@@ -1,0 +1,12 @@
+[book]
+authors = ["Fuel Labs <contact@fuel.sh>"]
+language = "en"
+multilingual = false
+src = "src"
+title = "The Fuel Indexer Service"
+
+[output.html]
+git-repository-url = "https://github.com/FuelLabs/fuel-indexer"
+
+[rust]
+edition = "2021"
