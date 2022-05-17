@@ -1,6 +1,6 @@
 # Fuel Indexer
 
-<img src="https://miro.medium.com/fit/c/176/176/1*W-1e0zVhcLui4u-ci2e-Fg.png">
+![Fuel Logo](./docs/img/fuel.png "Fuel Logo")
 
 [![build](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/fuel-indexer?label=latest)](https://crates.io/crates/fuel-indexer)
