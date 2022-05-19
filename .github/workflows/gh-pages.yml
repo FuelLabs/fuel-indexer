@@ -1,0 +1,43 @@
+name: github pages
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - v*
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v1
+        with:
+          mdbook-version: '0.4.7'
+
+      - run: mdbook build docs
+
+      - name: Deploy latest
+        if: github.ref == 'refs/heads/master'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/book
+          destination_dir: latest
+
+      - name: Get tag
+        id: branch_name
+        if: startsWith(github.ref, 'refs/tags')
+        run: |
+          echo ::set-output name=BRANCH_NAME::${GITHUB_REF#refs/tags/}
+
+      - name: Deploy tag
+        if: startsWith(github.ref, 'refs/tags')
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/book
+          destination_dir: ${{ steps.branch_name.outputs.BRANCH_NAME }}
