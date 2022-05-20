@@ -190,6 +190,8 @@ jobs:
         mdbook-build
       ]
     runs-on: ubuntu-latest
+    steps:
+      - run: true
 
   notify-slack-on-failure:
     if: ${{ always() }} && github.ref == 'refs/heads/master'
