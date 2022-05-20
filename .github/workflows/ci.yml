@@ -181,8 +181,9 @@ jobs:
     needs:
       [
         cargo-build-workspace
-        cargo-test-workspace
+        cargo-test-workspace-default-features
         cargo-test-workspace-all-features
+        cargo-test-workspace-no-features
         cargo-fmt-workspace-check
         cargo-toml-fmt-check
         cargo-clippy-workspace
