@@ -180,15 +180,15 @@ jobs:
   validation-complete:
     needs:
       [
-        cargo-build-workspace
-        cargo-test-workspace-default-features
-        cargo-test-workspace-all-features
-        cargo-test-workspace-no-features
-        cargo-fmt-workspace-check
-        cargo-toml-fmt-check
-        cargo-clippy-workspace
-        cargo-unused-deps-check
-        mdbook-build
+        cargo-build-workspace,
+        cargo-test-workspace-default-features,
+        cargo-test-workspace-all-features,
+        cargo-test-workspace-no-features,
+        cargo-fmt-workspace-check,
+        cargo-toml-fmt-check,
+        cargo-clippy-workspace,
+        cargo-unused-deps-check,
+        mdbook-build,
       ]
     runs-on: ubuntu-latest
     steps:
