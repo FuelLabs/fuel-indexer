@@ -12,12 +12,12 @@ async-std = "1.10.0"
 axum = "0.4"
 cfg-if = "1.0"
 diesel = { version = "1.4", features = ["postgres", "serde_json"] }
-fuel-core = { version = "0.2" }
-fuel-gql-client = { version = "0.2" }
+fuel-core = { version = "0.6.4" }
+fuel-gql-client = { version = "0.6.4" }
 fuel-indexer-schema = { path = "../schema", features = ["db-models"] }
-fuel-tx = { version = "0.2", features = ["serde-types"] }
-fuel-vm = { version = "0.2" }
-fuels-core = { version = "0.2" }
+fuel-tx = "0.9"
+fuel-vm = { version = "0.8" }
+fuels-core = { version = "0.12" }
 futures = "0.3"
 http = "0.2"
 r2d2 = "0.8"
@@ -34,21 +34,19 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.2", features = ["env-filter"] }
 wasmer = "2.0"
 wasmer-compiler-cranelift = { version = "2.0" }
-wasmer-compiler-llvm = { version = "2.0", optional = true }
 wasmer-engine-universal = "2.0"
 
 [dev-dependencies]
 chrono = { version = "0.4", features = ["serde"] }
-fuel-core = { version = "0.2", features = ["test-helpers"] }
-fuel-gql-client = { version = "0.2", features = ["test-helpers"] }
+fuel-core = { version = "0.6.4", features = ["test-helpers"] }
+fuel-gql-client = { version = "0.6.4", features = ["test-helpers"] }
 fuel-indexer = { path = "../lib" }
 fuel-storage = { version = "0.1" }
-fuel-types = { version = "0.3", features = ["serde-types"] }
-fuels-abigen-macro = { version = "0.2" }
-fuels-rs = { version = "0.2" }
+fuel-types = "0.3"
+fuels = "0.12"
+fuels-abigen-macro = { version = "0.12" }
 itertools = { version = "0.10" }
 
 [features]
 default = []
-llvm = ["wasmer-compiler-llvm"]
 postgres = []

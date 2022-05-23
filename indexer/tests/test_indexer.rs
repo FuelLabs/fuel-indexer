@@ -24,12 +24,14 @@ mod tests {
         .copied()
         .collect::<Vec<u8>>();
 
+        let byte_price = 0;
         let gas_price = 0;
         let gas_limit = 1_000_000;
         let maturity = 0;
         Transaction::script(
             gas_price,
             gas_limit,
+            byte_price,
             maturity,
             script,
             vec![],
