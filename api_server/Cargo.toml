@@ -5,6 +5,14 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "api_server"
+path = "src/lib.rs"
+
+[[bin]]
+name = "api_server"
+path = "src/main.rs"
+
 [dependencies]
 anyhow = "1.0.53"
 async-process = "1.3"

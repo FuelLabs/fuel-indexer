@@ -28,7 +28,7 @@ pub struct Answer {
 }
 
 #[derive(Debug, Error)]
-pub enum APIError {
+pub enum ApiError {
     #[error("Diesel error {0:?}")]
     DieselError(#[from] diesel::result::Error),
     #[error("Diesel connection error {0:?}")]
@@ -111,7 +111,7 @@ impl GraphQlApi {
     }
 }
 
-pub async fn load_schema(database_url: &str, name: &str) -> Result<Option<Schema>, APIError> {
+pub async fn load_schema(database_url: &str, name: &str) -> Result<Option<Schema>, ApiError> {
     let conn = Conn::establish(database_url)?;
     Ok(Some(Schema::load_from_db(&conn, name)?))
 }
@@ -120,7 +120,7 @@ pub async fn run_query(
     query: Query,
     schema: &Schema,
     database_url: String,
-) -> Result<Value, APIError> {
+) -> Result<Value, ApiError> {
     let conn = Conn::establish(&database_url)?;
     let builder = GraphqlQueryBuilder::new(schema, &query.query)?;
     let query = builder.build()?;

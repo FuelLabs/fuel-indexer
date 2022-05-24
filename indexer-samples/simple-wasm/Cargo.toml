@@ -8,11 +8,11 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuels = { path = "../../../fuels-rs/packages/fuels", default-features = false }
-fuels-core = "0.13"
 fuel-indexer = { path = "../../lib" }
 fuel-indexer-derive = { path = "../../derive" }
 fuel-tx = "0.9"
+fuels = { path = "../../../fuels-rs/packages/fuels", default-features = false }
 fuels-abigen-macro = { path = "../../../fuels-rs/packages/fuels-abigen-macro" }
+fuels-core = "0.13"
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
