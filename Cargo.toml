@@ -8,7 +8,7 @@ members = [
    "indexer",
    "schema"
 ]
-exclude = ["examples/*"]
+exclude = ["examples"]
 
 [profile.release]
 codegen-units = 1
