@@ -64,7 +64,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          args: --verbose --all-targets
+          args: --verbose --all-features --all-targets -- -D warnings
 
       - name: Run tests (default features)
         uses: actions-rs/cargo@v1
