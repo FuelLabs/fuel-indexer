@@ -153,10 +153,10 @@ mod tests {
     use fuels_abigen_macro::abigen;
     use fuels_core::abi_encoder::ABIEncoder;
 
-    const DATABASE_URL: &'static str = "postgres://postgres:my-secret@127.0.0.1:5432";
-    const MANIFEST: &'static str = include_str!("test_data/manifest.yaml");
-    const BAD_MANIFEST: &'static str = include_str!("test_data/bad_manifest.yaml");
-    const WASM_BYTES: &'static [u8] = include_bytes!("test_data/simple_wasm.wasm");
+    const DATABASE_URL: &str = "postgres://postgres:my-secret@127.0.0.1:5432";
+    const MANIFEST: &str = include_str!("test_data/manifest.yaml");
+    const BAD_MANIFEST: &str = include_str!("test_data/bad_manifest.yaml");
+    const WASM_BYTES: &[u8] = include_bytes!("test_data/simple_wasm.wasm");
 
     abigen!(MyContract, "indexer/src/test_data/my_struct.json");
 
