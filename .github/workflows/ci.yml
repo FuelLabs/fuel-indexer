@@ -45,9 +45,8 @@ jobs:
           crate: cargo-toml-lint
           version: "0.1"
 
-      # disable for now
-      #- name: Run Cargo.toml linter
-      #  run:  git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
+      - name: Run Cargo.toml linter
+        run:  git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
 
       - name: Check formatting
         uses: actions-rs/cargo@v1
