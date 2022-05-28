@@ -1,17 +1,9 @@
 [package]
-name = "fuel-indexer-api-server"
+name = "fuel-indexer-handler"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[lib]
-name = "fuel_indexer_api_server"
-path = "src/lib.rs"
-
-[[bin]]
-name = "api_server"
-path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.53"

@@ -4,9 +4,10 @@ resolver = "2"
 members = [
    "api_server",
    "derive",
-   "lib",
+   "handler",
    "indexer",
-   "schema"
+   "lib",
+   "schema",
 ]
 exclude = ["examples"]
 

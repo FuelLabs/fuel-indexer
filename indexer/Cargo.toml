@@ -15,6 +15,7 @@ diesel = { version = "1.4", features = ["postgres", "serde_json"] }
 fuel-core = { version = "0.6.4" }
 fuel-gql-client = { version = "0.6.4" }
 fuel-indexer-schema = { path = "../schema", features = ["db-models"] }
+fuel-indexer-handler = { path = "../handler", features = [] }
 fuel-tx = "0.9"
 fuel-vm = { version = "0.8" }
 fuels-core = { version = "0.12" }
@@ -43,7 +44,7 @@ fuel-gql-client = { version = "0.6.4", features = ["test-helpers"] }
 fuel-indexer = { path = "../lib" }
 fuel-storage = { version = "0.1" }
 fuel-types = "0.3"
-fuels = "0.12"
+# fuels = "0.12"
 fuels-abigen-macro = { version = "0.12" }
 itertools = { version = "0.10" }
 

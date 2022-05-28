@@ -1,6 +1,7 @@
-use crate::{IndexExecutor, IndexerResult, Manifest, SchemaManager};
+use crate::{IndexExecutor, IndexerResult, Manifest, SchemaManager, SimpleIndexExecutor};
 use async_std::sync::Arc;
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
+use fuel_indexer_handler::{Handler, Logger};
 use fuel_tx::Receipt;
 use fuels_core::abi_encoder::ABIEncoder;
 use fuels_core::{Token, Tokenizable};
@@ -60,7 +61,9 @@ impl IndexerService {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
         let _ = self.manager.new_schema(&name, graphql_schema)?;
-        let executor = IndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes)?;
+        // let executor = IndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes)?;
+        let executor: SimpleIndexExecutor =
+            SimpleIndexExecutor::new(self.database_url.clone(), manifest);
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
         let handle = tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
@@ -82,7 +85,7 @@ impl IndexerService {
     fn make_task(
         &self,
         kill_switch: Arc<AtomicBool>,
-        executor: IndexExecutor,
+        executor: SimpleIndexExecutor,
         start_block: Option<u64>,
     ) -> impl Future<Output = ()> {
         let mut next_cursor = None;

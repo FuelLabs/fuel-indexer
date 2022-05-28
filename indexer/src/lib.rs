@@ -1,4 +1,5 @@
 use diesel::result::Error as DieselError;
+use fuel_indexer_handler::HandlerError;
 use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
@@ -11,7 +12,7 @@ mod service;
 
 pub use api::GraphQlApi;
 pub use database::SchemaManager;
-pub use executor::{IndexEnv, IndexExecutor};
+pub use executor::{IndexEnv, IndexExecutor, SimpleIndexExecutor};
 pub use manifest::Manifest;
 pub use service::{IndexerConfig, IndexerService};
 
@@ -21,6 +22,8 @@ pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
 pub enum IndexerError {
     #[error("Compiler error: {0:#?}")]
     CompileError(#[from] wasmer::CompileError),
+    #[error("Compiler error: {0:#?}")]
+    HandlerError(#[from] HandlerError),
     #[error("Error instantiating wasm interpreter: {0:#?}")]
     InstantiationError(#[from] InstantiationError),
     #[error("Error finding exported symbol: {0:#?}")]

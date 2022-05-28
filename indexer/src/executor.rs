@@ -1,6 +1,7 @@
 use crate::database::Database;
 use crate::ffi;
 use crate::{IndexerError, IndexerResult, Manifest};
+use fuel_indexer_handler::{Handler, HandlerError, Logger};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
@@ -14,6 +15,8 @@ use wasmer_engine_universal::Universal;
 fn compiler() -> Cranelift {
     Cranelift::default()
 }
+
+type ConcurrentHandler = Arc<dyn Handler + Send + Sync>;
 
 #[derive(Error, Debug)]
 pub enum TxError {
@@ -56,6 +59,67 @@ pub struct IndexExecutor {
     db: Arc<Mutex<Database>>,
 }
 
+pub struct SimpleIndexExecutor {
+    handles: HashMap<String, Vec<ConcurrentHandler>>,
+    events: HashMap<String, String>,
+    db: Arc<Mutex<Database>>,
+}
+
+impl SimpleIndexExecutor {
+    pub fn new(db_conn: String, manifest: Manifest) -> Self {
+        let events = HashMap::new();
+        let db = Arc::new(Mutex::new(Database::new(&db_conn).unwrap()));
+        let handles = HashMap::new();
+
+        Self {
+            events,
+            db,
+            handles,
+        }
+    }
+
+    pub fn register_handler(&mut self, event: String, handler_name: String, h: ConcurrentHandler) {
+        if let Some(handler_set_key) = self.events.get(&event) {
+            let handles = self.handles.get_mut(handler_set_key).unwrap();
+            handles.push(h);
+        }
+        self.events.insert(event, handler_name);
+    }
+
+    pub fn from_file(_index: &Path) -> IndexerResult<IndexExecutor> {
+        unimplemented!()
+    }
+
+    pub fn trigger_event(&self, event_name: &str, bytes: Vec<Vec<u8>>) -> IndexerResult<()> {
+        if let Some(handle_key) = self.events.get(event_name) {
+            if let Some(handles) = self.handles.get(handle_key) {
+                for handler in handles.iter() {
+                    self.db.lock().expect("Lock poisoned").start_transaction()?;
+                    let handler = handler.clone();
+
+                    let res = handler.call(bytes.clone());
+                    // let res: Result<Vec<u8>, HandlerError> = Ok(Vec::new());
+
+                    if let Err(e) = res {
+                        error!("Indexer failed {e:?}");
+                        self.db
+                            .lock()
+                            .expect("Lock poisoned")
+                            .revert_transaction()?;
+                        return Err(IndexerError::HandlerError(e));
+                    } else {
+                        self.db
+                            .lock()
+                            .expect("Lock poisoned")
+                            .commit_transaction()?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 impl IndexExecutor {
     pub fn new(
         db_conn: String,
@@ -81,13 +145,13 @@ impl IndexExecutor {
         let mut events = HashMap::new();
 
         for handler in manifest.handlers {
-            let handlers = events.entry(handler.event).or_insert_with(Vec::new);
+            let handles = events.entry(handler.event).or_insert_with(Vec::new);
 
             if !instance.exports.contains(&handler.handler) {
                 return Err(IndexerError::MissingHandler(handler.handler));
             }
 
-            handlers.push(handler.handler);
+            handles.push(handler.handler);
         }
 
         Ok(IndexExecutor {
@@ -112,8 +176,8 @@ impl IndexExecutor {
         }
         let arg_list = ffi::WasmArgList::new(&self.instance, args.iter().collect())?;
 
-        if let Some(handlers) = self.events.get(event_name) {
-            for handler in handlers.iter() {
+        if let Some(handles) = self.events.get(event_name) {
+            for handler in handles.iter() {
                 let fun = self
                     .instance
                     .exports
