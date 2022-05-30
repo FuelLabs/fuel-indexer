@@ -1,21 +1,29 @@
-use fuel_indexer_api_server::{GraphQlApi, ServerConfig, Args};
-use simple_handler::graphql_schema;
-use async_std::{fs::File, io::ReadExt, net::SocketAddr};
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use async_std::{fs::File, io::ReadExt};
+use fuel_core::service::{Config, FuelService};
+use fuel_wasm_executor::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
 use std::path::PathBuf;
 use structopt::StructOpt;
+use tokio::join;
+use tracing::{error, info};
 use tracing_subscriber::filter::EnvFilter;
 
-graphql_schema!("simple_handler", "schema/schema.graphql");
+#[derive(Debug, StructOpt)]
+#[structopt(
+    name = "Indexer Service",
+    about = "Standalone binary for the fuel indexer service"
+)]
+pub struct Args {
+    #[structopt(short, long, help = "run local test node")]
+    local: bool,
+    #[structopt(parse(from_os_str), help = "Indexer service config file")]
+    config: PathBuf,
+    #[structopt(short, long, parse(from_os_str), help = "Indexer service config file")]
+    test_manifest: Option<PathBuf>,
+}
 
 #[tokio::main]
-async fn main() -> Result<()> {
-    // let srv = GraphQlApi::new(
-    //     "postgres://postgres@localhost:5432".to_string(),
-    //     "127.0.0.1:8080".parse().unwrap(),
-    // );
-    
+pub async fn main() -> Result<()> {
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided"),
         None => EnvFilter::new("info"),
@@ -32,16 +40,53 @@ async fn main() -> Result<()> {
     let mut contents = String::new();
     file.read_to_string(&mut contents).await?;
 
-    let ServerConfig {
-        listen_address,
-        database_url,
-    } = serde_yaml::from_str(&contents).expect("Bad yaml file");
+    let mut config: IndexerConfig = serde_yaml::from_str(&contents)?;
 
-    let api = GraphQlApi::new(database_url, listen_address);
+    let _local_node = if opt.local {
+        let s = FuelService::new_node(Config::local_node()).await.unwrap();
+        config.fuel_node_addr = s.bound_address;
+        Some(s)
+    } else {
+        None
+    };
 
-    let api_handle = tokio::spawn(api.run());
+    info!("Fuel node listening on {}", config.fuel_node_addr);
+    let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
 
-    api_handle.await?;
+    let mut service = IndexerService::new(config)?;
 
-    Ok(())    
+    // TODO: need an API endpoint to upload/create these things.....
+    if opt.test_manifest.is_some() {
+        let mut path = opt.test_manifest.unwrap();
+
+        let mut file = File::open(&path).await?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).await?;
+        let manifest: Manifest = serde_yaml::from_str(&contents)?;
+
+        path.pop();
+        path.push(&manifest.graphql_schema);
+        let mut file = File::open(&path).await?;
+        let mut schema = String::new();
+        file.read_to_string(&mut schema).await?;
+
+        path.pop();
+        path.push(&manifest.wasm_module);
+        let mut file = File::open(&path).await?;
+        let mut bytes = Vec::<u8>::new();
+        file.read_to_end(&mut bytes).await?;
+        service.add_indexer(manifest, &schema, bytes, false)?;
+    }
+
+    let service_handle = tokio::spawn(service.run());
+
+    let (first, second) = join!(api_handle, service_handle);
+
+    if let Err(e) = first {
+        error!("{:?}", e)
+    }
+    if let Err(e) = second {
+        error!("{:?}", e)
+    }
+    Ok(())
 }

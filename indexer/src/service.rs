@@ -1,7 +1,7 @@
 use crate::{IndexExecutor, IndexerResult, Manifest, SchemaManager, SimpleIndexExecutor};
 use async_std::sync::Arc;
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_handler::{Handler, Logger};
+use fuel_indexer_handler::{Handler, HandlerError};
 use fuel_tx::Receipt;
 use fuels_core::abi_encoder::ABIEncoder;
 use fuels_core::{Token, Tokenizable};
@@ -17,6 +17,15 @@ use tokio::{
 };
 
 use tracing::{debug, error, info, warn};
+
+pub struct LogHandler {}
+
+impl Handler for LogHandler {
+    fn call(&self, data: Vec<Vec<u8>>) -> Result<(), HandlerError> {
+        println!("Was called");
+        Ok(())
+    }
+}
 
 #[derive(Clone, Deserialize)]
 pub struct IndexerConfig {
@@ -62,8 +71,15 @@ impl IndexerService {
         let start_block = manifest.start_block;
         let _ = self.manager.new_schema(&name, graphql_schema)?;
         // let executor = IndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes)?;
-        let executor: SimpleIndexExecutor =
+        let mut executor: SimpleIndexExecutor =
             SimpleIndexExecutor::new(self.database_url.clone(), manifest);
+
+        // FIXME: the caller needs to do this
+        executor.register_handler(
+            "an_event_name".to_string(),
+            "simple_handler".to_string(),
+            Arc::new(LogHandler {}),
+        );
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
         let handle = tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
@@ -158,6 +174,38 @@ impl IndexerService {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }
+                            Receipt::LogData {
+                                id,
+                                ra,
+                                rb,
+                                ptr,
+                                len,
+                                digest,
+                                data,
+                                pc,
+                                is,
+                            } => {
+                                // TODO: might be nice to have Receipt type impl Tokenizable.
+                                let token = Token::Struct(vec![
+                                    id.into_token(),
+                                    ra.into_token(),
+                                    rb.into_token(),
+                                    ptr.into_token(),
+                                    len.into_token(),
+                                    digest.into_token(),
+                                    data.into_token(),
+                                    pc.into_token(),
+                                    is.into_token(),
+                                ]);
+
+                                let args = ABIEncoder::new()
+                                    .encode(&[token.clone()])
+                                    .expect("Bad Encoding!");
+                                // TODO: should wrap this in a db transaction.
+                                if let Err(e) = exec.trigger_event("an_event_name", vec![args]) {
+                                    error!("Event processing failed {:?}", e);
+                                }
+                            }
                             o => warn!("Unhandled receipt type: {:?}", o),
                         }
                     }
@@ -183,6 +231,7 @@ impl IndexerService {
 
     pub async fn run(self) {
         let IndexerService { handles, .. } = self;
+        debug!("Handling futures from IndexerService");
         let mut futs = FuturesUnordered::from_iter(handles.into_values());
         while let Some(fut) = futs.next().await {
             info!("Retired a future {fut:?}");

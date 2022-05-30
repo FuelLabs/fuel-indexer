@@ -1,0 +1,50 @@
+[
+  {
+    "type": "function",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "u32",
+        "components": null
+      }
+    ],
+    "name": "init_counter",
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32",
+        "components": null
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "inputs": [],
+    "name": "get_count",
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32",
+        "components": null
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "u32",
+        "components": null
+      }
+    ],
+    "name": "increment_counter",
+    "outputs": [
+      {
+        "name": "",
+        "type": "u32",
+        "components": null
+      }
+    ]
+  }
+]

@@ -1,4 +1,5 @@
 use thiserror::Error;
+use tracing::debug;
 
 #[derive(Error, Debug)]
 pub enum HandlerError {
@@ -13,7 +14,8 @@ pub trait Handler {
 pub struct Logger {}
 
 impl Handler for Logger {
-    fn call(&self, _data: Vec<Vec<u8>>) -> Result<(), HandlerError> {
+    fn call(&self, data: Vec<Vec<u8>>) -> Result<(), HandlerError> {
+        debug!("Hanlder was called with '{:?}'", data);
         Ok(())
     }
 }

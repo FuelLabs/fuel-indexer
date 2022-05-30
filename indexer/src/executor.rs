@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use thiserror::Error;
-use tracing::error;
+use tracing::{debug, error, warn};
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store, WasmerEnv,
 };
@@ -59,10 +59,19 @@ pub struct IndexExecutor {
     db: Arc<Mutex<Database>>,
 }
 
+
 pub struct SimpleIndexExecutor {
     handles: HashMap<String, Vec<ConcurrentHandler>>,
     events: HashMap<String, String>,
     db: Arc<Mutex<Database>>,
+}
+
+
+impl std::fmt::Debug for SimpleIndexExecutor {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Events: {:?}", self.events)
+        // write!(f, "Handles: {:?}", self.handles);
+    }
 }
 
 impl SimpleIndexExecutor {
@@ -79,11 +88,14 @@ impl SimpleIndexExecutor {
     }
 
     pub fn register_handler(&mut self, event: String, handler_name: String, h: ConcurrentHandler) {
-        if let Some(handler_set_key) = self.events.get(&event) {
-            let handles = self.handles.get_mut(handler_set_key).unwrap();
-            handles.push(h);
-        }
+        let handler_set_key = self.events.entry(event.clone()).or_insert(handler_name.clone());
+
+        let handles = self.handles.entry(handler_set_key.to_string()).or_insert(Vec::new());
+        handles.push(h);
+
         self.events.insert(event, handler_name);
+
+        println!("SELF: > {:?}", self);
     }
 
     pub fn from_file(_index: &Path) -> IndexerResult<IndexExecutor> {
@@ -98,7 +110,6 @@ impl SimpleIndexExecutor {
                     let handler = handler.clone();
 
                     let res = handler.call(bytes.clone());
-                    // let res: Result<Vec<u8>, HandlerError> = Ok(Vec::new());
 
                     if let Err(e) = res {
                         error!("Indexer failed {e:?}");

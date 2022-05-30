@@ -20,6 +20,8 @@ fuel-indexer = { path = "../../lib", default-features = false }
 fuel-indexer-api-server = { path = "../../api_server" }
 fuels-abigen-macro = "0.13"
 fuel-indexer-schema = { path = "../../schema" }
+fuel-wasm-executor = { path = "../../indexer" }
+fuel-core = { version = "0.6" }
 fuel-tx = "0.9"
 fuels = "0.13"
 fuels-core = "0.13"

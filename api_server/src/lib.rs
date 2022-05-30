@@ -2,9 +2,6 @@ use async_std::{
     net::SocketAddr,
     sync::{Arc, RwLock},
 };
-use structopt::{StructOpt};
-use std::path::PathBuf;
-use serde::{Deserialize, Serialize};
 use axum::{
     extract::{Extension, Json, Path},
     http::StatusCode,
@@ -18,8 +15,11 @@ use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
     tables::Schema,
 };
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::path::PathBuf;
+use structopt::StructOpt;
 use thiserror::Error;
 use tracing::error;
 
@@ -53,7 +53,6 @@ pub struct Query {
     #[allow(unused)] // TODO
     params: String,
 }
-
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "Indexer API Service", about = "Fuel indexer api")]
@@ -96,7 +95,6 @@ pub struct GraphQlApi {
     database_url: String,
     listen_address: SocketAddr,
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ServerConfig {
