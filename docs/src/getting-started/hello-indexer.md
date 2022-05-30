@@ -201,3 +201,26 @@ curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: applicati
 curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{"query": "query { event_counts { id account count } }", "params": "b"}'
 curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{"query": "query { event_counts { count } }", "params": "b"}'
 ```
+
+With those queries, the response might look something like:
+
+```json
+{
+  "count": 7,
+  "id": 10
+}
+```
+
+```json
+{
+  "account": "0000000000000000000000000000000000000000000000000000000000000000",
+  "count": 7,
+  "id": 10
+}
+```
+
+```json
+{
+  "count": 7
+}
+```
