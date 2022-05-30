@@ -1,7 +1,6 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_indexer_api_server::{Args, GraphQlApi, ServerConfig};
-use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing_subscriber::filter::EnvFilter;
 

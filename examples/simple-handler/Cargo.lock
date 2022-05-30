@@ -1515,7 +1515,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "structopt",
  "thiserror",
  "tokio",
  "tracing",
@@ -1659,19 +1658,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuels"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27d4d928dfc5218ccd093ff1f1b7a88df5d77a416149cd287ec891cd352f89e3"
-dependencies = [
- "fuels-abigen-macro",
- "fuels-contract",
- "fuels-core 0.13.0",
- "fuels-signers",
- "fuels-test-helpers",
-]
-
-[[package]]
 name = "fuels-abigen-macro"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1683,35 +1669,6 @@ dependencies = [
  "quote",
  "rand 0.8.5",
  "syn",
-]
-
-[[package]]
-name = "fuels-contract"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f0339176395569a2fa568e9e571a7b6b7f4b4bce8e06ef5e1fbf46fee113bc4"
-dependencies = [
- "anyhow",
- "bytes",
- "fuel-asm",
- "fuel-gql-client",
- "fuel-tx",
- "fuel-types",
- "fuel-vm",
- "fuels-core 0.13.0",
- "fuels-signers",
- "hex",
- "proc-macro2",
- "quote",
- "rand 0.8.5",
- "regex",
- "serde",
- "serde_json",
- "sha2 0.9.9",
- "strum",
- "strum_macros",
- "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -1764,43 +1721,6 @@ dependencies = [
  "strum_macros",
  "syn",
  "thiserror",
-]
-
-[[package]]
-name = "fuels-signers"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ad0c4fb12743fb802aff088a1fbabaee5ae9208076c88927120287d6e079283d"
-dependencies = [
- "async-trait",
- "bytes",
- "fuel-crypto",
- "fuel-gql-client",
- "fuel-tx",
- "fuel-types",
- "fuel-vm",
- "fuels-core 0.13.0",
- "hex",
- "rand 0.8.5",
- "serde",
- "sha2 0.9.9",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "fuels-test-helpers"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5b4b085676e481702c7f747970a1900859006b81d73dd708f729f5d34fdb0357"
-dependencies = [
- "fuel-core",
- "fuel-crypto",
- "fuel-gql-client",
- "fuel-tx",
- "fuel-types",
- "fuels-signers",
- "rand 0.8.5",
 ]
 
 [[package]]
@@ -3602,26 +3522,16 @@ dependencies = [
  "fuel-indexer",
  "fuel-indexer-api-server",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuel-wasm-executor",
- "fuels",
  "fuels-abigen-macro",
- "fuels-core 0.13.0",
  "getrandom 0.2.6",
- "graphql-parser",
- "proc-macro-error",
- "proc-macro2",
- "quote",
  "serde",
  "serde_json",
  "serde_yaml",
  "structopt",
- "syn",
- "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber 0.2.25",
- "trybuild",
 ]
 
 [[package]]
@@ -4229,21 +4139,6 @@ name = "try-lock"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
-
-[[package]]
-name = "trybuild"
-version = "1.0.61"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fc92f558afb6d1d7c6f175eb8d615b8ef49c227543e68e19c123d4ee43d8a7d"
-dependencies = [
- "glob",
- "once_cell",
- "serde",
- "serde_derive",
- "serde_json",
- "termcolor",
- "toml",
-]
 
 [[package]]
 name = "typenum"

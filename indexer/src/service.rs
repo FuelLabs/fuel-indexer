@@ -1,4 +1,4 @@
-use crate::{IndexExecutor, IndexerResult, Manifest, SchemaManager, SimpleIndexExecutor};
+use crate::{IndexerResult, Manifest, SchemaManager, SimpleIndexExecutor};
 use async_std::sync::Arc;
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
 use fuel_indexer_handler::{Handler, HandlerError};
@@ -21,7 +21,7 @@ use tracing::{debug, error, info, warn};
 pub struct LogHandler {}
 
 impl Handler for LogHandler {
-    fn call(&self, data: Vec<Vec<u8>>) -> Result<(), HandlerError> {
+    fn call(&self, _data: Vec<Vec<u8>>) -> Result<(), HandlerError> {
         println!("Was called");
         Ok(())
     }
@@ -64,7 +64,7 @@ impl IndexerService {
         &mut self,
         manifest: Manifest,
         graphql_schema: &str,
-        wasm_bytes: impl AsRef<[u8]>,
+        _wasm_bytes: impl AsRef<[u8]>,
         run_once: bool,
     ) -> IndexerResult<()> {
         let name = manifest.namespace.clone();
@@ -231,7 +231,6 @@ impl IndexerService {
 
     pub async fn run(self) {
         let IndexerService { handles, .. } = self;
-        debug!("Handling futures from IndexerService");
         let mut futs = FuturesUnordered::from_iter(handles.into_values());
         while let Some(fut) = futs.next().await {
             info!("Retired a future {fut:?}");
