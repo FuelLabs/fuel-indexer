@@ -5,11 +5,11 @@ members = [
    "api_server",
    "derive",
    "lib",
+   "examples/*",
    "indexer",
    "schema"
 ]
 
-exclude = ["examples"]
 
 [profile.release]
 codegen-units = 1
