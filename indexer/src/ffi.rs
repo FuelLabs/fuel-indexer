@@ -135,7 +135,7 @@ fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
     env.db
         .lock()
         .expect("Acquire lock failed")
-        .put_object(type_id, columns, bytes);
+        .put_object(type_id, columns, bytes, true);
 }
 
 pub fn get_exports(env: &IndexEnv, store: &Store) -> Exports {

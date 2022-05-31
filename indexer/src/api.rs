@@ -43,7 +43,7 @@ async fn query_graph(
     Extension(config): Extension<Arc<IndexerConfig>>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
 ) -> (StatusCode, Json<Value>) {
-    match manager.read().await.load_schema(&name) {
+    match manager.read().await.load_schema_wasm(&name) {
         Ok(schema) => match run_query(query, schema, config).await {
             Ok(response) => (StatusCode::OK, Json(response)),
             Err(e) => {

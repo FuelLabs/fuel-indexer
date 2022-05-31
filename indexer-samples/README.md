@@ -1,1 +1,0 @@
-# fuel-wasm-examples
