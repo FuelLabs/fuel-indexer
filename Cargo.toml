@@ -6,7 +6,13 @@ members = [
    "derive",
    "lib",
    "indexer",
-   "schema"
+   "examples/simple-non-wasm",
+   "schema",
+]
+
+exclude = [
+   "examples/simple-wasm",
+   "examples/indexer-demo",
 ]
 
 [profile.release]

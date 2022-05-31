@@ -6,7 +6,7 @@
   1. SchemaManager: sets up, validates new graphql schemas
 1. executor.rs - wasm runtime environment
   1. IndexEnv: holds references to objects that need to be available to ffi functions
-  1. IndexExecutor: load WASM, execute event triggers
+  1. WasmIndexExecutor: load WASM, execute event triggers
 1. ffi.rs - functions callable from WASM, loading data structures to/from WASM
 1. manifest.rs - the yaml format for a graphql instance
   1. namespace: The unique namespace this graphql schema lives in. This will correspond to the SQL database schema as well.

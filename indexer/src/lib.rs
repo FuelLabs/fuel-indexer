@@ -6,12 +6,15 @@ pub mod api;
 mod database;
 pub mod executor;
 mod ffi;
+pub mod handler;
 mod manifest;
 mod service;
 
 pub use api::GraphQlApi;
-pub use database::SchemaManager;
-pub use executor::{IndexEnv, IndexExecutor};
+pub use database::{ConnWrapper, Database, SchemaManager};
+pub use executor::{CustomIndexExecutor, Executor, IndexEnv, WasmIndexExecutor};
+pub use fuel_types::ContractId;
+pub use handler::{CustomHandler, HandlerFilter, ReceiptEvent};
 pub use manifest::Manifest;
 pub use service::{IndexerConfig, IndexerService};
 
@@ -41,6 +44,8 @@ pub enum IndexerError {
     MissingHandler(String),
     #[error("Indexer transaction error {0:?}")]
     TxError(#[from] crate::executor::TxError),
+    #[error("Error executing handler")]
+    HandlerError,
     #[error("Unknown error")]
     Unknown,
 }
