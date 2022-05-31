@@ -1,6 +1,6 @@
 use crate::{
     db::models::{
-        Columns, GraphRoot, NewColumn, NewGraphRoot, NewRootColumns, RootColumns, TypeIds,
+        Columns, GraphRoot, NewColumn, NewGraphRoot, NewRootColumns, RootColumns, TypeId,
     },
     sql_types::ColumnType,
     type_id,
@@ -14,7 +14,7 @@ use std::collections::{HashMap, HashSet};
 #[derive(Default)]
 pub struct SchemaBuilder {
     statements: Vec<String>,
-    type_ids: Vec<TypeIds>,
+    type_ids: Vec<TypeId>,
     columns: Vec<NewColumn>,
     namespace: String,
     version: String,
@@ -97,7 +97,7 @@ impl SchemaBuilder {
             }
             .insert(conn)?;
 
-            let latest = GraphRoot::get_latest(conn, &namespace)?;
+            let latest = GraphRoot::latest_version(conn, &namespace)?;
 
             let fields = query_fields.get(&query).expect("No query root!");
 
@@ -208,7 +208,7 @@ impl SchemaBuilder {
                 );
 
                 self.statements.push(create);
-                self.type_ids.push(TypeIds {
+                self.type_ids.push(TypeId {
                     id: type_id as i64,
                     schema_version: self.version.to_string(),
                     schema_name: self.namespace.to_string(),
@@ -236,9 +236,9 @@ pub struct Schema {
 
 impl Schema {
     pub fn load_from_db(conn: &PgConnection, name: &str) -> QueryResult<Self> {
-        let root = GraphRoot::get_latest(conn, name)?;
+        let root = GraphRoot::latest_version(conn, name)?;
         let root_cols = RootColumns::list_by_id(conn, root.id)?;
-        let typeids = TypeIds::list_by_name(conn, &root.schema_name, &root.version)?;
+        let typeids = TypeId::list_by_name(conn, &root.schema_name, &root.version)?;
 
         let mut types = HashSet::new();
         let mut fields = HashMap::new();

@@ -65,7 +65,7 @@ pub struct GraphRoot {
 }
 
 impl GraphRoot {
-    pub fn get_latest(conn: &PgConnection, name: &str) -> QueryResult<GraphRoot> {
+    pub fn latest_version(conn: &PgConnection, name: &str) -> QueryResult<GraphRoot> {
         use gr::graph_root::dsl::*;
         graph_root
             .filter(schema_name.eq(name))
@@ -74,10 +74,10 @@ impl GraphRoot {
     }
 }
 
-#[derive(Insertable, Queryable, QueryableByName)]
+#[derive(Insertable, Queryable, QueryableByName, Debug)]
 #[table_name = "type_ids"]
 #[allow(unused)]
-pub struct TypeIds {
+pub struct TypeId {
     pub id: i64,
     pub schema_version: String,
     pub schema_name: String,
@@ -85,16 +85,28 @@ pub struct TypeIds {
     pub table_name: String,
 }
 
-impl TypeIds {
+impl TypeId {
     pub fn list_by_name(
         conn: &PgConnection,
         name: &str,
         version: &str,
-    ) -> QueryResult<Vec<TypeIds>> {
+    ) -> QueryResult<Vec<TypeId>> {
         use gr::type_ids::dsl::*;
         type_ids
             .filter(schema_name.eq(name).and(schema_version.eq(version)))
             .load(conn)
+    }
+
+    pub fn latest_version(schema_name: &str, conn: &PgConnection) -> QueryResult<String> {
+        let mut results: Vec<Self> = diesel::sql_query(&format!(
+            "SELECT * FROM graph_registry.type_ids WHERE schema_name = '{}' ORDER BY id LIMIT 1",
+            schema_name
+        ))
+        .load(conn)?;
+
+        let item = results.pop().unwrap();
+
+        Ok(item.schema_version)
     }
 
     pub fn insert(&self, conn: &PgConnection) -> QueryResult<usize> {

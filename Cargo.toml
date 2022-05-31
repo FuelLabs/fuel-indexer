@@ -6,7 +6,7 @@ members = [
    "derive",
    "lib",
    "indexer",
-   "indexer-samples/*",
+   "examples/*",
    "schema"
 ]
 

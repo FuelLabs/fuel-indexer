@@ -1,0 +1,88 @@
+[
+  {
+    "type": "function",
+    "inputs": [
+      {
+        "name": "value",
+        "type": "u32",
+        "components": null
+      }
+    ],
+    "name": "init_counter",
+    "outputs": [
+      {
+        "name": "",
+        "type": "struct CountEvent",
+        "components": [
+          {
+            "name": "count",
+            "type": "u64",
+            "components": null
+          },
+          {
+            "name": "timestamp",
+            "type": "u64",
+            "components": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "inputs": [],
+    "name": "get_count",
+    "outputs": [
+      {
+        "name": "",
+        "type": "struct AnotherCountEvent",
+        "components": [
+          {
+            "name": "count",
+            "type": "u64",
+            "components": null
+          },
+          {
+            "name": "timestamp",
+            "type": "u64",
+            "components": null
+          },
+          {
+            "name": "address",
+            "type": "b256",
+            "components": null
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "inputs": [
+      {
+        "name": "amount",
+        "type": "u32",
+        "components": null
+      }
+    ],
+    "name": "increment_counter",
+    "outputs": [
+      {
+        "name": "",
+        "type": "struct CountEvent",
+        "components": [
+          {
+            "name": "count",
+            "type": "u64",
+            "components": null
+          },
+          {
+            "name": "timestamp",
+            "type": "u64",
+            "components": null
+          }
+        ]
+      }
+    ]
+  }
+]
