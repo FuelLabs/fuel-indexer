@@ -140,7 +140,7 @@ At a minimum, the schema needs a `schema` definition with the `query` type defin
 
 Now for the code! Fuel indexers use two proc macros to generate the rust types from these specifications.
 
-```rust
+```rust,ignore
 extern crate alloc;
 use fuel_indexer_derive::{graphql_schema, handler};
 use fuels_abigen_macro::wasm_abigen;
