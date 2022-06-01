@@ -32,6 +32,7 @@ target = "wasm32-unknown-unknown"
 ```
 
 - Cargo.toml - the basic dependencies are:
+
 ```toml
 [package]
 name = "hello-indexer"
