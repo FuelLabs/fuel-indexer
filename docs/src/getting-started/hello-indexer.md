@@ -9,7 +9,7 @@ We're assuming here you have a sway contract written, and you're ready to start 
 
 We'll start with the project structure:
 
-```bash
+```console
 hello-indexer/
 ├── .cargo
 │   └── config
