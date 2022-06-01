@@ -13,9 +13,9 @@ A basic indexer service can be configured with a yaml file, like so:
 
 ```yaml
 ---
-fuel_node_addr: '127.0.0.1:30333'
-database_url: 'postgres://postgres:my-secret@127.0.0.1:5432'
-listen_endpoint: '127.0.0.1:29899'
+fuel_node_addr: "127.0.0.1:30333"
+database_url: "postgres://postgres:my-secret@127.0.0.1:5432"
+listen_endpoint: "127.0.0.1:29899"
 ```
 
 - The `fuel_node_addr` will point to your fuel node. You can optionally supply the `--local` flag to the service and the indexer will bring up an embedded fuel node, useful for dev purposes to bring up all components on your local machine. This field will then be ignored in that case.
