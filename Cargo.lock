@@ -1801,10 +1801,11 @@ dependencies = [
 
 [[package]]
 name = "fuels-abigen-macro"
-version = "0.14.1"
-source = "git+https://github.com/FuelLabs/fuels-rs?branch=wasm-support#05119ddb10ce16f2c19663adb8450beed6688478"
+version = "0.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cedfa266c5f99b76ccc0bf4d46a1e6ce2ff194fc02eed2561e24e8538a81a0bf"
 dependencies = [
- "fuels-core 0.14.1",
+ "fuels-core 0.15.2",
  "proc-macro2",
  "quote",
  "rand 0.8.5",
@@ -1868,40 +1869,15 @@ dependencies = [
 
 [[package]]
 name = "fuels-core"
-version = "0.13.0"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05ff61f1f4b89cc901c94401d6e8dcdbe82f0e6a555d9527a7bae48f6decfcea"
-dependencies = [
- "Inflector",
- "anyhow",
- "fuel-tx 0.9.0",
- "fuel-types 0.3.1",
- "fuel-vm",
- "fuels-types 0.13.0",
- "hex",
- "itertools",
- "proc-macro2",
- "quote",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "sha2 0.9.9",
- "strum",
- "strum_macros",
- "syn",
- "thiserror",
-]
-
-[[package]]
-name = "fuels-core"
-version = "0.14.1"
-source = "git+https://github.com/FuelLabs/fuels-rs?branch=wasm-support#05119ddb10ce16f2c19663adb8450beed6688478"
+checksum = "6b97376c790ce53c8ef5a1ad196683b1a97a578cd77635f9adf69c358cc2fe13"
 dependencies = [
  "Inflector",
  "anyhow",
  "fuel-tx 0.12.1",
  "fuel-types 0.5.0",
- "fuels-types 0.14.1",
+ "fuels-types 0.15.2",
  "hex",
  "itertools",
  "proc-macro2",
@@ -1967,20 +1943,9 @@ dependencies = [
 
 [[package]]
 name = "fuels-types"
-version = "0.13.0"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70b9a98cc02d7a95d67ef872fc32e4a951309410be6b326f855a75b10ed0a348"
-dependencies = [
- "anyhow",
- "serde",
- "strum",
- "strum_macros",
-]
-
-[[package]]
-name = "fuels-types"
-version = "0.14.1"
-source = "git+https://github.com/FuelLabs/fuels-rs?branch=wasm-support#05119ddb10ce16f2c19663adb8450beed6688478"
+checksum = "c5daf649eab0822218ef79de5be7e88fa9d6e340ed549977d61bed054f2c0711"
 dependencies = [
  "anyhow",
  "serde",
@@ -2404,8 +2369,8 @@ dependencies = [
  "fuel-indexer",
  "fuel-indexer-derive",
  "fuel-tx 0.9.0",
- "fuels-abigen-macro 0.14.1",
- "fuels-core 0.13.0",
+ "fuels-abigen-macro 0.15.2",
+ "fuels-core 0.15.2",
  "getrandom 0.2.6",
  "serde",
 ]
@@ -3917,8 +3882,8 @@ dependencies = [
  "fuel-indexer",
  "fuel-indexer-derive",
  "fuel-tx 0.9.0",
- "fuels-abigen-macro 0.14.1",
- "fuels-core 0.13.0",
+ "fuels-abigen-macro 0.15.2",
+ "fuels-core 0.15.2",
  "getrandom 0.2.6",
  "serde",
 ]

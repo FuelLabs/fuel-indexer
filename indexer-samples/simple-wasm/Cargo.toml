@@ -11,7 +11,7 @@ crate-type = ['cdylib']
 fuel-indexer = { path = "../../lib" }
 fuel-indexer-derive = { path = "../../derive" }
 fuel-tx = "0.9"
-fuels-abigen-macro = { git = "https://github.com/FuelLabs/fuels-rs", package = "fuels-abigen-macro", branch = "wasm-support" }
-fuels-core = "0.13"
+fuels-abigen-macro = "0.15"
+fuels-core = "0.15"
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
