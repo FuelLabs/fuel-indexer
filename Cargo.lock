@@ -1576,7 +1576,7 @@ dependencies = [
  "fuel-indexer",
  "fuel-indexer-schema",
  "fuels",
- "fuels-core 0.12.0",
+ "fuels-core 0.15.2",
  "graphql-parser",
  "proc-macro-error",
  "proc-macro2",
