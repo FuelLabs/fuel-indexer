@@ -151,7 +151,7 @@ mod tests {
         prelude::PgConnection, sql_query, Connection, Queryable, QueryableByName, RunQueryDsl,
     };
     use fuels_abigen_macro::abigen;
-    use fuels_core::abi_encoder::ABIEncoder;
+    use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
 
     const DATABASE_URL: &str = "postgres://postgres:my-secret@127.0.0.1:5432";
     const MANIFEST: &str = include_str!("test_data/manifest.yaml");
