@@ -9,7 +9,7 @@ on:
     types: [published]
 
 env:
-  DATABASE_URL: postgres://postgres:my-secret@postgres:5432
+  DATABASE_URL: postgres://postgres:my-secret@localhost:5432
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
   REGISTRY: ghcr.io
