@@ -97,6 +97,12 @@ jobs:
           command: test
           args: --verbose --all-targets --no-default-features
 
+      - name: Run tests (all features)
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose --all-targets --all-features
+
       - name: Notify if Job Fails
         uses: ravsamhq/notify-slack-action@v1
         if: always() && github.ref == 'refs/heads/master'
