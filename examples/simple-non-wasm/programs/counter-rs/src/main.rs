@@ -4,20 +4,22 @@ extern crate log;
 extern crate pretty_env_logger;
 
 use actix_web::{middleware, web, web::Bytes, App, Error, HttpRequest, HttpResponse, HttpServer};
-use fuel_core::{
-    chain_config::{ChainConfig, CoinConfig, StateConfig},
-    service::{Config, DbType, FuelService},
-};
-use fuel_gql_client::client::FuelClient;
-use fuels::{
-    prelude::{Contract, LocalWallet, Provider, TxParameters, DEFAULT_COIN_AMOUNT},
-    signers::wallet::Wallet,
-    test_helpers::setup_address_and_coins,
-};
-use fuels_abigen_macro::abigen;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::Mutex;
+use fuels::{
+    signers::Signer,
+    node::{
+        chain_config::{ChainConfig, StateConfig},
+        service::DbType,
+    },
+    prelude::{
+        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract,
+        LocalWallet, Provider, TxParameters, DEFAULT_COIN_AMOUNT,
+    },
+    signers::wallet::Wallet,
+};
+use fuels_abigen_macro::abigen;
 
 pub fn tx_params() -> TxParameters {
     let gas_price = 0;
@@ -41,26 +43,17 @@ async fn get_contract_id(wallet: &Wallet) -> String {
     contract_id.to_string()
 }
 
-async fn setup_provider_and_wallet() -> (Provider, LocalWallet) {
-    let (secret, coins) = setup_address_and_coins(1, DEFAULT_COIN_AMOUNT);
+async fn setup_provider_and_wallet() -> (Provider, Wallet) {
 
-    let coin_configs = coins
-        .into_iter()
-        .map(|(utxo_id, coin)| CoinConfig {
-            tx_id: Some(*utxo_id.tx_id()),
-            output_index: Some(utxo_id.output_index() as u64),
-            block_created: Some(coin.block_created),
-            maturity: Some(coin.maturity),
-            owner: coin.owner,
-            amount: coin.amount,
-            asset_id: coin.asset_id,
-        })
-        .collect();
+    let mut wallet = LocalWallet::new_random(None);
+
+    let number_of_coins = 11;
+    let asset_id = AssetId::zeroed();
+    let coins = setup_single_asset_coins(wallet.address(), asset_id, number_of_coins, DEFAULT_COIN_AMOUNT);
 
     let config = Config {
         chain_conf: ChainConfig {
             initial_state: Some(StateConfig {
-                coins: Some(coin_configs),
                 ..StateConfig::default()
             }),
             ..ChainConfig::local_testnet()
@@ -71,12 +64,13 @@ async fn setup_provider_and_wallet() -> (Provider, LocalWallet) {
         ..Config::local_node()
     };
 
-    let srv = FuelService::new_node(config).await.unwrap();
-    let client = FuelClient::from(srv.bound_address);
+    let (client, _) = setup_test_client(coins, config).await;
+
     info!("Fuel client started at {:?}", client);
 
     let provider = Provider::new(client);
-    let wallet = LocalWallet::new_from_private_key(secret, provider.clone());
+
+    wallet.set_provider(provider.clone());
 
     (provider, wallet)
 }
@@ -200,7 +194,7 @@ async fn get_count(req: HttpRequest) -> Result<HttpResponse, Error> {
     ))
 }
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
     pretty_env_logger::init();
 

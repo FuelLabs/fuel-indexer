@@ -2,3 +2,6 @@
 
 # Don't add the generated MDBook artifacts
 docs/book/
+
+# Any rust programs in examples/
+examples/simple-non-wasm/programs/counter-rs/Cargo.lock
