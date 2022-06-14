@@ -16,8 +16,8 @@ fuel-indexer = { path = "../../lib" }
 fuel-indexer-derive = { path = "../../derive" }
 fuel-indexer-schema = { path = "../../schema", features = ["db-models"] }
 fuel-tx = "0.9"
-fuels = "0.13"
-fuels-abigen-macro = "0.13"
+fuels = "0.15"
+fuels-abigen-macro = "0.15"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 serde_yaml = "0.8.19"

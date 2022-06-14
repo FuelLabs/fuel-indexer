@@ -4,20 +4,22 @@ extern crate log;
 extern crate pretty_env_logger;
 
 use actix_web::{middleware, web, web::Bytes, App, Error, HttpRequest, HttpResponse, HttpServer};
-use fuel_core::{
-    chain_config::{ChainConfig, CoinConfig, StateConfig},
-    service::{Config, DbType, FuelService},
-};
-use fuel_gql_client::client::FuelClient;
+use async_mutex::Mutex;
 use fuels::{
-    prelude::{Contract, LocalWallet, Provider, TxParameters, DEFAULT_COIN_AMOUNT},
+    node::{
+        chain_config::{ChainConfig, StateConfig},
+        service::DbType,
+    },
+    prelude::{
+        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, LocalWallet,
+        Provider, TxParameters, DEFAULT_COIN_AMOUNT,
+    },
     signers::wallet::Wallet,
-    test_helpers::setup_address_and_coins,
+    signers::Signer,
 };
 use fuels_abigen_macro::abigen;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddr};
-use std::sync::Mutex;
 
 pub fn tx_params() -> TxParameters {
     let gas_price = 0;
@@ -26,11 +28,15 @@ pub fn tx_params() -> TxParameters {
     TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price), None)
 }
 
-abigen!(Counter, "./../counter/out/debug/counter-abi.json");
+abigen!(
+    Counter,
+    "examples/simple-non-wasm/programs/counter/out/debug/counter-abi.json"
+);
 
 async fn get_contract_id(wallet: &Wallet) -> String {
     dotenv::dotenv().ok();
     debug!("Creating new deployment for non-existent contract");
+
     let _compiled = Contract::load_sway_contract("./../counter/out/debug/counter.bin").unwrap();
 
     let bin_path = "./../counter/out/debug/counter.bin".to_string();
@@ -41,26 +47,21 @@ async fn get_contract_id(wallet: &Wallet) -> String {
     contract_id.to_string()
 }
 
-async fn setup_provider_and_wallet() -> (Provider, LocalWallet) {
-    let (secret, coins) = setup_address_and_coins(1, DEFAULT_COIN_AMOUNT);
+async fn setup_provider_and_wallet() -> (Provider, Wallet) {
+    let mut wallet = LocalWallet::new_random(None);
 
-    let coin_configs = coins
-        .into_iter()
-        .map(|(utxo_id, coin)| CoinConfig {
-            tx_id: Some(*utxo_id.tx_id()),
-            output_index: Some(utxo_id.output_index() as u64),
-            block_created: Some(coin.block_created),
-            maturity: Some(coin.maturity),
-            owner: coin.owner,
-            amount: coin.amount,
-            asset_id: coin.asset_id,
-        })
-        .collect();
+    let number_of_coins = 11;
+    let asset_id = AssetId::zeroed();
+    let coins = setup_single_asset_coins(
+        wallet.address(),
+        asset_id,
+        number_of_coins,
+        DEFAULT_COIN_AMOUNT,
+    );
 
     let config = Config {
         chain_conf: ChainConfig {
             initial_state: Some(StateConfig {
-                coins: Some(coin_configs),
                 ..StateConfig::default()
             }),
             ..ChainConfig::local_testnet()
@@ -71,12 +72,13 @@ async fn setup_provider_and_wallet() -> (Provider, LocalWallet) {
         ..Config::local_node()
     };
 
-    let srv = FuelService::new_node(config).await.unwrap();
-    let client = FuelClient::from(srv.bound_address);
+    let (client, _) = setup_test_client(coins, config).await;
+
     info!("Fuel client started at {:?}", client);
 
     let provider = Provider::new(client);
-    let wallet = LocalWallet::new_from_private_key(secret, provider.clone());
+
+    wallet.set_provider(provider.clone());
 
     (provider, wallet)
 }
@@ -105,20 +107,20 @@ struct InitCountResponse {
 }
 
 async fn initialize_count(req: HttpRequest) -> Result<HttpResponse, Error> {
-    let state = req.app_data::<web::Data<Mutex<Counter>>>().unwrap();
-    let contract = match state.lock() {
-        Ok(c) => c,
-        Err(e) => {
-            error!("Could not get state: {}", e);
+    let state = match req.app_data::<web::Data<Mutex<Counter>>>() {
+        Some(state) => state,
+        None => {
             return Ok(HttpResponse::Ok().content_type("application/json").body(
-                serde_json::to_string(&InitCountResponse {
+                serde_json::to_string(&GetCountResponse {
                     success: false,
-                    count: 1,
+                    count: 0,
                 })
                 .unwrap(),
-            ));
+            ))
         }
     };
+
+    let contract = state.lock().await;
 
     let result = contract
         .init_counter(1)
@@ -142,21 +144,19 @@ async fn initialize_count(req: HttpRequest) -> Result<HttpResponse, Error> {
 
 async fn increment_count(req: HttpRequest, body: Bytes) -> Result<HttpResponse, Error> {
     let json_body: IncrementCountRequest = serde_json::from_slice(&body).unwrap();
-    let state = req.app_data::<web::Data<Mutex<Counter>>>().unwrap();
-
-    let contract = match state.lock() {
-        Ok(c) => c,
-        Err(e) => {
-            error!("Could not get state: {}", e);
+    let state = match req.app_data::<web::Data<Mutex<Counter>>>() {
+        Some(state) => state,
+        None => {
             return Ok(HttpResponse::Ok().content_type("application/json").body(
-                serde_json::to_string(&IncrementCountResponse {
+                serde_json::to_string(&GetCountResponse {
                     success: false,
-                    count: 0u64,
+                    count: 0,
                 })
                 .unwrap(),
-            ));
+            ))
         }
     };
+    let contract = state.lock().await;
 
     let result = contract
         .increment_counter(json_body.count)
@@ -178,8 +178,20 @@ async fn increment_count(req: HttpRequest, body: Bytes) -> Result<HttpResponse, 
 }
 
 async fn get_count(req: HttpRequest) -> Result<HttpResponse, Error> {
-    let state = req.app_data::<web::Data<Mutex<Counter>>>().unwrap();
-    let contract = state.lock().unwrap();
+    let state = match req.app_data::<web::Data<Mutex<Counter>>>() {
+        Some(state) => state,
+        None => {
+            return Ok(HttpResponse::Ok().content_type("application/json").body(
+                serde_json::to_string(&GetCountResponse {
+                    success: false,
+                    count: 0,
+                })
+                .unwrap(),
+            ))
+        }
+    };
+
+    let contract = state.lock().await;
 
     let result = contract
         .get_count()
@@ -200,7 +212,7 @@ async fn get_count(req: HttpRequest) -> Result<HttpResponse, Error> {
     ))
 }
 
-#[actix_web::main]
+#[tokio::main]
 async fn main() -> std::io::Result<()> {
     pretty_env_logger::init();
 
@@ -228,41 +240,4 @@ async fn main() -> std::io::Result<()> {
     .bind(("127.0.0.1", 8080))?
     .run()
     .await
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use actix_web::body::to_bytes;
-    use actix_web::dev::Service;
-    use actix_web::{http, test, web, App};
-
-    #[actix_web::test]
-    async fn test_increment_count() {
-        let app = test::init_service(
-            App::new().service(web::resource("/counter").route(web::post().to(increment_count))),
-        )
-        .await;
-
-        let req = test::TestRequest::post().uri("/counter").to_request();
-        let resp = app.call(req).await.unwrap();
-
-        assert_eq!(resp.status(), http::StatusCode::OK);
-
-        let body_bytes = to_bytes(resp.into_body()).await.unwrap();
-        assert_eq!(body_bytes, r##"{"success":true}"##);
-    }
-
-    #[actix_web::test]
-    async fn test_get_count() {
-        let app = test::init_service(
-            App::new().service(web::resource("/count").route(web::get().to(get_count))),
-        )
-        .await;
-
-        let req = test::TestRequest::get().uri("/count").to_request();
-        let resp = app.call(req).await.unwrap();
-        let body_bytes = to_bytes(resp.into_body()).await.unwrap();
-        assert_eq!(body_bytes, r##"{"success":true,"count":1}"##);
-    }
 }

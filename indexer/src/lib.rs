@@ -14,7 +14,7 @@ pub use api::GraphQlApi;
 pub use database::{ConnWrapper, Database, SchemaManager};
 pub use executor::{CustomIndexExecutor, Executor, IndexEnv, WasmIndexExecutor};
 pub use fuel_types::ContractId;
-pub use handler::{CustomHandler, HandlerFilter, ReceiptEvent};
+pub use handler::{CustomHandler, ReceiptEvent};
 pub use manifest::Manifest;
 pub use service::{IndexerConfig, IndexerService};
 

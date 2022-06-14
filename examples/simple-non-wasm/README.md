@@ -4,14 +4,11 @@
 
 
 ```bash
-➜ tree . -I 'target/'                  
+➜  tree . -I 'target/'
 .
-├── Cargo.lock
 ├── Cargo.toml
 ├── README.md
-├── config
-│   ├── config.yaml
-│   └── manifest.yaml
+├── config.yaml
 ├── programs
 │   ├── counter
 │   │   ├── Forc.lock
@@ -23,10 +20,13 @@
 │   │   └── src
 │   │       └── main.sw
 │   └── counter-rs
+│       ├── Cargo.lock
+│       ├── Cargo.toml
+│       └── src
+│           └── main.rs
 ├── schema
 │   └── counter.graphql
 └── src
-    ├── lib.rs
     └── main.rs
 
 9 directories, 13 files
@@ -34,27 +34,59 @@
 
 ## Usage
 
-Run migrations
+#### Run migrations
+  - In this example we're using an `indexer` database owned by a `postgres` role without a password
 
 ```bash
-DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" diesel migration list --migration-dir=./schema/migrations
+DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" diesel migration list --migration-dir=schema/migrations
 ```
 
-Start fuel node and use small webserver as contract proxy
+#### Start fuel node and use small webserver as contract proxy
+
+OSX
 
 ```bash
-# OSX
-RUST_LOG=debug RUSTFLAGS="-Clink-arg=-Wl" cargo run --target x86_64-apple-darwin
+RUST_LOG=debug cargo run --target x86_64-apple-darwin
 ```
 
-Start the fuel indexer service
+Ubuntu
 
 ```bash
-RUST_LOG=info cargo run -- ./config/config.yaml
+RUST_LOG=debug cargo run
 ```
 
-Send a transaction to the smartcontract via the webserver
+#### Start the fuel indexer service
+
+```bash
+RUST_LOG=info cargo run -- ./config.yaml
+```
+
+#### Send a transaction to the smartcontract via the webserver
 
 ```bash
 curl -X POST http://127.0.0.1:8080/count | json_pp
+```
+
+#### Verify data was posted to the database
+
+In this example we just created an entity with `id = 1`
+
+```bash
+➜  echo "SELECT max(id) FROM simple_handler.count;" | psql -U postgres -d indexer
+ max
+-----
+   1
+(1 row)
+```
+
+So that's what we query for
+
+```
+curl -X POST http://localhost:29987/graph/simple_handler -H 'content-type: application/json' -d '{"query": "query { count(id: 1) { id count } }", "params": "b"}' | json_pp
+[
+   {
+      "count" : "1",
+      "id" : 1
+   }
+]
 ```

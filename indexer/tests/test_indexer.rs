@@ -12,6 +12,7 @@ mod tests {
     const MANIFEST: &str = include_str!("./test_data/demo_manifest.yaml");
     const WASM_BYTES: &[u8] = include_bytes!("./test_data/indexer_demo.wasm");
 
+    #[allow(clippy::iter_cloned_collect)]
     fn create_log_transaction(rega: u16, regb: u16) -> Transaction {
         let script = vec![
             Opcode::ADDI(0x10, REG_ZERO, rega),

@@ -82,7 +82,6 @@ impl Entity for CountEvent {
 fn count_handler(data: Vec<Vec<u8>>) -> Result<Option<EntityResult>> {
     info!("count_handler invoked");
     if let Some(data) = data.first() {
-        // let tokens: Vec<Token> = Receipt::ReturnData::into_tokens(data)?;
         let tokens = ABIDecoder::new()
             .decode(
                 &[
@@ -117,7 +116,6 @@ pub struct AnotherCountEvent {
 fn another_count_handler(data: Vec<Vec<u8>>) -> Result<Option<EntityResult>> {
     info!("another_count_handler invoked");
     if let Some(data) = data.first() {
-        // let tokens: Vec<Token> = Receipt::LogData::into_tokens(data)?;
         let tokens = ABIDecoder::new()
             .decode(
                 &[

@@ -55,8 +55,3 @@ impl From<ReceiptEvent> for String {
         }
     }
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HandlerFilter {
-    pub contract_id: Option<String>,
-}
