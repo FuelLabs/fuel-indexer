@@ -57,6 +57,7 @@ jobs:
         run: |
           cd schema
           diesel migration run
+          cargo fmt
 
       - name: Install Cargo.toml linter
         uses: baptiste0928/cargo-install@v1
