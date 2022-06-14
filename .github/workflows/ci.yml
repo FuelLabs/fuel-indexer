@@ -189,7 +189,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
   publish:
-    # Only do this job if publishing a release
+    # Only do this job if publishing a release and validations pass.
     needs: validation-complete
     if: ${{ success() }} && github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
