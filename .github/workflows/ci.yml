@@ -22,6 +22,24 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
+  cargo-check-workspace-locked:
+    needs: cancel-previous-runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        name: Cargo Check Workspace Locked
+        with:
+          command: check
+          args: --locked --workspace --all-features --all-targets
+        env:
+          RUSTFLAGS: '-D warnings'
+
   cargo-build-workspace:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
@@ -36,7 +54,7 @@ jobs:
         name: Cargo Build Workspace
         with:
           command: build
-          args: --locked --workspace --all-features --all-targets
+          args: --workspace --all-features --all-targets
         env:
           RUSTFLAGS: '-D warnings'
 
@@ -54,25 +72,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --locked --workspace
-        env:
-          RUSTFLAGS: '-D warnings'
-
-  cargo-test-workspace-all-features:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - name: Cargo Test Workspace
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked --workspace --all-features --all-targets
+          args: --workspace
         env:
           RUSTFLAGS: '-D warnings'
 
@@ -90,7 +90,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --locked --workspace --no-default-features --all-targets
+          args: --workspace --no-default-features --all-targets
         env:
           RUSTFLAGS: '-D warnings'
 
@@ -140,28 +140,6 @@ jobs:
           command: clippy
           args: --all-features --all-targets -- -D warnings
 
-  cargo-unused-deps-check:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          # `cargo-udeps` requires nightly to run
-          toolchain: nightly
-          default: true
-      - uses: Swatinem/rust-cache@v1
-      - name: Install cargo-udeps
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-udeps
-      - name: Check Unused Deps
-        uses: actions-rs/cargo@v1
-        with:
-          command: udeps
-          args: --locked --all-targets
-
   mdbook-build:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
@@ -180,6 +158,7 @@ jobs:
   validation-complete:
     needs:
       [
+        cargo-check-workspace-locked,
         cargo-build-workspace,
         cargo-test-workspace-default-features,
         cargo-test-workspace-all-features,
