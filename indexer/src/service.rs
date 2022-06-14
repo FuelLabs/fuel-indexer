@@ -1,13 +1,12 @@
 use crate::{IndexExecutor, IndexerResult, Manifest, SchemaManager};
 use async_std::sync::Arc;
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_tx::{Receipt, Transaction};
+use fuel_tx::Receipt;
 use fuels_core::abi_encoder::ABIEncoder;
 use fuels_core::{Token, Tokenizable};
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::future::Future;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -107,61 +106,56 @@ impl IndexerService {
                 debug!("Processing {} results", results.len());
                 let exec = executor.clone();
 
-                let result = tokio::task::spawn_blocking(move || {
-                    for block in results.into_iter().rev() {
-                        if block.height.0 != next_block {
-                            continue;
+                let mut receipts = Vec::new();
+                for block in results.into_iter().rev() {
+                    if block.height.0 != next_block {
+                        continue;
+                    }
+                    next_block = block.height.0 + 1;
+                    for trans in block.transactions {
+                        match client.receipts(&trans.id.to_string()).await {
+                            Ok(r) => {
+                                receipts.extend(r);
+                            }
+                            Err(e) => {
+                                error!("Client communication error {:?}", e);
+                            }
                         }
-                        next_block = block.height.0 + 1;
-                        for mut trans in block.transactions {
-                            let receipts = trans.receipts.take();
-                            let _tx = Transaction::try_from(trans).expect("Bad transaction");
+                    }
+                }
 
-                            if let Some(receipts) = receipts {
-                                for receipt in receipts {
-                                    let receipt = match Receipt::try_from(receipt) {
-                                        Ok(r) => r,
-                                        Err(e) => {
-                                            error!("Receipt unpacking failed {:?}", e);
-                                            continue; // Continue? or abort??
-                                        }
-                                    };
+                let result = tokio::task::spawn_blocking(move || {
+                    for receipt in receipts {
+                        match receipt {
+                            Receipt::Log {
+                                id,
+                                ra,
+                                rb,
+                                rc,
+                                rd,
+                                pc,
+                                is,
+                            } => {
+                                // TODO: might be nice to have Receipt type impl Tokenizable.
+                                let token = Token::Struct(vec![
+                                    id.into_token(),
+                                    ra.into_token(),
+                                    rb.into_token(),
+                                    rc.into_token(),
+                                    rd.into_token(),
+                                    pc.into_token(),
+                                    is.into_token(),
+                                ]);
 
-                                    match receipt {
-                                        Receipt::Log {
-                                            id,
-                                            ra,
-                                            rb,
-                                            rc,
-                                            rd,
-                                            pc,
-                                            is,
-                                        } => {
-                                            // TODO: might be nice to have Receipt type impl Tokenizable.
-                                            let token = Token::Struct(vec![
-                                                id.into_token(),
-                                                ra.into_token(),
-                                                rb.into_token(),
-                                                rc.into_token(),
-                                                rd.into_token(),
-                                                pc.into_token(),
-                                                is.into_token(),
-                                            ]);
-
-                                            let args = ABIEncoder::new()
-                                                .encode(&[token.clone()])
-                                                .expect("Bad Encoding!");
-                                            // TODO: should wrap this in a db transaction.
-                                            if let Err(e) =
-                                                exec.trigger_event("an_event_name", vec![args])
-                                            {
-                                                error!("Event processing failed {:?}", e);
-                                            }
-                                        }
-                                        o => warn!("Unhandled receipt type: {:?}", o),
-                                    }
+                                let args = ABIEncoder::new()
+                                    .encode(&[token.clone()])
+                                    .expect("Bad Encoding!");
+                                // TODO: should wrap this in a db transaction.
+                                if let Err(e) = exec.trigger_event("an_event_name", vec![args]) {
+                                    error!("Event processing failed {:?}", e);
                                 }
                             }
+                            o => warn!("Unhandled receipt type: {:?}", o),
                         }
                     }
                 })

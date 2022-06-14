@@ -13,12 +13,14 @@ fn create_log_transaction(rega: u16, regb: u16) -> Transaction {
     .into_iter()
     .collect::<Vec<u8>>();
 
+    let byte_price = 0;
     let gas_price = 0;
     let gas_limit = 1_000_000;
     let maturity = 0;
     Transaction::script(
         gas_price,
         gas_limit,
+        byte_price,
         maturity,
         script,
         vec![],
@@ -33,13 +35,13 @@ pub async fn main() -> Result<()> {
     let args: Vec<_> = std::env::args().collect();
     let addr: SocketAddr = args[1].parse().expect("Bad addr");
     let client = FuelClient::from(addr);
-    let result = client.submit(&create_log_transaction(0x0a, 0x02)).await;
-    println!("Result 0 {result:?}");
-    let result = client.submit(&create_log_transaction(0xfa, 0x03)).await;
-    println!("Result 1 {result:?}");
     let result = client.submit(&create_log_transaction(0x0a, 0x03)).await;
-    println!("Result 2 {result:?}");
+    println!("Result 0 {result:?}");
     let result = client.submit(&create_log_transaction(0xfa, 0x04)).await;
+    println!("Result 1 {result:?}");
+    let result = client.submit(&create_log_transaction(0x0a, 0x04)).await;
+    println!("Result 2 {result:?}");
+    let result = client.submit(&create_log_transaction(0xfa, 0x05)).await;
     println!("Result 1 {result:?}");
 
     Ok(())

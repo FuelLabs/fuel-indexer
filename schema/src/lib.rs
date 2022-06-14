@@ -1,4 +1,3 @@
-#![cfg_attr(not(feature = "use-std"), no_std)]
 #[cfg(feature = "db-models")]
 #[macro_use]
 extern crate diesel;
@@ -15,10 +14,8 @@ pub const LOG_LEVEL_INFO: u32 = 2;
 pub const LOG_LEVEL_DEBUG: u32 = 3;
 pub const LOG_LEVEL_TRACE: u32 = 4;
 
-#[cfg(feature = "use-std")]
 use sha2::{Digest, Sha256};
 
-#[cfg(feature = "use-std")]
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 
 pub mod sql_types;
@@ -44,14 +41,12 @@ pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> T {
     serde_scale::from_slice(bytes).expect("Deserialize failed")
 }
 
-#[cfg(feature = "use-std")]
 pub fn type_id(namespace: &str, type_name: &str) -> u64 {
     let mut bytes = [0u8; 8];
     bytes.copy_from_slice(&Sha256::digest(format!("{}:{}", namespace, type_name).as_bytes())[..8]);
     u64::from_le_bytes(bytes)
 }
 
-#[cfg(feature = "use-std")]
 pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
 }
@@ -141,7 +136,6 @@ impl FtColumn {
         }
     }
 
-    #[cfg(feature = "use-std")]
     pub fn query_fragment(&self) -> String {
         match self {
             FtColumn::ID(value) => {
@@ -187,12 +181,11 @@ impl FtColumn {
     }
 }
 
-#[cfg(all(test, feature = "use-std"))]
 mod tests {
-    use super::*;
-
     #[test]
     fn test_fragments() {
+        use super::*;
+
         let id = FtColumn::ID(123456);
         let addr = FtColumn::Address(Address::try_from([0x12; 32]).expect("Bad bytes"));
         let asset_id = FtColumn::AssetId(AssetId::try_from([0xA5; 32]).expect("Bad bytes"));
