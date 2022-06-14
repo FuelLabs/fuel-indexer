@@ -9,6 +9,7 @@ on:
     types: [published]
 
 env:
+  DATABASE_URL: postgres://postgres:my-secret@postgres:5432
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
   REGISTRY: ghcr.io
@@ -16,6 +17,16 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
       - name: Cancel Previous Runs
@@ -38,6 +49,14 @@ jobs:
 
       - name: Install rustfmt
         run: rustup component add rustfmt
+
+      - name: Install diesel-cli
+        run: cargo install diesel_cli
+
+      - name: Setup test database
+        run: |
+          cd schema
+          diesel migration run
 
       - name: Install Cargo.toml linter
         uses: baptiste0928/cargo-install@v1
