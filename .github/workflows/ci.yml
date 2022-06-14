@@ -169,7 +169,7 @@ jobs:
       ]
     runs-on: ubuntu-latest
     steps:
-      - run: ${{ success() }}
+      - run: success()
 
   notify-slack-on-failure:
     if: ${{ always() }} && github.ref == 'refs/heads/master'
