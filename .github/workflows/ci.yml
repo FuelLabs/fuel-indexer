@@ -197,6 +197,7 @@ jobs:
         cargo-build-workspace,
         cargo-test-workspace-default-features,
         cargo-test-workspace-no-features,
+        cargo-test-workspace-all-features,
         cargo-fmt-workspace-check,
         cargo-toml-fmt-check,
         cargo-clippy-workspace,
