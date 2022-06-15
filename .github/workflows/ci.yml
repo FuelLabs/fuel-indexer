@@ -115,12 +115,12 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+      - uses: Swatinem/rust-cache@v1
       - run: cargo install diesel_cli
       - run: |
           cd schema
           diesel migration run
           cargo fmt
-      - uses: Swatinem/rust-cache@v1
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
         with:
