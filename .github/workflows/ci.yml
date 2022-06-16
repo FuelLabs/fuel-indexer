@@ -9,6 +9,7 @@ on:
     types: [published]
 
 env:
+  DATABASE_URL: postgres://postgres:my-secret@localhost:5432
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
   REGISTRY: ghcr.io
@@ -16,6 +17,7 @@ env:
 jobs:
   cancel-previous-runs:
     runs-on: ubuntu-latest
+
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.9.1
@@ -94,6 +96,39 @@ jobs:
         env:
           RUSTFLAGS: '-D warnings'
 
+  cargo-test-workspace-all-features:
+    needs: cancel-previous-runs
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+      - run: cargo install diesel_cli
+      - run: |
+          cd schema
+          diesel migration run
+          cargo fmt
+      - name: Cargo Test Workspace
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace --all-features --all-targets
+        env:
+          RUSTFLAGS: '-D warnings'
+
   cargo-fmt-workspace-check:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
@@ -162,6 +197,7 @@ jobs:
         cargo-build-workspace,
         cargo-test-workspace-default-features,
         cargo-test-workspace-no-features,
+        cargo-test-workspace-all-features,
         cargo-fmt-workspace-check,
         cargo-toml-fmt-check,
         cargo-clippy-workspace,
