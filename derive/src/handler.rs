@@ -26,7 +26,7 @@ pub fn process_handler_attr(attrs: TokenStream, item: TokenStream) -> TokenStrea
     let mut block: Block = parse_quote! {
         {
             use fuel_indexer::types::*;
-            use fuels_core::abi_decoder::ABIDecoder;
+            use fuels_core::{abi_decoder::ABIDecoder, Parameterize};
 
             let mut decoder = ABIDecoder::new();
             let (blobs, lens) = unsafe { (Vec::from_raw_parts(blobs, len, len), Vec::from_raw_parts(lens, len, len)) };

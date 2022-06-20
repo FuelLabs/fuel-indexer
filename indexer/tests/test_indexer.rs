@@ -7,13 +7,14 @@ mod tests {
     use fuel_vm::{consts::*, prelude::*};
     use fuel_wasm_executor::{IndexerConfig, IndexerService, Manifest};
 
-    const DATABASE_URL: &'static str = "postgres://postgres:my-secret@127.0.0.1:5432";
-    const GRAPHQL_SCHEMA: &'static str = include_str!("./test_data/demo_schema.graphql");
-    const MANIFEST: &'static str = include_str!("./test_data/demo_manifest.yaml");
-    const WASM_BYTES: &'static [u8] = include_bytes!("./test_data/indexer_demo.wasm");
+    const DATABASE_URL: &str = "postgres://postgres:my-secret@127.0.0.1:5432";
+    const GRAPHQL_SCHEMA: &str = include_str!("./test_data/demo_schema.graphql");
+    const MANIFEST: &str = include_str!("./test_data/demo_manifest.yaml");
+    const WASM_BYTES: &[u8] = include_bytes!("./test_data/indexer_demo.wasm");
 
     fn create_log_transaction(rega: u16, regb: u16) -> Transaction {
-        let script = vec![
+        #[allow(clippy::iter_cloned_collect)]
+        let script = [
             Opcode::ADDI(0x10, REG_ZERO, rega),
             Opcode::ADDI(0x11, REG_ZERO, regb),
             Opcode::LOG(0x10, 0x11, REG_ZERO, REG_ZERO),
@@ -22,14 +23,16 @@ mod tests {
         ]
         .iter()
         .copied()
-        .collect::<Vec<u8>>();
+        .collect();
 
+        let byte_price = 0;
         let gas_price = 0;
         let gas_limit = 1_000_000;
         let maturity = 0;
         Transaction::script(
             gas_price,
             gas_limit,
+            byte_price,
             maturity,
             script,
             vec![],

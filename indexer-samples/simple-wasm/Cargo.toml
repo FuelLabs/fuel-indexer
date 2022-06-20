@@ -1,0 +1,17 @@
+[package]
+name = "simple-wasm"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fuel-indexer = { path = "../../lib" }
+fuel-indexer-derive = { path = "../../derive" }
+fuel-tx = "0.9"
+fuels-abigen-macro = "0.15"
+fuels-core = "0.15"
+getrandom = { version = "0.2", features = ["js"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
