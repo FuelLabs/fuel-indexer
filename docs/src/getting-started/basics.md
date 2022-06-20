@@ -13,9 +13,9 @@ A basic indexer service can be configured with a yaml file, like so:
 
 ```yaml
 ---
-fuel_node_addr: '127.0.0.1:30333'
-database_url: 'postgres://postgres:my-secret@127.0.0.1:5432'
-listen_endpoint: '127.0.0.1:29899'
+fuel_node_addr: "127.0.0.1:30333"
+database_url: "postgres://postgres:my-secret@127.0.0.1:5432"
+listen_endpoint: "127.0.0.1:29899"
 ```
 
 - The `fuel_node_addr` will point to your fuel node. You can optionally supply the `--local` flag to the service and the indexer will bring up an embedded fuel node, useful for dev purposes to bring up all components on your local machine. This field will then be ignored in that case.
@@ -35,7 +35,8 @@ RUST_LOG=wasmer_compiler_cranelift=off,regalloc=off,info cargo r --bin service c
 - The format of `local_config.yaml` was described above. We'll get to `manifest.yaml` in the next section.
 - Additionally, note the `--local` flag, this will automatically bring up a fuel-core node embedded into the service. If you would prefer to bring one up yourself, be sure to set the `fuel_node_addr` in the manifest.
 - If it all comes up properly, you'll see a message like this:
-```bash
+
+```console
 INFO fuel_core::service::graph_api: Binding GraphQL provider to 127.0.0.1:33641
 INFO fuel_wasm_executor::service: Registered indexer test_namespace
 ```
