@@ -178,6 +178,7 @@ impl IndexerService {
 
                 let result = tokio::task::spawn_blocking(move || {
                     for receipt in receipts {
+                        let receipt_cp = receipt.clone();
                         match receipt {
                             Receipt::Log {
                                 id,
@@ -203,7 +204,11 @@ impl IndexerService {
                                     .encode(&[token.clone()])
                                     .expect("Bad Encoding!");
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event(ReceiptEvent::Log, vec![args]) {
+                                if let Err(e) = exec.trigger_event(
+                                    ReceiptEvent::Log,
+                                    vec![args],
+                                    Some(receipt_cp),
+                                ) {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }
@@ -235,9 +240,11 @@ impl IndexerService {
                                     .encode(&[token.clone()])
                                     .expect("Bad Encoding!");
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) =
-                                    exec.trigger_event(ReceiptEvent::LogData, vec![args])
-                                {
+                                if let Err(e) = exec.trigger_event(
+                                    ReceiptEvent::LogData,
+                                    vec![args],
+                                    Some(receipt_cp),
+                                ) {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }
@@ -265,9 +272,11 @@ impl IndexerService {
                                     .encode(&[token.clone()])
                                     .expect("Bad Encoding!");
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) =
-                                    exec.trigger_event(ReceiptEvent::ReturnData, vec![args])
-                                {
+                                if let Err(e) = exec.trigger_event(
+                                    ReceiptEvent::ReturnData,
+                                    vec![args],
+                                    Some(receipt_cp),
+                                ) {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }

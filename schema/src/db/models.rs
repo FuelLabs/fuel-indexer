@@ -2,7 +2,10 @@ use crate::db::schema::graph_registry as gr;
 use crate::sql_types::Columntypename;
 use crate::ColumnType;
 use diesel::prelude::*;
-use diesel::{result::QueryResult, sql_types::*};
+use diesel::{
+    result::{DatabaseErrorKind, Error as ResultError, QueryResult},
+    sql_types::*,
+};
 use gr::{columns, graph_root, root_columns, type_ids};
 
 #[derive(Insertable, Queryable, QueryableByName)]
@@ -104,9 +107,19 @@ impl TypeId {
         ))
         .load(conn)?;
 
-        let item = results.pop().unwrap();
+        if let Some(item) = results.pop() {
+            return Ok(item.schema_version);
+        }
 
-        Ok(item.schema_version)
+        let err: Box<String> = Box::new(format!(
+            "Associated type_ids not found for schema '{}'",
+            schema_name
+        ));
+
+        Err(ResultError::DatabaseError(
+            DatabaseErrorKind::UniqueViolation,
+            err,
+        ))
     }
 
     pub fn insert(&self, conn: &PgConnection) -> QueryResult<usize> {
@@ -157,7 +170,7 @@ impl NewColumn {
 
     fn sql_type(&self) -> &str {
         match self.column_type {
-            ColumnType::ID => "bigserial primary key",
+            ColumnType::ID => "bigint primary key",
             ColumnType::Address => "varchar(64)",
             ColumnType::Bytes4 => "varchar(8)",
             ColumnType::Bytes8 => "varchar(16)",

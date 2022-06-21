@@ -91,7 +91,7 @@ struct IncrementCountResponse {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct IncrementCountRequest {
-    count: u32,
+    count: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -129,10 +129,9 @@ async fn initialize_count(req: HttpRequest) -> Result<HttpResponse, Error> {
         .await
         .unwrap();
 
-    debug!("{:?}", result);
+    debug!("Call result: {:?}", result);
 
-    // let count: u64 = result.receipts[2].val().unwrap();
-    let count = 1;
+    let count: u64 = result.receipts[2].val().unwrap();
     Ok(HttpResponse::Ok().content_type("application/json").body(
         serde_json::to_string(&InitCountResponse {
             success: true,
@@ -165,8 +164,8 @@ async fn increment_count(req: HttpRequest, body: Bytes) -> Result<HttpResponse, 
         .await
         .unwrap();
 
-    debug!("{:?}", result);
-    let count: u64 = result.receipts[1].val().unwrap();
+    debug!("Call result: {:?}", result);
+    let count: u64 = result.receipts[2].val().unwrap();
 
     Ok(HttpResponse::Ok().content_type("application/json").body(
         serde_json::to_string(&IncrementCountResponse {
@@ -200,8 +199,8 @@ async fn get_count(req: HttpRequest) -> Result<HttpResponse, Error> {
         .await
         .unwrap();
 
-    debug!("{:?}", result);
-    let count: u64 = result.receipts[1].val().unwrap();
+    debug!("Call result: {:?}", result);
+    let count: u64 = result.receipts[2].val().unwrap();
 
     Ok(HttpResponse::Ok().content_type("application/json").body(
         serde_json::to_string(&GetCountResponse {

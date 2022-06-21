@@ -14,7 +14,7 @@ cfg-if = "1.0"
 diesel = { version = "1.4", features = ["postgres", "serde_json"] }
 fuel-core = { version = "0.6.4" }
 fuel-gql-client = { version = "0.6.4" }
-fuel-indexer = { path = "../lib" }
+fuel-indexer = { path = "../lib", version = "0" }
 fuel-indexer-schema = { path = "../schema", features = ["db-models"] }
 fuel-tx = "0.9"
 fuel-types = "0.3"

@@ -2,11 +2,12 @@ use crate::database::Database;
 use crate::ffi;
 use crate::handler::{CustomHandler, ReceiptEvent};
 use crate::{IndexerError, IndexerResult, Manifest};
+use fuel_tx::Receipt;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use thiserror::Error;
-use tracing::{error, info};
+use tracing::error;
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store, WasmerEnv,
 };
@@ -21,7 +22,12 @@ where
     Self: Sized,
 {
     fn from_file(index: &Path) -> IndexerResult<Self>;
-    fn trigger_event(&self, event_name: ReceiptEvent, bytes: Vec<Vec<u8>>) -> IndexerResult<()>;
+    fn trigger_event(
+        &self,
+        event_name: ReceiptEvent,
+        bytes: Vec<Vec<u8>>,
+        receipt: Option<Receipt>,
+    ) -> IndexerResult<()>;
 }
 
 #[derive(Error, Debug)]
@@ -66,19 +72,12 @@ impl CustomIndexExecutor {
         })
     }
 
-    pub fn handler(&mut self, handler: CustomHandler) -> &mut Self {
-        info!("Registering new handler: {:?}", handler);
-
+    pub fn register(&mut self, handler: CustomHandler) -> &mut Self {
         let event = handler.event.clone();
-        match self.events.get_mut(&event) {
-            Some(handles) => {
-                handles.push(handler);
-            }
-            None => {
-                let h = vec![handler];
-                self.events.insert(event, h);
-            }
-        }
+        self.events
+            .entry(event)
+            .or_insert_with(Vec::new)
+            .push(handler);
 
         self
     }
@@ -89,7 +88,12 @@ impl Executor for CustomIndexExecutor {
         unimplemented!()
     }
 
-    fn trigger_event(&self, event: ReceiptEvent, bytes: Vec<Vec<u8>>) -> IndexerResult<()> {
+    fn trigger_event(
+        &self,
+        event: ReceiptEvent,
+        _bytes: Vec<Vec<u8>>,
+        receipt: Option<Receipt>,
+    ) -> IndexerResult<()> {
         if let Some(handles) = self.events.get(&event) {
             for handler in handles.iter() {
                 self.db
@@ -102,29 +106,22 @@ impl Executor for CustomIndexExecutor {
 
                 let func = handler.handle;
 
-                match func(bytes.clone()) {
-                    Ok(res) => {
-                        if let Some(res) = res {
-                            self.db.lock().expect("Lock poisoned on handle").put_object(
-                                handler.type_id,
-                                res.columns,
-                                res.data,
-                                false,
-                            );
-
+                if let Some(data) = receipt.as_ref().unwrap().data() {
+                    match func(data.to_vec(), self.db.clone()) {
+                        Ok(_) => {
                             self.db
                                 .lock()
                                 .expect("Lock poisoned")
                                 .commit_transaction()?;
                         }
-                    }
-                    Err(e) => {
-                        error!("Indexer failed {e:?}");
-                        self.db
-                            .lock()
-                            .expect("Lock poisoned on error")
-                            .revert_transaction()?;
-                        return Err(IndexerError::HandlerError);
+                        Err(e) => {
+                            error!("Indexer failed {e:?}");
+                            self.db
+                                .lock()
+                                .expect("Lock poisoned on error")
+                                .revert_transaction()?;
+                            return Err(IndexerError::HandlerError);
+                        }
                     }
                 }
             }
@@ -206,7 +203,12 @@ impl Executor for WasmIndexExecutor {
     }
 
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    fn trigger_event(&self, event_name: ReceiptEvent, bytes: Vec<Vec<u8>>) -> IndexerResult<()> {
+    fn trigger_event(
+        &self,
+        event_name: ReceiptEvent,
+        bytes: Vec<Vec<u8>>,
+        _receipt: Option<Receipt>,
+    ) -> IndexerResult<()> {
         let mut args = Vec::with_capacity(bytes.len());
         for arg in bytes.into_iter() {
             args.push(ffi::WasmArg::new(&self.instance, arg)?)
@@ -270,7 +272,7 @@ mod tests {
     }
 
     #[test]
-    fn test_executor() {
+    fn test_wasm_executor() {
         let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file.");
         let bad_manifest: Manifest = serde_yaml::from_str(BAD_MANIFEST).expect("Bad yaml file.");
 
@@ -285,7 +287,11 @@ mod tests {
 
         let executor = executor.unwrap();
 
-        let result = executor.trigger_event(ReceiptEvent::Log, vec![b"ejfiaiddiie".to_vec()]);
+        let result = executor.trigger_event(
+            ReceiptEvent::an_event_name,
+            vec![b"ejfiaiddiie".to_vec()],
+            None,
+        );
         match result {
             Err(IndexerError::RuntimeError(_)) => (),
             e => panic!("Should have been a runtime error {:#?}", e),
@@ -310,7 +316,7 @@ mod tests {
                 .expect("Failed to encode"),
         ];
 
-        let result = executor.trigger_event(ReceiptEvent::Log, encoded);
+        let result = executor.trigger_event(ReceiptEvent::an_event_name, encoded, None);
         assert!(result.is_ok());
 
         let conn = PgConnection::establish(DATABASE_URL).expect("Postgres connection failed");

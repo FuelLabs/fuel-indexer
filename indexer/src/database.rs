@@ -149,13 +149,7 @@ impl Database {
         )
     }
 
-    pub fn put_object(
-        &mut self,
-        type_id: u64,
-        columns: Vec<FtColumn>,
-        bytes: Vec<u8>,
-        include_id: bool,
-    ) {
+    pub fn put_object(&mut self, type_id: u64, columns: Vec<FtColumn>, bytes: Vec<u8>) {
         let table = &self.tables[&type_id];
         let inserts: Vec<_> = columns.iter().map(|col| col.query_fragment()).collect();
         let updates: Vec<_> = self.schema[table]
@@ -170,19 +164,7 @@ impl Database {
             })
             .collect();
 
-        let columns = match include_id {
-            true => self.schema[table].clone(),
-            false => self.schema[table]
-                .iter()
-                .filter_map(|col| {
-                    if col == "id" {
-                        None
-                    } else {
-                        Some(col.to_owned())
-                    }
-                })
-                .collect(),
-        };
+        let columns = self.schema[table].clone();
 
         let query_text = self.upsert_query(table, &columns, inserts, updates);
 
@@ -338,7 +320,7 @@ mod tests {
             FtColumn::Address(Address::from([0x04; 32])),
         ];
         let bytes = vec![0u8, 1u8, 2u8, 3u8];
-        db.put_object(THING1_TYPE, columns, bytes.clone(), true);
+        db.put_object(THING1_TYPE, columns, bytes.clone());
 
         let obj = db.get_object(THING1_TYPE, object_id);
         assert!(obj.is_some());

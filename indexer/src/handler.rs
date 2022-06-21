@@ -1,26 +1,20 @@
-use anyhow::Result;
-use fuel_indexer::EntityResult;
-use fuel_indexer_schema::type_id;
+use crate::{database::Database, IndexerResult};
 use serde::{Deserialize, Serialize};
+use std::sync::{Arc, Mutex};
 
-pub type Handle = fn(Vec<Vec<u8>>) -> Result<Option<EntityResult>>;
+type Handle = fn(data: Vec<u8>, pg: Arc<Mutex<Database>>) -> IndexerResult<()>;
 
-#[derive(Debug)]
 pub struct CustomHandler {
     pub event: ReceiptEvent,
     pub namespace: String,
-    pub entity: String,
     pub handle: Handle,
-    pub type_id: u64,
 }
 
 impl CustomHandler {
-    pub fn new(event: ReceiptEvent, namespace: String, entity: String, handle: Handle) -> Self {
+    pub fn new(event: ReceiptEvent, namespace: String, handle: Handle) -> Self {
         Self {
             event,
-            type_id: type_id(&namespace, &entity),
             namespace,
-            entity,
             handle,
         }
     }
@@ -28,6 +22,11 @@ impl CustomHandler {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
 pub enum ReceiptEvent {
+    // NOTE: Keeping these until https://github.com/FuelLabs/fuel-indexer/pull/65#discussion_r903138005 is figured out
+    #[allow(non_camel_case_types)]
+    an_event_name,
+    #[allow(non_camel_case_types)]
+    another_event_name,
     LogData,
     Log,
     ReturnData,
@@ -37,6 +36,8 @@ pub enum ReceiptEvent {
 impl From<String> for ReceiptEvent {
     fn from(e: String) -> Self {
         match &e[..] {
+            "another_event_name" => ReceiptEvent::another_event_name,
+            "an_event_name" => ReceiptEvent::an_event_name,
             "LogData" => ReceiptEvent::LogData,
             "Log" => ReceiptEvent::Log,
             "ReturnData" => ReceiptEvent::ReturnData,
@@ -48,6 +49,8 @@ impl From<String> for ReceiptEvent {
 impl From<ReceiptEvent> for String {
     fn from(e: ReceiptEvent) -> String {
         match e {
+            ReceiptEvent::another_event_name => "another_event_name".to_owned(),
+            ReceiptEvent::an_event_name => "an_event_name".to_owned(),
             ReceiptEvent::LogData => "LogData".to_owned(),
             ReceiptEvent::Log => "Log".to_owned(),
             ReceiptEvent::ReturnData => "ReturnDataa".to_owned(),

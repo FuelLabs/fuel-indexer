@@ -41,27 +41,15 @@ impl Logger {
     }
 }
 
-pub struct EntityResult {
-    pub data: Vec<u8>,
-    pub columns: Vec<FtColumn>,
-}
-
-pub trait Entity: Sized + PartialEq + Eq {
+pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
     const TYPE_ID: u64;
 
     fn from_row(vec: Vec<FtColumn>) -> Self;
 
     fn to_row(&self) -> Vec<FtColumn>;
 
-    fn to_vec(&self) -> Vec<u8> {
-        todo!()
-    }
-
-    fn as_entity_result(&self) -> EntityResult {
-        EntityResult {
-            data: self.to_vec(),
-            columns: self.to_row(),
-        }
+    fn type_id(&self) -> u64 {
+        Self::TYPE_ID
     }
 
     fn load(id: u64) -> Option<Self> {

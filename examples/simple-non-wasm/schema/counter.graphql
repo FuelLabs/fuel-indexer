@@ -8,15 +8,15 @@ type QueryRoot {
 }
 
 type Count {
-    id: ID!
-    count: Bytes8!,
-    timestamp: Bytes8!,
+    id: ID!,
+    count: UInt8!,
+    timestamp: UInt8!,
 }
 
 
 type AnotherCount {
     id: ID!
-    count: Bytes8!,
-    timestamp: Bytes8!,
+    count: UInt8!,
+    timestamp: UInt8!,
     address: Address! @indexed,
 }

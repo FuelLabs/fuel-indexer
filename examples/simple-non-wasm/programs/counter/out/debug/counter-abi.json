@@ -4,7 +4,7 @@
     "inputs": [
       {
         "name": "value",
-        "type": "u32",
+        "type": "u64",
         "components": null
       }
     ],
@@ -14,6 +14,11 @@
         "name": "",
         "type": "struct CountEvent",
         "components": [
+          {
+            "name": "id",
+            "type": "u64",
+            "components": null
+          },
           {
             "name": "count",
             "type": "u64",
@@ -38,6 +43,11 @@
         "type": "struct AnotherCountEvent",
         "components": [
           {
+            "name": "id",
+            "type": "u64",
+            "components": null
+          },
+          {
             "name": "count",
             "type": "u64",
             "components": null
@@ -61,7 +71,7 @@
     "inputs": [
       {
         "name": "amount",
-        "type": "u32",
+        "type": "u64",
         "components": null
       }
     ],
@@ -71,6 +81,11 @@
         "name": "",
         "type": "struct CountEvent",
         "components": [
+          {
+            "name": "id",
+            "type": "u64",
+            "components": null
+          },
           {
             "name": "count",
             "type": "u64",

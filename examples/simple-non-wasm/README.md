@@ -72,7 +72,7 @@ curl -X POST http://127.0.0.1:8080/count | json_pp
 In this example we just created an entity with `id = 1`
 
 ```bash
-➜  echo "SELECT max(id) FROM simple_handler.count;" | psql -U postgres -d indexer
+➜  echo "SELECT max(id) FROM counter.count;" | psql -U postgres -d indexer
  max
 -----
    1
@@ -82,11 +82,12 @@ In this example we just created an entity with `id = 1`
 So that's what we query for
 
 ```
-curl -X POST http://localhost:29987/graph/simple_handler -H 'content-type: application/json' -d '{"query": "query { count(id: 1) { id count } }", "params": "b"}' | json_pp
+curl -X POST http://localhost:29987/graph/counter -H 'content-type: application/json' -d '{"query": "query { count(id: 1) { id count timestamp } }", "params": "b"}' | json_pp
 [
    {
-      "count" : "1",
-      "id" : 1
+      "count" : 1,
+      "id" : 1,
+      "timestamp" : 123
    }
 ]
 ```
