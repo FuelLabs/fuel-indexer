@@ -9,3 +9,6 @@
   - [Basic usage](./getting-started/basics.md)
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-indexer.md)
+- [Database](./database/index.md)
+  - [Data Types](./database/types.md)
+  - [Conventions](./database/conventions.md)
