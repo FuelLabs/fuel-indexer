@@ -1,17 +1,22 @@
-## System Requirements
+# System Requirements
 
 There are several system requirements including forc, llvm, clang and postgres.
 
-### Installing `forc`
+## Fuel system dependencies
 
-- On all architectures, install the following Fuel crates via `cargo`:
+Getting started with a Fuel indexer requires a few system dependencies from the Fuel ecosystem, namely, `forc`, and `fuel-core`
+- `forc` is the crate that holds the Sway language and Fuel's equivalent of `cargo`
+- `fuel-core` is the crate that contains the Fuel node software and execution
+
+### Installation
+
+On all architectures, install the following Fuel crates via `cargo`
 
 ```bash
 cargo install forc fuel-core
 ```
 
-- `forc` is the crate that holds the Sway language and Fuel's equivalent of `cargo`
-- `fuel-core` is the crate that contains the Fuel node software and execution
+## Other system dependencies
 
 ### Ubuntu
 
