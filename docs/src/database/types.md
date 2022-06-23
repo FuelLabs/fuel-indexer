@@ -2,20 +2,20 @@
 
 Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing [Postgres 14](https://www.postgresql.org/docs/14/datatype.html) data types. 
 
-| GraphQL Schema Type | Postgres Type |
-|----------|----------|
-| ID | bigint primary key |
-| Address | varchar(64) |
-| Bytes4 | varchar(16) |
-| Bytes8 | varchar(64) |
-| Bytes32 | varchar(64) |
-| AssetId | varchar(64) |
-| ContractId | varchar(64) |
-| Salt | varchar(64) |
-| Int4 | integer |
-| Int8 | bigint |
-| Timestamp | timestamp |
-| Blob | bytes |
+| Sway Type | GraphQL Schema Type | Postgres Type |
+|------|----------|----------|
+| u64 | ID | bigint primary key |
+| b256 | Address | varchar(64) |
+| str[4] | Bytes4 | varchar(16) |
+| str[8] | Bytes8 | varchar(64) |
+| str[32] | Bytes32 | varchar(64) |
+| str[32] | AssetId | varchar(64) |
+| b256 | ContractId | varchar(64) |
+| str[32] | Salt | varchar(64) |
+| u32 | Int4 | integer |
+| u64 | Int8 | bigint |
+| u64 | Timestamp | timestamp |
+| str[] | Blob | bytes |
 
 So for example if you've defined the following struct in your Sway contract (as well as the ABI JSON the contract generates)
 

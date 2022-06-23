@@ -5,6 +5,7 @@ There are several system requirements including forc, llvm, clang and postgres.
 ## Fuel system dependencies
 
 Getting started with a Fuel indexer requires a few system dependencies from the Fuel ecosystem, namely, `forc`, and `fuel-core`
+
 - `forc` is the crate that holds the Sway language and Fuel's equivalent of `cargo`
 - `fuel-core` is the crate that contains the Fuel node software and execution
 
