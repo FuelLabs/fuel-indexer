@@ -1,24 +1,23 @@
 # System Requirements
 
-There are several system requirements including forc, llvm, clang and postgres.
+There are several system requirements including fuelup, llvm, clang and postgres.
 
 ## Fuel system dependencies
 
-Getting started with a Fuel indexer requires a few system dependencies from the Fuel ecosystem, namely, `forc`, and `fuel-core`
-- `forc` is the crate that holds the Sway language and Fuel's equivalent of `cargo`
-- `fuel-core` is the crate that contains the Fuel node software and execution
+Getting started with a Fuel indexer requires a single primary dependency from the Fuel ecosystem -- `fuelup`
+- `fuelup` installs the Fuel toolchain from Fuel's official release channels, enabling you to easily keep the toolchain updated. For more info, take a look at the [`fuelup` repo](https://github.com/fuellabs/fuelup).
 
 ### Installation
 
-On all architectures, install the following Fuel crates via `cargo`
+To install `fuelup`
 
 ```bash
-cargo install forc fuel-core
+fuelup toolchain install latest
 ```
 
 ## Other system dependencies
 
-### Ubuntu
+### Ubuntu/Debian
 
 ```bash
 apt update
@@ -31,14 +30,6 @@ apt install -y cmake pkg-config libssl-dev git \
 ```bash
 brew update
 brew install openssl cmake llvm libpq postgresql
-```
-
-### Debian
-
-```bash
-apt update
-apt install -y cmake pkg-config libssl-dev git \
-    gcc build-essential git clang libclang-dev llvm libpq-dev
 ```
 
 ### Arch
