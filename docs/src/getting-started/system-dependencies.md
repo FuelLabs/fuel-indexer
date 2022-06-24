@@ -22,22 +22,48 @@ fuelup toolchain install latest
 ```bash
 apt update
 apt install -y cmake pkg-config libssl-dev git \
-    gcc build-essential git clang libclang-dev llvm libpq-dev
+    gcc build-essential clang libclang-dev llvm libpq-dev
 ```
+| Dependency | Required For |
+| --------------- | --------------- |
+| cmake | Required for building Fuel Indexer crate dependencies |
+| pkg-config | Required for building Fuel Indexer crate dependencies |
+| libssl-dev | Required for building Fuel Indexer crate dependencies |
+| git | Required for building Fuel Indexer crate dependencies |
+| gcc | Required for building Fuel Indexer crate dependencies |
+| clang | Required for building Fuel Indexer crate dependencies |
+| llvm | Required for building Fuel Indexer crate dependencies |
+| libpq-dev | Row 3 Column 2 |
 
 ### MacOS
 
 ```bash
 brew update
-brew install openssl cmake llvm libpq postgresql
+brew install cmake llvm libpq postgresql
 ```
+
+| Dependency | Required For |
+| --------------- | --------------- |
+| cmake | Required for building Fuel Indexer crate dependencies |
+| llvm| Required for building Fuel Indexer crate dependencies |
+| libq | Required for building Fuel Indexer crate dependencies |
+| postgresql | Required for building Fuel Indexer crate dependencies |
+
 
 ### Arch
 
 ```bash
 pacman -Syu --needed --noconfirm cmake \
-    gcc openssl-1.0 pkgconf git clang llvm11 llvm11-libs postgresql-libs
-
-export OPENSSL_LIB_DIR="/usr/lib/openssl-1.0";
-export OPENSSL_INCLUDE_DIR="/usr/include/openssl-1.0"
+    gcc pkgconf git clang llvm11 llvm11-libs postgresql-libs
 ```
+
+| Dependency | Required For |
+| --------------- | --------------- |
+| cmake | Required for building Fuel Indexer crate dependencies |
+| git | Required for building Fuel Indexer crate dependencies |
+| gcc | Required for building Fuel Indexer crate dependencies |
+| llvm11 | Required for building Fuel Indexer crate dependencies |
+| llvm11-libs | Required for building Fuel Indexer crate dependencies |
+| pkgconf | Required for building Fuel Indexer crate dependencies |
+| postgresql-libs | Required for building Fuel Indexer crate dependencies |
+| clang | Required for building Fuel Indexer crate dependencies |
