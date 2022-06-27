@@ -71,7 +71,6 @@ handlers:
 - `wasm_module` - the compiled code you'll be writing to transform your data
 - `handlers` - this maps event types to the function names in your WASM that should handle the events
 
-
 ## Defining your data types
 
 The WASM indexer basically takes two sets of data types, one set coming from your sway contract, and the other defined in the form of a GraphQL schema, specifying how you would like your data to be indexed. The code you'll be writing will just transform the data from your contract types and inserts them into a database.

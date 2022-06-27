@@ -4,5 +4,8 @@
 
 - [Getting Started](./getting-started/index.md)
   - [Setting up](./getting-started/setup.md)
+    - [System dependencies](./getting-started/system-dependencies.md)
+    - [Application dependencies](./getting-started/application-dependencies.md)
   - [Basic usage](./getting-started/basics.md)
-  - [Hello World Indexer](./getting-started/hello-indexer.md)
+- [Examples](./examples/index.md)
+  - [Hello World](./examples/hello-indexer.md)
