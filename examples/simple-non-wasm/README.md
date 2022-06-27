@@ -38,26 +38,24 @@
   - In this example we're using an `indexer` database owned by a `postgres` role without a password
 
 ```bash
+cd fuel-indexer/
+
 DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" diesel migration list --migration-dir=schema/migrations
 ```
 
 #### Start fuel node and use small webserver as contract proxy
 
-OSX
-
 ```bash
-RUST_LOG=debug cargo run --target x86_64-apple-darwin
-```
+cd fuel-indexer/examples/simple-non-wasm/programs/counter-rs
 
-Ubuntu
-
-```bash
 RUST_LOG=debug cargo run
 ```
 
 #### Start the fuel indexer service
 
 ```bash
+cd fuel-indexer/examples/simple-non-wasm/
+
 RUST_LOG=info cargo run -- ./config.yaml
 ```
 
