@@ -7,4 +7,4 @@
 [![docs](https://docs.rs/fuel-indexer/badge.svg)](https://docs.rs/fuel-indexer/)
 [![discord](https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xfpK4Pe)
 
-Fuel Indexer uses WASM to index transactions and state within a fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases. For more info on how to get started with Fuel Indexer, [read the book](https://fuellabs.github.io/fuel-indexer/latest/index.html)
+The Fuel Indexer is a standalone binary that can be used to index various components of [the Fuel protocol](https://github.com/FuelLabs/fuel-specs/tree/master/specs/protocol). These indexable components include blocks, transactions, and [receipts](https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/tx_format.md) and state within a fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
