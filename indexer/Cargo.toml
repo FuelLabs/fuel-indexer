@@ -36,7 +36,6 @@ wasmer = "2.0"
 wasmer-compiler-cranelift = { version = "2.0" }
 wasmer-engine-universal = "2.0"
 
-
 [dev-dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 fuel-core = { version = "0.6.4", features = ["test-helpers"] }
