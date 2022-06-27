@@ -6,6 +6,9 @@ license = "BUSL-1.1"
 publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[package.metadata.cargo-udeps.ignore]
+development = ["fuels", "fuel-indexer", "fuels-core"]
+
 [lib]
 proc-macro = true
 
