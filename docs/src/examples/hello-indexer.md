@@ -4,7 +4,6 @@
 
 We're assuming here you have a sway contract written, and you're ready to start indexing. If not you can check out [The Sway Book](https://fuellabs.github.io/sway/latest/) to get started, then come back!
 
-
 ## Project structure
 
 We'll start with the project structure:
@@ -180,7 +179,7 @@ fn function_one(event: LogEvent) {
 - `wasm_abigen` will similarly translate the contract ABI types into rust types.
 - `handler` is another macro that is required for the indexer to be accessible from the indexer service, it is mostly generates some glue code that bridges the interface between native code and the WASM runtime.
 
-## Build it!
+## Build it
 
 With all this in place, we can now build the indexer:
 
@@ -188,7 +187,7 @@ With all this in place, we can now build the indexer:
 cargo build --release
 ```
 
-## Run it!
+## Run it
 
 - [On the previous page](./getting-started/basics.md), we described how to bring up the fuel service. The manifest.yaml described here is the one we promised to get to in that section. You may now run that command to bring up your indexer.
 - Now, you can send in some test transactions, and the data will be available via the API.
