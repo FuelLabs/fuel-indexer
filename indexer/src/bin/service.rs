@@ -1,6 +1,7 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
+use fuel_indexer_schema::db::run_migration;
 use fuel_wasm_executor::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -41,6 +42,8 @@ pub async fn main() -> Result<()> {
     file.read_to_string(&mut contents).await?;
 
     let mut config: IndexerConfig = serde_yaml::from_str(&contents)?;
+
+    run_migration(&config.database_url);
 
     let _local_node = if opt.local {
         let s = FuelService::new_node(Config::local_node()).await.unwrap();

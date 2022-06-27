@@ -1,6 +1,10 @@
 #[cfg(feature = "db-models")]
 #[macro_use]
 extern crate diesel;
+
+#[cfg(feature = "db-models")]
+#[macro_use]
+extern crate diesel_migrations;
 extern crate alloc;
 use alloc::vec::Vec;
 
