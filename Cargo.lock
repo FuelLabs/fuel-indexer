@@ -327,7 +327,6 @@ name = "api_server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-process",
  "async-std",
  "axum",
  "diesel",
@@ -527,23 +526,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "479db852db25d9dbf6204e6cb6253698f175c15726470f78af0d918e99d6156e"
 dependencies = [
  "event-listener",
-]
-
-[[package]]
-name = "async-process"
-version = "1.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf2c06e30a24e8c78a3987d07f0930edf76ef35e027e7bdb063fccafdad1f60c"
-dependencies = [
- "async-io",
- "blocking",
- "cfg-if",
- "event-listener",
- "futures-lite",
- "libc",
- "once_cell",
- "signal-hook",
- "winapi",
 ]
 
 [[package]]
@@ -2421,7 +2403,6 @@ name = "fuel-indexer-schema"
 version = "0.0.0"
 dependencies = [
  "diesel",
- "fuel-tx 0.9.0",
  "fuel-types 0.3.1",
  "graphql-parser",
  "insta",
@@ -2626,6 +2607,15 @@ dependencies = [
  "fuel-asm 0.5.3",
  "fuel-crypto 0.5.0",
  "fuel-merkle 0.1.1",
+ "anyhow",
+ "async-std",
+ "axum",
+ "cfg-if",
+ "chrono",
+ "diesel",
+ "fuel-core 0.6.4",
+ "fuel-gql-client 0.6.4",
+ "fuel-indexer-schema",
  "fuel-storage 0.1.0",
  "fuel-tx 0.13.0",
  "fuel-types 0.5.0",
@@ -5046,16 +5036,6 @@ name = "shlex"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
-
-[[package]]
-name = "signal-hook"
-version = "0.3.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a253b5e89e2698464fc26b545c9edceb338e18a89effeeecfea192c3025be29d"
-dependencies = [
- "libc",
- "signal-hook-registry",
-]
 
 [[package]]
 name = "signal-hook-registry"

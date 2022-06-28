@@ -14,7 +14,8 @@ mod tests {
 
     #[allow(clippy::iter_cloned_collect)]
     fn create_log_transaction(rega: u16, regb: u16) -> Transaction {
-        let script = vec![
+        #[allow(clippy::iter_cloned_collect)]
+        let script = [
             Opcode::ADDI(0x10, REG_ZERO, rega),
             Opcode::ADDI(0x11, REG_ZERO, regb),
             Opcode::LOG(0x10, 0x11, REG_ZERO, REG_ZERO),
