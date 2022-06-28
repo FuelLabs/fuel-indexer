@@ -17,7 +17,9 @@ Below is a mapping of GraphQL schema types to their Postgres equivalents, refere
 | u64 | Timestamp | timestamp |
 | str[] | Blob | bytes |
 
-So for example if you've defined the following struct in your Sway contract (as well as the ABI JSON the contract generates)
+## Example
+
+Let's define an `Event` struct in a Sway contract:
 
 ```sway
 struct Event {
@@ -27,7 +29,7 @@ struct Event {
 }
 ```
 
-Your subsequenty GraphQL schema would resemble:
+Our GraphQL schema should resemble:
 
 ```code
 type Event {
@@ -37,7 +39,7 @@ type Event {
 }
 ```
 
-Which would then generate the following Postgres schema
+This will generate the following Postgres schema:
 
 ```code
                                            Table "schema.event"
@@ -52,5 +54,5 @@ Indexes:
 Access method: heap
 ```
 
-The source code for these types can be found [here](https://github.com/FuelLabs/fuel-indexer/blob/master/schema/src/db/models.rs#L146)
+The source code for these types can be found [here](https://github.com/FuelLabs/fuel-indexer/blob/master/schema/src/db/models.rs#L146).
 
