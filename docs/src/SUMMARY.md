@@ -10,6 +10,8 @@
   - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-indexer.md)
+- [Web API](./api/index.md)
+  - [GraphQL server](./api/gql-server.md)
 - [Database](./database/index.md)
   - [Data Types](./database/types.md)
   - [Conventions](./database/conventions.md)
