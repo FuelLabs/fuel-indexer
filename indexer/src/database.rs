@@ -4,10 +4,9 @@ use r2d2_diesel::ConnectionManager;
 use std::collections::HashMap;
 use wasmer::Instance;
 
-use crate::ffi;
-use crate::IndexerResult;
+use crate::{ffi, IndexerResult, Manifest};
 use fuel_indexer_schema::{
-    db::models::{ColumnInfo, EntityData, TypeIds},
+    db::models::{ColumnInfo, EntityData, TypeId},
     db::tables::{Schema, SchemaBuilder},
     schema_version, FtColumn,
 };
@@ -72,7 +71,7 @@ impl SchemaManager {
         //       do graph schema upgrades
         let version = schema_version(schema);
 
-        if !TypeIds::schema_exists(&*connection, name, &version)? {
+        if !TypeId::schema_exists(&*connection, name, &version)? {
             let _db_schema = SchemaBuilder::new(name, &version)
                 .build(schema)
                 .commit_metadata(&*connection)?;
@@ -80,7 +79,7 @@ impl SchemaManager {
         Ok(())
     }
 
-    pub fn load_schema(&self, name: &str) -> IndexerResult<Schema> {
+    pub fn load_schema_wasm(&self, name: &str) -> IndexerResult<Schema> {
         // TODO: might be nice to cache this data in server?
         Ok(Schema::load_from_db(&*self.pool.get()?, name)?)
     }
@@ -165,7 +164,9 @@ impl Database {
             })
             .collect();
 
-        let query_text = self.upsert_query(table, &self.schema[table], inserts, updates);
+        let columns = self.schema[table].clone();
+
+        let query_text = self.upsert_query(table, &columns, inserts, updates);
 
         let query = sql_query(&query_text).bind::<Binary, _>(bytes);
 
@@ -184,7 +185,31 @@ impl Database {
         row.pop().map(|e| e.object)
     }
 
-    pub fn load_schema(&mut self, instance: &Instance) -> IndexerResult<()> {
+    pub fn load_schema_custom(&mut self, manifest: Manifest) -> IndexerResult<()> {
+        self.namespace = manifest.namespace;
+        self.version = TypeId::latest_version(&self.namespace, &*self.conn)?;
+
+        let results = ColumnInfo::get_schema(&self.conn, &self.namespace, &self.version)?;
+
+        for column in results {
+            let table = &column.table_name;
+
+            self.tables
+                .entry(column.type_id as u64)
+                .or_insert_with(|| table.to_string());
+
+            let columns = self
+                .schema
+                .entry(table.to_string())
+                .or_insert_with(Vec::new);
+
+            columns.push(column.column_name);
+        }
+
+        Ok(())
+    }
+
+    pub fn load_schema_wasm(&mut self, instance: &Instance) -> IndexerResult<()> {
         self.namespace = ffi::get_namespace(instance)?;
         self.version = ffi::get_version(instance)?;
 
@@ -279,7 +304,8 @@ mod tests {
 
         let mut db = Database::new(DATABASE_URL).expect("Failed to create database object.");
 
-        db.load_schema(&instance).expect("Could not load db schema");
+        db.load_schema_wasm(&instance)
+            .expect("Could not load db schema");
 
         assert_eq!(db.namespace, "test_namespace");
         assert_eq!(db.version, version);

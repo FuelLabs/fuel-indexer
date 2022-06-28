@@ -1,6 +1,5 @@
 extern crate alloc;
 use alloc::vec::Vec;
-
 use fuel_indexer_schema::{
     deserialize, serialize, FtColumn, LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO,
     LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
@@ -42,12 +41,16 @@ impl Logger {
     }
 }
 
-pub trait Entity: Sized + PartialEq + Eq {
+pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
     const TYPE_ID: u64;
 
     fn from_row(vec: Vec<FtColumn>) -> Self;
 
     fn to_row(&self) -> Vec<FtColumn>;
+
+    fn type_id(&self) -> u64 {
+        Self::TYPE_ID
+    }
 
     fn load(id: u64) -> Option<Self> {
         unsafe {
