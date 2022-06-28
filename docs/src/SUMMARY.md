@@ -10,3 +10,4 @@
   - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-indexer.md)
+  - [Non-WASM Execution](./examples/non-wasm.md)
