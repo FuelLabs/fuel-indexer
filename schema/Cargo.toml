@@ -8,7 +8,6 @@ publish = false
 
 [dependencies]
 diesel = { version = "1.4", optional = true, features = ["postgres", "serde_json"] }
-fuel-tx = "0.9"
 fuel-types = { version = "0.3", features = ["serde-types"] }
 graphql-parser = "0.3"
 itertools = { version = "0.10", optional = true }

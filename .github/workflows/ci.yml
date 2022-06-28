@@ -160,6 +160,28 @@ jobs:
       - name: Run Cargo.toml linter
         run: git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
 
+  cargo-unused-deps-check:
+    needs: cancel-previous-runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          # `cargo-udeps` requires nightly to run
+          toolchain: nightly
+          default: true
+      - uses: Swatinem/rust-cache@v1
+      - name: Install cargo-udeps
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-udeps
+      - name: Check Unused Deps
+        uses: actions-rs/cargo@v1
+        with:
+          command: udeps
+          args: --locked --all-targets --features postgres
+
   cargo-clippy-workspace:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
