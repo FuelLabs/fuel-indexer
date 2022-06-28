@@ -181,20 +181,42 @@
 <h2 id="other-system-dependencies"><a class="header" href="#other-system-dependencies">Other system dependencies</a></h2>
 <h3 id="ubuntudebian"><a class="header" href="#ubuntudebian">Ubuntu/Debian</a></h3>
 <pre><code class="language-bash">apt update
-apt install -y cmake pkg-config libssl-dev git \
-    gcc build-essential git clang libclang-dev llvm libpq-dev
+apt install -y cmake pkg-config git \
+    gcc build-essential clang libclang-dev llvm libpq-dev
 </code></pre>
+<table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
+<tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
+<tr><td>pkg-config</td><td>Language-agnostic helper tool used when compiling applications and libraries</td></tr>
+<tr><td>git</td><td>Version control system</td></tr>
+<tr><td>gcc</td><td>Compiler tools required to build various Fuel Indexer crates</td></tr>
+<tr><td>clang</td><td>Compiler tools required to build various Fuel Indexer crates on Unix-like OSes</td></tr>
+<tr><td>llvm</td><td>Required for building Fuel Indexer crate dependencies</td></tr>
+<tr><td>libpq-dev</td><td>Set of library function helping facilitate interaction with the PostgreSQL backend</td></tr>
+</tbody></table>
 <h3 id="macos"><a class="header" href="#macos">MacOS</a></h3>
 <pre><code class="language-bash">brew update
-brew install openssl cmake llvm libpq postgresql
+brew install cmake llvm libpq postgresql
 </code></pre>
+<table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
+<tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
+<tr><td>llvm</td><td>Compiler infrastructure for building Fuel Indexer crate dependencies</td></tr>
+<tr><td>libq</td><td>Postgres C API library</td></tr>
+<tr><td>postgresql</td><td>Installs the command line console (psql) as well as a PostgreSQL server locally</td></tr>
+</tbody></table>
 <h3 id="arch"><a class="header" href="#arch">Arch</a></h3>
 <pre><code class="language-bash">pacman -Syu --needed --noconfirm cmake \
-    gcc openssl-1.0 pkgconf git clang llvm11 llvm11-libs postgresql-libs
-
-export OPENSSL_LIB_DIR=&quot;/usr/lib/openssl-1.0&quot;;
-export OPENSSL_INCLUDE_DIR=&quot;/usr/include/openssl-1.0&quot;
+    gcc pkgconf git clang llvm11 llvm11-libs postgresql-libs
 </code></pre>
+<table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
+<tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
+<tr><td>git</td><td>Version control system</td></tr>
+<tr><td>gcc</td><td>Compiler tools required to build various Fuel Indexer crates</td></tr>
+<tr><td>llvm11</td><td>Compiler infrastructure for building Fuel Indexer crate dependencies</td></tr>
+<tr><td>llvm11-libs</td><td>Compiler infrastructure libs for building Fuel Indexer crate dependencies</td></tr>
+<tr><td>pkgconf</td><td>System for configuring build dependency information</td></tr>
+<tr><td>postgresql-libs</td><td>Provides the essential shared libraries for any PostgreSQL client program or interface</td></tr>
+<tr><td>clang</td><td>Compiler required to build various Fuel Indexer crates Unix-like OSes</td></tr>
+</tbody></table>
 
                     </main>
 
