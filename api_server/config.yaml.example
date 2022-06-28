@@ -1,0 +1,9 @@
+## The endpoint on which to serve the Fuel Indexer GraphQL API
+listen_address: 0.0.0.0:29987
+
+## Postgres connection URL. Note that this URI follows the format specified in
+## section 34.1.1.2 of https://www.postgresql.org/docs/current/libpq-connect.html
+database_url: postgres://postgres@127.0.0.1:5432/indexer
+
+## Local path to the local SQLite database
+sqlite_db_path: ../main.db
