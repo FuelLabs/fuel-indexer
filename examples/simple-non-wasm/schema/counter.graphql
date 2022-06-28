@@ -1,0 +1,22 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    count: Count
+    another_count: AnotherCount
+}
+
+type Count {
+    id: ID!,
+    count: UInt8!,
+    timestamp: UInt8!,
+}
+
+
+type AnotherCount {
+    id: ID!
+    count: UInt8!,
+    timestamp: UInt8!,
+    address: Address! @indexed,
+}

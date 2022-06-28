@@ -6,7 +6,8 @@ members = [
    "derive",
    "lib",
    "indexer",
-   "indexer-samples/*",
+   "examples/*",
+   "examples/simple-non-wasm/programs/counter-rs",
    "schema"
 ]
 
