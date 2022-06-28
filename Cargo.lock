@@ -1286,7 +1286,6 @@ dependencies = [
  "fuel-tx 0.9.0",
  "fuels 0.15.2",
  "fuels-abigen-macro 0.15.2",
- "json",
  "log",
  "pretty_env_logger",
  "rand 0.8.5",
@@ -2272,7 +2271,6 @@ dependencies = [
  "diesel",
  "fuel-core 0.6.4",
  "fuel-gql-client 0.6.4",
- "fuel-indexer",
  "fuel-indexer-schema",
  "fuel-storage 0.1.0",
  "fuel-tx 0.9.0",
@@ -2607,15 +2605,6 @@ dependencies = [
  "fuel-asm 0.5.3",
  "fuel-crypto 0.5.0",
  "fuel-merkle 0.1.1",
- "anyhow",
- "async-std",
- "axum",
- "cfg-if",
- "chrono",
- "diesel",
- "fuel-core 0.6.4",
- "fuel-gql-client 0.6.4",
- "fuel-indexer-schema",
  "fuel-storage 0.1.0",
  "fuel-tx 0.13.0",
  "fuel-types 0.5.0",
@@ -3438,12 +3427,6 @@ checksum = "c3fac17f7123a73ca62df411b1bf727ccc805daa070338fda671c86dac1bdc27"
 dependencies = [
  "wasm-bindgen",
 ]
-
-[[package]]
-name = "json"
-version = "0.12.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "078e285eafdfb6c4b434e0d31e8cfcb5115b651496faca5749b88fafd4f23bfd"
 
 [[package]]
 name = "json-decode"
@@ -5076,7 +5059,6 @@ name = "simple-non-wasm"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-process",
  "async-std",
  "axum",
  "diesel",
