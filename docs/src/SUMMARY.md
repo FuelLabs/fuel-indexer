@@ -7,5 +7,6 @@
     - [System dependencies](./getting-started/system-dependencies.md)
     - [Application dependencies](./getting-started/application-dependencies.md)
   - [Basic usage](./getting-started/basics.md)
+  - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-indexer.md)
