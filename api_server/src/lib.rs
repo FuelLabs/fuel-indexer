@@ -62,7 +62,7 @@ async fn query_graph(
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
 ) -> (StatusCode, Json<Value>) {
     if !manager.read().await.contains_key(&name) {
-        if let Ok(Some(schema)) = load_schema(&database_url, &name).await {
+        if let Ok(Some(schema)) = load_schema_wasm(&database_url, &name).await {
             manager.write().await.insert(name.clone(), schema);
         } else {
             let result = format!("The graph {name} was not found.");
@@ -114,7 +114,7 @@ impl GraphQlApi {
     }
 }
 
-pub async fn load_schema(database_url: &str, name: &str) -> Result<Option<Schema>, ApiError> {
+pub async fn load_schema_wasm(database_url: &str, name: &str) -> Result<Option<Schema>, ApiError> {
     let conn = Conn::establish(database_url)?;
     Ok(Some(Schema::load_from_db(&conn, name)?))
 }

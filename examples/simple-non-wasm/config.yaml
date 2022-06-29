@@ -1,0 +1,4 @@
+---
+fuel_node_addr: 0.0.0.0:4000
+database_url: postgres://postgres@127.0.0.1:5432/indexer
+listen_endpoint: 0.0.0.0:29987 

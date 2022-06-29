@@ -2,7 +2,7 @@ use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
 use fuel_indexer_schema::db::run_migration;
-use fuel_wasm_executor::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
+use fuel_executor::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tokio::join;
@@ -73,8 +73,11 @@ pub async fn main() -> Result<()> {
         let mut schema = String::new();
         file.read_to_string(&mut schema).await?;
 
-        path.pop();
-        path.push(&manifest.wasm_module);
+        if let Some(module) = &manifest.wasm_module {
+            path.pop();
+            path.push(&module);
+        }
+
         let mut file = File::open(&path).await?;
         let mut bytes = Vec::<u8>::new();
         file.read_to_end(&mut bytes).await?;

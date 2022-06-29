@@ -2,14 +2,19 @@ use crate::db::postgres as gr;
 use crate::sql_types::Columntypename;
 use crate::ColumnType;
 use diesel::prelude::*;
-use diesel::{
-    result::{DatabaseErrorKind, Error as ResultError, QueryResult},
-    sql_types::*,
-};
+<<<<<<< HEAD
+use diesel::{result::QueryResult, sql_types::*};
 use gr::{
     graph_registry_columns, graph_registry_graph_root, graph_registry_root_columns,
     graph_registry_type_ids,
 };
+=======
+use diesel::{
+    result::{DatabaseErrorKind, Error as ResultError, QueryResult},
+    sql_types::*,
+};
+use gr::{columns, graph_root, root_columns, type_ids};
+>>>>>>> master
 
 #[derive(Insertable, Queryable, QueryableByName)]
 #[table_name = "graph_registry_root_columns"]
@@ -77,17 +82,28 @@ pub struct GraphRoot {
 }
 
 impl GraphRoot {
-    pub fn latest_version(conn: &PgConnection, name: &str) -> QueryResult<GraphRoot> {
+<<<<<<< HEAD
+    pub fn get_latest(conn: &PgConnection, name: &str) -> QueryResult<GraphRoot> {
         use gr::graph_registry_graph_root::dsl::*;
         graph_registry_graph_root
+=======
+    pub fn latest_version(conn: &PgConnection, name: &str) -> QueryResult<GraphRoot> {
+        use gr::graph_root::dsl::*;
+        graph_root
+>>>>>>> master
             .filter(schema_name.eq(name))
             .order_by(id.desc())
             .first(conn)
     }
 }
 
-#[derive(Insertable, Queryable, QueryableByName, Debug)]
+<<<<<<< HEAD
+#[derive(Insertable, Queryable, QueryableByName)]
 #[table_name = "graph_registry_type_ids"]
+=======
+#[derive(Insertable, Queryable, QueryableByName, Debug)]
+#[table_name = "type_ids"]
+>>>>>>> master
 #[allow(unused)]
 pub struct TypeId {
     pub id: i64,
@@ -102,16 +118,22 @@ impl TypeId {
         conn: &PgConnection,
         name: &str,
         version: &str,
-    ) -> QueryResult<Vec<TypeId>> {
+<<<<<<< HEAD
+    ) -> QueryResult<Vec<TypeIds>> {
         use gr::graph_registry_type_ids::dsl::*;
         graph_registry_type_ids
+=======
+    ) -> QueryResult<Vec<TypeId>> {
+        use gr::type_ids::dsl::*;
+        type_ids
+>>>>>>> master
             .filter(schema_name.eq(name).and(schema_version.eq(version)))
             .load(conn)
     }
 
     pub fn latest_version(schema_name: &str, conn: &PgConnection) -> QueryResult<String> {
         let mut results: Vec<Self> = diesel::sql_query(&format!(
-            "SELECT * FROM graph_registry_type_ids WHERE schema_name = '{}' ORDER BY id LIMIT 1",
+            "SELECT * FROM graph_registry.type_ids WHERE schema_name = '{}' ORDER BY id LIMIT 1",
             schema_name
         ))
         .load(conn)?;

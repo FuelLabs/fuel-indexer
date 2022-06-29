@@ -1,5 +1,6 @@
-use crate::{IndexExecutor, IndexerResult, Manifest, SchemaManager};
-use async_std::sync::Arc;
+use crate::{Executor, IndexerResult, Manifest, ReceiptEvent, SchemaManager, WasmIndexExecutor};
+use anyhow::Result;
+use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
 use fuel_tx::Receipt;
 use fuels_core::abi_encoder::ABIEncoder;
@@ -8,7 +9,9 @@ use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::future::Future;
+use std::marker::{Send, Sync};
 use std::net::SocketAddr;
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     task::JoinHandle,
@@ -22,6 +25,17 @@ pub struct IndexerConfig {
     pub fuel_node_addr: SocketAddr,
     pub database_url: String,
     pub listen_endpoint: SocketAddr,
+}
+
+impl IndexerConfig {
+    pub async fn from_file(path: &Path) -> Result<Self> {
+        let mut file = File::open(path).await?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).await?;
+        let config: IndexerConfig = serde_yaml::from_str(&contents)?;
+
+        Ok(config)
+    }
 }
 
 pub struct IndexerService {
@@ -50,6 +64,38 @@ impl IndexerService {
         })
     }
 
+    pub fn build_schema(&self, manifest: &Manifest, graphql_schema: &str) -> IndexerResult<()> {
+        let _ = self
+            .manager
+            .new_schema(&manifest.namespace, graphql_schema)?;
+        Ok(())
+    }
+
+    pub fn add_executor<T: 'static + Executor + Send + Sync>(
+        &mut self,
+        executor: T,
+        _event_name: &'static str,
+        manifest: Manifest,
+        run_once: bool,
+    ) -> IndexerResult<()> {
+        let name = manifest.namespace.clone();
+        let start_block = manifest.start_block;
+
+        let kill_switch = Arc::new(AtomicBool::new(run_once));
+        let handle = tokio::spawn(self.make_task(
+            ReceiptEvent::Other,
+            kill_switch.clone(),
+            executor,
+            start_block,
+        ));
+
+        info!("Registered indexer {}", name);
+        self.handles.insert(name.clone(), handle);
+        self.killers.insert(name, kill_switch);
+
+        Ok(())
+    }
+
     pub fn add_indexer(
         &mut self,
         manifest: Manifest,
@@ -60,10 +106,15 @@ impl IndexerService {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
         let _ = self.manager.new_schema(&name, graphql_schema)?;
-        let executor = IndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes)?;
+        let executor = WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes)?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
-        let handle = tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+        let handle = tokio::spawn(self.make_task(
+            ReceiptEvent::Other,
+            kill_switch.clone(),
+            executor,
+            start_block,
+        ));
 
         info!("Registered indexer {}", name);
         self.handles.insert(name.clone(), handle);
@@ -79,10 +130,11 @@ impl IndexerService {
         }
     }
 
-    fn make_task(
+    fn make_task<T: 'static + Executor + Send + Sync>(
         &self,
+        _event_name: ReceiptEvent,
         kill_switch: Arc<AtomicBool>,
-        executor: IndexExecutor,
+        executor: T,
         start_block: Option<u64>,
     ) -> impl Future<Output = ()> {
         let mut next_cursor = None;
@@ -126,6 +178,7 @@ impl IndexerService {
 
                 let result = tokio::task::spawn_blocking(move || {
                     for receipt in receipts {
+                        let receipt_cp = receipt.clone();
                         match receipt {
                             Receipt::Log {
                                 id,
@@ -151,7 +204,79 @@ impl IndexerService {
                                     .encode(&[token.clone()])
                                     .expect("Bad Encoding!");
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event("an_event_name", vec![args]) {
+                                if let Err(e) = exec.trigger_event(
+                                    ReceiptEvent::Log,
+                                    vec![args],
+                                    Some(receipt_cp),
+                                ) {
+                                    error!("Event processing failed {:?}", e);
+                                }
+                            }
+                            Receipt::LogData {
+                                id,
+                                ra,
+                                rb,
+                                ptr,
+                                len,
+                                digest,
+                                data,
+                                pc,
+                                is,
+                            } => {
+                                // TODO: might be nice to have Receipt type impl Tokenizable.
+                                let token = Token::Struct(vec![
+                                    id.into_token(),
+                                    ra.into_token(),
+                                    rb.into_token(),
+                                    ptr.into_token(),
+                                    len.into_token(),
+                                    digest.into_token(),
+                                    data.into_token(),
+                                    pc.into_token(),
+                                    is.into_token(),
+                                ]);
+
+                                let args = ABIEncoder::new()
+                                    .encode(&[token.clone()])
+                                    .expect("Bad Encoding!");
+                                // TODO: should wrap this in a db transaction.
+                                if let Err(e) = exec.trigger_event(
+                                    ReceiptEvent::LogData,
+                                    vec![args],
+                                    Some(receipt_cp),
+                                ) {
+                                    error!("Event processing failed {:?}", e);
+                                }
+                            }
+                            Receipt::ReturnData {
+                                id,
+                                ptr,
+                                len,
+                                digest,
+                                data,
+                                pc,
+                                is,
+                            } => {
+                                // TODO: might be nice to have Receipt type impl Tokenizable.
+                                let token = Token::Struct(vec![
+                                    id.into_token(),
+                                    ptr.into_token(),
+                                    len.into_token(),
+                                    digest.into_token(),
+                                    data.into_token(),
+                                    pc.into_token(),
+                                    is.into_token(),
+                                ]);
+
+                                let args = ABIEncoder::new()
+                                    .encode(&[token.clone()])
+                                    .expect("Bad Encoding!");
+                                // TODO: should wrap this in a db transaction.
+                                if let Err(e) = exec.trigger_event(
+                                    ReceiptEvent::ReturnData,
+                                    vec![args],
+                                    Some(receipt_cp),
+                                ) {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }
