@@ -1,3 +1,7 @@
+## The following is an example Fuel Indexer GraphQL configuration.
+##
+## Read the book: https://fuellabs.github.io/fuel-indexer/master/
+
 ## The endpoint on which to serve the Fuel Indexer GraphQL API
 listen_address: 0.0.0.0:29987
 
