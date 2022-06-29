@@ -11,12 +11,16 @@ mod manifest;
 mod service;
 
 pub use api::GraphQlApi;
-pub use database::{ConnWrapper, Database, SchemaManager};
+pub use database::{Database, SchemaManager};
 pub use executor::{CustomIndexExecutor, Executor, IndexEnv, WasmIndexExecutor};
-pub use fuel_types::ContractId;
-pub use handler::{CustomHandler, ReceiptEvent};
+pub use fuel_types::{Address, ContractId};
+pub use handler::{NativeHandler, ReceiptEvent};
 pub use manifest::Manifest;
 pub use service::{IndexerConfig, IndexerService};
+// temporary
+use fuel_indexer_schema::FtColumn;
+
+pub type EntityRow = Vec<FtColumn>;
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
 

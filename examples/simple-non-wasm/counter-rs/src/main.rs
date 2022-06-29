@@ -30,16 +30,17 @@ pub fn tx_params() -> TxParameters {
 
 abigen!(
     Counter,
-    "examples/simple-non-wasm/programs/counter/out/debug/counter-abi.json"
+    "examples/simple-non-wasm/contracts/counter/out/debug/counter-abi.json"
 );
 
 async fn get_contract_id(wallet: &Wallet) -> String {
     dotenv::dotenv().ok();
     debug!("Creating new deployment for non-existent contract");
 
-    let _compiled = Contract::load_sway_contract("./../counter/out/debug/counter.bin").unwrap();
+    let _compiled =
+        Contract::load_sway_contract("./../contracts/counter/out/debug/counter.bin").unwrap();
 
-    let bin_path = "./../counter/out/debug/counter.bin".to_string();
+    let bin_path = "./../contracts/counter/out/debug/counter.bin".to_string();
     let contract_id = Contract::deploy(&bin_path, wallet, tx_params())
         .await
         .unwrap();

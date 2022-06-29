@@ -1,0 +1,5 @@
+namespace: counter
+graphql_schema: schema/counter.graphql
+handlers:
+  - event: an_event_name
+    handler: count_handler

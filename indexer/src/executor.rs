@@ -1,6 +1,6 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::handler::{CustomHandler, ReceiptEvent};
+use crate::handler::{NativeHandler, ReceiptEvent};
 use crate::{IndexerError, IndexerResult, Manifest};
 use fuel_tx::Receipt;
 use std::collections::HashMap;
@@ -50,7 +50,7 @@ pub struct IndexEnv {
 }
 
 pub struct CustomIndexExecutor {
-    events: HashMap<ReceiptEvent, Vec<CustomHandler>>,
+    events: HashMap<ReceiptEvent, Vec<NativeHandler>>,
     db: Arc<Mutex<Database>>,
     #[allow(dead_code)]
     manifest: Manifest,
@@ -72,7 +72,7 @@ impl CustomIndexExecutor {
         })
     }
 
-    pub fn register(&mut self, handler: CustomHandler) -> &mut Self {
+    pub fn register(&mut self, handler: NativeHandler) -> &mut Self {
         let event = handler.event.clone();
         self.events
             .entry(event)
@@ -107,8 +107,9 @@ impl Executor for CustomIndexExecutor {
                 let func = handler.handle;
 
                 if let Some(data) = receipt.as_ref().unwrap().data() {
-                    match func(data.to_vec(), self.db.clone()) {
-                        Ok(_) => {
+                    match func(data.to_vec()) {
+                        Ok(data) => {
+                            println!(">> RETURN WAS : {:?}", data);
                             self.db
                                 .lock()
                                 .expect("Lock poisoned")

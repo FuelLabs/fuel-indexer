@@ -1,15 +1,14 @@
 extern crate alloc;
 use anyhow::Result;
 use fuel_executor::{
-    CustomHandler, CustomIndexExecutor, Database, GraphQlApi, IndexerConfig, IndexerResult,
-    IndexerService, Manifest, ReceiptEvent,
+    Address, EntityRow, GraphQlApi, IndexerConfig, IndexerResult, IndexerService, Manifest,
 };
-use fuel_indexer_derive::graphql_schema;
-use fuel_indexer_schema::Address;
 use fuels::core::{abi_decoder::ABIDecoder, ParamType, Tokenizable};
+
+use fuel_indexer_derive::graphql_schema;
 use fuels_abigen_macro::abigen;
+
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 use structopt::StructOpt;
 use tokio::join;
 use tracing::{error, info};
@@ -21,8 +20,10 @@ use tracing_subscriber::filter::EnvFilter;
     about = "Standalone binary for the fuel indexer service"
 )]
 pub struct Args {
-    #[structopt(parse(from_os_str), help = "Indexer service config file")]
+    #[structopt(parse(from_os_str), help = "Indexer node config file")]
     config: PathBuf,
+    #[structopt(parse(from_os_str), help = "Indexer service manifest file")]
+    manifest: PathBuf,
 }
 
 // Load graphql schema
@@ -31,10 +32,10 @@ graphql_schema!("counter", "schema/counter.graphql");
 // Load structs from abigen
 abigen!(
     Counter,
-    "examples/simple-non-wasm/programs/counter/out/debug/counter-abi.json"
+    "examples/simple-non-wasm/contracts/counter/out/debug/counter-abi.json"
 );
 
-fn count_handler(data: Vec<u8>, pg: Arc<Mutex<Database>>) -> IndexerResult<()> {
+fn count_handler(data: Vec<u8>) -> IndexerResult<EntityRow> {
     // Define which params we expect (using the counter-abi.json as a reference)
     let params = ParamType::Struct(vec![ParamType::U64, ParamType::U64, ParamType::U64]);
 
@@ -51,17 +52,12 @@ fn count_handler(data: Vec<u8>, pg: Arc<Mutex<Database>>) -> IndexerResult<()> {
         count: event.count,
     };
 
-    // Save the entity
-    pg.lock()
-        .expect("Lock poisoned in handler")
-        .put_object(count.type_id(), count.to_row(), data);
-
-    Ok(())
+    Ok(count.to_row())
 }
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
-    // Uneccessary, but helpful
+    // Uneccessary, but helpful tracing
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided"),
         None => EnvFilter::new("info"),
@@ -74,17 +70,11 @@ pub async fn main() -> Result<()> {
 
     let opt = Args::from_args();
 
-    // Load node config
+    // Load the node config
     let config: IndexerConfig = IndexerConfig::from_file(&opt.config).await?;
 
-    // Create an executor config
-    let manifest = Manifest::new(
-        "counter".to_owned(),
-        "schema/counter.graphql".to_owned(),
-        None,
-    );
-
-    let schema = manifest.graphql_schema().await?;
+    // Load the indexer manifest
+    let manifest = Manifest::from_file(&opt.manifest)?;
 
     // In this example, we've already started our fuel node on another process
     info!("Fuel node listening on {}", config.fuel_node_addr);
@@ -92,22 +82,7 @@ pub async fn main() -> Result<()> {
 
     // Create a new service to run
     let mut service = IndexerService::new(config.clone())?;
-    let _ = service.build_schema(&manifest, &schema)?;
-
-    // Create a new executor to run on the service
-    let mut executor = CustomIndexExecutor::new(&config.database_url, manifest.clone())?;
-
-    // Add some handlers to the executor, in order to process events
-    executor.register(CustomHandler::new(
-        ReceiptEvent::ReturnData,
-        manifest.namespace.clone(),
-        count_handler,
-    ));
-
-    // Add the executor to our service
-    if let Err(e) = service.add_executor(executor, "an_unused_field", manifest, false) {
-        panic!("Error: {}", e);
-    }
+    service.add_native_indexer(manifest, false, vec![count_handler])?;
 
     // Kick it off!
     let service_handle = tokio::spawn(service.run());
