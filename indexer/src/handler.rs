@@ -1,16 +1,16 @@
-use crate::{database::Database, IndexerResult};
+use crate::IndexerResult;
+use fuel_indexer_schema::NativeResult;
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
 
-type Handle = fn(data: Vec<u8>, pg: Arc<Mutex<Database>>) -> IndexerResult<()>;
+pub type Handle = fn(data: Vec<u8>) -> IndexerResult<NativeResult>;
 
-pub struct CustomHandler {
+pub struct NativeHandler {
     pub event: ReceiptEvent,
     pub namespace: String,
     pub handle: Handle,
 }
 
-impl CustomHandler {
+impl NativeHandler {
     pub fn new(event: ReceiptEvent, namespace: String, handle: Handle) -> Self {
         Self {
             event,

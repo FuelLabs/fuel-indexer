@@ -57,28 +57,14 @@ pub async fn main() -> Result<()> {
 
     // TODO: need an API endpoint to upload/create these things.....
     if opt.test_manifest.is_some() {
-        let mut path = opt.test_manifest.unwrap();
+        let path = opt.test_manifest.unwrap();
 
         let mut file = File::open(&path).await?;
         let mut contents = String::new();
         file.read_to_string(&mut contents).await?;
         let manifest: Manifest = serde_yaml::from_str(&contents)?;
 
-        path.pop();
-        path.push(&manifest.graphql_schema);
-        let mut file = File::open(&path).await?;
-        let mut schema = String::new();
-        file.read_to_string(&mut schema).await?;
-
-        if let Some(module) = &manifest.wasm_module {
-            path.pop();
-            path.push(&module);
-        }
-
-        let mut file = File::open(&path).await?;
-        let mut bytes = Vec::<u8>::new();
-        file.read_to_end(&mut bytes).await?;
-        service.add_indexer(manifest, &schema, bytes, false)?;
+        service.add_wasm_indexer(manifest, false)?;
     }
 
     let service_handle = tokio::spawn(service.run());

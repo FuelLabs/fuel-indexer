@@ -1,4 +1,7 @@
-use crate::{Executor, IndexerResult, Manifest, ReceiptEvent, SchemaManager, WasmIndexExecutor};
+use crate::{
+    handler::Handle, Executor, IndexerResult, Manifest, NativeHandler, NativeIndexExecutor,
+    ReceiptEvent, SchemaManager, WasmIndexExecutor,
+};
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
@@ -64,22 +67,26 @@ impl IndexerService {
         })
     }
 
-    pub fn build_schema(&self, manifest: &Manifest, graphql_schema: &str) -> IndexerResult<()> {
-        let _ = self
-            .manager
-            .new_schema(&manifest.namespace, graphql_schema)?;
-        Ok(())
-    }
-
-    pub fn add_executor<T: 'static + Executor + Send + Sync>(
+    pub fn add_native_indexer(
         &mut self,
-        executor: T,
-        _event_name: &'static str,
         manifest: Manifest,
         run_once: bool,
+        handles: Vec<Handle>,
     ) -> IndexerResult<()> {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
+
+        let schema = manifest.graphql_schema().unwrap();
+        let _ = self.manager.new_schema(&name, &schema)?;
+        let mut executor = NativeIndexExecutor::new(&self.database_url.clone(), manifest.clone())?;
+
+        for handle in handles {
+            executor.register(NativeHandler {
+                event: ReceiptEvent::ReturnData,
+                namespace: manifest.namespace.clone(),
+                handle,
+            });
+        }
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
         let handle = tokio::spawn(self.make_task(
@@ -96,16 +103,14 @@ impl IndexerService {
         Ok(())
     }
 
-    pub fn add_indexer(
-        &mut self,
-        manifest: Manifest,
-        graphql_schema: &str,
-        wasm_bytes: impl AsRef<[u8]>,
-        run_once: bool,
-    ) -> IndexerResult<()> {
+    pub fn add_wasm_indexer(&mut self, manifest: Manifest, run_once: bool) -> IndexerResult<()> {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
-        let _ = self.manager.new_schema(&name, graphql_schema)?;
+
+        let schema = manifest.graphql_schema().unwrap();
+        let wasm_bytes = manifest.wasm_module().unwrap();
+
+        let _ = self.manager.new_schema(&name, &schema)?;
         let executor = WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes)?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
@@ -119,6 +124,7 @@ impl IndexerService {
         info!("Registered indexer {}", name);
         self.handles.insert(name.clone(), handle);
         self.killers.insert(name, kill_switch);
+
         Ok(())
     }
 

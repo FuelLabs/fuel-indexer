@@ -11,10 +11,11 @@ mod manifest;
 mod service;
 
 pub use api::GraphQlApi;
-pub use database::{ConnWrapper, Database, SchemaManager};
-pub use executor::{CustomIndexExecutor, Executor, IndexEnv, WasmIndexExecutor};
-pub use fuel_types::ContractId;
-pub use handler::{CustomHandler, ReceiptEvent};
+pub use database::{Database, SchemaManager};
+pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
+pub use fuel_indexer_schema::NativeResult;
+pub use fuel_types::{Address, ContractId};
+pub use handler::{NativeHandler, ReceiptEvent};
 pub use manifest::Manifest;
 pub use service::{IndexerConfig, IndexerService};
 

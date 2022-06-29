@@ -1,6 +1,6 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::handler::{CustomHandler, ReceiptEvent};
+use crate::handler::{NativeHandler, ReceiptEvent};
 use crate::{IndexerError, IndexerResult, Manifest};
 use fuel_tx::Receipt;
 use std::collections::HashMap;
@@ -49,21 +49,21 @@ pub struct IndexEnv {
     pub db: Arc<Mutex<Database>>,
 }
 
-pub struct CustomIndexExecutor {
-    events: HashMap<ReceiptEvent, Vec<CustomHandler>>,
+pub struct NativeIndexExecutor {
+    events: HashMap<ReceiptEvent, Vec<NativeHandler>>,
     db: Arc<Mutex<Database>>,
     #[allow(dead_code)]
     manifest: Manifest,
 }
 
-impl CustomIndexExecutor {
+impl NativeIndexExecutor {
     pub fn new(db_conn: &str, manifest: Manifest) -> IndexerResult<Self> {
         let events = HashMap::new();
         let db = Arc::new(Mutex::new(Database::new(db_conn).unwrap()));
 
         db.lock()
             .expect("Lock poisoned from schema load")
-            .load_schema_custom(manifest.clone())?;
+            .load_schema_native(manifest.clone())?;
 
         Ok(Self {
             events,
@@ -72,7 +72,7 @@ impl CustomIndexExecutor {
         })
     }
 
-    pub fn register(&mut self, handler: CustomHandler) -> &mut Self {
+    pub fn register(&mut self, handler: NativeHandler) -> &mut Self {
         let event = handler.event.clone();
         self.events
             .entry(event)
@@ -83,7 +83,7 @@ impl CustomIndexExecutor {
     }
 }
 
-impl Executor for CustomIndexExecutor {
+impl Executor for NativeIndexExecutor {
     fn from_file(_index: &Path) -> IndexerResult<Self> {
         unimplemented!()
     }
@@ -107,8 +107,14 @@ impl Executor for CustomIndexExecutor {
                 let func = handler.handle;
 
                 if let Some(data) = receipt.as_ref().unwrap().data() {
-                    match func(data.to_vec(), self.db.clone()) {
-                        Ok(_) => {
+                    match func(data.to_vec()) {
+                        Ok(result) => {
+                            self.db.lock().expect("Lock poisoned").put_object(
+                                result.0,
+                                result.1,
+                                data.to_vec(),
+                            );
+
                             self.db
                                 .lock()
                                 .expect("Lock poisoned")
