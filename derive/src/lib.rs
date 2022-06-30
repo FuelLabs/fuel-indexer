@@ -9,7 +9,6 @@ use schema::process_graphql_schema;
 #[proc_macro_error::proc_macro_error]
 #[proc_macro]
 pub fn graphql_schema(inputs: TokenStream) -> TokenStream {
-    println!(">> REG TOKENS : {:?}", inputs);
     process_graphql_schema(inputs)
 }
 
