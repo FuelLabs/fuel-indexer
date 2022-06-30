@@ -3,12 +3,13 @@ use proc_macro::TokenStream;
 
 mod handler;
 mod schema;
-use handler::process_handler_attr;
+use handler::{process_handler_attr, process_indexer_attr};
 use schema::process_graphql_schema;
 
 #[proc_macro_error::proc_macro_error]
 #[proc_macro]
 pub fn graphql_schema(inputs: TokenStream) -> TokenStream {
+    println!(">> REG TOKENS : {:?}", inputs);
     process_graphql_schema(inputs)
 }
 
@@ -16,6 +17,12 @@ pub fn graphql_schema(inputs: TokenStream) -> TokenStream {
 #[proc_macro_attribute]
 pub fn handler(attrs: TokenStream, item: TokenStream) -> TokenStream {
     process_handler_attr(attrs, item)
+}
+
+#[proc_macro_error::proc_macro_error]
+#[proc_macro_attribute]
+pub fn indexer(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    process_indexer_attr(attrs, item)
 }
 
 #[cfg(test)]

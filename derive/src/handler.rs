@@ -1,7 +1,10 @@
+use crate::schema::process_graphql_schema;
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::punctuated::Punctuated;
-use syn::{parse_macro_input, parse_quote, Attribute, Block, FnArg, ItemFn, PatType, Token};
+use syn::{
+    parse_macro_input, parse_quote, Attribute, Block, FnArg, ItemFn, ItemMod, PatType, Token,
+};
 
 pub fn process_handler_attr(attrs: TokenStream, item: TokenStream) -> TokenStream {
     if !attrs.is_empty() {
@@ -69,6 +72,65 @@ pub fn process_handler_attr(attrs: TokenStream, item: TokenStream) -> TokenStrea
 
     let output = quote! {
         #item_fn
+    };
+
+    proc_macro::TokenStream::from(output)
+}
+
+pub fn process_indexer_attr(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    if attrs.is_empty() {
+        proc_macro_error::abort_call_site!("handler macro requires arguments.")
+    }
+
+    let cloned_attr = attrs.clone();
+    let mut attr_iter = cloned_attr.into_iter();
+
+    let graphq_input_tokens = TokenStream::from_iter(vec![
+        attr_iter.next().unwrap(),
+        attr_iter.next().unwrap(),
+        attr_iter.next().unwrap(),
+    ]);
+
+    let graphql_output_tokens = process_graphql_schema(graphq_input_tokens);
+
+    let mut handlers: Vec<ItemFn> = Vec::new();
+
+    let mut item_mod = parse_macro_input!(item as ItemMod);
+
+    let mut block: Block = parse_quote! {
+        {
+            use fuel_indexer::types::*;
+            use fuels_core::{abi_decoder::ABIDecoder, Parameterize};
+
+            let mut decoder = ABIDecoder::new();
+
+        }
+    };
+
+    let mod_content = item_mod.clone().content.unwrap().1;
+
+    for item in mod_content {
+        let item_copy = item.clone();
+        match item_copy {
+            syn::Item::Fn(ItemFn {
+                attrs,
+                vis,
+                sig,
+                block,
+            }) => {
+                handlers.push(ItemFn {
+                    attrs,
+                    vis,
+                    sig,
+                    block,
+                });
+            }
+            _ => {}
+        }
+    }
+
+    let output = quote! {
+        #item_mod
     };
 
     proc_macro::TokenStream::from(output)
