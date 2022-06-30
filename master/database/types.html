@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>System dependencies - The Fuel Indexer Service</title>
+        <title>Data Types - The Fuel Indexer Service</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="../getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/system-dependencies.html" class="active"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="../getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="../getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="../getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="../examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="../database/index.html"><strong aria-hidden="true">3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../database/types.html"><strong aria-hidden="true">3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="../database/conventions.html"><strong aria-hidden="true">3.2.</strong> Conventions</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="../getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="../getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="../getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="../getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="../examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="../database/index.html"><strong aria-hidden="true">3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../database/types.html" class="active"><strong aria-hidden="true">3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="../database/conventions.html"><strong aria-hidden="true">3.2.</strong> Conventions</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -167,69 +167,63 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="system-requirements"><a class="header" href="#system-requirements">System Requirements</a></h1>
-<p>There are several system requirements including fuelup, llvm, clang and postgres.</p>
-<h2 id="fuel-system-dependencies"><a class="header" href="#fuel-system-dependencies">Fuel system dependencies</a></h2>
-<p>Getting started with a Fuel indexer requires a single primary dependency from the Fuel ecosystem -- <code>fuelup</code></p>
-<ul>
-<li><code>fuelup</code> installs the Fuel toolchain from Fuel's official release channels, enabling you to easily keep the toolchain updated. For more info, take a look at the <a href="https://github.com/fuellabs/fuelup"><code>fuelup</code> repo</a>.</li>
-</ul>
-<h3 id="installation"><a class="header" href="#installation">Installation</a></h3>
-<p>To install <code>fuelup</code></p>
-<pre><code class="language-bash">fuelup toolchain install latest
-</code></pre>
-<h2 id="other-system-dependencies"><a class="header" href="#other-system-dependencies">Other system dependencies</a></h2>
-<h3 id="ubuntudebian"><a class="header" href="#ubuntudebian">Ubuntu/Debian</a></h3>
-<pre><code class="language-bash">apt update
-apt install -y cmake pkg-config git \
-    gcc build-essential clang libclang-dev llvm libpq-dev
-</code></pre>
-<table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
-<tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
-<tr><td>pkg-config</td><td>Language-agnostic helper tool used when compiling applications and libraries</td></tr>
-<tr><td>git</td><td>Version control system</td></tr>
-<tr><td>gcc</td><td>Compiler tools required to build various Fuel Indexer crates</td></tr>
-<tr><td>clang</td><td>Compiler tools required to build various Fuel Indexer crates on Unix-like OSes</td></tr>
-<tr><td>llvm</td><td>Required for building Fuel Indexer crate dependencies</td></tr>
-<tr><td>libpq-dev</td><td>Set of library function helping facilitate interaction with the PostgreSQL backend</td></tr>
+                        <h1 id="types"><a class="header" href="#types">Types</a></h1>
+<p>Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing <a href="https://www.postgresql.org/docs/14/datatype.html">Postgres 14</a> data types. </p>
+<table><thead><tr><th>Sway Type</th><th>GraphQL Schema Type</th><th>Postgres Type</th></tr></thead><tbody>
+<tr><td>u64</td><td>ID</td><td>bigint primary key</td></tr>
+<tr><td>b256</td><td>Address</td><td>varchar(64)</td></tr>
+<tr><td>str[4]</td><td>Bytes4</td><td>varchar(16)</td></tr>
+<tr><td>str[8]</td><td>Bytes8</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>Bytes32</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>AssetId</td><td>varchar(64)</td></tr>
+<tr><td>b256</td><td>ContractId</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>Salt</td><td>varchar(64)</td></tr>
+<tr><td>u32</td><td>Int4</td><td>integer</td></tr>
+<tr><td>u64</td><td>Int8</td><td>bigint</td></tr>
+<tr><td>u64</td><td>Timestamp</td><td>timestamp</td></tr>
+<tr><td>str[]</td><td>Blob</td><td>bytes</td></tr>
 </tbody></table>
-<h3 id="macos"><a class="header" href="#macos">MacOS</a></h3>
-<pre><code class="language-bash">brew update
-brew install cmake llvm libpq postgresql
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<p>Let's define an <code>Event</code> struct in a Sway contract:</p>
+<pre><code class="language-sway">struct Event {
+    address: Address,
+    id: u64,
+    block_height: u64,
+}
 </code></pre>
-<table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
-<tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
-<tr><td>llvm</td><td>Compiler infrastructure for building Fuel Indexer crate dependencies</td></tr>
-<tr><td>libq</td><td>Postgres C API library</td></tr>
-<tr><td>postgresql</td><td>Installs the command line console (psql) as well as a PostgreSQL server locally</td></tr>
-</tbody></table>
-<h3 id="arch"><a class="header" href="#arch">Arch</a></h3>
-<pre><code class="language-bash">pacman -Syu --needed --noconfirm cmake \
-    gcc pkgconf git clang llvm11 llvm11-libs postgresql-libs
+<p>Our GraphQL schema should resemble:</p>
+<pre><code class="language-code">type Event {
+    id: ID!
+    account: Address! @indexed
+    block_height: Int8! @indexed
+}
 </code></pre>
-<table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
-<tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
-<tr><td>git</td><td>Version control system</td></tr>
-<tr><td>gcc</td><td>Compiler tools required to build various Fuel Indexer crates</td></tr>
-<tr><td>llvm11</td><td>Compiler infrastructure for building Fuel Indexer crate dependencies</td></tr>
-<tr><td>llvm11-libs</td><td>Compiler infrastructure libs for building Fuel Indexer crate dependencies</td></tr>
-<tr><td>pkgconf</td><td>System for configuring build dependency information</td></tr>
-<tr><td>postgresql-libs</td><td>Provides the essential shared libraries for any PostgreSQL client program or interface</td></tr>
-<tr><td>clang</td><td>Compiler required to build various Fuel Indexer crates Unix-like OSes</td></tr>
-</tbody></table>
+<p>This will generate the following Postgres schema:</p>
+<pre><code class="language-code">                                           Table &quot;schema.event&quot;
+  Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-----------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id        |    bigint   |           | not null |         | plain    |             |              | 
+ count     |    bigint   |           | not null |         | plain    |             |              | 
+ address   | varchar(64) |           | not null |         | plain    |             |              | 
+ object    |    bytea    |           | not null |         | extended |             |              | 
+Indexes:
+    &quot;count_pkey&quot; PRIMARY KEY, btree (id)
+Access method: heap
+</code></pre>
+<p>The source code for these types can be found <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/schema/src/db/models.rs#L146">here</a>.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../getting-started/setup.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../database/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../getting-started/application-dependencies.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../database/conventions.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -241,13 +235,13 @@ brew install cmake llvm libpq postgresql
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../getting-started/setup.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../database/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../getting-started/application-dependencies.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../database/conventions.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 

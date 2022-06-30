@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="database/index.html"><strong aria-hidden="true">3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="database/types.html"><strong aria-hidden="true">3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="database/conventions.html"><strong aria-hidden="true">3.2.</strong> Conventions</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -249,7 +249,7 @@ brew install cmake llvm libpq postgresql
 <tr><td>postgresql-libs</td><td>Provides the essential shared libraries for any PostgreSQL client program or interface</td></tr>
 <tr><td>clang</td><td>Compiler required to build various Fuel Indexer crates Unix-like OSes</td></tr>
 </tbody></table>
-<h2 id="application-dependencies"><a class="header" href="#application-dependencies">Application dependencies</a></h2>
+<h1 id="application-dependencies"><a class="header" href="#application-dependencies">Application dependencies</a></h1>
 <p>We'll need to install the <a href="https://github.com/diesel-rs/diesel/tree/HEAD/diesel_cli"><code>diesel</code> CLI</a></p>
 <pre><code class="language-bash">cargo install diesel_cli --no-default-features --features &quot;postgres sqlite&quot;
 </code></pre>
@@ -497,11 +497,11 @@ fn function_one(event: LogEvent) {
 <li><code>wasm_abigen</code> will similarly translate the contract ABI types into rust types.</li>
 <li><code>handler</code> is another macro that is required for the indexer to be accessible from the indexer service, it is mostly generates some glue code that bridges the interface between native code and the WASM runtime.</li>
 </ul>
-<h2 id="build-it"><a class="header" href="#build-it">Build it!</a></h2>
+<h2 id="build-it"><a class="header" href="#build-it">Build it</a></h2>
 <p>With all this in place, we can now build the indexer:</p>
 <pre><code class="language-bash">cargo build --release
 </code></pre>
-<h2 id="run-it"><a class="header" href="#run-it">Run it!</a></h2>
+<h2 id="run-it"><a class="header" href="#run-it">Run it</a></h2>
 <ul>
 <li><a href="examples/./getting-started/basics.html">On the previous page</a>, we described how to bring up the fuel service. The manifest.yaml described here is the one we promised to get to in that section. You may now run that command to bring up your indexer.</li>
 <li>Now, you can send in some test transactions, and the data will be available via the API.</li>
@@ -528,6 +528,75 @@ curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: applicati
   &quot;count&quot;: 7
 }
 </code></pre>
+<h1 id="database-1"><a class="header" href="#database-1">Database</a></h1>
+<p>The Fuel Indexer uses <a href="https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile">Postgres</a> as the database on the data layer.</p>
+<ul>
+<li><a href="database/./types.html">Types</a>
+<ul>
+<li>Explains how to use different data types from your Sway contract, all the way to your Postgres table</li>
+</ul>
+</li>
+<li><a href="database/./conventions.html">Conventions</a>
+<ul>
+<li>Brief explanations of some of the conventions used in the Fuel Indexer's data layer</li>
+</ul>
+</li>
+</ul>
+<h1 id="types"><a class="header" href="#types">Types</a></h1>
+<p>Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing <a href="https://www.postgresql.org/docs/14/datatype.html">Postgres 14</a> data types. </p>
+<table><thead><tr><th>Sway Type</th><th>GraphQL Schema Type</th><th>Postgres Type</th></tr></thead><tbody>
+<tr><td>u64</td><td>ID</td><td>bigint primary key</td></tr>
+<tr><td>b256</td><td>Address</td><td>varchar(64)</td></tr>
+<tr><td>str[4]</td><td>Bytes4</td><td>varchar(16)</td></tr>
+<tr><td>str[8]</td><td>Bytes8</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>Bytes32</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>AssetId</td><td>varchar(64)</td></tr>
+<tr><td>b256</td><td>ContractId</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>Salt</td><td>varchar(64)</td></tr>
+<tr><td>u32</td><td>Int4</td><td>integer</td></tr>
+<tr><td>u64</td><td>Int8</td><td>bigint</td></tr>
+<tr><td>u64</td><td>Timestamp</td><td>timestamp</td></tr>
+<tr><td>str[]</td><td>Blob</td><td>bytes</td></tr>
+</tbody></table>
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<p>Let's define an <code>Event</code> struct in a Sway contract:</p>
+<pre><code class="language-sway">struct Event {
+    address: Address,
+    id: u64,
+    block_height: u64,
+}
+</code></pre>
+<p>Our GraphQL schema should resemble:</p>
+<pre><code class="language-code">type Event {
+    id: ID!
+    account: Address! @indexed
+    block_height: Int8! @indexed
+}
+</code></pre>
+<p>This will generate the following Postgres schema:</p>
+<pre><code class="language-code">                                           Table &quot;schema.event&quot;
+  Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
+-----------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id        |    bigint   |           | not null |         | plain    |             |              | 
+ count     |    bigint   |           | not null |         | plain    |             |              | 
+ address   | varchar(64) |           | not null |         | plain    |             |              | 
+ object    |    bytea    |           | not null |         | extended |             |              | 
+Indexes:
+    &quot;count_pkey&quot; PRIMARY KEY, btree (id)
+Access method: heap
+</code></pre>
+<p>The source code for these types can be found <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/schema/src/db/models.rs#L146">here</a>.</p>
+<h1 id="conventions"><a class="header" href="#conventions">Conventions</a></h1>
+<h3 id="ids"><a class="header" href="#ids">IDs</a></h3>
+<p>IDs are often included in Sway smart contracts as a means of identifying an entity or object. Giving an indexable entity an ID, allows you to easily find the entity after it's been indexed, using the GraphQL API included with the Fuel Indexer.</p>
+<p>With regard to the Fuel Indexer, the <code>ID</code> data type in GraphQL schema maps to a <code>bigint primary key</code> in Postgres. Given this, ID fields in GraphQL schema should be paired with <code>u64</code> types in a Sway contract.</p>
+<ul>
+<li>Note that a Sway contract developer can always use another data type (e.g., <code>str[32]</code>) as a type of identifier field. However, you should reference <a href="database/./types.html">the Fuel Indexer types table</a> when deciding which data types to use in certain scenarios. </li>
+</ul>
+<p>One important thing to note is that when it comes to indexing data, the developer of the Sway smart contract is responsible for creating IDs. The Fuel Indexer does not use any type of auto-incrementing ID mechanism.</p>
+<ul>
+<li>This is important because if a Fuel Indexer operator is expecting IDs to be (for example) globally unique, then the indexer operator would have to ensure that the Sway contract generating the indexable events has some mechanism to generate those unique IDs.</li>
+</ul>
 
                     </main>
 

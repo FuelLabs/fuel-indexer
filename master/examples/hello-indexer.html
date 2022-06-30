@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="../getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="../getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="../getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="../getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="../examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../examples/hello-indexer.html" class="active"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="../getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="../getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="../getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="../getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="../examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../examples/hello-indexer.html" class="active"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="../database/index.html"><strong aria-hidden="true">3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../database/types.html"><strong aria-hidden="true">3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="../database/conventions.html"><strong aria-hidden="true">3.2.</strong> Conventions</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -328,11 +328,11 @@ fn function_one(event: LogEvent) {
 <li><code>wasm_abigen</code> will similarly translate the contract ABI types into rust types.</li>
 <li><code>handler</code> is another macro that is required for the indexer to be accessible from the indexer service, it is mostly generates some glue code that bridges the interface between native code and the WASM runtime.</li>
 </ul>
-<h2 id="build-it"><a class="header" href="#build-it">Build it!</a></h2>
+<h2 id="build-it"><a class="header" href="#build-it">Build it</a></h2>
 <p>With all this in place, we can now build the indexer:</p>
 <pre><code class="language-bash">cargo build --release
 </code></pre>
-<h2 id="run-it"><a class="header" href="#run-it">Run it!</a></h2>
+<h2 id="run-it"><a class="header" href="#run-it">Run it</a></h2>
 <ul>
 <li><a href="./getting-started/basics.html">On the previous page</a>, we described how to bring up the fuel service. The manifest.yaml described here is the one we promised to get to in that section. You may now run that command to bring up your indexer.</li>
 <li>Now, you can send in some test transactions, and the data will be available via the API.</li>
@@ -371,6 +371,10 @@ curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: applicati
                         
 
                         
+                            <a rel="next" href="../database/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
 
                         <div style="clear: both"></div>
                     </nav>
@@ -384,6 +388,10 @@ curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: applicati
                     </a>
                 
 
+                
+                    <a rel="next" href="../database/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
                 
             </nav>
 
