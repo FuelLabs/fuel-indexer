@@ -1,4 +1,4 @@
-## Application dependencies
+# Application dependencies
 
 We'll need to install the [`diesel` CLI](https://github.com/diesel-rs/diesel/tree/HEAD/diesel_cli)
 
