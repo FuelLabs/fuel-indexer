@@ -185,11 +185,13 @@ listen_endpoint: &quot;127.0.0.1:29899&quot;
 </ul>
 <h2 id="instantiating-a-fuel-indexer"><a class="header" href="#instantiating-a-fuel-indexer">Instantiating a Fuel Indexer</a></h2>
 <p>Start the Fuel Indexer service with a reference to your Fuel node</p>
-<pre><code class="language-bash">RUST_LOG=wasmer_compiler_cranelift=off,regalloc=off,info cargo r --bin service configs/local_config.yaml --local --test-manifest manifest.yaml
+<pre><code class="language-bash">RUST_LOG=wasmer_compiler_cranelift=off,regalloc=off,info \
+    cargo r --bin service api_server/config.yaml \
+    --local --test-manifest manifest.yaml
 </code></pre>
 <ul>
 <li><code>wasmer_compiler_cranelift</code> and <code>regalloc</code> are both quite noisy at the info level, so turn them on only if you need to!</li>
-<li>The format of <code>local_config.yaml</code> was described above. We'll get to <code>manifest.yaml</code> in the next section.</li>
+<li>The format of <code>config.yaml</code> was described above. We'll get to <code>manifest.yaml</code> in the next section.</li>
 <li>Additionally, note the <code>--local</code> flag, this will automatically bring up a fuel-core node embedded into the service. If you would prefer to bring one up yourself, be sure to set the <code>fuel_node_addr</code> in the manifest.</li>
 <li>If it all comes up properly, you'll see a message like this:</li>
 </ul>
@@ -198,7 +200,7 @@ INFO fuel_wasm_executor::service: Registered indexer test_namespace
 </code></pre>
 <h2 id="starting-an-api-server"><a class="header" href="#starting-an-api-server">Starting an API server</a></h2>
 <p>With the same config.yaml as above, run the following command:</p>
-<pre><code class="language-bash">cargo r --bin api_server -- --config configs/local_config.yaml
+<pre><code class="language-bash">cargo r --bin api_server -- --config api_server/config.yaml
 </code></pre>
 <p>You should be up and running and ready to try out an indexer module! We'll talk about that next.</p>
 
