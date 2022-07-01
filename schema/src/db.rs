@@ -6,7 +6,7 @@ pub mod models;
 pub mod postgres;
 pub mod tables;
 
-pub fn run_migration(database_url: &String) {
+pub fn run_migration(database_url: &str) {
     let conn = diesel::pg::PgConnection::establish(database_url)
         .expect("Could not establish pg connection");
     postgres::run_migration(&conn);
