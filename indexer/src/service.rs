@@ -65,8 +65,7 @@ impl IndexerService {
     }
 
     pub fn build_schema(&self, manifest: &Manifest, graphql_schema: &str) -> IndexerResult<()> {
-        let _ = self
-            .manager
+        self.manager
             .new_schema(&manifest.namespace, graphql_schema)?;
         Ok(())
     }
@@ -105,7 +104,7 @@ impl IndexerService {
     ) -> IndexerResult<()> {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
-        let _ = self.manager.new_schema(&name, graphql_schema)?;
+        self.manager.new_schema(&name, graphql_schema)?;
         let executor = WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes)?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
