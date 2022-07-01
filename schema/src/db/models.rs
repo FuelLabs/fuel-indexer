@@ -1,3 +1,4 @@
+#![allow(clippy::extra_unused_lifetimes)]
 use crate::db::postgres as gr;
 use crate::sql_types::Columntypename;
 use crate::ColumnType;

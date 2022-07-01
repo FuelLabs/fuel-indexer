@@ -92,7 +92,7 @@ pub async fn main() -> Result<()> {
 
     // Create a new service to run
     let mut service = IndexerService::new(config.clone())?;
-    let _ = service.build_schema(&manifest, &schema)?;
+    service.build_schema(&manifest, &schema)?;
 
     // Create a new executor to run on the service
     let mut executor = CustomIndexExecutor::new(&config.database_url, manifest.clone())?;
