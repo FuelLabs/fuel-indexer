@@ -13,6 +13,7 @@ use diesel::sql_types::Text;
 use diesel::{Connection, QueryableByName, RunQueryDsl};
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
+    run_migration,
     tables::Schema,
 };
 use serde::Deserialize;
@@ -98,6 +99,8 @@ impl GraphQlApi {
     pub async fn run(self) {
         let sm = SchemaManager::new();
         let schema_manager = Arc::new(RwLock::new(sm));
+
+        run_migration(&self.database_url);
 
         let app = Router::new()
             .route("/graph/:name", post(query_graph))

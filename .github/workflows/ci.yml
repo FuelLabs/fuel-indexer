@@ -119,7 +119,7 @@ jobs:
       - run: cargo install diesel_cli
       - run: |
           cd schema
-          diesel migration run
+          diesel migration run --migration-dir migrations/postgres/
           cargo fmt
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
