@@ -1,6 +1,6 @@
 use crate::{
-    handler::Handle, Executor, IndexerResult, Manifest, NativeHandler, NativeIndexExecutor,
-    ReceiptEvent, SchemaManager, WasmIndexExecutor,
+    handler::Handle, Executor, IndexerResult, Manifest, NativeIndexExecutor, ReceiptEvent,
+    SchemaManager, WasmIndexExecutor,
 };
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
@@ -77,16 +77,8 @@ impl IndexerService {
         let start_block = manifest.start_block;
 
         let schema = manifest.graphql_schema().unwrap();
-        let _ = self.manager.new_schema(&name, &schema)?;
-        let mut executor = NativeIndexExecutor::new(&self.database_url.clone(), manifest.clone())?;
-
-        for handle in handles {
-            executor.register(NativeHandler {
-                event: ReceiptEvent::ReturnData,
-                namespace: manifest.namespace.clone(),
-                handle,
-            });
-        }
+        self.manager.new_schema(&name, &schema)?;
+        let executor = NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles)?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
         let handle = tokio::spawn(self.make_task(
@@ -110,7 +102,7 @@ impl IndexerService {
         let schema = manifest.graphql_schema().unwrap();
         let wasm_bytes = manifest.wasm_module().unwrap();
 
-        let _ = self.manager.new_schema(&name, &schema)?;
+        self.manager.new_schema(&name, &schema)?;
         let executor = WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes)?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));

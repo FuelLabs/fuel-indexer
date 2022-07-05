@@ -1,6 +1,6 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::handler::{NativeHandler, ReceiptEvent};
+use crate::handler::{Handle, ReceiptEvent};
 use crate::{IndexerError, IndexerResult, Manifest};
 use fuel_tx::Receipt;
 use std::collections::HashMap;
@@ -50,15 +50,14 @@ pub struct IndexEnv {
 }
 
 pub struct NativeIndexExecutor {
-    events: HashMap<ReceiptEvent, Vec<NativeHandler>>,
+    handles: Vec<Handle>,
     db: Arc<Mutex<Database>>,
     #[allow(dead_code)]
     manifest: Manifest,
 }
 
 impl NativeIndexExecutor {
-    pub fn new(db_conn: &str, manifest: Manifest) -> IndexerResult<Self> {
-        let events = HashMap::new();
+    pub fn new(db_conn: &str, manifest: Manifest, handles: Vec<Handle>) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(Database::new(db_conn).unwrap()));
 
         db.lock()
@@ -66,20 +65,10 @@ impl NativeIndexExecutor {
             .load_schema_native(manifest.clone())?;
 
         Ok(Self {
-            events,
+            handles,
             db,
             manifest,
         })
-    }
-
-    pub fn register(&mut self, handler: NativeHandler) -> &mut Self {
-        let event = handler.event.clone();
-        self.events
-            .entry(event)
-            .or_insert_with(Vec::new)
-            .push(handler);
-
-        self
     }
 }
 
@@ -90,30 +79,25 @@ impl Executor for NativeIndexExecutor {
 
     fn trigger_event(
         &self,
-        event: ReceiptEvent,
+        _event: ReceiptEvent,
         _bytes: Vec<Vec<u8>>,
         receipt: Option<Receipt>,
     ) -> IndexerResult<()> {
-        if let Some(handles) = self.events.get(&event) {
-            for handler in handles.iter() {
-                self.db
-                    .lock()
-                    .expect("Lock poisoned on tx start")
-                    .start_transaction()?;
+        for handle in self.handles.iter() {
+            self.db
+                .lock()
+                .expect("Lock poisoned on tx start")
+                .start_transaction()?;
 
-                #[allow(clippy::clone_double_ref)]
-                let handler = handler.clone();
-
-                let func = handler.handle;
-
-                if let Some(data) = receipt.as_ref().unwrap().data() {
-                    match func(data.to_vec()) {
+            if let Some(receipt) = receipt.clone() {
+                let data = receipt.data().unwrap().to_vec();
+                if let Some(result) = handle(receipt) {
+                    match result {
                         Ok(result) => {
-                            self.db.lock().expect("Lock poisoned").put_object(
-                                result.0,
-                                result.1,
-                                data.to_vec(),
-                            );
+                            self.db
+                                .lock()
+                                .expect("Lock poisoned")
+                                .put_object(result.0, result.1, data);
 
                             self.db
                                 .lock()
@@ -129,7 +113,7 @@ impl Executor for NativeIndexExecutor {
                             return Err(IndexerError::HandlerError);
                         }
                     }
-                }
+                };
             }
         }
         Ok(())

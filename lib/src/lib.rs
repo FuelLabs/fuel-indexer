@@ -1,7 +1,7 @@
 extern crate alloc;
 use alloc::vec::Vec;
 use fuel_indexer_schema::{
-    deserialize, serialize, FtColumn, NativeResult, LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR,
+    deserialize, serialize, FtColumn, NativeHandlerResult, LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR,
     LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 
@@ -71,8 +71,8 @@ pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
         }
     }
 
-    fn pack(&self) -> NativeResult {
-        NativeResult(Self::TYPE_ID, self.to_row())
+    fn pack(&self) -> NativeHandlerResult {
+        NativeHandlerResult(Self::TYPE_ID, self.to_row())
     }
 
     fn save(&self) {

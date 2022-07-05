@@ -24,7 +24,7 @@ pub mod sql_types;
 pub mod db;
 
 pub use fuel_types::{Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word};
-pub struct NativeResult(pub u64, pub Vec<FtColumn>);
+pub struct NativeHandlerResult(pub u64, pub Vec<FtColumn>);
 
 pub type ID = u64;
 pub type Int4 = i32;

@@ -1,7 +1,8 @@
 extern crate alloc;
 use anyhow::Result;
 use fuel_executor::{
-    Address, GraphQlApi, IndexerConfig, IndexerResult, IndexerService, Manifest, NativeResult,
+    Address, GraphQlApi, IndexerConfig, IndexerResult, IndexerService, Manifest,
+    NativeHandlerResult, Receipt,
 };
 use fuels::core::{abi_decoder::ABIDecoder, ParamType, Tokenizable};
 
@@ -35,24 +36,29 @@ abigen!(
     "examples/simple-non-wasm/contracts/counter/out/debug/counter-abi.json"
 );
 
-fn count_handler(data: Vec<u8>) -> IndexerResult<NativeResult> {
-    // Define which params we expect (using the counter-abi.json as a reference)
-    let params = ParamType::Struct(vec![ParamType::U64, ParamType::U64, ParamType::U64]);
+fn count_handler(receipt: Receipt) -> Option<IndexerResult<NativeHandlerResult>> {
+    match receipt {
+        Receipt::ReturnData { data, .. } => {
+            // Define which params we expect (using the counter-abi.json as a reference)
+            let params = ParamType::Struct(vec![ParamType::U64, ParamType::U64, ParamType::U64]);
 
-    // Decode the data into a Token using these params
-    let token = ABIDecoder::decode_single(&params, &data).unwrap();
+            // Decode the data into a Token using these params
+            let token = ABIDecoder::decode_single(&params, &data).unwrap();
 
-    // Recover the CountEvent from this token
-    let event = CountEvent::from_token(token).unwrap();
+            // Recover the CountEvent from this token
+            let event = CountEvent::from_token(token).unwrap();
 
-    // Using the Count entity from the GraphQL schema
-    let count = Count {
-        id: event.id,
-        timestamp: event.timestamp,
-        count: event.count,
-    };
+            // Using the Count entity from the GraphQL schema
+            let count = Count {
+                id: event.id,
+                timestamp: event.timestamp,
+                count: event.count,
+            };
 
-    Ok(count.pack())
+            Some(Ok(count.pack()))
+        }
+        _ => None,
+    }
 }
 
 #[tokio::main]
@@ -82,6 +88,8 @@ pub async fn main() -> Result<()> {
 
     // Create a new service to run
     let mut service = IndexerService::new(config.clone())?;
+
+    // Add an indexer comprised of a list of handlers
     service.add_native_indexer(manifest, false, vec![count_handler])?;
 
     // Kick it off!
