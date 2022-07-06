@@ -222,9 +222,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: npm install -g markdownlint
-      - run: echo "linter is at $(which markdownlint)"
-      - run: $(which markdownlint) --config .markdownlintrc **/*.md docs/src/ 
+      - run: npm install -g markdownlint && markdownlint --config .markdownlintrc **/*.md docs/src/ 
 
   validation-complete:
     needs:
