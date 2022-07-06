@@ -1,8 +1,9 @@
 # A Fuel Indexer Project
 
 The Fuel Indexer service can currently be used in two different ways:
-1. The service can either be run as a standalone binary, outside the scope of a Sway project. 
-2. The service can be included in a Sway project, and as a tandem service. 
+
+1. The service can either be run as a standalone binary, outside the scope of a Sway project.
+2. The service can be included in a Sway project, and as a tandem service.
 
 We'll describe these two different implementations below.
 

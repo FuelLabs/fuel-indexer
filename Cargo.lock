@@ -31,9 +31,9 @@ dependencies = [
 
 [[package]]
 name = "actix-http"
-version = "3.1.0"
+version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd2e9f6794b5826aff6df65e3a0d0127b271d1c03629c774238f3582e903d4e4"
+checksum = "6f9ffb6db08c1c3a1f4aef540f1a63193adc73c4fbd40b75a95fc8c5258f6e51"
 dependencies = [
  "actix-codec",
  "actix-rt",
@@ -175,7 +175,7 @@ dependencies = [
  "serde_urlencoded",
  "smallvec",
  "socket2",
- "time 0.3.9",
+ "time 0.3.11",
  "url",
 ]
 
@@ -1255,7 +1255,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94d4706de1b0fa5b132270cddffa8585166037822e260a944fe161acd137ca05"
 dependencies = [
  "percent-encoding",
- "time 0.3.9",
+ "time 0.3.11",
  "version_check",
 ]
 
@@ -5478,9 +5478,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.9"
+version = "0.3.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c2702e08a7a860f005826c6815dcac101b19b5eb330c27fe4a5928fec1d20ddd"
+checksum = "72c91f41dcb2f096c05f0873d667dceec1087ce5bcf984ec8ffb19acddbb3217"
 dependencies = [
  "itoa",
  "libc",
