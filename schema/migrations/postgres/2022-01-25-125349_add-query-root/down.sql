@@ -1,7 +1,7 @@
 -- This file should undo anything in `up.sql`
-DROP TABLE graph_registry.graph_root;
+DROP TABLE graph_registry_graph_root;
 
-ALTER TABLE graph_registry.columns
+ALTER TABLE graph_registry_columns
 DROP COLUMN graphql_type;
 
 ALTER TYPE ColumnTypeName DROP VALUE 'Int4';

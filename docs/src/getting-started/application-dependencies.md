@@ -14,5 +14,5 @@ createdb -U postgres indexer
 cd fuel-indexer/
 
 DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" \
-    diesel migration run --migration-dir=./schema/migrations
+    diesel migration run --migration-dir=./schema/migrations/postgres
 ```
