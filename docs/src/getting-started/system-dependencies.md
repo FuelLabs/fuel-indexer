@@ -24,6 +24,7 @@ apt update
 apt install -y cmake pkg-config git \
     gcc build-essential clang libclang-dev llvm libpq-dev
 ```
+
 | Dependency | Required For |
 | --------------- | --------------- |
 | cmake | Manages the build process in an operating system and in a compiler-independent manner |
@@ -47,7 +48,6 @@ brew install cmake llvm libpq postgresql
 | llvm| Compiler infrastructure for building Fuel Indexer crate dependencies |
 | libq | Postgres C API library |
 | postgresql | Installs the command line console (psql) as well as a PostgreSQL server locally  |
-
 
 ### Arch
 

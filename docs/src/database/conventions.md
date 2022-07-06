@@ -1,6 +1,6 @@
 # Conventions
 
-### IDs
+## IDs
 
 IDs are often included in Sway smart contracts as a means of identifying an entity or object. Giving an indexable entity an ID, allows you to easily find the entity after it's been indexed, using the GraphQL API included with the Fuel Indexer.
 
