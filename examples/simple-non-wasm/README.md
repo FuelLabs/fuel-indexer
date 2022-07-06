@@ -9,27 +9,29 @@
 ├── Cargo.toml
 ├── README.md
 ├── config.yaml
-├── programs
-│   ├── counter
-│   │   ├── Forc.lock
-│   │   ├── Forc.toml
-│   │   ├── out
-│   │   │   └── debug
-│   │   │       ├── counter-abi.json
-│   │   │       └── counter.bin
-│   │   └── src
-│   │       └── main.sw
-│   └── counter-rs
-│       ├── Cargo.lock
-│       ├── Cargo.toml
+├── contracts
+│   └── counter
+│       ├── Forc.lock
+│       ├── Forc.toml
+│       ├── out
+│       │   └── debug
+│       │       ├── counter-abi.json
+│       │       └── counter.bin
 │       └── src
-│           └── main.rs
+│           └── main.sw
+├── counter-rs
+│   ├── Cargo.toml
+│   └── src
+│       └── main.rs
+├── frontend
+│   └── index.html
+├── manifest.yaml
 ├── schema
 │   └── counter.graphql
 └── src
     └── main.rs
 
-9 directories, 13 files
+10 directories, 14 files
 ```
 
 ## Usage
@@ -46,7 +48,7 @@ DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" diesel migration list 
 #### Start fuel node and use small webserver as contract proxy
 
 ```bash
-cd fuel-indexer/examples/simple-non-wasm/programs/counter-rs
+cd fuel-indexer/examples/simple-non-wasm/counter-rs
 
 RUST_LOG=debug cargo run
 ```

@@ -8,9 +8,7 @@ mod tests {
     use fuel_vm::{consts::*, prelude::*};
 
     const DATABASE_URL: &str = "postgres://postgres:my-secret@127.0.0.1:5432";
-    const GRAPHQL_SCHEMA: &str = include_str!("./test_data/demo_schema.graphql");
     const MANIFEST: &str = include_str!("./test_data/demo_manifest.yaml");
-    const WASM_BYTES: &[u8] = include_bytes!("./test_data/indexer_demo.wasm");
 
     #[allow(clippy::iter_cloned_collect)]
     fn create_log_transaction(rega: u16, regb: u16) -> Transaction {
@@ -52,6 +50,9 @@ mod tests {
         let _ = client.submit(&create_log_transaction(0xfa, 0x4f)).await;
         let _ = client.submit(&create_log_transaction(0x33, 0x11)).await;
 
+        let dir = std::env::current_dir().unwrap();
+        let test_data = dir.join("tests/test_data");
+
         let config = IndexerConfig {
             fuel_node_addr: srv.bound_address,
             database_url: DATABASE_URL.to_string(),
@@ -60,9 +61,21 @@ mod tests {
 
         let mut indexer_service = IndexerService::new(config).unwrap();
 
-        let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
+        let mut manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
+
+        manifest.graphql_schema = test_data
+            .join(manifest.graphql_schema)
+            .display()
+            .to_string();
+        manifest.wasm_module = Some(
+            test_data
+                .join(manifest.wasm_module.unwrap())
+                .display()
+                .to_string(),
+        );
+
         indexer_service
-            .add_indexer(manifest, GRAPHQL_SCHEMA, WASM_BYTES, true)
+            .add_wasm_indexer(manifest, true)
             .expect("Failed to initialize indexer");
 
         indexer_service.run().await;

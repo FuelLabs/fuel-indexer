@@ -1,8 +1,8 @@
 use crate::handler::ReceiptEvent;
 use anyhow::Result;
-use async_std::{fs::File, io::ReadExt};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::{fs::File, io::Read};
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Manifest {
@@ -26,28 +26,28 @@ impl Manifest {
         }
     }
 
-    pub async fn from_file(path: &Path) -> Result<Self> {
-        let mut file = File::open(&path).await?;
+    pub fn from_file(path: &Path) -> Result<Self> {
+        let mut file = File::open(&path)?;
         let mut contents = String::new();
-        file.read_to_string(&mut contents).await?;
+        file.read_to_string(&mut contents)?;
         let manifest: Manifest = serde_yaml::from_str(&contents)?;
         Ok(manifest)
     }
 
-    pub async fn graphql_schema(&self) -> Result<String> {
-        let mut file = File::open(&self.graphql_schema).await?;
+    pub fn graphql_schema(&self) -> Result<String> {
+        let mut file = File::open(&self.graphql_schema)?;
         let mut schema = String::new();
-        file.read_to_string(&mut schema).await?;
+        file.read_to_string(&mut schema)?;
 
         Ok(schema)
     }
 
-    pub async fn wasm_module(&self) -> Result<Vec<u8>> {
+    pub fn wasm_module(&self) -> Result<Vec<u8>> {
         let mut bytes = Vec::<u8>::new();
         if let Some(module) = &self.wasm_module {
-            let mut file = File::open(module).await?;
+            let mut file = File::open(module)?;
 
-            file.read_to_end(&mut bytes).await?;
+            file.read_to_end(&mut bytes)?;
         }
         Ok(bytes)
     }

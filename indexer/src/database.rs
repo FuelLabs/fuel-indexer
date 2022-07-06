@@ -185,7 +185,7 @@ impl Database {
         row.pop().map(|e| e.object)
     }
 
-    pub fn load_schema_custom(&mut self, manifest: Manifest) -> IndexerResult<()> {
+    pub fn load_schema_native(&mut self, manifest: Manifest) -> IndexerResult<()> {
         self.namespace = manifest.namespace;
         self.version = TypeId::latest_version(&self.namespace, &*self.conn)?;
 
