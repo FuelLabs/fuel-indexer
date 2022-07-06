@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="database/index.html"><strong aria-hidden="true">3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="database/types.html"><strong aria-hidden="true">3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="database/conventions.html"><strong aria-hidden="true">3.2.</strong> Conventions</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="api/index.html"><strong aria-hidden="true">3.</strong> Web API</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="api/gql-server.html"><strong aria-hidden="true">3.1.</strong> GraphQL server</a></li></ol></li><li class="chapter-item expanded "><a href="database/index.html"><strong aria-hidden="true">4.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="database/types.html"><strong aria-hidden="true">4.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="database/conventions.html"><strong aria-hidden="true">4.2.</strong> Conventions</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -530,6 +530,23 @@ curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: applicati
   &quot;count&quot;: 7
 }
 </code></pre>
+<h1 id="api-server-components"><a class="header" href="#api-server-components">API Server Components</a></h1>
+<ul>
+<li><a href="api/./gql-server.html">GraphQL API Server</a>
+<ul>
+<li>An asynchronous API server built on top of GraphQL</li>
+</ul>
+</li>
+</ul>
+<h1 id="graphql-server"><a class="header" href="#graphql-server">GraphQL Server</a></h1>
+<p>The <code>api_server</code> crate of the Fuel Indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the data layer.</p>
+<p>Note that the main binary of the <code>fuel_indexer</code> crate <em>also</em> contains a queryable GraphQL API endpoint. However, the <code>api_server</code> crate offers a standalone GraphQL API endpoint, whereas the <code>fuel_indexer</code> bundles its GraphQL API endpoint with other Fuel Indexer functionality (e.g., execution, handling, data-layer contruction, etc).</p>
+<p>To run the standalone Fuel Indexer GraphQL API server:</p>
+<pre><code class="language-bash">cd fuel-indexer/
+
+RUST_LOG=debug cargo run --bin api_server -- --config api_server/config.yaml
+</code></pre>
+<p>Where <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/api_server/config.yaml">the default service configuration file</a>.</p>
 <h1 id="database-1"><a class="header" href="#database-1">Database</a></h1>
 <p>The Fuel Indexer uses <a href="https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile">Postgres</a> as the database on the data layer.</p>
 <ul>
