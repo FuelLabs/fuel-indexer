@@ -52,14 +52,15 @@ With this [recommended project structure](../getting-started/fuel-indexer-projec
 - `contracts` is where our Sway smart contract `counter` is located.
 - `counter-rs` is a tiny HTTP web application that we use to pass messages to/from the `counter` contract.
 
-<h2 id="header-usage">Usage</h2>
+## <h2 id="header-usage">Usage</h2>
 
 In this section we'll cover the exact steps needed to spin up this example.
 
 ### Database setup
 
 We'll start by creating a database. This step assumes some familiarity with [creating Postgres roles and databases](https://learn.coderslang.com/0120-databases-roles-and-tables-in-postgresql/). In this example we're using an `indexer` database owned by a `postgres` role without a password.
-  - Note that some of these commands may differ based on your local setup
+
+- Note that some of these commands may differ based on your local setup
 
 ```bash
 createdb -U postgres indexer
