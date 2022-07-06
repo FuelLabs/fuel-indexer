@@ -36,8 +36,9 @@
 
 ## Usage
 
-#### Run migrations
-  - In this example we're using an `indexer` database owned by a `postgres` role without a password
+### Run migrations
+
+- In this example we're using an `indexer` database owned by a `postgres` role without a password
 
 ```bash
 cd fuel-indexer/
@@ -46,7 +47,7 @@ DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" \
    diesel migration list --migration-dir=schema/migrations/postgres
 ```
 
-#### Start fuel node and use small webserver as contract proxy
+### Start fuel node and use small webserver as contract proxy
 
 ```bash
 cd fuel-indexer/examples/simple-native/counter-rs
@@ -54,7 +55,7 @@ cd fuel-indexer/examples/simple-native/counter-rs
 RUST_LOG=debug cargo run
 ```
 
-#### Start the fuel indexer service
+### Start the fuel indexer service
 
 ```bash
 cd fuel-indexer/examples/simple-native/
@@ -62,13 +63,13 @@ cd fuel-indexer/examples/simple-native/
 RUST_LOG=info cargo run -- ./config.yaml ./manifest.yaml
 ```
 
-#### Send a transaction to the smartcontract via the webserver
+### Send a transaction to the smartcontract via the webserver
 
 ```bash
 curl -X POST http://127.0.0.1:8080/count | json_pp
 ```
 
-#### Verify data was posted to the database
+### Verify data was posted to the database
 
 In this example we just created an entity with `id = 1`
 
