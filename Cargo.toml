@@ -7,7 +7,7 @@ members = [
    "lib",
    "indexer",
    "examples/*",
-   "examples/simple-native/programs/counter-rs",
+   "examples/simple-native/counter-rs",
    "schema"
 ]
 

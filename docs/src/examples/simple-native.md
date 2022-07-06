@@ -3,7 +3,7 @@ IMPORTANT: This file uses a combination of markdown and HTML. Unfortunately
 doesn't look like mdbook supports anchor links? Given this, anchor links
 have been implemented in HTML. `markdown` lint will most certainly complain about it. 
  -->
-# Non-WASM Execution
+# Simple Native
 
 - <a href="#header-setup">Setup</a>
 - <a href="#header-usage">Usage</a>
@@ -23,33 +23,34 @@ First we'll walk through the basic setup and usage of the project, then we'll di
 ├── Cargo.toml
 ├── README.md
 ├── config.yaml
-├── programs
-│   ├── counter
-│   │   ├── Forc.lock
-│   │   ├── Forc.toml
-│   │   ├── out
-│   │   │   └── debug
-│   │   │       ├── counter-abi.json
-│   │   │       └── counter.bin
-│   │   └── src
-│   │       └── main.sw
-│   └── counter-rs
-│       ├── Cargo.lock
-│       ├── Cargo.toml
+├── contracts
+│   └── counter
+│       ├── Forc.lock
+│       ├── Forc.toml
+│       ├── out
+│       │   └── debug
+│       │       ├── counter-abi.json
+│       │       └── counter.bin
 │       └── src
-│           └── main.rs
+│           └── main.sw
+├── counter-rs
+│   ├── Cargo.toml
+│   └── src
+│       └── main.rs
+├── frontend
+│   └── index.html
+├── manifest.yaml
 ├── schema
 │   └── counter.graphql
 └── src
     └── main.rs
-9 directories, 13 files
+
+10 directories, 14 files
 ```
 
-With this project setup you'll notice:
-- `programs` is a directory containing a Sway project and a small Rust project
-- `programs/counter` is our Sway project that contains our smart contract
-- `programs/counter-rs` is our tiny webserver used to pass messages to and from our Sway smart contract 
-- `schema` is the directory that holds our GraphQL schema
+With this [recommended project structure](../getting-started/fuel-indexer-project.md) you'll notice:
+- `contracts` is where our Sway smart contract `counter` is located.
+- `counter-rs` is a tiny HTTP web application that we use to pass messages to/from the `counter` contract.
 
 <h2 id="header-usage">Usage</h2>
 
@@ -58,6 +59,7 @@ In this section we'll cover the exact steps needed to spin up this example.
 ### Database setup
 
 We'll start by creating a database. This step assumes some familiarity with [creating Postgres roles and databases](https://learn.coderslang.com/0120-databases-roles-and-tables-in-postgresql/). In this example we're using an `indexer` database owned by a `postgres` role without a password.
+  - Note that some of these commands may differ based on your local setup
 
 ```bash
 createdb -U postgres indexer
@@ -71,15 +73,15 @@ Next we'll bootstrap our database by running some migrations. These migrations a
 cd fuel-indexer/
 
 DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" \
-    diesel migration list --migration-dir=schema/migrations
+    diesel migration list --migration-dir=schema/migrations/postgres
 ```
 
 ### Starting the webserver & Fuel node
 
-As previously mentioned, `programs/counter-rs` contains both a tiny webserver used to pass messages to/from our Sway smart contract, as well as our Fuel node that we use to interact with the blockchain. We will start both of these services with the following command.
+As previously mentioned, `counter-rs` contains both a tiny webserver used to pass messages to/from our Sway smart contract, as well as our Fuel node that we use to interact with the blockchain. We will start both of these services with the following command.
 
 ```bash
-cd fuel-indexer/examples/simple-native/programs/counter-rs
+cd fuel-indexer/examples/simple-native/counter-rs
 
 RUST_LOG=debug cargo run
 ```
@@ -91,7 +93,7 @@ With our Fuel node and webserver up and running, we'll next start our Fuel Index
 ```bash
 cd fuel-indexer/examples/simple-native/
 
-RUST_LOG=info cargo run -- ./config.yaml
+RUST_LOG=info cargo run -- ./config.yaml ./manifest.yaml
 ```
 
 ### Send a transaction to the smartcontract via the webserver
@@ -144,7 +146,6 @@ struct CountEvent {
 ```
 
 Next we see that we're returning our `CountEvent` struct. This returned entity will be made available in the `data` property of the `ReturnData` receipt.
-  - For more info on receipts. [Go here](#) 
 
 ```sway
 abi Counter {
@@ -197,7 +198,6 @@ We create a service
 ```
 
 We add our handlers to the service
-
 
 ```rust
 service.add_native_indexer(manifest, false, vec![count_handler])?;

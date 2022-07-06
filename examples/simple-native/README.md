@@ -42,13 +42,14 @@
 ```bash
 cd fuel-indexer/
 
-DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" diesel migration list --migration-dir=schema/migrations/postgres
+DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" \
+   diesel migration list --migration-dir=schema/migrations/postgres
 ```
 
 #### Start fuel node and use small webserver as contract proxy
 
 ```bash
-cd fuel-indexer/examples/simple-native/programs/counter-rs
+cd fuel-indexer/examples/simple-native/counter-rs
 
 RUST_LOG=debug cargo run
 ```
@@ -58,7 +59,7 @@ RUST_LOG=debug cargo run
 ```bash
 cd fuel-indexer/examples/simple-native/
 
-RUST_LOG=info cargo run -- ./config.yaml
+RUST_LOG=info cargo run -- ./config.yaml ./manifest.yaml
 ```
 
 #### Send a transaction to the smartcontract via the webserver
