@@ -1,4 +1,4 @@
-# simple-non-wasm
+# simple-native
 
 ## Setup
 
@@ -46,7 +46,7 @@ DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" diesel migration list 
 #### Start fuel node and use small webserver as contract proxy
 
 ```bash
-cd fuel-indexer/examples/simple-non-wasm/programs/counter-rs
+cd fuel-indexer/examples/simple-native/programs/counter-rs
 
 RUST_LOG=debug cargo run
 ```
@@ -54,7 +54,7 @@ RUST_LOG=debug cargo run
 #### Start the fuel indexer service
 
 ```bash
-cd fuel-indexer/examples/simple-non-wasm/
+cd fuel-indexer/examples/simple-native/
 
 RUST_LOG=info cargo run -- ./config.yaml
 ```

@@ -5087,7 +5087,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "simple-non-wasm"
+name = "simple-native"
 version = "0.1.0"
 dependencies = [
  "anyhow",

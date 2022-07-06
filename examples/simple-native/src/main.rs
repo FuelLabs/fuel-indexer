@@ -31,7 +31,7 @@ graphql_schema!("counter", "schema/counter.graphql");
 // Load structs from abigen
 abigen!(
     Counter,
-    "examples/simple-non-wasm/programs/counter/out/debug/counter-abi.json"
+    "examples/simple-native/programs/counter/out/debug/counter-abi.json"
 );
 
 fn count_handler(data: Vec<u8>, pg: Arc<Mutex<Database>>) -> IndexerResult<()> {

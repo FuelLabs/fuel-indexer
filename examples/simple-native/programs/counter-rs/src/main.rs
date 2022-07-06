@@ -30,7 +30,7 @@ pub fn tx_params() -> TxParameters {
 
 abigen!(
     Counter,
-    "examples/simple-non-wasm/programs/counter/out/debug/counter-abi.json"
+    "examples/simple-native/programs/counter/out/debug/counter-abi.json"
 );
 
 async fn get_contract_id(wallet: &Wallet) -> String {
