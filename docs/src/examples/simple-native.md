@@ -1,21 +1,12 @@
-<!--
-IMPORTANT: This file uses a combination of markdown and HTML. Unfortunately
-doesn't look like mdbook supports anchor links? Given this, anchor links
-have been implemented in HTML. `markdown` lint will most certainly complain about it. 
- -->
 # Simple Native
 
-- <a href="#header-setup">Setup</a>
-- <a href="#header-usage">Usage</a>
-- <a href="#header-concepts">Concepts</a>
-
-In this example project we'll walk through how to run a Fuel Indexer service that uses native Rust execution. We'll go through project structure, how to actually use the service, as well as a few key concepts.
+> In this example project we'll walk through how to run a Fuel Indexer service that uses native Rust execution. We'll go through project structure, how to actually use the service, as well as a few key concepts.
 
 ## Setup
 
 First we'll walk through the basic setup and usage of the project
 
-```bash
+```text
 ➜  cd fuel-indexer/examples/simple-native/
 
 ➜  tree . -I 'target/'
@@ -63,15 +54,15 @@ In this section we'll cover the exact steps needed to spin up this example.
 
 We'll start by creating a database. This step assumes some familiarity with [creating Postgres roles and databases](https://learn.coderslang.com/0120-databases-roles-and-tables-in-postgresql/). In this example we're using an `indexer` database owned by a `postgres` role without a password.
 
-- Note that some of these commands may differ based on your local setup
+> Note that some of these commands may differ based on your local setup
 
 ```bash
 createdb -U postgres indexer
 ```
 
-Next we'll bootstrap our database by running some migrations. These migrations are repsonsible for creating our `graph_registry`. 
+Next we'll bootstrap our database by running some migrations. These migrations are responsible for creating our `graph_registry`. 
 
-- The `graph_registry` is a component that is responsible for keeping track of database columns and columns types. The `graph_registry` is largely abstracted away from the user, but can be seen by inspecting the `graph_registry` schema.
+> The `graph_registry` is a component that is responsible for keeping track of database columns and columns types. The `graph_registry` is largely abstracted away from the user, but can be seen by inspecting the `graph_registry` schema.
 
 ```bash
 cd fuel-indexer/
@@ -131,11 +122,11 @@ curl -X POST http://localhost:29987/graph/counter -H 'content-type: application/
 ]
 ```
 
-Hooray! 🎉 we've successfully created our first Fuel Indexer service that uses non-WASM execution.
+Hooray! 🎉 we've successfully created our first Fuel Indexer service that uses native Rust execution.
 
-<h2 id="header-concepts">Concepts</h2>
+## Concepts
 
-So now that we've walked through how to get up and running with this small example, in this section we'll cover some of the concepts.
+> So now that we've walked through how to get up and running with this small example, in this section we'll cover some of the concepts.
 
 ### Entities
 
@@ -151,7 +142,7 @@ struct CountEvent {
 
 Next we see that we're returning our `CountEvent` struct in our `init_counter` method. This returned struct will be made available in the `data` property of the `ReturnData` receipt.
 
-- Read more about receipts [here](https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md).
+> Read more about receipts [here](https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md).
 
 ```sway
 abi Counter {
