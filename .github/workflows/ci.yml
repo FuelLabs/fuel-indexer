@@ -222,7 +222,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: npm install -g markdownlint-cli && markdownlint --config .markdownlintrc **/*.md docs/src/ 
+      - run: |
+          npm install -g markdownlint-cli@https://github.com/igorshubovych/markdownlint-cli/archive/refs/tags/v0.31.1.tar.gz
+          markdownlint --config .markdownlintrc **/*.md docs/src/ 
 
   validation-complete:
     needs:
