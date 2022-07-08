@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="api/index.html"><strong aria-hidden="true">3.</strong> Web API</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="api/gql-server.html"><strong aria-hidden="true">3.1.</strong> GraphQL server</a></li></ol></li><li class="chapter-item expanded "><a href="database/index.html"><strong aria-hidden="true">4.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="database/types.html"><strong aria-hidden="true">4.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="database/conventions.html"><strong aria-hidden="true">4.2.</strong> Conventions</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/basics.html"><strong aria-hidden="true">1.2.</strong> Basic usage</a></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.3.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="examples/simple-native.html"><strong aria-hidden="true">2.2.</strong> Simple Native</a></li></ol></li><li class="chapter-item expanded "><a href="api/index.html"><strong aria-hidden="true">3.</strong> Web API</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="api/gql-server.html"><strong aria-hidden="true">3.1.</strong> GraphQL server</a></li></ol></li><li class="chapter-item expanded "><a href="database/index.html"><strong aria-hidden="true">4.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="database/types.html"><strong aria-hidden="true">4.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="database/conventions.html"><strong aria-hidden="true">4.2.</strong> Conventions</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -172,7 +172,7 @@
                         <h1 id="fuel-indexer"><a class="header" href="#fuel-indexer">Fuel Indexer</a></h1>
 <p><img src="./img/fuel.png" alt="Fuel Logo" /></p>
 <p>The Fuel Indexer is a standalone binary that can be used to index various components of [the blockchain]. These indexable components include blocks, transactions, and <a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/tx_format.md">receipts</a> and state within a fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.</p>
-<p>Events can be indexed by the Fuel Indexer by either using WASM modules (as described in <a href="./src/examples/hello-indexer.html">the Hello World example</a>), or by writing native Rust handlers (as described in <a href="the-fuel-indexer.html#">the Simple Non-WASM example</a>)</p>
+<p>Events can be indexed by the Fuel Indexer by either using WASM modules (as described in <a href="./src/examples/hello-indexer.html">the Hello World example</a>), or by writing native Rust handlers (as described in <a href="./examples/simple-native.html">the Simple Native example</a>)</p>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
 <p>This section provides an outline regarding how to get started using a Fuel Indexer, including dependency installation, basic usage, as well as examples.</p>
 <ul>
@@ -300,8 +300,8 @@ INFO fuel_wasm_executor::service: Registered indexer test_namespace
 <h1 id="a-fuel-indexer-project"><a class="header" href="#a-fuel-indexer-project">A Fuel Indexer Project</a></h1>
 <p>The Fuel Indexer service can currently be used in two different ways:</p>
 <ol>
-<li>The service can either be run as a standalone binary, outside the scope of a Sway project. </li>
-<li>The service can be included in a Sway project, and as a tandem service. </li>
+<li>The service can either be run as a standalone binary, outside the scope of a Sway project.</li>
+<li>The service can be included in a Sway project, and as a tandem service.</li>
 </ol>
 <p>We'll describe these two different implementations below.</p>
 <h2 id="as-a-standalone-service"><a class="header" href="#as-a-standalone-service">As a standalone service</a></h2>
@@ -335,6 +335,12 @@ INFO fuel_wasm_executor::service: Registered indexer test_namespace
 <ul>
 <li>A simple application representing the &quot;Hello world&quot; version of a Fuel indexer</li>
 <li>This example includes WASM execution</li>
+</ul>
+</li>
+<li><a href="examples/./simple-native.html">Simple Native</a>
+<ul>
+<li>A simple example of an indexer within a full Fuel project. </li>
+<li>Also demonstrates native execution.</li>
 </ul>
 </li>
 </ul>
@@ -530,6 +536,161 @@ curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: applicati
   &quot;count&quot;: 7
 }
 </code></pre>
+<h1 id="simple-native"><a class="header" href="#simple-native">Simple Native</a></h1>
+<blockquote>
+<p>In this example project we'll walk through how to run a Fuel Indexer service that uses native Rust execution. We'll go through project structure, how to actually use the service, as well as a few key concepts.</p>
+</blockquote>
+<h2 id="setup"><a class="header" href="#setup">Setup</a></h2>
+<p>First we'll walk through the basic setup and usage of the project</p>
+<pre><code class="language-text">➜  cd fuel-indexer/examples/simple-native/
+
+➜  tree . -I 'target/'
+.
+├── Cargo.toml
+├── README.md
+├── config.yaml
+├── contracts
+│   └── counter
+│       ├── Forc.lock
+│       ├── Forc.toml
+│       ├── out
+│       │   └── debug
+│       │       ├── counter-abi.json
+│       │       └── counter.bin
+│       └── src
+│           └── main.sw
+├── counter-rs
+│   ├── Cargo.toml
+│   └── src
+│       └── main.rs
+├── frontend
+│   └── index.html
+├── manifest.yaml
+├── schema
+│   └── counter.graphql
+└── src
+    └── main.rs
+
+10 directories, 14 files
+</code></pre>
+<p>With this <a href="examples/../getting-started/fuel-indexer-project.html">recommended project structure</a> you'll notice:</p>
+<ul>
+<li><code>contracts</code> is where our Sway smart contract <code>counter</code> is located.</li>
+<li><code>counter-rs</code> is a tiny HTTP web application that we use to pass messages to/from the <code>counter</code> contract.</li>
+<li><code>frontend</code> is unused (as there is no frontend for this small example)</li>
+<li><code>config.yaml</code> is our node config</li>
+<li><code>manifest.yaml</code> is our indexer config</li>
+</ul>
+<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<p>In this section we'll cover the exact steps needed to spin up this example.</p>
+<h3 id="database-setup"><a class="header" href="#database-setup">Database setup</a></h3>
+<p>We'll start by creating a database. This step assumes some familiarity with <a href="https://learn.coderslang.com/0120-databases-roles-and-tables-in-postgresql/">creating Postgres roles and databases</a>. In this example we're using an <code>indexer</code> database owned by a <code>postgres</code> role without a password.</p>
+<blockquote>
+<p>Note that some of these commands may differ based on your local setup</p>
+</blockquote>
+<pre><code class="language-bash">createdb -U postgres indexer
+</code></pre>
+<p>Next we'll bootstrap our database by running some migrations. These migrations are responsible for creating our <code>graph_registry</code>. </p>
+<blockquote>
+<p>The <code>graph_registry</code> is a component that is responsible for keeping track of database columns and columns types. The <code>graph_registry</code> is largely abstracted away from the user, but can be seen by inspecting the <code>graph_registry</code> schema.</p>
+</blockquote>
+<pre><code class="language-bash">cd fuel-indexer/
+
+DATABASE_URL=&quot;postgres://postgres@127.0.0.1:5432/indexer&quot; \
+    diesel migration list --migration-dir=schema/migrations/postgres
+</code></pre>
+<h3 id="starting-the-webserver--fuel-node"><a class="header" href="#starting-the-webserver--fuel-node">Starting the webserver &amp; Fuel node</a></h3>
+<p>As previously mentioned, <code>counter-rs</code> contains both a tiny webserver used to pass messages to/from our Sway smart contract, as well as our Fuel node that we use to interact with the blockchain. We will start both of these services with the following command.</p>
+<pre><code class="language-bash">cd fuel-indexer/examples/simple-native/counter-rs
+
+RUST_LOG=debug cargo run
+</code></pre>
+<h3 id="start-the-fuel-indexer-service"><a class="header" href="#start-the-fuel-indexer-service">Start the fuel indexer service</a></h3>
+<p>With our Fuel node and webserver up and running, we'll next start our Fuel Indexer service.</p>
+<pre><code class="language-bash">cd fuel-indexer/examples/simple-native/
+
+RUST_LOG=info cargo run -- ./config.yaml ./manifest.yaml
+</code></pre>
+<h3 id="send-a-transaction-to-the-smart-contract-via-the-webserver"><a class="header" href="#send-a-transaction-to-the-smart-contract-via-the-webserver">Send a transaction to the smart contract via the webserver</a></h3>
+<pre><code class="language-bash">curl -X POST http://127.0.0.1:8080/count | json_pp
+</code></pre>
+<h3 id="verify-data-was-posted-to-the-database"><a class="header" href="#verify-data-was-posted-to-the-database">Verify data was posted to the database</a></h3>
+<p>In this example we just created an entity with <code>id = 1</code></p>
+<pre><code class="language-bash">➜  echo &quot;SELECT max(id) FROM counter.count;&quot; | psql -U postgres -d indexer
+ max
+-----
+   1
+(1 row)
+</code></pre>
+<p>So that's what we query for</p>
+<pre><code>curl -X POST http://localhost:29987/graph/counter -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { count(id: 1) { id count timestamp } }&quot;, &quot;params&quot;: &quot;b&quot;}' | json_pp
+[
+   {
+      &quot;count&quot; : 1,
+      &quot;id&quot; : 1,
+      &quot;timestamp&quot; : 123
+   }
+]
+</code></pre>
+<p>Hooray! 🎉 we've successfully created our first Fuel Indexer service that uses native Rust execution.</p>
+<h2 id="concepts"><a class="header" href="#concepts">Concepts</a></h2>
+<blockquote>
+<p>So now that we've walked through how to get up and running with this small example, in this section we'll cover some of the concepts.</p>
+</blockquote>
+<h3 id="entities"><a class="header" href="#entities">Entities</a></h3>
+<p>We'll start with our Sway smart contract. You'll see below that we define a struct that we'll be using in this example. Note that per <a href="examples/./../database/types.html">the conventions regarding types</a> we're using a <code>u64</code> for our struct's identifier.</p>
+<pre><code class="language-sway">struct CountEvent {
+    id: u64,
+    count: u64,
+    timestamp: u64,
+}
+</code></pre>
+<p>Next we see that we're returning our <code>CountEvent</code> struct in our <code>init_counter</code> method. This returned struct will be made available in the <code>data</code> property of the <code>ReturnData</code> receipt.</p>
+<blockquote>
+<p>Read more about receipts <a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md">here</a>.</p>
+</blockquote>
+<pre><code class="language-sway">abi Counter {
+    #[storage(write, read)]
+    fn init_counter(value: u64) -&gt; CountEvent;
+
+    #[storage(read)]
+    fn get_count() -&gt; AnotherCountEvent;
+
+    #[storage(write, read)]
+    fn increment_counter(value: u64) -&gt; CountEvent;
+}
+</code></pre>
+<h3 id="handlers"><a class="header" href="#handlers">Handlers</a></h3>
+<p>A handler is basically a function that takes input from a block, and does something with that input. Often times, users will want to save some data in a database in their handler -- i.e., &quot;index&quot; the data. Below is an example of a simple <code>count_handler</code> handler function that receives a <code>Receipt</code> and saves a <code>Count</code> entity into the database.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>fn count_handler(receipt: Receipt) -&gt; Option&lt;IndexerResult&lt;NativeHandlerResult&gt;&gt; {
+    match receipt {
+        Receipt::ReturnData { data, .. } =&gt; {
+            // Define which params we expect (using the counter-abi.json as a reference)
+            let params = ParamType::Struct(vec![ParamType::U64, ParamType::U64, ParamType::U64]);
+
+            // Decode the data into a Token using these params
+            let token = ABIDecoder::decode_single(&amp;params, &amp;data).unwrap();
+
+            // Recover the CountEvent from this token
+            let event = CountEvent::from_token(token).unwrap();
+
+            // Using the Count entity from the GraphQL schema
+            let count = Count {
+                id: event.id,
+                timestamp: event.timestamp,
+                count: event.count,
+            };
+
+            Some(Ok(count.pack()))
+        }
+        _ =&gt; None,
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
 <h1 id="api-server-components"><a class="header" href="#api-server-components">API Server Components</a></h1>
 <ul>
 <li><a href="api/./gql-server.html">GraphQL API Server</a>
@@ -606,7 +767,7 @@ Access method: heap
 </code></pre>
 <p>The source code for these types can be found <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/schema/src/db/models.rs#L146">here</a>.</p>
 <h1 id="conventions"><a class="header" href="#conventions">Conventions</a></h1>
-<h3 id="ids"><a class="header" href="#ids">IDs</a></h3>
+<h2 id="ids"><a class="header" href="#ids">IDs</a></h2>
 <p>IDs are often included in Sway smart contracts as a means of identifying an entity or object. Giving an indexable entity an ID, allows you to easily find the entity after it's been indexed, using the GraphQL API included with the Fuel Indexer.</p>
 <p>With regard to the Fuel Indexer, the <code>ID</code> data type in GraphQL schema maps to a <code>bigint primary key</code> in Postgres. Given this, ID fields in GraphQL schema should be paired with <code>u64</code> types in a Sway contract.</p>
 <ul>
