@@ -33,7 +33,7 @@ graphql_schema!("counter", "schema/counter.graphql");
 // Load structs from abigen
 abigen!(
     Counter,
-    "examples/simple-non-wasm/contracts/counter/out/debug/counter-abi.json"
+    "examples/simple-native/contracts/counter/out/debug/counter-abi.json"
 );
 
 fn count_handler(receipt: Receipt) -> Option<IndexerResult<NativeHandlerResult>> {

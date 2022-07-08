@@ -10,6 +10,7 @@
   - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-indexer.md)
+  - [Simple Native](./examples/simple-native.md)
 - [Web API](./api/index.md)
   - [GraphQL server](./api/gql-server.md)
 - [Database](./database/index.md)

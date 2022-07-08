@@ -214,6 +214,18 @@ jobs:
         with:
           mdbook-version: '0.4.17'
 
+  mdbook-lint:
+    needs: cancel-previous-runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: |
+          npm install -g markdownlint-cli@0.31.1
+          markdownlint --config .markdownlintrc **/*.md docs/src/ 
+
   validation-complete:
     needs:
       [
