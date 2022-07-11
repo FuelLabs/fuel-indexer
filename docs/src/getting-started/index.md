@@ -5,7 +5,6 @@ This section provides an outline regarding how to get started using a Fuel Index
 - [Setting up](./setup.md)
   - [System dependencies](./system-dependencies.md)
   - [Application dependencies](./application-dependencies.md)
-- [Basic usage](./basics.md)
 - [Project Structure](./fuel-indexer-project.md)
 - [Examples](./../examples/index.md)
   - [Hello World](./../examples/hello-indexer.md)

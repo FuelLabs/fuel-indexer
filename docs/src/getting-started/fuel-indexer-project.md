@@ -9,7 +9,7 @@ We'll describe these two different implementations below.
 
 ## As a standalone service
 
-When running a Fuel Indexer service as a standalone binary, you can just start the service (with or without Docker) after you've defined your manifest file. For an example of this, checkout the [Basic Usage](./basics.md) section.
+When running a Fuel Indexer service as a standalone binary, you can just start the service (with or without Docker) after you've defined your manifest file. For an example of this, checkout the [Hello World example](./../examples/hello-indexer.md) section.
 
 ## With a Sway project
 
