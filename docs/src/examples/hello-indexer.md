@@ -188,7 +188,7 @@ cargo build --release
 
 ## Run it
 
-- [On the previous page](./getting-started/basics.md), we described how to bring up the fuel service. The manifest.yaml described here is the one we promised to get to in that section. You may now run that command to bring up your indexer.
+- We've previously described how to bring up the fuel service. The manifest.yaml described here is the one we promised to get to in that section. You may now run that command to bring up your indexer.
 - Now, you can send in some test transactions, and the data will be available via the API.
 
 ## Querying the data
