@@ -62,65 +62,65 @@ pub mod config {
         utils::{is_env_var, trim_env_key},
     };
     use anyhow::Result;
+    pub use clap::Parser;
     use serde::Deserialize;
     use std::fmt::Write;
     use std::net::SocketAddr;
     use std::path::PathBuf;
-    use structopt::StructOpt;
 
-    #[derive(Debug, StructOpt, Clone)]
-    #[structopt(
+    #[derive(Debug, Parser, Clone)]
+    #[clap(
         name = "Indexer Service",
         about = "Standalone binary for the fuel indexer service"
     )]
     pub struct IndexerArgs {
-        #[structopt(short, long, help = "run local test node")]
+        #[clap(short, long, help = "Run local test node")]
         pub local: bool,
-        #[structopt(short, long, parse(from_os_str), help = "Indexer service config file")]
+        #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
         pub config: Option<PathBuf>,
-        #[structopt(short, long, parse(from_os_str), help = "Indexer service config file")]
+        #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
         pub test_manifest: Option<PathBuf>,
-        #[structopt(
+        #[clap(
             long,
             help = "Listening IP of the running Fuel node. (default = '127.0.0.1')"
         )]
         pub fuel_node_host: Option<String>,
-        #[structopt(long, help = "Listening port of the running Fuel node.")]
+        #[clap(long, help = "Listening port of the running Fuel node.")]
         pub fuel_node_port: Option<String>,
-        #[structopt(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
+        #[clap(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
         pub graphql_api_host: Option<String>,
-        #[structopt(long, help = "GraphQL API port. (default = 29987)")]
+        #[clap(long, help = "GraphQL API port. (default = 29987)")]
         pub graphql_api_port: Option<String>,
-        #[structopt(long, help = "Postgres username. (default = 'postgres')")]
+        #[clap(long, help = "Postgres username. (default = 'postgres')")]
         pub postgres_user: Option<String>,
-        #[structopt(long, help = "Postgres database. (default = 'postgres')")]
+        #[clap(long, help = "Postgres database. (default = 'postgres')")]
         pub postgres_database: Option<String>,
-        #[structopt(long, help = "Postgres password.")]
+        #[clap(long, help = "Postgres password.")]
         pub postgres_password: Option<String>,
-        #[structopt(long, help = "Postgres host. (default = '127.0.0.1')")]
+        #[clap(long, help = "Postgres host. (default = '127.0.0.1')")]
         pub postgres_host: Option<String>,
-        #[structopt(long, help = "Postgres port. (default = 5432)")]
+        #[clap(long, help = "Postgres port. (default = 5432)")]
         pub postgres_port: Option<String>,
     }
 
-    #[derive(Debug, StructOpt, Clone)]
-    #[structopt(name = "Indexer API Service", about = "Fuel indexer api")]
+    #[derive(Debug, Parser, Clone)]
+    #[clap(name = "Indexer API Service", about = "Fuel Indexer GraphQL API")]
     pub struct ApiServerArgs {
-        #[structopt(short, long, help = "API Server config.")]
+        #[clap(short, long, help = "API Server config.")]
         pub config: Option<PathBuf>,
-        #[structopt(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
+        #[clap(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
         pub graphql_api_host: Option<String>,
-        #[structopt(long, help = "GraphQL API port. (default = 29987)")]
+        #[clap(long, help = "GraphQL API port. (default = 29987)")]
         pub graphql_api_port: Option<String>,
-        #[structopt(long, help = "Postgres username. (default = 'postgres')")]
+        #[clap(long, help = "Postgres username. (default = 'postgres')")]
         pub postgres_user: Option<String>,
-        #[structopt(long, help = "Postgres database. (default = 'postgres')")]
+        #[clap(long, help = "Postgres database. (default = 'postgres')")]
         pub postgres_database: Option<String>,
-        #[structopt(long, help = "Postgres password.")]
+        #[clap(long, help = "Postgres password.")]
         pub postgres_password: Option<String>,
-        #[structopt(long, help = "Postgres host. (default = '127.0.0.1')")]
+        #[clap(long, help = "Postgres host. (default = '127.0.0.1')")]
         pub postgres_host: Option<String>,
-        #[structopt(long, help = "Postgres port. (default = 5432)")]
+        #[clap(long, help = "Postgres port. (default = 5432)")]
         pub postgres_port: Option<String>,
     }
 

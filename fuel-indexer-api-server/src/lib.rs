@@ -11,7 +11,7 @@ use diesel::prelude::PgConnection as Conn;
 use diesel::sql_types::Text;
 use diesel::{Connection, QueryableByName, RunQueryDsl};
 pub use fuel_indexer_lib::{
-    config::{ApiServerArgs, GraphQLConfig, PostgresConfig},
+    config::{ApiServerArgs, GraphQLConfig, Parser, PostgresConfig},
     defaults,
 };
 use fuel_indexer_schema::db::{
