@@ -12,7 +12,6 @@ mod service;
 pub use api::GraphQlApi;
 pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
-
 pub use fuel_indexer_lib::config::{
     FuelNodeConfig, GraphQLConfig, IndexerArgs, Parser, PostgresConfig,
 };
