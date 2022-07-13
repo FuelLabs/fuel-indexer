@@ -1,10 +1,11 @@
 use crate::{
-    handler::Handle, Executor, IndexerResult, Manifest, NativeIndexExecutor, ReceiptEvent,
-    SchemaManager, WasmIndexExecutor,
+    handler::Handle, Executor, FuelNodeConfig, GraphQLConfig, IndexerArgs, IndexerResult, Manifest,
+    NativeIndexExecutor, PostgresConfig, ReceiptEvent, SchemaManager, WasmIndexExecutor,
 };
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
+use fuel_indexer_lib::defaults;
 use fuel_tx::Receipt;
 use fuels_core::abi_encoder::ABIEncoder;
 use fuels_core::{Token, Tokenizable};
@@ -23,21 +24,81 @@ use tokio::{
 
 use tracing::{debug, error, info, warn};
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
-    pub fuel_node_addr: SocketAddr,
-    pub database_url: String,
-    pub listen_endpoint: SocketAddr,
+    pub fuel_node: FuelNodeConfig,
+    pub graphql_api: GraphQLConfig,
+    pub postgres: PostgresConfig,
+}
+
+#[derive(Deserialize)]
+pub struct TmpIndexerConfig {
+    pub fuel_node: Option<FuelNodeConfig>,
+    pub graphql_api: Option<GraphQLConfig>,
+    pub postgres: Option<PostgresConfig>,
 }
 
 impl IndexerConfig {
+    pub fn upgrade_optionals(&mut self, tmp: TmpIndexerConfig) {
+        if let Some(cfg) = tmp.fuel_node {
+            self.fuel_node = cfg;
+        }
+
+        if let Some(cfg) = tmp.postgres {
+            self.postgres = cfg;
+        }
+
+        if let Some(cfg) = tmp.graphql_api {
+            self.graphql_api = cfg;
+        }
+    }
+
+    pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
+        IndexerConfig {
+            fuel_node: FuelNodeConfig {
+                host: args
+                    .fuel_node_host
+                    .unwrap_or_else(|| defaults::FUEL_NODE_HOST.into()),
+                port: args.fuel_node_port.unwrap_or(defaults::FUEL_NODE_PORT),
+            },
+            postgres: PostgresConfig {
+                user: args
+                    .postgres_user
+                    .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
+                password: args.postgres_password,
+                host: args
+                    .postgres_host
+                    .unwrap_or_else(|| defaults::POSTGRES_HOST.into()),
+                port: args
+                    .postgres_port
+                    .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
+                database: args.postgres_database,
+            },
+            graphql_api: GraphQLConfig {
+                host: args
+                    .graphql_api_host
+                    .unwrap_or_else(|| defaults::GRAPHQL_API_HOST.into()),
+                port: args.graphql_api_port.unwrap_or(defaults::GRAPHQL_API_PORT),
+            },
+        }
+    }
+
     pub async fn from_file(path: &Path) -> Result<Self> {
         let mut file = File::open(path).await?;
         let mut contents = String::new();
         file.read_to_string(&mut contents).await?;
-        let config: IndexerConfig = serde_yaml::from_str(&contents)?;
+
+        let mut config = IndexerConfig::default();
+        let tmp_config: TmpIndexerConfig = serde_yaml::from_str(&contents)?;
+
+        config.upgrade_optionals(tmp_config);
+        config.inject_env_vars();
 
         Ok(config)
+    }
+
+    pub fn inject_env_vars(&mut self) {
+        let _ = self.postgres.inject_env_vars();
     }
 }
 
@@ -51,17 +112,16 @@ pub struct IndexerService {
 
 impl IndexerService {
     pub fn new(config: IndexerConfig) -> IndexerResult<IndexerService> {
-        let IndexerConfig {
-            fuel_node_addr,
-            database_url,
-            ..
-        } = config;
-        let manager = SchemaManager::new(&database_url)?;
+        let fuel_node_addr = format!("{}:{}", &config.fuel_node.host, &config.fuel_node.port)
+            .parse()
+            .expect("Failed");
+
+        let manager = SchemaManager::new(&config.postgres.to_string())?;
 
         Ok(IndexerService {
             fuel_node_addr,
             manager,
-            database_url,
+            database_url: config.postgres.to_string(),
             handles: HashMap::default(),
             killers: HashMap::default(),
         })

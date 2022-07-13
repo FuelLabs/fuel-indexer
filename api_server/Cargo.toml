@@ -18,6 +18,7 @@ anyhow = "1.0.53"
 async-std = "1.10.0"
 axum = "0.4"
 diesel = { version = "1.4", features = ["postgres"] }
+fuel-indexer-lib = { path = "../indexer-lib" }
 fuel-indexer-schema = { path = "../schema", features = ["db-models"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }

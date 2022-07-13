@@ -330,6 +330,7 @@ dependencies = [
  "async-std",
  "axum",
  "diesel",
+ "fuel-indexer-lib",
  "fuel-indexer-schema",
  "serde",
  "serde_json",
@@ -2281,6 +2282,7 @@ dependencies = [
  "diesel",
  "fuel-core 0.6.4",
  "fuel-gql-client 0.6.4",
+ "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-storage 0.1.0",
  "fuel-tx 0.9.0",
@@ -2407,11 +2409,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "structopt",
+]
+
+[[package]]
 name = "fuel-indexer-schema"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "diesel",
  "diesel_migrations",
+ "fuel-indexer-lib",
  "fuel-types 0.3.1",
  "graphql-parser",
  "insta",

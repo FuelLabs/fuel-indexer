@@ -1,27 +1,12 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
-use fuel_executor::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
+use fuel_executor::{GraphQlApi, IndexerArgs, IndexerConfig, IndexerService, Manifest};
 use fuel_indexer_schema::db::run_migration;
-use std::path::PathBuf;
 use structopt::StructOpt;
 use tokio::join;
 use tracing::{error, info};
 use tracing_subscriber::filter::EnvFilter;
-
-#[derive(Debug, StructOpt)]
-#[structopt(
-    name = "Indexer Service",
-    about = "Standalone binary for the fuel indexer service"
-)]
-pub struct Args {
-    #[structopt(short, long, help = "run local test node")]
-    local: bool,
-    #[structopt(parse(from_os_str), help = "Indexer service config file")]
-    config: PathBuf,
-    #[structopt(short, long, parse(from_os_str), help = "Indexer service config file")]
-    test_manifest: Option<PathBuf>,
-}
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
@@ -35,25 +20,26 @@ pub async fn main() -> Result<()> {
         .with_env_filter(filter)
         .init();
 
-    let opt = Args::from_args();
+    let opt = IndexerArgs::from_args();
 
-    let mut file = File::open(opt.config).await?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).await?;
+    let mut config = match &opt.config {
+        Some(path) => IndexerConfig::from_file(path).await?,
+        None => IndexerConfig::from_opts(opt.clone()),
+    };
 
-    let mut config: IndexerConfig = serde_yaml::from_str(&contents)?;
+    info!("Configuration: {:?}", config);
 
-    run_migration(&config.database_url);
+    run_migration(&config.postgres.to_string());
 
     let _local_node = if opt.local {
         let s = FuelService::new_node(Config::local_node()).await.unwrap();
-        config.fuel_node_addr = s.bound_address;
+        config.fuel_node = s.bound_address.into();
         Some(s)
     } else {
         None
     };
 
-    info!("Fuel node listening on {}", config.fuel_node_addr);
+    info!("Fuel node listening on {}", &config.fuel_node.to_string());
     let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
 
     let mut service = IndexerService::new(config)?;

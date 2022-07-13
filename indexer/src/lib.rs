@@ -12,11 +12,14 @@ mod service;
 pub use api::GraphQlApi;
 pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
+
+pub use fuel_indexer_lib::config::{FuelNodeConfig, GraphQLConfig, IndexerArgs, PostgresConfig};
 pub use fuel_indexer_schema::NativeHandlerResult;
 pub use fuel_tx::Receipt;
 pub use fuel_types::{Address, ContractId};
 pub use handler::ReceiptEvent;
 pub use manifest::Manifest;
+use serde::{Deserialize, Serialize};
 pub use service::{IndexerConfig, IndexerService};
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
@@ -52,10 +55,9 @@ pub enum IndexerError {
 }
 
 mod handler {
-    use crate::IndexerResult;
+    use crate::{Deserialize, IndexerResult, Serialize};
     use fuel_indexer_schema::NativeHandlerResult;
     use fuel_tx::Receipt;
-    use serde::{Deserialize, Serialize};
 
     pub type Handle = fn(data: Receipt) -> Option<IndexerResult<NativeHandlerResult>>;
 

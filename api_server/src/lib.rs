@@ -11,6 +11,7 @@ use axum::{
 use diesel::prelude::PgConnection as Conn;
 use diesel::sql_types::Text;
 use diesel::{Connection, QueryableByName, RunQueryDsl};
+pub use fuel_indexer_lib::config::{GraphQLConfig, PostgresConfig};
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
     run_migration,
@@ -83,16 +84,16 @@ async fn query_graph(
     }
 }
 
-pub struct GraphQlApi {
-    database_url: String,
-    listen_address: SocketAddr,
+pub struct GraphQLApi {
+    pg_config: PostgresConfig,
+    graphql_config: GraphQLConfig,
 }
 
-impl GraphQlApi {
-    pub fn new(database_url: String, listen_address: SocketAddr) -> GraphQlApi {
-        GraphQlApi {
-            database_url,
-            listen_address,
+impl GraphQLApi {
+    pub fn new(pg_config: PostgresConfig, graphql_config: GraphQLConfig) -> GraphQLApi {
+        GraphQLApi {
+            pg_config,
+            graphql_config,
         }
     }
 
@@ -100,14 +101,14 @@ impl GraphQlApi {
         let sm = SchemaManager::new();
         let schema_manager = Arc::new(RwLock::new(sm));
 
-        run_migration(&self.database_url);
+        run_migration(&self.pg_config.to_string());
 
         let app = Router::new()
             .route("/graph/:name", post(query_graph))
-            .layer(Extension(self.database_url.clone()))
+            .layer(Extension(SocketAddr::from(self.graphql_config.clone())))
             .layer(Extension(schema_manager));
 
-        axum::Server::bind(&self.listen_address)
+        axum::Server::bind(&self.graphql_config.into())
             .serve(app.into_make_service())
             .await
             .expect("Service failed to start");

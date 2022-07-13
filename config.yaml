@@ -1,0 +1,27 @@
+## The following is an example Fuel Indexer configuration file.
+##  
+## This configuration spec is intended to be used for a single instance
+## of a Fuel Indexer node or service.
+## 
+## For more info on how the Fuel Indexer work, read the book: https://fuellabs.github.io/fuel-indexer/master/
+
+## Fuel Node configuration
+# fuel_node:
+#   host: 127.0.0.1
+#   port: 4000
+
+## GraphQL API configuration
+# graphql_api:
+#   host: 0.0.0.0
+#   port: 29987
+
+
+## Postgres configuration
+# postgres:
+#   user: postgres
+#   database:
+#   password:
+#   host: 127.0.0.1
+#   port: 5432
+
+# sqlite_db_path: ../main.db
