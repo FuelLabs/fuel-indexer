@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_lib::defaults;
+use fuel_indexer_lib::{config::InjectEnvironment, defaults};
 use fuel_tx::Receipt;
 use fuels_core::abi_encoder::ABIEncoder;
 use fuels_core::{Token, Tokenizable};
@@ -59,7 +59,9 @@ impl IndexerConfig {
                 host: args
                     .fuel_node_host
                     .unwrap_or_else(|| defaults::FUEL_NODE_HOST.into()),
-                port: args.fuel_node_port.unwrap_or(defaults::FUEL_NODE_PORT),
+                port: args
+                    .fuel_node_port
+                    .unwrap_or_else(|| defaults::FUEL_NODE_PORT.into()),
             },
             postgres: PostgresConfig {
                 user: args
@@ -78,7 +80,9 @@ impl IndexerConfig {
                 host: args
                     .graphql_api_host
                     .unwrap_or_else(|| defaults::GRAPHQL_API_HOST.into()),
-                port: args.graphql_api_port.unwrap_or(defaults::GRAPHQL_API_PORT),
+                port: args
+                    .graphql_api_port
+                    .unwrap_or_else(|| defaults::GRAPHQL_API_PORT.into()),
             },
         }
     }
@@ -98,7 +102,9 @@ impl IndexerConfig {
     }
 
     pub fn inject_env_vars(&mut self) {
+        let _ = self.fuel_node.inject_env_vars();
         let _ = self.postgres.inject_env_vars();
+        let _ = self.graphql_api.inject_env_vars();
     }
 }
 

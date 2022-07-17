@@ -249,7 +249,7 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: |
-            ghcr.io/fuellabs/fuel-core
+            ghcr.io/fuellabs/fuel-indexer
           tags: |
             type=sha
             type=ref,event=branch

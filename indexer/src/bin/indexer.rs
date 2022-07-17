@@ -39,7 +39,10 @@ pub async fn main() -> Result<()> {
         None
     };
 
-    info!("Fuel node listening on {}", &config.fuel_node.to_string());
+    info!(
+        "Subscribed to Fuel node at {}",
+        &config.fuel_node.to_string()
+    );
     let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
 
     let mut service = IndexerService::new(config)?;

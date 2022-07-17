@@ -2421,10 +2421,8 @@ dependencies = [
 name = "fuel-indexer-schema"
 version = "0.0.0"
 dependencies = [
- "anyhow",
  "diesel",
  "diesel_migrations",
- "fuel-indexer-lib",
  "fuel-types 0.3.1",
  "graphql-parser",
  "insta",

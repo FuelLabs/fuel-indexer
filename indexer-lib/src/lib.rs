@@ -16,10 +16,10 @@ pub mod utils {
 
 pub mod defaults {
     pub const FUEL_NODE_HOST: &str = "127.0.0.1";
-    pub const FUEL_NODE_PORT: u32 = 4000;
+    pub const FUEL_NODE_PORT: &str = "4000";
 
     pub const GRAPHQL_API_HOST: &str = "0.0.0.0";
-    pub const GRAPHQL_API_PORT: u32 = 29987;
+    pub const GRAPHQL_API_PORT: &str = "29987";
 
     pub const POSTGRES_USER: &str = "postgres";
     pub const POSTGRES_HOST: &str = "127.0.0.1";
@@ -57,11 +57,11 @@ pub mod config {
         )]
         pub fuel_node_host: Option<String>,
         #[structopt(long, help = "Listening port of the running Fuel node.")]
-        pub fuel_node_port: Option<u32>,
+        pub fuel_node_port: Option<String>,
         #[structopt(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
         pub graphql_api_host: Option<String>,
         #[structopt(long, help = "GraphQL API port. (default = 29987)")]
-        pub graphql_api_port: Option<u32>,
+        pub graphql_api_port: Option<String>,
         #[structopt(long, help = "Postgres username. (default = 'postgres')")]
         pub postgres_user: Option<String>,
         #[structopt(long, help = "Postgres database. (default = 'postgres')")]
@@ -74,17 +74,37 @@ pub mod config {
         pub postgres_port: Option<String>,
     }
 
+    pub trait InjectEnvironment {
+        fn inject_env_vars(&mut self) -> Result<()>;
+    }
+
     #[derive(Clone, Deserialize, Debug)]
     pub struct FuelNodeConfig {
         pub host: String,
-        pub port: u32,
+        pub port: String,
+    }
+
+    impl InjectEnvironment for FuelNodeConfig {
+        fn inject_env_vars(&mut self) -> Result<()> {
+            if is_env_var(&self.host) {
+                self.host = std::env::var(trim_env_key(&self.host))
+                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
+            }
+
+            if is_env_var(&self.port) {
+                self.port = std::env::var(trim_env_key(&self.port))
+                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
+            }
+
+            Ok(())
+        }
     }
 
     impl Default for FuelNodeConfig {
         fn default() -> Self {
             Self {
                 host: defaults::FUEL_NODE_HOST.into(),
-                port: defaults::FUEL_NODE_PORT,
+                port: defaults::FUEL_NODE_PORT.into(),
             }
         }
     }
@@ -93,7 +113,7 @@ pub mod config {
         fn from(s: SocketAddr) -> FuelNodeConfig {
             let parts: Vec<String> = s.to_string().split(':').map(|x| x.to_owned()).collect();
             let host = parts[0].to_owned();
-            let port = parts[1].parse::<u32>().unwrap();
+            let port = parts[1].to_owned();
             FuelNodeConfig { host, port }
         }
     }
@@ -113,8 +133,8 @@ pub mod config {
         pub database: Option<String>,
     }
 
-    impl PostgresConfig {
-        pub fn inject_env_vars(&mut self) -> Result<()> {
+    impl InjectEnvironment for PostgresConfig {
+        fn inject_env_vars(&mut self) -> Result<()> {
             if is_env_var(&self.user) {
                 self.user = std::env::var(trim_env_key(&self.user))
                     .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.user));
@@ -200,14 +220,14 @@ pub mod config {
     #[derive(Clone, Deserialize, Debug)]
     pub struct GraphQLConfig {
         pub host: String,
-        pub port: u32,
+        pub port: String,
     }
 
     impl Default for GraphQLConfig {
         fn default() -> Self {
             Self {
                 host: defaults::GRAPHQL_API_HOST.into(),
-                port: defaults::GRAPHQL_API_PORT,
+                port: defaults::GRAPHQL_API_PORT.into(),
             }
         }
     }
@@ -217,6 +237,22 @@ pub mod config {
             format!("{}:{}", cfg.host, cfg.port)
                 .parse()
                 .expect("Failed")
+        }
+    }
+
+    impl InjectEnvironment for GraphQLConfig {
+        fn inject_env_vars(&mut self) -> Result<()> {
+            if is_env_var(&self.host) {
+                self.host = std::env::var(trim_env_key(&self.host))
+                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
+            }
+
+            if is_env_var(&self.port) {
+                self.port = std::env::var(trim_env_key(&self.port))
+                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
+            }
+
+            Ok(())
         }
     }
 }
