@@ -1,1 +1,8 @@
+<<<<<<< HEAD
 **/target
+=======
+# we don't need example binaries in the release
+examples/**/target
+target/debug/
+
+>>>>>>> cd8e90b (Feedback:update Docker + config env vars)
