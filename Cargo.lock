@@ -2400,7 +2400,14 @@ dependencies = [
 name = "fuel-indexer-plugin"
 version = "0.0.0"
 dependencies = [
+<<<<<<< HEAD
  "fuel-indexer-schema",
+=======
+ "anyhow",
+ "serde",
+ "structopt",
+ "tracing",
+>>>>>>> 46e24d9 (Implement review feedback)
 ]
 
 [[package]]
