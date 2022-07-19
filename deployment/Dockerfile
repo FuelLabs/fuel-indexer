@@ -52,4 +52,4 @@ ARG GRAPHQL_API_PORT=29987
 EXPOSE $GRAPHQL_API_PORT
 
 # hadolint ignore=DL3025
-CMD exec ./fuel-indexer
+CMD exec ./fuel-executor
