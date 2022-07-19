@@ -24,181 +24,6 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-  cargo-check-workspace-locked:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        name: Cargo Check Workspace Locked
-        with:
-          command: check
-          args: --locked --workspace --all-features --all-targets
-        env:
-          RUSTFLAGS: '-D warnings'
-
-  cargo-build-workspace:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        name: Cargo Build Workspace
-        with:
-          command: build
-          args: --locked --workspace --all-features --all-targets
-        env:
-          RUSTFLAGS: '-D warnings'
-
-  cargo-test-workspace-default-features:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - name: Cargo Test Workspace
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked --workspace
-        env:
-          RUSTFLAGS: '-D warnings'
-
-  cargo-test-workspace-no-features:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - name: Cargo Test Workspace
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked --workspace --no-default-features --all-targets
-        env:
-          RUSTFLAGS: '-D warnings'
-
-  cargo-test-workspace-all-features:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo install diesel_cli
-      - run: |
-          cd schema
-          diesel migration run --migration-dir migrations/postgres/
-          cargo fmt
-      - name: Cargo Test Workspace
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked --workspace --all-features --all-targets
-        env:
-          RUSTFLAGS: '-D warnings'
-
-  cargo-fmt-workspace-check:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Check Formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
-
-  cargo-toml-fmt-check:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - name: Install Cargo.toml linter
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: cargo-toml-lint
-          version: '0.1'
-      - name: Run Cargo.toml linter
-        run: git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
-
-  cargo-unused-deps-check:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          # `cargo-udeps` requires nightly to run
-          toolchain: nightly
-          default: true
-      - uses: Swatinem/rust-cache@v1
-      - name: Install cargo-udeps
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-udeps
-      - name: Check Unused Deps
-        uses: actions-rs/cargo@v1
-        with:
-          command: udeps
-          args: --locked --all-targets --features postgres
-
-  cargo-clippy-workspace:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - name: Check Clippy Linter
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          # After rustc 1.62 upgrade, the `Insertable` trait in the diesel crate triggers an 
-          # unused lifetime warning, so only allow that single warning until diesel is upgraded
-          args: --all-features --all-targets -- -D warnings -Aclippy::extra-unused-lifetimes
-
   mdbook-build:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
@@ -224,7 +49,268 @@ jobs:
           node-version: 18
       - run: |
           npm install -g markdownlint-cli@0.31.1
-          markdownlint --config .markdownlintrc **/*.md docs/src/ 
+          markdownlint --config .markdownlintrc **/*.md docs/src/
+
+  cargo-unused-deps-check:
+    needs: cancel-previous-runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          default: true
+      - uses: Swatinem/rust-cache@v1
+      - name: Install cargo-udeps
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-udeps
+      - name: Check Unused Deps
+        uses: actions-rs/cargo@v1
+        with:
+          command: udeps
+          args: --locked --all-targets --features postgres
+
+  cargo-toml-fmt-check:
+    needs: cancel-previous-runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+      - name: Install Cargo.toml linter
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-toml-lint
+          version: '0.1'
+      - name: Run Cargo.toml linter
+        run: git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
+
+  cargo-verifications:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    needs:
+      - cancel-previous-runs
+      - cargo-unused-deps-check
+      - cargo-toml-fmt-check
+    strategy:
+      matrix:
+        include:
+          - command: fmt
+            args: --all --verbose -- --check
+          - command: clippy
+            args: --all-features --all-targets -- -D warnings -Aclippy::extra-unused-lifetimes
+          - command: check
+            args: --locked --workspace --all-features --all-targets
+            env:
+              RUSTFLAGS: '-D warnings'
+          - command: build
+            args: --locked --workspace --all-features --all-targets
+            env:
+              RUSTFLAGS: '-D warnings'
+          # Default features
+          - command: test
+            args: --locked --workspace
+          # All features
+          - command: test
+            args: --locked --all-targets --all-features --workspace
+            env:
+              RUSTFLAGS: '-D warnings'
+          # No default features
+          - command: test
+            args: --locked --all-targets --no-default-features --workspace
+            env:
+              RUSTFLAGS: '-D warnings'
+    # disallow any job that takes longer than 30 minutes
+    timeout-minutes: 45
+    continue-on-error: ${{ matrix.skip-error || false }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: '${{ matrix.command }} ${{ matrix.args }}'
+      - run: cargo install diesel_cli
+      - run: |
+          cd schema
+          diesel migration run --migration-dir migrations/postgres/
+          cargo fmt
+      - name: ${{ matrix.command }} ${{ matrix.args }}
+        uses: actions-rs/cargo@v1
+        with:
+          command: ${{ matrix.command }}
+          args: ${{ matrix.args }}
+      - name: Notify if Job Fails
+        uses: ravsamhq/notify-slack-action@v1
+        if: always() && github.ref == 'refs/heads/master'
+        with:
+          status: ${{ job.status }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+          footer: ''
+          notify_when: 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
+          RUSTFLAGS: -D warnings
+
+  publish-fuel-indexer-binaries:
+    name: Release fuel-indexer binaries
+    runs-on: ${{ matrix.job.os }}
+    # Only do this job if publishing a release
+    needs:
+      - cancel-previous-runs
+      - cargo-unused-deps-check
+      - cargo-toml-fmt-check
+    if: github.event_name == 'release' && github.event.action == 'published'
+    strategy:
+      matrix:
+        job:
+          - os: ubuntu-latest
+            platform: linux
+            target: x86_64-unknown-linux-gnu
+            cross_image: x86_64-linux-gnu
+          - os: ubuntu-latest
+            platform: linux
+            target: x86_64-unknown-linux-musl
+            cross_image: x86_64-linux-musl
+          - os: ubuntu-latest
+            platform: linux-arm
+            target: aarch64-unknown-linux-gnu
+            cross_image: aarch64-linux-gnu
+          - os: ubuntu-latest
+            platform: linux-arm
+            target: aarch64-unknown-linux-musl
+            cross_image: aarch64-linux-musl
+          - os: macos-latest
+            platform: darwin
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            platform: darwin-arm
+            target: aarch64-apple-darwin
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Setup custom cross env ${{ matrix.job.cross_image }}
+        if: matrix.job.cross_image
+        uses: docker/build-push-action@v2
+        with:
+          context: ci
+          file: ci/Dockerfile.${{ matrix.job.target }}-clang
+          tags: ${{ matrix.job.cross_image }}:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Install packages (macOS)
+        if: matrix.job.os == 'macos-latest'
+        run: |
+          ci/macos-install-packages.sh
+      - name: Install toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: ${{ matrix.job.target }}
+          override: true
+
+      - uses: Swatinem/rust-cache@v1
+        with:
+          cache-on-failure: true
+          key: '${{ matrix.job.target }}'
+
+      - name: Install cross
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cross
+          cache-key: '${{ matrix.job.target }}'
+
+      - name: Build fuel-executor
+        run: |
+          cross build --profile=release --target ${{ matrix.job.target }} -p fuel-executor
+      - name: Strip release binary linux x86_64
+        if: matrix.job.platform == 'linux'
+        run: strip "target/${{ matrix.job.target }}/release/fuel-executor"
+
+      - name: Strip release binary aarch64-linux-gnu
+        if: matrix.job.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          docker run --rm -v \
+          "$PWD/target:/target:Z" \
+          aarch64-linux-gnu:latest \
+          aarch64-linux-gnu-strip \
+          /target/aarch64-unknown-linux-gnu/release/fuel-executor
+      - name: Strip release binary aarch64-linux-musl
+        if: matrix.job.target == 'aarch64-unknown-linux-musl'
+        run: |
+          docker run --rm -v \
+          "$PWD/target:/target:Z" \
+          aarch64-linux-musl:latest \
+          aarch64-linux-musl-strip \
+          /target/aarch64-unknown-linux-musl/release/fuel-executor
+      - name: Strip release binary mac
+        if: matrix.job.os == 'macos-latest'
+        run: strip -x "target/${{ matrix.job.target }}/release/fuel-executor"
+
+      - name: Prepare Binary Artifact
+        env:
+          PLATFORM_NAME: ${{ matrix.job.platform }}
+          TARGET: ${{ matrix.job.target }}
+        run: |
+          # trim refs/tags/ prefix
+          FUEL_CORE_VERSION="${GITHUB_REF#refs/tags/}"
+          # optionally trim v from tag prefix
+          FUEL_CORE_VERSION="${FUEL_CORE_VERSION#v}"
+          echo "version is: $FUEL_CORE_VERSION"
+          # setup artifact filename
+          ARTIFACT="fuel-executor-$FUEL_CORE_VERSION-${{ env.TARGET }}"
+          ZIP_FILE_NAME="$ARTIFACT.tar.gz"
+          echo "ZIP_FILE_NAME=$ZIP_FILE_NAME" >> $GITHUB_ENV
+          # create zip file
+          mkdir -pv "$ARTIFACT"
+          cp "target/${{ matrix.job.target }}/release/fuel-executor" "$ARTIFACT"
+          tar -czvf "$ZIP_FILE_NAME" "$ARTIFACT"
+      - name: Upload Binary Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ env.ZIP_FILE_NAME }}
+          asset_name: ${{ env.ZIP_FILE_NAME }}
+          asset_content_type: application/gzip
+
+      - name: Notify if Job Fails
+        uses: ravsamhq/notify-slack-action@v1
+        # need to find a work-around to be able to run this action on mac
+        if: always() && (github.ref == 'refs/heads/master' || github.ref_type == 'tag') && matrix.job.os != 'macos-latest'
+        with:
+          status: ${{ job.status }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+          footer: ''
+          notify_when: 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
   publish-docker-image:
     needs: cargo-toml-fmt-check
@@ -293,17 +379,8 @@ jobs:
 
   validation-complete:
     needs:
-      [
-        cargo-check-workspace-locked,
-        cargo-build-workspace,
-        cargo-test-workspace-default-features,
-        cargo-test-workspace-no-features,
-        cargo-test-workspace-all-features,
-        cargo-fmt-workspace-check,
-        cargo-toml-fmt-check,
-        cargo-clippy-workspace,
-        mdbook-build,
-      ]
+      - cargo-verifications
+      - mdbook-build
     runs-on: ubuntu-latest
     steps:
       - run: true
