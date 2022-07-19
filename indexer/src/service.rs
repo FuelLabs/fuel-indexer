@@ -5,7 +5,7 @@ use crate::{
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_lib::{config::InjectEnvironment, defaults};
+use fuel_indexer_lib::{config::InjectEnvironment, defaults, utils::derive_socket_addr};
 use fuel_tx::Receipt;
 use fuels_core::abi_encoder::ABIEncoder;
 use fuels_core::{Token, Tokenizable};
@@ -118,9 +118,8 @@ pub struct IndexerService {
 
 impl IndexerService {
     pub fn new(config: IndexerConfig) -> IndexerResult<IndexerService> {
-        let fuel_node_addr = format!("{}:{}", &config.fuel_node.host, &config.fuel_node.port)
-            .parse()
-            .expect("Failed");
+        let fuel_node_addr =
+            derive_socket_addr(&config.fuel_node.host, &config.fuel_node.port).unwrap();
 
         let manager = SchemaManager::new(&config.postgres.to_string())?;
 

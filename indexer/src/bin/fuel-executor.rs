@@ -40,7 +40,7 @@ pub async fn main() -> Result<()> {
     };
 
     info!(
-        "Subscribed to Fuel node at {}",
+        "Subscribing to Fuel node at {}",
         &config.fuel_node.to_string()
     );
     let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));

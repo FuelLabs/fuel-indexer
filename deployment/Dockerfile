@@ -37,11 +37,12 @@ FROM ubuntu:22.04 as run
 WORKDIR /root/
 
 RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends ca-certificates \
+    && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    libpq-dev \
     # Clean up
     && apt-get autoremove -y \
     && apt-get clean -y
-
 
 COPY --from=builder /build/target/release/fuel-executor .
 COPY --from=builder /build/target/release/fuel-executor.d .
@@ -51,4 +52,4 @@ ARG GRAPHQL_API_PORT=29987
 EXPOSE $GRAPHQL_API_PORT
 
 # hadolint ignore=DL3025
-CMD exec ./fuel-executor
+ENTRYPOINT ["./fuel-executor"]

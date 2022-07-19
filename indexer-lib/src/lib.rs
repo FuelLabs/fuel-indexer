@@ -1,5 +1,9 @@
 pub mod utils {
 
+    use anyhow::Result;
+    use std::net::{SocketAddr, ToSocketAddrs};
+    use tracing::{debug, warn};
+
     pub fn trim_env_key(key: &str) -> &str {
         // Abmiguous key: $FOO, non-ambiguous key: ${FOO}
         let not_ambiguous = key.starts_with("${");
@@ -11,6 +15,32 @@ pub mod utils {
 
     pub fn is_env_var(key: &str) -> bool {
         key.starts_with('$') || (key.starts_with("${") && key.ends_with('}'))
+    }
+
+    pub fn derive_socket_addr(host: &String, port: &String) -> Result<SocketAddr> {
+        let host = format!("{}:{}", host, port);
+        match &host.parse() {
+            Ok(sock) => Ok(*sock),
+            Err(e) => {
+                warn!(
+                    "Failed to parse '{}' as a SocketAddr due to '{}'. Retrying using ToSocketAddrs.",
+                    host, e
+                );
+
+                let mut addrs: Vec<_> = host
+                    .to_socket_addrs()
+                    .unwrap_or_else(|_| panic!("Unable to resolve domain for '{}'", host))
+                    .collect();
+
+                let addr = addrs
+                    .pop()
+                    .unwrap_or_else(|| panic!("Could not derive SocketAddr from '{}'", host));
+
+                debug!("Parsed SocketAddr '{}' from '{}'", addr.to_string(), host);
+
+                Ok(addr)
+            }
+        }
     }
 }
 
