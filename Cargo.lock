@@ -2300,7 +2300,6 @@ dependencies = [
  "serde-scale",
  "serde_json",
  "serde_yaml",
- "structopt",
  "thiserror",
  "tokio",
  "tokio-postgres",
@@ -2413,8 +2412,8 @@ name = "fuel-indexer-lib"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "clap 3.2.4",
  "serde",
- "structopt",
  "tracing",
 ]
 
@@ -5118,7 +5117,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "structopt",
  "thiserror",
  "tokio",
  "tracing",

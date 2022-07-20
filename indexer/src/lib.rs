@@ -13,7 +13,10 @@ pub use api::GraphQlApi;
 pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
 
-pub use fuel_indexer_lib::config::{FuelNodeConfig, GraphQLConfig, IndexerArgs, PostgresConfig};
+pub use fuel_indexer_lib::{
+    config::{FuelNodeConfig, GraphQLConfig, IndexerArgs, PostgresConfig},
+    Parser,
+};
 pub use fuel_indexer_schema::NativeHandlerResult;
 pub use fuel_tx::Receipt;
 pub use fuel_types::{Address, ContractId};
