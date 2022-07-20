@@ -66,10 +66,11 @@ pub struct GraphQlApi;
 
 impl GraphQlApi {
     pub async fn run(config: IndexerConfig) {
-        let sm = SchemaManager::new(&config.database_url).expect("SchemaManager create failed");
+        let sm =
+            SchemaManager::new(&config.postgres.to_string()).expect("SchemaManager create failed");
         let schema_manager = Arc::new(RwLock::new(sm));
-        let config = Arc::new(config);
-        let listen_on = config.listen_endpoint;
+        let config = Arc::new(config.clone());
+        let listen_on = config.graphql_api.clone().into();
 
         let app = Router::new()
             .route("/graph/:name", post(query_graph))
@@ -88,7 +89,7 @@ async fn run_query(
     schema: Schema,
     config: Arc<IndexerConfig>,
 ) -> Result<Value, APIError> {
-    let (client, conn) = connect(&config.database_url, NoTls).await?;
+    let (client, conn) = connect(&config.postgres.to_string(), NoTls).await?;
     tokio::spawn(async move {
         if let Err(e) = conn.await {
             error!("Database connection error {:?}", e);

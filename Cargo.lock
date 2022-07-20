@@ -324,12 +324,13 @@ checksum = "08f9b8508dccb7687a1d6c4ce66b2b0ecef467c94667de27d8d7fe1f8d2a9cdc"
 
 [[package]]
 name = "api_server"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-std",
  "axum",
  "diesel",
+ "fuel-indexer-lib",
  "fuel-indexer-schema",
  "serde",
  "serde_json",
@@ -2281,6 +2282,7 @@ dependencies = [
  "diesel",
  "fuel-core 0.6.4",
  "fuel-gql-client 0.6.4",
+ "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-storage 0.1.0",
  "fuel-tx 0.9.0",
@@ -2404,6 +2406,16 @@ dependencies = [
  "serde",
  "syn",
  "trybuild",
+]
+
+[[package]]
+name = "fuel-indexer-lib"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+ "structopt",
+ "tracing",
 ]
 
 [[package]]

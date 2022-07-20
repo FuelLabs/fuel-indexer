@@ -1,17 +1,15 @@
 use anyhow::Result;
-use api_server::GraphQlApi;
-use async_std::{fs::File, io::ReadExt, net::SocketAddr};
-use serde::{Deserialize, Serialize};
+use api_server::{GraphQLApi, GraphQLConfig, PostgresConfig};
+use async_std::{fs::File, io::ReadExt};
+use serde::Deserialize;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing_subscriber::filter::EnvFilter;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct ServerConfig {
-    /// API Server listen address.
-    listen_address: SocketAddr,
-    /// Where the data lives.
-    database_url: String,
+    graphql: GraphQLConfig,
+    postgres: PostgresConfig,
 }
 
 #[derive(Debug, StructOpt)]
@@ -39,12 +37,10 @@ pub async fn main() -> Result<()> {
     let mut contents = String::new();
     file.read_to_string(&mut contents).await?;
 
-    let ServerConfig {
-        listen_address,
-        database_url,
-    } = serde_yaml::from_str(&contents).expect("Bad yaml file");
+    let ServerConfig { graphql, postgres } =
+        serde_yaml::from_str(&contents).expect("Bad yaml file");
 
-    let api = GraphQlApi::new(database_url, listen_address);
+    let api = GraphQLApi::new(postgres, graphql);
 
     let api_handle = tokio::spawn(api.run());
 

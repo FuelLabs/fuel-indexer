@@ -6,6 +6,7 @@ members = [
    "derive",
    "lib",
    "indexer",
+   "indexer-lib",
    "examples/*",
    "examples/simple-native/counter-rs",
    "schema"
