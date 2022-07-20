@@ -2,7 +2,7 @@ extern crate alloc;
 use anyhow::Result;
 use fuel_executor::{
     Address, GraphQlApi, IndexerArgs, IndexerConfig, IndexerResult, IndexerService, Manifest,
-    NativeHandlerResult, Receipt, Parser,
+    NativeHandlerResult, Parser, Receipt,
 };
 use fuel_indexer_derive::graphql_schema;
 use fuels::core::{abi_decoder::ABIDecoder, ParamType, Tokenizable};

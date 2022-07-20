@@ -59,6 +59,7 @@ pub mod defaults {
 }
 
 pub mod config {
+    use crate::Parser;
     use crate::{
         defaults,
         utils::{is_env_var, trim_env_key},
@@ -68,7 +69,6 @@ pub mod config {
     use std::fmt::Write;
     use std::net::SocketAddr;
     use std::path::PathBuf;
-    use crate::Parser;
 
     #[derive(Debug, Parser)]
     #[clap(

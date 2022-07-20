@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
-use fuel_executor::{GraphQlApi, Parser, IndexerArgs, IndexerConfig, IndexerService, Manifest};
+use fuel_executor::{GraphQlApi, IndexerArgs, IndexerConfig, IndexerService, Manifest, Parser};
 use fuel_indexer_schema::db::run_migration;
 use tokio::join;
 use tracing::{error, info};
