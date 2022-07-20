@@ -59,6 +59,7 @@ pub mod defaults {
 }
 
 pub mod config {
+    use crate::Parser;
     use crate::{
         defaults,
         utils::{is_env_var, trim_env_key},
