@@ -245,7 +245,7 @@ jobs:
 
       - name: Build fuel-executor
         run: |
-          cross build --profile=release --target ${{ matrix.job.target }} -p fuel-executor
+          cross build --locked --profile=release --target ${{ matrix.job.target }} -p fuel-executor
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
         run: strip "target/${{ matrix.job.target }}/release/fuel-executor"
