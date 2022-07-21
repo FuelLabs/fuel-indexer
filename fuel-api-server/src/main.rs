@@ -1,5 +1,5 @@
 use anyhow::Result;
-use api_server::{GraphQLApi, GraphQLConfig, PostgresConfig};
+use fuel_api_server::{GraphQLApi, GraphQLConfig, PostgresConfig};
 use async_std::{fs::File, io::ReadExt};
 use serde::Deserialize;
 use std::path::PathBuf;

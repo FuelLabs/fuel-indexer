@@ -8,8 +8,8 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer = { path = "../../lib" }
-fuel-indexer-derive = { path = "../../derive" }
+fuel-indexer = { path = "../../fuel-indexer" }
+fuel-indexer-derive = { path = "../../fuel-indexer-derive" }
 fuel-tx = "0.9"
 fuels-abigen-macro = "0.15"
 fuels-core = "0.15"

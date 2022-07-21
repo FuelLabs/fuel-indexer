@@ -10,4 +10,4 @@ publish = false
 crate-type = ['rlib']
 
 [dependencies]
-fuel-indexer-schema = { path = "../schema" }
+fuel-indexer-schema = { path = "../fuel-indexer-schema" }

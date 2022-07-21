@@ -323,26 +323,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08f9b8508dccb7687a1d6c4ce66b2b0ecef467c94667de27d8d7fe1f8d2a9cdc"
 
 [[package]]
-name = "api_server"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-std",
- "axum",
- "diesel",
- "fuel-indexer-lib",
- "fuel-indexer-schema",
- "serde",
- "serde_json",
- "serde_yaml",
- "structopt",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.2.25",
-]
-
-[[package]]
 name = "arrayvec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2051,6 +2031,26 @@ name = "fuchsia-cprng"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a06f77d526c1a601b7c4cdd98f54b5eaabffc14d5f2f0296febdc7f357c6d3ba"
+
+[[package]]
+name = "fuel-api-server"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "axum",
+ "diesel",
+ "fuel-indexer-lib",
+ "fuel-indexer-schema",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "structopt",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
 
 [[package]]
 name = "fuel-asm"

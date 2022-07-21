@@ -1,5 +1,5 @@
 [package]
-name = "api_server"
+name = "fuel-api-server"
 version = "0.0.0"
 edition = "2021"
 license = "BUSL-1.1"
@@ -8,11 +8,11 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "api_server"
+name = "fuel_api_server"
 path = "src/lib.rs"
 
 [[bin]]
-name = "api_server"
+name = "fuel-api-server"
 path = "src/main.rs"
 
 [dependencies]
@@ -20,8 +20,8 @@ anyhow = "1.0.53"
 async-std = "1.10.0"
 axum = "0.4"
 diesel = { version = "1.4", features = ["postgres"] }
-fuel-indexer-lib = { path = "../indexer-lib" }
-fuel-indexer-schema = { path = "../schema", features = ["db-models"] }
+fuel-indexer-lib = { path = "../fuel-indexer-lib" }
+fuel-indexer-schema = { path = "../fuel-indexer-schema", features = ["db-models"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 serde_yaml = "0.8.19"
