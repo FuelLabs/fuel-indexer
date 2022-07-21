@@ -146,7 +146,7 @@ jobs:
           key: '${{ matrix.command }} ${{ matrix.args }}'
       - run: cargo install diesel_cli
       - run: |
-          cd schema
+          cd fuel-indexer-schema
           diesel migration run --migration-dir migrations/postgres/
           cargo fmt
       - name: ${{ matrix.command }} ${{ matrix.args }}

@@ -1,6 +1,6 @@
 use anyhow::Result;
-use fuel_api_server::{GraphQLApi, GraphQLConfig, PostgresConfig};
 use async_std::{fs::File, io::ReadExt};
+use fuel_api_server::{GraphQLApi, GraphQLConfig, PostgresConfig};
 use serde::Deserialize;
 use std::path::PathBuf;
 use structopt::StructOpt;
