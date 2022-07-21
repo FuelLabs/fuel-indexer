@@ -13,7 +13,7 @@ development = ["fuels", "fuel-indexer", "fuels-core"]
 proc-macro = true
 
 [dependencies]
-fuel-indexer-schema = { path = "../schema" }
+fuel-indexer-schema = { path = "../fuel-indexer-schema" }
 graphql-parser = "0.3"
 proc-macro-error = "1.0"
 proc-macro2 = "1.0"
@@ -21,7 +21,7 @@ quote = "1.0"
 syn = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
-fuel-indexer = { path = "../lib" }
+fuel-indexer = { path = "../fuel-indexer" }
 fuels = { version = "0.15" }
 fuels-core = { version = "0.15" }
 serde = { version = "1.0", default-features = false, features = ["derive"] }

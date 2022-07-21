@@ -251,7 +251,7 @@ mod tests {
     const BAD_MANIFEST: &str = include_str!("test_data/bad_manifest.yaml");
     const WASM_BYTES: &[u8] = include_bytes!("test_data/simple_wasm.wasm");
 
-    abigen!(MyContract, "indexer/src/test_data/my_struct.json");
+    abigen!(MyContract, "fuel-executor/src/test_data/my_struct.json");
 
     #[derive(Debug, Queryable, QueryableByName)]
     struct Thing1 {
