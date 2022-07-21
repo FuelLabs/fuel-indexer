@@ -1,12 +1,17 @@
-# https://stackoverflow.com/a/61809830/19446076
-# https://stackoverflow.com/q/57749127/19446076
-FROM ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main-centos
+FROM ubuntu:22.04
 
-RUN yum -y update && \
-    yum -y install centos-release-scl && \
-    yum-config-manager --enable rhel-server-rhscl-8-rpms && \
-    yum -y install llvm-toolset-7.0
-
-COPY centos-entrypoint /usr/bin/entrypoint.sh
-RUN chmod +x /usr/bin/entrypoint.sh
-ENTRYPOINT [ "/usr/bin/entrypoint.sh" ]
+RUN apt-get update && \
+    apt-get install -y \
+        binutils-aarch64-linux-gnu \
+        build-essential \
+        clang \
+        cmake \
+        gcc \
+        git \
+        libclang-dev \
+        libpq5 \
+        libpq-dev \
+        lld \
+        llvm \
+        pkg-config \
+        && apt-get clean
