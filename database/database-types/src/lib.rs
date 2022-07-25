@@ -1,0 +1,186 @@
+pub struct RootColumns {
+    pub id: i32,
+    pub root_id: i64,
+    pub column_name: String,
+    pub graphql_type: String,
+}
+
+pub struct NewRootColumns {
+    pub root_id: i64,
+    pub column_name: String,
+    pub graphql_type: String,
+}
+
+pub struct GraphRoot {
+    pub id: i64,
+    pub version: String,
+    pub schema_name: String,
+    pub query: String,
+    pub schema: String,
+}
+
+pub struct NewGraphRoot {
+    pub version: String,
+    pub schema_name: String,
+    pub query: String,
+    pub schema: String,
+}
+
+pub struct TypeId {
+    pub id: i64,
+    pub schema_version: String,
+    pub schema_name: String,
+    pub graphql_name: String,
+    pub table_name: String,
+}
+
+pub struct IdLatest {
+    pub schema_version: String
+}
+
+pub struct NumVersions {
+    pub num: Option<i64>
+}
+
+pub struct NewColumn {
+    pub type_id: i64,
+    pub column_position: i32,
+    pub column_name: String,
+    pub column_type: String,
+    pub nullable: bool,
+    pub graphql_type: String,
+}
+
+pub struct Columns {
+    pub id: i32,
+    pub type_id: i64,
+    pub column_position: i32,
+    pub column_name: String,
+    pub column_type: String,
+    pub nullable: bool,
+    pub graphql_type: String,
+}
+
+impl NewColumn {
+    pub fn sql_fragment(&self) -> String {
+        if self.nullable {
+            format!("{} {}", self.column_name, self.sql_type())
+        } else {
+            format!("{} {} not null", self.column_name, self.sql_type())
+        }
+    }
+
+    fn sql_type(&self) -> &str {
+        match ColumnType::from(self.column_type.as_str()) {
+            ColumnType::ID => "bigint primary key",
+            ColumnType::Address => "varchar(64)",
+            ColumnType::Bytes4 => "varchar(8)",
+            ColumnType::Bytes8 => "varchar(16)",
+            ColumnType::Bytes32 => "varchar(64)",
+            ColumnType::AssetId => "varchar(64)",
+            ColumnType::ContractId => "varchar(64)",
+            ColumnType::Salt => "varchar(64)",
+            ColumnType::Int4 => "integer",
+            ColumnType::Int8 => "bigint",
+            ColumnType::UInt4 => "integer",
+            ColumnType::UInt8 => "bigint",
+            ColumnType::Timestamp => "timestamp",
+            ColumnType::Blob => "bytea",
+        }
+    }
+}
+
+pub struct Query {
+    row: String
+}
+
+pub struct ColumnInfo {
+    pub type_id: i64,
+    pub table_name: String,
+    pub column_position: i32,
+    pub column_name: String,
+    pub column_type: String,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ColumnType {
+    ID = 0,
+    Address = 1,
+    AssetId = 2,
+    Bytes4 = 3,
+    Bytes8 = 4,
+    Bytes32 = 5,
+    ContractId = 6,
+    Salt = 7,
+    Int4 = 8,
+    Int8 = 9,
+    UInt4 = 10,
+    UInt8 = 11,
+    Timestamp = 12,
+    Blob = 13,
+}
+
+impl From<ColumnType> for i32 {
+    fn from(typ: ColumnType) -> i32 {
+        match typ {
+            ColumnType::ID => 0,
+            ColumnType::Address => 1,
+            ColumnType::AssetId => 2,
+            ColumnType::Bytes4 => 3,
+            ColumnType::Bytes8 => 4,
+            ColumnType::Bytes32 => 5,
+            ColumnType::ContractId => 6,
+            ColumnType::Salt => 7,
+            ColumnType::Int4 => 8,
+            ColumnType::Int8 => 9,
+            ColumnType::UInt4 => 10,
+            ColumnType::UInt8 => 11,
+            ColumnType::Timestamp => 12,
+            ColumnType::Blob => 13,
+        }
+    }
+}
+
+impl From<i32> for ColumnType {
+    fn from(num: i32) -> ColumnType {
+        match num {
+            0 => ColumnType::ID,
+            1 => ColumnType::Address,
+            2 => ColumnType::AssetId,
+            3 => ColumnType::Bytes4,
+            4 => ColumnType::Bytes8,
+            5 => ColumnType::Bytes32,
+            6 => ColumnType::ContractId,
+            7 => ColumnType::Salt,
+            8 => ColumnType::Int4,
+            9 => ColumnType::Int8,
+            10 => ColumnType::UInt4,
+            11 => ColumnType::UInt8,
+            12 => ColumnType::Timestamp,
+            13 => ColumnType::Blob,
+            _ => panic!("Invalid column type!"),
+        }
+    }
+}
+
+impl From<&str> for ColumnType {
+    fn from(name: &str) -> ColumnType {
+        match name {
+            "ID" => ColumnType::ID,
+            "Address" => ColumnType::Address,
+            "AssetId" => ColumnType::AssetId,
+            "Bytes4" => ColumnType::Bytes4,
+            "Bytes8" => ColumnType::Bytes8,
+            "Bytes32" => ColumnType::Bytes32,
+            "ContractId" => ColumnType::ContractId,
+            "Salt" => ColumnType::Salt,
+            "Int4" => ColumnType::Int4,
+            "Int8" => ColumnType::Int8,
+            "UInt4" => ColumnType::UInt4,
+            "UInt8" => ColumnType::UInt8,
+            "Timestamp" => ColumnType::Timestamp,
+            "Blob" => ColumnType::Blob,
+            _ => panic!("Invalid column type! {}", name),
+        }
+    }
+}

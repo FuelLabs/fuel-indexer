@@ -2,13 +2,13 @@
 # Use the new resolver to prevent dev-deps and build-deps from enabling debugging or test features in production.
 resolver = "2"
 members = [
-   "api_server",
-   "derive",
+   #"api_server",
+   #"derive",
    "lib",
    "indexer",
-   "examples/*",
-   "examples/simple-native/counter-rs",
-   "schema"
+   "database/*",
+   #"examples/*",
+   #"examples/simple-native/counter-rs",
 ]
 
 [profile.release]

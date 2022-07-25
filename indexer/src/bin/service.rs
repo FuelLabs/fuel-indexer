@@ -43,7 +43,7 @@ pub async fn main() -> Result<()> {
 
     let mut config: IndexerConfig = serde_yaml::from_str(&contents)?;
 
-    run_migration(&config.database_url);
+    run_migration(&config.database_url).await;
 
     let _local_node = if opt.local {
         let s = FuelService::new_node(Config::local_node()).await.unwrap();

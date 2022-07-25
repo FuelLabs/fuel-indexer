@@ -1,0 +1,209 @@
+use crate::{ColumnType, db::IndexerConnection};
+use fuel_indexer_postgres as postgres;
+use fuel_indexer_sqlite as sqlite;
+
+
+pub struct RootColumns {
+    pub id: i32,
+    pub root_id: i64,
+    pub column_name: String,
+    pub graphql_type: String,
+}
+
+impl RootColumns {
+    async fn list_by_id(conn: &mut IndexerConnection, root_id: i64) -> sqlx::Result<Vec<RootColumns>> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::root_columns_list_by_id(c, root_id);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::root_columns_list_by_id(c, root_id);
+            }
+        }
+    }
+
+    async fn insert(conn: &mut IndexerConnection, root_ids: Vec<i64>, column_names: Vec<String>, graphql_types: Vec<String>) -> sqlx::Result<usize> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::new_root_columns(c, root_ids, column_names, graphql_types);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::new_root_columns(c, root_ids, column_names, graphql_types);
+            }
+        }
+    }
+}
+
+pub struct GraphRoot {
+    pub id: i64,
+    pub version: String,
+    pub schema_name: String,
+    pub query: String,
+    pub schema: String,
+}
+
+impl GraphRoot {
+    async fn latest_version(conn: &mut IndexerConnection, name: &str) -> sqlx::Result<GraphRoot> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::graph_root_lates(c, name);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::graph_root_lates(c, name);
+            }
+        }
+    }
+
+    async fn insert(conn: &mut IndexerConnection, version: &str, schema_name: &str, query: &str, schema: &str) -> sqlx::Result<usize> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::new_graph_root(c, version, schema_name, query, schema);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::new_graph_root(c, version, schema_name, query, schema);
+            }
+        }
+    }
+}
+
+pub struct TypeId {
+    pub id: i64,
+    pub schema_version: String,
+    pub schema_name: String,
+    pub graphql_name: String,
+    pub table_name: String,
+}
+
+impl TypeId {
+    async fn list_by_name(conn: &mut IndexerConnection, name: &str, version: &str,) -> sqlx::Result<Vec<TypeId>> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::type_id_list_by_name(c, name, version);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::type_id_list_by_name(c, name, version);
+            }
+        }
+    }
+
+    async fn latest_version(conn: &mut IndexerConnection, schema_name: &str) -> sqlx::Result<String> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::type_id_latest(c, schema_name);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::type_id_latest(c, schema_name);
+            }
+        }
+    }
+
+    async fn insert(conn: &mut IndexerConnection, ids: Vec<i64>, schema_versions: Vec<String>, schema_names: Vec<String>, graphql_names: Vec<String>, table_names: Vec<String>) -> sqlx::Result<usize> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::type_id_insert(c, ids, schema_versions, schema_names, graphql_names, table_names);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::type_id_insert(c, ids, schema_versions, schema_names, graphql_names, table_names);
+            }
+        }
+    }
+
+    async fn schema_exists(conn: &mut IndexerConnection, name: &str, version: &str) -> sqlx::Result<bool> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::schema_exists(c, name, version);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::schema_exists(c, name, version);
+            }
+        }
+    }
+}
+
+impl NewColumn {
+    async fn insert(conn: &mut IndexerConnection, type_id: i64, column_position: i32, column_name: &str, column_type: &str, nullable: bool, graphql_type: &str) -> sqlx::Result<usize> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::new_column_insert(c, type_id, column_position, column_name, column_type, nullable, graphq_type);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::new_column_insert(c, type_id, column_position, column_name, column_type, nullable, graphq_type);
+            }
+        }
+    }
+
+    pub fn sql_fragment(&self) -> String {
+        if self.nullable {
+            format!("{} {}", self.column_name, self.sql_type())
+        } else {
+            format!("{} {} not null", self.column_name, self.sql_type())
+        }
+    }
+
+    fn sql_type(&self) -> &str {
+        match self.column_type {
+            ColumnType::ID => "bigint primary key",
+            ColumnType::Address => "varchar(64)",
+            ColumnType::Bytes4 => "varchar(8)",
+            ColumnType::Bytes8 => "varchar(16)",
+            ColumnType::Bytes32 => "varchar(64)",
+            ColumnType::AssetId => "varchar(64)",
+            ColumnType::ContractId => "varchar(64)",
+            ColumnType::Salt => "varchar(64)",
+            ColumnType::Int4 => "integer",
+            ColumnType::Int8 => "bigint",
+            ColumnType::UInt4 => "integer",
+            ColumnType::UInt8 => "bigint",
+            ColumnType::Timestamp => "timestamp",
+            ColumnType::Blob => "bytea",
+        }
+    }
+}
+
+pub struct Columns {
+    pub id: i32,
+    pub type_id: i64,
+    pub column_position: i32,
+    pub column_name: String,
+    pub column_type: ColumnType,
+    pub nullable: bool,
+    pub graphql_type: String,
+}
+
+impl Columns {
+    async fn list_by_id(conn: &mut IndexerConnection, col_id: i64) -> sqlx::Result<Vec<Columns>> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::list_column_by_id(c, col_id);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::list_column_by_id(c, col_id);
+            }
+        }
+    }
+}
+
+pub struct ColumnInfo {
+    pub type_id: i64,
+    pub table_name: String,
+    pub column_position: i32,
+    pub column_name: String,
+    pub column_type: ColumnType,
+}
+
+impl ColumnInfo {
+    async fn get_schema(conn: &mut IndexerConnection, name: &str, version: &str) -> sqlx::Result<Vec<ColumnInfo>> {
+        match conn {
+            IndexerConnection::Postgres(&mut c) => {
+                postgres::columns_get_schema(c, name, version);
+            }
+            IndexerConnection::Sqlite(&mut c) => {
+                sqlite::columns_get_schema(c, name, version);
+            }
+        }
+    }
+}
+
+pub struct EntityData {
+    pub object: Vec<u8>,
+}

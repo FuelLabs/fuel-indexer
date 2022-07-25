@@ -1,12 +1,6 @@
-#[cfg(feature = "db-models")]
-#[macro_use]
-extern crate diesel;
-
-#[cfg(feature = "db-models")]
-#[macro_use]
-extern crate diesel_migrations;
 extern crate alloc;
 use alloc::vec::Vec;
+pub use fuel_indexer_database_types as sql_types;
 
 use crate::sql_types::ColumnType;
 use core::convert::{TryFrom, TryInto};
@@ -21,8 +15,6 @@ pub const LOG_LEVEL_TRACE: u32 = 4;
 use sha2::{Digest, Sha256};
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
-
-pub mod sql_types;
 
 #[cfg(feature = "db-models")]
 pub mod db;

@@ -8,11 +8,10 @@ use axum::{
     routing::post,
     Router,
 };
-use diesel::prelude::PgConnection as Conn;
-use diesel::sql_types::Text;
-use diesel::{Connection, QueryableByName, RunQueryDsl};
 use fuel_indexer_schema::db::{
+    IndexerConnectionPool,
     graphql::{GraphqlError, GraphqlQueryBuilder},
+    models,
     run_migration,
     tables::Schema,
 };
@@ -22,18 +21,12 @@ use std::collections::HashMap;
 use thiserror::Error;
 use tracing::error;
 
-#[derive(QueryableByName)]
 pub struct Answer {
-    #[sql_type = "Text"]
     row: String,
 }
 
 #[derive(Debug, Error)]
 pub enum ApiError {
-    #[error("Diesel error {0:?}")]
-    DieselError(#[from] diesel::result::Error),
-    #[error("Diesel connection error {0:?}")]
-    DieselConnectionError(#[from] diesel::result::ConnectionError),
     #[error("Query builder error {0:?}")]
     GraphqlError(#[from] GraphqlError),
     #[error("Malformed query")]
@@ -44,6 +37,8 @@ pub enum ApiError {
     SerdeError(#[from] serde_json::Error),
     #[error("Graph Not Found.")]
     GraphNotFound,
+    #[error("Sqlx Error.")]
+    SqlxError(#[from] sqlx::Error),
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -100,7 +95,7 @@ impl GraphQlApi {
         let sm = SchemaManager::new();
         let schema_manager = Arc::new(RwLock::new(sm));
 
-        run_migration(&self.database_url);
+        run_migration(&self.database_url).await;
 
         let app = Router::new()
             .route("/graph/:name", post(query_graph))
@@ -115,8 +110,9 @@ impl GraphQlApi {
 }
 
 pub async fn load_schema_wasm(database_url: &str, name: &str) -> Result<Option<Schema>, ApiError> {
-    let conn = Conn::establish(database_url)?;
-    Ok(Some(Schema::load_from_db(&conn, name)?))
+    // TODO: eww! thread a Pool through the server....
+    let pool = IndexerConnectionPool::connect(database_url).await;
+    Ok(Some(Schema::load_from_db(&pool, name).await?))
 }
 
 pub async fn run_query(
@@ -124,18 +120,18 @@ pub async fn run_query(
     schema: &Schema,
     database_url: String,
 ) -> Result<Value, ApiError> {
-    let conn = Conn::establish(&database_url)?;
+    // TODO: eww! thread a Pool through the server....
+    let mut conn = IndexerConnectionPool::connect(&database_url).await.acquire().await?;
     let builder = GraphqlQueryBuilder::new(schema, &query.query)?;
     let query = builder.build()?;
 
     let queries = query.as_sql(true).join(";\n");
 
-    match diesel::sql_query(queries).get_result::<Answer>(&conn) {
+    match models::run_query(&mut conn, queries).await {
         Ok(ans) => {
-            let row: Value = serde_json::from_str(&ans.row)?;
+            let row: Value = serde_json::from_str(&ans)?;
             Ok(row)
         }
-        Err(diesel::result::Error::NotFound) => Ok(Value::Null),
         Err(e) => {
             error!("Error querying database");
             Err(e.into())

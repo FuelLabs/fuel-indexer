@@ -1,15 +1,10 @@
-use crate::{
-    db::models::{
-        Columns, GraphRoot, NewColumn, NewGraphRoot, NewRootColumns, RootColumns, TypeId,
-    },
-    sql_types::ColumnType,
-    type_id,
-};
-use diesel::result::QueryResult;
-use diesel::{prelude::PgConnection, sql_query, Connection, RunQueryDsl};
+use crate::type_id;
+use crate::db::{IndexerConnectionPool, models::*};
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{Definition, Field, SchemaDefinition, Type, TypeDefinition};
 use std::collections::{HashMap, HashSet};
+use fuel_indexer_database_types::*;
+
 
 #[derive(Default)]
 pub struct SchemaBuilder {
@@ -74,7 +69,7 @@ impl SchemaBuilder {
         self
     }
 
-    pub fn commit_metadata(self, conn: &PgConnection) -> QueryResult<Schema> {
+    pub async fn commit_metadata(self, pool: &IndexerConnectionPool) -> sqlx::Result<Schema> {
         let SchemaBuilder {
             version,
             statements,
@@ -88,41 +83,36 @@ impl SchemaBuilder {
             schema,
         } = self;
 
-        conn.transaction::<(), diesel::result::Error, _>(|| {
-            NewGraphRoot {
-                version: version.clone(),
-                schema_name: namespace.clone(),
-                query: query.clone(),
-                schema,
+        let mut conn = pool.acquire().await?;
+
+        let new_root = NewGraphRoot {
+            version: version.clone(),
+            schema_name: namespace.clone(),
+            query: query.clone(),
+            schema,
+        };
+        new_graph_root(&mut conn, new_root).await?;
+
+        let latest = graph_root_latest(&mut conn, &namespace).await?;
+
+        let field_defs = query_fields.get(&query).expect("No query root!");
+
+        let cols: Vec<_> = field_defs.into_iter().map(|(key, val)| {
+            NewRootColumns {
+                root_id: latest.id,
+                column_name: key.to_string(),
+                graphql_type: val.to_string(),
             }
-            .insert(conn)?;
+        }).collect();
 
-            let latest = GraphRoot::latest_version(conn, &namespace)?;
+        new_root_columns(&mut conn, cols).await?;
+        type_id_insert(&mut conn, type_ids).await?;
+        new_column_insert(&mut conn, columns).await?;
 
-            let fields = query_fields.get(&query).expect("No query root!");
+        for statement in statements {
+            execute_query(&mut conn, statement).await?;
+        }
 
-            for (key, val) in fields {
-                NewRootColumns {
-                    root_id: latest.id,
-                    column_name: key.to_string(),
-                    graphql_type: val.to_string(),
-                }
-                .insert(conn)?;
-            }
-
-            for query in statements.iter() {
-                sql_query(query).execute(conn)?;
-            }
-
-            for type_id in type_ids {
-                type_id.insert(conn)?;
-            }
-
-            for column in columns {
-                column.insert(conn)?;
-            }
-            Ok(())
-        })?;
 
         Ok(Schema {
             version,
@@ -133,9 +123,9 @@ impl SchemaBuilder {
         })
     }
 
-    fn process_type<'a>(&self, field_type: &Type<'a, String>) -> (ColumnType, bool) {
+    fn process_type<'a>(&self, field_type: &Type<'a, String>) -> (String, bool) {
         match field_type {
-            Type::NamedType(t) => (ColumnType::from(t.as_str()), true),
+            Type::NamedType(t) => (t.to_string(), true),
             Type::ListType(_) => panic!("List types not supported yet."),
             Type::NonNullType(t) => {
                 let (typ, _) = self.process_type(t);
@@ -168,7 +158,7 @@ impl SchemaBuilder {
             type_id,
             column_position: fragments.len() as i32,
             column_name: "object".to_string(),
-            column_type: ColumnType::Blob,
+            column_type: "Blob".to_string(),
             graphql_type: "__".into(),
             nullable: false,
         };
@@ -235,10 +225,11 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn load_from_db(conn: &PgConnection, name: &str) -> QueryResult<Self> {
-        let root = GraphRoot::latest_version(conn, name)?;
-        let root_cols = RootColumns::list_by_id(conn, root.id)?;
-        let typeids = TypeId::list_by_name(conn, &root.schema_name, &root.version)?;
+    pub async fn load_from_db(pool: &IndexerConnectionPool, name: &str) -> sqlx::Result<Self> {
+        let mut conn = pool.acquire().await?;
+        let root = graph_root_latest(&mut conn, name).await?;
+        let root_cols = root_columns_list_by_id(&mut conn, root.id).await?;
+        let typeids = type_id_list_by_name(&mut conn, &root.schema_name, &root.version).await?;
 
         let mut types = HashSet::new();
         let mut fields = HashMap::new();
@@ -254,7 +245,7 @@ impl Schema {
         for tid in typeids {
             types.insert(tid.graphql_name.clone());
 
-            let columns = Columns::list_by_id(conn, tid.id)?;
+            let columns = list_column_by_id(&mut conn, tid.id).await?;
             fields.insert(
                 tid.graphql_name,
                 columns
@@ -284,6 +275,7 @@ impl Schema {
         }
     }
 }
+
 
 #[cfg(test)]
 mod tests {
