@@ -124,6 +124,27 @@ pub mod config {
         pub postgres_port: Option<String>,
     }
 
+    #[derive(Debug, StructOpt, Clone)]
+    #[structopt(name = "Indexer API Service", about = "Fuel indexer api")]
+    pub struct ApiServerArgs {
+        #[structopt(short, long, help = "API Server config.")]
+        pub config: Option<PathBuf>,
+        #[structopt(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
+        pub graphql_api_host: Option<String>,
+        #[structopt(long, help = "GraphQL API port. (default = 29987)")]
+        pub graphql_api_port: Option<String>,
+        #[structopt(long, help = "Postgres username. (default = 'postgres')")]
+        pub postgres_user: Option<String>,
+        #[structopt(long, help = "Postgres database. (default = 'postgres')")]
+        pub postgres_database: Option<String>,
+        #[structopt(long, help = "Postgres password.")]
+        pub postgres_password: Option<String>,
+        #[structopt(long, help = "Postgres host. (default = '127.0.0.1')")]
+        pub postgres_host: Option<String>,
+        #[structopt(long, help = "Postgres port. (default = 5432)")]
+        pub postgres_port: Option<String>,
+    }
+
     pub trait InjectEnvironment {
         fn inject_env_vars(&mut self) -> Result<()>;
     }

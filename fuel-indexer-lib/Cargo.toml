@@ -8,11 +8,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
-<<<<<<< HEAD:fuel-indexer-lib/Cargo.toml
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 serde = { version = "1.0", features = ["derive"] }
-=======
-serde = { version = "1.0", features = ["derive"] }
-structopt = "0.3"
->>>>>>> 46e24d9 (Implement review feedback):indexer-lib/Cargo.toml
 tracing = "0.1"
