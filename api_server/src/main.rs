@@ -1,6 +1,5 @@
 use anyhow::Result;
-use api_server::{ApiServerArgs, ApiServerConfig, GraphQLApi};
-use structopt::StructOpt;
+use api_server::{ApiServerArgs, ApiServerConfig, GraphQLApi, Parser};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
