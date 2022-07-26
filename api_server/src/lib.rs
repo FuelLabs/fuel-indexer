@@ -1,7 +1,6 @@
-use async_std::{
-    net::SocketAddr,
-    sync::{Arc, RwLock},
-};
+use anyhow::Result;
+use async_std::sync::{Arc, RwLock};
+use async_std::{fs::File, io::ReadExt};
 use axum::{
     extract::{Extension, Json, Path},
     http::StatusCode,
@@ -11,7 +10,10 @@ use axum::{
 use diesel::prelude::PgConnection as Conn;
 use diesel::sql_types::Text;
 use diesel::{Connection, QueryableByName, RunQueryDsl};
-pub use fuel_indexer_lib::config::{GraphQLConfig, PostgresConfig};
+pub use fuel_indexer_lib::{
+    config::{ApiServerArgs, GraphQLConfig, PostgresConfig},
+    defaults,
+};
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
     run_migration,
@@ -84,6 +86,50 @@ async fn query_graph(
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct ApiServerConfig {
+    pub graphql_api: GraphQLConfig,
+    pub postgres: PostgresConfig,
+}
+
+impl ApiServerConfig {
+    pub async fn from_file(path: &std::path::Path) -> Result<Self> {
+        let mut file = File::open(path).await?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).await?;
+
+        let config = serde_yaml::from_str(&contents)?;
+
+        Ok(config)
+    }
+
+    pub fn from_opts(args: ApiServerArgs) -> ApiServerConfig {
+        ApiServerConfig {
+            postgres: PostgresConfig {
+                user: args
+                    .postgres_user
+                    .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
+                password: args.postgres_password,
+                host: args
+                    .postgres_host
+                    .unwrap_or_else(|| defaults::POSTGRES_HOST.into()),
+                port: args
+                    .postgres_port
+                    .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
+                database: args.postgres_database,
+            },
+            graphql_api: GraphQLConfig {
+                host: args
+                    .graphql_api_host
+                    .unwrap_or_else(|| defaults::GRAPHQL_API_HOST.into()),
+                port: args
+                    .graphql_api_port
+                    .unwrap_or_else(|| defaults::GRAPHQL_API_PORT.into()),
+            },
+        }
+    }
+}
+
 pub struct GraphQLApi {
     pg_config: PostgresConfig,
     graphql_config: GraphQLConfig,
@@ -105,7 +151,7 @@ impl GraphQLApi {
 
         let app = Router::new()
             .route("/graph/:name", post(query_graph))
-            .layer(Extension(SocketAddr::from(self.graphql_config.clone())))
+            .layer(Extension(self.pg_config.to_string()))
             .layer(Extension(schema_manager));
 
         axum::Server::bind(&self.graphql_config.into())

@@ -12,7 +12,7 @@ use gr::{
     graph_registry_type_ids,
 };
 
-#[derive(Insertable, Queryable, QueryableByName)]
+#[derive(Insertable, Queryable, QueryableByName, Debug)]
 #[table_name = "graph_registry_root_columns"]
 #[allow(unused)]
 pub struct RootColumns {
@@ -66,7 +66,7 @@ impl NewGraphRoot {
     }
 }
 
-#[derive(Insertable, Queryable, QueryableByName)]
+#[derive(Insertable, Queryable, QueryableByName, Debug)]
 #[table_name = "graph_registry_graph_root"]
 #[allow(unused)]
 pub struct GraphRoot {

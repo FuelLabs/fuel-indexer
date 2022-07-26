@@ -1,23 +1,8 @@
 use anyhow::Result;
-use api_server::{GraphQLApi, GraphQLConfig, PostgresConfig};
-use async_std::{fs::File, io::ReadExt};
-use serde::Deserialize;
-use std::path::PathBuf;
+use api_server::{ApiServerArgs, ApiServerConfig, GraphQLApi};
 use structopt::StructOpt;
+use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
-
-#[derive(Debug, Deserialize)]
-pub struct ServerConfig {
-    graphql: GraphQLConfig,
-    postgres: PostgresConfig,
-}
-
-#[derive(Debug, StructOpt)]
-#[structopt(name = "Indexer API Service", about = "Fuel indexer api")]
-pub struct Args {
-    #[structopt(short, long, help = "API Server config.")]
-    config: PathBuf,
-}
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
@@ -31,16 +16,16 @@ pub async fn main() -> Result<()> {
         .with_env_filter(filter)
         .init();
 
-    let opt = Args::from_args();
+    let opt = ApiServerArgs::from_args();
 
-    let mut file = File::open(opt.config).await?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents).await?;
+    let config = match &opt.config {
+        Some(path) => ApiServerConfig::from_file(path).await?,
+        None => ApiServerConfig::from_opts(opt.clone()),
+    };
 
-    let ServerConfig { graphql, postgres } =
-        serde_yaml::from_str(&contents).expect("Bad yaml file");
+    info!("Configuration: {:?}", config);
 
-    let api = GraphQLApi::new(postgres, graphql);
+    let api = GraphQLApi::new(config.postgres, config.graphql_api);
 
     let api_handle = tokio::spawn(api.run());
 

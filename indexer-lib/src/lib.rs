@@ -68,12 +68,11 @@ pub mod config {
     use std::path::PathBuf;
     use structopt::StructOpt;
 
-    #[derive(Debug, StructOpt)]
+    #[derive(Debug, StructOpt, Clone)]
     #[structopt(
         name = "Indexer Service",
         about = "Standalone binary for the fuel indexer service"
     )]
-    #[derive(Clone)]
     pub struct IndexerArgs {
         #[structopt(short, long, help = "run local test node")]
         pub local: bool,
@@ -88,6 +87,27 @@ pub mod config {
         pub fuel_node_host: Option<String>,
         #[structopt(long, help = "Listening port of the running Fuel node.")]
         pub fuel_node_port: Option<String>,
+        #[structopt(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
+        pub graphql_api_host: Option<String>,
+        #[structopt(long, help = "GraphQL API port. (default = 29987)")]
+        pub graphql_api_port: Option<String>,
+        #[structopt(long, help = "Postgres username. (default = 'postgres')")]
+        pub postgres_user: Option<String>,
+        #[structopt(long, help = "Postgres database. (default = 'postgres')")]
+        pub postgres_database: Option<String>,
+        #[structopt(long, help = "Postgres password.")]
+        pub postgres_password: Option<String>,
+        #[structopt(long, help = "Postgres host. (default = '127.0.0.1')")]
+        pub postgres_host: Option<String>,
+        #[structopt(long, help = "Postgres port. (default = 5432)")]
+        pub postgres_port: Option<String>,
+    }
+
+    #[derive(Debug, StructOpt, Clone)]
+    #[structopt(name = "Indexer API Service", about = "Fuel indexer api")]
+    pub struct ApiServerArgs {
+        #[structopt(short, long, help = "API Server config.")]
+        pub config: Option<PathBuf>,
         #[structopt(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
         pub graphql_api_host: Option<String>,
         #[structopt(long, help = "GraphQL API port. (default = 29987)")]
@@ -251,6 +271,12 @@ pub mod config {
     pub struct GraphQLConfig {
         pub host: String,
         pub port: String,
+    }
+
+    impl std::string::ToString for GraphQLConfig {
+        fn to_string(&self) -> String {
+            format!("{}:{}", self.host, self.port)
+        }
     }
 
     impl Default for GraphQLConfig {
