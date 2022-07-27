@@ -1,6 +1,6 @@
 extern crate alloc;
 use anyhow::Result;
-use fuel_executor::{
+use fuel_indexer::{
     Address, GraphQlApi, IndexerConfig, IndexerResult, IndexerService, Manifest,
     NativeHandlerResult, Receipt,
 };

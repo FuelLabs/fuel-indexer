@@ -1,9 +1,9 @@
 #![no_std]
 extern crate alloc;
+use alloc::vec::Vec;
 use core::convert::TryFrom;
 use fuel_indexer_derive::handler;
-use alloc::vec::Vec;
-use fuel_indexer::types::*;
+use fuel_indexer_plugins::types::*;
 use fuels_core::{ParamType, Token};
 
 #[handler(SomeArg)]

@@ -3,8 +3,8 @@ extern crate alloc;
 #[cfg(feature = "postgres")]
 mod tests {
     use fuel_core::service::{Config, FuelService};
-    use fuel_executor::{IndexerConfig, IndexerService, Manifest};
     use fuel_gql_client::client::FuelClient;
+    use fuel_indexer::{IndexerConfig, IndexerService, Manifest};
     use fuel_vm::{consts::*, prelude::*};
 
     const DATABASE_URL: &str = "postgres://postgres:my-secret@127.0.0.1:5432";

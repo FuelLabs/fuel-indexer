@@ -1,5 +1,5 @@
 [package]
-name = "fuel-indexer"
+name = "fuel-indexer-plugins"
 version = "0.0.0"
 edition = "2021"
 license = "BUSL-1.1"
@@ -10,4 +10,4 @@ publish = false
 crate-type = ['rlib']
 
 [dependencies]
-fuel-indexer-schema = { path = "../schema" }
+fuel-indexer-schema = { path = "../fuel-indexer-schema" }
