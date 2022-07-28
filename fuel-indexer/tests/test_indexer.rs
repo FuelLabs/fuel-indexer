@@ -4,10 +4,11 @@ extern crate alloc;
 mod tests {
     use fuel_core::service::{Config, FuelService};
     use fuel_gql_client::client::FuelClient;
-    use fuel_indexer::{IndexerConfig, IndexerService, Manifest};
+    use fuel_indexer::{
+        FuelNodeConfig, GraphQLConfig, IndexerConfig, IndexerService, Manifest, PostgresConfig,
+    };
     use fuel_vm::{consts::*, prelude::*};
 
-    const DATABASE_URL: &str = "postgres://postgres:my-secret@127.0.0.1:5432";
     const MANIFEST: &str = include_str!("./test_data/demo_manifest.yaml");
 
     #[allow(clippy::iter_cloned_collect)]
@@ -54,9 +55,15 @@ mod tests {
         let test_data = dir.join("tests/test_data");
 
         let config = IndexerConfig {
-            fuel_node_addr: srv.bound_address,
-            database_url: DATABASE_URL.to_string(),
-            listen_endpoint: "0.0.0.0:9999".parse().unwrap(),
+            fuel_node: FuelNodeConfig::from(srv.bound_address),
+            postgres: PostgresConfig {
+                user: "postgres".into(),
+                password: Some("my-secret".into()),
+                host: "127.0.0.1".into(),
+                port: "5432".into(),
+                database: None,
+            },
+            graphql_api: GraphQLConfig::default(),
         };
 
         let mut indexer_service = IndexerService::new(config).unwrap();

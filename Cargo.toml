@@ -5,6 +5,7 @@ members = [
    "examples/*",
    "examples/simple-native/counter-rs",
    "fuel-indexer-api-server",
+   "fuel-indexer-lib",
    "fuel-indexer-macros",
    "fuel-indexer-plugin",
    "fuel-indexer-schema",

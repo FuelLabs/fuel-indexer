@@ -58,7 +58,7 @@ pub struct SchemaManager {
 }
 
 impl SchemaManager {
-    pub fn new(db_conn: impl Into<String>) -> IndexerResult<SchemaManager> {
+    pub fn new(db_conn: &String) -> IndexerResult<SchemaManager> {
         let pool = DbPool::new(db_conn)?;
 
         Ok(SchemaManager { pool })
@@ -239,6 +239,7 @@ impl Database {
 mod tests {
     use super::*;
     use crate::IndexEnv;
+    use fuel_indexer_lib::config::PostgresConfig;
     use fuel_types::Address;
     use wasmer::{imports, Instance, Module, Store, WasmerEnv};
     use wasmer_compiler_cranelift::Cranelift;
@@ -279,7 +280,16 @@ mod tests {
 
     #[test]
     fn test_schema_manager() {
-        let manager = SchemaManager::new(DATABASE_URL).expect("Could not create SchemaManager");
+        let pg_conf = PostgresConfig {
+            user: "postgres".into(),
+            password: Some("my-secret".into()),
+            host: "127.0.0.1".into(),
+            port: "5432".into(),
+            database: None,
+        };
+
+        let manager =
+            SchemaManager::new(&pg_conf.to_string()).expect("Could not create SchemaManager");
 
         let result = manager.new_schema("test_namespace", GRAPHQL_SCHEMA);
         assert!(result.is_ok());

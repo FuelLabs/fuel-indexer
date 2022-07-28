@@ -28,7 +28,6 @@ pub fn process_handler_attr(attrs: TokenStream, item: TokenStream) -> TokenStrea
             use fuel_indexer_plugin::types::*;
             use fuels_core::{abi_decoder::ABIDecoder, Parameterize};
 
-            let mut decoder = ABIDecoder::new();
             let (blobs, lens) = unsafe { (Vec::from_raw_parts(blobs, len, len), Vec::from_raw_parts(lens, len, len)) };
         }
     };
@@ -40,7 +39,7 @@ pub fn process_handler_attr(attrs: TokenStream, item: TokenStream) -> TokenStrea
             FnArg::Typed(PatType { pat, ty, .. }) => {
                 let bytes: Vec<_> = parse_quote! {
                     let tokens = unsafe { Vec::from_raw_parts(blobs[#idx], lens[#idx], lens[#idx]) };
-                    let #pat = decoder.decode(&#ty::param_types(), &tokens).expect("Failed decoding");
+                    let #pat = ABIDecoder::decode(&#ty::param_types(), &tokens).expect("Failed decoding");
                     core::mem::forget(tokens);
                 };
 
