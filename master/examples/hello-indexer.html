@@ -205,7 +205,7 @@ crate-type = ['cdylib']
 
 [dependencies]
 fuel-indexer = &quot;0.1&quot;
-fuel-indexer-derive = &quot;0.1&quot;
+fuel-indexer-macros = &quot;0.1&quot;
 fuel-tx = &quot;0.9&quot;
 fuels = &quot;0.13&quot;
 fuels-abigen-macro = &quot;0.13&quot;
@@ -290,7 +290,7 @@ type SomeOtherData {
 <p>At a minimum, the schema needs a <code>schema</code> definition with the <code>query</code> type defined. In this example, they are defined at the top of the file.</p>
 <p>Now for the code! Fuel indexers use two proc macros to generate the rust types from these specifications.</p>
 <pre><code class="language-rust ignore">extern crate alloc;
-use fuel_indexer_derive::{graphql_schema, handler};
+use fuel_indexer_macros::{graphql_schema, handler};
 use fuels_abigen_macro::wasm_abigen;
 
 graphql_schema!(&quot;hello_namespace&quot;, &quot;schema/schema.graphql&quot;);
