@@ -23,15 +23,15 @@ ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
-
+# Stage 2: build binaries
 FROM chef as builder
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 COPY --from=planner /build/recipe.json recipe.json
 RUN cargo chef cook --release -p fuel-indexer --recipe-path recipe.json
 COPY . .
-RUN cargo build --release -p fuel-executor --all-targets
+RUN cargo build --release -p fuel-indexer --all-targets
 
-# Stage 2: Run
+# Stage 3: Run
 FROM ubuntu:22.04 as run
 
 WORKDIR /root/
