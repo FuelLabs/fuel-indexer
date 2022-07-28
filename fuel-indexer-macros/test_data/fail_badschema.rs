@@ -1,6 +1,6 @@
 extern crate alloc;
 use core::convert::TryFrom;
-use fuel_indexer_derive::{graphql_schema, handler};
+use fuel_indexer_macros::{graphql_schema, handler};
 use alloc::vec::Vec;
 use fuel_indexer::types::*;
 use serde::{Deserialize, Serialize};

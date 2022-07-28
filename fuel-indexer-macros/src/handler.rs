@@ -25,7 +25,7 @@ pub fn process_handler_attr(attrs: TokenStream, item: TokenStream) -> TokenStrea
 
     let mut block: Block = parse_quote! {
         {
-            use fuel_indexer::types::*;
+            use fuel_indexer_plugin::types::*;
             use fuels_core::{abi_decoder::ABIDecoder, Parameterize};
 
             let mut decoder = ABIDecoder::new();

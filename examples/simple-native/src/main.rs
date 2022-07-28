@@ -1,12 +1,12 @@
 extern crate alloc;
 use anyhow::Result;
-use fuel_executor::{
+use fuel_indexer::{
     Address, GraphQlApi, IndexerConfig, IndexerResult, IndexerService, Manifest,
     NativeHandlerResult, Receipt,
 };
 use fuels::core::{abi_decoder::ABIDecoder, ParamType, Tokenizable};
 
-use fuel_indexer_derive::graphql_schema;
+use fuel_indexer_macros::graphql_schema;
 use fuels_abigen_macro::abigen;
 
 use std::path::PathBuf;

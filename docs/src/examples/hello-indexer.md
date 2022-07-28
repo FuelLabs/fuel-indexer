@@ -44,7 +44,7 @@ crate-type = ['cdylib']
 
 [dependencies]
 fuel-indexer = "0.1"
-fuel-indexer-derive = "0.1"
+fuel-indexer-macros = "0.1"
 fuel-tx = "0.9"
 fuels = "0.13"
 fuels-abigen-macro = "0.13"
@@ -140,7 +140,7 @@ Now for the code! Fuel indexers use two proc macros to generate the rust types f
 
 ```rust,ignore
 extern crate alloc;
-use fuel_indexer_derive::{graphql_schema, handler};
+use fuel_indexer_macros::{graphql_schema, handler};
 use fuels_abigen_macro::wasm_abigen;
 
 graphql_schema!("hello_namespace", "schema/schema.graphql");

@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
-use fuel_executor::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
+use fuel_indexer::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
 use fuel_indexer_schema::db::run_migration;
 use std::path::PathBuf;
 use structopt::StructOpt;

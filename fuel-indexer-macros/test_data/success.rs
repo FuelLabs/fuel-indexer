@@ -1,17 +1,14 @@
 #![no_std]
 extern crate alloc;
-use core::convert::TryFrom;
-use fuel_indexer_derive::handler;
 use alloc::vec::Vec;
-use fuel_indexer::types::*;
+use core::convert::TryFrom;
+use fuel_indexer_macros::handler;
+use fuel_indexer_plugin::types::*;
 use fuels_core::{ParamType, Token};
 
-#[handler(SomeArg)]
-fn function_one(event: SomeEvent) {
-    let SomeEvent { id, account } = event;
-
-    let t1 = Thing1 { id, account };
-    t1.save();
+struct Logger;
+impl Logger {
+    pub fn info(_: &str) {}
 }
 
 struct SomeEvent {
