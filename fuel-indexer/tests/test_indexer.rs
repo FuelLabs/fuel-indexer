@@ -3,10 +3,10 @@ extern crate alloc;
 #[cfg(feature = "postgres")]
 mod tests {
     use fuel_core::service::{Config, FuelService};
-    use fuel_executor::{
+    use fuel_gql_client::client::FuelClient;
+    use fuel_indexer::{
         FuelNodeConfig, GraphQLConfig, IndexerConfig, IndexerService, Manifest, PostgresConfig,
     };
-    use fuel_gql_client::client::FuelClient;
     use fuel_vm::{consts::*, prelude::*};
 
     const MANIFEST: &str = include_str!("./test_data/demo_manifest.yaml");

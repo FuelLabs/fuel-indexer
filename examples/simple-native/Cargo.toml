@@ -6,14 +6,14 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0"
+anyhow = "1.0.53"
 async-std = "1.10.0"
 axum = "0.4"
 diesel = { version = "1.4", features = ["postgres"] }
-fuel-executor = { path = "../../indexer" }
-fuel-indexer = { path = "../../lib" }
-fuel-indexer-derive = { path = "../../derive" }
-fuel-indexer-schema = { path = "../../schema", features = ["db-models"] }
+fuel-indexer = { path = "../../fuel-indexer" }
+fuel-indexer-macros = { path = "../../fuel-indexer-macros" }
+fuel-indexer-plugin = { path = "../../fuel-indexer-plugin" }
+fuel-indexer-schema = { path = "../../fuel-indexer-schema", features = ["db-models"] }
 fuel-tx = "0.9"
 fuel-types = "0.5"
 fuels = "0.16"

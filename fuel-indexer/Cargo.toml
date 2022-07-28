@@ -1,5 +1,5 @@
 [package]
-name = "fuel-executor"
+name = "fuel-indexer"
 version = "0.0.0"
 edition = "2021"
 license = "BUSL-1.1"
@@ -14,8 +14,8 @@ cfg-if = "1.0"
 diesel = { version = "1.4", features = ["postgres", "serde_json"] }
 fuel-core = { version = "0.6.4" }
 fuel-gql-client = { version = "0.6.4" }
-fuel-indexer-lib = { path = "../indexer-lib" }
-fuel-indexer-schema = { path = "../schema", features = ["db-models"] }
+fuel-indexer-lib = { path = "../fuel-indexer-lib" }
+fuel-indexer-schema = { path = "../fuel-indexer-schema", features = ["db-models"] }
 fuel-tx = "0.9"
 fuel-types = "0.3"
 fuel-vm = { version = "0.8" }

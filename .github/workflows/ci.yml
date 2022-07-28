@@ -118,7 +118,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - run: cargo install diesel_cli
       - run: |
-          cd schema
+          cd fuel-indexer-schema
           diesel migration run --migration-dir migrations/postgres/
           cargo fmt
       - name: Cargo Test Workspace
@@ -342,10 +342,12 @@ jobs:
         run: |
           curl -sSLf "https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64" -L -o dasel && chmod +x dasel
           mv ./dasel /usr/local/bin/dasel
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} derive/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} indexer/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} lib/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} schema/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-api-server/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-lib/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-macros/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-plugin/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-schema/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
       - name: Publish crate
         uses: katyo/publish-crates@v1
         with:

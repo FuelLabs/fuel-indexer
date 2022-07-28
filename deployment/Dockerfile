@@ -44,12 +44,12 @@ RUN apt-get update -y \
     && apt-get autoremove -y \
     && apt-get clean -y
 
-COPY --from=builder /build/target/release/fuel-executor .
-COPY --from=builder /build/target/release/fuel-executor.d .
+COPY --from=builder /build/target/release/fuel-indexer .
+COPY --from=builder /build/target/release/fuel-indexer.d .
 
 ARG GRAPHQL_API_PORT=29987
 
 EXPOSE $GRAPHQL_API_PORT
 
 # hadolint ignore=DL3025
-ENTRYPOINT ["./fuel-executor"]
+CMD exec ./fuel-indexer

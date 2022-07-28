@@ -294,8 +294,8 @@ pub(crate) fn process_graphql_schema(inputs: TokenStream) -> TokenStream {
 
     let mut output = quote! {
         use alloc::{format, vec, vec::Vec};
-        use fuel_indexer::{Entity, Logger};
-        use fuel_indexer::types::*;
+        use fuel_indexer_plugin::{Entity, Logger};
+        use fuel_indexer_plugin::types::*;
         #namespace
         #version
     };
