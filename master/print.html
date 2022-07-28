@@ -572,7 +572,7 @@ RUST_LOG=debug cargo run
 <p>With our Fuel node and webserver up and running, we'll next start our Fuel Indexer service.</p>
 <pre><code class="language-bash">cd fuel-indexer/examples/simple-native/
 
-RUST_LOG=info cargo run -- ./config.yaml ./manifest.yaml
+RUST_LOG=debug cargo run -- --config ./config.yaml --test-manifest manifest.yaml
 </code></pre>
 <h3 id="send-a-transaction-to-the-smart-contract-via-the-webserver"><a class="header" href="#send-a-transaction-to-the-smart-contract-via-the-webserver">Send a transaction to the smart contract via the webserver</a></h3>
 <pre><code class="language-bash">curl -X POST http://127.0.0.1:8080/count | json_pp
