@@ -11,8 +11,8 @@ async-std = "1.10.0"
 axum = "0.4"
 diesel = { version = "1.4", features = ["postgres"] }
 fuel-indexer = { path = "../../fuel-indexer" }
-fuel-indexer-derive = { path = "../../fuel-indexer-derive" }
-fuel-indexer-plugins = { path = "../../fuel-indexer-plugins" }
+fuel-indexer-macros = { path = "../../fuel-indexer-macros" }
+fuel-indexer-plugin = { path = "../../fuel-indexer-plugin" }
 fuel-indexer-schema = { path = "../../fuel-indexer-schema", features = ["db-models"] }
 fuel-tx = "0.9"
 fuel-types = "0.5"

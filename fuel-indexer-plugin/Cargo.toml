@@ -1,5 +1,5 @@
 [package]
-name = "fuel-indexer-plugins"
+name = "fuel-indexer-plugin"
 version = "0.0.0"
 edition = "2021"
 license = "BUSL-1.1"

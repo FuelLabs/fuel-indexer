@@ -1,5 +1,5 @@
 [package]
-name = "fuel-indexer-derive"
+name = "fuel-indexer-macros"
 version = "0.0.0"
 edition = "2021"
 license = "BUSL-1.1"
@@ -7,7 +7,7 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package.metadata.cargo-udeps.ignore]
-development = ["fuels", "fuel-indexer-plugins", "fuels-core"]
+development = ["fuels", "fuel-indexer-plugin", "fuels-core"]
 
 [lib]
 proc-macro = true
@@ -21,7 +21,7 @@ quote = "1.0"
 syn = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
-fuel-indexer-plugins = { path = "../fuel-indexer-plugins" }
+fuel-indexer-plugin = { path = "../fuel-indexer-plugin" }
 fuels = { version = "0.15" }
 fuels-core = { version = "0.15" }
 serde = { version = "1.0", default-features = false, features = ["derive"] }

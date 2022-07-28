@@ -1,5 +1,5 @@
 #![no_std]
-use fuel_indexer_derive::handler;
+use fuel_indexer_macros::handler;
 
 #[handler]
 fn function_one(self, event: SomeEvent) {

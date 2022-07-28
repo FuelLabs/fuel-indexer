@@ -5,8 +5,8 @@ members = [
    "examples/*",
    "examples/simple-native/counter-rs",
    "fuel-indexer-api-server",
-   "fuel-indexer-derive",
-   "fuel-indexer-plugins",
+   "fuel-indexer-macros",
+   "fuel-indexer-plugin",
    "fuel-indexer-schema",
    "fuel-indexer",
 ]
