@@ -87,10 +87,12 @@ pub async fn main() -> Result<()> {
     let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
 
     // Create a new service to run
-    let mut service = IndexerService::new(config.clone())?;
+    let mut service = IndexerService::new(config.clone()).await?;
 
     // Add an indexer comprised of a list of handlers
-    service.add_native_indexer(manifest, false, vec![count_handler])?;
+    service
+        .add_native_indexer(manifest, false, vec![count_handler])
+        .await?;
 
     // Kick it off!
     let service_handle = tokio::spawn(service.run());

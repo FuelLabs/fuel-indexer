@@ -4,14 +4,12 @@ use wasmer::Instance;
 use crate::{ffi, IndexerError, IndexerResult, Manifest};
 use fuel_indexer_schema::{
     db::{
-        IndexerConnection,
-        IndexerConnectionPool,
         models,
-        tables::{Schema, SchemaBuilder}
+        tables::{Schema, SchemaBuilder},
+        IndexerConnection, IndexerConnectionPool,
     },
     schema_version, FtColumn,
 };
-
 
 /// Responsible for laying down graph schemas, processes schema upgrades.
 pub struct SchemaManager {
@@ -35,7 +33,8 @@ impl SchemaManager {
         if !models::schema_exists(&mut connection, name, &version).await? {
             let _db_schema = SchemaBuilder::new(name, &version)
                 .build(schema)
-                .commit_metadata(&mut connection).await?;
+                .commit_metadata(&mut connection)
+                .await?;
         }
         Ok(())
     }
@@ -85,12 +84,18 @@ impl Database {
     }
 
     pub async fn commit_transaction(&mut self) -> IndexerResult<usize> {
-        let mut conn = self.stashed.take().ok_or(IndexerError::NoTransactionError)?;
+        let mut conn = self
+            .stashed
+            .take()
+            .ok_or(IndexerError::NoTransactionError)?;
         Ok(models::execute_query(&mut conn, "COMMIT".into()).await?)
     }
 
     pub async fn revert_transaction(&mut self) -> IndexerResult<usize> {
-        let mut conn = self.stashed.take().ok_or(IndexerError::NoTransactionError)?;
+        let mut conn = self
+            .stashed
+            .take()
+            .ok_or(IndexerError::NoTransactionError)?;
         Ok(models::execute_query(&mut conn, "ROLLBACK".into()).await?)
     }
 
@@ -142,7 +147,10 @@ impl Database {
 
         let query_text = self.upsert_query(table, &columns, inserts, updates);
 
-        let mut conn = self.stashed.as_mut().expect("No transaction has been opened!");
+        let mut conn = self
+            .stashed
+            .as_mut()
+            .expect("No transaction has been opened!");
         let query = models::put_object(&mut conn, query_text, bytes).await;
 
         query.expect("Query failed");
@@ -152,7 +160,10 @@ impl Database {
         let table = &self.tables[&type_id];
         let query = self.get_query(table, object_id);
 
-        let conn = self.stashed.as_mut().expect("No transaction has been opened!");
+        let conn = self
+            .stashed
+            .as_mut()
+            .expect("No transaction has been opened!");
         match models::get_object(conn, query).await {
             Ok(object) => Some(object),
             Err(sqlx::Error::RowNotFound) => None,
@@ -259,7 +270,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_schema_manager() {
-        let manager = SchemaManager::new(DATABASE_URL).await.expect("Could not create SchemaManager");
+        let manager = SchemaManager::new(DATABASE_URL)
+            .await
+            .expect("Could not create SchemaManager");
 
         let result = manager.new_schema("test_namespace", GRAPHQL_SCHEMA).await;
         assert!(result.is_ok());
@@ -267,12 +280,14 @@ mod tests {
         let result = manager.new_schema("test_namespace", GRAPHQL_SCHEMA).await;
         assert!(result.is_ok());
 
-        let pool = IndexerConnectionPool::connect(DATABASE_URL).await
+        let pool = IndexerConnectionPool::connect(DATABASE_URL)
+            .await
             .expect("Connection pool error");
 
         let version = schema_version(GRAPHQL_SCHEMA);
         let mut conn = pool.acquire().await.unwrap();
-        let results = models::columns_get_schema(&mut conn, "test_namespace", &version).await
+        let results = models::columns_get_schema(&mut conn, "test_namespace", &version)
+            .await
             .expect("Metadata query failed");
 
         for (index, result) in results.into_iter().enumerate() {
@@ -283,9 +298,13 @@ mod tests {
 
         let instance = wasm_instance().await.expect("Error creating WASM module");
 
-        let mut db = Database::new(DATABASE_URL).await.expect("Failed to create database object.");
+        let mut db = Database::new(DATABASE_URL)
+            .await
+            .expect("Failed to create database object.");
 
-        db.load_schema_wasm(&instance).await.expect("Could not load db schema");
+        db.load_schema_wasm(&instance)
+            .await
+            .expect("Could not load db schema");
 
         assert_eq!(db.namespace, "test_namespace");
         assert_eq!(db.version, version);
@@ -300,7 +319,9 @@ mod tests {
             FtColumn::Address(Address::from([0x04; 32])),
         ];
         let bytes = vec![0u8, 1u8, 2u8, 3u8];
-        db.start_transaction().await.expect("Start transaction failed");
+        db.start_transaction()
+            .await
+            .expect("Start transaction failed");
         db.put_object(THING1_TYPE, columns, bytes.clone()).await;
 
         let obj = db.get_object(THING1_TYPE, object_id).await;

@@ -1,14 +1,14 @@
-use async_trait::async_trait;
 use crate::database::Database;
 use crate::ffi;
 use crate::handler::{Handle, ReceiptEvent};
 use crate::{IndexerError, IndexerResult, Manifest};
+use async_std::sync::{Arc, Mutex};
+use async_trait::async_trait;
 use fuel_tx::Receipt;
 use std::collections::HashMap;
 use std::path::Path;
-use tokio::task::spawn_blocking;
-use async_std::sync::{Arc, Mutex};
 use thiserror::Error;
+use tokio::task::spawn_blocking;
 use tracing::error;
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store, WasmerEnv,
@@ -58,7 +58,11 @@ pub struct NativeIndexExecutor {
 }
 
 impl NativeIndexExecutor {
-    pub async fn new(db_conn: &str, manifest: Manifest, handles: Vec<Handle>) -> IndexerResult<Self> {
+    pub async fn new(
+        db_conn: &str,
+        manifest: Manifest,
+        handles: Vec<Handle>,
+    ) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(Database::new(db_conn).await.unwrap()));
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
@@ -91,19 +95,17 @@ impl Executor for NativeIndexExecutor {
                 if let Some(result) = handle(receipt) {
                     match result {
                         Ok(result) => {
-                            self.db.lock().await.put_object(result.0, result.1, data).await;
-
                             self.db
                                 .lock()
                                 .await
-                                .commit_transaction().await?;
+                                .put_object(result.0, result.1, data)
+                                .await;
+
+                            self.db.lock().await.commit_transaction().await?;
                         }
                         Err(e) => {
                             error!("Indexer failed {e:?}");
-                            self.db
-                                .lock()
-                                .await
-                                .revert_transaction().await?;
+                            self.db.lock().await.revert_transaction().await?;
                             return Err(IndexerError::HandlerError);
                         }
                     }
@@ -210,9 +212,7 @@ impl Executor for WasmIndexExecutor {
                 let lens = arg_list.get_lens();
                 let len = arg_list.get_len();
 
-                let res = spawn_blocking(
-                    move || fun.call(ptrs, lens, len)
-                ).await?;
+                let res = spawn_blocking(move || fun.call(ptrs, lens, len)).await?;
 
                 if let Err(e) = res {
                     error!("Indexer failed {e:?}");
@@ -230,9 +230,9 @@ impl Executor for WasmIndexExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::{Connection, Row};
     use fuels_abigen_macro::abigen;
     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+    use sqlx::{Connection, Row};
 
     const DATABASE_URL: &str = "postgres://postgres:my-secret@127.0.0.1:5432";
     const MANIFEST: &str = include_str!("test_data/manifest.yaml");
@@ -252,7 +252,8 @@ mod tests {
         let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file.");
         let bad_manifest: Manifest = serde_yaml::from_str(BAD_MANIFEST).expect("Bad yaml file.");
 
-        let executor = WasmIndexExecutor::new(DATABASE_URL.to_string(), bad_manifest, WASM_BYTES).await;
+        let executor =
+            WasmIndexExecutor::new(DATABASE_URL.to_string(), bad_manifest, WASM_BYTES).await;
         match executor {
             Err(IndexerError::MissingHandler(o)) if o == "fn_one" => (),
             e => panic!("Expected missing handler error {:#?}", e),
@@ -263,11 +264,13 @@ mod tests {
 
         let executor = executor.unwrap();
 
-        let result = executor.trigger_event(
-            ReceiptEvent::an_event_name,
-            vec![b"ejfiaiddiie".to_vec()],
-            None,
-        ).await;
+        let result = executor
+            .trigger_event(
+                ReceiptEvent::an_event_name,
+                vec![b"ejfiaiddiie".to_vec()],
+                None,
+            )
+            .await;
         match result {
             Err(IndexerError::RuntimeError(_)) => (),
             e => panic!("Should have been a runtime error {:#?}", e),
@@ -292,20 +295,24 @@ mod tests {
                 .expect("Failed to encode"),
         ];
 
-        let result = executor.trigger_event(ReceiptEvent::an_event_name, encoded, None).await;
+        let result = executor
+            .trigger_event(ReceiptEvent::an_event_name, encoded, None)
+            .await;
         assert!(result.is_ok());
 
-        let mut conn = sqlx::PgConnection::connect(DATABASE_URL).await.expect("Database connection failed!");
+        let mut conn = sqlx::PgConnection::connect(DATABASE_URL)
+            .await
+            .expect("Database connection failed!");
 
-        let row = sqlx::query("select id,account from test_namespace.thing1 where id = 1020;").fetch_one(&mut conn).await.expect("Database query failed");
+        let row = sqlx::query("select id,account from test_namespace.thing1 where id = 1020;")
+            .fetch_one(&mut conn)
+            .await
+            .expect("Database query failed");
 
         let id = row.get(0);
         let account = row.get(1);
 
-        let data = Thing1 {
-            id,
-            account,
-        };
+        let data = Thing1 { id, account };
 
         assert_eq!(data.id, 1020);
         assert_eq!(

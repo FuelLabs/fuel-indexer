@@ -1,10 +1,9 @@
+use crate::db::{models::*, IndexerConnection, IndexerConnectionPool};
 use crate::type_id;
-use crate::db::{IndexerConnection, IndexerConnectionPool, models::*};
+use fuel_indexer_database_types::*;
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{Definition, Field, SchemaDefinition, Type, TypeDefinition};
 use std::collections::{HashMap, HashSet};
-use fuel_indexer_database_types::*;
-
 
 #[derive(Default)]
 pub struct SchemaBuilder {
@@ -95,13 +94,14 @@ impl SchemaBuilder {
 
         let field_defs = query_fields.get(&query).expect("No query root!");
 
-        let cols: Vec<_> = field_defs.into_iter().map(|(key, val)| {
-            NewRootColumns {
+        let cols: Vec<_> = field_defs
+            .into_iter()
+            .map(|(key, val)| NewRootColumns {
                 root_id: latest.id,
                 column_name: key.to_string(),
                 graphql_type: val.to_string(),
-            }
-        }).collect();
+            })
+            .collect();
 
         new_root_columns(conn, cols).await?;
         type_id_insert(conn, type_ids).await?;
@@ -110,7 +110,6 @@ impl SchemaBuilder {
         for statement in statements {
             execute_query(conn, statement).await?;
         }
-
 
         Ok(Schema {
             version,
@@ -273,7 +272,6 @@ impl Schema {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

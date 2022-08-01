@@ -4,7 +4,6 @@ pub mod tables;
 use sqlx::pool::PoolConnection;
 use thiserror::Error;
 
-
 #[derive(Clone, Debug, Error)]
 pub enum DatabaseError {
     #[error("Invalid connection string: {0:?}")]
@@ -12,7 +11,6 @@ pub enum DatabaseError {
     #[error("Database backend not supported: {0:?}")]
     BackendNotSupported(String),
 }
-
 
 #[derive(Clone, Debug)]
 pub enum IndexerConnectionPool {
@@ -31,17 +29,17 @@ impl IndexerConnectionPool {
         match url.scheme() {
             "postgres" => {
                 let pool = sqlx::Pool::<sqlx::Postgres>::connect(database_url)
-                    .await.expect("Could not connect to postgres backend!");
+                    .await
+                    .expect("Could not connect to postgres backend!");
                 Ok(IndexerConnectionPool::Postgres(pool))
             }
             "sqlite" => {
                 let pool = sqlx::Pool::<sqlx::Sqlite>::connect(database_url)
-                    .await.expect("Could not connect to sqlite backend!");
+                    .await
+                    .expect("Could not connect to sqlite backend!");
                 Ok(IndexerConnectionPool::Sqlite(pool))
             }
-            err => {
-                Err(DatabaseError::BackendNotSupported(err.into()))
-            }
+            err => Err(DatabaseError::BackendNotSupported(err.into())),
         }
     }
 
@@ -50,9 +48,7 @@ impl IndexerConnectionPool {
             IndexerConnectionPool::Postgres(p) => {
                 Ok(IndexerConnection::Postgres(p.acquire().await?))
             }
-            IndexerConnectionPool::Sqlite(p) => {
-                Ok(IndexerConnection::Sqlite(p.acquire().await?))
-            }
+            IndexerConnectionPool::Sqlite(p) => Ok(IndexerConnection::Sqlite(p.acquire().await?)),
         }
     }
 }
@@ -63,8 +59,8 @@ pub enum IndexerConnection {
     Sqlite(PoolConnection<sqlx::Sqlite>),
 }
 
-use fuel_indexer_sqlite as sqlite;
 use fuel_indexer_postgres as postgres;
+use fuel_indexer_sqlite as sqlite;
 
 pub async fn run_migration(database_url: &str) {
     let url = url::Url::parse(database_url);

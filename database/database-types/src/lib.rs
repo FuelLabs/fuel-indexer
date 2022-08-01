@@ -41,12 +41,12 @@ pub struct TypeId {
 
 #[derive(Debug)]
 pub struct IdLatest {
-    pub schema_version: String
+    pub schema_version: String,
 }
 
 #[derive(Debug)]
 pub struct NumVersions {
-    pub num: Option<i64>
+    pub num: Option<i64>,
 }
 
 #[derive(Debug)]

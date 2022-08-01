@@ -7,8 +7,8 @@ members = [
    "lib",
    "indexer",
    "database/*",
-   #"examples/*",
-   #"examples/simple-native/counter-rs",
+   "examples/*",
+   "examples/simple-native/counter-rs",
 ]
 
 [profile.release]

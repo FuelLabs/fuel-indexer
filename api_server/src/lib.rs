@@ -9,18 +9,16 @@ use axum::{
     Router,
 };
 use fuel_indexer_schema::db::{
-    IndexerConnectionPool,
     graphql::{GraphqlError, GraphqlQueryBuilder},
-    models,
-    run_migration,
+    models, run_migration,
     tables::Schema,
+    IndexerConnectionPool,
 };
 use serde::Deserialize;
 use serde_json::Value;
 use std::collections::HashMap;
 use thiserror::Error;
 use tracing::error;
-
 
 #[derive(Debug, Error)]
 pub enum ApiError {
@@ -107,7 +105,10 @@ impl GraphQlApi {
     }
 }
 
-pub async fn load_schema_wasm(pool: &IndexerConnectionPool, name: &str) -> Result<Option<Schema>, ApiError> {
+pub async fn load_schema_wasm(
+    pool: &IndexerConnectionPool,
+    name: &str,
+) -> Result<Option<Schema>, ApiError> {
     Ok(Some(Schema::load_from_db(pool, name).await?))
 }
 

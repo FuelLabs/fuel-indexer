@@ -6,10 +6,10 @@ use axum::{
     Router,
 };
 use fuel_indexer_schema::db::{
-    IndexerConnectionPool,
-    models,
     graphql::{GraphqlError, GraphqlQueryBuilder},
+    models,
     tables::Schema,
+    IndexerConnectionPool,
 };
 use http::StatusCode;
 use serde::Deserialize;
@@ -63,12 +63,15 @@ pub struct GraphQlApi;
 
 impl GraphQlApi {
     pub async fn run(config: IndexerConfig) {
-        let sm = SchemaManager::new(&config.database_url).await.expect("SchemaManager create failed");
+        let sm = SchemaManager::new(&config.database_url)
+            .await
+            .expect("SchemaManager create failed");
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = Arc::new(config);
         let listen_on = config.listen_endpoint;
 
-        let pool = IndexerConnectionPool::connect(&config.database_url).await
+        let pool = IndexerConnectionPool::connect(&config.database_url)
+            .await
             .expect("Failed to establish connection pool");
 
         let app = Router::new()

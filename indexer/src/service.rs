@@ -78,7 +78,8 @@ impl IndexerService {
 
         let schema = manifest.graphql_schema().unwrap();
         self.manager.new_schema(&name, &schema).await?;
-        let executor = NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles).await?;
+        let executor =
+            NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles).await?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
         let handle = tokio::spawn(self.make_task(
@@ -95,7 +96,11 @@ impl IndexerService {
         Ok(())
     }
 
-    pub async fn add_wasm_indexer(&mut self, manifest: Manifest, run_once: bool) -> IndexerResult<()> {
+    pub async fn add_wasm_indexer(
+        &mut self,
+        manifest: Manifest,
+        run_once: bool,
+    ) -> IndexerResult<()> {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
@@ -103,7 +108,8 @@ impl IndexerService {
         let wasm_bytes = manifest.wasm_module().unwrap();
 
         self.manager.new_schema(&name, &schema).await?;
-        let executor = WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes).await?;
+        let executor =
+            WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes).await?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
         let handle = tokio::spawn(self.make_task(
@@ -202,11 +208,10 @@ impl IndexerService {
                                     .encode(&[token.clone()])
                                     .expect("Bad Encoding!");
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event(
-                                    ReceiptEvent::Log,
-                                    vec![args],
-                                    Some(receipt_cp),
-                                ).await {
+                                if let Err(e) = exec
+                                    .trigger_event(ReceiptEvent::Log, vec![args], Some(receipt_cp))
+                                    .await
+                                {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }
@@ -238,11 +243,14 @@ impl IndexerService {
                                     .encode(&[token.clone()])
                                     .expect("Bad Encoding!");
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event(
-                                    ReceiptEvent::LogData,
-                                    vec![args],
-                                    Some(receipt_cp),
-                                ).await {
+                                if let Err(e) = exec
+                                    .trigger_event(
+                                        ReceiptEvent::LogData,
+                                        vec![args],
+                                        Some(receipt_cp),
+                                    )
+                                    .await
+                                {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }
@@ -270,11 +278,14 @@ impl IndexerService {
                                     .encode(&[token.clone()])
                                     .expect("Bad Encoding!");
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event(
-                                    ReceiptEvent::ReturnData,
-                                    vec![args],
-                                    Some(receipt_cp),
-                                ).await {
+                                if let Err(e) = exec
+                                    .trigger_event(
+                                        ReceiptEvent::ReturnData,
+                                        vec![args],
+                                        Some(receipt_cp),
+                                    )
+                                    .await
+                                {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }

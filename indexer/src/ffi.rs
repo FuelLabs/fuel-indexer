@@ -97,9 +97,7 @@ fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
 
     // TODO: stash this thing somewhere??
     let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime!");
-    let bytes = rt.block_on(async { 
-        env.db.lock().await.get_object(type_id, id).await
-    });
+    let bytes = rt.block_on(async { env.db.lock().await.get_object(type_id, id).await });
 
     if let Some(bytes) = bytes {
         let alloc_fn = env.alloc_ref().expect("Alloc export is missing");
@@ -135,7 +133,11 @@ fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
     // TODO: stash this??
     let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime!");
     rt.block_on(async {
-        env.db.lock().await.put_object(type_id, columns, bytes).await
+        env.db
+            .lock()
+            .await
+            .put_object(type_id, columns, bytes)
+            .await
     });
 }
 
