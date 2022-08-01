@@ -4,19 +4,20 @@ schema {
 
 type QueryRoot {
     count: Count
-    another_count: AnotherCount
+    anothercount: AnotherCount
 }
 
 type Count {
-    id: ID!,
-    count: UInt8!,
-    timestamp: UInt8!,
+    id: ID!
+    count: UInt8!
+    timestamp: UInt8!
 }
 
 
 type AnotherCount {
     id: ID!
-    count: UInt8!,
-    timestamp: UInt8!,
-    address: Address! @indexed,
+    count: UInt8!
+    timestamp: UInt8!
+    address: Address! @indexed
+    reference_count: Count!
 }

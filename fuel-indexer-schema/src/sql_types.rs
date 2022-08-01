@@ -12,6 +12,7 @@ use std::io::Write;
 #[cfg(feature = "db-models")]
 #[derive(SqlType)]
 #[postgres(type_name = "Columntypename")]
+// NOTE: Should we change this to AssoicateFuelType?
 pub struct Columntypename;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -32,6 +33,7 @@ pub enum ColumnType {
     UInt8 = 11,
     Timestamp = 12,
     Blob = 13,
+    ForeignKey = 14,
 }
 
 #[cfg(feature = "db-models")]
@@ -52,6 +54,7 @@ impl<DB: Backend> ToSql<Columntypename, DB> for ColumnType {
             ColumnType::Timestamp => out.write_all(b"Timestamp")?,
             ColumnType::Salt => out.write_all(b"Salt")?,
             ColumnType::Blob => out.write_all(b"Blob")?,
+            ColumnType::ForeignKey => out.write_all(b"ForeignKey")?,
         }
         Ok(IsNull::No)
     }
@@ -75,6 +78,7 @@ impl FromSql<Columntypename, Pg> for ColumnType {
             b"Timestamp" => Ok(ColumnType::Timestamp),
             b"Salt" => Ok(ColumnType::Salt),
             b"Blob" => Ok(ColumnType::Blob),
+            b"ForeignKey" => Ok(ColumnType::ForeignKey),
             _ => Err("Unrecognized enum variant".into()),
         }
     }
@@ -97,6 +101,7 @@ impl From<ColumnType> for i32 {
             ColumnType::UInt8 => 11,
             ColumnType::Timestamp => 12,
             ColumnType::Blob => 13,
+            ColumnType::ForeignKey => 14,
         }
     }
 }
@@ -118,6 +123,7 @@ impl From<i32> for ColumnType {
             11 => ColumnType::UInt8,
             12 => ColumnType::Timestamp,
             13 => ColumnType::Blob,
+            14 => ColumnType::ForeignKey,
             _ => panic!("Invalid column type!"),
         }
     }
@@ -139,7 +145,8 @@ impl From<&str> for ColumnType {
             "UInt4" => ColumnType::UInt4,
             "UInt8" => ColumnType::UInt8,
             "Timestamp" => ColumnType::Timestamp,
-            "Blob`" => ColumnType::Blob,
+            "Blob" => ColumnType::Blob,
+            "ForeignKey" => ColumnType::ForeignKey,
             _ => panic!("Invalid column type! {}", name),
         }
     }

@@ -10,7 +10,9 @@ use alloc::vec::Vec;
 
 use crate::sql_types::ColumnType;
 use core::convert::{TryFrom, TryInto};
+use graphql_parser::schema::{Definition, Document, TypeDefinition};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 
 pub const LOG_LEVEL_ERROR: u32 = 0;
 pub const LOG_LEVEL_WARN: u32 = 1;
@@ -54,6 +56,46 @@ pub fn type_id(namespace: &str, type_name: &str) -> u64 {
 
 pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
+}
+
+pub fn type_name(typ: &TypeDefinition<String>) -> String {
+    match typ {
+        TypeDefinition::Scalar(obj) => obj.name.clone(),
+        TypeDefinition::Object(obj) => obj.name.clone(),
+        TypeDefinition::Interface(obj) => obj.name.clone(),
+        TypeDefinition::Union(obj) => obj.name.clone(),
+        TypeDefinition::Enum(obj) => obj.name.clone(),
+        TypeDefinition::InputObject(obj) => obj.name.clone(),
+    }
+}
+
+pub fn get_schema_types(ast: &Document<String>) -> (HashSet<String>, HashSet<String>) {
+    let types: HashSet<String> = ast
+        .definitions
+        .iter()
+        .filter_map(|def| {
+            if let Definition::TypeDefinition(typ) = def {
+                Some(typ)
+            } else {
+                None
+            }
+        })
+        .map(type_name)
+        .collect();
+
+    let directives = ast
+        .definitions
+        .iter()
+        .filter_map(|def| {
+            if let Definition::DirectiveDefinition(dir) = def {
+                Some(dir.name.clone())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    (types, directives)
 }
 
 #[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
@@ -137,6 +179,9 @@ impl FtColumn {
             }
             ColumnType::Blob => {
                 panic!("Blob not supported for FtColumn!");
+            }
+            ColumnType::ForeignKey => {
+                panic!("ForeignKey not supported for FtColumn!");
             }
         }
     }

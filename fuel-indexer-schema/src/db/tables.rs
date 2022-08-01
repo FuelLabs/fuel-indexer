@@ -1,9 +1,11 @@
 use crate::{
     db::models::{
-        Columns, GraphRoot, NewColumn, NewGraphRoot, NewRootColumns, RootColumns, TypeId,
+        ColumnIndex, Columns, CreateStatement, ForeignKey, GraphRoot, IdCol, IndexMethod,
+        NewColumn, NewGraphRoot, NewRootColumns, RootColumns, TypeId,
     },
+    get_schema_types,
     sql_types::ColumnType,
-    type_id,
+    type_id, BASE_SCHEMA,
 };
 use diesel::result::QueryResult;
 use diesel::{prelude::PgConnection, sql_query, Connection, RunQueryDsl};
@@ -11,11 +13,24 @@ use graphql_parser::parse_schema;
 use graphql_parser::schema::{Definition, Field, SchemaDefinition, Type, TypeDefinition};
 use std::collections::{HashMap, HashSet};
 
+fn normalize_field_type_name(name: &str) -> String {
+    let s = name.to_string();
+    let mut chars = s.chars();
+    chars.next_back();
+    chars.as_str().to_string()
+}
+
+fn extract_table_name_from_field_type(f: &Field<String>) -> String {
+    normalize_field_type_name(&f.field_type.to_string()).to_lowercase()
+}
+
 #[derive(Default)]
 pub struct SchemaBuilder {
     statements: Vec<String>,
     type_ids: Vec<TypeId>,
     columns: Vec<NewColumn>,
+    foreign_keys: Vec<ForeignKey>,
+    indices: Vec<ColumnIndex>,
     namespace: String,
     version: String,
     schema: String,
@@ -23,13 +38,23 @@ pub struct SchemaBuilder {
     fields: HashMap<String, HashMap<String, String>>,
     query: String,
     query_fields: HashMap<String, HashMap<String, String>>,
+    primitives: HashSet<String>,
 }
 
 impl SchemaBuilder {
     pub fn new(namespace: &str, version: &str) -> SchemaBuilder {
+        let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
+            Ok(ast) => ast,
+            Err(e) => {
+                panic!("Error parsing graphql schema {:?}", e)
+            }
+        };
+        let (primitives, _) = get_schema_types(&base_ast);
+
         SchemaBuilder {
             namespace: namespace.to_string(),
             version: version.to_string(),
+            primitives,
             ..Default::default()
         }
     }
@@ -80,12 +105,15 @@ impl SchemaBuilder {
             statements,
             type_ids,
             columns,
+            foreign_keys,
+            indices,
             namespace,
             types,
             fields,
             query,
             query_fields,
             schema,
+            ..
         } = self;
 
         conn.transaction::<(), diesel::result::Error, _>(|| {
@@ -114,6 +142,14 @@ impl SchemaBuilder {
                 sql_query(query).execute(conn)?;
             }
 
+            for fk in foreign_keys {
+                sql_query(fk.create_statement()).execute(conn)?;
+            }
+
+            for idx in indices {
+                sql_query(idx.create_statement()).execute(conn)?;
+            }
+
             for type_id in type_ids {
                 type_id.insert(conn)?;
             }
@@ -135,7 +171,12 @@ impl SchemaBuilder {
 
     fn process_type<'a>(&self, field_type: &Type<'a, String>) -> (ColumnType, bool) {
         match field_type {
-            Type::NamedType(t) => (ColumnType::from(t.as_str()), true),
+            Type::NamedType(t) => {
+                if !self.primitives.contains(t.as_str()) {
+                    return (ColumnType::ForeignKey, true);
+                }
+                (ColumnType::from(t.as_str()), true)
+            }
             Type::ListType(_) => panic!("List types not supported yet."),
             Type::NonNullType(t) => {
                 let (typ, _) = self.process_type(t);
@@ -144,12 +185,60 @@ impl SchemaBuilder {
         }
     }
 
-    fn generate_columns<'a>(&mut self, type_id: i64, fields: &[Field<'a, String>]) -> String {
+    fn process_field_index_directive(
+        &self,
+        field: &Field<String>,
+        column: NewColumn,
+        table_name: &String,
+    ) -> Option<ColumnIndex> {
+        if !field.directives.is_empty() {
+            return Some(ColumnIndex {
+                table_name: table_name.to_string(),
+                namespace: self.namespace.clone(),
+                method: IndexMethod::Btree,
+                unique: false,
+                column,
+            });
+        }
+
+        None
+    }
+
+    fn generate_columns<'a>(
+        &mut self,
+        type_id: i64,
+        fields: &[Field<'a, String>],
+        table_name: &String,
+    ) -> String {
         let mut fragments = vec![];
 
         for (pos, f) in fields.iter().enumerate() {
-            // will ignore field arguments and field directives for now, but possibly useful...
             let (typ, nullable) = self.process_type(&f.field_type);
+
+            if typ == ColumnType::ForeignKey {
+                let fk = ForeignKey::new(
+                    self.namespace.clone(),
+                    table_name.clone(),
+                    f.name.clone(),
+                    extract_table_name_from_field_type(f),
+                    IdCol::to_string(),
+                );
+
+                let column = NewColumn {
+                    type_id,
+                    column_position: pos as i32,
+                    column_name: f.name.to_string(),
+                    column_type: ColumnType::UInt8,
+                    graphql_type: f.field_type.to_string(),
+                    nullable,
+                };
+
+                fragments.push(column.sql_fragment());
+                self.columns.push(column);
+                self.foreign_keys.push(fk);
+
+                continue;
+            }
 
             let column = NewColumn {
                 type_id,
@@ -159,6 +248,23 @@ impl SchemaBuilder {
                 graphql_type: f.field_type.to_string(),
                 nullable,
             };
+
+            if let Some(ColumnIndex {
+                table_name,
+                namespace,
+                method,
+                unique,
+                column,
+            }) = self.process_field_index_directive(f, column.clone(), table_name)
+            {
+                self.indices.push(ColumnIndex {
+                    table_name,
+                    namespace,
+                    method,
+                    unique,
+                    column,
+                });
+            }
 
             fragments.push(column.sql_fragment());
             self.columns.push(column);
@@ -186,6 +292,7 @@ impl SchemaBuilder {
                 .map(|f| (f.name.to_string(), f.field_type.to_string()))
                 .collect()
         }
+
         match typ {
             TypeDefinition::Object(o) => {
                 self.types.insert(o.name.to_string());
@@ -198,9 +305,9 @@ impl SchemaBuilder {
                     return;
                 }
 
-                let type_id = type_id(&self.namespace, &o.name);
-                let columns = self.generate_columns(type_id as i64, &o.fields);
                 let table_name = o.name.to_lowercase();
+                let type_id = type_id(&self.namespace, &o.name);
+                let columns = self.generate_columns(type_id as i64, &o.fields, &table_name);
 
                 let create = format!(
                     "CREATE TABLE IF NOT EXISTS\n {}.{} (\n {}\n)",
@@ -280,7 +387,13 @@ impl Schema {
     pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
         match self.fields.get(cond) {
             Some(fieldset) => fieldset.get(name),
-            _ => None,
+            _ => {
+                let tablename = normalize_field_type_name(cond);
+                match self.fields.get(&tablename) {
+                    Some(fieldset) => fieldset.get(name),
+                    _ => None,
+                }
+            }
         }
     }
 }
@@ -289,7 +402,9 @@ impl Schema {
 mod tests {
     use super::*;
 
-    const GRAPHQL_SCHEMA: &str = r#"
+    #[test]
+    fn test_schema_builder_for_basic_schema_returns_proper_create_sql() {
+        let graphql_schema: &str = r#"
         schema {
             query: QueryRoot
         }
@@ -307,38 +422,118 @@ mod tests {
         
         type Thing2 {
             id: ID!
+            account: Address!
+            hash: Bytes32!
+        }
+    "#;
+
+        let create_schema: &str = "CREATE SCHEMA IF NOT EXISTS test_namespace";
+        let create_thing1_schmea: &str = concat!(
+            "CREATE TABLE IF NOT EXISTS\n",
+            " test_namespace.thing1 (\n",
+            " id bigint primary key not null,\n",
+            "account varchar(64) not null,\n",
+            "object bytea not null",
+            "\n)"
+        );
+        let create_thing2_schema: &str = concat!(
+            "CREATE TABLE IF NOT EXISTS\n",
+            " test_namespace.thing2 (\n",
+            " id bigint primary key not null,\n",
+            "account varchar(64) not null,\n",
+            "hash varchar(64) not null,\n",
+            "object bytea not null\n",
+            ")"
+        );
+
+        let sb = SchemaBuilder::new("test_namespace", "a_version_string");
+
+        let SchemaBuilder { statements, .. } = sb.build(graphql_schema);
+
+        assert_eq!(statements[0], create_schema);
+        assert_eq!(statements[1], create_thing1_schmea);
+        assert_eq!(statements[2], create_thing2_schema);
+    }
+
+    #[test]
+    fn test_schema_builder_for_indices_returns_proper_create_sql() {
+        let graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+        
+        type QueryRoot {
+            thing1: Thing1
+            thing2: Thing2
+        }
+        
+        type Payer {
+            id: ID!
             account: Address! @indexed
+        }
+        
+        
+        type Payee {
+            id: ID!
+            account: Address!
             hash: Bytes32! @indexed
         }
     "#;
 
-    const CREATE_SCHEMA: &str = "CREATE SCHEMA IF NOT EXISTS test_namespace";
-    const CREATE_THING1: &str = concat!(
-        "CREATE TABLE IF NOT EXISTS\n",
-        " test_namespace.thing1 (\n",
-        " id bigint primary key not null,\n",
-        "account varchar(64) not null,\n",
-        "object bytea not null",
-        "\n)"
-    );
-    const CREATE_THING2: &str = concat!(
-        "CREATE TABLE IF NOT EXISTS\n",
-        " test_namespace.thing2 (\n",
-        " id bigint primary key not null,\n",
-        "account varchar(64) not null,\n",
-        "hash varchar(64) not null,\n",
-        "object bytea not null\n",
-        ")"
-    );
+        let sb = SchemaBuilder::new("namespace", "v1");
+
+        let SchemaBuilder { indices, .. } = sb.build(graphql_schema);
+
+        assert_eq!(indices.len(), 2);
+        assert_eq!(
+            indices[0].create_statement(),
+            "CREATE INDEX payer_account_idx ON namespace.payer USING btree (account);".to_string()
+        );
+        assert_eq!(
+            indices[1].create_statement(),
+            "CREATE INDEX payee_hash_idx ON namespace.payee USING btree (hash);".to_string()
+        );
+    }
 
     #[test]
-    fn test_schema_builder() {
-        let sb = SchemaBuilder::new("test_namespace", "a_version_string");
+    fn test_schema_builder_for_foreign_keys_returns_proper_create_sql() {
+        let graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+        
+        type QueryRoot {
+            borrower: Borrower
+            lender: Lender
+            auditor: Auditor
+        }
 
-        let SchemaBuilder { statements, .. } = sb.build(GRAPHQL_SCHEMA);
+        type Borrower {
+            id: ID!
+            account: Address! @indexed
+        }
 
-        assert_eq!(statements[0], CREATE_SCHEMA);
-        assert_eq!(statements[1], CREATE_THING1);
-        assert_eq!(statements[2], CREATE_THING2);
+        type Lender {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower!
+        }
+
+        type Auditor {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower!
+        }
+    "#;
+
+        let sb = SchemaBuilder::new("namespace", "v1");
+
+        let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
+
+        assert_eq!(foreign_keys.len(), 2);
+        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.lender ADD CONSTRAINT fk_borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.auditor ADD CONSTRAINT fk_borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
     }
 }

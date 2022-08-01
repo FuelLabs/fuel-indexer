@@ -1,4 +1,4 @@
-use fuel_indexer_schema::{schema_version, type_id, BASE_SCHEMA};
+use fuel_indexer_schema::{get_schema_types, schema_version, type_id, BASE_SCHEMA};
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{Definition, Document, Field, SchemaDefinition, Type, TypeDefinition};
 use proc_macro::TokenStream;
@@ -57,9 +57,6 @@ fn process_field<'a>(
     proc_macro2::Ident,
     proc_macro2::TokenStream,
 ) {
-    // TODO: might want to make use of directives on fields?
-    //       e.g. to annotate columns to be indexed in postgres.
-
     let Field {
         name, field_type, ..
     } = field;
@@ -83,12 +80,15 @@ fn process_type_def<'a>(
     namespace: &str,
     types: &HashSet<String>,
     typ: &TypeDefinition<'a, String>,
+    processed: &mut HashSet<String>,
+    primitives: &HashSet<String>,
 ) -> Option<proc_macro2::TokenStream> {
     match typ {
         TypeDefinition::Object(obj) => {
             if obj.name == *query_root {
                 return None;
             }
+
             let name = &obj.name;
             let type_id = type_id(namespace, name);
             // TODO: ignore directives for now, could do some useful things with them though.
@@ -99,6 +99,14 @@ fn process_type_def<'a>(
 
             for field in &obj.fields {
                 let (type_name, field_name, ext) = process_field(types, field);
+
+                let type_name_str = type_name.to_string();
+
+                if processed.contains(&type_name_str) && !primitives.contains(&type_name_str) {
+                    continue;
+                }
+
+                processed.insert(type_name_str);
 
                 block = quote! {
                     #block
@@ -122,6 +130,8 @@ fn process_type_def<'a>(
                 };
             }
             let strct = format_ident! {"{}", name};
+
+            processed.insert(strct.to_string());
 
             Some(quote! {
                 #[derive(Debug, PartialEq, Eq)]
@@ -156,24 +166,17 @@ fn process_definition<'a>(
     namespace: &str,
     types: &HashSet<String>,
     definition: &Definition<'a, String>,
+    processed: &mut HashSet<String>,
+    primitives: &HashSet<String>,
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
-        Definition::TypeDefinition(def) => process_type_def(query_root, namespace, types, def),
+        Definition::TypeDefinition(def) => {
+            process_type_def(query_root, namespace, types, def, processed, primitives)
+        }
         Definition::SchemaDefinition(_def) => None,
         def => {
             panic!("Unhandled definition type: {:?}", def);
         }
-    }
-}
-
-fn type_name(typ: &TypeDefinition<String>) -> String {
-    match typ {
-        TypeDefinition::Scalar(obj) => obj.name.clone(),
-        TypeDefinition::Object(obj) => obj.name.clone(),
-        TypeDefinition::Interface(obj) => obj.name.clone(),
-        TypeDefinition::Union(obj) => obj.name.clone(),
-        TypeDefinition::Enum(obj) => obj.name.clone(),
-        TypeDefinition::InputObject(obj) => obj.name.clone(),
     }
 }
 
@@ -203,35 +206,6 @@ fn get_query_root<'a>(types: &HashSet<String>, ast: &Document<'a, String>) -> St
     }
 
     name
-}
-
-fn get_schema_types(ast: &Document<String>) -> (HashSet<String>, HashSet<String>) {
-    let types: HashSet<String> = ast
-        .definitions
-        .iter()
-        .filter_map(|def| {
-            if let Definition::TypeDefinition(typ) = def {
-                Some(typ)
-            } else {
-                None
-            }
-        })
-        .map(type_name)
-        .collect();
-
-    let directives = ast
-        .definitions
-        .iter()
-        .filter_map(|def| {
-            if let Definition::DirectiveDefinition(dir) = def {
-                Some(dir.name.clone())
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    (types, directives)
 }
 
 fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
@@ -287,7 +261,7 @@ pub(crate) fn process_graphql_schema(inputs: TokenStream) -> TokenStream {
         }
     };
     let (mut types, _) = get_schema_types(&ast);
-    types.extend(primitives);
+    types.extend(primitives.clone());
 
     let namespace = const_item("NAMESPACE", &schema.namespace.value());
     let version = const_item("VERSION", &schema_version(&text));
@@ -302,16 +276,22 @@ pub(crate) fn process_graphql_schema(inputs: TokenStream) -> TokenStream {
 
     let query_root = get_query_root(&types, &ast);
 
+    let mut processed: HashSet<String> = HashSet::new();
+
     for definition in ast.definitions.iter() {
-        if let Some(def) =
-            process_definition(&query_root, &schema.namespace.value(), &types, definition)
-        {
+        if let Some(def) = process_definition(
+            &query_root,
+            &schema.namespace.value(),
+            &types,
+            definition,
+            &mut processed,
+            &primitives,
+        ) {
             output = quote! {
                 #output
                 #def
             };
         }
     }
-
     TokenStream::from(output)
 }
