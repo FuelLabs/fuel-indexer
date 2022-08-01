@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct RootColumns {
     pub id: i32,
     pub root_id: i64,
@@ -5,12 +6,14 @@ pub struct RootColumns {
     pub graphql_type: String,
 }
 
+#[derive(Debug)]
 pub struct NewRootColumns {
     pub root_id: i64,
     pub column_name: String,
     pub graphql_type: String,
 }
 
+#[derive(Debug)]
 pub struct GraphRoot {
     pub id: i64,
     pub version: String,
@@ -19,6 +22,7 @@ pub struct GraphRoot {
     pub schema: String,
 }
 
+#[derive(Debug)]
 pub struct NewGraphRoot {
     pub version: String,
     pub schema_name: String,
@@ -26,6 +30,7 @@ pub struct NewGraphRoot {
     pub schema: String,
 }
 
+#[derive(Debug)]
 pub struct TypeId {
     pub id: i64,
     pub schema_version: String,
@@ -34,14 +39,17 @@ pub struct TypeId {
     pub table_name: String,
 }
 
+#[derive(Debug)]
 pub struct IdLatest {
     pub schema_version: String
 }
 
+#[derive(Debug)]
 pub struct NumVersions {
     pub num: Option<i64>
 }
 
+#[derive(Debug)]
 pub struct NewColumn {
     pub type_id: i64,
     pub column_position: i32,
@@ -51,6 +59,7 @@ pub struct NewColumn {
     pub graphql_type: String,
 }
 
+#[derive(Debug)]
 pub struct Columns {
     pub id: i32,
     pub type_id: i64,
@@ -90,10 +99,7 @@ impl NewColumn {
     }
 }
 
-pub struct Query {
-    row: String
-}
-
+#[derive(Debug)]
 pub struct ColumnInfo {
     pub type_id: i64,
     pub table_name: String,

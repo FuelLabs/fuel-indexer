@@ -2,38 +2,47 @@ pub mod graphql;
 pub mod models;
 pub mod tables;
 use sqlx::pool::PoolConnection;
+use thiserror::Error;
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug, Error)]
+pub enum DatabaseError {
+    #[error("Invalid connection string: {0:?}")]
+    InvalidConnectionString(String),
+    #[error("Database backend not supported: {0:?}")]
+    BackendNotSupported(String),
+}
+
+
+#[derive(Clone, Debug)]
 pub enum IndexerConnectionPool {
     Postgres(sqlx::Pool<sqlx::Postgres>),
     Sqlite(sqlx::Pool<sqlx::Sqlite>),
 }
 
 impl IndexerConnectionPool {
-    pub async fn connect(database_url: &str) -> IndexerConnectionPool {
+    pub async fn connect(database_url: &str) -> Result<IndexerConnectionPool, DatabaseError> {
         let url = url::Url::parse(database_url);
         if url.is_err() {
-            panic!("{} is not a valid database string!", database_url);
+            return Err(DatabaseError::InvalidConnectionString(database_url.into()));
         }
         let url = url.unwrap();
 
         match url.scheme() {
             "postgres" => {
-                let pool = sqlx::Pool::<sqlx::Postgres>::connect(database_url).await
-                    .expect("Something went wrong establishing a pg connection!");
-                IndexerConnectionPool::Postgres(pool)
+                let pool = sqlx::Pool::<sqlx::Postgres>::connect(database_url)
+                    .await.expect("Could not connect to postgres backend!");
+                Ok(IndexerConnectionPool::Postgres(pool))
             }
             "sqlite" => {
-                let pool = sqlx::Pool::<sqlx::Sqlite>::connect(database_url).await
-                    .expect("Something went wrong establishing a pg connection!");
-                IndexerConnectionPool::Sqlite(pool)
+                let pool = sqlx::Pool::<sqlx::Sqlite>::connect(database_url)
+                    .await.expect("Could not connect to sqlite backend!");
+                Ok(IndexerConnectionPool::Sqlite(pool))
             }
-            e => {
-                panic!("database {} is not supported, use sqlite or postgres", e);
+            err => {
+                Err(DatabaseError::BackendNotSupported(err.into()))
             }
         }
-        
     }
 
     pub async fn acquire(&self) -> sqlx::Result<IndexerConnection> {
@@ -48,6 +57,7 @@ impl IndexerConnectionPool {
     }
 }
 
+#[derive(Debug)]
 pub enum IndexerConnection {
     Postgres(PoolConnection<sqlx::Postgres>),
     Sqlite(PoolConnection<sqlx::Sqlite>),

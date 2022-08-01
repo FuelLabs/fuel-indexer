@@ -25,5 +25,5 @@ url = "2.2"
 insta = "1.8"
 
 [features]
-default = ["sqlx"]
-db-models = ["itertools", "thiserror"]
+default = ["db-models"]
+db-models = ["sqlx", "itertools", "thiserror"]

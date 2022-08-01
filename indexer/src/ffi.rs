@@ -95,11 +95,11 @@ fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
 
     let id = get_object_id(mem, ptr);
 
-    let bytes = env
-        .db
-        .lock()
-        .expect("Lock acquire failed")
-        .get_object(type_id, id);
+    // TODO: stash this thing somewhere??
+    let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime!");
+    let bytes = rt.block_on(async { 
+        env.db.lock().await.get_object(type_id, id).await
+    });
 
     if let Some(bytes) = bytes {
         let alloc_fn = env.alloc_ref().expect("Alloc export is missing");
@@ -132,10 +132,11 @@ fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
 
     let columns: Vec<FtColumn> = serde_scale::from_slice(&bytes).expect("Scale serde error");
 
-    env.db
-        .lock()
-        .expect("Acquire lock failed")
-        .put_object(type_id, columns, bytes);
+    // TODO: stash this??
+    let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime!");
+    rt.block_on(async {
+        env.db.lock().await.put_object(type_id, columns, bytes).await
+    });
 }
 
 pub fn get_exports(env: &IndexEnv, store: &Store) -> Exports {

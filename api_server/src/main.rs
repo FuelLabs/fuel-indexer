@@ -44,11 +44,9 @@ pub async fn main() -> Result<()> {
         database_url,
     } = serde_yaml::from_str(&contents).expect("Bad yaml file");
 
+
     let api = GraphQlApi::new(database_url, listen_address);
-
-    let api_handle = tokio::spawn(api.run());
-
-    api_handle.await?;
+    api.run().await;
 
     Ok(())
 }

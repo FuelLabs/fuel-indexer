@@ -56,7 +56,7 @@ pub async fn main() -> Result<()> {
     info!("Fuel node listening on {}", config.fuel_node_addr);
     let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
 
-    let mut service = IndexerService::new(config)?;
+    let mut service = IndexerService::new(config).await?;
 
     // TODO: need an API endpoint to upload/create these things.....
     if opt.test_manifest.is_some() {
@@ -67,7 +67,7 @@ pub async fn main() -> Result<()> {
         file.read_to_string(&mut contents).await?;
         let manifest: Manifest = serde_yaml::from_str(&contents)?;
 
-        service.add_wasm_indexer(manifest, false)?;
+        service.add_wasm_indexer(manifest, false).await?;
     }
 
     let service_handle = tokio::spawn(service.run());

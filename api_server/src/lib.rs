@@ -21,9 +21,6 @@ use std::collections::HashMap;
 use thiserror::Error;
 use tracing::error;
 
-pub struct Answer {
-    row: String,
-}
 
 #[derive(Debug, Error)]
 pub enum ApiError {
@@ -53,11 +50,11 @@ type SchemaManager = HashMap<String, Schema>;
 async fn query_graph(
     Path(name): Path<String>,
     Json(query): Json<Query>,
-    Extension(database_url): Extension<String>,
+    Extension(pool): Extension<&IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
 ) -> (StatusCode, Json<Value>) {
     if !manager.read().await.contains_key(&name) {
-        if let Ok(Some(schema)) = load_schema_wasm(&database_url, &name).await {
+        if let Ok(Some(schema)) = load_schema_wasm(&pool, &name).await {
             manager.write().await.insert(name.clone(), schema);
         } else {
             let result = format!("The graph {name} was not found.");
@@ -68,7 +65,7 @@ async fn query_graph(
     let guard = manager.read().await;
     let schema = guard.get(&name).unwrap();
 
-    match run_query(query, schema, database_url).await {
+    match run_query(query, schema, pool).await {
         Ok(response) => (StatusCode::OK, Json(response)),
         Err(e) => {
             error!("Query error {e:?}");
@@ -97,9 +94,10 @@ impl GraphQlApi {
 
         run_migration(&self.database_url).await;
 
+        let pool = IndexerConnectionPool::connect(&self.database_url).await;
         let app = Router::new()
             .route("/graph/:name", post(query_graph))
-            .layer(Extension(self.database_url.clone()))
+            .layer(Extension(pool))
             .layer(Extension(schema_manager));
 
         axum::Server::bind(&self.listen_address)
@@ -109,19 +107,16 @@ impl GraphQlApi {
     }
 }
 
-pub async fn load_schema_wasm(database_url: &str, name: &str) -> Result<Option<Schema>, ApiError> {
-    // TODO: eww! thread a Pool through the server....
-    let pool = IndexerConnectionPool::connect(database_url).await;
-    Ok(Some(Schema::load_from_db(&pool, name).await?))
+pub async fn load_schema_wasm(pool: &IndexerConnectionPool, name: &str) -> Result<Option<Schema>, ApiError> {
+    Ok(Some(Schema::load_from_db(pool, name).await?))
 }
 
 pub async fn run_query(
     query: Query,
     schema: &Schema,
-    database_url: String,
+    pool: &IndexerConnectionPool,
 ) -> Result<Value, ApiError> {
-    // TODO: eww! thread a Pool through the server....
-    let mut conn = IndexerConnectionPool::connect(&database_url).await.acquire().await?;
+    let mut conn = pool.acquire().await?;
     let builder = GraphqlQueryBuilder::new(schema, &query.query)?;
     let query = builder.build()?;
 

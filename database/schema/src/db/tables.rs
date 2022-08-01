@@ -1,5 +1,5 @@
 use crate::type_id;
-use crate::db::{IndexerConnectionPool, models::*};
+use crate::db::{IndexerConnection, IndexerConnectionPool, models::*};
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{Definition, Field, SchemaDefinition, Type, TypeDefinition};
 use std::collections::{HashMap, HashSet};
@@ -69,7 +69,7 @@ impl SchemaBuilder {
         self
     }
 
-    pub async fn commit_metadata(self, pool: &IndexerConnectionPool) -> sqlx::Result<Schema> {
+    pub async fn commit_metadata(self, conn: &mut IndexerConnection) -> sqlx::Result<Schema> {
         let SchemaBuilder {
             version,
             statements,
@@ -83,17 +83,15 @@ impl SchemaBuilder {
             schema,
         } = self;
 
-        let mut conn = pool.acquire().await?;
-
         let new_root = NewGraphRoot {
             version: version.clone(),
             schema_name: namespace.clone(),
             query: query.clone(),
             schema,
         };
-        new_graph_root(&mut conn, new_root).await?;
+        new_graph_root(conn, new_root).await?;
 
-        let latest = graph_root_latest(&mut conn, &namespace).await?;
+        let latest = graph_root_latest(conn, &namespace).await?;
 
         let field_defs = query_fields.get(&query).expect("No query root!");
 
@@ -105,12 +103,12 @@ impl SchemaBuilder {
             }
         }).collect();
 
-        new_root_columns(&mut conn, cols).await?;
-        type_id_insert(&mut conn, type_ids).await?;
-        new_column_insert(&mut conn, columns).await?;
+        new_root_columns(conn, cols).await?;
+        type_id_insert(conn, type_ids).await?;
+        new_column_insert(conn, columns).await?;
 
         for statement in statements {
-            execute_query(&mut conn, statement).await?;
+            execute_query(conn, statement).await?;
         }
 
 

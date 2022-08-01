@@ -3,6 +3,27 @@ use sqlx::{Postgres, pool::PoolConnection, PgConnection};
 use fuel_indexer_database_types::*;
 
 
+pub async fn put_object(conn: &mut PoolConnection<Postgres>, query: String, bytes: Vec<u8>) -> sqlx::Result<usize> {
+
+    let mut builder = sqlx::QueryBuilder::new(query);
+
+    let query = builder.build();
+    let query = query.bind(bytes);
+    let result = query.execute(conn).await?;
+
+    Ok(result.rows_affected() as usize)
+}
+
+pub async fn get_object(conn: &mut PoolConnection<Postgres>, query: String) -> sqlx::Result<Vec<u8>> {
+    let mut builder = sqlx::QueryBuilder::new(query);
+
+    let query = builder.build();
+
+    let row = query.fetch_one(conn).await?;
+
+    Ok(row.get(0))
+}
+
 pub async fn run_migration(database_url: &str) {
     let mut conn = PgConnection::connect(database_url).await.expect("Failed to establish postgres connection.");
     sqlx::migrate!().run(&mut conn).await.expect("Failed postgres migration!");
@@ -54,12 +75,14 @@ pub async fn new_root_columns(conn: &mut PoolConnection<Postgres>, cols: Vec<New
 }
 
 pub async fn new_graph_root(conn: &mut PoolConnection<Postgres>, root: NewGraphRoot) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_graph_root (version, schema_name, query, schema) VALUES ($1, $2, $3, $4)");
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_graph_root (version, schema_name, query, schema)");
 
-    builder.push_bind(root.version)
-        .push_bind(root.schema_name)
-        .push_bind(root.query)
-        .push_bind(root.schema);
+    builder.push_values(std::iter::once(root), |mut b, root| {
+        b.push_bind(root.version)
+            .push_bind(root.schema_name)
+            .push_bind(root.query)
+            .push_bind(root.schema);
+    });
 
     let query = builder.build();
 

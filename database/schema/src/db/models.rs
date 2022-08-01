@@ -4,6 +4,28 @@ use fuel_indexer_sqlite as sqlite;
 use fuel_indexer_database_types::*;
 
 
+pub async fn put_object(conn: &mut IndexerConnection, query: String, bytes: Vec<u8>) -> sqlx::Result<usize> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::put_object(c, query, bytes).await
+        }
+        IndexerConnection::Sqlite(ref mut c) => {
+            sqlite::put_object(c, query, bytes).await
+        }
+    }
+}
+
+pub async fn get_object(conn: &mut IndexerConnection, query: String) -> sqlx::Result<Vec<u8>> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::get_object(c, query).await
+        }
+        IndexerConnection::Sqlite(ref mut c) => {
+            sqlite::get_object(c, query).await
+        }
+    }
+}
+
 pub async fn run_query(conn: &mut IndexerConnection, query: String) -> sqlx::Result<String> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
