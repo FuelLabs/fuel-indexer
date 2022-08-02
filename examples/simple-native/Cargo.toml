@@ -13,7 +13,7 @@ diesel = { version = "1.4", features = ["postgres"] }
 fuel-executor = { path = "../../indexer" }
 fuel-indexer = { path = "../../lib" }
 fuel-indexer-derive = { path = "../../derive" }
-fuel-indexer-schema = { path = "../../database/schema", features = ["db-models"] }
+fuel-indexer-schema = { path = "../../fuel-indexer-schema", features = ["db-models"] }
 fuel-tx = "0.9"
 fuel-types = "0.5"
 fuels = "0.16"

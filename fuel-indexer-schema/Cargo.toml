@@ -8,9 +8,9 @@ publish = false
 
 [dependencies]
 async-trait = { version = "0.1" }
-fuel-indexer-database-types = { path = "../database-types" }
-fuel-indexer-postgres = { path = "../postgres" }
-fuel-indexer-sqlite = { path = "../sqlite" }
+fuel-indexer-database-types = { path = "../database/database-types" }
+fuel-indexer-postgres = { path = "../database/postgres" }
+fuel-indexer-sqlite = { path = "../database/sqlite" }
 fuel-types = { version = "0.3", features = ["serde-types"] }
 graphql-parser = "0.3"
 itertools = { version = "0.10", optional = true }

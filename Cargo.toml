@@ -4,6 +4,7 @@ resolver = "2"
 members = [
    "api_server",
    "derive",
+   "fuel-indexer-schema",
    "lib",
    "indexer",
    "database/*",
