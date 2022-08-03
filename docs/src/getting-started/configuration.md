@@ -20,7 +20,7 @@ Using the standalone GraphQL API server.
 
 - Path to the configuration file.
 
-`t` `--test-manifest`
+`-t` `--test-manifest`
 
 - Path to the test manifest file.
 
