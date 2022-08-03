@@ -12,7 +12,7 @@ name = "api_server"
 path = "src/lib.rs"
 
 [[bin]]
-name = "api_server"
+name = "fuel-indexer-api-server"
 path = "src/main.rs"
 
 [dependencies]
