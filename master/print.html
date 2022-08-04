@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="examples/simple-native.html"><strong aria-hidden="true">2.2.</strong> Simple Native</a></li></ol></li><li class="chapter-item expanded "><a href="api/index.html"><strong aria-hidden="true">3.</strong> Web API</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="api/gql-server.html"><strong aria-hidden="true">3.1.</strong> GraphQL server</a></li></ol></li><li class="chapter-item expanded "><a href="database/index.html"><strong aria-hidden="true">4.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="database/types.html"><strong aria-hidden="true">4.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="database/conventions.html"><strong aria-hidden="true">4.2.</strong> Conventions</a></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="examples/simple-native.html"><strong aria-hidden="true">2.2.</strong> Simple Native</a></li></ol></li><li class="chapter-item expanded "><a href="api/index.html"><strong aria-hidden="true">3.</strong> Web API</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="api/gql-server.html"><strong aria-hidden="true">3.1.</strong> GraphQL server</a></li></ol></li><li class="chapter-item expanded "><a href="database/index.html"><strong aria-hidden="true">4.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="database/types.html"><strong aria-hidden="true">4.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="database/conventions.html"><strong aria-hidden="true">4.2.</strong> Conventions</a></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -180,6 +180,7 @@
 <ul>
 <li><a href="getting-started/./system-dependencies.html">System dependencies</a></li>
 <li><a href="getting-started/./application-dependencies.html">Application dependencies</a></li>
+<li><a href="getting-started/./configuration.html">Indexer Configuration</a></li>
 </ul>
 </li>
 <li><a href="getting-started/./fuel-indexer-project.html">Project Structure</a></li>
@@ -292,6 +293,67 @@ DATABASE_URL=&quot;postgres://postgres@127.0.0.1:5432/indexer&quot; \
 
 6 directories, 9 files
 </code></pre>
+<h1 id="indexer-configuration"><a class="header" href="#indexer-configuration">Indexer Configuration</a></h1>
+<p>Below you will find a list of CLI configuration options that can be used to configure either the Fuel Indexer service, the standalone Fuel Indexer GraphQL API service, or both. For those who prefer using a configuration file,
+you can <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">checkout the default service configuration file</a>, which also shows the default values used for these configuration options.</p>
+<h2 id="usage"><a class="header" href="#usage">Usage:</a></h2>
+<p>Using the main Fuel Indexer service binary.</p>
+<p><code>cargo run --bin fuel-indexer -- [options]</code></p>
+<p>Using the standalone GraphQL API server.</p>
+<p><code>cargo run --bin fuel-indexer-api-server -- [options]</code></p>
+<h3 id="options"><a class="header" href="#options">Options:</a></h3>
+<p><code>-c</code> <code>--config</code></p>
+<ul>
+<li>Path to the configuration file.</li>
+</ul>
+<p><code>-t</code> <code>--test-manifest</code></p>
+<ul>
+<li>Path to the test manifest file.</li>
+</ul>
+<blockquote>
+<p>Fuel node: The node running the Fuel client implementation.</p>
+</blockquote>
+<p><code>--fuel-node-host</code> <FUEL-NODE-HOST></p>
+<ul>
+<li>IP of the Fuel node</li>
+</ul>
+<p><code>--fuel-node-port</code> <FUEL-NODE-PORT></p>
+<ul>
+<li>Port of the Fuel node</li>
+</ul>
+<blockquote>
+<p>GraphQL API: The enpoint at which GraphQL queries will be processed. This is context dependent. If ran
+using the <code>fuel-indexer</code> binary, these options apply to the GraphQL service run in that binary. If ran using
+the <code>fuel-indexer-api-server</code> binary, these options will apply to that service.</p>
+</blockquote>
+<p><code>--graphql-api-host</code> <GRAPHQL-API-HOST></p>
+<ul>
+<li>IP at which to bind the GraphQL server</li>
+</ul>
+<p><code>--graphql-api-port</code> <GRAPHQL-API-PORT></p>
+<blockquote>
+<p>Postgres: Standard Postgres connection options.</p>
+</blockquote>
+<p><code>--postgres-host</code> <POSTGRES-HOST></p>
+<ul>
+<li>Postgres host</li>
+</ul>
+<p><code>--postgres-port</code> <POSTGRES-PORT></p>
+<ul>
+<li>Postgres port</li>
+</ul>
+<p><code>--postgres-username</code> <POSTGRES-USERNAME></p>
+<ul>
+<li>Postgres username</li>
+</ul>
+<p><code>--postgres-password</code> <POSTGRES-PASSWORD></p>
+<ul>
+<li>Postgres password (redacted from logging)</li>
+</ul>
+<p><code>--postgres-database</code> <POSTGRES-DATABASE></p>
+<ul>
+<li>Postgres database</li>
+</ul>
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <ul>
 <li><a href="examples/./hello-indexer.html">Hello World</a>
@@ -544,7 +606,7 @@ curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: applicati
 <li><code>config.yaml</code> is our node config</li>
 <li><code>manifest.yaml</code> is our indexer config</li>
 </ul>
-<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<h2 id="usage-1"><a class="header" href="#usage-1">Usage</a></h2>
 <p>In this section we'll cover the exact steps needed to spin up this example.</p>
 <h3 id="database-setup"><a class="header" href="#database-setup">Database setup</a></h3>
 <p>We'll start by creating a database. This step assumes some familiarity with <a href="https://learn.coderslang.com/0120-databases-roles-and-tables-in-postgresql/">creating Postgres roles and databases</a>. In this example we're using an <code>indexer</code> database owned by a <code>postgres</code> role without a password.</p>
@@ -663,14 +725,14 @@ RUST_LOG=debug cargo run -- --config ./config.yaml --test-manifest manifest.yaml
 </li>
 </ul>
 <h1 id="graphql-server"><a class="header" href="#graphql-server">GraphQL Server</a></h1>
-<p>The <code>api_server</code> crate of the Fuel Indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the data layer.</p>
-<p>Note that the main binary of the <code>fuel_indexer</code> crate <em>also</em> contains a queryable GraphQL API endpoint. However, the <code>api_server</code> crate offers a standalone GraphQL API endpoint, whereas the <code>fuel_indexer</code> bundles its GraphQL API endpoint with other Fuel Indexer functionality (e.g., execution, handling, data-layer contruction, etc).</p>
+<p>The <code>fuel-indexer-api-server</code> crate of the Fuel Indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the data layer.</p>
+<p>Note that the main binary of the <code>fuel-indexer</code> crate <em>also</em> contains a queryable GraphQL API endpoint. However, the <code>fuel-indexer-api-server</code> crate offers a standalone GraphQL API endpoint, whereas the <code>fuel-indexer-api-server</code> bundles its GraphQL API endpoint with other Fuel Indexer functionality (e.g., execution, handling, data-layer contruction, etc).</p>
 <p>To run the standalone Fuel Indexer GraphQL API server:</p>
 <pre><code class="language-bash">cd fuel-indexer/
 
-RUST_LOG=debug cargo run --bin api_server -- --config api_server/config.yaml
+RUST_LOG=debug cargo run --bin fuel-indexer-api-server -- --config config.yaml
 </code></pre>
-<p>Where <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/api_server/config.yaml">the default service configuration file</a>.</p>
+<p>Where <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">the default service configuration file</a>.</p>
 <h1 id="database"><a class="header" href="#database">Database</a></h1>
 <p>The Fuel Indexer uses <a href="https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile">Postgres</a> as the database on the data layer.</p>
 <ul>
