@@ -166,13 +166,13 @@ fn count_handler(receipt: Receipt) -> Option<IndexerResult<NativeHandlerResult>>
     match receipt {
         Receipt::ReturnData { data, .. } => {
             // Define which params we expect (using the counter-abi.json as a reference)
-            let params = ParamType::Struct(vec![ParamType::U64, ParamType::U64, ParamType::U64]);
+            let params = vec![ParamType::Struct(vec![ParamType::U64, ParamType::U64, ParamType::U64])];
 
             // Decode the data into a Token using these params
-            let token = ABIDecoder::decode_single(&params, &data).unwrap();
+            let token = ABIDecoder::decode(&params, &data).unwrap();
 
             // Recover the CountEvent from this token
-            let event = CountEvent::from_token(token).unwrap();
+            let event = CountEvent::from_token(token[0].to_owned()).unwrap();
 
             // Using the Count entity from the GraphQL schema
             let count = Count {

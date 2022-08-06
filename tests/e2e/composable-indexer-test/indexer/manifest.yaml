@@ -1,0 +1,6 @@
+namespace: composability_test
+graphql_schema: schema/schema.graphql
+wasm_module: simple_wasm.wasm
+handlers:
+  - event: LogData
+    handler: function_one
