@@ -269,12 +269,11 @@ mod tests {
         Ok(instance)
     }
 
-    // TODO: unfuck..
-    //#[tokio::test]
-    //async fn test_schema_manager_postgres() {
-    //    let database_url = "postgres://postgres:my-secret@127.0.0.1:5432";
-    //    do_test(database_url).await;
-    //}
+    #[tokio::test]
+    async fn test_schema_manager_postgres() {
+        let database_url = "postgres://postgres:my-secret@127.0.0.1:5432";
+        do_test(database_url).await;
+    }
 
     #[tokio::test]
     async fn test_schema_manager_sqlite() {

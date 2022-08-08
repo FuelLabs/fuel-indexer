@@ -246,33 +246,32 @@ mod tests {
         account: String,
     }
 
-    // TODO: undo
-    //#[tokio::test]
-    //async fn test_postgres() {
-    //    let database_url = "postgres://postgres:my-secret@127.0.0.1:5432";
+    #[tokio::test]
+    async fn test_postgres() {
+        let database_url = "postgres://postgres:my-secret@127.0.0.1:5432";
 
-    //    do_test(database_url).await;
+        do_test(database_url).await;
 
-    //    let mut conn = sqlx::PgConnection::connect(database_url)
-    //        .await
-    //        .expect("Database connection failed!");
+        let mut conn = sqlx::PgConnection::connect(database_url)
+            .await
+            .expect("Database connection failed!");
 
-    //    let row = sqlx::query("select id,account from test_namespace.thing1 where id = 1020;")
-    //        .fetch_one(&mut conn)
-    //        .await
-    //        .expect("Database query failed");
+        let row = sqlx::query("select id,account from test_namespace.thing1 where id = 1020;")
+            .fetch_one(&mut conn)
+            .await
+            .expect("Database query failed");
 
-    //    let id = row.get(0);
-    //    let account = row.get(1);
+        let id = row.get(0);
+        let account = row.get(1);
 
-    //    let data = Thing1 { id, account };
+        let data = Thing1 { id, account };
 
-    //    assert_eq!(data.id, 1020);
-    //    assert_eq!(
-    //        data.account,
-    //        "afafafafafafafafafafafafafafafafafafafafafafafafafafafafafafafaf"
-    //    );
-    //}
+        assert_eq!(data.id, 1020);
+        assert_eq!(
+            data.account,
+            "afafafafafafafafafafafafafafafafafafafafafafafafafafafafafafafaf"
+        );
+    }
 
     #[tokio::test]
     async fn test_sqlite() {
