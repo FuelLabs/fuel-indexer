@@ -1,6 +1,6 @@
 #[derive(Debug)]
 pub struct RootColumns {
-    pub id: i32,
+    pub id: i64,
     pub root_id: i64,
     pub column_name: String,
     pub graphql_type: String,
@@ -46,7 +46,7 @@ pub struct IdLatest {
 
 #[derive(Debug)]
 pub struct NumVersions {
-    pub num: Option<i64>,
+    pub num: i64,
 }
 
 #[derive(Debug)]
@@ -61,7 +61,7 @@ pub struct NewColumn {
 
 #[derive(Debug)]
 pub struct Columns {
-    pub id: i32,
+    pub id: i64,
     pub type_id: i64,
     pub column_position: i32,
     pub column_name: String,

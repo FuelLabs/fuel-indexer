@@ -1,6 +1,6 @@
 -- Add up migration script here
 create table graph_registry_type_ids (
-    id bigint primary key,
+    id bigserial primary key,
     schema_version varchar(512) not null,
     schema_name varchar(32) not null,
     graphql_name varchar(32) not null,
@@ -8,8 +8,8 @@ create table graph_registry_type_ids (
 );
 
 create table graph_registry_columns (
-    id serial primary key,
-    type_id bigint not null,
+    id bigserial primary key,
+    type_id bigserial not null,
     column_position integer not null,
     column_name varchar(32) not null,
     column_type varchar(32) not null,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS graph_registry_graph_root (
 );
 
 CREATE TABLE IF NOT EXISTS graph_registry_root_columns (
-    id serial primary key,
+    id bigserial primary key,
     root_id bigserial not null,
     column_name varchar(32) not null,
     graphql_type varchar(32) not null,
