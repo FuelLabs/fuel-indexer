@@ -18,7 +18,30 @@ pub enum IndexerConnectionPool {
     Sqlite(sqlx::Pool<sqlx::Sqlite>),
 }
 
+#[derive(Default, PartialEq)]
+pub enum DbType {
+    #[default]
+    Postgres,
+    Sqlite,
+}
+
+impl DbType {
+    pub fn table_name(&self, namespace: &str, table_name: &str) -> String {
+        match self {
+            DbType::Postgres => format!("{}.{}", namespace, table_name),
+            DbType::Sqlite => format!("{}", table_name),
+        }
+    }
+}
+
 impl IndexerConnectionPool {
+    pub fn database_type(&self) -> DbType {
+        match self {
+            IndexerConnectionPool::Postgres(_) => DbType::Postgres,
+            IndexerConnectionPool::Sqlite(_) => DbType::Sqlite,
+        }
+    }
+
     pub async fn connect(database_url: &str) -> Result<IndexerConnectionPool, DatabaseError> {
         let url = url::Url::parse(database_url);
         if url.is_err() {

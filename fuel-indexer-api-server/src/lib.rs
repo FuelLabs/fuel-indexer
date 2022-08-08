@@ -1,12 +1,15 @@
-use async_std::{
-    net::SocketAddr,
-    sync::{Arc, RwLock},
-};
+use anyhow::Result;
+use async_std::sync::{Arc, RwLock};
+use async_std::{fs::File, io::ReadExt};
 use axum::{
     extract::{Extension, Json, Path},
     http::StatusCode,
     routing::post,
     Router,
+};
+pub use fuel_indexer_lib::{
+    config::{ApiServerArgs, GraphQLConfig, Parser, DatabaseConfig},
+    defaults,
 };
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
@@ -73,16 +76,74 @@ async fn query_graph(
     }
 }
 
-pub struct GraphQlApi {
-    database_url: String,
-    listen_address: SocketAddr,
+#[derive(Debug, Deserialize)]
+pub struct ApiServerConfig {
+    pub graphql_api: GraphQLConfig,
+    pub database_config: DatabaseConfig,
 }
 
-impl GraphQlApi {
-    pub fn new(database_url: String, listen_address: SocketAddr) -> GraphQlApi {
-        GraphQlApi {
-            database_url,
-            listen_address,
+impl ApiServerConfig {
+    pub async fn from_file(path: &std::path::Path) -> Result<Self> {
+        let mut file = File::open(path).await?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).await?;
+
+        let config = serde_yaml::from_str(&contents)?;
+
+        Ok(config)
+    }
+
+    pub fn from_opts(args: ApiServerArgs) -> ApiServerConfig {
+        let database_config = match args.database.as_str() {
+            "postgres" => {
+                DatabaseConfig::Postgres{
+                    user: args
+                        .postgres_user
+                        .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
+                    password: args.postgres_password,
+                    host: args
+                        .postgres_host
+                        .unwrap_or_else(|| defaults::POSTGRES_HOST.into()),
+                    port: args
+                        .postgres_port
+                        .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
+                    database: args.postgres_database,
+                }
+            },
+            "sqlite" => {
+                DatabaseConfig::Sqlite {
+                    path: args.sqlite_database
+                }
+            }
+            _ => {
+                unreachable!()
+            }
+        };
+
+        ApiServerConfig {
+            database_config,
+            graphql_api: GraphQLConfig {
+                host: args
+                    .graphql_api_host
+                    .unwrap_or_else(|| defaults::GRAPHQL_API_HOST.into()),
+                port: args
+                    .graphql_api_port
+                    .unwrap_or_else(|| defaults::GRAPHQL_API_PORT.into()),
+            },
+        }
+    }
+}
+
+pub struct GraphQLApi {
+    database_config: DatabaseConfig,
+    graphql_config: GraphQLConfig,
+}
+
+impl GraphQLApi {
+    pub fn new(database_config: DatabaseConfig, graphql_config: GraphQLConfig) -> GraphQLApi {
+        GraphQLApi {
+            database_config,
+            graphql_config,
         }
     }
 
@@ -90,15 +151,15 @@ impl GraphQlApi {
         let sm = SchemaManager::new();
         let schema_manager = Arc::new(RwLock::new(sm));
 
-        run_migration(&self.database_url).await;
+        run_migration(&self.database_config.to_string()).await;
 
-        let pool = IndexerConnectionPool::connect(&self.database_url).await;
+        let pool = IndexerConnectionPool::connect(&self.database_config.to_string()).await;
         let app = Router::new()
             .route("/graph/:name", post(query_graph))
             .layer(Extension(pool))
             .layer(Extension(schema_manager));
 
-        axum::Server::bind(&self.listen_address)
+        axum::Server::bind(&self.graphql_config.into())
             .serve(app.into_make_service())
             .await
             .expect("Service failed to start");

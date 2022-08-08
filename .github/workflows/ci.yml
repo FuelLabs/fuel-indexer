@@ -118,7 +118,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - run: cargo install diesel_cli
       - run: |
-          cd schema
+          cd fuel-indexer-schema
           diesel migration run --migration-dir migrations/postgres/
           cargo fmt
       - name: Cargo Test Workspace
@@ -226,6 +226,71 @@ jobs:
           npm install -g markdownlint-cli@0.31.1
           markdownlint --config .markdownlintrc **/*.md docs/src/ 
 
+  publish-docker-image:
+    needs: cargo-toml-fmt-check
+
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # This is a way to make this job run after publish-crates even if it's skipped on master or pr branches
+      # https://stackoverflow.com/a/69252812/680811
+      - name: fail if any dependent jobs failed
+        if: ${{ contains(needs.*.result, 'failure') }}
+        run: exit 1
+
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v3
+        with:
+          images: |
+            ghcr.io/fuellabs/fuel-indexer
+          tags: |
+            type=sha
+            type=ref,event=branch
+            type=ref,event=tag
+            type=semver,pattern={{raw}}
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/master' }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Log in to the ghcr.io registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push the image to ghcr.io
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: deployment/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Notify if Job Fails
+        uses: ravsamhq/notify-slack-action@v1
+        if: always() && (github.ref == 'refs/heads/master' || github.ref_type == 'tag')
+        with:
+          status: ${{ job.status }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+          footer: ''
+          notify_when: 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
+
   validation-complete:
     needs:
       [
@@ -277,10 +342,12 @@ jobs:
         run: |
           curl -sSLf "https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64" -L -o dasel && chmod +x dasel
           mv ./dasel /usr/local/bin/dasel
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} derive/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} indexer/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} lib/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} schema/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-api-server/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-lib/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-macros/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-plugin/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-schema/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
       - name: Publish crate
         uses: katyo/publish-crates@v1
         with:

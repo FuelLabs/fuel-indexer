@@ -10,9 +10,10 @@ anyhow = "1.0.53"
 async-std = "1.10.0"
 axum = "0.4"
 diesel = { version = "1.4", features = ["postgres"] }
-fuel-executor = { path = "../../indexer" }
-fuel-indexer = { path = "../../lib" }
-fuel-indexer-derive = { path = "../../derive" }
+fuel-indexer = { path = "../../fuel-indexer" }
+fuel-indexer-lib = { path = "../../fuel-indexer-lib" }
+fuel-indexer-macros = { path = "../../fuel-indexer-macros" }
+fuel-indexer-plugin = { path = "../../fuel-indexer-plugin" }
 fuel-indexer-schema = { path = "../../fuel-indexer-schema", features = ["db-models"] }
 fuel-tx = "0.9"
 fuel-types = "0.5"
@@ -22,7 +23,6 @@ fuels-core = "0.15"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
 serde_yaml = "0.8.19"
-structopt = "0.3"
 thiserror = "1.0"
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"

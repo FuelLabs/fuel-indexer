@@ -1,5 +1,5 @@
 extern crate alloc;
-use fuel_indexer_derive::{graphql_schema, handler};
+use fuel_indexer_macros::{graphql_schema, handler};
 use fuels_abigen_macro::wasm_abigen;
 
 graphql_schema!("demo_namespace", "schema/demo_schema.graphql");

@@ -1,4 +1,4 @@
-use crate::db::{models::*, IndexerConnection, IndexerConnectionPool};
+use crate::db::{DbType, models::*, IndexerConnection, IndexerConnectionPool};
 use crate::type_id;
 use fuel_indexer_database_types::*;
 use graphql_parser::parse_schema;
@@ -7,6 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub struct SchemaBuilder {
+    db_type: DbType,
     statements: Vec<String>,
     type_ids: Vec<TypeId>,
     columns: Vec<NewColumn>,
@@ -20,8 +21,9 @@ pub struct SchemaBuilder {
 }
 
 impl SchemaBuilder {
-    pub fn new(namespace: &str, version: &str) -> SchemaBuilder {
+    pub fn new(namespace: &str, version: &str, db_type: DbType) -> SchemaBuilder {
         SchemaBuilder {
+            db_type,
             namespace: namespace.to_string(),
             version: version.to_string(),
             ..Default::default()
@@ -29,8 +31,10 @@ impl SchemaBuilder {
     }
 
     pub fn build(mut self, schema: &str) -> Self {
-        let create = format!("CREATE SCHEMA IF NOT EXISTS {}", self.namespace);
-        self.statements.push(create);
+        if DbType::Postgres == self.db_type {
+            let create = format!("CREATE SCHEMA IF NOT EXISTS {}", self.namespace);
+            self.statements.push(create);
+        }
 
         let ast = match parse_schema::<String>(schema) {
             Ok(ast) => ast,
@@ -70,6 +74,7 @@ impl SchemaBuilder {
 
     pub async fn commit_metadata(self, conn: &mut IndexerConnection) -> sqlx::Result<Schema> {
         let SchemaBuilder {
+            db_type,
             version,
             statements,
             type_ids,
@@ -189,9 +194,11 @@ impl SchemaBuilder {
                 let columns = self.generate_columns(type_id as i64, &o.fields);
                 let table_name = o.name.to_lowercase();
 
+                let sql_table = self.db_type.table_name(&self.namespace, &table_name);
+
                 let create = format!(
-                    "CREATE TABLE IF NOT EXISTS\n {}.{} (\n {}\n)",
-                    self.namespace, table_name, columns,
+                    "CREATE TABLE IF NOT EXISTS\n {} (\n {}\n)",
+                    sql_table, columns,
                 );
 
                 self.statements.push(create);
@@ -321,7 +328,15 @@ mod tests {
 
     #[test]
     fn test_schema_builder() {
-        let sb = SchemaBuilder::new("test_namespace", "a_version_string");
+        let sb = SchemaBuilder::new("test_namespace", "a_version_string", DbType::Postgres);
+
+        let SchemaBuilder { statements, .. } = sb.build(GRAPHQL_SCHEMA);
+
+        assert_eq!(statements[0], CREATE_SCHEMA);
+        assert_eq!(statements[1], CREATE_THING1);
+        assert_eq!(statements[2], CREATE_THING2);
+
+        let sb = SchemaBuilder::new("test_namespace", "a_version_string", DbType::Sqlite);
 
         let SchemaBuilder { statements, .. } = sb.build(GRAPHQL_SCHEMA);
 

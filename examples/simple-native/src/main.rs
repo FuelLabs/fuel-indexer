@@ -1,31 +1,16 @@
 extern crate alloc;
 use anyhow::Result;
-use fuel_executor::{
+use fuel_indexer::{
     Address, GraphQlApi, IndexerConfig, IndexerResult, IndexerService, Manifest,
     NativeHandlerResult, Receipt,
 };
+use fuel_indexer_lib::config::{IndexerArgs, Parser};
+use fuel_indexer_macros::graphql_schema;
 use fuels::core::{abi_decoder::ABIDecoder, ParamType, Tokenizable};
-
-use fuel_indexer_derive::graphql_schema;
 use fuels_abigen_macro::abigen;
-
-use std::path::PathBuf;
-use structopt::StructOpt;
 use tokio::join;
 use tracing::{error, info};
 use tracing_subscriber::filter::EnvFilter;
-
-#[derive(StructOpt)]
-#[structopt(
-    name = "Indexer Service",
-    about = "Standalone binary for the fuel indexer service"
-)]
-pub struct Args {
-    #[structopt(parse(from_os_str), help = "Indexer node config file")]
-    config: PathBuf,
-    #[structopt(parse(from_os_str), help = "Indexer service manifest file")]
-    manifest: PathBuf,
-}
 
 // Load graphql schema
 graphql_schema!("counter", "schema/counter.graphql");
@@ -74,16 +59,18 @@ pub async fn main() -> Result<()> {
         .with_env_filter(filter)
         .init();
 
-    let opt = Args::from_args();
+    let opt = IndexerArgs::from_args();
 
     // Load the node config
-    let config: IndexerConfig = IndexerConfig::from_file(&opt.config).await?;
-
+    let config = match &opt.config {
+        Some(path) => IndexerConfig::from_file(path).await?,
+        None => IndexerConfig::from_opts(opt.clone()),
+    };
     // Load the indexer manifest
-    let manifest = Manifest::from_file(&opt.manifest)?;
+    let manifest = Manifest::from_file(&opt.test_manifest.unwrap())?;
 
     // In this example, we've already started our fuel node on another process
-    info!("Fuel node listening on {}", config.fuel_node_addr);
+    info!("Fuel node listening on {}", config.fuel_node.to_string());
     let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
 
     // Create a new service to run
