@@ -116,10 +116,15 @@ jobs:
           profile: minimal
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
-      - run: cargo install diesel_cli
+      - run: cargo install sqlx-cli
       - run: |
-          cd fuel-indexer-schema
-          diesel migration run --migration-dir migrations/postgres/
+          cd database
+          cd postgres
+          sqlx database create
+          sqlx migrate run
+          cd ../sqlite
+          sqlx database create
+          sqlx migrate run
           cargo fmt
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
