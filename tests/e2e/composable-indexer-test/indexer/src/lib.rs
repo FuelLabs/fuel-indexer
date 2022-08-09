@@ -11,16 +11,18 @@ wasm_abigen!(
 );
 
 #[handler]
-fn function_one(_ping: Ping) {
+fn function_one(ping: Ping) {
     Logger::info("function_one handling a Pong event.");
 
-    let buff: [u8; 32] = [32u8; 32];
+    let mut bytes: [u8; 32] = [0u8; 32];
+
+    bytes.copy_from_slice(&ping.message.as_bytes()[..32]);
 
     let entity = Message {
-        id: 1,
-        ping: 123,
+        id: ping.id,
+        ping: ping.value,
         pong: 456,
-        message: Bytes32::from(buff),
+        message: Bytes32::from(bytes),
     };
 
     entity.save();

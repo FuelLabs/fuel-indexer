@@ -19,6 +19,12 @@
             "type": "u64",
             "components": null,
             "typeArguments": null
+          },
+          {
+            "name": "message",
+            "type": "str[32]",
+            "components": null,
+            "typeArguments": null
           }
         ],
         "typeArguments": null

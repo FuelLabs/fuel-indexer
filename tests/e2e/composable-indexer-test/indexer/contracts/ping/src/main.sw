@@ -11,6 +11,7 @@ pub struct Pong {
 pub struct Ping {
     id: u64,
     value: u64,
+    message: str[32],
 }
 
 abi Message {
@@ -20,7 +21,11 @@ abi Message {
 
 impl Message for Contract {
     fn ping() -> Ping {
-        let p = Ping{ id: 1, value: 123 };
+        let p = Ping{
+            id: 1,
+            value: 123,
+            message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf"
+        };
         log(p);
         p
     }

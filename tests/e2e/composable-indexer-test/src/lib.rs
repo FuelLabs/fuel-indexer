@@ -13,7 +13,7 @@ pub mod defaults {
     pub const FUEL_NODE_ADDR: &str = "0.0.0.0:4000";
     pub const WEB_API_ADDR: &str = "0.0.0.0:8000";
     pub const PING_CONTRACT_ID: &str =
-        "90b8a5ce47c6798a1453e093df0a7de3c16d8134de3829e29b2e4d729b943efc";
+        "68518c3ba3768c863e0d945aa18249f9516d3aa1338083ba79467aa393de109c";
     pub const SLEEP: Duration = Duration::from_secs(60 * 60 * 10);
     pub const WALLET_PASSWORD: &str = "password";
 }
