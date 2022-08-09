@@ -1,6 +1,0 @@
-namespace: composability_test
-graphql_schema: tests/e2e/composable-indexer-test/indexer/schema/schema.graphql
-wasm_module: tests/e2e/composable-indexer-test/indexer/indexer.wasm
-handlers:
-  - event: LogData
-    handler: function_one

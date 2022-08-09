@@ -318,9 +318,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.60"
+version = "1.0.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c794e162a5eff65c72ef524dfe393eb923c354e350bb78b9c7383df13f3bc142"
+checksum = "94a45b455c14666b85fc40a019e8ab9eb75e3a124e05494f5397122bc9eb06e0"
 
 [[package]]
 name = "arrayvec"
@@ -1160,15 +1160,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "composable-indexer-test-pkg"
+name = "composable-indexer"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-std",
  "axum",
  "axum-macros",
+ "clap",
  "fuel-core 0.6.4",
  "fuel-gql-client 0.6.4",
+ "fuel-indexer-lib",
  "fuel-tx 0.9.0",
  "fuel-types 0.5.1",
  "fuels",
@@ -1181,6 +1183,20 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "composable-indexer-lib"
+version = "0.1.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx 0.9.0",
+ "fuels-abigen-macro",
+ "fuels-core",
+ "getrandom 0.2.7",
+ "serde",
 ]
 
 [[package]]
@@ -3158,20 +3174,6 @@ dependencies = [
  "matches",
  "unicode-bidi",
  "unicode-normalization",
-]
-
-[[package]]
-name = "indexer"
-version = "0.1.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuel-tx 0.9.0",
- "fuels-abigen-macro",
- "fuels-core",
- "getrandom 0.2.7",
- "serde",
 ]
 
 [[package]]

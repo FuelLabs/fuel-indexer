@@ -7,7 +7,7 @@ use fuels_abigen_macro::wasm_abigen;
 graphql_schema!("composability_test", "schema/schema.graphql");
 wasm_abigen!(
     no_name,
-    "tests/e2e/composable-indexer-test/indexer/contracts/ping/out/debug/ping-abi.json"
+    "tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping-abi.json"
 );
 
 #[handler]

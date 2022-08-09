@@ -1,4 +1,4 @@
-use composable_indexer_test::{defaults, tx_params};
+use composable_indexer::{defaults, tx_params};
 use fuels::{
     node::{
         chain_config::{ChainConfig, StateConfig},
@@ -17,12 +17,18 @@ use tracing_subscriber::filter::EnvFilter;
 
 abigen!(
     Message,
-    "tests/e2e/composable-indexer-test/indexer/contracts/ping/out/debug/ping-abi.json"
+    "tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping-abi.json"
 );
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("Manifest dir unknown");
+    let manifest_dir = Path::new(file!())
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap()
+        .parent()
+        .unwrap();
 
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided"),
@@ -72,11 +78,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     wallet.set_provider(provider.clone());
 
-    let bin_path = "indexer/contracts/ping/out/debug/ping.bin".to_string();
+    let bin_path = Path::join(
+        manifest_dir,
+        "composable-indexer-lib/contracts/ping/out/debug/ping.bin",
+    );
 
-    let contract_id = Contract::deploy(&bin_path, &wallet, tx_params())
-        .await
-        .unwrap();
+    let contract_id = Contract::deploy(
+        &bin_path.into_os_string().into_string().unwrap(),
+        &wallet,
+        tx_params(),
+    )
+    .await
+    .unwrap();
 
     let contract_id = contract_id.to_string();
 
