@@ -8,7 +8,7 @@ use axum::{
     Router,
 };
 pub use fuel_indexer_lib::{
-    config::{ApiServerArgs, GraphQLConfig, Parser, DatabaseConfig},
+    config::{ApiServerArgs, DatabaseConfig, GraphQLConfig, Parser},
     defaults,
 };
 use fuel_indexer_schema::db::{
@@ -95,26 +95,22 @@ impl ApiServerConfig {
 
     pub fn from_opts(args: ApiServerArgs) -> ApiServerConfig {
         let database_config = match args.database.as_str() {
-            "postgres" => {
-                DatabaseConfig::Postgres{
-                    user: args
-                        .postgres_user
-                        .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
-                    password: args.postgres_password,
-                    host: args
-                        .postgres_host
-                        .unwrap_or_else(|| defaults::POSTGRES_HOST.into()),
-                    port: args
-                        .postgres_port
-                        .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
-                    database: args.postgres_database,
-                }
+            "postgres" => DatabaseConfig::Postgres {
+                user: args
+                    .postgres_user
+                    .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
+                password: args.postgres_password,
+                host: args
+                    .postgres_host
+                    .unwrap_or_else(|| defaults::POSTGRES_HOST.into()),
+                port: args
+                    .postgres_port
+                    .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
+                database: args.postgres_database,
             },
-            "sqlite" => {
-                DatabaseConfig::Sqlite {
-                    path: args.sqlite_database
-                }
-            }
+            "sqlite" => DatabaseConfig::Sqlite {
+                path: args.sqlite_database,
+            },
             _ => {
                 unreachable!()
             }

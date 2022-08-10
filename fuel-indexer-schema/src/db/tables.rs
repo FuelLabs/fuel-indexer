@@ -1,4 +1,4 @@
-use crate::db::{DbType, models::*, IndexerConnection, IndexerConnectionPool};
+use crate::db::{models::*, DbType, IndexerConnection, IndexerConnectionPool};
 use crate::type_id;
 use fuel_indexer_database_types::*;
 use graphql_parser::parse_schema;

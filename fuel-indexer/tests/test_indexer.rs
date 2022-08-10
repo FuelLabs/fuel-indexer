@@ -4,8 +4,8 @@ extern crate alloc;
 mod tests {
     use fuel_core::service::{Config, FuelService};
     use fuel_gql_client::client::FuelClient;
-    use fuel_indexer_lib::config::{FuelNodeConfig, GraphQLConfig, DatabaseConfig};
     use fuel_indexer::{IndexerConfig, IndexerService, Manifest};
+    use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
     use fuel_vm::{consts::*, prelude::*};
 
     const MANIFEST: &str = include_str!("./test_data/demo_manifest.yaml");

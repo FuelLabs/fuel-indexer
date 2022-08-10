@@ -185,7 +185,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: udeps
-          args: --locked --all-targets --features postgres
+          args: --locked --all-targets --all-features
 
   cargo-clippy-workspace:
     needs: cancel-previous-runs

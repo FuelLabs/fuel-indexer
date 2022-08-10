@@ -301,7 +301,6 @@ mod tests {
         );
     }
 
-
     async fn do_test(database_url: &str) {
         let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file.");
         let bad_manifest: Manifest = serde_yaml::from_str(BAD_MANIFEST).expect("Bad yaml file.");

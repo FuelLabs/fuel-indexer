@@ -2,7 +2,6 @@ use fuel_indexer_database_types::*;
 use sqlx::{pool::PoolConnection, Sqlite, SqliteConnection};
 use sqlx::{Connection, Row};
 
-
 pub async fn put_object(
     conn: &mut PoolConnection<Sqlite>,
     query: String,
@@ -118,7 +117,9 @@ pub async fn new_graph_root(
     conn: &mut PoolConnection<Sqlite>,
     root: NewGraphRoot,
 ) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_graph_root (version, schema_name, query, schema)");
+    let mut builder = sqlx::QueryBuilder::new(
+        "INSERT INTO graph_registry_graph_root (version, schema_name, query, schema)",
+    );
 
     builder.push_values(std::iter::once(root), |mut b, root| {
         b.push_bind(root.version)

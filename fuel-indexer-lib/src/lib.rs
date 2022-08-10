@@ -193,13 +193,19 @@ pub mod config {
             host: String,
             port: String,
             database: Option<String>,
-        }
+        },
     }
 
     impl InjectEnvironment for DatabaseConfig {
         fn inject_env_vars(&mut self) -> Result<()> {
             match self {
-                DatabaseConfig::Postgres { user, password, host, port, database } => {
+                DatabaseConfig::Postgres {
+                    user,
+                    password,
+                    host,
+                    port,
+                    database,
+                } => {
                     if is_env_var(&user) {
                         *user = std::env::var(trim_env_key(&user))
                             .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &user));
@@ -207,10 +213,10 @@ pub mod config {
 
                     if let Some(pass) = &password {
                         if is_env_var(pass) {
-                            *password = Some(
-                                std::env::var(trim_env_key(pass))
-                                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &pass)),
-                            );
+                            *password =
+                                Some(std::env::var(trim_env_key(pass)).unwrap_or_else(|_| {
+                                    panic!("Failed to read '{}' from env", &pass)
+                                }));
                         }
                     }
 
@@ -236,10 +242,10 @@ pub mod config {
                 DatabaseConfig::Sqlite { path } => {
                     let os_str = path.as_os_str().to_str().unwrap();
                     if is_env_var(os_str) {
-                        *path = PathBuf::from(
-                            std::env::var(trim_env_key(os_str)).unwrap_or_else(|_| {
-                                format!("Failed to read '{}' from env", os_str)
-                            }));
+                        *path =
+                            PathBuf::from(std::env::var(trim_env_key(os_str)).unwrap_or_else(
+                                |_| format!("Failed to read '{}' from env", os_str),
+                            ));
                     }
                 }
             }
@@ -250,7 +256,13 @@ pub mod config {
     impl std::string::ToString for DatabaseConfig {
         fn to_string(&self) -> String {
             match self {
-                DatabaseConfig::Postgres { user, password, host, port, database } => {
+                DatabaseConfig::Postgres {
+                    user,
+                    password,
+                    host,
+                    port,
+                    database,
+                } => {
                     let mut uri: String = format!("postgres://{}", user);
 
                     if let Some(pass) = &password {
@@ -275,7 +287,13 @@ pub mod config {
     impl std::fmt::Debug for DatabaseConfig {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             match self {
-                DatabaseConfig::Postgres { user, host, port, database, ..} => {
+                DatabaseConfig::Postgres {
+                    user,
+                    host,
+                    port,
+                    database,
+                    ..
+                } => {
                     let _ = f
                         .debug_struct("PostgresConfig")
                         .field("user", &user)
@@ -286,10 +304,7 @@ pub mod config {
                         .finish();
                 }
                 DatabaseConfig::Sqlite { path } => {
-                    let _ = f
-                        .debug_struct("SqliteConfig")
-                        .field("path", &path)
-                        .finish();
+                    let _ = f.debug_struct("SqliteConfig").field("path", &path).finish();
                 }
             }
 

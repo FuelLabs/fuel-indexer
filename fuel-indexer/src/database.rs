@@ -124,10 +124,7 @@ impl Database {
 
     fn get_query(&self, table: &str, object_id: u64) -> String {
         let sql_table = self.pool.database_type().table_name(&self.namespace, table);
-        format!(
-            "SELECT object from {} where id = {}",
-            sql_table, object_id
-        )
+        format!("SELECT object from {} where id = {}", sql_table, object_id)
     }
 
     pub async fn put_object(&mut self, type_id: u64, columns: Vec<FtColumn>, bytes: Vec<u8>) {
@@ -310,7 +307,9 @@ mod tests {
             assert_eq!(result.column_name, TEST_COLUMNS[index].2);
         }
 
-        let instance = wasm_instance(database_url).await.expect("Error creating WASM module");
+        let instance = wasm_instance(database_url)
+            .await
+            .expect("Error creating WASM module");
 
         let mut db = Database::new(database_url)
             .await

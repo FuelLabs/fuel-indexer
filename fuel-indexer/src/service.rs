@@ -1,11 +1,14 @@
 use crate::{
-    handler::Handle, Executor, IndexerResult, Manifest,
-    NativeIndexExecutor, ReceiptEvent, SchemaManager, WasmIndexExecutor,
+    handler::Handle, Executor, IndexerResult, Manifest, NativeIndexExecutor, ReceiptEvent,
+    SchemaManager, WasmIndexExecutor,
 };
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_lib::{config::{InjectEnvironment, IndexerArgs, DatabaseConfig, FuelNodeConfig, GraphQLConfig}, defaults};
+use fuel_indexer_lib::{
+    config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs, InjectEnvironment},
+    defaults,
+};
 use fuel_tx::Receipt;
 use fuels_core::abi_encoder::ABIEncoder;
 use fuels_core::{Token, Tokenizable};
@@ -55,26 +58,22 @@ impl IndexerConfig {
 
     pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
         let database_config = match args.database.as_str() {
-            "postgres" => {
-                DatabaseConfig::Postgres{
-                    user: args
-                        .postgres_user
-                        .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
-                    password: args.postgres_password,
-                    host: args
-                        .postgres_host
-                        .unwrap_or_else(|| defaults::POSTGRES_HOST.into()),
-                    port: args
-                        .postgres_port
-                        .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
-                    database: args.postgres_database,
-                }
+            "postgres" => DatabaseConfig::Postgres {
+                user: args
+                    .postgres_user
+                    .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
+                password: args.postgres_password,
+                host: args
+                    .postgres_host
+                    .unwrap_or_else(|| defaults::POSTGRES_HOST.into()),
+                port: args
+                    .postgres_port
+                    .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
+                database: args.postgres_database,
             },
-            "sqlite" => {
-                DatabaseConfig::Sqlite {
-                    path: PathBuf::from(args.sqlite_database)
-                }
-            }
+            "sqlite" => DatabaseConfig::Sqlite {
+                path: PathBuf::from(args.sqlite_database),
+            },
             _ => {
                 unreachable!()
             }
