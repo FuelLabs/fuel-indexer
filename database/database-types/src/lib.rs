@@ -46,7 +46,7 @@ pub struct IdLatest {
 
 #[derive(Debug)]
 pub struct NumVersions {
-    pub num: i64,
+    pub num: Option<i64>,
 }
 
 #[derive(Debug)]

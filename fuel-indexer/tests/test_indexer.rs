@@ -1,5 +1,6 @@
 extern crate alloc;
 
+#[cfg(test)]
 mod tests {
     use fuel_core::service::{Config, FuelService};
     use fuel_gql_client::client::FuelClient;
@@ -40,50 +41,50 @@ mod tests {
         )
     }
 
-    //#[tokio::test]
-    //async fn test_blocks() {
-    //    let srv = FuelService::new_node(Config::local_node()).await.unwrap();
-    //    let client = FuelClient::from(srv.bound_address);
-    //    // submit tx
-    //    let _ = client.submit(&create_log_transaction(0xca, 0xba)).await;
-    //    let _ = client.submit(&create_log_transaction(0xfa, 0x4f)).await;
-    //    let _ = client.submit(&create_log_transaction(0x33, 0x11)).await;
+    #[tokio::test]
+    async fn test_blocks() {
+        let srv = FuelService::new_node(Config::local_node()).await.unwrap();
+        let client = FuelClient::from(srv.bound_address);
+        // submit tx
+        let _ = client.submit(&create_log_transaction(0xca, 0xba)).await;
+        let _ = client.submit(&create_log_transaction(0xfa, 0x4f)).await;
+        let _ = client.submit(&create_log_transaction(0x33, 0x11)).await;
 
-    //    let dir = std::env::current_dir().unwrap();
-    //    let test_data = dir.join("tests/test_data");
+        let dir = std::env::current_dir().unwrap();
+        let test_data = dir.join("tests/test_data");
 
-    //    let config = IndexerConfig {
-    //        fuel_node: FuelNodeConfig::from(srv.bound_address),
-    //        database_config: DatabaseConfig::Postgres {
-    //            user: "postgres".into(),
-    //            password: Some("my-secret".into()),
-    //            host: "127.0.0.1".into(),
-    //            port: "5432".into(),
-    //            database: None,
-    //        },
-    //        graphql_api: GraphQLConfig::default(),
-    //    };
+        let config = IndexerConfig {
+            fuel_node: FuelNodeConfig::from(srv.bound_address),
+            database_config: DatabaseConfig::Postgres {
+                user: "postgres".into(),
+                password: Some("my-secret".into()),
+                host: "127.0.0.1".into(),
+                port: "5432".into(),
+                database: None,
+            },
+            graphql_api: GraphQLConfig::default(),
+        };
 
-    //    let mut indexer_service = IndexerService::new(config).await.unwrap();
+        let mut indexer_service = IndexerService::new(config).await.unwrap();
 
-    //    let mut manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
+        let mut manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
 
-    //    manifest.graphql_schema = test_data
-    //        .join(manifest.graphql_schema)
-    //        .display()
-    //        .to_string();
-    //    manifest.wasm_module = Some(
-    //        test_data
-    //            .join(manifest.wasm_module.unwrap())
-    //            .display()
-    //            .to_string(),
-    //    );
+        manifest.graphql_schema = test_data
+            .join(manifest.graphql_schema)
+            .display()
+            .to_string();
+        manifest.wasm_module = Some(
+            test_data
+                .join(manifest.wasm_module.unwrap())
+                .display()
+                .to_string(),
+        );
 
-    //    indexer_service
-    //        .add_wasm_indexer(manifest, true)
-    //        .await
-    //        .expect("Failed to initialize indexer");
+        indexer_service
+            .add_wasm_indexer(manifest, true)
+            .await
+            .expect("Failed to initialize indexer");
 
-    //    indexer_service.run().await;
-    //}
+        indexer_service.run().await;
+    }
 }

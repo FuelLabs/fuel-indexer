@@ -74,7 +74,6 @@ impl SchemaBuilder {
 
     pub async fn commit_metadata(self, conn: &mut IndexerConnection) -> sqlx::Result<Schema> {
         let SchemaBuilder {
-            db_type,
             version,
             statements,
             type_ids,
@@ -85,6 +84,7 @@ impl SchemaBuilder {
             query,
             query_fields,
             schema,
+            ..
         } = self;
 
         let new_root = NewGraphRoot {
@@ -308,7 +308,7 @@ mod tests {
     "#;
 
     const CREATE_SCHEMA: &str = "CREATE SCHEMA IF NOT EXISTS test_namespace";
-    const CREATE_THING1: &str = concat!(
+    const CREATE_THING1_PG: &str = concat!(
         "CREATE TABLE IF NOT EXISTS\n",
         " test_namespace.thing1 (\n",
         " id bigint primary key not null,\n",
@@ -316,7 +316,7 @@ mod tests {
         "object bytea not null",
         "\n)"
     );
-    const CREATE_THING2: &str = concat!(
+    const CREATE_THING2_PG: &str = concat!(
         "CREATE TABLE IF NOT EXISTS\n",
         " test_namespace.thing2 (\n",
         " id bigint primary key not null,\n",
@@ -326,6 +326,23 @@ mod tests {
         ")"
     );
 
+    const CREATE_THING1_SQLITE: &str = concat!(
+        "CREATE TABLE IF NOT EXISTS\n",
+        " thing1 (\n",
+        " id bigint primary key not null,\n",
+        "account varchar(64) not null,\n",
+        "object bytea not null",
+        "\n)"
+    );
+    const CREATE_THING2_SQLITE: &str = concat!(
+        "CREATE TABLE IF NOT EXISTS\n",
+        " thing2 (\n",
+        " id bigint primary key not null,\n",
+        "account varchar(64) not null,\n",
+        "hash varchar(64) not null,\n",
+        "object bytea not null\n",
+        ")"
+    );
     #[test]
     fn test_schema_builder() {
         let sb = SchemaBuilder::new("test_namespace", "a_version_string", DbType::Postgres);
@@ -333,15 +350,14 @@ mod tests {
         let SchemaBuilder { statements, .. } = sb.build(GRAPHQL_SCHEMA);
 
         assert_eq!(statements[0], CREATE_SCHEMA);
-        assert_eq!(statements[1], CREATE_THING1);
-        assert_eq!(statements[2], CREATE_THING2);
+        assert_eq!(statements[1], CREATE_THING1_PG);
+        assert_eq!(statements[2], CREATE_THING2_PG);
 
         let sb = SchemaBuilder::new("test_namespace", "a_version_string", DbType::Sqlite);
 
         let SchemaBuilder { statements, .. } = sb.build(GRAPHQL_SCHEMA);
 
-        assert_eq!(statements[0], CREATE_SCHEMA);
-        assert_eq!(statements[1], CREATE_THING1);
-        assert_eq!(statements[2], CREATE_THING2);
+        assert_eq!(statements[0], CREATE_THING1_SQLITE);
+        assert_eq!(statements[1], CREATE_THING2_SQLITE);
     }
 }

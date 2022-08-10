@@ -185,7 +185,7 @@ pub async fn schema_exists(
 ) -> sqlx::Result<bool> {
     let versions = sqlx::query_as!(NumVersions, "SELECT count(*) as num FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_version = $2", name, version).fetch_one(conn).await?;
 
-    Ok(versions.num > 0)
+    Ok(versions.num.is_some() && versions.num.unwrap() > 0)
 }
 
 pub async fn new_column_insert(
