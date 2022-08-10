@@ -55,7 +55,7 @@ async fn query_graph(
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
 ) -> (StatusCode, Json<Value>) {
     if !manager.read().await.contains_key(&name) {
-        if let Ok(Some(schema)) = load_schema_wasm(&pool, &name).await {
+        if let Ok(Some(schema)) = load_schema_wasm(pool, &name).await {
             manager.write().await.insert(name.clone(), schema);
         } else {
             let result = format!("The graph {name} was not found.");

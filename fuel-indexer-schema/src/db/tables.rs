@@ -100,7 +100,7 @@ impl SchemaBuilder {
         let field_defs = query_fields.get(&query).expect("No query root!");
 
         let cols: Vec<_> = field_defs
-            .into_iter()
+            .iter()
             .map(|(key, val)| NewRootColumns {
                 root_id: latest.id,
                 column_name: key.to_string(),

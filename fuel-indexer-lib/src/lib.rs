@@ -206,8 +206,8 @@ pub mod config {
                     port,
                     database,
                 } => {
-                    if is_env_var(&user) {
-                        *user = std::env::var(trim_env_key(&user))
+                    if is_env_var(user) {
+                        *user = std::env::var(trim_env_key(user))
                             .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &user));
                     }
 
@@ -220,13 +220,13 @@ pub mod config {
                         }
                     }
 
-                    if is_env_var(&host) {
-                        *host = std::env::var(trim_env_key(&host))
+                    if is_env_var(host) {
+                        *host = std::env::var(trim_env_key(host))
                             .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &host));
                     }
 
-                    if is_env_var(&port) {
-                        *port = std::env::var(trim_env_key(&port))
+                    if is_env_var(port) {
+                        *port = std::env::var(trim_env_key(port))
                             .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &port));
                     }
 

@@ -29,7 +29,7 @@ impl DbType {
     pub fn table_name(&self, namespace: &str, table_name: &str) -> String {
         match self {
             DbType::Postgres => format!("{}.{}", namespace, table_name),
-            DbType::Sqlite => format!("{}", table_name),
+            DbType::Sqlite => table_name.to_string(),
         }
     }
 }
@@ -69,7 +69,7 @@ impl IndexerConnectionPool {
     pub async fn acquire(&self) -> sqlx::Result<IndexerConnection> {
         match self {
             IndexerConnectionPool::Postgres(p) => {
-                Ok(IndexerConnection::Postgres(p.acquire().await?))
+                Ok(IndexerConnection::Postgres(Box::new(p.acquire().await?)))
             }
             IndexerConnectionPool::Sqlite(p) => Ok(IndexerConnection::Sqlite(p.acquire().await?)),
         }
@@ -78,7 +78,7 @@ impl IndexerConnectionPool {
 
 #[derive(Debug)]
 pub enum IndexerConnection {
-    Postgres(PoolConnection<sqlx::Postgres>),
+    Postgres(Box<PoolConnection<sqlx::Postgres>>),
     Sqlite(PoolConnection<sqlx::Sqlite>),
 }
 

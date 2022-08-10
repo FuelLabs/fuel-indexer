@@ -146,11 +146,11 @@ impl Database {
 
         let query_text = self.upsert_query(table, &columns, inserts, updates);
 
-        let mut conn = self
+        let conn = self
             .stashed
             .as_mut()
             .expect("No transaction has been opened!");
-        let query = models::put_object(&mut conn, query_text, bytes).await;
+        let query = models::put_object(conn, query_text, bytes).await;
 
         query.expect("Query failed");
     }

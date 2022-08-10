@@ -20,11 +20,11 @@ use tracing::error;
 #[derive(Debug, Error)]
 enum APIError {
     #[error("Query builder error {0:?}")]
-    GraphqlError(#[from] GraphqlError),
+    Graphql(#[from] GraphqlError),
     #[error("Serde Error {0:?}")]
-    SerdeError(#[from] serde_json::Error),
+    Serde(#[from] serde_json::Error),
     #[error("Sqlx Error {0:?}")]
-    SqlxError(#[from] sqlx::Error),
+    Sqlx(#[from] sqlx::Error),
 }
 
 #[derive(Clone, Debug, Deserialize)]
