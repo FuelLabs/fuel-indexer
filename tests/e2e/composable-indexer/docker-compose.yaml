@@ -16,20 +16,16 @@ services:
       start_period: 80s
   fuel-node:
     image: local/composable-indexer-test:latest
-    build:
-      dockerfile: ./Dockerfile
-      context: ./../../../
-    command: bash -c "RUST_BACKTRACE=full ./target/release/fuel-node"
+    command: >
+      bash -c "RUST_BACKTRACE=full ./fuel-node --wallet-path ./wallet.json --bin-path ./ping.bin"
     ports:
       - "4000:4000"
     volumes:
       - .:/usr/local/fuel
   web-api:
     image: local/composable-indexer-test:latest
-    build:
-      dockerfile: ./Dockerfile
-      context: ./../../../
-    command: bash -c "RUST_BACKTRACE=full ./target/release/web-api --fuel-node-host fuel-node --fuel-node-port 4000"
+    command: >
+      bash -c "RUST_BACKTRACE=full ./web-api --fuel-node-host fuel-node --fuel-node-port 4000 --wallet-path ./wallet.json --bin-path ./ping.bin"
     ports:
       - "8000:8000"
     volumes:
@@ -38,10 +34,7 @@ services:
       - fuel-node
   fuel-indexer:
     image: local/composable-indexer-test:latest
-    build:
-      dockerfile: ./Dockerfile
-      context: ./../../../
-    command: bash -c "RUST_BACKTRACE=full ./target/release/fuel-indexer --fuel-node-host fuel-node --fuel-node-port 4000 --postgres-host postgres --postgres-password postgres --test-manifest manifest.yaml"
+    command: bash -c "sleep 2 && RUST_BACKTRACE=full ./fuel-indexer --fuel-node-host fuel-node --fuel-node-port 4000 --postgres-host postgres --postgres-password postgres --test-manifest manifest.yaml"
     ports:
       - "29987:29987"
     volumes:

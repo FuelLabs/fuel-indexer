@@ -5,7 +5,10 @@ use composable_indexer::defaults;
 use fuel_indexer_lib::utils::derive_socket_addr;
 use fuels::prelude::{Contract, LocalWallet, Provider, TxParameters};
 use fuels_abigen_macro::abigen;
-use std::{net::SocketAddr, path::Path};
+use std::{
+    net::SocketAddr,
+    path::{Path, PathBuf},
+};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
@@ -24,10 +27,14 @@ abigen!(
 #[derive(Debug, Parser, Clone)]
 #[clap(name = "Indexer test web api", about = "Test")]
 pub struct Args {
-    #[clap(short, long, help = "Test node host")]
+    #[clap(long, help = "Test node host")]
     pub fuel_node_host: Option<String>,
-    #[clap(short, long, help = "Test node port")]
+    #[clap(long, help = "Test node port")]
     pub fuel_node_port: Option<String>,
+    #[clap(long, help = "Test wallet filepath")]
+    pub wallet_path: Option<PathBuf>,
+    #[clap(long, help = "Contract bin filepath")]
+    pub bin_path: Option<PathBuf>,
 }
 
 #[axum_macros::debug_handler]
@@ -40,13 +47,19 @@ async fn ping(Extension(contract): Extension<Arc<Mutex<Message>>>) -> String {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let manifest_dir = Path::new(file!())
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap()
-        .parent()
-        .unwrap();
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| {
+        let p = Path::new(file!())
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap();
+
+        p.display().to_string()
+    });
+
+    let manifest_dir = Path::new(&manifest_dir);
 
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided"),
@@ -54,6 +67,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let opts = Args::from_args();
+
     let fuel_node_host = opts
         .fuel_node_host
         .unwrap_or_else(|| defaults::FUEL_NODE_HOST.to_string());
@@ -71,7 +85,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let provider = Provider::connect(fuel_node_addr).await.unwrap();
 
-    let wallet_path = Path::new(&manifest_dir).join("wallet.json");
+    let wallet_path = opts
+        .wallet_path
+        .unwrap_or_else(|| Path::new(&manifest_dir).join("wallet.json"));
 
     info!("Wallet keystore at: {}", wallet_path.display());
 
@@ -81,10 +97,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Connected to fuel client at {}", fuel_node_addr.to_string());
 
     let contract = Message::new(defaults::PING_CONTRACT_ID.to_string(), wallet);
-    let bin_path = Path::join(
-        manifest_dir,
-        "composable-indexer-lib/contracts/ping/out/debug/ping.bin",
-    );
+
+    let bin_path = opts.bin_path.unwrap_or_else(|| {
+        Path::join(
+            manifest_dir,
+            "composable-indexer-lib/contracts/ping/out/debug/ping.bin",
+        )
+    });
 
     let compiled =
         Contract::load_sway_contract(&bin_path.into_os_string().into_string().unwrap()).unwrap();

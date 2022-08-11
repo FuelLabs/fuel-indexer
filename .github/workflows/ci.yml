@@ -195,9 +195,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: clippy
-          # After rustc 1.62 upgrade, the `Insertable` trait in the diesel crate triggers an 
-          # unused lifetime warning, so only allow that single warning until diesel is upgraded
-          args: --all-features --all-targets -- -D warnings -Aclippy::extra-unused-lifetimes
+          args: --all-features --all-targets -- -D warnings
 
   mdbook-build:
     needs: cancel-previous-runs

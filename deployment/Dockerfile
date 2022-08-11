@@ -47,5 +47,3 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
 
 COPY --from=builder /build/target/release/fuel-indexer .
 COPY --from=builder /build/target/release/fuel-indexer.d .
-
-# docker run -t $TAG bash -c "./fuel-indexer"

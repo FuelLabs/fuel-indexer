@@ -1,10 +1,11 @@
-# composable-indexer
+# Composable Indexer
+
+An end-to-end test of the indexer service using a reproducible environment.
 
 ### 1. Spin up services
 
 ```bash
-cd tests/e2e/composable-indexer
-docker-compose -f dockercompose.yaml up
+bash tests/e2e/composable-indexer/compose-up.bash
 ```
 
 ### 2. Trigger an event

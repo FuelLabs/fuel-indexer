@@ -1,7 +1,4 @@
 FROM lukemathwalker/cargo-chef:latest-rust-1.62 AS installer
-
-WORKDIR /app
-
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
     build-essential \
@@ -17,14 +14,36 @@ RUN apt-get update -y && \
     pkg-config \
     && apt-get clean
 
+
 FROM installer AS builder
-
-WORKDIR /app
-
+WORKDIR /build/
 COPY . .
 RUN rustup component add rustfmt
-RUN rustup target add wasm32-unknown-unknown
-RUN cargo build --release -p composable-indexer -p fuel-indexer 
+RUN cargo build --release -p composable-indexer -p fuel-indexer
 
-RUN chmod +x tests/e2e/composable-indexer/make-test-manifest.bash
-RUN bash tests/e2e/composable-indexer/make-test-manifest.bash
+
+FROM ubuntu:22.04
+WORKDIR /usr/local/composable-indexer
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
+    && apt-get install -y --no-install-recommends \
+    tzdata \
+    ca-certificates \
+    libpq-dev \
+    && apt-get autoremove -y \
+    && apt-get clean -y
+
+COPY --from=builder /build/target/release/fuel-node .
+COPY --from=builder /build/target/release/fuel-node.d .
+
+COPY --from=builder /build/target/release/web-api .
+COPY --from=builder /build/target/release/web-api.d .
+
+COPY --from=builder /build/target/release/fuel-indexer .
+COPY --from=builder /build/target/release/fuel-indexer.d .
+
+COPY --from=builder /build/tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping.bin .
+
+COPY --from=builder /build/tests/e2e/composable-indexer .
+
+
+RUN bash make-test-manifest.bash
