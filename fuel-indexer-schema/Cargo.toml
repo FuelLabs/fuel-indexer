@@ -7,7 +7,6 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-async-trait = { version = "0.1" }
 fuel-indexer-database-types = { path = "../database/database-types" }
 fuel-indexer-postgres = { path = "../database/postgres" }
 fuel-indexer-sqlite = { path = "../database/sqlite" }
