@@ -300,13 +300,13 @@ RUST_LOG=debug cargo run -- --config ./config.yaml --test-manifest manifest.yaml
     match receipt {
         Receipt::ReturnData { data, .. } =&gt; {
             // Define which params we expect (using the counter-abi.json as a reference)
-            let params = ParamType::Struct(vec![ParamType::U64, ParamType::U64, ParamType::U64]);
+            let params = vec![ParamType::Struct(vec![ParamType::U64, ParamType::U64, ParamType::U64])];
 
             // Decode the data into a Token using these params
-            let token = ABIDecoder::decode_single(&amp;params, &amp;data).unwrap();
+            let token = ABIDecoder::decode(&amp;params, &amp;data).unwrap();
 
             // Recover the CountEvent from this token
-            let event = CountEvent::from_token(token).unwrap();
+            let event = CountEvent::from_token(token[0].to_owned()).unwrap();
 
             // Using the Count entity from the GraphQL schema
             let count = Count {
