@@ -1,0 +1,272 @@
+{
+  "db": "PostgreSQL",
+  "2a7d1741198b91d9175b00373f51d793be5415583317ed1d42cd2a75cca51007": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "schema_version",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "schema_name",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "graphql_name",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "table_name",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT id, schema_version, schema_name, graphql_name, table_name FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_version = $2"
+  },
+  "6daf0d3b6d1ec9412ba138cae993af3736a64100a1fca6ee15520513e0cc580e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "version",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "schema_name",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "query",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "schema",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT * FROM graph_registry_graph_root WHERE schema_name = $1 ORDER BY id DESC LIMIT 1"
+  },
+  "95cb39d77bb08bd0709e5c4fac7ad4ebef48e5e2d98dfc796d790a9cae5d7738": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "type_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "column_position",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "column_name",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "column_type",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "nullable",
+          "ordinal": 5,
+          "type_info": "Bool"
+        },
+        {
+          "name": "graphql_type",
+          "ordinal": 6,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT id, type_id, column_position, column_name, column_type, nullable, graphql_type FROM graph_registry_columns WHERE type_id = $1"
+  },
+  "a3eaf437c002e776fbf79f2d1461f797cec299713648da4df5ba4e262dda4e6e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "schema_version",
+          "ordinal": 0,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT schema_version FROM graph_registry_type_ids WHERE schema_name = $1 ORDER BY id"
+  },
+  "cfe5d046d65469faa47e085e0344353b8cb9ee36a525a07551d26ec48fda861e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "root_id",
+          "ordinal": 1,
+          "type_info": "Int8"
+        },
+        {
+          "name": "column_name",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "graphql_type",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Int8"
+        ]
+      }
+    },
+    "query": "SELECT\n               id, root_id, column_name, graphql_type\n           FROM graph_registry_root_columns\n           WHERE root_id = $1"
+  },
+  "dc616ec3a042d206d605b658b633a6d4198712208bf2c9795d6518225561d3e2": {
+    "describe": {
+      "columns": [
+        {
+          "name": "type_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "table_name",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "column_position",
+          "ordinal": 2,
+          "type_info": "Int4"
+        },
+        {
+          "name": "column_name",
+          "ordinal": 3,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "column_type",
+          "ordinal": 4,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT\n               c.type_id as type_id,\n               t.table_name as table_name,\n               c.column_position as column_position,\n               c.column_name as column_name,\n               c.column_type as column_type\n           FROM graph_registry_type_ids as t\n           INNER JOIN graph_registry_columns as c\n           ON t.id = c.type_id\n           WHERE t.schema_name = $1\n           AND t.schema_version = $2\n           ORDER BY c.type_id, c.column_position"
+  },
+  "ee7e6f84bb6541909ddfec641a828287d6e414337988b0bc346b765f8766479e": {
+    "describe": {
+      "columns": [
+        {
+          "name": "num",
+          "ordinal": 0,
+          "type_info": "Int8"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT count(*) as num FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_version = $2"
+  }
+}
