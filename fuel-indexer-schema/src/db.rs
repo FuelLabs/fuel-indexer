@@ -18,11 +18,16 @@ pub enum IndexerConnectionPool {
     Sqlite(sqlx::Pool<sqlx::Sqlite>),
 }
 
-#[derive(Default, Eq, PartialEq)]
+#[derive(Eq, PartialEq)]
 pub enum DbType {
-    #[default]
     Postgres,
     Sqlite,
+}
+
+impl Default for DbType {
+    fn default() -> DbType {
+       DbType::Postgres
+    }
 }
 
 impl DbType {
