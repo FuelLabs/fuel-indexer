@@ -26,7 +26,7 @@ pub enum DbType {
 
 impl Default for DbType {
     fn default() -> DbType {
-       DbType::Postgres
+        DbType::Postgres
     }
 }
 
