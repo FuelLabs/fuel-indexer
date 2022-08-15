@@ -27,12 +27,24 @@ jobs:
   cargo-check-workspace-locked:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
+      - run: cargo install sqlx-cli
+      - run: ./run_migrations.sh
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         name: Cargo Check Workspace Locked
@@ -45,12 +57,24 @@ jobs:
   cargo-build-workspace:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
+      - run: cargo install sqlx-cli
+      - run: ./run_migrations.sh
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         name: Cargo Build Workspace
@@ -63,12 +87,24 @@ jobs:
   cargo-test-workspace-default-features:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
+      - run: cargo install sqlx-cli
+      - run: ./run_migrations.sh
       - uses: Swatinem/rust-cache@v1
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
@@ -81,12 +117,24 @@ jobs:
   cargo-test-workspace-no-features:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
+      - run: cargo install sqlx-cli
+      - run: ./run_migrations.sh
       - uses: Swatinem/rust-cache@v1
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
@@ -117,15 +165,7 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
-      - run: |
-          cd database
-          cd postgres
-          sqlx database create
-          sqlx migrate run
-          cd ../sqlite
-          sqlx database create
-          sqlx migrate run
-          cargo fmt
+      - run: ./run_migrations.sh
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
         with:
