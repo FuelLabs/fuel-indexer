@@ -48,7 +48,7 @@ pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, Eq, PartialEq, Deserialize, Serialize, Clone)]
 pub enum FtColumn {
     ID(u64),
     Address(Address),

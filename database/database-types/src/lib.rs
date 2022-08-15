@@ -108,7 +108,7 @@ pub struct ColumnInfo {
     pub column_type: String,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ColumnType {
     ID = 0,
     Address = 1,

@@ -18,7 +18,7 @@ pub enum IndexerConnectionPool {
     Sqlite(sqlx::Pool<sqlx::Sqlite>),
 }
 
-#[derive(Default, PartialEq)]
+#[derive(Default, Eq, PartialEq)]
 pub enum DbType {
     #[default]
     Postgres,

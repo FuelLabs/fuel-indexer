@@ -208,6 +208,16 @@ jobs:
   cargo-unused-deps-check:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -216,6 +226,8 @@ jobs:
           toolchain: nightly
           default: true
       - uses: Swatinem/rust-cache@v1
+      - run: cargo install sqlx-cli
+      - run: ./run_migrations.sh
       - name: Install cargo-udeps
         uses: actions-rs/cargo@v1
         with:
@@ -230,12 +242,24 @@ jobs:
   cargo-clippy-workspace:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
+      - run: cargo install sqlx-cli
+      - run: ./run_migrations.sh
       - name: Check Clippy Linter
         uses: actions-rs/cargo@v1
         with:
