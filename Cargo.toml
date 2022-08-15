@@ -2,14 +2,18 @@
 # Use the new resolver to prevent dev-deps and build-deps from enabling debugging or test features in production.
 resolver = "2"
 members = [
-   "examples/*",
+   "examples/indexer-demo",
+   "examples/simple-native",
    "examples/simple-native/counter-rs",
+   "examples/simple-wasm",
    "fuel-indexer-api-server",
    "fuel-indexer-lib",
    "fuel-indexer-macros",
    "fuel-indexer-plugin",
    "fuel-indexer-schema",
    "fuel-indexer",
+   "tests/e2e/composable-indexer",
+   "tests/e2e/composable-indexer/composable-indexer-lib",
 ]
 
 [profile.release]

@@ -7,8 +7,6 @@ use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
 use fuel_indexer_lib::{config::InjectEnvironment, defaults, utils::derive_socket_addr};
 use fuel_tx::Receipt;
-use fuels_core::abi_encoder::ABIEncoder;
-use fuels_core::{Token, Tokenizable};
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -243,101 +241,29 @@ impl IndexerService {
                     for receipt in receipts {
                         let receipt_cp = receipt.clone();
                         match receipt {
-                            Receipt::Log {
-                                id,
-                                ra,
-                                rb,
-                                rc,
-                                rd,
-                                pc,
-                                is,
-                            } => {
-                                // TODO: might be nice to have Receipt type impl Tokenizable.
-                                let token = Token::Struct(vec![
-                                    id.into_token(),
-                                    ra.into_token(),
-                                    rb.into_token(),
-                                    rc.into_token(),
-                                    rd.into_token(),
-                                    pc.into_token(),
-                                    is.into_token(),
-                                ]);
-
-                                let args = ABIEncoder::new()
-                                    .encode(&[token.clone()])
-                                    .expect("Bad Encoding!");
-                                // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event(
-                                    ReceiptEvent::Log,
-                                    vec![args],
-                                    Some(receipt_cp),
-                                ) {
-                                    error!("Event processing failed {:?}", e);
-                                }
-                            }
                             Receipt::LogData {
-                                id,
-                                ra,
-                                rb,
-                                ptr,
-                                len,
-                                digest,
+                                // TODO: use data field for now, the rest will be useful later
                                 data,
-                                pc,
-                                is,
+                                ..
                             } => {
-                                // TODO: might be nice to have Receipt type impl Tokenizable.
-                                let token = Token::Struct(vec![
-                                    id.into_token(),
-                                    ra.into_token(),
-                                    rb.into_token(),
-                                    ptr.into_token(),
-                                    len.into_token(),
-                                    digest.into_token(),
-                                    data.into_token(),
-                                    pc.into_token(),
-                                    is.into_token(),
-                                ]);
-
-                                let args = ABIEncoder::new()
-                                    .encode(&[token.clone()])
-                                    .expect("Bad Encoding!");
                                 // TODO: should wrap this in a db transaction.
                                 if let Err(e) = exec.trigger_event(
                                     ReceiptEvent::LogData,
-                                    vec![args],
+                                    vec![data],
                                     Some(receipt_cp),
                                 ) {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }
                             Receipt::ReturnData {
-                                id,
-                                ptr,
-                                len,
-                                digest,
+                                // TODO: use data field for now, the rest will be useful later
                                 data,
-                                pc,
-                                is,
+                                ..
                             } => {
-                                // TODO: might be nice to have Receipt type impl Tokenizable.
-                                let token = Token::Struct(vec![
-                                    id.into_token(),
-                                    ptr.into_token(),
-                                    len.into_token(),
-                                    digest.into_token(),
-                                    data.into_token(),
-                                    pc.into_token(),
-                                    is.into_token(),
-                                ]);
-
-                                let args = ABIEncoder::new()
-                                    .encode(&[token.clone()])
-                                    .expect("Bad Encoding!");
                                 // TODO: should wrap this in a db transaction.
                                 if let Err(e) = exec.trigger_event(
                                     ReceiptEvent::ReturnData,
-                                    vec![args],
+                                    vec![data],
                                     Some(receipt_cp),
                                 ) {
                                     error!("Event processing failed {:?}", e);

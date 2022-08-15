@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM lukemathwalker/cargo-chef:latest-rust-1.61 as chef
+FROM lukemathwalker/cargo-chef:latest-rust-1.62 AS chef
 
 WORKDIR /build/
 
@@ -17,14 +17,14 @@ RUN apt-get update -y && \
     pkg-config \
     && apt-get clean
 
-FROM chef as planner
+FROM chef AS planner
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 
 COPY . .
 RUN cargo chef prepare --recipe-path recipe.json
 
 # Stage 2: build binaries
-FROM chef as builder
+FROM chef AS builder
 ENV CARGO_NET_GIT_FETCH_WITH_CLI=true
 COPY --from=planner /build/recipe.json recipe.json
 RUN cargo chef cook --release -p fuel-indexer --recipe-path recipe.json
@@ -32,12 +32,13 @@ COPY . .
 RUN cargo build --release -p fuel-indexer --all-targets
 
 # Stage 3: Run
-FROM ubuntu:22.04 as run
+FROM ubuntu:22.04 AS run
 
 WORKDIR /root/
 
-RUN apt-get update -y \
+RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
     && apt-get install -y --no-install-recommends \
+    tzdata \
     ca-certificates \
     libpq-dev \
     # Clean up
@@ -46,10 +47,3 @@ RUN apt-get update -y \
 
 COPY --from=builder /build/target/release/fuel-indexer .
 COPY --from=builder /build/target/release/fuel-indexer.d .
-
-ARG GRAPHQL_API_PORT=29987
-
-EXPOSE $GRAPHQL_API_PORT
-
-# hadolint ignore=DL3025
-CMD exec ./fuel-indexer
