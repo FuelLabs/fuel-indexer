@@ -7,6 +7,7 @@ use axum::{
 };
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
+    run_migration,
     tables::Schema,
 };
 use http::StatusCode;
@@ -17,7 +18,7 @@ use tokio_postgres::{connect, types::Type, NoTls};
 use tracing::error;
 
 #[derive(Debug, Error)]
-enum APIError {
+pub enum APIError {
     #[error("Postgres error {0:?}")]
     PostgresError(#[from] tokio_postgres::Error),
     #[error("Query builder error {0:?}")]
@@ -31,13 +32,13 @@ enum APIError {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-struct Query {
+pub struct Query {
     query: String,
     #[allow(unused)] // TODO
     params: String,
 }
 
-async fn query_graph(
+pub async fn query_graph(
     Path(name): Path<String>,
     Json(query): Json<Query>,
     Extension(config): Extension<Arc<IndexerConfig>>,
@@ -72,6 +73,10 @@ impl GraphQlApi {
         let config = Arc::new(config.clone());
         let listen_on = config.graphql_api.clone().into();
 
+        if config.graphql_api.run_migrations {
+            run_migration(&config.postgres.to_string());
+        }
+
         let app = Router::new()
             .route("/graph/:name", post(query_graph))
             .layer(Extension(schema_manager))
@@ -84,7 +89,7 @@ impl GraphQlApi {
     }
 }
 
-async fn run_query(
+pub async fn run_query(
     query: Query,
     schema: Schema,
     config: Arc<IndexerConfig>,

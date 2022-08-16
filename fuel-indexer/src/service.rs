@@ -81,6 +81,9 @@ impl IndexerConfig {
                 port: args
                     .graphql_api_port
                     .unwrap_or_else(|| defaults::GRAPHQL_API_PORT.into()),
+                run_migrations: args
+                    .run_migrations
+                    .unwrap_or(defaults::GRAPHQL_API_RUN_MIGRATIONS),
             },
         }
     }

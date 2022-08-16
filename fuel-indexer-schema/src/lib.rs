@@ -98,7 +98,7 @@ pub fn get_schema_types(ast: &Document<String>) -> (HashSet<String>, HashSet<Str
     (types, directives)
 }
 
-#[derive(Debug, PartialEq, Deserialize, Serialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone)]
 pub enum FtColumn {
     ID(u64),
     Address(Address),
