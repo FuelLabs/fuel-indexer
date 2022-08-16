@@ -6,7 +6,7 @@ use wasmer::Instance;
 
 use crate::{ffi, IndexerResult, Manifest};
 use fuel_indexer_schema::{
-    db::models::{ColumnInfo, EntityData, TypeId},
+    db::models::{ColumnInfo, EntityData, IdCol, TypeId},
     db::tables::{Schema, SchemaBuilder},
     schema_version, FtColumn,
 };
@@ -156,7 +156,7 @@ impl Database {
             .iter()
             .zip(columns.iter())
             .filter_map(|(colname, value)| {
-                if colname == "id" {
+                if colname == &IdCol::to_string() {
                     None
                 } else {
                     Some(format!("{} = {}", colname, value.query_fragment()))
