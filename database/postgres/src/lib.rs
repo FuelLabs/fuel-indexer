@@ -69,7 +69,7 @@ pub async fn root_columns_list_by_id(
     sqlx::query_as!(
         RootColumns,
         r#"SELECT
-               id, root_id, column_name, graphql_type
+               id AS "id: i64", root_id AS "root_id: i64", column_name, graphql_type
            FROM graph_registry_root_columns
            WHERE root_id = $1"#,
         root_id
@@ -214,7 +214,7 @@ pub async fn list_column_by_id(
     conn: &mut PoolConnection<Postgres>,
     col_id: i64,
 ) -> sqlx::Result<Vec<Columns>> {
-    sqlx::query_as!(Columns, "SELECT id, type_id, column_position, column_name, column_type, nullable, graphql_type FROM graph_registry_columns WHERE type_id = $1", col_id).fetch_all(conn).await
+    sqlx::query_as!(Columns, r#"SELECT id AS "id: i64", type_id, column_position, column_name, column_type AS "column_type: String", nullable, graphql_type FROM graph_registry_columns WHERE type_id = $1"#, col_id).fetch_all(conn).await
 }
 
 pub async fn columns_get_schema(
@@ -229,7 +229,7 @@ pub async fn columns_get_schema(
                t.table_name as table_name,
                c.column_position as column_position,
                c.column_name as column_name,
-               c.column_type as column_type
+               c.column_type as "column_type: String"
            FROM graph_registry_type_ids as t
            INNER JOIN graph_registry_columns as c
            ON t.id = c.type_id
