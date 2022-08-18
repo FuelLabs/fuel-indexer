@@ -1,5 +1,5 @@
 use anyhow::Result;
-use api_server::{ApiServerArgs, ApiServerConfig, GraphQLApi, Parser};
+use fuel_indexer::{GraphQlApi, IndexerArgs, IndexerConfig, Parser};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
@@ -15,18 +15,16 @@ pub async fn main() -> Result<()> {
         .with_env_filter(filter)
         .init();
 
-    let opt = ApiServerArgs::from_args();
+    let opts = IndexerArgs::from_args();
 
-    let config = match &opt.config {
-        Some(path) => ApiServerConfig::from_file(path).await?,
-        None => ApiServerConfig::from_opts(opt.clone()),
+    let config = match &opts.config {
+        Some(path) => IndexerConfig::from_file(path).await?,
+        None => IndexerConfig::from_opts(opts.clone()),
     };
 
     info!("Configuration: {:?}", config);
 
-    let api = GraphQLApi::new(config.postgres, config.graphql_api);
-
-    let api_handle = tokio::spawn(api.run());
+    let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
 
     api_handle.await?;
 

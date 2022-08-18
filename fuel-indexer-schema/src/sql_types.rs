@@ -15,7 +15,7 @@ use std::io::Write;
 // NOTE: Should we change this to AssoicateFuelType?
 pub struct Columntypename;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "db-models", derive(AsExpression, FromSqlRow))]
 #[cfg_attr(feature = "db-models", sql_type = "Columntypename")]
 pub enum ColumnType {
