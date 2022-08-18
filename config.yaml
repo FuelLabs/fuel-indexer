@@ -1,8 +1,8 @@
 ## The following is an example Fuel Indexer configuration file.
-##  
+##
 ## This configuration spec is intended to be used for a single instance
 ## of a Fuel Indexer node or service.
-## 
+##
 ## For more info on how the Fuel Indexer work, read the book: https://fuellabs.github.io/fuel-indexer/master/
 
 ## Fuel Node configuration
@@ -15,7 +15,6 @@
 #   host: 0.0.0.0
 #   port: 29987
 #   run_migrations: false
-
 
 ## Postgres configuration
 # postgres:
