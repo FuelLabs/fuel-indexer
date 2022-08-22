@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use wasmer::Instance;
+use crate::database::models::IdCol;
 
 use crate::{ffi, IndexerError, IndexerResult, Manifest};
 use fuel_indexer_schema::{
@@ -134,7 +135,7 @@ impl Database {
             .iter()
             .zip(columns.iter())
             .filter_map(|(colname, value)| {
-                if colname == "id" {
+                if colname == &IdCol::to_string() {
                     None
                 } else {
                     Some(format!("{} = {}", colname, value.query_fragment()))
@@ -286,9 +287,7 @@ mod tests {
             .expect("Could not create SchemaManager");
 
         let result = manager.new_schema("test_namespace", GRAPHQL_SCHEMA).await;
-        assert!(result.is_ok());
-
-        let result = manager.new_schema("test_namespace", GRAPHQL_SCHEMA).await;
+        println!("TJDEBUG {:?}", result);
         assert!(result.is_ok());
 
         let pool = IndexerConnectionPool::connect(database_url)

@@ -21,7 +21,7 @@ thiserror = { version = "1.0", optional = true }
 url = "2.2"
 
 [dev-dependencies]
-insta = "1.8"
+insta = { version = "1.8", features = ["yaml"] }
 
 [features]
 default = ["db-models"]

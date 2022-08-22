@@ -3,14 +3,18 @@
 resolver = "2"
 members = [
    "database/*",
-   "examples/*",
+   "examples/indexer-demo",
+   "examples/simple-native",
    "examples/simple-native/counter-rs",
+   "examples/simple-wasm",
    "fuel-indexer-api-server",
    "fuel-indexer-lib",
    "fuel-indexer-macros",
    "fuel-indexer-plugin",
    "fuel-indexer-schema",
    "fuel-indexer",
+   "tests/e2e/composable-indexer",
+   "tests/e2e/composable-indexer/composable-indexer-lib",
 ]
 
 [profile.release]

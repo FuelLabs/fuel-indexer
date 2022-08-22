@@ -3,7 +3,7 @@ extern crate log;
 
 extern crate pretty_env_logger;
 
-use actix_web::{middleware, web, web::Bytes, App, Error, HttpRequest, HttpResponse, HttpServer};
+use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use async_mutex::Mutex;
 use fuels::{
     node::{
@@ -85,23 +85,6 @@ async fn setup_provider_and_wallet() -> (Provider, Wallet) {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct IncrementCountResponse {
-    success: bool,
-    count: u64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct IncrementCountRequest {
-    count: u64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct GetCountResponse {
-    success: bool,
-    count: u64,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 struct InitCountResponse {
     success: bool,
     count: u64,
@@ -112,7 +95,7 @@ async fn initialize_count(req: HttpRequest) -> Result<HttpResponse, Error> {
         Some(state) => state,
         None => {
             return Ok(HttpResponse::Ok().content_type("application/json").body(
-                serde_json::to_string(&GetCountResponse {
+                serde_json::to_string(&InitCountResponse {
                     success: false,
                     count: 0,
                 })
@@ -142,76 +125,6 @@ async fn initialize_count(req: HttpRequest) -> Result<HttpResponse, Error> {
     ))
 }
 
-async fn increment_count(req: HttpRequest, body: Bytes) -> Result<HttpResponse, Error> {
-    let json_body: IncrementCountRequest = serde_json::from_slice(&body).unwrap();
-    let state = match req.app_data::<web::Data<Mutex<Counter>>>() {
-        Some(state) => state,
-        None => {
-            return Ok(HttpResponse::Ok().content_type("application/json").body(
-                serde_json::to_string(&GetCountResponse {
-                    success: false,
-                    count: 0,
-                })
-                .unwrap(),
-            ))
-        }
-    };
-    let contract = state.lock().await;
-
-    let result = contract
-        .increment_counter(json_body.count)
-        .tx_params(tx_params())
-        .call()
-        .await
-        .unwrap();
-
-    debug!("Call result: {:?}", result);
-    let count: u64 = result.receipts[2].val().unwrap();
-
-    Ok(HttpResponse::Ok().content_type("application/json").body(
-        serde_json::to_string(&IncrementCountResponse {
-            success: true,
-            count,
-        })
-        .unwrap(),
-    ))
-}
-
-async fn get_count(req: HttpRequest) -> Result<HttpResponse, Error> {
-    let state = match req.app_data::<web::Data<Mutex<Counter>>>() {
-        Some(state) => state,
-        None => {
-            return Ok(HttpResponse::Ok().content_type("application/json").body(
-                serde_json::to_string(&GetCountResponse {
-                    success: false,
-                    count: 0,
-                })
-                .unwrap(),
-            ))
-        }
-    };
-
-    let contract = state.lock().await;
-
-    let result = contract
-        .get_count()
-        .tx_params(tx_params())
-        .call()
-        .await
-        .unwrap();
-
-    debug!("Call result: {:?}", result);
-    let count: u64 = result.receipts[2].val().unwrap();
-
-    Ok(HttpResponse::Ok().content_type("application/json").body(
-        serde_json::to_string(&GetCountResponse {
-            success: true,
-            count,
-        })
-        .unwrap(),
-    ))
-}
-
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
     pretty_env_logger::init();
@@ -232,9 +145,7 @@ async fn main() -> std::io::Result<()> {
             .service(
                 web::resource("/count")
                     .app_data(web::JsonConfig::default().limit(1024))
-                    .route(web::put().to(increment_count))
-                    .route(web::post().to(initialize_count))
-                    .route(web::get().to(get_count)),
+                    .route(web::post().to(initialize_count)),
             )
     })
     .bind(("127.0.0.1", 8080))?

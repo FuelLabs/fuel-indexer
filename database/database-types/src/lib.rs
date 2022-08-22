@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[derive(Debug)]
 pub struct RootColumns {
     pub id: i64,
@@ -49,7 +51,7 @@ pub struct NumVersions {
     pub num: Option<i64>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct NewColumn {
     pub type_id: i64,
     pub column_position: i32,
@@ -95,6 +97,7 @@ impl NewColumn {
             ColumnType::UInt8 => "bigint",
             ColumnType::Timestamp => "timestamp",
             ColumnType::Blob => "bytea",
+            ColumnType::ForeignKey => panic!("ForeignKey ColumnType is a reference type only."),
         }
     }
 }
@@ -124,6 +127,7 @@ pub enum ColumnType {
     UInt8 = 11,
     Timestamp = 12,
     Blob = 13,
+    ForeignKey = 14,
 }
 
 impl From<ColumnType> for i32 {
@@ -143,7 +147,14 @@ impl From<ColumnType> for i32 {
             ColumnType::UInt8 => 11,
             ColumnType::Timestamp => 12,
             ColumnType::Blob => 13,
+            ColumnType::ForeignKey => 14,
         }
+    }
+}
+
+impl fmt::Display for ColumnType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 
@@ -164,6 +175,7 @@ impl From<i32> for ColumnType {
             11 => ColumnType::UInt8,
             12 => ColumnType::Timestamp,
             13 => ColumnType::Blob,
+            14 => ColumnType::ForeignKey,
             _ => panic!("Invalid column type!"),
         }
     }
@@ -186,6 +198,7 @@ impl From<&str> for ColumnType {
             "UInt8" => ColumnType::UInt8,
             "Timestamp" => ColumnType::Timestamp,
             "Blob" => ColumnType::Blob,
+            "ForeignKey" => ColumnType::ForeignKey,
             _ => panic!("Invalid column type! {}", name),
         }
     }
