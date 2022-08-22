@@ -1,14 +1,6 @@
-use crate::{
-    db::models::{
-        ColumnIndex, Columns, CreateStatement, ForeignKey, GraphRoot, IdCol, IndexMethod,
-        NewColumn, NewGraphRoot, NewRootColumns, RootColumns, TypeId,
-    },
-    get_schema_types,
-    sql_types::ColumnType,
-    type_id, BASE_SCHEMA,
-};
-use diesel::result::QueryResult;
-use diesel::{prelude::PgConnection, sql_query, Connection, RunQueryDsl};
+use crate::db::{models::*, DbType, IndexerConnection, IndexerConnectionPool};
+use crate::{get_schema_types, type_id, BASE_SCHEMA};
+use fuel_indexer_database_types::*;
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{Definition, Field, SchemaDefinition, Type, TypeDefinition};
 use std::collections::{HashMap, HashSet};
@@ -26,6 +18,7 @@ fn extract_table_name_from_field_type(f: &Field<String>) -> String {
 
 #[derive(Default)]
 pub struct SchemaBuilder {
+    db_type: DbType,
     statements: Vec<String>,
     type_ids: Vec<TypeId>,
     columns: Vec<NewColumn>,
@@ -42,7 +35,7 @@ pub struct SchemaBuilder {
 }
 
 impl SchemaBuilder {
-    pub fn new(namespace: &str, version: &str) -> SchemaBuilder {
+    pub fn new(namespace: &str, version: &str, db_type: DbType) -> SchemaBuilder {
         let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
             Ok(ast) => ast,
             Err(e) => {
@@ -52,6 +45,7 @@ impl SchemaBuilder {
         let (primitives, _) = get_schema_types(&base_ast);
 
         SchemaBuilder {
+            db_type,
             namespace: namespace.to_string(),
             version: version.to_string(),
             primitives,
@@ -60,8 +54,10 @@ impl SchemaBuilder {
     }
 
     pub fn build(mut self, schema: &str) -> Self {
-        let create = format!("CREATE SCHEMA IF NOT EXISTS {}", self.namespace);
-        self.statements.push(create);
+        if DbType::Postgres == self.db_type {
+            let create = format!("CREATE SCHEMA IF NOT EXISTS {}", self.namespace);
+            self.statements.push(create);
+        }
 
         let ast = match parse_schema::<String>(schema) {
             Ok(ast) => ast,
@@ -99,7 +95,7 @@ impl SchemaBuilder {
         self
     }
 
-    pub fn commit_metadata(self, conn: &PgConnection) -> QueryResult<Schema> {
+    pub async fn commit_metadata(self, conn: &mut IndexerConnection) -> sqlx::Result<Schema> {
         let SchemaBuilder {
             version,
             statements,
@@ -113,52 +109,52 @@ impl SchemaBuilder {
             query,
             query_fields,
             schema,
+            db_type,
             ..
         } = self;
 
-        conn.transaction::<(), diesel::result::Error, _>(|| {
-            NewGraphRoot {
-                version: version.clone(),
-                schema_name: namespace.clone(),
-                query: query.clone(),
-                schema,
-            }
-            .insert(conn)?;
+        let new_root = NewGraphRoot {
+            version: version.clone(),
+            schema_name: namespace.clone(),
+            query: query.clone(),
+            schema,
+        };
+        new_graph_root(conn, new_root).await?;
 
-            let latest = GraphRoot::latest_version(conn, &namespace)?;
+        let latest = graph_root_latest(conn, &namespace).await?;
 
-            let fields = query_fields.get(&query).expect("No query root!");
+        let field_defs = query_fields.get(&query).expect("No query root!");
 
-            for (key, val) in fields {
-                NewRootColumns {
-                    root_id: latest.id,
-                    column_name: key.to_string(),
-                    graphql_type: val.to_string(),
-                }
-                .insert(conn)?;
-            }
+        let cols: Vec<_> = field_defs
+            .iter()
+            .map(|(key, val)| NewRootColumns {
+                root_id: latest.id,
+                column_name: key.to_string(),
+                graphql_type: val.to_string(),
+            })
+            .collect();
 
-            for query in statements.iter() {
-                sql_query(query).execute(conn)?;
-            }
+        new_root_columns(conn, cols).await?;
 
-            for fk in foreign_keys {
-                sql_query(fk.create_statement()).execute(conn)?;
-            }
+        for query in statements {
+            execute_query(conn, query).await?;
+        }
 
+        for fk in foreign_keys {
+            execute_query(conn, fk.create_statement()).await?;
+        }
+
+        // TODO: should we handle sqlite as well?
+        if db_type == DbType::Postgres {
             for idx in indices {
-                sql_query(idx.create_statement()).execute(conn)?;
+                execute_query(conn, idx.create_statement()).await?;
             }
+        }
 
-            for type_id in type_ids {
-                type_id.insert(conn)?;
-            }
-
-            for column in columns {
-                column.insert(conn)?;
-            }
-            Ok(())
-        })?;
+        println!("TJDEBUG 7");
+        type_id_insert(conn, type_ids).await?;
+        println!("TJDEBUG 8");
+        new_column_insert(conn, columns).await?;
 
         Ok(Schema {
             version,
@@ -228,7 +224,7 @@ impl SchemaBuilder {
                     type_id,
                     column_position: pos as i32,
                     column_name: f.name.to_string(),
-                    column_type: ColumnType::UInt8,
+                    column_type: ColumnType::UInt8.to_string(),
                     graphql_type: f.field_type.to_string(),
                     nullable,
                 };
@@ -244,7 +240,7 @@ impl SchemaBuilder {
                 type_id,
                 column_position: pos as i32,
                 column_name: f.name.to_string(),
-                column_type: typ,
+                column_type: typ.to_string(),
                 graphql_type: f.field_type.to_string(),
                 nullable,
             };
@@ -274,7 +270,7 @@ impl SchemaBuilder {
             type_id,
             column_position: fragments.len() as i32,
             column_name: "object".to_string(),
-            column_type: ColumnType::Blob,
+            column_type: "Blob".to_string(),
             graphql_type: "__".into(),
             nullable: false,
         };
@@ -309,9 +305,11 @@ impl SchemaBuilder {
                 let type_id = type_id(&self.namespace, &o.name);
                 let columns = self.generate_columns(type_id as i64, &o.fields, &table_name);
 
+                let sql_table = self.db_type.table_name(&self.namespace, &table_name);
+
                 let create = format!(
-                    "CREATE TABLE IF NOT EXISTS\n {}.{} (\n {}\n)",
-                    self.namespace, table_name, columns,
+                    "CREATE TABLE IF NOT EXISTS\n {} (\n {}\n)",
+                    sql_table, columns,
                 );
 
                 self.statements.push(create);
@@ -342,10 +340,11 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub fn load_from_db(conn: &PgConnection, name: &str) -> QueryResult<Self> {
-        let root = GraphRoot::latest_version(conn, name)?;
-        let root_cols = RootColumns::list_by_id(conn, root.id)?;
-        let typeids = TypeId::list_by_name(conn, &root.schema_name, &root.version)?;
+    pub async fn load_from_db(pool: &IndexerConnectionPool, name: &str) -> sqlx::Result<Self> {
+        let mut conn = pool.acquire().await?;
+        let root = graph_root_latest(&mut conn, name).await?;
+        let root_cols = root_columns_list_by_id(&mut conn, root.id).await?;
+        let typeids = type_id_list_by_name(&mut conn, &root.schema_name, &root.version).await?;
 
         let mut types = HashSet::new();
         let mut fields = HashMap::new();
@@ -361,7 +360,7 @@ impl Schema {
         for tid in typeids {
             types.insert(tid.graphql_name.clone());
 
-            let columns = Columns::list_by_id(conn, tid.id)?;
+            let columns = list_column_by_id(&mut conn, tid.id).await?;
             fields.insert(
                 tid.graphql_name,
                 columns
@@ -446,7 +445,7 @@ mod tests {
             ")"
         );
 
-        let sb = SchemaBuilder::new("test_namespace", "a_version_string");
+        let sb = SchemaBuilder::new("test_namespace", "a_version_string", DbType::Postgres);
 
         let SchemaBuilder { statements, .. } = sb.build(graphql_schema);
 
@@ -480,7 +479,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1");
+        let sb = SchemaBuilder::new("namespace", "v1", DbType::Postgres);
 
         let SchemaBuilder { indices, .. } = sb.build(graphql_schema);
 
@@ -528,7 +527,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1");
+        let sb = SchemaBuilder::new("namespace", "v1", DbType::Postgres);
 
         let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
 

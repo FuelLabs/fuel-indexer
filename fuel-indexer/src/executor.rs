@@ -2,11 +2,13 @@ use crate::database::Database;
 use crate::ffi;
 use crate::handler::{Handle, ReceiptEvent};
 use crate::{IndexerError, IndexerResult, Manifest};
+use async_std::sync::{Arc, Mutex};
+use async_trait::async_trait;
 use fuel_tx::Receipt;
 use std::collections::HashMap;
 use std::path::Path;
-use std::sync::{Arc, Mutex};
 use thiserror::Error;
+use tokio::task::spawn_blocking;
 use tracing::error;
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store, WasmerEnv,
@@ -17,12 +19,13 @@ fn compiler() -> Cranelift {
     Cranelift::default()
 }
 
+#[async_trait]
 pub trait Executor
 where
     Self: Sized,
 {
     fn from_file(index: &Path) -> IndexerResult<Self>;
-    fn trigger_event(
+    async fn trigger_event(
         &self,
         event_name: ReceiptEvent,
         bytes: Vec<Vec<u8>>,
@@ -32,8 +35,6 @@ where
 
 #[derive(Error, Debug)]
 pub enum TxError {
-    #[error("Diesel Error {0:?}")]
-    DieselError(#[from] diesel::result::Error),
     #[error("WASM Runtime Error {0:?}")]
     WasmRuntimeError(#[from] RuntimeError),
 }
@@ -57,12 +58,14 @@ pub struct NativeIndexExecutor {
 }
 
 impl NativeIndexExecutor {
-    pub fn new(db_conn: &str, manifest: Manifest, handles: Vec<Handle>) -> IndexerResult<Self> {
-        let db = Arc::new(Mutex::new(Database::new(db_conn).unwrap()));
+    pub async fn new(
+        db_conn: &str,
+        manifest: Manifest,
+        handles: Vec<Handle>,
+    ) -> IndexerResult<Self> {
+        let db = Arc::new(Mutex::new(Database::new(db_conn).await.unwrap()));
 
-        db.lock()
-            .expect("Lock poisoned from schema load")
-            .load_schema_native(manifest.clone())?;
+        db.lock().await.load_schema_native(manifest.clone()).await?;
 
         Ok(Self {
             handles,
@@ -72,22 +75,20 @@ impl NativeIndexExecutor {
     }
 }
 
+#[async_trait]
 impl Executor for NativeIndexExecutor {
     fn from_file(_index: &Path) -> IndexerResult<Self> {
         unimplemented!()
     }
 
-    fn trigger_event(
+    async fn trigger_event(
         &self,
         _event: ReceiptEvent,
         _bytes: Vec<Vec<u8>>,
         receipt: Option<Receipt>,
     ) -> IndexerResult<()> {
         for handle in self.handles.iter() {
-            self.db
-                .lock()
-                .expect("Lock poisoned on tx start")
-                .start_transaction()?;
+            self.db.lock().await.start_transaction().await?;
 
             if let Some(receipt) = receipt.clone() {
                 let data = receipt.data().unwrap().to_vec();
@@ -96,20 +97,15 @@ impl Executor for NativeIndexExecutor {
                         Ok(result) => {
                             self.db
                                 .lock()
-                                .expect("Lock poisoned")
-                                .put_object(result.0, result.1, data);
+                                .await
+                                .put_object(result.0, result.1, data)
+                                .await;
 
-                            self.db
-                                .lock()
-                                .expect("Lock poisoned")
-                                .commit_transaction()?;
+                            self.db.lock().await.commit_transaction().await?;
                         }
                         Err(e) => {
                             error!("Indexer failed {e:?}");
-                            self.db
-                                .lock()
-                                .expect("Lock poisoned on error")
-                                .revert_transaction()?;
+                            self.db.lock().await.revert_transaction().await?;
                             return Err(IndexerError::HandlerError);
                         }
                     }
@@ -121,8 +117,8 @@ impl Executor for NativeIndexExecutor {
 }
 
 impl IndexEnv {
-    pub fn new(db_conn: String) -> IndexerResult<IndexEnv> {
-        let db = Arc::new(Mutex::new(Database::new(&db_conn)?));
+    pub async fn new(db_conn: String) -> IndexerResult<IndexEnv> {
+        let db = Arc::new(Mutex::new(Database::new(&db_conn).await?));
         Ok(IndexEnv {
             memory: Default::default(),
             alloc: Default::default(),
@@ -143,7 +139,7 @@ pub struct WasmIndexExecutor {
 }
 
 impl WasmIndexExecutor {
-    pub fn new(
+    pub async fn new(
         db_conn: String,
         manifest: Manifest,
         wasm_bytes: impl AsRef<[u8]>,
@@ -153,16 +149,13 @@ impl WasmIndexExecutor {
 
         let mut import_object = imports! {};
 
-        let mut env = IndexEnv::new(db_conn)?;
+        let mut env = IndexEnv::new(db_conn).await?;
         let exports = ffi::get_exports(&env, &store);
         import_object.register("env", exports);
 
         let instance = Instance::new(&module, &import_object)?;
         env.init_with_instance(&instance)?;
-        env.db
-            .lock()
-            .expect("mutex lock failed")
-            .load_schema_wasm(&instance)?;
+        env.db.lock().await.load_schema_wasm(&instance).await?;
 
         let mut events = HashMap::new();
 
@@ -186,6 +179,7 @@ impl WasmIndexExecutor {
     }
 }
 
+#[async_trait]
 impl Executor for WasmIndexExecutor {
     /// Restore index from wasm file
     fn from_file(_index: &Path) -> IndexerResult<Self> {
@@ -193,7 +187,7 @@ impl Executor for WasmIndexExecutor {
     }
 
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    fn trigger_event(
+    async fn trigger_event(
         &self,
         event_name: ReceiptEvent,
         bytes: Vec<Vec<u8>>,
@@ -212,22 +206,20 @@ impl Executor for WasmIndexExecutor {
                     .exports
                     .get_native_function::<(u32, u32, u32), ()>(handler)?;
 
-                self.db.lock().expect("Lock poisoned").start_transaction()?;
+                self.db.lock().await.start_transaction().await?;
 
-                let res = fun.call(arg_list.get_ptrs(), arg_list.get_lens(), arg_list.get_len());
+                let ptrs = arg_list.get_ptrs();
+                let lens = arg_list.get_lens();
+                let len = arg_list.get_len();
+
+                let res = spawn_blocking(move || fun.call(ptrs, lens, len)).await?;
 
                 if let Err(e) = res {
                     error!("Indexer failed {e:?}");
-                    self.db
-                        .lock()
-                        .expect("Lock poisoned")
-                        .revert_transaction()?;
+                    self.db.lock().await.revert_transaction().await?;
                     return Err(IndexerError::RuntimeError(e));
                 } else {
-                    self.db
-                        .lock()
-                        .expect("Lock poisoned")
-                        .commit_transaction()?;
+                    self.db.lock().await.commit_transaction().await?;
                 }
             }
         }
@@ -235,53 +227,103 @@ impl Executor for WasmIndexExecutor {
     }
 }
 
-#[cfg(feature = "postgres")]
 #[cfg(test)]
 mod tests {
     use super::*;
-    use diesel::sql_types::*;
-    use diesel::{
-        prelude::PgConnection, sql_query, Connection, Queryable, QueryableByName, RunQueryDsl,
-    };
     use fuels_abigen_macro::abigen;
     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+    use sqlx::{Connection, Row};
 
-    const DATABASE_URL: &str = "postgres://postgres:my-secret@127.0.0.1:5432";
     const MANIFEST: &str = include_str!("test_data/manifest.yaml");
     const BAD_MANIFEST: &str = include_str!("test_data/bad_manifest.yaml");
     const WASM_BYTES: &[u8] = include_bytes!("test_data/simple_wasm.wasm");
 
     abigen!(MyContract, "fuel-indexer/src/test_data/my_struct.json");
 
-    #[derive(Debug, Queryable, QueryableByName)]
+    #[derive(Debug)]
     struct Thing1 {
-        #[sql_type = "BigInt"]
         id: i64,
-        #[sql_type = "Text"]
         account: String,
     }
 
-    #[test]
-    fn test_wasm_executor() {
+    #[tokio::test]
+    async fn test_postgres() {
+        let database_url = "postgres://postgres:my-secret@127.0.0.1:5432";
+
+        do_test(database_url).await;
+
+        let mut conn = sqlx::PgConnection::connect(database_url)
+            .await
+            .expect("Database connection failed!");
+
+        let row = sqlx::query("select id,account from test_namespace.thing1 where id = 1020;")
+            .fetch_one(&mut conn)
+            .await
+            .expect("Database query failed");
+
+        let id = row.get(0);
+        let account = row.get(1);
+
+        let data = Thing1 { id, account };
+
+        assert_eq!(data.id, 1020);
+        assert_eq!(
+            data.account,
+            "afafafafafafafafafafafafafafafafafafafafafafafafafafafafafafafaf"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_sqlite() {
+        let workspace_root = env!("CARGO_MANIFEST_DIR");
+        let database_url = format!("sqlite://{}/test.db", workspace_root);
+
+        do_test(&database_url).await;
+
+        let mut conn = sqlx::SqliteConnection::connect(&database_url)
+            .await
+            .expect("Database connection failed!");
+
+        let row = sqlx::query("select id,account from thing1 where id = 1020;")
+            .fetch_one(&mut conn)
+            .await
+            .expect("Database query failed");
+
+        let id = row.get(0);
+        let account = row.get(1);
+
+        let data = Thing1 { id, account };
+
+        assert_eq!(data.id, 1020);
+        assert_eq!(
+            data.account,
+            "afafafafafafafafafafafafafafafafafafafafafafafafafafafafafafafaf"
+        );
+    }
+
+    async fn do_test(database_url: &str) {
         let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file.");
         let bad_manifest: Manifest = serde_yaml::from_str(BAD_MANIFEST).expect("Bad yaml file.");
 
-        let executor = WasmIndexExecutor::new(DATABASE_URL.to_string(), bad_manifest, WASM_BYTES);
+        let executor =
+            WasmIndexExecutor::new(database_url.to_string(), bad_manifest, WASM_BYTES).await;
         match executor {
             Err(IndexerError::MissingHandler(o)) if o == "fn_one" => (),
             e => panic!("Expected missing handler error {:#?}", e),
         }
 
-        let executor = WasmIndexExecutor::new(DATABASE_URL.to_string(), manifest, WASM_BYTES);
+        let executor = WasmIndexExecutor::new(database_url.to_string(), manifest, WASM_BYTES).await;
         assert!(executor.is_ok());
 
         let executor = executor.unwrap();
 
-        let result = executor.trigger_event(
-            ReceiptEvent::an_event_name,
-            vec![b"ejfiaiddiie".to_vec()],
-            None,
-        );
+        let result = executor
+            .trigger_event(
+                ReceiptEvent::an_event_name,
+                vec![b"ejfiaiddiie".to_vec()],
+                None,
+            )
+            .await;
         match result {
             Err(IndexerError::RuntimeError(_)) => (),
             e => panic!("Should have been a runtime error {:#?}", e),
@@ -306,20 +348,9 @@ mod tests {
                 .expect("Failed to encode"),
         ];
 
-        let result = executor.trigger_event(ReceiptEvent::an_event_name, encoded, None);
+        let result = executor
+            .trigger_event(ReceiptEvent::an_event_name, encoded, None)
+            .await;
         assert!(result.is_ok());
-
-        let conn = PgConnection::establish(DATABASE_URL).expect("Postgres connection failed");
-        let data: Vec<Thing1> =
-            sql_query("select id,account from test_namespace.thing1 where id = 1020;")
-                .load(&conn)
-                .expect("Database query failed");
-
-        assert_eq!(data.len(), 1);
-        assert_eq!(data[0].id, 1020);
-        assert_eq!(
-            data[0].account,
-            "afafafafafafafafafafafafafafafafafafafafafafafafafafafafafafafaf"
-        );
     }
 }

@@ -1,11 +1,14 @@
 use crate::{
-    handler::Handle, Executor, FuelNodeConfig, GraphQLConfig, IndexerArgs, IndexerResult, Manifest,
-    NativeIndexExecutor, PostgresConfig, ReceiptEvent, SchemaManager, WasmIndexExecutor,
+    handler::Handle, Executor, IndexerResult, Manifest, NativeIndexExecutor, ReceiptEvent,
+    SchemaManager, WasmIndexExecutor,
 };
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_lib::{config::InjectEnvironment, defaults, utils::derive_socket_addr};
+use fuel_indexer_lib::{
+    config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs, InjectEnvironment},
+    defaults,
+};
 use fuel_tx::Receipt;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use serde::Deserialize;
@@ -13,7 +16,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::marker::{Send, Sync};
 use std::net::SocketAddr;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     task::JoinHandle,
@@ -26,14 +29,14 @@ use tracing::{debug, error, info, warn};
 pub struct IndexerConfig {
     pub fuel_node: FuelNodeConfig,
     pub graphql_api: GraphQLConfig,
-    pub postgres: PostgresConfig,
+    pub database_config: DatabaseConfig,
 }
 
 #[derive(Deserialize)]
 pub struct TmpIndexerConfig {
     pub fuel_node: Option<FuelNodeConfig>,
     pub graphql_api: Option<GraphQLConfig>,
-    pub postgres: Option<PostgresConfig>,
+    pub database_config: Option<DatabaseConfig>,
 }
 
 impl IndexerConfig {
@@ -42,8 +45,8 @@ impl IndexerConfig {
             self.fuel_node = cfg;
         }
 
-        if let Some(cfg) = tmp.postgres {
-            self.postgres = cfg;
+        if let Some(cfg) = tmp.database_config {
+            self.database_config = cfg;
         }
 
         if let Some(cfg) = tmp.graphql_api {
@@ -52,16 +55,8 @@ impl IndexerConfig {
     }
 
     pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
-        IndexerConfig {
-            fuel_node: FuelNodeConfig {
-                host: args
-                    .fuel_node_host
-                    .unwrap_or_else(|| defaults::FUEL_NODE_HOST.into()),
-                port: args
-                    .fuel_node_port
-                    .unwrap_or_else(|| defaults::FUEL_NODE_PORT.into()),
-            },
-            postgres: PostgresConfig {
+        let database_config = match args.database.as_str() {
+            "postgres" => DatabaseConfig::Postgres {
                 user: args
                     .postgres_user
                     .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
@@ -73,6 +68,24 @@ impl IndexerConfig {
                     .postgres_port
                     .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
                 database: args.postgres_database,
+            },
+            "sqlite" => DatabaseConfig::Sqlite {
+                path: PathBuf::from(args.sqlite_database),
+            },
+            _ => {
+                unreachable!()
+            }
+        };
+
+        IndexerConfig {
+            database_config,
+            fuel_node: FuelNodeConfig {
+                host: args
+                    .fuel_node_host
+                    .unwrap_or_else(|| defaults::FUEL_NODE_HOST.into()),
+                port: args
+                    .fuel_node_port
+                    .unwrap_or_else(|| defaults::FUEL_NODE_PORT.into()),
             },
             graphql_api: GraphQLConfig {
                 host: args
@@ -104,7 +117,7 @@ impl IndexerConfig {
 
     pub fn inject_env_vars(&mut self) {
         let _ = self.fuel_node.inject_env_vars();
-        let _ = self.postgres.inject_env_vars();
+        let _ = self.database_config.inject_env_vars();
         let _ = self.graphql_api.inject_env_vars();
     }
 }
@@ -118,22 +131,24 @@ pub struct IndexerService {
 }
 
 impl IndexerService {
-    pub fn new(config: IndexerConfig) -> IndexerResult<IndexerService> {
-        let fuel_node_addr =
-            derive_socket_addr(&config.fuel_node.host, &config.fuel_node.port).unwrap();
-
-        let manager = SchemaManager::new(&config.postgres.to_string())?;
+    pub async fn new(config: IndexerConfig) -> IndexerResult<IndexerService> {
+        let IndexerConfig {
+            fuel_node,
+            database_config,
+            ..
+        } = config;
+        let manager = SchemaManager::new(&database_config.to_string()).await?;
 
         Ok(IndexerService {
-            fuel_node_addr,
+            fuel_node_addr: fuel_node.to_string().parse()?,
             manager,
-            database_url: config.postgres.to_string(),
+            database_url: database_config.to_string(),
             handles: HashMap::default(),
             killers: HashMap::default(),
         })
     }
 
-    pub fn add_native_indexer(
+    pub async fn add_native_indexer(
         &mut self,
         manifest: Manifest,
         run_once: bool,
@@ -143,8 +158,9 @@ impl IndexerService {
         let start_block = manifest.start_block;
 
         let schema = manifest.graphql_schema().unwrap();
-        self.manager.new_schema(&name, &schema)?;
-        let executor = NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles)?;
+        self.manager.new_schema(&name, &schema).await?;
+        let executor =
+            NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles).await?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
         let handle = tokio::spawn(self.make_task(
@@ -161,15 +177,20 @@ impl IndexerService {
         Ok(())
     }
 
-    pub fn add_wasm_indexer(&mut self, manifest: Manifest, run_once: bool) -> IndexerResult<()> {
+    pub async fn add_wasm_indexer(
+        &mut self,
+        manifest: Manifest,
+        run_once: bool,
+    ) -> IndexerResult<()> {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
         let schema = manifest.graphql_schema().unwrap();
         let wasm_bytes = manifest.wasm_module().unwrap();
 
-        self.manager.new_schema(&name, &schema)?;
-        let executor = WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes)?;
+        self.manager.new_schema(&name, &schema).await?;
+        let executor =
+            WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes).await?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
         let handle = tokio::spawn(self.make_task(
@@ -240,7 +261,7 @@ impl IndexerService {
                     }
                 }
 
-                let result = tokio::task::spawn_blocking(move || {
+                let result = tokio::task::spawn(async move {
                     for receipt in receipts {
                         let receipt_cp = receipt.clone();
                         match receipt {
@@ -250,11 +271,14 @@ impl IndexerService {
                                 ..
                             } => {
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event(
-                                    ReceiptEvent::LogData,
-                                    vec![data],
-                                    Some(receipt_cp),
-                                ) {
+                                if let Err(e) = exec
+                                    .trigger_event(
+                                        ReceiptEvent::LogData,
+                                        vec![data],
+                                        Some(receipt_cp),
+                                    )
+                                    .await
+                                {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }
@@ -264,11 +288,14 @@ impl IndexerService {
                                 ..
                             } => {
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event(
-                                    ReceiptEvent::ReturnData,
-                                    vec![data],
-                                    Some(receipt_cp),
-                                ) {
+                                if let Err(e) = exec
+                                    .trigger_event(
+                                        ReceiptEvent::ReturnData,
+                                        vec![data],
+                                        Some(receipt_cp),
+                                    )
+                                    .await
+                                {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }

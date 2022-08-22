@@ -1,4 +1,3 @@
-use diesel::result::Error as DieselError;
 use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
@@ -12,11 +11,7 @@ mod service;
 pub use api::GraphQlApi;
 pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
-
-pub use fuel_indexer_lib::config::{
-    FuelNodeConfig, GraphQLConfig, IndexerArgs, Parser, PostgresConfig,
-};
-pub use fuel_indexer_schema::NativeHandlerResult;
+pub use fuel_indexer_schema::{db::DatabaseError, NativeHandlerResult};
 pub use fuel_tx::Receipt;
 pub use fuel_types::{Address, ContractId};
 pub use handler::ReceiptEvent;
@@ -30,6 +25,8 @@ pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
 pub enum IndexerError {
     #[error("Compiler error: {0:#?}")]
     CompileError(#[from] wasmer::CompileError),
+    #[error("Error from sqlx: {0:#?}")]
+    SqlxError(#[from] sqlx::Error),
     #[error("Error instantiating wasm interpreter: {0:#?}")]
     InstantiationError(#[from] InstantiationError),
     #[error("Error finding exported symbol: {0:#?}")]
@@ -40,18 +37,20 @@ pub enum IndexerError {
     HostEnvInitError(#[from] HostEnvInitError),
     #[error("FFI Error {0:?}")]
     FFIError(#[from] ffi::FFIError),
-    #[error("Database initialization error: {0:?}")]
-    DatabaseInitError(#[from] r2d2::Error),
-    #[error("Database query error: {0:?}")]
-    DatabaseQueryError(#[from] DieselError),
-    #[error("Database connection error: {0:?}")]
-    ConnectionError(#[from] diesel::ConnectionError),
     #[error("Missing handler: {0:?}")]
     MissingHandler(String),
     #[error("Indexer transaction error {0:?}")]
     TxError(#[from] crate::executor::TxError),
+    #[error("Database error {0:?}")]
+    DatabaseError(#[from] DatabaseError),
+    #[error("Invalid address {0:?}")]
+    InvalidAddress(#[from] std::net::AddrParseError),
+    #[error("Join Error {0:?}")]
+    JoinError(#[from] tokio::task::JoinError),
     #[error("Error executing handler")]
     HandlerError,
+    #[error("No transaction is open!")]
+    NoTransactionError,
     #[error("Unknown error")]
     Unknown,
 }

@@ -9,8 +9,8 @@ edition = "2021"
 anyhow = "1.0.53"
 async-std = "1.10.0"
 axum = "0.4"
-diesel = { version = "1.4", features = ["postgres"] }
 fuel-indexer = { path = "../../fuel-indexer" }
+fuel-indexer-lib = { path = "../../fuel-indexer-lib" }
 fuel-indexer-macros = { path = "../../fuel-indexer-macros" }
 fuel-indexer-plugin = { path = "../../fuel-indexer-plugin" }
 fuel-indexer-schema = { path = "../../fuel-indexer-schema", features = ["db-models"] }

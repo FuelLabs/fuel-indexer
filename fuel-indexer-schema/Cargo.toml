@@ -7,19 +7,22 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-diesel = { version = "1.4", optional = true, features = ["postgres", "serde_json"] }
-diesel_migrations = { version = "1.4.0", features = ["postgres", "sqlite"] }
+fuel-indexer-database-types = { path = "../database/database-types" }
+fuel-indexer-postgres = { path = "../database/postgres" }
+fuel-indexer-sqlite = { path = "../database/sqlite" }
 fuel-types = { version = "0.3", features = ["serde-types"] }
 graphql-parser = "0.3"
 itertools = { version = "0.10", optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde-scale = "0.2"
 sha2 = "0.9"
+sqlx = { version = "0.6", optional = true, features = ["postgres", "runtime-tokio-rustls", "sqlite"] }
 thiserror = { version = "1.0", optional = true }
+url = "2.2"
 
 [dev-dependencies]
 insta = { version = "1.8", features = ["yaml"] }
 
 [features]
-default = ["diesel"]
-db-models = ["itertools", "thiserror"]
+default = ["db-models"]
+db-models = ["sqlx", "itertools", "thiserror"]

@@ -1,5 +1,6 @@
 use anyhow::Result;
-use fuel_indexer::{GraphQlApi, IndexerArgs, IndexerConfig, Parser};
+use fuel_indexer::{GraphQlApi, IndexerConfig};
+use fuel_indexer_lib::config::{IndexerArgs, Parser};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
@@ -24,9 +25,7 @@ pub async fn main() -> Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
-
-    api_handle.await?;
+    GraphQlApi::run(config.clone()).await;
 
     Ok(())
 }

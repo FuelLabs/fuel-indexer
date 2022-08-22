@@ -1,12 +1,11 @@
 extern crate alloc;
 
-#[cfg(feature = "postgres")]
+#[cfg(test)]
 mod tests {
     use fuel_core::service::{Config, FuelService};
     use fuel_gql_client::client::FuelClient;
-    use fuel_indexer::{
-        FuelNodeConfig, GraphQLConfig, IndexerConfig, IndexerService, Manifest, PostgresConfig,
-    };
+    use fuel_indexer::{IndexerConfig, IndexerService, Manifest};
+    use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
     use fuel_vm::{consts::*, prelude::*};
 
     const MANIFEST: &str = include_str!("./test_data/demo_manifest.yaml");
@@ -56,7 +55,7 @@ mod tests {
 
         let config = IndexerConfig {
             fuel_node: FuelNodeConfig::from(srv.bound_address),
-            postgres: PostgresConfig {
+            database_config: DatabaseConfig::Postgres {
                 user: "postgres".into(),
                 password: Some("my-secret".into()),
                 host: "127.0.0.1".into(),
@@ -66,7 +65,7 @@ mod tests {
             graphql_api: GraphQLConfig::default(),
         };
 
-        let mut indexer_service = IndexerService::new(config).unwrap();
+        let mut indexer_service = IndexerService::new(config).await.unwrap();
 
         let mut manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
 
@@ -83,6 +82,7 @@ mod tests {
 
         indexer_service
             .add_wasm_indexer(manifest, true)
+            .await
             .expect("Failed to initialize indexer");
 
         indexer_service.run().await;

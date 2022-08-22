@@ -1,25 +1,30 @@
-# Install the diesel-cli tool
+# Install the sqlx-cli tool
 
-```cargo install diesel_cli --no-default-features --features postgres```
+```cargo install sqlx-cli```
 
-## Setting up
+## Quick set up with postgres
 
 ```
 docker run --rm -p 5432:5432 --name postgres-db -e POSTGRES_PASSWORD=my-secret -d postgres
-echo 'DATABASE_URL=postgres://postgres:my-secret@127.0.0.1:5432' >> .env
-diesel migration run 
+```
+
+## Create a database
+
+```console
+
+DATABASE_URL=postgres://postgres:my-secret@localhost/mydb sqlx database create
+DATABASE_URL=sqlite://mydb.db sqlx database create
+
 ```
 
 ## Upgrading the schema
 
-```
-diesel migration generate <schema_update_name>
-```
+-r will make a reversible migration with up.sql and down.sql
 
-edit migration schema, which will be in `migrations/<date>_<version>_<schema_update_name>/up.sql` and `down.sql`
+```console
 
-Then run the migration:
+sqlx migrate add -r <migration_name>
 
 ```
-disel migration run 
-```
+
+edit migration schema, which will be in `migrations/<YYYYMMDDHHmmSS>_<migration_name>.up.sql` and `down.sql`

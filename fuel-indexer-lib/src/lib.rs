@@ -93,6 +93,10 @@ pub mod config {
         pub graphql_api_host: Option<String>,
         #[clap(long, help = "GraphQL API port. (default = 29987)")]
         pub graphql_api_port: Option<String>,
+        #[clap(long, help = "Database type", default_value = "postgres", value_parser(["postgres", "sqlite"]))]
+        pub database: String,
+        #[clap(long, default_value = "sqlite.db", help = "Sqlite database.")]
+        pub sqlite_database: String,
         #[clap(long, help = "Postgres username. (default = 'postgres')")]
         pub postgres_user: Option<String>,
         #[clap(long, help = "Postgres database. (default = 'postgres')")]
@@ -116,6 +120,10 @@ pub mod config {
         pub graphql_api_host: Option<String>,
         #[clap(long, help = "GraphQL API port. (default = 29987)")]
         pub graphql_api_port: Option<String>,
+        #[clap(long, help = "Database type", default_value = "postgres", value_parser(["postgres", "sqlite"]))]
+        pub database: String,
+        #[clap(long, default_value = "sqlite.db", help = "Sqlite database.")]
+        pub sqlite_database: PathBuf,
         #[clap(long, help = "Postgres username. (default = 'postgres')")]
         pub postgres_user: Option<String>,
         #[clap(long, help = "Postgres database. (default = 'postgres')")]
@@ -179,89 +187,138 @@ pub mod config {
     }
 
     #[derive(Clone, Deserialize)]
-    pub struct PostgresConfig {
-        pub user: String,
-        pub password: Option<String>,
-        pub host: String,
-        pub port: String,
-        pub database: Option<String>,
+    pub enum DatabaseConfig {
+        Sqlite {
+            path: PathBuf,
+        },
+        Postgres {
+            user: String,
+            password: Option<String>,
+            host: String,
+            port: String,
+            database: Option<String>,
+        },
     }
 
-    impl InjectEnvironment for PostgresConfig {
+    impl InjectEnvironment for DatabaseConfig {
         fn inject_env_vars(&mut self) -> Result<()> {
-            if is_env_var(&self.user) {
-                self.user = std::env::var(trim_env_key(&self.user))
-                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.user));
-            }
+            match self {
+                DatabaseConfig::Postgres {
+                    user,
+                    password,
+                    host,
+                    port,
+                    database,
+                } => {
+                    if is_env_var(user) {
+                        *user = std::env::var(trim_env_key(user))
+                            .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &user));
+                    }
 
-            if let Some(password) = &self.password {
-                if is_env_var(password) {
-                    self.password = Some(
-                        std::env::var(trim_env_key(password))
-                            .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &password)),
-                    );
+                    if let Some(pass) = &password {
+                        if is_env_var(pass) {
+                            *password =
+                                Some(std::env::var(trim_env_key(pass)).unwrap_or_else(|_| {
+                                    panic!("Failed to read '{}' from env", &pass)
+                                }));
+                        }
+                    }
+
+                    if is_env_var(host) {
+                        *host = std::env::var(trim_env_key(host))
+                            .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &host));
+                    }
+
+                    if is_env_var(port) {
+                        *port = std::env::var(trim_env_key(port))
+                            .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &port));
+                    }
+
+                    if let Some(db) = &database {
+                        if is_env_var(db) {
+                            *database =
+                                Some(std::env::var(trim_env_key(db)).unwrap_or_else(|_| {
+                                    format!("Failed to read '{}' from env", &db)
+                                }));
+                        }
+                    }
+                }
+                DatabaseConfig::Sqlite { path } => {
+                    let os_str = path.as_os_str().to_str().unwrap();
+                    if is_env_var(os_str) {
+                        *path =
+                            PathBuf::from(std::env::var(trim_env_key(os_str)).unwrap_or_else(
+                                |_| format!("Failed to read '{}' from env", os_str),
+                            ));
+                    }
                 }
             }
-
-            if is_env_var(&self.host) {
-                self.host = std::env::var(trim_env_key(&self.host))
-                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
-            }
-
-            if is_env_var(&self.port) {
-                self.port = std::env::var(trim_env_key(&self.port))
-                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
-            }
-
-            if let Some(database) = &self.database {
-                if is_env_var(database) {
-                    self.database =
-                        Some(std::env::var(trim_env_key(database)).unwrap_or_else(|_| {
-                            format!("Failed to read '{}' from env", &database)
-                        }));
-                }
-            }
-
             Ok(())
         }
     }
 
-    impl std::string::ToString for PostgresConfig {
+    impl std::string::ToString for DatabaseConfig {
         fn to_string(&self) -> String {
-            let mut uri: String = format!("postgres://{}", self.user);
+            match self {
+                DatabaseConfig::Postgres {
+                    user,
+                    password,
+                    host,
+                    port,
+                    database,
+                } => {
+                    let mut uri: String = format!("postgres://{}", user);
 
-            if let Some(pass) = &self.password {
-                let _ = write!(uri, ":{}", pass);
+                    if let Some(pass) = &password {
+                        let _ = write!(uri, ":{}", pass);
+                    }
+
+                    let _ = write!(uri, "@{}:{}", host, port);
+
+                    if let Some(db_name) = &database {
+                        let _ = write!(uri, "/{}", db_name);
+                    }
+
+                    uri
+                }
+                DatabaseConfig::Sqlite { path } => {
+                    format!("sqlite://{}", path.display())
+                }
             }
-
-            let _ = write!(uri, "@{}:{}", self.host, self.port);
-
-            if let Some(db_name) = &self.database {
-                let _ = write!(uri, "/{}", db_name);
-            }
-
-            uri
         }
     }
 
-    impl std::fmt::Debug for PostgresConfig {
+    impl std::fmt::Debug for DatabaseConfig {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            let _ = f
-                .debug_struct("PostgresConfig")
-                .field("user", &self.user)
-                .field("password", &"XXXX")
-                .field("host", &self.host)
-                .field("port", &self.port)
-                .field("database", &self.database)
-                .finish();
+            match self {
+                DatabaseConfig::Postgres {
+                    user,
+                    host,
+                    port,
+                    database,
+                    ..
+                } => {
+                    let _ = f
+                        .debug_struct("PostgresConfig")
+                        .field("user", &user)
+                        .field("password", &"XXXX")
+                        .field("host", &host)
+                        .field("port", &port)
+                        .field("database", &database)
+                        .finish();
+                }
+                DatabaseConfig::Sqlite { path } => {
+                    let _ = f.debug_struct("SqliteConfig").field("path", &path).finish();
+                }
+            }
 
             Ok(())
         }
     }
 
-    impl Default for PostgresConfig {
+    impl Default for DatabaseConfig {
         fn default() -> Self {
-            Self {
+            DatabaseConfig::Postgres {
                 user: defaults::POSTGRES_USER.into(),
                 password: None,
                 host: defaults::POSTGRES_HOST.into(),

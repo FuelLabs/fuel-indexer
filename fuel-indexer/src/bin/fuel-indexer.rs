@@ -1,10 +1,10 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
-use fuel_indexer::{GraphQlApi, IndexerArgs, IndexerConfig, IndexerService, Manifest, Parser};
+use fuel_indexer::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
+use fuel_indexer_lib::config::{IndexerArgs, Parser};
 use fuel_indexer_schema::db::run_migration;
-use tokio::join;
-use tracing::{error, info};
+use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
 #[tokio::main]
@@ -28,7 +28,7 @@ pub async fn main() -> Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    run_migration(&config.postgres.to_string());
+    run_migration(&config.database_config.to_string()).await;
 
     let _local_node = if opt.local {
         let s = FuelService::new_node(Config::local_node()).await.unwrap();
@@ -42,9 +42,8 @@ pub async fn main() -> Result<()> {
         "Subscribing to Fuel node at {}",
         &config.fuel_node.to_string()
     );
-    let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
 
-    let mut service = IndexerService::new(config)?;
+    let mut service = IndexerService::new(config.clone()).await?;
 
     // TODO: need an API endpoint to upload/create these things.....
     if opt.test_manifest.is_some() {
@@ -55,18 +54,12 @@ pub async fn main() -> Result<()> {
         file.read_to_string(&mut contents).await?;
         let manifest: Manifest = serde_yaml::from_str(&contents)?;
 
-        service.add_wasm_indexer(manifest, false)?;
+        service.add_wasm_indexer(manifest, false).await?;
     }
 
     let service_handle = tokio::spawn(service.run());
+    GraphQlApi::run(config).await;
 
-    let (first, second) = join!(api_handle, service_handle);
-
-    if let Err(e) = first {
-        error!("{:?}", e)
-    }
-    if let Err(e) = second {
-        error!("{:?}", e)
-    }
+    service_handle.await?;
     Ok(())
 }
