@@ -1,5 +1,5 @@
 use crate::db::{models::*, DbType, IndexerConnection, IndexerConnectionPool};
-use crate::{BASE_SCHEMA, get_schema_types, type_id};
+use crate::{get_schema_types, type_id, BASE_SCHEMA};
 use fuel_indexer_database_types::*;
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{Definition, Field, SchemaDefinition, Type, TypeDefinition};
@@ -109,6 +109,7 @@ impl SchemaBuilder {
             query,
             query_fields,
             schema,
+            db_type,
             ..
         } = self;
 
@@ -143,11 +144,16 @@ impl SchemaBuilder {
             execute_query(conn, fk.create_statement()).await?;
         }
 
-        for idx in indices {
-            execute_query(conn, idx.create_statement()).await?;
+        // TODO: should we handle sqlite as well?
+        if db_type == DbType::Postgres {
+            for idx in indices {
+                execute_query(conn, idx.create_statement()).await?;
+            }
         }
 
+        println!("TJDEBUG 7");
         type_id_insert(conn, type_ids).await?;
+        println!("TJDEBUG 8");
         new_column_insert(conn, columns).await?;
 
         Ok(Schema {

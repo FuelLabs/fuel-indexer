@@ -8,8 +8,7 @@ use fuel_indexer_lib::config::{IndexerArgs, Parser};
 use fuel_indexer_macros::graphql_schema;
 use fuels::core::{abi_decoder::ABIDecoder, ParamType, Tokenizable};
 use fuels_abigen_macro::abigen;
-use tokio::join;
-use tracing::{error, info};
+use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
 // Load graphql schema
@@ -73,10 +72,6 @@ pub async fn main() -> Result<()> {
     // Load the indexer manifest
     let manifest = Manifest::from_file(&opt.test_manifest.unwrap())?;
 
-    // In this example, we've already started our fuel node on another process
-    info!("Fuel node listening on {}", config.fuel_node.to_string());
-    let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
-
     // Create a new service to run
     let mut service = IndexerService::new(config.clone()).await?;
 
@@ -88,14 +83,11 @@ pub async fn main() -> Result<()> {
     // Kick it off!
     let service_handle = tokio::spawn(service.run());
 
-    let (first, second) = join!(api_handle, service_handle);
+    // In this example, we've already started our fuel node on another process
+    info!("Fuel node listening on {}", config.fuel_node.to_string());
+    GraphQlApi::run(config.clone()).await;
 
-    if let Err(e) = first {
-        error!("{:?}", e)
-    }
-    if let Err(e) = second {
-        error!("{:?}", e)
-    }
+    service_handle.await?;
 
     Ok(())
 }

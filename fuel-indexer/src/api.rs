@@ -7,7 +7,7 @@ use axum::{
 };
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
-    models,
+    models, run_migration,
     tables::Schema,
     IndexerConnectionPool,
 };
@@ -18,7 +18,7 @@ use thiserror::Error;
 use tracing::error;
 
 #[derive(Debug, Error)]
-enum APIError {
+pub enum APIError {
     #[error("Query builder error {0:?}")]
     Graphql(#[from] GraphqlError),
     #[error("Serde Error {0:?}")]
@@ -28,13 +28,13 @@ enum APIError {
 }
 
 #[derive(Clone, Debug, Deserialize)]
-struct Query {
+pub struct Query {
     query: String,
     #[allow(unused)] // TODO
     params: String,
 }
 
-async fn query_graph(
+pub async fn query_graph(
     Path(name): Path<String>,
     Json(query): Json<Query>,
     Extension(pool): Extension<&IndexerConnectionPool>,
@@ -74,6 +74,10 @@ impl GraphQlApi {
             .await
             .expect("Failed to establish connection pool");
 
+        if config.graphql_api.run_migrations {
+            run_migration(&config.database_config.to_string()).await;
+        }
+
         let app = Router::new()
             .route("/graph/:name", post(query_graph))
             .layer(Extension(schema_manager))
@@ -86,7 +90,7 @@ impl GraphQlApi {
     }
 }
 
-async fn run_query(
+pub async fn run_query(
     query: Query,
     schema: Schema,
     pool: &IndexerConnectionPool,

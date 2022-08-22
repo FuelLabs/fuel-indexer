@@ -1,8 +1,8 @@
 use crate::db::IndexerConnection;
-use std::fmt::Write;
 use fuel_indexer_database_types::*;
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_sqlite as sqlite;
+use std::fmt::Write;
 
 pub async fn put_object(
     conn: &mut IndexerConnection,
@@ -238,10 +238,9 @@ pub async fn type_id_list_by_name(
         }
         IndexerConnection::Sqlite(ref mut c) => {
             sqlite::type_id_list_by_name(c, name, version).await
+        }
     }
 }
-}
-
 
 pub async fn type_id_latest(
     conn: &mut IndexerConnection,

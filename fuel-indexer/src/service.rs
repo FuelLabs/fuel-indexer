@@ -94,6 +94,9 @@ impl IndexerConfig {
                 port: args
                     .graphql_api_port
                     .unwrap_or_else(|| defaults::GRAPHQL_API_PORT.into()),
+                run_migrations: args
+                    .run_migrations
+                    .unwrap_or(defaults::GRAPHQL_API_RUN_MIGRATIONS),
             },
         }
     }
@@ -268,11 +271,14 @@ impl IndexerService {
                                 ..
                             } => {
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event(
-                                    ReceiptEvent::LogData,
-                                    vec![data],
-                                    Some(receipt_cp),
-                                ).await {
+                                if let Err(e) = exec
+                                    .trigger_event(
+                                        ReceiptEvent::LogData,
+                                        vec![data],
+                                        Some(receipt_cp),
+                                    )
+                                    .await
+                                {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }
@@ -282,11 +288,14 @@ impl IndexerService {
                                 ..
                             } => {
                                 // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec.trigger_event(
-                                    ReceiptEvent::ReturnData,
-                                    vec![data],
-                                    Some(receipt_cp),
-                                ).await {
+                                if let Err(e) = exec
+                                    .trigger_event(
+                                        ReceiptEvent::ReturnData,
+                                        vec![data],
+                                        Some(receipt_cp),
+                                    )
+                                    .await
+                                {
                                     error!("Event processing failed {:?}", e);
                                 }
                             }

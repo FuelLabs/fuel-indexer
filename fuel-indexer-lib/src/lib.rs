@@ -54,6 +54,8 @@ pub mod defaults {
     pub const POSTGRES_USER: &str = "postgres";
     pub const POSTGRES_HOST: &str = "127.0.0.1";
     pub const POSTGRES_PORT: &str = "5432";
+
+    pub const GRAPHQL_API_RUN_MIGRATIONS: bool = false;
 }
 
 pub mod config {
@@ -105,6 +107,8 @@ pub mod config {
         pub postgres_host: Option<String>,
         #[clap(long, help = "Postgres port. (default = 5432)")]
         pub postgres_port: Option<String>,
+        #[clap(long, help = "Run database migrations for the GraphQL API service.")]
+        pub run_migrations: Option<bool>,
     }
 
     #[derive(Debug, Parser, Clone)]
@@ -328,6 +332,7 @@ pub mod config {
     pub struct GraphQLConfig {
         pub host: String,
         pub port: String,
+        pub run_migrations: bool,
     }
 
     impl std::string::ToString for GraphQLConfig {
@@ -341,6 +346,7 @@ pub mod config {
             Self {
                 host: defaults::GRAPHQL_API_HOST.into(),
                 port: defaults::GRAPHQL_API_PORT.into(),
+                run_migrations: defaults::GRAPHQL_API_RUN_MIGRATIONS,
             }
         }
     }

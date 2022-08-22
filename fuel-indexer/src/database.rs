@@ -1,6 +1,6 @@
+use crate::database::models::IdCol;
 use std::collections::HashMap;
 use wasmer::Instance;
-use crate::database::models::IdCol;
 
 use crate::{ffi, IndexerError, IndexerResult, Manifest};
 use fuel_indexer_schema::{

@@ -4,8 +4,7 @@ use fuel_core::service::{Config, FuelService};
 use fuel_indexer::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
 use fuel_indexer_lib::config::{IndexerArgs, Parser};
 use fuel_indexer_schema::db::run_migration;
-use tokio::join;
-use tracing::{error, info};
+use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
 #[tokio::main]
@@ -43,9 +42,8 @@ pub async fn main() -> Result<()> {
         "Subscribing to Fuel node at {}",
         &config.fuel_node.to_string()
     );
-    let api_handle = tokio::spawn(GraphQlApi::run(config.clone()));
 
-    let mut service = IndexerService::new(config).await?;
+    let mut service = IndexerService::new(config.clone()).await?;
 
     // TODO: need an API endpoint to upload/create these things.....
     if opt.test_manifest.is_some() {
@@ -60,14 +58,8 @@ pub async fn main() -> Result<()> {
     }
 
     let service_handle = tokio::spawn(service.run());
+    GraphQlApi::run(config).await;
 
-    let (first, second) = join!(api_handle, service_handle);
-
-    if let Err(e) = first {
-        error!("{:?}", e)
-    }
-    if let Err(e) = second {
-        error!("{:?}", e)
-    }
+    service_handle.await?;
     Ok(())
 }
