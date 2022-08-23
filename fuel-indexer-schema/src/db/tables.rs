@@ -96,6 +96,7 @@ impl SchemaBuilder {
     }
 
     pub async fn commit_metadata(self, conn: &mut IndexerConnection) -> sqlx::Result<Schema> {
+        #[allow(unused_variables)]
         let SchemaBuilder {
             version,
             statements,
@@ -144,16 +145,11 @@ impl SchemaBuilder {
             execute_query(conn, fk.create_statement()).await?;
         }
 
-        // TODO: should we handle sqlite as well?
-        if db_type == DbType::Postgres {
-            for idx in indices {
-                execute_query(conn, idx.create_statement()).await?;
-            }
+        for idx in indices {
+            execute_query(conn, idx.create_statement()).await?;
         }
 
-        println!("TJDEBUG 7");
         type_id_insert(conn, type_ids).await?;
-        println!("TJDEBUG 8");
         new_column_insert(conn, columns).await?;
 
         Ok(Schema {
@@ -189,6 +185,7 @@ impl SchemaBuilder {
     ) -> Option<ColumnIndex> {
         if !field.directives.is_empty() {
             return Some(ColumnIndex {
+                db_type: self.db_type.clone(),
                 table_name: table_name.to_string(),
                 namespace: self.namespace.clone(),
                 method: IndexMethod::Btree,
@@ -213,6 +210,7 @@ impl SchemaBuilder {
 
             if typ == ColumnType::ForeignKey {
                 let fk = ForeignKey::new(
+                    self.db_type.clone(),
                     self.namespace.clone(),
                     table_name.clone(),
                     f.name.clone(),
@@ -246,6 +244,7 @@ impl SchemaBuilder {
             };
 
             if let Some(ColumnIndex {
+                db_type,
                 table_name,
                 namespace,
                 method,
@@ -254,6 +253,7 @@ impl SchemaBuilder {
             }) = self.process_field_index_directive(f, column.clone(), table_name)
             {
                 self.indices.push(ColumnIndex {
+                    db_type,
                     table_name,
                     namespace,
                     method,
@@ -407,18 +407,17 @@ mod tests {
         schema {
             query: QueryRoot
         }
-        
+
         type QueryRoot {
             thing1: Thing1
             thing2: Thing2
         }
-        
+
         type Thing1 {
             id: ID!
             account: Address!
         }
-        
-        
+
         type Thing2 {
             id: ID!
             account: Address!
@@ -460,18 +459,17 @@ mod tests {
         schema {
             query: QueryRoot
         }
-        
+
         type QueryRoot {
             thing1: Thing1
             thing2: Thing2
         }
-        
+
         type Payer {
             id: ID!
             account: Address! @indexed
         }
-        
-        
+
         type Payee {
             id: ID!
             account: Address!
@@ -500,7 +498,7 @@ mod tests {
         schema {
             query: QueryRoot
         }
-        
+
         type QueryRoot {
             borrower: Borrower
             lender: Lender

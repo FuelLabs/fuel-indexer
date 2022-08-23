@@ -8,3 +8,17 @@
 [![discord](https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xfpK4Pe)
 
 The Fuel Indexer is a standalone binary that can be used to index various components of [the Fuel protocol](https://github.com/FuelLabs/fuel-specs/tree/master/specs/protocol). These indexable components include blocks, transactions, and [receipts](https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/tx_format.md) and state within a fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
+
+## Usage
+
+### Clone repository
+
+```bash
+git clone git@github.com:FuelLabs/fuel-indexer.git
+```
+
+### Run migrations
+
+```bash
+DATABASE_URL=postgres://postgres@localhost sh scripts/run_migrations.local.sh
+```

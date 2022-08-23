@@ -5,3 +5,6 @@ docs/book/
 
 .env
 .dockerignore
+*.db
+*.db*
+
