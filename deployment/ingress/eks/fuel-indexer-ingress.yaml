@@ -1,8 +1,8 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: ${k8s_namespace}-ingress
-  namespace: ${k8s_namespace}
+  name: fuel-indexer-ingress
+  namespace: fuel-indexer
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
@@ -11,7 +11,7 @@ metadata:
     kubernetes.io/ingress.class: "nginx"
 spec:
   rules:
-    - host: ${fuel_indexer_ingress_dns}
+    - host: index.swayswap.io
       http:
         paths:
           - path: /
@@ -20,8 +20,8 @@ spec:
               service:
                 name: fuel-indexer-service
                 port:
-                  number: ${fuel_indexer_ingress_http_port}
+                  number: 80
   tls:
     - hosts:
-        - ${fuel_indexer_ingress_dns}
-      secretName: ${fuel_indexer_ingress_secret}
+        - index.swayswap.io
+      secretName: indexer-swayswap-io
