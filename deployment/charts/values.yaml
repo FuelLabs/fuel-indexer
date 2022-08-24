@@ -1,0 +1,28 @@
+# Default values for fuel core for environment
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+app:
+  name: fuel-indexer
+  fuel-node-host: ${fuel_node_host}
+  fuel-node-port: 4000
+  replicas: ${fuel_indexer_pod_replicas}
+  http_port: 80
+  target_port: 29987
+  image:
+    repository: ${fuel_indexer_image_repository}
+    tag: ${fuel_indexer_image_tag}
+    pullPolicy: Always
+  volume: 
+    pvname: fuel-indexer-db-volume
+    mountPath: /mnt/db/
+    claimname: fuel-indexer-db-volume-pv-claim
+    storageclass: ${pvc_storage_class}
+    storagerequests: ${pvc_storage_requests}
+    accessmodes: ReadWriteOnce
+  postgres:
+    host: 127.0.0.1
+    port: 5432
+    username: test
+    password: test
+    database: test
