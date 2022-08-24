@@ -2,7 +2,7 @@ pub mod utils {
 
     use anyhow::Result;
     use std::net::{SocketAddr, ToSocketAddrs};
-    use tracing::{debug, warn};
+    use tracing::{info, warn};
 
     pub fn trim_env_key(key: &str) -> &str {
         // Abmiguous key: $FOO, non-ambiguous key: ${FOO}
@@ -36,7 +36,7 @@ pub mod utils {
                     .pop()
                     .unwrap_or_else(|| panic!("Could not derive SocketAddr from '{}'", host));
 
-                debug!("Parsed SocketAddr '{}' from '{}'", addr.to_string(), host);
+                info!("Parsed SocketAddr '{}' from '{}'", addr.to_string(), host);
 
                 Ok(addr)
             }
@@ -61,7 +61,7 @@ pub mod defaults {
 pub mod config {
     use crate::{
         defaults,
-        utils::{is_env_var, trim_env_key},
+        utils::{derive_socket_addr, is_env_var, trim_env_key},
     };
     use anyhow::Result;
     pub use clap::Parser;
@@ -144,6 +144,12 @@ pub mod config {
     pub struct FuelNodeConfig {
         pub host: String,
         pub port: String,
+    }
+
+    impl FuelNodeConfig {
+        pub fn derive_socket_addr(&self) -> Result<SocketAddr> {
+            derive_socket_addr(&self.host, &self.port)
+        }
     }
 
     impl InjectEnvironment for FuelNodeConfig {
