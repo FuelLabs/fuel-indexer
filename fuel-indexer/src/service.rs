@@ -139,8 +139,12 @@ impl IndexerService {
         } = config;
         let manager = SchemaManager::new(&database_config.to_string()).await?;
 
+        let fuel_node_addr = fuel_node
+            .derive_socket_addr()
+            .expect("Could not parse Fuel node addr for IndexerService.");
+
         Ok(IndexerService {
-            fuel_node_addr: fuel_node.to_string().parse()?,
+            fuel_node_addr,
             manager,
             database_url: database_config.to_string(),
             handles: HashMap::default(),
