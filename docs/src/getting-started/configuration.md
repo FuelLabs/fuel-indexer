@@ -20,9 +20,9 @@ Using the standalone GraphQL API server.
 
 - Path to the configuration file.
 
-`-t` `--test-manifest`
+`-m` `--manifest`
 
-- Path to the test manifest file.
+- Path to manifest file from which initial indices will be loaded
 
 > Fuel node: The node running the Fuel client implementation.
 

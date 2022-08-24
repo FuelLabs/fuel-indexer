@@ -82,8 +82,13 @@ pub mod config {
         pub local: bool,
         #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
         pub config: Option<PathBuf>,
-        #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
-        pub test_manifest: Option<PathBuf>,
+        #[clap(
+            short,
+            long,
+            parse(from_os_str),
+            help = "Manifest file used to bootstrap the indexer service."
+        )]
+        pub manifest: Option<PathBuf>,
         #[clap(
             long,
             help = "Listening IP of the running Fuel node. (default = '127.0.0.1')"
