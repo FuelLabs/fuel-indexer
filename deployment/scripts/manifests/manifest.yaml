@@ -4,4 +4,3 @@ wasm_module: composable-indexer-lib/composable_indexer_lib.wasm
 handlers:
   - event: LogData
     handler: function_one
-
