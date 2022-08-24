@@ -8,8 +8,6 @@ set -o allexport && source .env && set +o allexport
 if [ "${k8s_provider}" == "eks" ]; then
     echo "Updating your kube context locally ...."
     aws eks update-kubeconfig --name ${TF_VAR_eks_cluster_name}
-    echo "Copying manifest.yaml into deployment context..."
-    cp manifests/${manifest_file} ../charts/manifest.yaml
     cd ../charts
     mv values.yaml values.template
     envsubst < values.template > values.yaml

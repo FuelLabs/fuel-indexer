@@ -13,14 +13,6 @@ spec:
       storage: {{ .Values.app.volume.storagerequests }}
   storageClassName: {{ .Values.app.volume.storageclass }}
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ .Release.Name }}-manifest-configmap
-data:
-  manifest.yaml: |-
-{{ .Files.Get "manifest.yaml" | indent 4 }}
----
 kind: Service
 apiVersion: v1
 metadata:
@@ -66,44 +58,26 @@ spec:
       containers:
         - name: {{ .Values.app.name }}
           image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
-          command: ["RUST_BACKTRACE=full ./fuel-indexer"]
+          command: ["./fuel-indexer"]
           args:
             - "--fuel-node-host"
-            - "{{ .Values.app.fuel-node-host }}"
+            - "{{ .Values.app.fuel_node_host }}"
             - "--fuel-node-port"
-            - "{{ .Values.app.fuel-node-port }}"
+            - "{{ .Values.app.fuel_node_port }}"
             - "--postgres-host"
             - "{{ .Values.app.postgres.host }}"
             - "--postgres-password"
             - "{{ .Values.app.postgres.password }}"
-            - "--test-manifest"
-            - "/mnt/config/manifest.yaml"
           resources: {}
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           ports:
             - name: http
-              containerPort: {{ .Values.app.targetport }}
+              containerPort: {{ .Values.app.target_port }}
               protocol: TCP
           volumeMounts:
             - name: {{ .Values.app.volume.pvname }}
               mountPath: "{{ .Values.app.volume.mountPath }}"
-            - name: config
-              mountPath: "/mnt/config"
-          env:
-            - name: POSTGRES_HOST
-              value: {{ .Values.app.postgres.host }}
-            - name: POSTGRES_PORT
-              value: {{ .Values.app.postgres.port }}
-            - name: POSTGRES_USERNAME
-              value: {{ .Values.app.postgres.username }}
-            - name: POSTGRES_PASSWORD
-              value: {{ .Values.app.postgres.password }}
-            - name: POSTGRES_DATABASE
-              value: {{ .Values.app.postgres.database }}
       volumes:
         - name: {{ .Values.app.volume.pvname }}
           persistentVolumeClaim:
             claimName: {{ .Values.app.volume.claimname }}
-        - name: config
-          configMap:
-            name: {{ .Release.Name }}-manifest-configmap
