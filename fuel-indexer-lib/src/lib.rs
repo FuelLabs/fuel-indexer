@@ -143,8 +143,9 @@ pub mod config {
         pub postgres_port: Option<String>,
     }
 
-    pub trait InjectEnvironment {
+    pub trait AdjustableConfig {
         fn inject_env_vars(&mut self) -> Result<()>;
+        fn derive_socket_addr(&self) -> Result<SocketAddr>;
     }
 
     #[derive(Clone, Deserialize, Debug)]
@@ -153,13 +154,7 @@ pub mod config {
         pub port: String,
     }
 
-    impl FuelNodeConfig {
-        pub fn derive_socket_addr(&self) -> Result<SocketAddr> {
-            derive_socket_addr(&self.host, &self.port)
-        }
-    }
-
-    impl InjectEnvironment for FuelNodeConfig {
+    impl AdjustableConfig for FuelNodeConfig {
         fn inject_env_vars(&mut self) -> Result<()> {
             if is_env_var(&self.host) {
                 self.host = std::env::var(trim_env_key(&self.host))
@@ -172,6 +167,10 @@ pub mod config {
             }
 
             Ok(())
+        }
+
+        fn derive_socket_addr(&self) -> Result<SocketAddr> {
+            derive_socket_addr(&self.host, &self.port)
         }
     }
 
@@ -214,7 +213,7 @@ pub mod config {
         },
     }
 
-    impl InjectEnvironment for DatabaseConfig {
+    impl AdjustableConfig for DatabaseConfig {
         fn inject_env_vars(&mut self) -> Result<()> {
             match self {
                 DatabaseConfig::Postgres {
@@ -268,6 +267,15 @@ pub mod config {
                 }
             }
             Ok(())
+        }
+
+        fn derive_socket_addr(&self) -> Result<SocketAddr> {
+            match self {
+                DatabaseConfig::Postgres { host, port, .. } => derive_socket_addr(host, port),
+                _ => {
+                    panic!("Cannot use AdjustableConfig::derive_socket_addr on a SQLite database.")
+                }
+            }
         }
     }
 
@@ -373,7 +381,7 @@ pub mod config {
         }
     }
 
-    impl InjectEnvironment for GraphQLConfig {
+    impl AdjustableConfig for GraphQLConfig {
         fn inject_env_vars(&mut self) -> Result<()> {
             if is_env_var(&self.host) {
                 self.host = std::env::var(trim_env_key(&self.host))
@@ -386,6 +394,10 @@ pub mod config {
             }
 
             Ok(())
+        }
+
+        fn derive_socket_addr(&self) -> Result<SocketAddr> {
+            derive_socket_addr(&self.host, &self.port)
         }
     }
 }

@@ -1,6 +1,5 @@
 use fuel_indexer_database_types::*;
-use sqlx::{pool::PoolConnection, Sqlite, SqliteConnection};
-use sqlx::{Connection, Row};
+use sqlx::{pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection};
 
 pub async fn put_object(
     conn: &mut PoolConnection<Sqlite>,
@@ -36,14 +35,17 @@ pub async fn run_migration(database_url: &str) {
         .expect("Failed sqlite migration!");
 }
 
-pub async fn run_query(conn: &mut PoolConnection<Sqlite>, query: String) -> sqlx::Result<String> {
+pub async fn run_query(
+    conn: &mut PoolConnection<Sqlite>,
+    query: String,
+) -> sqlx::Result<JsonValue> {
     let mut builder = sqlx::QueryBuilder::new(query);
 
     let query = builder.build();
 
     let row = query.fetch_one(conn).await?;
 
-    Ok(row.get::<'_, String, usize>(0))
+    Ok(row.get::<'_, JsonValue, usize>(0))
 }
 
 pub async fn execute_query(
@@ -60,7 +62,7 @@ pub async fn execute_query(
 }
 
 // NOTE: sqlx type inference is broken in sqlite, waiting for this to land, then we can clean this up:
-//       https://github.com/launchbadge/sqlx/pull/1960
+// https://github.com/launchbadge/sqlx/pull/1960
 pub async fn root_columns_list_by_id(
     conn: &mut PoolConnection<Sqlite>,
     root_id: i64,

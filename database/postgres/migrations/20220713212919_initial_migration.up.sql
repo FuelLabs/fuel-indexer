@@ -1,5 +1,5 @@
 -- Add up migration script here
-create table graph_registry_type_ids (
+create table if not exists graph_registry_type_ids (
     id bigserial primary key,
     schema_version varchar(512) not null,
     schema_name varchar(32) not null,
@@ -7,7 +7,7 @@ create table graph_registry_type_ids (
     table_name varchar(32) not null
 );
 
-create table graph_registry_columns (
+create table if not exists graph_registry_columns (
     id bigserial primary key,
     type_id bigserial not null,
     column_position integer not null,

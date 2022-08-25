@@ -5,7 +5,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - .:/usr/local/postgres
+      - .:/mnt/db/postgres
     environment:
       - POSTGRES_PASSWORD=postgres
     healthcheck:
@@ -21,7 +21,7 @@ services:
     ports:
       - "4000:4000"
     volumes:
-      - .:/usr/local/fuel
+      - .:/mnt/db/fuel-indexer
   web-api:
     image: local/composable-indexer-test:latest
     command: >
@@ -29,7 +29,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/usr/local/fuel
+      - .:/mnt/db/fuel-indexer
     depends_on:
       - fuel-node
   fuel-indexer:
@@ -38,7 +38,7 @@ services:
     ports:
       - "29987:29987"
     volumes:
-      - .:/usr/local/fuel
+      - .:/mnt/db/fuel-indexer
     depends_on:
       - fuel-node
       - web-api

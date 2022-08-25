@@ -3,6 +3,7 @@
 An end-to-end test of the indexer service using a reproducible environment.
 
 ### 1. Spin up services
+> You'll need to stop your local Postgres on `5432` if you have one running.
 
 ```bash
 bash tests/e2e/composable-indexer/compose-up.bash
