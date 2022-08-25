@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.app.volume.claimname }}
+  labels:
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  accessModes:
+    - {{ .Values.app.volume.accessmodes }}
+  resources:
+    requests:
+      storage: {{ .Values.app.volume.storagerequests }}
+  storageClassName: {{ .Values.app.volume.storageclass }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: {{ template "fuel-indexer.name" . }}
+    chart: {{ template "fuel-indexer.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  name: {{ template "fuel-indexer.name" . }}-service
+spec:
+  type: NodePort
+  selector:
+    app: {{ template "fuel-indexer.name" . }}
+  ports:
+    - name: http
+      port: {{ .Values.app.http_port }}
+      protocol: TCP
+      targetPort: {{ .Values.app.target_port }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "fuel-indexer.name" . }}-k8s
+  labels:
+    app: {{ template "fuel-indexer.name" . }}
+    chart: {{ template "fuel-indexer.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ template "fuel-indexer.name" . }}
+      release: {{ .Release.Name }}
+  replicas: {{ .Values.app.replicas }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ template "fuel-indexer.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Values.app.name }}
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          command: ["./fuel-indexer"]
+          args:
+            - "--fuel-node-host"
+            - "{{ .Values.app.fuel_node_host }}"
+            - "--fuel-node-port"
+            - "{{ .Values.app.fuel_node_port }}"
+            - "--postgres-host"
+            - "{{ .Values.app.postgres.host }}"
+            - "--postgres-password"
+            - "{{ .Values.app.postgres.password }}"
+          resources: {}
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.app.target_port }}
+              protocol: TCP
+          volumeMounts:
+            - name: {{ .Values.app.volume.pvname }}
+              mountPath: "{{ .Values.app.volume.mountPath }}"
+      volumes:
+        - name: {{ .Values.app.volume.pvname }}
+          persistentVolumeClaim:
+            claimName: {{ .Values.app.volume.claimname }} 

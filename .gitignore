@@ -3,7 +3,6 @@
 # Don't add the generated MDBook artifacts
 docs/book/
 
-.env
 .dockerignore
 *.db
 *.db*
