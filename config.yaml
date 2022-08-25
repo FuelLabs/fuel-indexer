@@ -3,25 +3,32 @@
 ## This configuration spec is intended to be used for a single instance
 ## of a Fuel Indexer node or service.
 ##
-## For more info on how the Fuel Indexer work, read the book: https://fuellabs.github.io/fuel-indexer/master/
+## For more info on how the Fuel Indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
+## or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
 ## Fuel Node configuration
+#
 # fuel_node:
 #   host: 127.0.0.1
 #   port: 4000
 
 ## GraphQL API configuration
+#
 # graphql_api:
 #   host: 0.0.0.0
 #   port: 29987
 #   run_migrations: false
 
-## Postgres configuration
-# postgres:
-#   user: postgres
-#   database:
-#   password:
-#   host: 127.0.0.1
-#   port: 5432
+## Database configuration options. Use either the Postgres
+## configuration or the SQLite configuration, but not both
+#
+# database:
+#   postgres:
+#     user: postgres
+#     database:
+#     password:
+#     host: 127.0.0.1
+#     port: 5432
 
-# sqlite_db_path: ../main.db
+#   sqlite:
+#     path: database/sqlite/sqlite.db

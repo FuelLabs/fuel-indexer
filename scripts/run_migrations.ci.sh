@@ -1,3 +1,4 @@
+
 export DATABASE_URL="postgres://postgres:my-secret@localhost:5432/postgres"
 
 cd database/postgres

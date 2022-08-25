@@ -28,7 +28,7 @@ pub async fn main() -> Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    run_migration(&config.database_config.to_string()).await;
+    run_migration(&config.database.to_string()).await;
 
     let _local_node = if opt.local {
         let s = FuelService::new_node(Config::local_node()).await.unwrap();

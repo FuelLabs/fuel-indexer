@@ -96,6 +96,7 @@ impl SchemaBuilder {
     }
 
     pub async fn commit_metadata(self, conn: &mut IndexerConnection) -> sqlx::Result<Schema> {
+        #[allow(unused_variables)]
         let SchemaBuilder {
             version,
             statements,
@@ -144,16 +145,11 @@ impl SchemaBuilder {
             execute_query(conn, fk.create_statement()).await?;
         }
 
-        // TODO: should we handle sqlite as well?
-        if db_type == DbType::Postgres {
-            for idx in indices {
-                execute_query(conn, idx.create_statement()).await?;
-            }
+        for idx in indices {
+            execute_query(conn, idx.create_statement()).await?;
         }
 
-        println!("TJDEBUG 7");
         type_id_insert(conn, type_ids).await?;
-        println!("TJDEBUG 8");
         new_column_insert(conn, columns).await?;
 
         Ok(Schema {
@@ -189,6 +185,7 @@ impl SchemaBuilder {
     ) -> Option<ColumnIndex> {
         if !field.directives.is_empty() {
             return Some(ColumnIndex {
+                db_type: self.db_type.clone(),
                 table_name: table_name.to_string(),
                 namespace: self.namespace.clone(),
                 method: IndexMethod::Btree,
@@ -213,6 +210,7 @@ impl SchemaBuilder {
 
             if typ == ColumnType::ForeignKey {
                 let fk = ForeignKey::new(
+                    self.db_type.clone(),
                     self.namespace.clone(),
                     table_name.clone(),
                     f.name.clone(),
@@ -246,6 +244,7 @@ impl SchemaBuilder {
             };
 
             if let Some(ColumnIndex {
+                db_type,
                 table_name,
                 namespace,
                 method,
@@ -254,6 +253,7 @@ impl SchemaBuilder {
             }) = self.process_field_index_directive(f, column.clone(), table_name)
             {
                 self.indices.push(ColumnIndex {
+                    db_type,
                     table_name,
                     namespace,
                     method,
@@ -402,23 +402,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_schema_builder_for_basic_schema_returns_proper_create_sql() {
+    fn test_schema_builder_for_basic_postgres_schema_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
         schema {
             query: QueryRoot
         }
-        
+
         type QueryRoot {
             thing1: Thing1
             thing2: Thing2
         }
-        
+
         type Thing1 {
             id: ID!
             account: Address!
         }
-        
-        
+
         type Thing2 {
             id: ID!
             account: Address!
@@ -455,23 +454,22 @@ mod tests {
     }
 
     #[test]
-    fn test_schema_builder_for_indices_returns_proper_create_sql() {
+    fn test_schema_builder_for_postgres_indices_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
         schema {
             query: QueryRoot
         }
-        
+
         type QueryRoot {
             thing1: Thing1
             thing2: Thing2
         }
-        
+
         type Payer {
             id: ID!
             account: Address! @indexed
         }
-        
-        
+
         type Payee {
             id: ID!
             account: Address!
@@ -495,12 +493,12 @@ mod tests {
     }
 
     #[test]
-    fn test_schema_builder_for_foreign_keys_returns_proper_create_sql() {
+    fn test_schema_builder_for_postgres_foreign_keys_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
         schema {
             query: QueryRoot
         }
-        
+
         type QueryRoot {
             borrower: Borrower
             lender: Lender
@@ -534,5 +532,86 @@ mod tests {
         assert_eq!(foreign_keys.len(), 2);
         assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.lender ADD CONSTRAINT fk_borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
         assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.auditor ADD CONSTRAINT fk_borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+    }
+
+    #[test]
+    fn test_schema_builder_for_sqlite_indices_returns_proper_create_sql() {
+        let graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+
+        type QueryRoot {
+            thing1: Thing1
+            thing2: Thing2
+        }
+
+        type Payer {
+            id: ID!
+            account: Address! @indexed
+        }
+
+        type Payee {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+        }
+    "#;
+
+        let sb = SchemaBuilder::new("namespace", "v1", DbType::Sqlite);
+
+        let SchemaBuilder { indices, .. } = sb.build(graphql_schema);
+
+        assert_eq!(indices.len(), 2);
+        assert_eq!(
+            indices[0].create_statement(),
+            "CREATE INDEX payer_account_idx ON payer(account);".to_string()
+        );
+        assert_eq!(
+            indices[1].create_statement(),
+            "CREATE INDEX payee_hash_idx ON payee(hash);".to_string()
+        );
+    }
+
+    #[test]
+    fn test_schema_builder_for_sqlite_foreign_keys_returns_proper_create_sql() {
+        let graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+
+        type QueryRoot {
+            borrower: Borrower
+            lender: Lender
+            auditor: Auditor
+        }
+
+        type Borrower {
+            id: ID!
+            account: Address! @indexed
+        }
+
+        type Lender {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower!
+        }
+
+        type Auditor {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower!
+        }
+    "#;
+
+        let sb = SchemaBuilder::new("namespace", "v1", DbType::Sqlite);
+
+        let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
+
+        assert_eq!(foreign_keys.len(), 2);
+        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE lender DROP COLUMN borrower; ALTER TABLE lender ADD COLUMN borrower BIGINT REFERENCES borrower(id);");
+        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE auditor DROP COLUMN borrower; ALTER TABLE auditor ADD COLUMN borrower BIGINT REFERENCES borrower(id);");
     }
 }

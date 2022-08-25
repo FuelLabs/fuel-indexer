@@ -69,6 +69,7 @@ pub async fn main() -> Result<()> {
         Some(path) => IndexerConfig::from_file(path).await?,
         None => IndexerConfig::from_opts(opt.clone()),
     };
+
     // Load the indexer manifest
     let manifest = Manifest::from_file(&opt.test_manifest.unwrap())?;
 
