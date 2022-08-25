@@ -1,0 +1,27 @@
+# Default values for fuel indexer for environment
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+app:
+  name: fuel-indexer
+  fuel_node_host: node.swayswap.io
+  fuel_node_port: 443
+  replicas: 1
+  http_port: 80
+  target_port: 29987
+  image:
+    repository: ghcr.io/fuellabs/fuel-indexer
+    tag: latest
+    pullPolicy: Always
+  volume: 
+    pvname: fuel-indexer-db-volume
+    mountPath: /mnt/db/
+    claimname: fuel-indexer-db-volume-pv-claim
+    storageclass: gp2
+    storagerequests: 3Gi
+    accessmodes: ReadWriteOnce
+  postgres:
+    host: postgres
+    port: 5432
+    username: postgres
+    password: password
