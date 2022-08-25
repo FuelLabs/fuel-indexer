@@ -287,7 +287,6 @@ mod tests {
             .expect("Could not create SchemaManager");
 
         let result = manager.new_schema("test_namespace", GRAPHQL_SCHEMA).await;
-        println!("TJDEBUG {:?}", result);
         assert!(result.is_ok());
 
         let pool = IndexerConnectionPool::connect(database_url)

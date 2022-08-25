@@ -1,4 +1,4 @@
-use crate::db::IndexerConnection;
+use crate::db::{DbType, IndexerConnection};
 use fuel_indexer_database_types::*;
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_sqlite as sqlite;
@@ -87,6 +87,7 @@ pub trait CreateStatement {
 
 #[derive(Debug)]
 pub struct ColumnIndex {
+    pub db_type: DbType,
     pub table_name: String,
     pub namespace: String,
     pub method: IndexMethod,
@@ -107,15 +108,28 @@ impl CreateStatement for ColumnIndex {
             frag += "UNIQUE ";
         }
 
-        let _ = write!(
-            frag,
-            "INDEX {} ON {}.{} USING {} ({});",
-            self.name(),
-            self.namespace,
-            self.table_name,
-            self.method.to_string(),
-            self.column.column_name
-        );
+        match self.db_type {
+            DbType::Postgres => {
+                let _ = write!(
+                    frag,
+                    "INDEX {} ON {}.{} USING {} ({});",
+                    self.name(),
+                    self.namespace,
+                    self.table_name,
+                    self.method.to_string(),
+                    self.column.column_name
+                );
+            }
+            DbType::Sqlite => {
+                let _ = write!(
+                    frag,
+                    "INDEX {} ON {}({});",
+                    self.name(),
+                    self.table_name,
+                    self.column.column_name
+                );
+            }
+        }
 
         frag
     }
@@ -155,6 +169,7 @@ impl std::string::ToString for OnUpdate {
 
 #[derive(Debug, Clone, Default)]
 pub struct ForeignKey {
+    pub db_type: DbType,
     pub namespace: String,
     pub table_name: String,
     pub column_name: String,
@@ -166,6 +181,7 @@ pub struct ForeignKey {
 
 impl ForeignKey {
     pub fn new(
+        db_type: DbType,
         namespace: String,
         table_name: String,
         column_name: String,
@@ -173,6 +189,7 @@ impl ForeignKey {
         reference_column_name: String,
     ) -> Self {
         Self {
+            db_type,
             namespace,
             table_name,
             column_name,
@@ -192,18 +209,33 @@ impl ForeignKey {
 
 impl CreateStatement for ForeignKey {
     fn create_statement(&self) -> String {
-        format!(
-            "ALTER TABLE {}.{} ADD CONSTRAINT {} FOREIGN KEY ({}) REFERENCES {}.{}({}) ON DELETE {} ON UPDATE {} INITIALLY DEFERRED;",
-            self.namespace,
-            self.table_name,
-            self.name(),
-            self.column_name,
-            self.namespace,
-            self.reference_table_name,
-            self.reference_column_name,
-            self.on_delete.to_string(),
-            self.on_update.to_string()
-        )
+        match self.db_type {
+            DbType::Postgres => {
+                format!(
+                    "ALTER TABLE {}.{} ADD CONSTRAINT {} FOREIGN KEY ({}) REFERENCES {}.{}({}) ON DELETE {} ON UPDATE {} INITIALLY DEFERRED;",
+                    self.namespace,
+                    self.table_name,
+                    self.name(),
+                    self.column_name,
+                    self.namespace,
+                    self.reference_table_name,
+                    self.reference_column_name,
+                    self.on_delete.to_string(),
+                    self.on_update.to_string()
+                )
+            }
+            DbType::Sqlite => {
+                format!(
+                    "ALTER TABLE {} DROP COLUMN {}; ALTER TABLE {} ADD COLUMN {} BIGINT REFERENCES {}({});",
+                    self.table_name,
+                    self.column_name,
+                    self.table_name,
+                    self.column_name,
+                    self.reference_table_name,
+                    self.reference_column_name,
+                )
+            }
+        }
     }
 }
 

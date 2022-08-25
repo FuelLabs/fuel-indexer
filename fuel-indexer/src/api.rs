@@ -63,19 +63,19 @@ pub struct GraphQlApi;
 
 impl GraphQlApi {
     pub async fn run(config: IndexerConfig) {
-        let sm = SchemaManager::new(&config.database_config.to_string())
+        let sm = SchemaManager::new(&config.database.to_string())
             .await
             .expect("SchemaManager create failed");
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = Arc::new(config.clone());
         let listen_on = config.graphql_api.clone().into();
 
-        let pool = IndexerConnectionPool::connect(&config.database_config.to_string())
+        let pool = IndexerConnectionPool::connect(&config.database.to_string())
             .await
             .expect("Failed to establish connection pool");
 
         if config.graphql_api.run_migrations {
-            run_migration(&config.database_config.to_string()).await;
+            run_migration(&config.database.to_string()).await;
         }
 
         let app = Router::new()

@@ -16,7 +16,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::marker::{Send, Sync};
 use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     task::JoinHandle,
@@ -29,14 +29,14 @@ use tracing::{debug, error, info, warn};
 pub struct IndexerConfig {
     pub fuel_node: FuelNodeConfig,
     pub graphql_api: GraphQLConfig,
-    pub database_config: DatabaseConfig,
+    pub database: DatabaseConfig,
 }
 
 #[derive(Deserialize)]
 pub struct TmpIndexerConfig {
     pub fuel_node: Option<FuelNodeConfig>,
     pub graphql_api: Option<GraphQLConfig>,
-    pub database_config: Option<DatabaseConfig>,
+    pub database: Option<DatabaseConfig>,
 }
 
 impl IndexerConfig {
@@ -45,8 +45,8 @@ impl IndexerConfig {
             self.fuel_node = cfg;
         }
 
-        if let Some(cfg) = tmp.database_config {
-            self.database_config = cfg;
+        if let Some(cfg) = tmp.database {
+            self.database = cfg;
         }
 
         if let Some(cfg) = tmp.graphql_api {
@@ -55,7 +55,7 @@ impl IndexerConfig {
     }
 
     pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
-        let database_config = match args.database.as_str() {
+        let database = match args.database.as_str() {
             "postgres" => DatabaseConfig::Postgres {
                 user: args
                     .postgres_user
@@ -70,15 +70,18 @@ impl IndexerConfig {
                 database: args.postgres_database,
             },
             "sqlite" => DatabaseConfig::Sqlite {
-                path: PathBuf::from(args.sqlite_database),
+                path: args
+                    .sqlite_database
+                    .unwrap_or_else(|| defaults::SQLITE_DATABASE.into())
+                    .into(),
             },
             _ => {
-                unreachable!()
+                panic!("Unrecognized database type in options.");
             }
         };
 
         IndexerConfig {
-            database_config,
+            database,
             fuel_node: FuelNodeConfig {
                 host: args
                     .fuel_node_host
@@ -117,7 +120,7 @@ impl IndexerConfig {
 
     pub fn inject_env_vars(&mut self) {
         let _ = self.fuel_node.inject_env_vars();
-        let _ = self.database_config.inject_env_vars();
+        let _ = self.database.inject_env_vars();
         let _ = self.graphql_api.inject_env_vars();
     }
 }
@@ -134,10 +137,10 @@ impl IndexerService {
     pub async fn new(config: IndexerConfig) -> IndexerResult<IndexerService> {
         let IndexerConfig {
             fuel_node,
-            database_config,
+            database,
             ..
         } = config;
-        let manager = SchemaManager::new(&database_config.to_string()).await?;
+        let manager = SchemaManager::new(&database.to_string()).await?;
 
         let fuel_node_addr = fuel_node
             .derive_socket_addr()
@@ -146,7 +149,7 @@ impl IndexerService {
         Ok(IndexerService {
             fuel_node_addr,
             manager,
-            database_url: database_config.to_string(),
+            database_url: database.to_string(),
             handles: HashMap::default(),
             killers: HashMap::default(),
         })

@@ -55,6 +55,8 @@ pub mod defaults {
     pub const POSTGRES_HOST: &str = "127.0.0.1";
     pub const POSTGRES_PORT: &str = "5432";
 
+    pub const SQLITE_DATABASE: &str = "sqlite.db";
+
     pub const GRAPHQL_API_RUN_MIGRATIONS: bool = false;
 }
 
@@ -95,8 +97,8 @@ pub mod config {
         pub graphql_api_port: Option<String>,
         #[clap(long, help = "Database type", default_value = "postgres", value_parser(["postgres", "sqlite"]))]
         pub database: String,
-        #[clap(long, default_value = "sqlite.db", help = "Sqlite database.")]
-        pub sqlite_database: String,
+        #[clap(long, help = "Sqlite database.")]
+        pub sqlite_database: Option<String>,
         #[clap(long, help = "Postgres username. (default = 'postgres')")]
         pub postgres_user: Option<String>,
         #[clap(long, help = "Postgres database. (default = 'postgres')")]
@@ -193,6 +195,7 @@ pub mod config {
     }
 
     #[derive(Clone, Deserialize)]
+    #[serde(rename_all = "snake_case")]
     pub enum DatabaseConfig {
         Sqlite {
             path: PathBuf,

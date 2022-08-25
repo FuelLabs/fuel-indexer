@@ -4,3 +4,6 @@
 docs/book/
 
 .dockerignore
+*.db
+*.db*
+

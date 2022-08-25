@@ -55,7 +55,7 @@ mod tests {
 
         let config = IndexerConfig {
             fuel_node: FuelNodeConfig::from(srv.bound_address),
-            database_config: DatabaseConfig::Postgres {
+            database: DatabaseConfig::Postgres {
                 user: "postgres".into(),
                 password: Some("my-secret".into()),
                 host: "127.0.0.1".into(),

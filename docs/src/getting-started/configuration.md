@@ -44,6 +44,12 @@ the `fuel-indexer-api-server` binary, these options will apply to that service.
 
 `--graphql-api-port` <GRAPHQL-API-PORT>
 
+- Port at which to bind the GraphQL server
+
+- `--run-migrations` <RUN-MIGRATIONS>
+
+- Whether to run the migrations on the GraphQL API's connected database
+
 > Postgres: Standard Postgres connection options.
 
 `--postgres-host` <POSTGRES-HOST>
@@ -65,3 +71,9 @@ the `fuel-indexer-api-server` binary, these options will apply to that service.
 `--postgres-database` <POSTGRES-DATABASE>
 
 - Postgres database
+
+> SQLite: An alternative database implementation using standard SQLite connection options
+
+- `--sqlite-database` <SQLITE-DATABASE>
+
+- Path to SQLite database
