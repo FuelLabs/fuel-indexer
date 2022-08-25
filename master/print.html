@@ -331,6 +331,17 @@ the <code>fuel-indexer-api-server</code> binary, these options will apply to tha
 <li>IP at which to bind the GraphQL server</li>
 </ul>
 <p><code>--graphql-api-port</code> <GRAPHQL-API-PORT></p>
+<ul>
+<li>
+<p>Port at which to bind the GraphQL server</p>
+</li>
+<li>
+<p><code>--run-migrations</code> <RUN-MIGRATIONS></p>
+</li>
+<li>
+<p>Whether to run the migrations on the GraphQL API's connected database</p>
+</li>
+</ul>
 <blockquote>
 <p>Postgres: Standard Postgres connection options.</p>
 </blockquote>
@@ -353,6 +364,17 @@ the <code>fuel-indexer-api-server</code> binary, these options will apply to tha
 <p><code>--postgres-database</code> <POSTGRES-DATABASE></p>
 <ul>
 <li>Postgres database</li>
+</ul>
+<blockquote>
+<p>SQLite: An alternative database implementation using standard SQLite connection options</p>
+</blockquote>
+<ul>
+<li>
+<p><code>--sqlite-database</code> <SQLITE-DATABASE></p>
+</li>
+<li>
+<p>Path to SQLite database</p>
+</li>
 </ul>
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <ul>
