@@ -306,9 +306,9 @@ you can <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yam
 <ul>
 <li>Path to the configuration file.</li>
 </ul>
-<p><code>-t</code> <code>--test-manifest</code></p>
+<p><code>-m</code> <code>--manifest</code></p>
 <ul>
-<li>Path to the test manifest file.</li>
+<li>Path to manifest file from which initial indices will be loaded</li>
 </ul>
 <blockquote>
 <p>Fuel node: The node running the Fuel client implementation.</p>
@@ -656,7 +656,7 @@ RUST_LOG=debug cargo run
 <p>With our Fuel node and webserver up and running, we'll next start our Fuel Indexer service.</p>
 <pre><code class="language-bash">cd fuel-indexer/examples/simple-native/
 
-RUST_LOG=debug cargo run -- --config ./config.yaml --test-manifest manifest.yaml
+RUST_LOG=debug cargo run -- --config ./config.yaml --manifest ./manifest.yaml
 </code></pre>
 <h3 id="send-a-transaction-to-the-smart-contract-via-the-webserver"><a class="header" href="#send-a-transaction-to-the-smart-contract-via-the-webserver">Send a transaction to the smart contract via the webserver</a></h3>
 <pre><code class="language-bash">curl -X POST http://127.0.0.1:8080/count | json_pp
