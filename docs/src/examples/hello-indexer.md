@@ -196,9 +196,9 @@ cargo build --release
 With some data in our indexer, we can now query the API endpoint, remembering that our namespace defined in the manifest file is `hello_namespace`, some example queries will look like this:
 
 ```bash
-curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{"query": "query { event_counts { id count } }", "params": "b"}'
-curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{"query": "query { event_counts { id account count } }", "params": "b"}'
-curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{"query": "query { event_counts { count } }", "params": "b"}'
+curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{"query": "query { event_counts { id count } }", "params": "b"}'
+curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{"query": "query { event_counts { id account count } }", "params": "b"}'
+curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{"query": "query { event_counts { count } }", "params": "b"}'
 ```
 
 With those queries, the response might look something like:

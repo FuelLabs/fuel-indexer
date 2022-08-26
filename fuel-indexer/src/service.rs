@@ -1,22 +1,17 @@
 use crate::{
-    handler::Handle, Executor, IndexerResult, Manifest, NativeIndexExecutor, ReceiptEvent,
-    SchemaManager, WasmIndexExecutor,
+    config::{AdjustableConfig, IndexerConfig},
+    handler::Handle,
+    Executor, IndexerResult, Manifest, NativeIndexExecutor, ReceiptEvent, SchemaManager,
+    WasmIndexExecutor,
 };
-use anyhow::Result;
-use async_std::{fs::File, io::ReadExt, sync::Arc};
+use async_std::sync::Arc;
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_lib::{
-    config::{AdjustableConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs},
-    defaults,
-};
 use fuel_tx::Receipt;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::future::Future;
 use std::marker::{Send, Sync};
 use std::net::SocketAddr;
-use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     task::JoinHandle,
@@ -24,106 +19,6 @@ use tokio::{
 };
 
 use tracing::{debug, error, info, warn};
-
-#[derive(Clone, Deserialize, Default, Debug)]
-pub struct IndexerConfig {
-    pub fuel_node: FuelNodeConfig,
-    pub graphql_api: GraphQLConfig,
-    pub database: DatabaseConfig,
-}
-
-#[derive(Deserialize)]
-pub struct TmpIndexerConfig {
-    pub fuel_node: Option<FuelNodeConfig>,
-    pub graphql_api: Option<GraphQLConfig>,
-    pub database: Option<DatabaseConfig>,
-}
-
-impl IndexerConfig {
-    pub fn upgrade_optionals(&mut self, tmp: TmpIndexerConfig) {
-        if let Some(cfg) = tmp.fuel_node {
-            self.fuel_node = cfg;
-        }
-
-        if let Some(cfg) = tmp.database {
-            self.database = cfg;
-        }
-
-        if let Some(cfg) = tmp.graphql_api {
-            self.graphql_api = cfg;
-        }
-    }
-
-    pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
-        let database = match args.database.as_str() {
-            "postgres" => DatabaseConfig::Postgres {
-                user: args
-                    .postgres_user
-                    .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
-                password: args.postgres_password,
-                host: args
-                    .postgres_host
-                    .unwrap_or_else(|| defaults::POSTGRES_HOST.into()),
-                port: args
-                    .postgres_port
-                    .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
-                database: args.postgres_database,
-            },
-            "sqlite" => DatabaseConfig::Sqlite {
-                path: args
-                    .sqlite_database
-                    .unwrap_or_else(|| defaults::SQLITE_DATABASE.into())
-                    .into(),
-            },
-            _ => {
-                panic!("Unrecognized database type in options.");
-            }
-        };
-
-        IndexerConfig {
-            database,
-            fuel_node: FuelNodeConfig {
-                host: args
-                    .fuel_node_host
-                    .unwrap_or_else(|| defaults::FUEL_NODE_HOST.into()),
-                port: args
-                    .fuel_node_port
-                    .unwrap_or_else(|| defaults::FUEL_NODE_PORT.into()),
-            },
-            graphql_api: GraphQLConfig {
-                host: args
-                    .graphql_api_host
-                    .unwrap_or_else(|| defaults::GRAPHQL_API_HOST.into()),
-                port: args
-                    .graphql_api_port
-                    .unwrap_or_else(|| defaults::GRAPHQL_API_PORT.into()),
-                run_migrations: args
-                    .run_migrations
-                    .unwrap_or(defaults::GRAPHQL_API_RUN_MIGRATIONS),
-            },
-        }
-    }
-
-    pub async fn from_file(path: &Path) -> Result<Self> {
-        let mut file = File::open(path).await?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).await?;
-
-        let mut config = IndexerConfig::default();
-        let tmp_config: TmpIndexerConfig = serde_yaml::from_str(&contents)?;
-
-        config.upgrade_optionals(tmp_config);
-        config.inject_env_vars();
-
-        Ok(config)
-    }
-
-    pub fn inject_env_vars(&mut self) {
-        let _ = self.fuel_node.inject_env_vars();
-        let _ = self.database.inject_env_vars();
-        let _ = self.graphql_api.inject_env_vars();
-    }
-}
 
 pub struct IndexerService {
     fuel_node_addr: SocketAddr,
@@ -164,7 +59,7 @@ impl IndexerService {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
-        let schema = manifest.graphql_schema().unwrap();
+        let schema = manifest.load_schema_from_file().unwrap();
         self.manager.new_schema(&name, &schema).await?;
         let executor =
             NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles).await?;
@@ -192,8 +87,8 @@ impl IndexerService {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
-        let schema = manifest.graphql_schema().unwrap();
-        let wasm_bytes = manifest.wasm_module().unwrap();
+        let schema = manifest.load_schema_from_file().unwrap();
+        let wasm_bytes = manifest.load_wasm_from_file().unwrap();
 
         self.manager.new_schema(&name, &schema).await?;
         let executor =

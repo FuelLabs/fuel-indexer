@@ -4,8 +4,10 @@ extern crate alloc;
 mod tests {
     use fuel_core::service::{Config, FuelService};
     use fuel_gql_client::client::FuelClient;
-    use fuel_indexer::{IndexerConfig, IndexerService, Manifest};
-    use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
+    use fuel_indexer::{
+        config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
+        IndexerService, Manifest,
+    };
     use fuel_vm::{consts::*, prelude::*};
 
     const MANIFEST: &str = include_str!("./test_data/demo_manifest.yaml");
@@ -54,6 +56,7 @@ mod tests {
         let test_data = dir.join("tests/test_data");
 
         let config = IndexerConfig {
+            fuel_indexer_home: dir,
             fuel_node: FuelNodeConfig::from(srv.bound_address),
             database: DatabaseConfig::Postgres {
                 user: "postgres".into(),
@@ -69,16 +72,9 @@ mod tests {
 
         let mut manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
 
-        manifest.graphql_schema = test_data
-            .join(manifest.graphql_schema)
-            .display()
-            .to_string();
-        manifest.wasm_module = Some(
-            test_data
-                .join(manifest.wasm_module.unwrap())
-                .display()
-                .to_string(),
-        );
+        manifest.graphql_schema = test_data.join(manifest.graphql_schema);
+
+        manifest.wasm_module = Some(test_data.join(manifest.wasm_module.unwrap()));
 
         indexer_service
             .add_wasm_indexer(manifest, true)

@@ -120,6 +120,7 @@ impl SchemaBuilder {
             query: query.clone(),
             schema,
         };
+
         new_graph_root(conn, new_root).await?;
 
         let latest = graph_root_latest(conn, &namespace).await?;
@@ -150,6 +151,7 @@ impl SchemaBuilder {
         }
 
         type_id_insert(conn, type_ids).await?;
+
         new_column_insert(conn, columns).await?;
 
         Ok(Schema {

@@ -8,6 +8,9 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0"
+async-std = "1.10.0"
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
+home = "0.5"
 serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.8.19"
 tracing = "0.1"

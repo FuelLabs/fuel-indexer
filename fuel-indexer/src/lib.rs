@@ -2,6 +2,7 @@ use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
 pub mod api;
+pub mod config;
 mod database;
 pub mod executor;
 mod ffi;
@@ -17,7 +18,7 @@ pub use fuel_types::{Address, ContractId};
 pub use handler::ReceiptEvent;
 pub use manifest::Manifest;
 use serde::{Deserialize, Serialize};
-pub use service::{IndexerConfig, IndexerService};
+pub use service::IndexerService;
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
 

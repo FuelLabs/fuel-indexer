@@ -68,6 +68,8 @@ spec:
             - "{{ .Values.app.postgres.host }}"
             - "--postgres-password"
             - "{{ .Values.app.postgres.password }}"
+            - "--fuel-indexer-home"
+            - "{{ .Values.app.fuel_indexer_home }}"
           resources: {}
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           ports:

@@ -8,6 +8,8 @@
 
 ## Fuel Node configuration
 #
+# fuel_indexer_home: $HOME/.fuel-indexer
+#
 # fuel_node:
 #   host: 127.0.0.1
 #   port: 4000

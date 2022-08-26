@@ -18,7 +18,7 @@ curl -X POST http://0.0.0.0:8000/ping
 ### 3. Confirm event was indexed
 
 ```bash
-curl -X POST http://0.0.0.0:29987/graph/composability_test \
+curl -X POST http://0.0.0.0:29987/api/graph/composability_test \
    -H 'content-type: application/json' \
    -d '{"query": "query { message { id ping pong message }}", "params": "b"}' \
    | json_pp

@@ -645,6 +645,7 @@ dependencies = [
  "matchit",
  "memchr",
  "mime",
+ "multer",
  "percent-encoding",
  "pin-project-lite",
  "serde",
@@ -2348,6 +2349,7 @@ dependencies = [
  "axum",
  "cfg-if",
  "chrono",
+ "clap",
  "fuel-core 0.6.4",
  "fuel-gql-client 0.6.4",
  "fuel-indexer-database-types",
@@ -2406,8 +2408,11 @@ name = "fuel-indexer-lib"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-std",
  "clap",
+ "home",
  "serde",
+ "serde_yaml",
  "tracing",
 ]
 
@@ -3116,6 +3121,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6c49c37c09c17a53d937dfbb742eb3a961d65a994e6bcdcf37e7399d0cc8ab5e"
 dependencies = [
  "digest 0.10.3",
+]
+
+[[package]]
+name = "home"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2456aef2e6b6a9784192ae780c0f15bc57df0e918585282325e8c8ac27737654"
+dependencies = [
+ "winapi",
 ]
 
 [[package]]

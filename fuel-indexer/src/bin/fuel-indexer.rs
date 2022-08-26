@@ -1,8 +1,10 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
-use fuel_indexer::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
-use fuel_indexer_lib::config::{IndexerArgs, Parser};
+use fuel_indexer::{
+    config::{IndexerArgs, IndexerConfig, Parser},
+    GraphQlApi, IndexerService, Manifest,
+};
 use fuel_indexer_schema::db::run_migration;
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;

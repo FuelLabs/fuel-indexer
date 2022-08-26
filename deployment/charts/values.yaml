@@ -25,3 +25,4 @@ app:
     port: 5432
     username: postgres
     password: password
+  fuel_indexer_home: /mnt/db/.fuel-indexer

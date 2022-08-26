@@ -1,10 +1,9 @@
 extern crate alloc;
 use anyhow::Result;
 use fuel_indexer::{
-    Address, GraphQlApi, IndexerConfig, IndexerResult, IndexerService, Manifest,
-    NativeHandlerResult, Receipt,
+    config::{IndexerArgs, IndexerConfig, Parser},
+    Address, GraphQlApi, IndexerResult, IndexerService, Manifest, NativeHandlerResult, Receipt,
 };
-use fuel_indexer_lib::config::{IndexerArgs, Parser};
 use fuel_indexer_macros::graphql_schema;
 use fuels::core::{abi_decoder::ABIDecoder, ParamType, Tokenizable};
 use fuels_abigen_macro::abigen;
