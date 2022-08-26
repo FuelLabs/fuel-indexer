@@ -2,7 +2,7 @@ use crate::{IndexerConfig, SchemaManager};
 use async_std::sync::{Arc, RwLock};
 use axum::{
     extract::{Extension, Json, Path},
-    routing::post,
+    routing::{get, post},
     Router,
 };
 use fuel_indexer_lib::config::AdjustableConfig;
@@ -60,6 +60,10 @@ pub async fn query_graph(
     }
 }
 
+pub async fn health_check() -> StatusCode {
+    StatusCode::OK
+}
+
 pub struct GraphQlApi;
 
 impl GraphQlApi {
@@ -82,7 +86,8 @@ impl GraphQlApi {
         let app = Router::new()
             .route("/graph/:name", post(query_graph))
             .layer(Extension(schema_manager))
-            .layer(Extension(pool));
+            .layer(Extension(pool))
+            .route("/health", get(health_check));
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())
