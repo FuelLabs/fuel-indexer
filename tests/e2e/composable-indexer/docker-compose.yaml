@@ -42,3 +42,4 @@ services:
     depends_on:
       - fuel-node
       - web-api
+
