@@ -6,7 +6,7 @@ use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
 use fuel_indexer_lib::{
-    config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs, InjectEnvironment},
+    config::{AdjustableConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs},
     defaults,
 };
 use fuel_tx::Receipt;

@@ -5,6 +5,7 @@ use axum::{
     routing::post,
     Router,
 };
+use fuel_indexer_lib::config::AdjustableConfig;
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
     models, run_migration,
@@ -37,11 +38,11 @@ pub struct Query {
 pub async fn query_graph(
     Path(name): Path<String>,
     Json(query): Json<Query>,
-    Extension(pool): Extension<&IndexerConnectionPool>,
+    Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
 ) -> (StatusCode, Json<Value>) {
     match manager.read().await.load_schema_wasm(&name).await {
-        Ok(schema) => match run_query(query, schema, pool).await {
+        Ok(schema) => match run_query(query, schema, &pool).await {
             Ok(response) => (StatusCode::OK, Json(response)),
             Err(e) => {
                 error!("Query error {e:?}");
@@ -68,7 +69,7 @@ impl GraphQlApi {
             .expect("SchemaManager create failed");
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = Arc::new(config.clone());
-        let listen_on = config.graphql_api.clone().into();
+        let listen_on = config.graphql_api.derive_socket_addr().unwrap();
 
         let pool = IndexerConnectionPool::connect(&config.database.to_string())
             .await
@@ -104,7 +105,7 @@ pub async fn run_query(
 
     match models::run_query(&mut conn, queries).await {
         Ok(ans) => {
-            let row: Value = serde_json::from_str(&ans)?;
+            let row: Value = serde_json::from_value(ans)?;
             Ok(row)
         }
         Err(e) => {

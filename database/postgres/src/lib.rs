@@ -1,6 +1,5 @@
 use fuel_indexer_database_types::*;
-use sqlx::{pool::PoolConnection, PgConnection, Postgres};
-use sqlx::{Connection, Row};
+use sqlx::{pool::PoolConnection, types::JsonValue, Connection, PgConnection, Postgres, Row};
 
 pub async fn put_object(
     conn: &mut PoolConnection<Postgres>,
@@ -39,14 +38,17 @@ pub async fn run_migration(database_url: &str) {
         .expect("Failed postgres migration!");
 }
 
-pub async fn run_query(conn: &mut PoolConnection<Postgres>, query: String) -> sqlx::Result<String> {
+pub async fn run_query(
+    conn: &mut PoolConnection<Postgres>,
+    query: String,
+) -> sqlx::Result<JsonValue> {
     let mut builder = sqlx::QueryBuilder::new(query);
 
     let query = builder.build();
 
     let row = query.fetch_one(conn).await?;
 
-    Ok(row.get::<'_, String, usize>(0))
+    Ok(row.get::<'_, JsonValue, usize>(0))
 }
 
 pub async fn execute_query(

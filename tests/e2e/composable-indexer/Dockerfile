@@ -14,6 +14,7 @@ RUN apt-get update -y && \
     pkg-config \
     && apt-get clean
 
+ENV SQLX_OFFLINE=true
 
 FROM installer AS builder
 WORKDIR /build/
@@ -23,7 +24,7 @@ RUN cargo build --release -p composable-indexer -p fuel-indexer
 
 
 FROM ubuntu:22.04
-WORKDIR /usr/local/composable-indexer
+WORKDIR /mnt/db/fuel-indexer
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
     && apt-get install -y --no-install-recommends \
     tzdata \
@@ -44,6 +45,5 @@ COPY --from=builder /build/target/release/fuel-indexer.d .
 COPY --from=builder /build/tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping.bin .
 
 COPY --from=builder /build/tests/e2e/composable-indexer .
-
 
 RUN bash make-test-manifest.bash

@@ -71,7 +71,7 @@ pub async fn main() -> Result<()> {
     };
 
     // Load the indexer manifest
-    let manifest = Manifest::from_file(&opt.test_manifest.unwrap())?;
+    let manifest = Manifest::from_file(&opt.manifest.unwrap())?;
 
     // Create a new service to run
     let mut service = IndexerService::new(config.clone()).await?;

@@ -46,8 +46,13 @@ pub async fn main() -> Result<()> {
     let mut service = IndexerService::new(config.clone()).await?;
 
     // TODO: need an API endpoint to upload/create these things.....
-    if opt.test_manifest.is_some() {
-        let path = opt.test_manifest.unwrap();
+    if opt.manifest.is_some() {
+        let path = opt.manifest.unwrap();
+
+        info!(
+            "Using bootstrap manifest file located at '{}'",
+            path.display()
+        );
 
         let mut file = File::open(&path).await?;
         let mut contents = String::new();

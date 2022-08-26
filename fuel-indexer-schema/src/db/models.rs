@@ -2,6 +2,7 @@ use crate::db::{DbType, IndexerConnection};
 use fuel_indexer_database_types::*;
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_sqlite as sqlite;
+use sqlx::types::JsonValue;
 use std::fmt::Write;
 
 pub async fn put_object(
@@ -22,7 +23,7 @@ pub async fn get_object(conn: &mut IndexerConnection, query: String) -> sqlx::Re
     }
 }
 
-pub async fn run_query(conn: &mut IndexerConnection, query: String) -> sqlx::Result<String> {
+pub async fn run_query(conn: &mut IndexerConnection, query: String) -> sqlx::Result<JsonValue> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::run_query(c, query).await,
         IndexerConnection::Sqlite(ref mut c) => sqlite::run_query(c, query).await,

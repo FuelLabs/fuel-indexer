@@ -88,7 +88,7 @@ With our Fuel node and webserver up and running, we'll next start our Fuel Index
 ```bash
 cd fuel-indexer/examples/simple-native/
 
-RUST_LOG=debug cargo run -- --config ./config.yaml --test-manifest manifest.yaml
+RUST_LOG=debug cargo run -- --config ./config.yaml --manifest ./manifest.yaml
 ```
 
 ### Send a transaction to the smart contract via the webserver
