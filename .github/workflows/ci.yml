@@ -445,7 +445,6 @@ jobs:
           tag=(`echo $GITHUB_SHA | cut -c1-7`)
           echo "IMAGE_TAG=`echo sha-$tag`" >> $GITHUB_ENV
           echo "DEPLOYMENT_VERSION=$(echo $GITHUB_SHA)" >> $GITHUB_ENV
-          echo "NAMESPACE=$(echo ${GITHUB_HEAD_REF})"  >> $GITHUB_ENV
 
       - name: Deploy Fuel Indexer
         id: deploy_fuel_indexer
