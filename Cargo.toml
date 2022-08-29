@@ -3,9 +3,9 @@
 resolver = "2"
 members = [
    "database/*",
-   "examples/indexer-demo",
-   "examples/simple-native",
-   "examples/simple-native/counter-rs",
+   #"examples/indexer-demo",
+   #"examples/simple-native",
+   #"examples/simple-native/counter-rs",
    "examples/simple-wasm",
    "fuel-indexer-api-server",
    "fuel-indexer-lib",
@@ -13,8 +13,8 @@ members = [
    "fuel-indexer-plugin",
    "fuel-indexer-schema",
    "fuel-indexer",
-   "tests/e2e/composable-indexer",
-   "tests/e2e/composable-indexer/composable-indexer-lib",
+   #"tests/e2e/composable-indexer",
+   #"tests/e2e/composable-indexer/composable-indexer-lib",
 ]
 
 [profile.release]

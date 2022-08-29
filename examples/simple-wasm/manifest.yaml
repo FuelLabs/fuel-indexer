@@ -1,7 +1,7 @@
 ---
 namespace: test_namespace
-graphql_schema: schema.graphql
-wasm_module: simple_wasm.wasm
+graphql_schema: /home/tj/fuel-indexer/examples/simple-wasm/schema/schema.graphql
+wasm_module: /home/tj/fuel-indexer/target/wasm32-unknown-unknown/release/simple_wasm.wasm
 handlers:
   - event: an_event_name
     handler: function_one

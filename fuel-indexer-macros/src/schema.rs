@@ -1,29 +1,11 @@
 use fuel_indexer_schema::{get_schema_types, schema_version, type_id, BASE_SCHEMA};
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{Definition, Document, Field, SchemaDefinition, Type, TypeDefinition};
-use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
-use syn::parse::{Parse, ParseStream};
-use syn::{parse_macro_input, LitStr, Result, Token};
 
-/// Arguments to this proc macro are (<namespace>, <gaphql_file>)
-struct GraphSchema {
-    namespace: LitStr,
-    path: LitStr,
-}
-
-impl Parse for GraphSchema {
-    fn parse(input: ParseStream) -> Result<GraphSchema> {
-        let namespace = input.parse()?;
-        let _: Token![,] = input.parse()?;
-        let path = input.parse()?;
-
-        Ok(GraphSchema { namespace, path })
-    }
-}
 
 fn process_type<'a>(
     types: &HashSet<String>,
@@ -229,12 +211,11 @@ fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
     }
 }
 
-pub(crate) fn process_graphql_schema(inputs: TokenStream) -> TokenStream {
+pub(crate) fn process_graphql_schema(namespace: String, schema_name: String) -> proc_macro2::TokenStream {
     let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("Manifest dir unknown");
 
     let mut current = std::path::PathBuf::from(manifest);
-    let schema = parse_macro_input!(inputs as GraphSchema);
-    current.push(schema.path.value());
+    current.push(schema_name);
 
     let mut file = match File::open(current) {
         Ok(f) => f,
@@ -263,14 +244,11 @@ pub(crate) fn process_graphql_schema(inputs: TokenStream) -> TokenStream {
     let (mut types, _) = get_schema_types(&ast);
     types.extend(primitives.clone());
 
-    let namespace = const_item("NAMESPACE", &schema.namespace.value());
+    let namespace_tokens = const_item("NAMESPACE", &namespace);
     let version = const_item("VERSION", &schema_version(&text));
 
     let mut output = quote! {
-        use alloc::{format, vec, vec::Vec};
-        use fuel_indexer_plugin::{Entity, Logger};
-        use fuel_indexer_plugin::types::*;
-        #namespace
+        #namespace_tokens
         #version
     };
 
@@ -281,7 +259,7 @@ pub(crate) fn process_graphql_schema(inputs: TokenStream) -> TokenStream {
     for definition in ast.definitions.iter() {
         if let Some(def) = process_definition(
             &query_root,
-            &schema.namespace.value(),
+            &namespace,
             &types,
             definition,
             &mut processed,
@@ -293,5 +271,5 @@ pub(crate) fn process_graphql_schema(inputs: TokenStream) -> TokenStream {
             };
         }
     }
-    TokenStream::from(output)
+    output
 }

@@ -9,6 +9,7 @@ use wasmer::{
 };
 
 use crate::{IndexEnv, IndexerResult};
+pub const MODULE_ENTRYPOINT: &str = "handle_events";
 
 #[derive(Debug, Error)]
 pub enum FFIError {
@@ -192,86 +193,5 @@ impl<'a> Drop for WasmArg<'a> {
             .get_native_function::<(u32, u32), ()>("dealloc_fn")
             .expect("No dealloc fn");
         dealloc_fn.call(self.ptr, self.len).expect("Dealloc failed");
-    }
-}
-
-/// Holds on to a byte blob that has been copied into WASM memory until
-/// it's not needed anymore, then tells WASM to deallocate.
-pub(crate) struct WasmArgList<'a> {
-    instance: &'a Instance,
-    ptrs: u32,
-    lens: u32,
-    len: u32,
-}
-
-impl<'a> WasmArgList<'a> {
-    pub fn new(instance: &'a Instance, blobs: Vec<&WasmArg<'a>>) -> IndexerResult<WasmArgList<'a>> {
-        let alloc_fn = instance
-            .exports
-            .get_native_function::<u32, u32>("alloc_fn")?;
-        let dealloc_fn = instance
-            .exports
-            .get_native_function::<(u32, u32), ()>("dealloc_fn")?;
-        let mem = instance.exports.get_memory("memory")?;
-
-        let len = blobs.len() as u32;
-        let ptrs = alloc_fn.call(len)?;
-        let lens = match alloc_fn.call(len) {
-            Ok(l) => l,
-            Err(e) => {
-                error!("Failed to allocate wasm memory! {:?}", e);
-                let _ = dealloc_fn.call(ptrs, len);
-                return Err(e.into());
-            }
-        };
-
-        for (idx, blob) in blobs.iter().enumerate() {
-            let offset = idx * std::mem::size_of::<u32>();
-            WasmPtr::<u32>::new(ptrs + offset as u32)
-                .deref(mem)
-                .unwrap()
-                .set(blob.get_ptr());
-            WasmPtr::<u32>::new(lens + offset as u32)
-                .deref(mem)
-                .unwrap()
-                .set(blob.get_len());
-        }
-
-        Ok(WasmArgList {
-            instance,
-            ptrs,
-            lens,
-            len,
-        })
-    }
-
-    pub fn get_ptrs(&self) -> u32 {
-        self.ptrs
-    }
-
-    pub fn get_lens(&self) -> u32 {
-        self.lens
-    }
-
-    pub fn get_len(&self) -> u32 {
-        self.len
-    }
-}
-
-impl<'a> Drop for WasmArgList<'a> {
-    fn drop(&mut self) {
-        let dealloc_fn = self
-            .instance
-            .exports
-            .get_native_function::<(u32, u32), ()>("dealloc_fn")
-            .expect("No dealloc fn");
-
-        if let Err(e) = dealloc_fn.call(self.ptrs, self.len) {
-            error!("Failed deallocating wasm memory! {:?}", e);
-        }
-
-        if let Err(e) = dealloc_fn.call(self.lens, self.len) {
-            error!("Failed deallocating wasm memory! {:?}", e);
-        }
     }
 }

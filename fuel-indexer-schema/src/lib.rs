@@ -3,6 +3,7 @@ use alloc::vec::Vec;
 pub use fuel_indexer_database_types as sql_types;
 
 use crate::sql_types::ColumnType;
+use fuel_tx::Receipt;
 use core::convert::{TryFrom, TryInto};
 use graphql_parser::schema::{Definition, Document, TypeDefinition};
 use serde::{Deserialize, Serialize};
@@ -22,7 +23,6 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub mod db;
 
 pub use fuel_types::{Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word};
-pub struct NativeHandlerResult(pub u64, pub Vec<FtColumn>);
 
 pub type ID = u64;
 pub type Int4 = i32;
@@ -31,13 +31,22 @@ pub type UInt4 = u32;
 pub type UInt8 = u64;
 pub type Timestamp = u64;
 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct BlockData {
+    pub height: u64,
+    pub transactions: Vec<Vec<Receipt>>,
+}
+
 // serde_scale for now, can look at other options if necessary.
 pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
     serde_scale::to_vec(obj).expect("Serialize failed")
 }
 
-pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> T {
-    serde_scale::from_slice(bytes).expect("Deserialize failed")
+pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
+    match serde_scale::from_slice(bytes) {
+        Ok(obj) => Ok(obj),
+        Err(e) => Err(format!("Scale serde error {:?}", e)),
+    }
 }
 
 pub fn type_id(namespace: &str, type_name: &str) -> u64 {

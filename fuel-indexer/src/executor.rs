@@ -1,20 +1,22 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::handler::{Handle, ReceiptEvent};
 use crate::{IndexerError, IndexerResult, Manifest};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_tx::Receipt;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::Path;
 use thiserror::Error;
 use tokio::task::spawn_blocking;
 use tracing::error;
+use fuel_indexer_schema::{BlockData, serialize};
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store, WasmerEnv,
 };
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_universal::Universal;
+
 fn compiler() -> Cranelift {
     Cranelift::default()
 }
@@ -25,11 +27,9 @@ where
     Self: Sized,
 {
     fn from_file(index: &Path) -> IndexerResult<Self>;
-    async fn trigger_event(
+    async fn handle_events(
         &self,
-        event_name: ReceiptEvent,
-        bytes: Vec<Vec<u8>>,
-        receipt: Option<Receipt>,
+        blocks: Vec<BlockData>,
     ) -> IndexerResult<()>;
 }
 
@@ -51,7 +51,6 @@ pub struct IndexEnv {
 }
 
 pub struct NativeIndexExecutor {
-    handles: Vec<Handle>,
     db: Arc<Mutex<Database>>,
     #[allow(dead_code)]
     manifest: Manifest,
@@ -61,14 +60,12 @@ impl NativeIndexExecutor {
     pub async fn new(
         db_conn: &str,
         manifest: Manifest,
-        handles: Vec<Handle>,
     ) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(Database::new(db_conn).await.unwrap()));
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
 
         Ok(Self {
-            handles,
             db,
             manifest,
         })
@@ -81,37 +78,11 @@ impl Executor for NativeIndexExecutor {
         unimplemented!()
     }
 
-    async fn trigger_event(
+    async fn handle_events(
         &self,
-        _event: ReceiptEvent,
-        _bytes: Vec<Vec<u8>>,
-        receipt: Option<Receipt>,
+        blocks: Vec<BlockData>,
     ) -> IndexerResult<()> {
-        for handle in self.handles.iter() {
-            self.db.lock().await.start_transaction().await?;
-
-            if let Some(receipt) = receipt.clone() {
-                let data = receipt.data().unwrap().to_vec();
-                if let Some(result) = handle(receipt) {
-                    match result {
-                        Ok(result) => {
-                            self.db
-                                .lock()
-                                .await
-                                .put_object(result.0, result.1, data)
-                                .await;
-
-                            self.db.lock().await.commit_transaction().await?;
-                        }
-                        Err(e) => {
-                            error!("Indexer failed {e:?}");
-                            self.db.lock().await.revert_transaction().await?;
-                            return Err(IndexerError::HandlerError);
-                        }
-                    }
-                };
-            }
-        }
+    // TODO: fill out
         Ok(())
     }
 }
@@ -134,7 +105,6 @@ pub struct WasmIndexExecutor {
     instance: Instance,
     _module: Module,
     _store: Store,
-    events: HashMap<ReceiptEvent, Vec<String>>,
     db: Arc<Mutex<Database>>,
 }
 
@@ -157,23 +127,10 @@ impl WasmIndexExecutor {
         env.init_with_instance(&instance)?;
         env.db.lock().await.load_schema_wasm(&instance).await?;
 
-        let mut events = HashMap::new();
-
-        for handler in manifest.handlers {
-            let handlers = events.entry(handler.event).or_insert_with(Vec::new);
-
-            if !instance.exports.contains(&handler.handler) {
-                return Err(IndexerError::MissingHandler(handler.handler));
-            }
-
-            handlers.push(handler.handler);
-        }
-
         Ok(WasmIndexExecutor {
             instance,
             _module: module,
             _store: store,
-            events,
             db: env.db.clone(),
         })
     }
@@ -187,41 +144,31 @@ impl Executor for WasmIndexExecutor {
     }
 
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    async fn trigger_event(
+    async fn handle_events(
         &self,
-        event_name: ReceiptEvent,
-        bytes: Vec<Vec<u8>>,
-        _receipt: Option<Receipt>,
+        blocks: Vec<BlockData>,
     ) -> IndexerResult<()> {
-        let mut args = Vec::with_capacity(bytes.len());
-        for arg in bytes.into_iter() {
-            args.push(ffi::WasmArg::new(&self.instance, arg)?)
-        }
-        let arg_list = ffi::WasmArgList::new(&self.instance, args.iter().collect())?;
+        let bytes = serialize(&blocks);
+        let arg = ffi::WasmArg::new(&self.instance, bytes)?;
 
-        if let Some(handlers) = self.events.get(&event_name) {
-            for handler in handlers.iter() {
-                let fun = self
-                    .instance
-                    .exports
-                    .get_native_function::<(u32, u32, u32), ()>(handler)?;
+        let fun = self
+            .instance
+            .exports
+            .get_native_function::<(u32, u32), ()>(ffi::MODULE_ENTRYPOINT)?;
 
-                self.db.lock().await.start_transaction().await?;
+        self.db.lock().await.start_transaction().await?;
 
-                let ptrs = arg_list.get_ptrs();
-                let lens = arg_list.get_lens();
-                let len = arg_list.get_len();
+        let ptr = arg.get_ptr();
+        let len = arg.get_len();
 
-                let res = spawn_blocking(move || fun.call(ptrs, lens, len)).await?;
+        let res = spawn_blocking(move || fun.call(ptr, len)).await?;
 
-                if let Err(e) = res {
-                    error!("Indexer failed {e:?}");
-                    self.db.lock().await.revert_transaction().await?;
-                    return Err(IndexerError::RuntimeError(e));
-                } else {
-                    self.db.lock().await.commit_transaction().await?;
-                }
-            }
+        if let Err(e) = res {
+            error!("Indexer failed {e:?}");
+            self.db.lock().await.revert_transaction().await?;
+            return Err(IndexerError::RuntimeError(e));
+        } else {
+            self.db.lock().await.commit_transaction().await?;
         }
         Ok(())
     }

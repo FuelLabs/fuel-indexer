@@ -1,4 +1,3 @@
-use crate::handler::ReceiptEvent;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -10,7 +9,6 @@ pub struct Manifest {
     pub graphql_schema: String,
     pub wasm_module: Option<String>,
     pub start_block: Option<u64>,
-    pub handlers: Vec<Handle>,
     pub test_events: Option<Vec<Event>>,
 }
 
@@ -21,7 +19,6 @@ impl Manifest {
             graphql_schema,
             wasm_module: None,
             start_block,
-            handlers: Vec::new(),
             test_events: None,
         }
     }
@@ -57,10 +54,4 @@ impl Manifest {
 pub struct Event {
     pub trigger: String,
     pub payload: String,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Handle {
-    pub event: ReceiptEvent,
-    pub handler: String,
 }

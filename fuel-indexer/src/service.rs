@@ -1,10 +1,11 @@
 use crate::{
-    handler::Handle, Executor, IndexerResult, Manifest, NativeIndexExecutor, ReceiptEvent,
+    Executor, IndexerResult, Manifest, NativeIndexExecutor,
     SchemaManager, WasmIndexExecutor,
 };
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
-use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
+use fuel_gql_client::client::{schema::block::Block, FuelClient, PageDirection, PaginatedResult, PaginationRequest};
+use fuel_indexer_schema::BlockData;
 use fuel_indexer_lib::{
     config::{AdjustableConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs},
     defaults,
@@ -155,36 +156,7 @@ impl IndexerService {
         })
     }
 
-    pub async fn add_native_indexer(
-        &mut self,
-        manifest: Manifest,
-        run_once: bool,
-        handles: Vec<Handle>,
-    ) -> IndexerResult<()> {
-        let name = manifest.namespace.clone();
-        let start_block = manifest.start_block;
-
-        let schema = manifest.graphql_schema().unwrap();
-        self.manager.new_schema(&name, &schema).await?;
-        let executor =
-            NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles).await?;
-
-        let kill_switch = Arc::new(AtomicBool::new(run_once));
-        let handle = tokio::spawn(self.make_task(
-            ReceiptEvent::Other,
-            kill_switch.clone(),
-            executor,
-            start_block,
-        ));
-
-        info!("Registered indexer {}", name);
-        self.handles.insert(name.clone(), handle);
-        self.killers.insert(name, kill_switch);
-
-        Ok(())
-    }
-
-    pub async fn add_wasm_indexer(
+    pub async fn add_indexer(
         &mut self,
         manifest: Manifest,
         run_once: bool,
@@ -195,13 +167,13 @@ impl IndexerService {
         let schema = manifest.graphql_schema().unwrap();
         let wasm_bytes = manifest.wasm_module().unwrap();
 
+        // TODO: detect native vs. wasm right here.....
         self.manager.new_schema(&name, &schema).await?;
         let executor =
             WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes).await?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
         let handle = tokio::spawn(self.make_task(
-            ReceiptEvent::Other,
             kill_switch.clone(),
             executor,
             start_block,
@@ -224,7 +196,6 @@ impl IndexerService {
 
     fn make_task<T: 'static + Executor + Send + Sync>(
         &self,
-        _event_name: ReceiptEvent,
         kill_switch: Arc<AtomicBool>,
         executor: T,
         start_block: Option<u64>,
@@ -233,6 +204,7 @@ impl IndexerService {
         let mut next_block = start_block.unwrap_or(1);
         let client = FuelClient::from(self.fuel_node_addr);
         let executor = Arc::new(executor);
+
 
         async move {
             loop {
@@ -250,67 +222,37 @@ impl IndexerService {
                 debug!("Processing {} results", results.len());
                 let exec = executor.clone();
 
-                let mut receipts = Vec::new();
+                let mut block_info = Vec::new();
                 for block in results.into_iter().rev() {
                     if block.height.0 != next_block {
                         continue;
                     }
                     next_block = block.height.0 + 1;
+
+                    // NOTE: for now assuming we have a single contract instance,
+                    //       we'll need to watch contract creation events here in
+                    //       case an indexer would be interested in processing it.
+                    let mut transactions = Vec::new();
                     for trans in block.transactions {
                         match client.receipts(&trans.id.to_string()).await {
                             Ok(r) => {
-                                receipts.extend(r);
+                                transactions.push(r);
                             }
                             Err(e) => {
                                 error!("Client communication error {:?}", e);
                             }
                         }
                     }
+
+                    let block = BlockData {
+                        height: block.height.0,
+                        transactions,
+                    };
+
+                    block_info.push(block);
                 }
 
-                let result = tokio::task::spawn(async move {
-                    for receipt in receipts {
-                        let receipt_cp = receipt.clone();
-                        match receipt {
-                            Receipt::LogData {
-                                // TODO: use data field for now, the rest will be useful later
-                                data,
-                                ..
-                            } => {
-                                // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec
-                                    .trigger_event(
-                                        ReceiptEvent::LogData,
-                                        vec![data],
-                                        Some(receipt_cp),
-                                    )
-                                    .await
-                                {
-                                    error!("Event processing failed {:?}", e);
-                                }
-                            }
-                            Receipt::ReturnData {
-                                // TODO: use data field for now, the rest will be useful later
-                                data,
-                                ..
-                            } => {
-                                // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec
-                                    .trigger_event(
-                                        ReceiptEvent::ReturnData,
-                                        vec![data],
-                                        Some(receipt_cp),
-                                    )
-                                    .await
-                                {
-                                    error!("Event processing failed {:?}", e);
-                                }
-                            }
-                            o => warn!("Unhandled receipt type: {:?}", o),
-                        }
-                    }
-                })
-                .await;
+                let result = exec.handle_events(block_info).await;
 
                 if let Err(e) = result {
                     error!("Indexer executor failed {e:?}");

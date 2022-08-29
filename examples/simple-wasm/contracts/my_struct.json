@@ -36,6 +36,21 @@
             }
         ],
         "name":"takes_struct",
-        "outputs":[]
+        "outputs":[
+            {
+                "name":"SomeEvent",
+                "type":"struct SomeEvent",
+                "components": [
+                    {
+                        "name": "id",
+                        "type": "u64"
+                    },
+                    {
+                        "name": "account",
+                        "type": "b256"
+                    }
+                ]
+            }
+        ]
     }
 ]
