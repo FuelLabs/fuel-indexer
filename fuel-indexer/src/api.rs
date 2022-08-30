@@ -147,7 +147,6 @@ impl AssetBundle {
     }
 
     /// Deconstruct a `Multipart` upload into different `Asset` pieces, and build an `AssetBundle`
-    /// using these `Asset`s
     pub async fn into_map(mut multipart: Multipart, config: Arc<IndexerConfig>) -> Result<Self> {
         let mut items: HashMap<Asset, Vec<u8>> = HashMap::new();
 

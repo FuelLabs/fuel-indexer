@@ -2408,11 +2408,7 @@ name = "fuel-indexer-lib"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-std",
- "clap",
  "home",
- "serde",
- "serde_yaml",
  "tracing",
 ]
 
