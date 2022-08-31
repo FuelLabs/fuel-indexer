@@ -60,7 +60,7 @@ mod tests {
                 password: Some("my-secret".into()),
                 host: "127.0.0.1".into(),
                 port: "5432".into(),
-                database: None,
+                database: "postgres".to_string(),
             },
             graphql_api: GraphQLConfig::default(),
         };

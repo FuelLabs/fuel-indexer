@@ -23,6 +23,7 @@ fuel-vm = { version = "0.8" }
 fuels-core = { version = "0.15" }
 futures = "0.3"
 http = "0.2"
+hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}
 serde = { version = "1.0", features = ["derive"] }
 serde-scale = "0.2"
 serde_json = { version = "1.0", features = ["raw_value"] }

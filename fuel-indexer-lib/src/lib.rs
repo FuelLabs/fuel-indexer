@@ -1,6 +1,7 @@
 pub mod utils {
 
     use anyhow::Result;
+    use serde::{Deserialize, Serialize};
     use std::net::{SocketAddr, ToSocketAddrs};
     use tracing::{info, warn};
 
@@ -42,6 +43,26 @@ pub mod utils {
             }
         }
     }
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub enum ServiceStatus {
+        OK,
+        NotOk,
+    }
+
+    impl From<FuelNodeHealthResponse> for ServiceStatus {
+        fn from(r: FuelNodeHealthResponse) -> Self {
+            match r.up {
+                true => ServiceStatus::OK,
+                _ => ServiceStatus::NotOk,
+            }
+        }
+    }
+
+    #[derive(Serialize, Deserialize)]
+    pub struct FuelNodeHealthResponse {
+        up: bool,
+    }
 }
 
 pub mod defaults {
@@ -51,13 +72,17 @@ pub mod defaults {
     pub const GRAPHQL_API_HOST: &str = "0.0.0.0";
     pub const GRAPHQL_API_PORT: &str = "29987";
 
+    pub const DATABASE: &str = "postgres";
+    pub const POSTGRES_DATABASE: &str = "postgres";
     pub const POSTGRES_USER: &str = "postgres";
     pub const POSTGRES_HOST: &str = "127.0.0.1";
     pub const POSTGRES_PORT: &str = "5432";
 
     pub const SQLITE_DATABASE: &str = "sqlite.db";
 
-    pub const GRAPHQL_API_RUN_MIGRATIONS: bool = false;
+    pub const GRAPHQL_API_RUN_MIGRATIONS: Option<bool> = None;
+
+    pub const PROTOCOL: &str = "http";
 }
 
 pub mod config {
@@ -78,9 +103,9 @@ pub mod config {
         about = "Standalone binary for the fuel indexer service"
     )]
     pub struct IndexerArgs {
-        #[clap(short, long, help = "Run local test node")]
+        #[clap(short, long, help = "Run local test node.")]
         pub local: bool,
-        #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
+        #[clap(short, long, parse(from_os_str), help = "Indexer service config file.")]
         pub config: Option<PathBuf>,
         #[clap(
             short,
@@ -91,29 +116,30 @@ pub mod config {
         pub manifest: Option<PathBuf>,
         #[clap(
             long,
-            help = "Listening IP of the running Fuel node. (default = '127.0.0.1')"
+            help = "Listening IP of the running Fuel node.)",
+            default_value = defaults::FUEL_NODE_HOST,
         )]
-        pub fuel_node_host: Option<String>,
-        #[clap(long, help = "Listening port of the running Fuel node.")]
-        pub fuel_node_port: Option<String>,
-        #[clap(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
-        pub graphql_api_host: Option<String>,
-        #[clap(long, help = "GraphQL API port. (default = 29987)")]
-        pub graphql_api_port: Option<String>,
-        #[clap(long, help = "Database type", default_value = "postgres", value_parser(["postgres", "sqlite"]))]
+        pub fuel_node_host: String,
+        #[clap(long, help = "Listening port of the running Fuel node.", default_value = defaults::FUEL_NODE_PORT)]
+        pub fuel_node_port: String,
+        #[clap(long, help = "GraphQL API IP.", default_value = defaults::GRAPHQL_API_HOST )]
+        pub graphql_api_host: String,
+        #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT )]
+        pub graphql_api_port: String,
+        #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres", "sqlite"]))]
         pub database: String,
-        #[clap(long, help = "Sqlite database.")]
-        pub sqlite_database: Option<String>,
-        #[clap(long, help = "Postgres username. (default = 'postgres')")]
-        pub postgres_user: Option<String>,
-        #[clap(long, help = "Postgres database. (default = 'postgres')")]
-        pub postgres_database: Option<String>,
+        #[clap(long, help = "Sqlite database.", default_value = defaults::SQLITE_DATABASE)]
+        pub sqlite_database: PathBuf,
+        #[clap(long, help = "Postgres username.", default_value = defaults::POSTGRES_USER)]
+        pub postgres_user: String,
+        #[clap(long, help = "Postgres database.", default_value = defaults::POSTGRES_DATABASE )]
+        pub postgres_database: String,
         #[clap(long, help = "Postgres password.")]
         pub postgres_password: Option<String>,
-        #[clap(long, help = "Postgres host. (default = '127.0.0.1')")]
-        pub postgres_host: Option<String>,
-        #[clap(long, help = "Postgres port. (default = 5432)")]
-        pub postgres_port: Option<String>,
+        #[clap(long, help = "Postgres host.", default_value = defaults::POSTGRES_HOST)]
+        pub postgres_host: String,
+        #[clap(long, help = "Postgres port.", default_value = defaults::POSTGRES_PORT)]
+        pub postgres_port: String,
         #[clap(long, help = "Run database migrations for the GraphQL API service.")]
         pub run_migrations: Option<bool>,
     }
@@ -123,24 +149,33 @@ pub mod config {
     pub struct ApiServerArgs {
         #[clap(short, long, help = "API Server config.")]
         pub config: Option<PathBuf>,
-        #[clap(long, help = "GraphQL API IP. (default = '0.0.0.0')")]
-        pub graphql_api_host: Option<String>,
-        #[clap(long, help = "GraphQL API port. (default = 29987)")]
-        pub graphql_api_port: Option<String>,
-        #[clap(long, help = "Database type", default_value = "postgres", value_parser(["postgres", "sqlite"]))]
+        #[clap(long, help = "GraphQL API IP.", default_value = defaults::GRAPHQL_API_HOST)]
+        pub graphql_api_host: String,
+        #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
+        pub graphql_api_port: String,
+        #[clap(long, help = "Database type", default_value = defaults::DATABASE, value_parser(["postgres", "sqlite"]))]
         pub database: String,
-        #[clap(long, default_value = "sqlite.db", help = "Sqlite database.")]
+        #[clap(long, default_value = defaults::SQLITE_DATABASE, help = "Sqlite database.")]
         pub sqlite_database: PathBuf,
-        #[clap(long, help = "Postgres username. (default = 'postgres')")]
-        pub postgres_user: Option<String>,
-        #[clap(long, help = "Postgres database. (default = 'postgres')")]
-        pub postgres_database: Option<String>,
+        #[clap(long, help = "Postgres username.", default_value = defaults::POSTGRES_USER)]
+        pub postgres_user: String,
+        #[clap(long, help = "Postgres database.", default_value = defaults::POSTGRES_DATABASE)]
+        pub postgres_database: String,
         #[clap(long, help = "Postgres password.")]
         pub postgres_password: Option<String>,
-        #[clap(long, help = "Postgres host. (default = '127.0.0.1')")]
-        pub postgres_host: Option<String>,
-        #[clap(long, help = "Postgres port. (default = 5432)")]
-        pub postgres_port: Option<String>,
+        #[clap(long, help = "Postgres host.", default_value = defaults::POSTGRES_HOST)]
+        pub postgres_host: String,
+        #[clap(long, help = "Postgres port.", default_value = defaults::POSTGRES_PORT)]
+        pub postgres_port: String,
+    }
+
+    fn http_url(host: &String, port: &String) -> String {
+        let protocol = match port.as_str() {
+            "443" | "4443" => "https",
+            _ => "http",
+        };
+
+        format!("{}://{}:{}", protocol, host, port)
     }
 
     pub trait AdjustableConfig {
@@ -152,6 +187,12 @@ pub mod config {
     pub struct FuelNodeConfig {
         pub host: String,
         pub port: String,
+    }
+
+    impl FuelNodeConfig {
+        pub fn http_url(&self) -> String {
+            http_url(&self.host, &self.port)
+        }
     }
 
     impl AdjustableConfig for FuelNodeConfig {
@@ -209,7 +250,7 @@ pub mod config {
             password: Option<String>,
             host: String,
             port: String,
-            database: Option<String>,
+            database: String,
         },
     }
 
@@ -246,14 +287,9 @@ pub mod config {
                         *port = std::env::var(trim_env_key(port))
                             .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &port));
                     }
-
-                    if let Some(db) = &database {
-                        if is_env_var(db) {
-                            *database =
-                                Some(std::env::var(trim_env_key(db)).unwrap_or_else(|_| {
-                                    format!("Failed to read '{}' from env", &db)
-                                }));
-                        }
+                    if is_env_var(database) {
+                        *database = std::env::var(trim_env_key(database))
+                            .unwrap_or_else(|_| format!("Failed to read '{}' from env", &database));
                     }
                 }
                 DatabaseConfig::Sqlite { path } => {
@@ -295,11 +331,7 @@ pub mod config {
                         let _ = write!(uri, ":{}", pass);
                     }
 
-                    let _ = write!(uri, "@{}:{}", host, port);
-
-                    if let Some(db_name) = &database {
-                        let _ = write!(uri, "/{}", db_name);
-                    }
+                    let _ = write!(uri, "@{}:{}/{}", host, port, database);
 
                     uri
                 }
@@ -345,7 +377,7 @@ pub mod config {
                 password: None,
                 host: defaults::POSTGRES_HOST.into(),
                 port: defaults::POSTGRES_PORT.into(),
-                database: None,
+                database: defaults::POSTGRES_DATABASE.into(),
             }
         }
     }
@@ -354,7 +386,13 @@ pub mod config {
     pub struct GraphQLConfig {
         pub host: String,
         pub port: String,
-        pub run_migrations: bool,
+        pub run_migrations: Option<bool>,
+    }
+
+    impl GraphQLConfig {
+        pub fn http_url(&self) -> String {
+            http_url(&self.host, &self.port)
+        }
     }
 
     impl std::string::ToString for GraphQLConfig {
