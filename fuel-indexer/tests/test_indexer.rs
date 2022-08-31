@@ -1,54 +1,53 @@
 extern crate alloc;
 
+#[cfg(not_yet)]
 #[cfg(test)]
 mod tests {
     use fuel_core::service::{Config, FuelService};
+    use fuel_crypto::SecretKey;
     use fuel_gql_client::client::FuelClient;
     use fuel_indexer::{IndexerConfig, IndexerService, Manifest};
     use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
     use fuel_vm::{consts::*, prelude::*};
+    use fuels::prelude::{Contract, LocalWallet, Provider, TxParameters};
+    use fuels::signers::wallet::Wallet;
+    use fuels_abigen_macro::abigen;
+    use rand::{rngs::StdRng, SeedableRng};
+    use std::path::Path;
 
-    const MANIFEST: &str = include_str!("./test_data/demo_manifest.yaml");
+    const MANIFEST: &str = include_str!("./test_data/manifest.yaml");
+    const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
-    #[allow(clippy::iter_cloned_collect)]
-    fn create_log_transaction(rega: u16, regb: u16) -> Transaction {
-        #[allow(clippy::iter_cloned_collect)]
-        let script = [
-            Opcode::ADDI(0x10, REG_ZERO, rega),
-            Opcode::ADDI(0x11, REG_ZERO, regb),
-            Opcode::LOG(0x10, 0x11, REG_ZERO, REG_ZERO),
-            Opcode::LOG(0x11, 0x12, REG_ZERO, REG_ZERO),
-            Opcode::RET(REG_ONE),
-        ]
-        .iter()
-        .copied()
-        .collect();
+    abigen!(Simple, "./fuel-indexer/tests/test_data/contracts-abi.json");
 
-        let byte_price = 0;
+    fn tx_params() -> TxParameters {
         let gas_price = 0;
         let gas_limit = 1_000_000;
-        let maturity = 0;
-        Transaction::script(
-            gas_price,
-            gas_limit,
-            byte_price,
-            maturity,
-            script,
-            vec![],
-            vec![],
-            vec![],
-            vec![],
-        )
+        let byte_price = 0;
+        TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price), None)
     }
 
     #[tokio::test]
     async fn test_blocks() {
+        let workdir = Path::new(WORKSPACE_DIR);
         let srv = FuelService::new_node(Config::local_node()).await.unwrap();
-        let client = FuelClient::from(srv.bound_address);
-        // submit tx
-        let _ = client.submit(&create_log_transaction(0xca, 0xba)).await;
-        let _ = client.submit(&create_log_transaction(0xfa, 0x4f)).await;
-        let _ = client.submit(&create_log_transaction(0x33, 0x11)).await;
+
+        let mut rng = StdRng::seed_from_u64(10);
+
+        let provider = Provider::connect(srv.bound_address).await.unwrap();
+
+        let secret = SecretKey::random(&mut rng);
+        let wallet = LocalWallet::new_from_private_key(secret, Some(provider.clone()));
+
+        let p = workdir.join("./tests/test_data/contracts.bin");
+        let path = p.as_os_str().to_str().unwrap();
+        let _compiled = Contract::load_sway_contract(path).unwrap();
+
+        let contract_id = Contract::deploy(path, &wallet, tx_params()).await.unwrap();
+
+        let contract: Simple = Simple::new(contract_id.to_string(), wallet);
+        let _ = contract.gimme_someevent(78).call().await;
+        let _ = contract.gimme_anotherevent(899).call().await;
 
         let dir = std::env::current_dir().unwrap();
         let test_data = dir.join("tests/test_data");
@@ -81,7 +80,7 @@ mod tests {
         );
 
         indexer_service
-            .add_wasm_indexer(manifest, true)
+            .add_indexer(manifest, true)
             .await
             .expect("Failed to initialize indexer");
 

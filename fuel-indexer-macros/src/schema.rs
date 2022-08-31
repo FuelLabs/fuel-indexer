@@ -6,7 +6,6 @@ use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
 
-
 fn process_type<'a>(
     types: &HashSet<String>,
     typ: &Type<'a, String>,
@@ -211,16 +210,19 @@ fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
     }
 }
 
-pub(crate) fn process_graphql_schema(namespace: String, schema_name: String) -> proc_macro2::TokenStream {
+pub(crate) fn process_graphql_schema(
+    namespace: String,
+    schema_name: String,
+) -> proc_macro2::TokenStream {
     let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("Manifest dir unknown");
 
     let mut current = std::path::PathBuf::from(manifest);
     current.push(schema_name);
 
-    let mut file = match File::open(current) {
+    let mut file = match File::open(&current) {
         Ok(f) => f,
         Err(e) => {
-            proc_macro_error::abort_call_site!("Could not open schema file {:?}", e)
+            proc_macro_error::abort_call_site!("Could not open schema file {:?} {:?}", current, e)
         }
     };
 

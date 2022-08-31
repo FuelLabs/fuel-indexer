@@ -10,6 +10,7 @@ pub fn handler_block_wasm(handler_block: proc_macro2::TokenStream) -> proc_macro
                 Ok(blocks) => blocks,
                 Err(msg) => {
                     // TODO: probably need some error codes to send back to runtime.
+                    core::mem::forget(bytes);
                     Logger::error(&msg);
                     return;
                 }
@@ -17,8 +18,6 @@ pub fn handler_block_wasm(handler_block: proc_macro2::TokenStream) -> proc_macro
             core::mem::forget(bytes);
 
             #handler_block
-
         }
     }
 }
-

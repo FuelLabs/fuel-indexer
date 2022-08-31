@@ -12,10 +12,8 @@ pub use api::GraphQlApi;
 pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
 pub use fuel_indexer_schema::db::DatabaseError;
-pub use fuel_tx::Receipt;
 pub use fuel_types::{Address, ContractId};
 pub use manifest::Manifest;
-use serde::{Deserialize, Serialize};
 pub use service::{IndexerConfig, IndexerService};
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
@@ -36,8 +34,8 @@ pub enum IndexerError {
     HostEnvInitError(#[from] HostEnvInitError),
     #[error("FFI Error {0:?}")]
     FFIError(#[from] ffi::FFIError),
-    #[error("Missing handler: {0:?}")]
-    MissingHandler(String),
+    #[error("Missing handler")]
+    MissingHandler,
     #[error("Indexer transaction error {0:?}")]
     TxError(#[from] crate::executor::TxError),
     #[error("Database error {0:?}")]

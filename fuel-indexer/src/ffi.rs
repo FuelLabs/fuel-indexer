@@ -129,7 +129,7 @@ fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
         bytes.extend_from_slice(&mem.data_unchecked()[range]);
     }
 
-    let columns: Vec<FtColumn> = serde_scale::from_slice(&bytes).expect("Scale serde error");
+    let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error");
 
     // TODO: stash this??
     let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime!");

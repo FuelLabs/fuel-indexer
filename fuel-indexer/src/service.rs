@@ -1,16 +1,14 @@
 use crate::{
-    Executor, IndexerResult, Manifest, NativeIndexExecutor,
-    SchemaManager, WasmIndexExecutor,
+    Executor, IndexerResult, Manifest, SchemaManager, WasmIndexExecutor,
 };
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
-use fuel_gql_client::client::{schema::block::Block, FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_schema::BlockData;
+use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
 use fuel_indexer_lib::{
     config::{AdjustableConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs},
     defaults,
 };
-use fuel_tx::Receipt;
+use fuel_indexer_schema::BlockData;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -25,6 +23,8 @@ use tokio::{
 };
 
 use tracing::{debug, error, info, warn};
+
+const RETRY_LIMIT: usize = 5;
 
 #[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
@@ -156,11 +156,7 @@ impl IndexerService {
         })
     }
 
-    pub async fn add_indexer(
-        &mut self,
-        manifest: Manifest,
-        run_once: bool,
-    ) -> IndexerResult<()> {
+    pub async fn add_indexer(&mut self, manifest: Manifest, run_once: bool) -> IndexerResult<()> {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
@@ -173,11 +169,7 @@ impl IndexerService {
             WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes).await?;
 
         let kill_switch = Arc::new(AtomicBool::new(run_once));
-        let handle = tokio::spawn(self.make_task(
-            kill_switch.clone(),
-            executor,
-            start_block,
-        ));
+        let handle = tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
 
         info!("Registered indexer {}", name);
         self.handles.insert(name.clone(), handle);
@@ -205,14 +197,15 @@ impl IndexerService {
         let client = FuelClient::from(self.fuel_node_addr);
         let executor = Arc::new(executor);
 
-
         async move {
+            let mut retry_count = 0;
+
             loop {
                 debug!("Fetching paginated results from {:?}", next_cursor);
                 // TODO: can we have a "start at height" option?
                 let PaginatedResult { cursor, results } = client
                     .blocks(PaginationRequest {
-                        cursor: next_cursor,
+                        cursor: next_cursor.clone(),
                         results: 10,
                         direction: PageDirection::Forward,
                     })
@@ -255,7 +248,15 @@ impl IndexerService {
                 let result = exec.handle_events(block_info).await;
 
                 if let Err(e) = result {
-                    error!("Indexer executor failed {e:?}");
+                    error!("Indexer executor failed {e:?}, retrying.");
+                    sleep(Duration::from_secs(5)).await;
+                    retry_count += 1;
+                    if retry_count < RETRY_LIMIT {
+                        continue;
+                    } else {
+                        error!("Indexer failed after retries, giving up!");
+                        break;
+                    }
                 }
 
                 next_cursor = cursor;
@@ -263,6 +264,7 @@ impl IndexerService {
                     info!("No next page, sleeping");
                     sleep(Duration::from_secs(5)).await;
                 };
+                retry_count = 0;
 
                 if kill_switch.load(Ordering::SeqCst) {
                     break;

@@ -1,16 +1,17 @@
-use crate::schema::process_graphql_schema;
 use crate::native::handler_block_native;
-use crate::wasm::handler_block_wasm;
 use crate::parse::IndexerConfig;
-use std::collections::HashSet;
-use fuels_core::{abi_encoder::ABIEncoder, json_abi::ABIParser, source::Source, code_gen::abigen::Abigen};
+use crate::schema::process_graphql_schema;
+use crate::wasm::handler_block_wasm;
+use fuels_core::{
+    abi_encoder::ABIEncoder, code_gen::abigen::Abigen, json_abi::ABIParser, source::Source,
+};
 use fuels_types::JsonABI;
 use sha2::{Digest, Sha256};
+use std::collections::HashSet;
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
-
 
 const DISALLOWED: &[&str] = &["Vec"];
 
@@ -18,7 +19,10 @@ fn get_json_abi(abi: String) -> JsonABI {
     let src = match Source::parse(abi) {
         Ok(src) => src,
         Err(e) => {
-            proc_macro_error::abort_call_site!("`abi` must be a file path to valid json abi! {:?}", e)
+            proc_macro_error::abort_call_site!(
+                "`abi` must be a file path to valid json abi! {:?}",
+                e
+            )
         }
     };
 
@@ -37,9 +41,14 @@ fn get_json_abi(abi: String) -> JsonABI {
     }
 }
 
-fn rust_name(ty: &String) -> Ident {
-    if ty.contains(" ") {
-        let ty =  ty.split(" ").last().unwrap().to_string().to_ascii_lowercase();
+fn rust_name(ty: &str) -> Ident {
+    if ty.contains(' ') {
+        let ty = ty
+            .split(' ')
+            .last()
+            .unwrap()
+            .to_string()
+            .to_ascii_lowercase();
         format_ident! { "{}_decoded", ty }
     } else {
         let ty = ty.to_ascii_lowercase();
@@ -48,8 +57,8 @@ fn rust_name(ty: &String) -> Ident {
 }
 
 fn rust_type(ty: &String) -> Ident {
-    if ty.contains(" ") {
-        let ty =  ty.split(" ").last().unwrap().to_string();
+    if ty.contains(' ') {
+        let ty = ty.split(' ').last().unwrap().to_string();
         format_ident! { "{}", ty }
     } else {
         format_ident! { "{}", ty }
@@ -67,21 +76,42 @@ fn type_id(bytes: &[u8]) -> u64 {
     u64::from_be_bytes(output)
 }
 
+fn is_primitive(ty: &Ident) -> bool {
+    let ident_str = ty.to_string();
+    // TODO: complete the list
+    matches!(ident_str.as_str(), "u8" | "u16" | "u32" | "u64" | "bool")
+}
+
 fn decode_snippet(ty_id: u64, ty: &Ident, name: &Ident) -> proc_macro2::TokenStream {
-    quote!{
-        #ty_id => {
-            let decoded = ABIDecoder::decode(&#ty::param_types(), &data).expect("Failed decoding");
-            let obj = #ty::new_from_tokens(&decoded);
-            self.#name.push(obj);
+    if is_primitive(ty) {
+        // TODO: do we want decoder for primitive? Might need something a little smarte to identify what the primitive is for... and to which handler it will go.
+        quote! {
+            #ty_id => {
+                Logger::warn("Skipping primitive decoder");
+            }
+        }
+    } else {
+        quote! {
+            #ty_id => {
+                let decoded = ABIDecoder::decode(&#ty::param_types(), &data).expect("Failed decoding");
+                let obj = #ty::new_from_tokens(&decoded);
+                self.#name.push(obj);
+            }
         }
     }
 }
 
-fn process_fn_items(abi: String, input: ItemMod) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
-    let disallowed_types: HashSet<String> = HashSet::from_iter(DISALLOWED.iter().map(|s| s.to_string()));
+fn process_fn_items(
+    abi: String,
+    input: ItemMod,
+) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
+    let disallowed_types: HashSet<String> =
+        HashSet::from_iter(DISALLOWED.iter().map(|s| s.to_string()));
 
     if input.content.is_none() {
-        proc_macro_error::abort_call_site!("No module body, must specify at least one handler function!")
+        proc_macro_error::abort_call_site!(
+            "No module body, must specify at least one handler function!"
+        )
     }
 
     let parsed = get_json_abi(abi);
@@ -107,7 +137,7 @@ fn process_fn_items(abi: String, input: ItemMod) -> (proc_macro2::TokenStream, p
         let selector = ABIEncoder::encode_function_selector(sig.as_bytes());
         let selector = u64::from_be_bytes(selector);
 
-        if let Some(out) =  &function.outputs.first() {
+        if let Some(out) = &function.outputs.first() {
             let output = out.type_field.clone();
 
             let ty = rust_type(&output);
@@ -115,7 +145,7 @@ fn process_fn_items(abi: String, input: ItemMod) -> (proc_macro2::TokenStream, p
             let ty_id = type_id(ty.to_string().as_bytes());
 
             if !types.contains(&ty_id) {
-                type_vecs.push(quote!{
+                type_vecs.push(quote! {
                     #name: Vec<#ty>
                 });
 
@@ -123,7 +153,7 @@ fn process_fn_items(abi: String, input: ItemMod) -> (proc_macro2::TokenStream, p
                 types.insert(ty_id);
             }
 
-            selectors.push(quote!{
+            selectors.push(quote! {
                 #selector => #ty_id,
             });
         }
@@ -136,7 +166,7 @@ fn process_fn_items(abi: String, input: ItemMod) -> (proc_macro2::TokenStream, p
             let ty_id = type_id(ty.to_string().as_bytes());
 
             if !types.contains(&ty_id) {
-                type_vecs.push(quote!{
+                type_vecs.push(quote! {
                     #name: Vec<#ty>
                 });
 
@@ -161,30 +191,41 @@ fn process_fn_items(abi: String, input: ItemMod) -> (proc_macro2::TokenStream, p
                 for inp in &fn_item.sig.inputs {
                     match inp {
                         FnArg::Receiver(_) => {
-                            proc_macro_error::abort_call_site!("`self` argument not allowed in handler function.")
+                            proc_macro_error::abort_call_site!(
+                                "`self` argument not allowed in handler function."
+                            )
                         }
-                        FnArg::Typed(PatType { ty, ..} ) =>{
+                        FnArg::Typed(PatType { ty, .. }) => {
                             if let Type::Path(path) = &**ty {
                                 let path = path.path.segments.last().unwrap();
-                                let ty_id = type_id(&path.ident.to_string().as_bytes());
+                                let ty_id = type_id(path.ident.to_string().as_bytes());
 
                                 if disallowed_types.contains(&path.ident.to_string()) {
-                                    proc_macro_error::abort_call_site!("Type {:?} currently not supported", path.ident)
+                                    proc_macro_error::abort_call_site!(
+                                        "Type {:?} currently not supported",
+                                        path.ident
+                                    )
                                 }
 
                                 if !types.contains(&ty_id) {
-                                    proc_macro_error::abort_call_site!("Type {:?} not defined in the ABI. ABI: {:?}", path.ident, types)
+                                    proc_macro_error::abort_call_site!(
+                                        "Type {:?} not defined in the ABI. ABI: {:?}",
+                                        path.ident,
+                                        types
+                                    )
                                 }
 
                                 let name = rust_name(&path.ident.to_string());
                                 input_checks.push(quote! { self.#name.len() > 0 });
                                 arg_list.push(quote! { self.#name[0].clone() });
                             } else {
-                                proc_macro_error::abort_call_site!("Arguments must be types defined in the abi.json.")
+                                proc_macro_error::abort_call_site!(
+                                    "Arguments must be types defined in the abi.json."
+                                )
                             }
                         }
                     }
-                };
+                }
 
                 let fn_name = &fn_item.sig.ident;
                 dispatchers.push(quote! {
@@ -238,52 +279,57 @@ fn process_fn_items(abi: String, input: ItemMod) -> (proc_macro2::TokenStream, p
             }
         }
     };
-    (quote! {
-        for block in blocks {
-            for tx in block.transactions {
-                let mut decoder = Decoders::default();
-                let mut return_types = Vec::new();
+    (
+        quote! {
+            for block in blocks {
+                for tx in block.transactions {
+                    let mut decoder = Decoders::default();
+                    let mut return_types = Vec::new();
 
-                for receipt in tx {
-                    match receipt {
-                        Receipt::Call { param1, ..} => {
-                            return_types.push(param1);
-                        }
-                        Receipt::ReturnData { data, .. } => {
-                            let selector = return_types.pop().expect("No return type available!");
-                            decoder.decode_return_type(selector, data);
-                        }
-                        other => {
-                            Logger::info("This type is not handled yet!");
+                    for receipt in tx {
+                        match receipt {
+                            Receipt::Call { param1, ..} => {
+                                return_types.push(param1);
+                            }
+                            Receipt::ReturnData { data, .. } => {
+                                let selector = return_types.pop().expect("No return type available!");
+                                decoder.decode_return_type(selector, data);
+                            }
+                            other => {
+                                Logger::info("This type is not handled yet!");
+                            }
                         }
                     }
+
+                    decoder.dispatch();
                 }
-
-                decoder.dispatch();
+                // TODO: save block height process to DB...
             }
-            // TODO: save block height process to DB...
-        }
-    },
-    quote! {
-        #decoder_struct
+        },
+        quote! {
+            #decoder_struct
 
-        #(#handler_fns)*
-    })
+            #(#handler_fns)*
+        },
+    )
 }
 
 pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    let IndexerConfig { abi, namespace, schema, native } = parse_macro_input!(attrs as IndexerConfig);
+    let IndexerConfig {
+        abi,
+        namespace,
+        schema,
+        native,
+    } = parse_macro_input!(attrs as IndexerConfig);
     let indexer = parse_macro_input!(item as ItemMod);
 
     let abi_tokens = match Abigen::new(&namespace, &abi) {
-        Ok(abi) => {
-            match abi.no_std().expand() {
-                Ok(tokens) => tokens,
-                Err(e) => {
-                    proc_macro_error::abort_call_site!("Could not generate tokens for abi! {:?}", e)
-                }
+        Ok(abi) => match abi.no_std().expand() {
+            Ok(tokens) => tokens,
+            Err(e) => {
+                proc_macro_error::abort_call_site!("Could not generate tokens for abi! {:?}", e)
             }
-        }
+        },
         Err(e) => {
             proc_macro_error::abort_call_site!("Could not generate abi object! {:?}", e)
         }
@@ -294,16 +340,16 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     let (handler_block, fn_items) = process_fn_items(abi, indexer);
 
     let handler_block = if native {
-        handler_block_native( handler_block )
+        handler_block_native(handler_block)
     } else {
-        handler_block_wasm( handler_block )
+        handler_block_wasm(handler_block)
     };
 
     let output = quote! {
         use alloc::{format, vec, vec::Vec};
         use fuel_indexer_plugin::{Entity, Logger};
         use fuel_indexer_plugin::types::*;
-        use fuels_core::{abi_decoder::ABIDecoder, Parameterize};
+        use fuels_core::{abi_decoder::ABIDecoder, ParamType, Parameterize};
         use fuel_tx::Receipt;
 
         #abi_tokens

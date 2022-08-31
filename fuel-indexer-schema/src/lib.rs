@@ -3,8 +3,8 @@ use alloc::vec::Vec;
 pub use fuel_indexer_database_types as sql_types;
 
 use crate::sql_types::ColumnType;
-use fuel_tx::Receipt;
 use core::convert::{TryFrom, TryInto};
+use fuel_tx::Receipt;
 use graphql_parser::schema::{Definition, Document, TypeDefinition};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -39,11 +39,11 @@ pub struct BlockData {
 
 // serde_scale for now, can look at other options if necessary.
 pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
-    serde_scale::to_vec(obj).expect("Serialize failed")
+    bincode::serialize(obj).expect("Serialize failed")
 }
 
 pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
-    match serde_scale::from_slice(bytes) {
+    match bincode::deserialize(bytes) {
         Ok(obj) => Ok(obj),
         Err(e) => Err(format!("Scale serde error {:?}", e)),
     }

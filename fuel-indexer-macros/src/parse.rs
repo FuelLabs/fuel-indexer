@@ -1,6 +1,6 @@
 use syn::parse::{Parse, ParseStream};
-use syn::{LitStr, Token};
 use syn::punctuated::Punctuated;
+use syn::{LitStr, Token};
 
 mod kw {
     syn::custom_keyword!(abi);
@@ -25,7 +25,12 @@ struct ConfigBuilder {
 
 impl ConfigBuilder {
     fn new() -> ConfigBuilder {
-        ConfigBuilder { abi: None, schema: None, namespace: None, native: false }
+        ConfigBuilder {
+            abi: None,
+            schema: None,
+            namespace: None,
+            native: false,
+        }
     }
 
     fn set_abi(&mut self, abi: Abi) {
@@ -53,11 +58,15 @@ impl ConfigBuilder {
         } = self;
 
         if abi.is_none() {
-            proc_macro_error::abort_call_site!("abi specification is required in indexer definition!")
+            proc_macro_error::abort_call_site!(
+                "abi specification is required in indexer definition!"
+            )
         }
 
         if schema.is_none() {
-            proc_macro_error::abort_call_site!("schema specification is required in indexer definition!")
+            proc_macro_error::abort_call_site!(
+                "schema specification is required in indexer definition!"
+            )
         }
 
         if namespace.is_none() {
@@ -132,9 +141,7 @@ impl Parse for Abi {
         let _: Token![=] = input.parse()?;
         let name = input.parse()?;
 
-        Ok(Abi {
-            name
-        })
+        Ok(Abi { name })
     }
 }
 
@@ -148,9 +155,7 @@ impl Parse for Namespace {
         let _: Token![=] = input.parse()?;
         let name = input.parse()?;
 
-        Ok(Namespace {
-            name
-        })
+        Ok(Namespace { name })
     }
 }
 
@@ -164,9 +169,6 @@ impl Parse for Schema {
         let _: Token![=] = input.parse()?;
         let name = input.parse()?;
 
-        Ok(Schema {
-            name
-        })
+        Ok(Schema { name })
     }
 }
-
