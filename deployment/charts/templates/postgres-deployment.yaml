@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: postgres-12
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: postgres-12
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: postgres-12
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: postgres-12
+          image: postgres:12.4-alpine
+          imagePullPolicy: Always
+
+          volumeMounts:
+          - mountPath: "/var/lib/postgresql/data"
+            name: postgres
+ 
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+
+          env:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Release.Name }} 
+                key: POSTGRES_PASSWORD
+
+          - name: PGDATA
+            value: "/var/lib/postgresql/data/pgdata"
+
+
+          resources:
+            limits: 
+              cpu: 500m
+              memory: 2Gi
+            requests:
+              cpu: 100m 
+              memory: 1Gi
+
+
+      volumes:
+      - name: postgres
+        persistentVolumeClaim:
+         claimName: {{ .Release.Name }}
