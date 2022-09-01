@@ -17,28 +17,28 @@ services:
   fuel-node:
     image: local/composable-indexer-test:latest
     command: >
-      bash -c "RUST_BACKTRACE=full /mnt/db/fuel-indexer/fuel-node --wallet-path ./wallet.json --bin-path ./ping.bin"
+      bash -c "RUST_BACKTRACE=full ./fuel-node --wallet-path ./wallet.json --bin-path ./ping.bin"
     ports:
       - "4000:4000"
     volumes:
-      - .:/volumes/fuel-indexer
+      - .:/mnt/db/fuel-indexer
   web-api:
     image: local/composable-indexer-test:latest
     command: >
-      bash -c "RUST_BACKTRACE=full /mnt/db/fuel-indexer/web-api --fuel-node-host fuel-node --fuel-node-port 4000 --wallet-path ./wallet.json --bin-path ./ping.bin"
+      bash -c "RUST_BACKTRACE=full ./web-api --fuel-node-host fuel-node --fuel-node-port 4000 --wallet-path ./wallet.json --bin-path ./ping.bin"
     ports:
       - "8000:8000"
     volumes:
-      - .:/volumes/fuel-indexer
+      - .:/mnt/db/fuel-indexer
     depends_on:
       - fuel-node
   fuel-indexer:
     image: local/composable-indexer-test:latest
-    command: bash -c "sleep 2 && RUST_BACKTRACE=full /mnt/db/fuel-indexer/fuel-indexer --fuel-node-host fuel-node --fuel-node-port 4000 --postgres-host postgres --postgres-password postgres --manifest manifest.yaml"
+    command: bash -c "sleep 2 && RUST_BACKTRACE=full ./fuel-indexer --fuel-node-host fuel-node --fuel-node-port 4000 --postgres-host postgres --postgres-password postgres --manifest manifest.yaml"
     ports:
       - "29987:29987"
     volumes:
-      - .:/volumes/fuel-indexer
+      - .:/mnt/db/fuel-indexer
     depends_on:
       - fuel-node
       - web-api
