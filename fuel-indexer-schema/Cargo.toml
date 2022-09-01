@@ -11,8 +11,8 @@ bincode = "1.3.3"
 fuel-indexer-database-types = { path = "../database/database-types" }
 fuel-indexer-postgres = { path = "../database/postgres", optional = true }
 fuel-indexer-sqlite = { path = "../database/sqlite", optional = true }
-fuel-types = { version = "0.3", features = ["serde-types"] }
 fuel-tx = { version = "0.9", features = ["serde-types-minimal"] }
+fuel-types = { version = "0.3", features = ["serde-types"] }
 graphql-parser = "0.3"
 itertools = { version = "0.10", optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"] }

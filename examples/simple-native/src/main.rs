@@ -1,18 +1,15 @@
 extern crate alloc;
 use anyhow::Result;
-use fuel_indexer::{
-    Address, GraphQlApi, IndexerConfig, IndexerService, Manifest,
-};
+use fuel_indexer::{Address, GraphQlApi, IndexerConfig, IndexerService, Manifest};
 use fuel_indexer_lib::config::{IndexerArgs, Parser};
 use fuel_indexer_macros::indexer;
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
-
 #[indexer(
     abi = "examples/simple-native/contracts/counter/out/debug/counter-abi.json",
     namespace = "counter",
-    schema = "schema/counter.graphql",
+    schema = "schema/counter.graphql"
 )]
 mod simple_native {
     fn count_handler(event: CountEvent) {
@@ -55,9 +52,7 @@ pub async fn main() -> Result<()> {
     let mut service = IndexerService::new(config.clone()).await?;
 
     // Add an indexer comprised of a list of handlers
-    service
-        .add_indexer(manifest, false)
-        .await?;
+    service.add_indexer(manifest, false).await?;
 
     // Kick it off!
     let service_handle = tokio::spawn(service.run());
