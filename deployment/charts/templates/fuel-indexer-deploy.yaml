@@ -80,4 +80,4 @@ spec:
       volumes:
         - name: {{ .Values.app.volume.pvname }}
           persistentVolumeClaim:
-            claimName: {{ .Values.app.volume.claimname }} 
+            claimName: {{ .Values.app.volume.claimname }}
