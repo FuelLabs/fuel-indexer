@@ -673,6 +673,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "axum-macros"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6293dae2ec708e679da6736e857cf8532886ef258e92930f38279c12641628b8"
+dependencies = [
+ "heck 0.4.0",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.66"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1154,6 +1166,46 @@ dependencies = [
  "either",
  "memchr",
  "unreachable",
+]
+
+[[package]]
+name = "composable-indexer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "axum",
+ "axum-macros",
+ "clap",
+ "fuel-core 0.6.4",
+ "fuel-gql-client 0.6.4",
+ "fuel-indexer-lib",
+ "fuel-tx 0.9.0",
+ "fuel-types 0.5.1",
+ "fuels",
+ "fuels-abigen-macro",
+ "fuels-core",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "composable-indexer-lib"
+version = "0.1.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx 0.9.0",
+ "fuels-abigen-macro",
+ "fuels-core",
+ "getrandom 0.2.7",
+ "serde",
 ]
 
 [[package]]

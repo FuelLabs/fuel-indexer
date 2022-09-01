@@ -7,7 +7,6 @@ members = [
    "examples/simple-native/counter-rs",
    "examples/simple-wasm/simple-wasm",
    "examples/simple-wasm/simple",
-   "examples/simple-wasm/contracts",
    "fuel-indexer-api-server",
    "fuel-indexer-lib",
    "fuel-indexer-macros",
