@@ -38,7 +38,7 @@ RUN cargo build --release -p fuel-indexer -p fuel-indexer-api-server --all-targe
 # Stage 3: Run
 FROM ubuntu:22.04 AS run
 
-WORKDIR /mnt/db/fuel-indexer
+WORKDIR /root/
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
     && apt-get install -y --no-install-recommends \

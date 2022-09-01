@@ -2,6 +2,8 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+password: "password"
+
 app:
   name: fuel-indexer
   fuel_node_host: node.swayswap.io
@@ -10,8 +12,7 @@ app:
   http_port: 80
   target_port: 29987
   image:
-    repository: ghcr.io/fuellabs/fuel-indexer
-    tag: latest
+    fuelIndexerImage: ghcr.io/fuellabs/fuel-indexer:latest
     pullPolicy: Always
   volume: 
     pvname: fuel-indexer-db-volume
