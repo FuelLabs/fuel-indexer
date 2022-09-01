@@ -24,7 +24,7 @@ RUN cargo build --release -p composable-indexer -p fuel-indexer
 
 
 FROM ubuntu:22.04
-WORKDIR /mnt/db/fuel-indexer
+WORKDIR /root/
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
     && apt-get install -y --no-install-recommends \
     tzdata \
