@@ -16,8 +16,6 @@ fuel-indexer-plugin = { path = "../../fuel-indexer-plugin" }
 fuel-indexer-schema = { path = "../../fuel-indexer-schema", features = ["db-models"] }
 fuel-tx = "0.9"
 fuel-types = "0.5"
-fuels = "0.15"
-fuels-abigen-macro = "0.15"
 fuels-core = "0.15"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
