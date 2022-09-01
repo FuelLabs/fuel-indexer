@@ -1,6 +1,4 @@
-use crate::{
-    Executor, IndexerResult, Manifest, SchemaManager, WasmIndexExecutor,
-};
+use crate::{Executor, IndexerResult, Manifest, SchemaManager, WasmIndexExecutor};
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};

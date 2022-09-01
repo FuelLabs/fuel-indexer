@@ -108,7 +108,7 @@ fn process_fn_items(
     let disallowed_types: HashSet<String> =
         HashSet::from_iter(DISALLOWED.iter().map(|s| s.to_string()));
 
-    if input.content.is_none() {
+    if input.content.is_none() || input.content.as_ref().unwrap().1.is_empty() {
         proc_macro_error::abort_call_site!(
             "No module body, must specify at least one handler function!"
         )
@@ -209,9 +209,8 @@ fn process_fn_items(
 
                                 if !types.contains(&ty_id) {
                                     proc_macro_error::abort_call_site!(
-                                        "Type {:?} not defined in the ABI. ABI: {:?}",
+                                        "Type {:?} not defined in the ABI.",
                                         path.ident,
-                                        types
                                     )
                                 }
 
@@ -323,7 +322,18 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     } = parse_macro_input!(attrs as IndexerConfig);
     let indexer = parse_macro_input!(item as ItemMod);
 
-    let abi_tokens = match Abigen::new(&namespace, &abi) {
+    let (abi_string, schema_string) = match std::env::var("COMPILE_TEST_PREFIX") {
+        Ok(prefix) => {
+            let prefixed = std::path::Path::new(&prefix).join(&abi);
+            let abi_string = prefixed.into_os_string().to_str().unwrap().to_string();
+            let prefixed = std::path::Path::new(&prefix).join(&schema);
+            let schema_string = prefixed.into_os_string().to_str().unwrap().to_string();
+            (abi_string, schema_string)
+        }
+        Err(_) => (abi, schema),
+    };
+
+    let abi_tokens = match Abigen::new(&namespace, &abi_string) {
         Ok(abi) => match abi.no_std().expand() {
             Ok(tokens) => tokens,
             Err(e) => {
@@ -335,9 +345,9 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         }
     };
 
-    let graphql_tokens = process_graphql_schema(namespace, schema);
+    let graphql_tokens = process_graphql_schema(namespace, schema_string);
 
-    let (handler_block, fn_items) = process_fn_items(abi, indexer);
+    let (handler_block, fn_items) = process_fn_items(abi_string, indexer);
 
     let handler_block = if native {
         handler_block_native(handler_block)

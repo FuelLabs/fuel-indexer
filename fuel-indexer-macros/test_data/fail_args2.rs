@@ -1,6 +1,8 @@
 use fuel_indexer_macros::indexer;
 
-#[indexer()]
+#[indexer(
+    abi = "./some/file/name.json",
+)]
 mod indexer {
     fn function_one(event: SomeEvent) {
         let SomeEvent { id, account } = event;

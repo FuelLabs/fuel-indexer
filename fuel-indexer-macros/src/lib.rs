@@ -19,11 +19,15 @@ mod tests {
     #[test]
     fn test_macros() {
         let t = trybuild::TestCases::new();
+        std::env::set_var("COMPILE_TEST_PREFIX", env!("CARGO_MANIFEST_DIR"));
 
         t.compile_fail("test_data/fail_self.rs");
-        //t.compile_fail("test_data/fail_args.rs");
-        //t.pass("test_data/success.rs");
-        //t.compile_fail("test_data/fail_noschema.rs");
-        //t.compile_fail("test_data/fail_badschema.rs");
+        t.compile_fail("test_data/fail_args.rs");
+        t.compile_fail("test_data/fail_args2.rs");
+        t.pass("test_data/success.rs");
+        t.pass("test_data/success2.rs");
+        t.compile_fail("test_data/fail_badschema.rs");
+        t.compile_fail("test_data/fail_unknown_type.rs");
+        t.compile_fail("test_data/fail_empty.rs");
     }
 }

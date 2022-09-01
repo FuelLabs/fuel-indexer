@@ -1,4 +1,8 @@
+extern crate alloc;
 use fuel_indexer_macros::indexer;
+
+#[no_mangle]
+fn ff_log_data(_inp: ()) {}
 
 
 #[indexer(
@@ -7,12 +11,4 @@ use fuel_indexer_macros::indexer;
     schema = "./test_data/schema.graphql",
 )]
 mod indexer {
-    fn function_one(self, event: SomeEvent) {
-        let SomeEvent { id, account } = event;
-
-        let t1 = Thing1 { id, account };
-        t1.save();
-    }
 }
-
-

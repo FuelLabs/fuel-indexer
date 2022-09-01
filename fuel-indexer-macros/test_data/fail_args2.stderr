@@ -1,0 +1,15 @@
+error: schema specification is required in indexer definition!
+ --> test_data/fail_args2.rs:3:1
+  |
+3 | / #[indexer(
+4 | |     abi = "./some/file/name.json",
+5 | | )]
+  | |__^
+  |
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0601]: `main` function not found in crate `$CRATE`
+  --> test_data/fail_args2.rs:20:2
+   |
+20 | }
+   |  ^ consider adding a `main` function to `$DIR/test_data/fail_args2.rs`

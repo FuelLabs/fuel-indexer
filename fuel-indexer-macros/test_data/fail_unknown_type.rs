@@ -8,10 +8,10 @@ fn ff_log_data(_inp: ()) {}
 #[indexer(
     abi = "./test_data/contracts-abi.json",
     namespace = "test_namespace",
-    schema = "./test_data/badschema.graphql",
+    schema = "./test_data/schema.graphql",
 )]
 mod indexer {
-    fn function_one(event: SomeEvent) {
+    fn function_one(event: BadType) {
         let SomeEvent { id, account } = event;
 
         assert_eq!(id, 9);

@@ -1,7 +1,13 @@
-error: handler macro does not take arguments
- --> test_data/fail_args.rs:9:1
+error: abi specification is required in indexer definition!
+ --> test_data/fail_args.rs:3:1
   |
-9 | #[handler(SomeArg)]
-  | ^^^^^^^^^^^^^^^^^^^
+3 | #[indexer()]
+  | ^^^^^^^^^^^^
   |
-  = note: this error originates in the attribute macro `handler` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0601]: `main` function not found in crate `$CRATE`
+  --> test_data/fail_args.rs:18:2
+   |
+18 | }
+   |  ^ consider adding a `main` function to `$DIR/test_data/fail_args.rs`
