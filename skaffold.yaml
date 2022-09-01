@@ -1,0 +1,30 @@
+apiVersion: skaffold/v2alpha3
+kind: Config
+build:
+  local:
+    concurrency: 1
+  artifacts:
+  - image: ghcr.io/fuellabs/fuel-indexer
+    context: . 
+    docker:
+      dockerfile: deployment/Dockerfile
+
+  tagPolicy:
+    gitCommit: {}
+deploy:
+  helm:
+    releases:
+    - name: fuel-indexer
+      chartPath: deployment/charts
+      values:
+        fuelIndexerImage: ghcr.io/fuellabs/fuel-indexer
+
+      namespace: fuel-indexer
+    flags:
+      upgrade:
+      - --install 
+      - --atomic
+      - --timeout=1800s
+      install:
+      - --atomic
+      - --timeout=1800s
