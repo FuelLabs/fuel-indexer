@@ -3,8 +3,8 @@
 resolver = "2"
 members = [
    "database/*",
-   #"examples/simple-native",
-   #"examples/simple-native/counter-rs",
+   "examples/simple-native",
+   "examples/simple-native/counter-rs",
    "examples/simple-wasm/simple-wasm",
    "examples/simple-wasm/simple",
    "fuel-indexer-api-server",

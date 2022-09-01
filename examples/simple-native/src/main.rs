@@ -1,51 +1,29 @@
 extern crate alloc;
 use anyhow::Result;
 use fuel_indexer::{
-    Address, GraphQlApi, IndexerConfig, IndexerResult, IndexerService, Manifest,
-    NativeHandlerResult, Receipt,
+    Address, GraphQlApi, IndexerConfig, IndexerService, Manifest,
 };
 use fuel_indexer_lib::config::{IndexerArgs, Parser};
-use fuel_indexer_macros::graphql_schema;
-use fuels::core::{abi_decoder::ABIDecoder, ParamType, Tokenizable};
-use fuels_abigen_macro::abigen;
+use fuel_indexer_macros::indexer;
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
-// Load graphql schema
-graphql_schema!("counter", "schema/counter.graphql");
 
-// Load structs from abigen
-abigen!(
-    Counter,
-    "examples/simple-native/contracts/counter/out/debug/counter-abi.json"
-);
+#[indexer(
+    abi = "examples/simple-native/contracts/counter/out/debug/counter-abi.json",
+    namespace = "counter",
+    schema = "schema/counter.graphql",
+)]
+mod simple_native {
+    fn count_handler(event: CountEvent) {
+        // Using the Count entity from the GraphQL schema
+        let count = Count {
+            id: event.id,
+            timestamp: event.timestamp,
+            count: event.count,
+        };
 
-fn count_handler(receipt: Receipt) -> Option<IndexerResult<NativeHandlerResult>> {
-    match receipt {
-        Receipt::ReturnData { data, .. } => {
-            // Define which params we expect (using the counter-abi.json as a reference)
-            let params = vec![ParamType::Struct(vec![
-                ParamType::U64,
-                ParamType::U64,
-                ParamType::U64,
-            ])];
-
-            // Decode the data into a Token using these params
-            let token = ABIDecoder::decode(&params, &data).unwrap();
-
-            // Recover the CountEvent from this token
-            let event = CountEvent::from_token(token[0].to_owned()).unwrap();
-
-            // Using the Count entity from the GraphQL schema
-            let count = Count {
-                id: event.id,
-                timestamp: event.timestamp,
-                count: event.count,
-            };
-
-            Some(Ok(count.pack()))
-        }
-        _ => None,
+        count.save()
     }
 }
 
@@ -78,7 +56,7 @@ pub async fn main() -> Result<()> {
 
     // Add an indexer comprised of a list of handlers
     service
-        .add_native_indexer(manifest, false, vec![count_handler])
+        .add_indexer(manifest, false)
         .await?;
 
     // Kick it off!
