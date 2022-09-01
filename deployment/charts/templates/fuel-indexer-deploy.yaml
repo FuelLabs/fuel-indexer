@@ -57,7 +57,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.app.name }}
-          image:{{ .Values.fuelIndexerImage }} 
+          image: {{ .Values.fuelIndexerImage }} 
           command: ["./fuel-indexer"]
           args:
             - "--fuel-node-host"
@@ -65,9 +65,9 @@ spec:
             - "--fuel-node-port"
             - "{{ .Values.app.fuel_node_port }}"
             - "--postgres-host"
-            - "{{ .Values.app.postgres.host }}"
+            - "{{ .Release.Name }}-postgres"
             - "--postgres-password"
-            - "{{ .Values.app.postgres.password }}"
+            - "{{ .Values.password }}"
           resources: {}
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           ports:
