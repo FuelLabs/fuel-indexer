@@ -1,7 +1,6 @@
 extern crate alloc;
 use fuel_indexer_macros::indexer;
 
-
 #[indexer(
     abi = "tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping-abi.json",
     namespace = "composability_test",

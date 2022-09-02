@@ -101,12 +101,8 @@ mod tests {
             .join(manifest.graphql_schema)
             .display()
             .to_string();
-        manifest.module = Module::Wasm(
-            test_data
-                .join(manifest.module.path())
-                .display()
-                .to_string(),
-        );
+        manifest.module =
+            Module::Wasm(test_data.join(manifest.module.path()).display().to_string());
 
         indexer_service
             .add_indexer(manifest, true)

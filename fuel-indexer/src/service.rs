@@ -1,4 +1,7 @@
-use crate::{Executor, IndexerResult, Manifest, Module, SchemaManager, NativeIndexExecutor, WasmIndexExecutor};
+use crate::{
+    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, SchemaManager,
+    WasmIndexExecutor,
+};
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
@@ -148,24 +151,23 @@ impl IndexerService {
                 let mut file = File::open(module).await?;
                 file.read_to_end(&mut bytes).await?;
 
-                let executor =
-                    WasmIndexExecutor::new(db_url, manifest, bytes).await?;
+                let executor = WasmIndexExecutor::new(db_url, manifest, bytes).await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
-                let handle = tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+                let handle =
+                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
 
                 (kill_switch, handle)
             }
             Module::Native(ref path) => {
                 let path = path.clone();
-                let executor =
-                    NativeIndexExecutor::new(&db_url, manifest, path).await?;
+                let executor = NativeIndexExecutor::new(&db_url, manifest, path).await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
-                let handle = tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+                let handle =
+                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
 
                 (kill_switch, handle)
             }
         };
-
 
         info!("Registered indexer {}", name);
         self.handles.insert(name.clone(), handle);
