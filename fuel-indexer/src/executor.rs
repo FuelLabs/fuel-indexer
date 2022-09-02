@@ -51,10 +51,12 @@ pub struct NativeIndexExecutor {
 }
 
 impl NativeIndexExecutor {
-    pub async fn new(db_conn: &str, manifest: Manifest) -> IndexerResult<Self> {
+    pub async fn new(db_conn: &str, manifest: Manifest, _path: String) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(Database::new(db_conn).await.unwrap()));
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
+
+        // TODO: spawn executor, set up comms..
 
         Ok(Self { _db: db, manifest })
     }

@@ -13,7 +13,7 @@ pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
 pub use fuel_indexer_schema::db::DatabaseError;
 pub use fuel_types::{Address, ContractId};
-pub use manifest::Manifest;
+pub use manifest::{Manifest, Module};
 pub use service::{IndexerConfig, IndexerService};
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
@@ -32,6 +32,8 @@ pub enum IndexerError {
     RuntimeError(#[from] RuntimeError),
     #[error("Could not initialize host environment: {0:#?}")]
     HostEnvInitError(#[from] HostEnvInitError),
+    #[error("IO Error: {0:#?}")]
+    IoError(#[from] std::io::Error),
     #[error("FFI Error {0:?}")]
     FFIError(#[from] ffi::FFIError),
     #[error("Missing handler")]

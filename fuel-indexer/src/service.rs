@@ -1,4 +1,4 @@
-use crate::{Executor, IndexerResult, Manifest, SchemaManager, WasmIndexExecutor};
+use crate::{Executor, IndexerResult, Manifest, Module, SchemaManager, NativeIndexExecutor, WasmIndexExecutor};
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
@@ -31,7 +31,7 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct TmpIndexerConfig {
     pub fuel_node: Option<FuelNodeConfig>,
     pub graphql_api: Option<GraphQLConfig>,
@@ -159,15 +159,33 @@ impl IndexerService {
         let start_block = manifest.start_block;
 
         let schema = manifest.graphql_schema().unwrap();
-        let wasm_bytes = manifest.wasm_module().unwrap();
-
-        // TODO: detect native vs. wasm right here.....
         self.manager.new_schema(&name, &schema).await?;
-        let executor =
-            WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes).await?;
+        let db_url = self.database_url.clone();
 
-        let kill_switch = Arc::new(AtomicBool::new(run_once));
-        let handle = tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+        let (kill_switch, handle) = match manifest.module {
+            Module::Wasm(ref module) => {
+                let mut bytes = Vec::<u8>::new();
+                let mut file = File::open(module).await?;
+                file.read_to_end(&mut bytes).await?;
+
+                let executor =
+                    WasmIndexExecutor::new(db_url, manifest, bytes).await?;
+                let kill_switch = Arc::new(AtomicBool::new(run_once));
+                let handle = tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+
+                (kill_switch, handle)
+            }
+            Module::Native(ref path) => {
+                let path = path.clone();
+                let executor =
+                    NativeIndexExecutor::new(&db_url, manifest, path).await?;
+                let kill_switch = Arc::new(AtomicBool::new(run_once));
+                let handle = tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+
+                (kill_switch, handle)
+            }
+        };
+
 
         info!("Registered indexer {}", name);
         self.handles.insert(name.clone(), handle);

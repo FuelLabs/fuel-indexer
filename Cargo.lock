@@ -4925,36 +4925,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple-counter"
+version = "0.1.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx 0.9.0",
+ "fuels-core",
+ "getrandom 0.2.7",
+ "serde",
+]
+
+[[package]]
 name = "simple-mutex"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38aabbeafa6f6dead8cebf246fe9fae1f9215c8d29b3a69f93bd62a9e4a3dcd6"
 dependencies = [
  "event-listener",
-]
-
-[[package]]
-name = "simple-native"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-std",
- "axum",
- "fuel-indexer",
- "fuel-indexer-lib",
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuel-tx 0.9.0",
- "fuel-types 0.5.1",
- "fuels-core",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.2.25",
 ]
 
 [[package]]

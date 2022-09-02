@@ -2,10 +2,8 @@ extern crate alloc;
 
 #[cfg(test)]
 mod tests {
-    use fuel_crypto::SecretKey;
-    use fuel_indexer::{IndexerConfig, IndexerService, Manifest};
+    use fuel_indexer::{IndexerConfig, IndexerService, Manifest, Module};
     use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
-    use fuel_vm::{consts::*, prelude::*};
     use fuels::node::{
         chain_config::{ChainConfig, StateConfig},
         service::DbType,
@@ -14,9 +12,8 @@ mod tests {
         setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, LocalWallet,
         Provider, TxParameters, DEFAULT_COIN_AMOUNT,
     };
-    use fuels::signers::{wallet::Wallet, Signer};
+    use fuels::signers::Signer;
     use fuels_abigen_macro::abigen;
-    use rand::{rngs::StdRng, SeedableRng};
     use std::path::Path;
 
     const MANIFEST: &str = include_str!("./test_data/manifest.yaml");
@@ -104,9 +101,9 @@ mod tests {
             .join(manifest.graphql_schema)
             .display()
             .to_string();
-        manifest.wasm_module = Some(
+        manifest.module = Module::Wasm(
             test_data
-                .join(manifest.wasm_module.unwrap())
+                .join(manifest.module.path())
                 .display()
                 .to_string(),
         );

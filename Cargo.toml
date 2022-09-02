@@ -3,7 +3,7 @@
 resolver = "2"
 members = [
    "database/*",
-   "examples/simple-native",
+   "examples/simple-native/simple-counter",
    "examples/simple-native/counter-rs",
    "examples/simple-wasm/simple-wasm",
    "examples/simple-wasm/simple",
