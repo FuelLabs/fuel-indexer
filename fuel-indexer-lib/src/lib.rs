@@ -30,12 +30,12 @@ pub mod utils {
 
                 let mut addrs: Vec<_> = host
                     .to_socket_addrs()
-                    .unwrap_or_else(|_| panic!("Unable to resolve domain for '{}'", host))
+                    .expect_or_else(|_| panic!("Unable to resolve domain for '{}'", host))
                     .collect();
 
                 let addr = addrs
                     .pop()
-                    .unwrap_or_else(|| panic!("Could not derive SocketAddr from '{}'", host));
+                    .expect_or_else(|| panic!("Could not derive SocketAddr from '{}'", host));
 
                 info!("Parsed SocketAddr '{}' from '{}'", addr.to_string(), host);
 
@@ -199,12 +199,12 @@ pub mod config {
         fn inject_env_vars(&mut self) -> Result<()> {
             if is_env_var(&self.host) {
                 self.host = std::env::var(trim_env_key(&self.host))
-                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
+                expect_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
             }
 
             if is_env_var(&self.port) {
                 self.port = std::env::var(trim_env_key(&self.port))
-                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
+                    .expect_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
             }
 
             Ok(())
@@ -266,13 +266,13 @@ pub mod config {
                 } => {
                     if is_env_var(user) {
                         *user = std::env::var(trim_env_key(user))
-                            .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &user));
+                        expect_or_else(|_| panic!("Failed to read '{}' from env", &user));
                     }
 
                     if let Some(pass) = &password {
                         if is_env_var(pass) {
                             *password =
-                                Some(std::env::var(trim_env_key(pass)).unwrap_or_else(|_| {
+                                Some(std::env::var(trim_env_key(pass)).expect_or_else(|_| {
                                     panic!("Failed to read '{}' from env", &pass)
                                 }));
                         }
@@ -280,23 +280,23 @@ pub mod config {
 
                     if is_env_var(host) {
                         *host = std::env::var(trim_env_key(host))
-                            .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &host));
+                            .expect_or_else(|_| panic!("Failed to read '{}' from env", &host));
                     }
 
                     if is_env_var(port) {
                         *port = std::env::var(trim_env_key(port))
-                            .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &port));
+                            .expect_or_else(|_| panic!("Failed to read '{}' from env", &port));
                     }
                     if is_env_var(database) {
                         *database = std::env::var(trim_env_key(database))
-                            .unwrap_or_else(|_| format!("Failed to read '{}' from env", &database));
+                            .expect_or_else(|_| format!("Failed to read '{}' from env", &database));
                     }
                 }
                 DatabaseConfig::Sqlite { path } => {
-                    let os_str = path.as_os_str().to_str().unwrap();
+                    let os_str = path.as_os_str().to_str().expect();
                     if is_env_var(os_str) {
                         *path =
-                            PathBuf::from(std::env::var(trim_env_key(os_str)).unwrap_or_else(
+                            PathBuf::from(std::env::var(trim_env_key(os_str)).expect_or_else(
                                 |_| format!("Failed to read '{}' from env", os_str),
                             ));
                     }
@@ -423,12 +423,12 @@ pub mod config {
         fn inject_env_vars(&mut self) -> Result<()> {
             if is_env_var(&self.host) {
                 self.host = std::env::var(trim_env_key(&self.host))
-                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
+                    .expect_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
             }
 
             if is_env_var(&self.port) {
                 self.port = std::env::var(trim_env_key(&self.port))
-                    .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
+                    .expect_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
             }
 
             Ok(())

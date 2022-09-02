@@ -11,7 +11,7 @@ pub fn process_handler_attr(attrs: TokenStream, item: TokenStream) -> TokenStrea
 
     let has_nomangle = item_fn.attrs.iter().any(|attr| {
         let path = attr.path.get_ident();
-        path.is_some() && path.unwrap() == "no_mangle"
+        path.is_some() && path.expect() == "no_mangle"
     });
 
     if !has_nomangle {
