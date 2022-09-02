@@ -2362,6 +2362,7 @@ dependencies = [
  "fuels-core",
  "futures",
  "http",
+ "hyper",
  "itertools",
  "serde",
  "serde-scale",
@@ -2448,6 +2449,7 @@ name = "fuel-indexer-schema"
 version = "0.0.0"
 dependencies = [
  "fuel-indexer-database-types",
+ "fuel-indexer-lib",
  "fuel-indexer-postgres",
  "fuel-indexer-sqlite",
  "fuel-types 0.3.1",
@@ -3224,6 +3226,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
+ "h2",
  "http",
  "http-body",
  "httparse",
