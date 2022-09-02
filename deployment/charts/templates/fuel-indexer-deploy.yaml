@@ -57,7 +57,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.app.name }}
-          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
+          image: {{ .Values.app.image.fuelIndexerImage }} 
           command: ["./fuel-indexer"]
           args:
             - "--fuel-node-host"
@@ -65,15 +65,22 @@ spec:
             - "--fuel-node-port"
             - "{{ .Values.app.fuel_node_port }}"
             - "--postgres-host"
-            - "{{ .Values.app.postgres.host }}"
+            - "{{ .Release.Name }}-postgres"
             - "--postgres-password"
-            - "{{ .Values.app.postgres.password }}"
+            - "{{ .Values.password }}"
           resources: {}
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           ports:
             - name: http
               containerPort: {{ .Values.app.target_port }}
               protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.app.target_port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
           volumeMounts:
             - name: {{ .Values.app.volume.pvname }}
               mountPath: "{{ .Values.app.volume.mountPath }}"

@@ -9,6 +9,7 @@ publish = false
 [dependencies]
 bincode = "1.3.3"
 fuel-indexer-database-types = { path = "../database/database-types" }
+fuel-indexer-lib = { path = "../fuel-indexer-lib" }
 fuel-indexer-postgres = { path = "../database/postgres", optional = true }
 fuel-indexer-sqlite = { path = "../database/sqlite", optional = true }
 fuel-tx = { version = "0.9", features = ["serde-types-minimal"] }
