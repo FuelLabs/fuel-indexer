@@ -40,21 +40,21 @@ pub struct Args {
 #[axum_macros::debug_handler]
 async fn ping(Extension(contract): Extension<Arc<Mutex<Message>>>) -> String {
     let contract = contract.lock().await;
-    let result = contract.ping().tx_params(tx_params()).call().await.unwrap();
+    let result = contract.ping().tx_params(tx_params()).call().await.expect();
     let pong: Ping = result.value;
     pong.value.to_string()
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect_or_else(|_| {
         let p = Path::new(file!())
             .parent()
-            .unwrap()
+            .expect()
             .parent()
-            .unwrap()
+            .expect()
             .parent()
-            .unwrap();
+            .expect();
 
         p.display().to_string()
     });
@@ -70,24 +70,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let fuel_node_host = opts
         .fuel_node_host
-        .unwrap_or_else(|| defaults::FUEL_NODE_HOST.to_string());
+        .expect_or_else(|| defaults::FUEL_NODE_HOST.to_string());
 
     let fuel_node_port = opts
         .fuel_node_port
-        .unwrap_or_else(|| defaults::FUEL_NODE_PORT.to_string());
+        .expect_or_else(|| defaults::FUEL_NODE_PORT.to_string());
 
-    let fuel_node_addr = derive_socket_addr(&fuel_node_host, &fuel_node_port).unwrap();
+    let fuel_node_addr = derive_socket_addr(&fuel_node_host, &fuel_node_port).expect();
 
     tracing_subscriber::fmt::Subscriber::builder()
         .with_writer(std::io::stderr)
         .with_env_filter(filter)
         .init();
 
-    let provider = Provider::connect(fuel_node_addr).await.unwrap();
+    let provider = Provider::connect(fuel_node_addr).await.expect();
 
     let wallet_path = opts
         .wallet_path
-        .unwrap_or_else(|| Path::new(&manifest_dir).join("wallet.json"));
+        .expect_or_else(|| Path::new(&manifest_dir).join("wallet.json"));
 
     info!("Wallet keystore at: {}", wallet_path.display());
 
@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let contract = Message::new(defaults::PING_CONTRACT_ID.to_string(), wallet);
 
-    let bin_path = opts.bin_path.unwrap_or_else(|| {
+    let bin_path = opts.bin_path.expect_or_else(|| {
         Path::join(
             manifest_dir,
             "composable-indexer-lib/contracts/ping/out/debug/ping.bin",
@@ -106,7 +106,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let compiled =
-        Contract::load_sway_contract(&bin_path.into_os_string().into_string().unwrap()).unwrap();
+        Contract::load_sway_contract(&bin_path.into_os_string().into_string().expect()).expect();
     let id = Contract::compute_contract_id(&compiled).to_string();
     info!("Using contract at {}", id);
 
@@ -118,7 +118,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/ping", post(ping))
         .layer(Extension(state.clone()));
 
-    let addr: SocketAddr = defaults::WEB_API_ADDR.parse().unwrap();
+    let addr: SocketAddr = defaults::WEB_API_ADDR.parse().expect();
 
     axum::Server::bind(&addr)
         .serve(app.into_make_service())

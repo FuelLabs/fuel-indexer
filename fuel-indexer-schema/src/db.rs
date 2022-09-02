@@ -57,7 +57,7 @@ impl IndexerConnectionPool {
         if url.is_err() {
             return Err(DatabaseError::InvalidConnectionString(database_url.into()));
         }
-        let url = url.unwrap();
+        let url = url.expect();
 
         match url.scheme() {
             "postgres" => {
@@ -124,7 +124,7 @@ pub async fn run_migration(database_url: &str) {
     if url.is_err() {
         panic!("{} is not a valid database string!", database_url);
     }
-    let url = url.unwrap();
+    let url = url.expect();
 
     match url.scheme() {
         "postgres" => {

@@ -32,14 +32,14 @@ pub struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| {
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect_or_else(|_| {
         let p = Path::new(file!())
             .parent()
-            .unwrap()
+            .expect()
             .parent()
-            .unwrap()
+            .expect()
             .parent()
-            .unwrap();
+            .expect();
 
         p.display().to_string()
     });
@@ -59,7 +59,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts = Args::from_args();
     let wallet_path = opts
         .wallet_path
-        .unwrap_or_else(|| Path::new(&manifest_dir).join("wallet.json"));
+        .expect_or_else(|| Path::new(&manifest_dir).join("wallet.json"));
 
     info!("Wallet keystore at: {}", wallet_path.display());
 
@@ -85,7 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         },
         database_type: DbType::InMemory,
         utxo_validation: false,
-        addr: defaults::FUEL_NODE_ADDR.parse().unwrap(),
+        addr: defaults::FUEL_NODE_ADDR.parse().expect(),
         ..Config::local_node()
     };
 
@@ -97,7 +97,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     wallet.set_provider(provider.clone());
 
-    let bin_path = opts.bin_path.unwrap_or_else(|| {
+    let bin_path = opts.bin_path.expect_or_else(|| {
         Path::join(
             manifest_dir,
             "composable-indexer-lib/contracts/ping/out/debug/ping.bin",
@@ -105,12 +105,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let contract_id = Contract::deploy(
-        &bin_path.into_os_string().into_string().unwrap(),
+        &bin_path.into_os_string().into_string().expect(),
         &wallet,
         tx_params(),
     )
     .await
-    .unwrap();
+    .expect();
 
     let contract_id = contract_id.to_string();
 
