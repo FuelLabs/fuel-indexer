@@ -254,7 +254,7 @@ RUST_LOG=debug cargo run -- --config ./config.yaml --manifest ./manifest.yaml
 (1 row)
 </code></pre>
 <p>So that's what we query for</p>
-<pre><code>curl -X POST http://localhost:29987/graph/counter -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { count(id: 1) { id count timestamp } }&quot;, &quot;params&quot;: &quot;b&quot;}' | json_pp
+<pre><code>curl -X POST http://localhost:29987/api/graph/counter -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { count(id: 1) { id count timestamp } }&quot;, &quot;params&quot;: &quot;b&quot;}' | json_pp
 [
    {
       &quot;count&quot; : 1,

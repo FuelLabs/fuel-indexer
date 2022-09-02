@@ -563,9 +563,9 @@ fn function_one(event: LogEvent) {
 </ul>
 <h2 id="querying-the-data"><a class="header" href="#querying-the-data">Querying the data</a></h2>
 <p>With some data in our indexer, we can now query the API endpoint, remembering that our namespace defined in the manifest file is <code>hello_namespace</code>, some example queries will look like this:</p>
-<pre><code class="language-bash">curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { event_counts { id count } }&quot;, &quot;params&quot;: &quot;b&quot;}'
-curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { event_counts { id account count } }&quot;, &quot;params&quot;: &quot;b&quot;}'
-curl -s localhost:29987/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { event_counts { count } }&quot;, &quot;params&quot;: &quot;b&quot;}'
+<pre><code class="language-bash">curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { event_counts { id count } }&quot;, &quot;params&quot;: &quot;b&quot;}'
+curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { event_counts { id account count } }&quot;, &quot;params&quot;: &quot;b&quot;}'
+curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { event_counts { count } }&quot;, &quot;params&quot;: &quot;b&quot;}'
 </code></pre>
 <p>With those queries, the response might look something like:</p>
 <pre><code class="language-json">{
@@ -670,7 +670,7 @@ RUST_LOG=debug cargo run -- --config ./config.yaml --manifest ./manifest.yaml
 (1 row)
 </code></pre>
 <p>So that's what we query for</p>
-<pre><code>curl -X POST http://localhost:29987/graph/counter -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { count(id: 1) { id count timestamp } }&quot;, &quot;params&quot;: &quot;b&quot;}' | json_pp
+<pre><code>curl -X POST http://localhost:29987/api/graph/counter -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { count(id: 1) { id count timestamp } }&quot;, &quot;params&quot;: &quot;b&quot;}' | json_pp
 [
    {
       &quot;count&quot; : 1,
