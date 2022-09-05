@@ -187,13 +187,12 @@ impl IndexerService {
     fn make_task<T: 'static + Executor + Send + Sync>(
         &self,
         kill_switch: Arc<AtomicBool>,
-        executor: T,
+        mut executor: T,
         start_block: Option<u64>,
     ) -> impl Future<Output = ()> {
         let mut next_cursor = None;
         let mut next_block = start_block.unwrap_or(1);
         let client = FuelClient::from(self.fuel_node_addr);
-        let executor = Arc::new(executor);
 
         async move {
             let mut retry_count = 0;
@@ -211,7 +210,6 @@ impl IndexerService {
                     .unwrap();
 
                 debug!("Processing {} results", results.len());
-                let exec = executor.clone();
 
                 let mut block_info = Vec::new();
                 for block in results.into_iter().rev() {
@@ -243,7 +241,7 @@ impl IndexerService {
                     block_info.push(block);
                 }
 
-                let result = exec.handle_events(block_info).await;
+                let result = executor.handle_events(block_info).await;
 
                 if let Err(e) = result {
                     error!("Indexer executor failed {e:?}, retrying.");

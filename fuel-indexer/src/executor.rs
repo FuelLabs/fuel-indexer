@@ -1,12 +1,13 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::{IndexerError, IndexerResult, Manifest};
+use crate::{IndexerError, IndexerMessage, IndexerResult, Manifest, DEFAULT_PORT};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
-use fuel_indexer_schema::{serialize, BlockData};
+use fuel_indexer_schema::{deserialize, serialize, BlockData};
 use std::path::Path;
 use thiserror::Error;
-use tokio::task::spawn_blocking;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::{net::TcpStream, task::spawn_blocking};
 use tracing::error;
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store, WasmerEnv,
@@ -24,7 +25,7 @@ where
     Self: Sized,
 {
     fn from_file(index: &Path) -> IndexerResult<Self>;
-    async fn handle_events(&self, blocks: Vec<BlockData>) -> IndexerResult<()>;
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
 }
 
 #[derive(Error, Debug)]
@@ -45,20 +46,33 @@ pub struct IndexEnv {
 }
 
 pub struct NativeIndexExecutor {
-    _db: Arc<Mutex<Database>>,
+    db: Arc<Mutex<Database>>,
     #[allow(dead_code)]
     manifest: Manifest,
+    _process: tokio::process::Child,
+    stream: TcpStream,
 }
 
 impl NativeIndexExecutor {
-    pub async fn new(db_conn: &str, manifest: Manifest, _path: String) -> IndexerResult<Self> {
+    pub async fn new(db_conn: &str, manifest: Manifest, path: String) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(Database::new(db_conn).await.unwrap()));
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
 
-        // TODO: spawn executor, set up comms..
+        let port = manifest.indexer_port.unwrap_or(DEFAULT_PORT);
+        let process = tokio::process::Command::new(path)
+            .arg(format!("--listen {}", port))
+            .kill_on_drop(true)
+            .spawn()?;
 
-        Ok(Self { _db: db, manifest })
+        let stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
+
+        Ok(Self {
+            db,
+            manifest,
+            _process: process,
+            stream,
+        })
     }
 }
 
@@ -68,8 +82,45 @@ impl Executor for NativeIndexExecutor {
         unimplemented!()
     }
 
-    async fn handle_events(&self, _blocks: Vec<BlockData>) -> IndexerResult<()> {
-        // TODO: fill out
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+        let mut buf = [0u8; 4096];
+
+        let msg = serialize(&IndexerMessage::Blocks(blocks));
+
+        self.stream.write_u64(msg.len() as u64).await?;
+        self.stream.write_all(&msg).await?;
+
+        loop {
+            let size = self.stream.read_u64().await? as usize;
+
+            if self.stream.read_exact(&mut buf[..size]).await? < size {
+                return Err(IndexerError::HandlerError);
+            }
+
+            let object: IndexerMessage =
+                deserialize(&buf[..size]).expect("Could not deserialize message from indexer!");
+
+            match object {
+                IndexerMessage::Object(_) | IndexerMessage::Blocks(_) => panic!("Not good"),
+                IndexerMessage::GetObject(type_id, object_id) => {
+                    let object = self.db.lock().await.get_object(type_id, object_id).await;
+                    if let Some(obj) = object {
+                        self.stream.write_u64(obj.len() as u64).await?;
+                        self.stream.write_all(&obj).await?
+                    } else {
+                        self.stream.write_u64(0).await?;
+                    }
+                }
+                IndexerMessage::PutObject(type_id, bytes, columns) => {
+                    self.db
+                        .lock()
+                        .await
+                        .put_object(type_id, columns, bytes)
+                        .await;
+                }
+                IndexerMessage::Commit => break,
+            }
+        }
         Ok(())
     }
 }
@@ -138,7 +189,7 @@ impl Executor for WasmIndexExecutor {
     }
 
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    async fn handle_events(&self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);
         let arg = ffi::WasmArg::new(&self.instance, bytes)?;
 
@@ -255,7 +306,7 @@ mod tests {
         let executor = WasmIndexExecutor::new(database_url.to_string(), manifest, WASM_BYTES).await;
         assert!(executor.is_ok());
 
-        let executor = executor.unwrap();
+        let mut executor = executor.unwrap();
 
         let evt1 = SomeEvent {
             id: 1020,

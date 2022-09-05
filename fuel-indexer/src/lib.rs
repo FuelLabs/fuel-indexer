@@ -11,12 +11,15 @@ mod service;
 pub use api::GraphQlApi;
 pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
-pub use fuel_indexer_schema::db::DatabaseError;
+pub use fuel_indexer_schema::{db::DatabaseError, BlockData, FtColumn};
 pub use fuel_types::{Address, ContractId};
 pub use manifest::{Manifest, Module};
+use serde::{Deserialize, Serialize};
 pub use service::{IndexerConfig, IndexerService};
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
+
+pub const DEFAULT_PORT: u16 = 4000;
 
 #[derive(Error, Debug)]
 pub enum IndexerError {
@@ -52,4 +55,13 @@ pub enum IndexerError {
     NoTransactionError,
     #[error("Unknown error")]
     Unknown,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum IndexerMessage {
+    Blocks(Vec<BlockData>),
+    GetObject(u64, u64),
+    PutObject(u64, Vec<u8>, Vec<FtColumn>),
+    Object(Vec<u8>),
+    Commit,
 }
