@@ -98,7 +98,7 @@ pub async fn health_check(
         .get(
             format!("{}/health", config.fuel_node.http_url())
                 .parse()
-                .unwrap(),
+                .expect("Failed to parse string into URI"),
         )
         .await
         .expect("Failed to get fuel-client status.");
@@ -129,7 +129,10 @@ impl GraphQlApi {
             .expect("SchemaManager create failed");
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = Arc::new(config.clone());
-        let listen_on = config.graphql_api.derive_socket_addr().unwrap();
+        let listen_on = config
+            .graphql_api
+            .derive_socket_addr()
+            .expect("Failed to derive socket address");
 
         let pool = IndexerConnectionPool::connect(&config.database.to_string())
             .await
