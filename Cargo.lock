@@ -4928,7 +4928,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "simple-counter"
+name = "simple-counter-indexer"
 version = "0.1.0"
 dependencies = [
  "fuel-indexer-macros",

@@ -58,9 +58,7 @@ RUST_LOG=debug cargo run
 ### Start the fuel indexer service
 
 ```bash
-cd fuel-indexer/examples/simple-native/
-
-RUST_LOG=info cargo run -- ./config.yaml ./manifest.yaml
+./target/debug/fuel-indexer --manifest examples/simple-native/manifest.yaml --fuel-node-port 4004 --graphql-api-host 127.0.0.1
 ```
 
 ### Send a transaction to the smartcontract via the webserver

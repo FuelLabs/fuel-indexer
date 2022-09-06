@@ -1,6 +1,5 @@
 namespace: composability_test
 graphql_schema: schema/schema.graphql
-wasm_module: composable_indexer_lib.wasm
-handlers:
-  - event: LogData
-    handler: function_one
+module:
+  wasm:
+    composable_indexer_lib.wasm
