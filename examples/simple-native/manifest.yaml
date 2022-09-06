@@ -1,5 +1,0 @@
-namespace: counter
-graphql_schema: examples/simple-native/schema/counter.graphql
-module:
-  wasm:
-   target/wasm32-unknown-unknown/release/simple_counter_indexer.wasm

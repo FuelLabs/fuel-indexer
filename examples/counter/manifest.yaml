@@ -1,0 +1,4 @@
+namespace: counter
+graphql_schema: examples/counter/schema/counter.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/release/counter_indexer.wasm

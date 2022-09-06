@@ -1300,25 +1300,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "counter-rs"
+name = "counter-indexer"
 version = "0.1.0"
 dependencies = [
- "actix-web",
- "async-mutex",
- "bytes 0.4.12",
- "dotenv",
- "env_logger 0.9.0",
- "fuel-core 0.6.4",
- "fuel-gql-client 0.6.4",
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
  "fuel-tx 0.9.0",
- "fuels",
- "fuels-abigen-macro",
- "log",
- "pretty_env_logger",
- "rand 0.8.5",
+ "fuels-core",
+ "getrandom 0.2.7",
  "serde",
- "serde_json",
- "tokio",
 ]
 
 [[package]]
@@ -4928,19 +4919,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "simple-counter-indexer"
-version = "0.1.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuel-tx 0.9.0",
- "fuels-core",
- "getrandom 0.2.7",
- "serde",
-]
-
-[[package]]
 name = "simple-mutex"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6209,6 +6187,28 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2d4bc4724b4f02a482c8cab053dac5ef26410f264c06ce914958f9a42813556"
 dependencies = [
  "wast",
+]
+
+[[package]]
+name = "web-api-and-fuel-node"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "async-mutex",
+ "bytes 0.4.12",
+ "dotenv",
+ "env_logger 0.9.0",
+ "fuel-core 0.6.4",
+ "fuel-gql-client 0.6.4",
+ "fuel-tx 0.9.0",
+ "fuels",
+ "fuels-abigen-macro",
+ "log",
+ "pretty_env_logger",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

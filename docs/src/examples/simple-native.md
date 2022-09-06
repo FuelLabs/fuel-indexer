@@ -7,7 +7,7 @@
 First we'll walk through the basic setup and usage of the project
 
 ```text
-➜  cd fuel-indexer/examples/simple-native/
+➜  cd fuel-indexer/examples/counter/
 
 ➜  tree . -I 'target/'
 .
@@ -76,7 +76,7 @@ DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" \
 As previously mentioned, `counter-rs` contains both a tiny webserver used to pass messages to/from our Sway smart contract, as well as our Fuel node that we use to interact with the blockchain. We will start both of these services with the following command.
 
 ```bash
-cd fuel-indexer/examples/simple-native/counter-rs
+cd fuel-indexer/examples/counter/counter-rs
 
 RUST_LOG=debug cargo run
 ```
@@ -86,7 +86,7 @@ RUST_LOG=debug cargo run
 With our Fuel node and webserver up and running, we'll next start our Fuel Indexer service.
 
 ```bash
-cd fuel-indexer/examples/simple-native/
+cd fuel-indexer/examples/counter/
 
 RUST_LOG=debug cargo run -- --config ./config.yaml --manifest ./manifest.yaml
 ```

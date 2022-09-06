@@ -45,5 +45,3 @@ COPY --from=builder /build/target/release/fuel-indexer.d .
 COPY --from=builder /build/tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping.bin .
 
 COPY --from=builder /build/tests/e2e/composable-indexer .
-
-RUN bash make-test-manifest.bash
