@@ -19,12 +19,12 @@ A simple app that shows indexer functionality.
 │       │       └── counter.bin
 │       └── src
 │           └── main.sw
-├── frontend
-│   └── index.html
-├── indexer
+├── counter-indexer
 │   ├── Cargo.toml
 │   └── src
 │       └── lib.rs
+├── frontend
+│   └── index.html
 ├── manifest.yaml
 ├── schema
 │   └── counter.graphql
