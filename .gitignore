@@ -7,4 +7,5 @@ docs/book/
 *.swp
 *.db
 *.db*
-
+# *.stderr
+*.wasm

@@ -1,4 +1,6 @@
-# simple-native
+# counter
+
+A simple app that shows indexer functionality.
 
 ## Setup
 
@@ -6,9 +8,7 @@
 ```bash
 ➜  tree . -I 'target/'
 .
-├── Cargo.toml
 ├── README.md
-├── config.yaml
 ├── contracts
 │   └── counter
 │       ├── Forc.lock
@@ -19,19 +19,21 @@
 │       │       └── counter.bin
 │       └── src
 │           └── main.sw
-├── counter-rs
+├── counter-indexer
 │   ├── Cargo.toml
 │   └── src
-│       └── main.rs
+│       └── lib.rs
 ├── frontend
 │   └── index.html
 ├── manifest.yaml
 ├── schema
 │   └── counter.graphql
-└── src
-    └── main.rs
+└── web-api-and-fuel-node
+    ├── Cargo.toml
+    └── src
+        └── main.rs
 
-10 directories, 14 files
+11 directories, 13 files
 ```
 
 ## Usage
@@ -41,26 +43,23 @@
 - In this example we're using an `indexer` database owned by a `postgres` role without a password
 
 ```bash
-cd fuel-indexer/
+createdb indexer -U postgres
 
-DATABASE_URL="postgres://postgres@127.0.0.1:5432/indexer" \
-   diesel migration list --migration-dir=schema/migrations/postgres
+DATABASE_URL=postgres://postgres@localhost/indexer bash scripts/run_migrations.local.sh
 ```
 
 ### Start fuel node and use small webserver as contract proxy
 
 ```bash
-cd fuel-indexer/examples/simple-native/counter-rs
-
-RUST_LOG=debug cargo run
+cd fuel-indexer/examples/counter/web-api-and-fuel-node && cargo run
 ```
 
 ### Start the fuel indexer service
 
 ```bash
-cd fuel-indexer/examples/simple-native/
+cargo build -p fuel-indexer
 
-RUST_LOG=info cargo run -- ./config.yaml ./manifest.yaml
+./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml --fuel-node-port 4004 --graphql-api-host 127.0.0.1 --postgres-database indexer
 ```
 
 ### Send a transaction to the smartcontract via the webserver

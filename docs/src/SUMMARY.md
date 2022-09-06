@@ -10,7 +10,7 @@
     - [Configuration](./getting-started/configuration.md)
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-indexer.md)
-  - [Simple Native](./examples/simple-native.md)
+  - [Counter](./examples/counter.md)
 - [Web API](./api/index.md)
   - [GraphQL server](./api/gql-server.md)
 - [Database](./database/index.md)

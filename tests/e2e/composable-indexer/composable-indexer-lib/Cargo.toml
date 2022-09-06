@@ -7,9 +7,9 @@ edition = "2021"
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = { path = "../../../../fuel-indexer-macros" }
+fuel-indexer-macros = { path = "../../../../fuel-indexer-macros", default-features = false }
 fuel-indexer-plugin = { path = "../../../../fuel-indexer-plugin" }
-fuel-indexer-schema = { path = "../../../../fuel-indexer-schema" }
+fuel-indexer-schema = { path = "../../../../fuel-indexer-schema", default-features = false }
 fuel-tx = "0.9"
 fuels-core = "0.15"
 getrandom = { version = "0.2", features = ["js"] }

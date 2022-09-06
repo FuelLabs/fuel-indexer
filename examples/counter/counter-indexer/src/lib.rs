@@ -2,7 +2,7 @@ extern crate alloc;
 use fuel_indexer_macros::indexer;
 
 #[indexer(
-    abi = "examples/simple-native/contracts/counter/out/debug/counter-abi.json",
+    abi = "examples/counter/contracts/counter/out/debug/counter-abi.json",
     namespace = "counter",
     schema = "../schema/counter.graphql"
 )]
