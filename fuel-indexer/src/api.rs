@@ -17,6 +17,7 @@ use fuel_indexer_schema::db::{
 };
 use http::StatusCode;
 use hyper::Client;
+use hyper_tls::HttpsConnector;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{process, process::Command};
@@ -91,7 +92,9 @@ pub async fn health_check(
     let uptime = ps_status.pop().expect("Malformed stdout.");
 
     // Get fuel-core status
-    let resp = Client::new()
+    let https = HttpsConnector::new();
+    let client = Client::builder().build::<_, hyper::Body>(https);
+    let resp = client
         .get(
             format!("{}/health", config.fuel_node.http_url())
                 .parse()

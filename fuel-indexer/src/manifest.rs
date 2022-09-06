@@ -10,6 +10,7 @@ pub struct Manifest {
     pub module: Module,
     pub start_block: Option<u64>,
     pub test_events: Option<Vec<Event>>,
+    pub indexer_port: Option<u16>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
