@@ -91,7 +91,9 @@ impl Selections {
                         }
 
                         let val = match value {
-                            gql::Value::Int(val) => format!("{}", val.as_i64().unwrap()),
+                            gql::Value::Int(val) => {
+                                format!("{}", val.as_i64().expect("Failed to parse value as i64"))
+                            }
                             gql::Value::Float(val) => format!("{}", val),
                             gql::Value::String(val) => val.to_string(),
                             gql::Value::Boolean(val) => format!("{}", val),
@@ -152,7 +154,9 @@ impl Selections {
                     }
                 }
                 Selection::Field(name, filters, sub_selection) => {
-                    let field_type = schema.field_type(cond, name).unwrap();
+                    let field_type = schema
+                        .field_type(cond, name)
+                        .expect("Unable to retrieve field type");
                     let _ = sub_selection.resolve_fragments(schema, field_type, fragments)?;
 
                     selections.push(Selection::Field(
