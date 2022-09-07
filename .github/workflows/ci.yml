@@ -447,13 +447,14 @@ jobs:
           echo "DEPLOYMENT_VERSION=$(echo $GITHUB_SHA)" >> $GITHUB_ENV
 
       - name: Deploy Fuel Indexer
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: Deploy Fuel Indexer on k8s
-          repo: FuelLabs/fuel-deployment
-          ref: refs/heads/master
-          token: ${{ secrets.REPO_TOKEN }}
-          inputs: '{"ref":"master","inputs":{ "k8s-type": "${{ env.K8S }}", "config-directory": "${{ env.CONFIG }}", "config-env": "${{ env.ENV }}", "deployment-version": "${{ env.DEPLOYMENT_VERSION }}", "image-tag": "${{ env.IMAGE_TAG }}" }}'
+        id: deploy_fuel_indexer
+        run: |
+          curl \
+            -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.REPO_TOKEN }}" \
+            https://api.github.com/repos/FuelLabs/fuel-deployment/actions/workflows/deploy-fuel-indexer.yml/dispatches \
+            -d '{"ref":"master","inputs":{ "k8s-type": "${{ env.K8S }}", "config-directory": "${{ env.CONFIG }}", "config-env": "${{ env.ENV }}", "deployment-version": "${{ env.DEPLOYMENT_VERSION }}", "image-tag": "${{ env.IMAGE_TAG }}" }}'
         env:
           K8S: 'eks'
           CONFIG: 'fuel-dev1'
