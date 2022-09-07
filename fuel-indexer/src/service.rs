@@ -141,7 +141,9 @@ impl IndexerService {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
-        let schema = manifest.graphql_schema().unwrap();
+        let schema = manifest
+            .graphql_schema()
+            .expect("Manifest should include GraphQL schema");
         self.manager.new_schema(&name, &schema).await?;
         let db_url = self.database_url.clone();
 
@@ -207,7 +209,7 @@ impl IndexerService {
                         direction: PageDirection::Forward,
                     })
                     .await
-                    .unwrap();
+                    .expect("Failed to retrieve blocks");
 
                 debug!("Processing {} results", results.len());
 

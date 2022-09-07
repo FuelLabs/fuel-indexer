@@ -74,7 +74,10 @@ fn get_string(mem: &Memory, ptr: u32, len: u32) -> Result<String, FFIError> {
 }
 
 fn get_object_id(mem: &Memory, ptr: u32) -> u64 {
-    WasmPtr::<u64>::new(ptr).deref(mem).unwrap().get()
+    WasmPtr::<u64>::new(ptr)
+        .deref(mem)
+        .expect("Failed to deref WasmPtr")
+        .get()
 }
 
 fn log_data(env: &IndexEnv, ptr: u32, len: u32, log_level: u32) {
@@ -107,7 +110,10 @@ fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
         let result = alloc_fn.call(size).expect("Alloc failed");
         let range = result as usize..result as usize + size as usize;
 
-        WasmPtr::<u32>::new(len_ptr).deref(mem).unwrap().set(size);
+        WasmPtr::<u32>::new(len_ptr)
+            .deref(mem)
+            .expect("Failed to deref WasmPtr")
+            .set(size);
 
         unsafe {
             mem.data_unchecked_mut()[range].copy_from_slice(&bytes);

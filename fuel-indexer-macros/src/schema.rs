@@ -170,17 +170,12 @@ fn get_query_root<'a>(types: &HashSet<String>, ast: &Document<'a, String>) -> St
         }
     });
 
-    if schema.is_none() {
-        panic!("Schema definition not found!");
-    }
+    let SchemaDefinition { query, .. } = schema.expect("Schema definition not found!");
 
-    let SchemaDefinition { query, .. } = schema.unwrap();
-
-    if query.is_none() {
-        panic!("Schema definition must specify a query root!");
-    }
-
-    let name = query.as_ref().unwrap().into();
+    let name = query
+        .as_ref()
+        .expect("Schema definition must specify a query root!")
+        .into();
 
     if !types.contains(&name) {
         panic!("Query root not defined!");

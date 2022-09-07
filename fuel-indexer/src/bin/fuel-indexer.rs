@@ -31,7 +31,9 @@ pub async fn main() -> Result<()> {
     run_migration(&config.database.to_string()).await;
 
     let _local_node = if opt.local {
-        let s = FuelService::new_node(Config::local_node()).await.unwrap();
+        let s = FuelService::new_node(Config::local_node())
+            .await
+            .expect("Failed to start node using local config");
         config.fuel_node = s.bound_address.into();
         Some(s)
     } else {
@@ -47,7 +49,7 @@ pub async fn main() -> Result<()> {
 
     // TODO: need an API endpoint to upload/create these things.....
     if opt.manifest.is_some() {
-        let path = opt.manifest.unwrap();
+        let path = opt.manifest.expect("Could not get path from manifest");
 
         info!(
             "Using bootstrap manifest file located at '{}'",
