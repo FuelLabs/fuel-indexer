@@ -152,6 +152,7 @@ impl WasmIndexExecutor {
         _manifest: Manifest,
         wasm_bytes: impl AsRef<[u8]>,
     ) -> IndexerResult<Self> {
+
         let store = Store::new(&Universal::new(compiler()).engine());
         let module = Module::new(&store, &wasm_bytes)?;
 

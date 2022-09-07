@@ -45,3 +45,5 @@ COPY --from=builder /build/target/release/fuel-indexer.d .
 COPY --from=builder /build/tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping.bin .
 
 COPY --from=builder /build/tests/e2e/composable-indexer .
+
+COPY --from=builder /build/target/wasm32-unknown-unknown/release/composable_indexer_lib.wasm composable-indexer/composable-indexer-lib/

@@ -1,5 +1,0 @@
-namespace: composability_test
-graphql_schema: schema/schema.graphql
-module:
-  wasm:
-    composable_indexer_lib.wasm

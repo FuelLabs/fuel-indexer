@@ -2,9 +2,9 @@ extern crate alloc;
 use fuel_indexer_macros::indexer;
 
 #[indexer(
-    abi = "composable-indexer-lib/contracts/ping/out/debug/ping-abi.json",
+    abi = "tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping-abi.json",
     namespace = "composability_test",
-    schema = "composable-indexer-lib/schema/schema.graphql"
+    schema = "schema/schema.graphql"
 )]
 mod composability_test {
     fn function_one(ping: Ping) {

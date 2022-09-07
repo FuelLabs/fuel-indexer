@@ -257,7 +257,7 @@ impl IndexerService {
 
                 next_cursor = cursor;
                 if next_cursor.is_none() {
-                    info!("No next page, sleeping");
+                    debug!("No next page, sleeping");
                     sleep(Duration::from_secs(5)).await;
                 };
                 retry_count = 0;
@@ -273,7 +273,7 @@ impl IndexerService {
         let IndexerService { handles, .. } = self;
         let mut futs = FuturesUnordered::from_iter(handles.into_values());
         while let Some(fut) = futs.next().await {
-            info!("Retired a future {fut:?}");
+            debug!("Retired a future {fut:?}");
         }
     }
 }
