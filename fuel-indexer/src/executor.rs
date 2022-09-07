@@ -1,12 +1,12 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::{IndexerError, IndexerMessage, IndexerResult, Manifest, DEFAULT_PORT};
+use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult, Manifest};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_indexer_schema::{deserialize, serialize, BlockData};
 use std::path::Path;
 use thiserror::Error;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::{net::TcpStream, task::spawn_blocking};
 use tracing::error;
 use wasmer::{
@@ -59,11 +59,20 @@ impl NativeIndexExecutor {
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
 
-        let port = manifest.indexer_port.unwrap_or(DEFAULT_PORT);
-        let process = tokio::process::Command::new(path)
-            .arg(format!("--listen {}", port))
+        let mut process = tokio::process::Command::new(path)
             .kill_on_drop(true)
             .spawn()?;
+
+        let mut reader = BufReader::new(
+            process
+                .stdout
+                .take()
+                .ok_or(IndexerError::ExecutorInitError)?,
+        );
+        let mut out = String::new();
+        reader.read_line(&mut out).await?;
+
+        let port: u16 = out.parse()?;
 
         let stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
 
@@ -85,7 +94,7 @@ impl Executor for NativeIndexExecutor {
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let mut buf = [0u8; 4096];
 
-        let msg = serialize(&IndexerMessage::Blocks(blocks));
+        let msg = serialize(&IndexerResponse::Blocks(blocks));
 
         self.stream.write_u64(msg.len() as u64).await?;
         self.stream.write_all(&msg).await?;
@@ -97,12 +106,11 @@ impl Executor for NativeIndexExecutor {
                 return Err(IndexerError::HandlerError);
             }
 
-            let object: IndexerMessage =
+            let object: IndexerRequest =
                 deserialize(&buf[..size]).expect("Could not deserialize message from indexer!");
 
             match object {
-                IndexerMessage::Object(_) | IndexerMessage::Blocks(_) => panic!("Not good"),
-                IndexerMessage::GetObject(type_id, object_id) => {
+                IndexerRequest::GetObject(type_id, object_id) => {
                     let object = self.db.lock().await.get_object(type_id, object_id).await;
                     if let Some(obj) = object {
                         self.stream.write_u64(obj.len() as u64).await?;
@@ -111,14 +119,14 @@ impl Executor for NativeIndexExecutor {
                         self.stream.write_u64(0).await?;
                     }
                 }
-                IndexerMessage::PutObject(type_id, bytes, columns) => {
+                IndexerRequest::PutObject(type_id, bytes, columns) => {
                     self.db
                         .lock()
                         .await
                         .put_object(type_id, columns, bytes)
                         .await;
                 }
-                IndexerMessage::Commit => break,
+                IndexerRequest::Commit => break,
             }
         }
         Ok(())

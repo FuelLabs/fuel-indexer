@@ -19,8 +19,6 @@ pub use service::{IndexerConfig, IndexerService};
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
 
-pub const DEFAULT_PORT: u16 = 4000;
-
 #[derive(Error, Debug)]
 pub enum IndexerError {
     #[error("Compiler error: {0:#?}")]
@@ -49,8 +47,12 @@ pub enum IndexerError {
     InvalidAddress(#[from] std::net::AddrParseError),
     #[error("Join Error {0:?}")]
     JoinError(#[from] tokio::task::JoinError),
+    #[error("Error initializing executor")]
+    ExecutorInitError,
     #[error("Error executing handler")]
     HandlerError,
+    #[error("Invalid port {0:?}")]
+    InvalidPortNumber(#[from] core::num::ParseIntError),
     #[error("No transaction is open!")]
     NoTransactionError,
     #[error("Unknown error")]
@@ -58,10 +60,14 @@ pub enum IndexerError {
 }
 
 #[derive(Serialize, Deserialize)]
-pub enum IndexerMessage {
+pub enum IndexerResponse {
     Blocks(Vec<BlockData>),
+    Object(Vec<u8>),
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum IndexerRequest {
     GetObject(u64, u64),
     PutObject(u64, Vec<u8>, Vec<FtColumn>),
-    Object(Vec<u8>),
     Commit,
 }

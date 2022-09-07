@@ -45,7 +45,7 @@ pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
 pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
     match bincode::deserialize(bytes) {
         Ok(obj) => Ok(obj),
-        Err(e) => Err(format!("Scale serde error {:?}", e)),
+        Err(e) => Err(format!("Bincode serde error {:?}", e)),
     }
 }
 
