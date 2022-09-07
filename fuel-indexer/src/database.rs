@@ -294,7 +294,10 @@ mod tests {
             .expect("Connection pool error");
 
         let version = schema_version(GRAPHQL_SCHEMA);
-        let mut conn = pool.acquire().await.unwrap();
+        let mut conn = pool
+            .acquire()
+            .await
+            .expect("Failed to acquire indexer connection");
         let results = models::columns_get_schema(&mut conn, "test_namespace", &version)
             .await
             .expect("Metadata query failed");
@@ -337,7 +340,7 @@ mod tests {
 
         let obj = db.get_object(THING1_TYPE, object_id).await;
         assert!(obj.is_some());
-        let obj = obj.unwrap();
+        let obj = obj.expect("Failed to get object from database");
 
         assert_eq!(obj, bytes);
 

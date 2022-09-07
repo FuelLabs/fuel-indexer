@@ -293,7 +293,10 @@ pub mod config {
                     }
                 }
                 DatabaseConfig::Sqlite { path } => {
-                    let os_str = path.as_os_str().to_str().unwrap();
+                    let os_str = path
+                        .as_os_str()
+                        .to_str()
+                        .expect("Failed to convert path to &str slice");
                     if is_env_var(os_str) {
                         *path =
                             PathBuf::from(std::env::var(trim_env_key(os_str)).unwrap_or_else(

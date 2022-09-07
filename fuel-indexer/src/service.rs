@@ -144,7 +144,9 @@ impl IndexerService {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
-        let schema = manifest.graphql_schema().unwrap();
+        let schema = manifest
+            .graphql_schema()
+            .expect("Manifest should include GraphQL schema");
         self.manager.new_schema(&name, &schema).await?;
         let executor =
             NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles).await?;
@@ -172,8 +174,10 @@ impl IndexerService {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
-        let schema = manifest.graphql_schema().unwrap();
-        let wasm_bytes = manifest.wasm_module().unwrap();
+        let schema = manifest
+            .graphql_schema()
+            .expect("Manifest should include GraphQL schema");
+        let wasm_bytes = manifest.wasm_module().expect("Could not load wasm module");
 
         self.manager.new_schema(&name, &schema).await?;
         let executor =
@@ -225,7 +229,7 @@ impl IndexerService {
                         direction: PageDirection::Forward,
                     })
                     .await
-                    .unwrap();
+                    .expect("Failed to retrieve blocks");
 
                 debug!("Processing {} results", results.len());
                 let exec = executor.clone();
