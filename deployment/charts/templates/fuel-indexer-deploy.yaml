@@ -57,7 +57,11 @@ spec:
     spec:
       containers:
         - name: {{ .Values.app.name }}
+<<<<<<< HEAD
           image: {{ .Values.fuelIndexerImage }} 
+=======
+          image: {{ .Values.app.image.fuelIndexerImage }} 
+>>>>>>> 07ef8b9c86b650e34d992e1cee5f80173227118e
           command: ["./fuel-indexer"]
           args:
             - "--fuel-node-host"
@@ -74,6 +78,13 @@ spec:
             - name: http
               containerPort: {{ .Values.app.target_port }}
               protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.app.target_port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
           volumeMounts:
             - name: {{ .Values.app.volume.pvname }}
               mountPath: "{{ .Values.app.volume.mountPath }}"

@@ -77,11 +77,7 @@ impl SchemaBuilder {
             })
             .next();
 
-        if query.is_none() {
-            panic!("TODO: this needs to be error type");
-        }
-
-        let query = query.cloned().unwrap();
+        let query = query.cloned().expect("TODO: this needs to be error type");
 
         for def in ast.definitions.iter() {
             if let Definition::TypeDefinition(typ) = def {

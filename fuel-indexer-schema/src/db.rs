@@ -1,7 +1,9 @@
 pub mod graphql;
 pub mod models;
 pub mod tables;
+use fuel_indexer_lib::utils::ServiceStatus;
 use sqlx::pool::PoolConnection;
+use std::cmp::Ordering;
 use thiserror::Error;
 
 #[derive(Clone, Debug, Error)]
@@ -39,6 +41,9 @@ impl DbType {
     }
 }
 
+use fuel_indexer_postgres as postgres;
+use fuel_indexer_sqlite as sqlite;
+
 impl IndexerConnectionPool {
     pub fn database_type(&self) -> DbType {
         match self {
@@ -52,7 +57,7 @@ impl IndexerConnectionPool {
         if url.is_err() {
             return Err(DatabaseError::InvalidConnectionString(database_url.into()));
         }
-        let url = url.unwrap();
+        let url = url.expect("Database URL should be correctly formed");
 
         match url.scheme() {
             "postgres" => {
@@ -68,6 +73,33 @@ impl IndexerConnectionPool {
                 Ok(IndexerConnectionPool::Sqlite(pool))
             }
             err => Err(DatabaseError::BackendNotSupported(err.into())),
+        }
+    }
+
+    pub async fn is_connected(&self) -> sqlx::Result<ServiceStatus> {
+        match self {
+            IndexerConnectionPool::Postgres(p) => {
+                let mut conn = p.acquire().await.expect("Failed to get pool connection");
+                let result = postgres::execute_query(&mut conn, "SELECT true;".to_string())
+                    .await
+                    .expect("Failed to test Postgres connection.");
+
+                match result.cmp(&1) {
+                    Ordering::Equal => Ok(ServiceStatus::OK),
+                    _ => Ok(ServiceStatus::NotOk),
+                }
+            }
+            IndexerConnectionPool::Sqlite(p) => {
+                let mut conn = p.acquire().await.expect("Failed to get pool connection");
+                let result = sqlite::execute_query(&mut conn, "SELECT true;".to_string())
+                    .await
+                    .expect("Failed to test Sqlite connection.");
+
+                match result.cmp(&1) {
+                    Ordering::Equal => Ok(ServiceStatus::OK),
+                    _ => Ok(ServiceStatus::NotOk),
+                }
+            }
         }
     }
 
@@ -87,15 +119,12 @@ pub enum IndexerConnection {
     Sqlite(PoolConnection<sqlx::Sqlite>),
 }
 
-use fuel_indexer_postgres as postgres;
-use fuel_indexer_sqlite as sqlite;
-
 pub async fn run_migration(database_url: &str) {
     let url = url::Url::parse(database_url);
     if url.is_err() {
         panic!("{} is not a valid database string!", database_url);
     }
-    let url = url.unwrap();
+    let url = url.expect("Database URL should be correctly formed");
 
     match url.scheme() {
         "postgres" => {

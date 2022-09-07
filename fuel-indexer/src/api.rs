@@ -2,10 +2,13 @@ use crate::{IndexerConfig, SchemaManager};
 use async_std::sync::{Arc, RwLock};
 use axum::{
     extract::{Extension, Json, Path},
-    routing::post,
+    routing::{get, post},
     Router,
 };
-use fuel_indexer_lib::config::AdjustableConfig;
+use fuel_indexer_lib::{
+    config::AdjustableConfig,
+    utils::{FuelNodeHealthResponse, ServiceStatus},
+};
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
     models, run_migration,
@@ -13,8 +16,11 @@ use fuel_indexer_schema::db::{
     IndexerConnectionPool,
 };
 use http::StatusCode;
+use hyper::Client;
+use hyper_tls::HttpsConnector;
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{json, Value};
+use std::{process, process::Command};
 use thiserror::Error;
 use tracing::error;
 
@@ -60,6 +66,60 @@ pub async fn query_graph(
     }
 }
 
+#[allow(unused_variables)]
+pub async fn health_check(
+    Extension(config): Extension<Arc<IndexerConfig>>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+) -> (StatusCode, Json<Value>) {
+    // Get database status
+    let db_status = pool.is_connected().await.unwrap_or(ServiceStatus::NotOk);
+
+    // Get service uptime
+    let proc = Command::new("ps")
+        .arg("-o")
+        .arg("etime")
+        .arg("-p")
+        .arg(process::id().to_string())
+        .output()
+        .expect("Failed to call ps.");
+
+    let mut ps_status: Vec<String> = String::from_utf8_lossy(&proc.stdout)
+        .split('\n')
+        .map(|x| x.trim().to_string())
+        .filter(|x| !x.is_empty())
+        .collect();
+
+    let uptime = ps_status.pop().expect("Malformed stdout.");
+
+    // Get fuel-core status
+    let https = HttpsConnector::new();
+    let client = Client::builder().build::<_, hyper::Body>(https);
+    let resp = client
+        .get(
+            format!("{}/health", config.fuel_node.http_url())
+                .parse()
+                .expect("Failed to parse string into URI"),
+        )
+        .await
+        .expect("Failed to get fuel-client status.");
+
+    let body_bytes = hyper::body::to_bytes(resp.into_body())
+        .await
+        .expect("Failed to parse response body.");
+
+    let fuel_node_health: FuelNodeHealthResponse =
+        serde_json::from_slice(&body_bytes).expect("Failed to parse response.");
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "fuel_core_status": ServiceStatus::from(fuel_node_health),
+            "uptime": uptime,
+            "database_status": db_status,
+        })),
+    )
+}
+
 pub struct GraphQlApi;
 
 impl GraphQlApi {
@@ -69,20 +129,34 @@ impl GraphQlApi {
             .expect("SchemaManager create failed");
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = Arc::new(config.clone());
-        let listen_on = config.graphql_api.derive_socket_addr().unwrap();
+        let listen_on = config
+            .graphql_api
+            .derive_socket_addr()
+            .expect("Failed to derive socket address");
 
         let pool = IndexerConnectionPool::connect(&config.database.to_string())
             .await
             .expect("Failed to establish connection pool");
 
-        if config.graphql_api.run_migrations {
+        if config.graphql_api.run_migrations.is_some() {
             run_migration(&config.database.to_string()).await;
         }
 
-        let app = Router::new()
-            .route("/graph/:name", post(query_graph))
+        let graph_route = Router::new()
+            .route("/:name", post(query_graph))
             .layer(Extension(schema_manager))
+            .layer(Extension(pool.clone()));
+
+        let health_route = Router::new()
+            .route("/health", get(health_check))
+            .layer(Extension(config.clone()))
             .layer(Extension(pool));
+
+        let api_routes = Router::new()
+            .nest("/graph", graph_route)
+            .nest("/", health_route);
+
+        let app = Router::new().nest("/api", api_routes);
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())

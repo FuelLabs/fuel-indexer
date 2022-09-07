@@ -8,6 +8,7 @@ publish = false
 
 [dependencies]
 fuel-indexer-database-types = { path = "../database/database-types" }
+fuel-indexer-lib = { path = "../fuel-indexer-lib" }
 fuel-indexer-postgres = { path = "../database/postgres" }
 fuel-indexer-sqlite = { path = "../database/sqlite" }
 fuel-types = { version = "0.3", features = ["serde-types"] }

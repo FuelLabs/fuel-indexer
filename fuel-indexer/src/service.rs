@@ -5,9 +5,8 @@ use crate::{
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_lib::{
-    config::{AdjustableConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs},
-    defaults,
+use fuel_indexer_lib::config::{
+    AdjustableConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs,
 };
 use fuel_tx::Receipt;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
@@ -57,23 +56,14 @@ impl IndexerConfig {
     pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
         let database = match args.database.as_str() {
             "postgres" => DatabaseConfig::Postgres {
-                user: args
-                    .postgres_user
-                    .unwrap_or_else(|| defaults::POSTGRES_USER.into()),
+                user: args.postgres_user,
                 password: args.postgres_password,
-                host: args
-                    .postgres_host
-                    .unwrap_or_else(|| defaults::POSTGRES_HOST.into()),
-                port: args
-                    .postgres_port
-                    .unwrap_or_else(|| defaults::POSTGRES_PORT.into()),
+                host: args.postgres_host,
+                port: args.postgres_port,
                 database: args.postgres_database,
             },
             "sqlite" => DatabaseConfig::Sqlite {
-                path: args
-                    .sqlite_database
-                    .unwrap_or_else(|| defaults::SQLITE_DATABASE.into())
-                    .into(),
+                path: args.sqlite_database,
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -83,23 +73,13 @@ impl IndexerConfig {
         IndexerConfig {
             database,
             fuel_node: FuelNodeConfig {
-                host: args
-                    .fuel_node_host
-                    .unwrap_or_else(|| defaults::FUEL_NODE_HOST.into()),
-                port: args
-                    .fuel_node_port
-                    .unwrap_or_else(|| defaults::FUEL_NODE_PORT.into()),
+                host: args.fuel_node_host,
+                port: args.fuel_node_port,
             },
             graphql_api: GraphQLConfig {
-                host: args
-                    .graphql_api_host
-                    .unwrap_or_else(|| defaults::GRAPHQL_API_HOST.into()),
-                port: args
-                    .graphql_api_port
-                    .unwrap_or_else(|| defaults::GRAPHQL_API_PORT.into()),
-                run_migrations: args
-                    .run_migrations
-                    .unwrap_or(defaults::GRAPHQL_API_RUN_MIGRATIONS),
+                host: args.graphql_api_host,
+                port: args.graphql_api_port,
+                run_migrations: args.run_migrations,
             },
         }
     }
@@ -164,7 +144,9 @@ impl IndexerService {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
-        let schema = manifest.graphql_schema().unwrap();
+        let schema = manifest
+            .graphql_schema()
+            .expect("Manifest should include GraphQL schema");
         self.manager.new_schema(&name, &schema).await?;
         let executor =
             NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles).await?;
@@ -192,8 +174,10 @@ impl IndexerService {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
-        let schema = manifest.graphql_schema().unwrap();
-        let wasm_bytes = manifest.wasm_module().unwrap();
+        let schema = manifest
+            .graphql_schema()
+            .expect("Manifest should include GraphQL schema");
+        let wasm_bytes = manifest.wasm_module().expect("Could not load wasm module");
 
         self.manager.new_schema(&name, &schema).await?;
         let executor =
@@ -245,7 +229,7 @@ impl IndexerService {
                         direction: PageDirection::Forward,
                     })
                     .await
-                    .unwrap();
+                    .expect("Failed to retrieve blocks");
 
                 debug!("Processing {} results", results.len());
                 let exec = executor.clone();
