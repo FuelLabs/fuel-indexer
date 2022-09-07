@@ -63,7 +63,11 @@ impl NativeIndexExecutor {
         manifest: Manifest,
         handles: Vec<Handle>,
     ) -> IndexerResult<Self> {
-        let db = Arc::new(Mutex::new(Database::new(db_conn).await.unwrap()));
+        let db = Arc::new(Mutex::new(
+            Database::new(db_conn)
+                .await
+                .expect("Failed to connect to database"),
+        ));
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
 
@@ -91,7 +95,10 @@ impl Executor for NativeIndexExecutor {
             self.db.lock().await.start_transaction().await?;
 
             if let Some(receipt) = receipt.clone() {
-                let data = receipt.data().unwrap().to_vec();
+                let data = receipt
+                    .data()
+                    .expect("Failed to extract data from receipt")
+                    .to_vec();
                 if let Some(result) = handle(receipt) {
                     match result {
                         Ok(result) => {
@@ -315,7 +322,7 @@ mod tests {
         let executor = WasmIndexExecutor::new(database_url.to_string(), manifest, WASM_BYTES).await;
         assert!(executor.is_ok());
 
-        let executor = executor.unwrap();
+        let executor = executor.expect("Failed to create WasmIndexExecutor");
 
         let result = executor
             .trigger_event(
