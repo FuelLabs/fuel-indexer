@@ -1,5 +1,0 @@
-namespace: counter
-graphql_schema: /home/tj/fuel-indexer/examples/simple-native/schema/counter.graphql
-module:
-  wasm:
-    /home/tj/fuel-indexer/target/wasm32-unknown-unknown/release/simple_counter.wasm
