@@ -75,7 +75,7 @@ pub async fn health_check(
     // Get database status
     let db_status = pool.is_connected().await.unwrap_or(ServiceStatus::NotOk);
 
-    let uptime = start_time.elapsed().as_millis().to_string();
+    let uptime = start_time.elapsed().as_secs().to_string();
 
     // Get fuel-core status
     let https = HttpsConnector::new();
@@ -100,7 +100,7 @@ pub async fn health_check(
         StatusCode::OK,
         Json(json!({
             "fuel_core_status": ServiceStatus::from(fuel_node_health),
-            "uptime": uptime,
+            "uptime(seconds)": uptime,
             "database_status": db_status,
         })),
     )
