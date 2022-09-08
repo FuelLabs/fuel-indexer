@@ -275,7 +275,7 @@ impl IndexerService {
         let IndexerService { handles, .. } = self;
         let mut futs = FuturesUnordered::from_iter(handles.into_values());
         while let Some(fut) = futs.next().await {
-            info!("Retired a future {fut:?}");
+            debug!("Retired a future {fut:?}");
         }
     }
 }
