@@ -114,4 +114,4 @@ curl -X POST http://localhost:29987/api/graph/counter -H 'content-type: applicat
 ]
 ```
 
-Hooray! 🎉 we've successfully created our first Fuel Indexer service that uses native Rust execution.
+Hooray! 🎉 we've successfully created our first Fuel Indexer service.
