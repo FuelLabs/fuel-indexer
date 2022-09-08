@@ -54,11 +54,7 @@ pub struct NativeIndexExecutor {
 }
 
 impl NativeIndexExecutor {
-    pub async fn new(
-        db_conn: &str,
-        manifest: Manifest,
-        path: String,
-    ) -> IndexerResult<Self> {
+    pub async fn new(db_conn: &str, manifest: Manifest, path: String) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(
             Database::new(db_conn)
                 .await
