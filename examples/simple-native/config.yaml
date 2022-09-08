@@ -5,13 +5,15 @@ fuel_node:
 graphql_api:
   host: 0.0.0.0
   port: 29987
+  run_migrations: true
 
 
-postgres:
-  user: postgres
-  database: indexer
-  password: 
-  host: localhost
-  port: 5432
+database:
+  postgres:
+    user: postgres
+    database: postgres
+    password: my-secret 
+    host: localhost
+    port: 5432
 
 sqlite_db_path: ../main.db

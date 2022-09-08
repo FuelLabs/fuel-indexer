@@ -11,11 +11,9 @@ mod service;
 pub use api::GraphQlApi;
 pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
-pub use fuel_indexer_schema::{db::DatabaseError, NativeHandlerResult};
-pub use fuel_tx::Receipt;
+pub use fuel_indexer_schema::{db::DatabaseError, BlockData, FtColumn};
 pub use fuel_types::{Address, ContractId};
-pub use handler::ReceiptEvent;
-pub use manifest::Manifest;
+pub use manifest::{Manifest, Module};
 use serde::{Deserialize, Serialize};
 pub use service::{IndexerConfig, IndexerService};
 
@@ -35,10 +33,12 @@ pub enum IndexerError {
     RuntimeError(#[from] RuntimeError),
     #[error("Could not initialize host environment: {0:#?}")]
     HostEnvInitError(#[from] HostEnvInitError),
+    #[error("IO Error: {0:#?}")]
+    IoError(#[from] std::io::Error),
     #[error("FFI Error {0:?}")]
     FFIError(#[from] ffi::FFIError),
-    #[error("Missing handler: {0:?}")]
-    MissingHandler(String),
+    #[error("Missing handler")]
+    MissingHandler,
     #[error("Indexer transaction error {0:?}")]
     TxError(#[from] crate::executor::TxError),
     #[error("Database error {0:?}")]
@@ -47,57 +47,27 @@ pub enum IndexerError {
     InvalidAddress(#[from] std::net::AddrParseError),
     #[error("Join Error {0:?}")]
     JoinError(#[from] tokio::task::JoinError),
+    #[error("Error initializing executor")]
+    ExecutorInitError,
     #[error("Error executing handler")]
     HandlerError,
+    #[error("Invalid port {0:?}")]
+    InvalidPortNumber(#[from] core::num::ParseIntError),
     #[error("No transaction is open!")]
     NoTransactionError,
     #[error("Unknown error")]
     Unknown,
 }
 
-mod handler {
-    use crate::{Deserialize, IndexerResult, Serialize};
-    use fuel_indexer_schema::NativeHandlerResult;
-    use fuel_tx::Receipt;
+#[derive(Serialize, Deserialize)]
+pub enum IndexerResponse {
+    Blocks(Vec<BlockData>),
+    Object(Vec<u8>),
+}
 
-    pub type Handle = fn(data: Receipt) -> Option<IndexerResult<NativeHandlerResult>>;
-
-    #[derive(Debug, PartialEq, Eq, Hash, Clone, Serialize, Deserialize)]
-    pub enum ReceiptEvent {
-        // NOTE: Keeping these until https://github.com/FuelLabs/fuel-indexer/pull/65#discussion_r903138005 is figured out
-        #[allow(non_camel_case_types)]
-        an_event_name,
-        #[allow(non_camel_case_types)]
-        another_event_name,
-        LogData,
-        Log,
-        ReturnData,
-        Other,
-    }
-
-    impl From<String> for ReceiptEvent {
-        fn from(e: String) -> Self {
-            match &e[..] {
-                "another_event_name" => ReceiptEvent::another_event_name,
-                "an_event_name" => ReceiptEvent::an_event_name,
-                "LogData" => ReceiptEvent::LogData,
-                "Log" => ReceiptEvent::Log,
-                "ReturnData" => ReceiptEvent::ReturnData,
-                _ => ReceiptEvent::Other,
-            }
-        }
-    }
-
-    impl From<ReceiptEvent> for String {
-        fn from(e: ReceiptEvent) -> String {
-            match e {
-                ReceiptEvent::another_event_name => "another_event_name".to_owned(),
-                ReceiptEvent::an_event_name => "an_event_name".to_owned(),
-                ReceiptEvent::LogData => "LogData".to_owned(),
-                ReceiptEvent::Log => "Log".to_owned(),
-                ReceiptEvent::ReturnData => "ReturnDataa".to_owned(),
-                _ => "Other".to_owned(),
-            }
-        }
-    }
+#[derive(Serialize, Deserialize)]
+pub enum IndexerRequest {
+    GetObject(u64, u64),
+    PutObject(u64, Vec<u8>, Vec<FtColumn>),
+    Commit,
 }

@@ -1,4 +1,3 @@
-use crate::handler::ReceiptEvent;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
@@ -8,24 +7,28 @@ use std::{fs::File, io::Read};
 pub struct Manifest {
     pub namespace: String,
     pub graphql_schema: String,
-    pub wasm_module: Option<String>,
+    pub module: Module,
     pub start_block: Option<u64>,
-    pub handlers: Vec<Handle>,
     pub test_events: Option<Vec<Event>>,
 }
 
-impl Manifest {
-    pub fn new(namespace: String, graphql_schema: String, start_block: Option<u64>) -> Self {
-        Self {
-            namespace,
-            graphql_schema,
-            wasm_module: None,
-            start_block,
-            handlers: Vec::new(),
-            test_events: None,
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum Module {
+    Wasm(String),
+    Native(String),
+}
+
+impl Module {
+    pub fn path(&self) -> String {
+        match self {
+            Self::Wasm(o) => o.clone(),
+            Self::Native(o) => o.clone(),
         }
     }
+}
 
+impl Manifest {
     pub fn from_file(path: &Path) -> Result<Self> {
         let mut file = File::open(&path)?;
         let mut contents = String::new();
@@ -41,26 +44,10 @@ impl Manifest {
 
         Ok(schema)
     }
-
-    pub fn wasm_module(&self) -> Result<Vec<u8>> {
-        let mut bytes = Vec::<u8>::new();
-        if let Some(module) = &self.wasm_module {
-            let mut file = File::open(module)?;
-
-            file.read_to_end(&mut bytes)?;
-        }
-        Ok(bytes)
-    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Event {
     pub trigger: String,
     pub payload: String,
-}
-
-#[derive(Debug, Deserialize, Serialize, Clone)]
-pub struct Handle {
-    pub event: ReceiptEvent,
-    pub handler: String,
 }

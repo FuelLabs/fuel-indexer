@@ -1,7 +1,3 @@
-schema {
-    query: QueryRoot
-}
-
 type QueryRoot {
     thing1: Thing1
     thing2: Thing2

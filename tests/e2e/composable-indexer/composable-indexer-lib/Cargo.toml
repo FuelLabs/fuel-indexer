@@ -11,7 +11,6 @@ fuel-indexer-macros = { path = "../../../../fuel-indexer-macros" }
 fuel-indexer-plugin = { path = "../../../../fuel-indexer-plugin" }
 fuel-indexer-schema = { path = "../../../../fuel-indexer-schema" }
 fuel-tx = "0.9"
-fuels-abigen-macro = "0.15"
 fuels-core = "0.15"
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }

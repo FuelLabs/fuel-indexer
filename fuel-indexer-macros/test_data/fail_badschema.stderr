@@ -1,0 +1,84 @@
+error: custom attribute panicked
+  --> test_data/fail_badschema.rs:8:1
+   |
+8  | / #[indexer(
+9  | |     abi = "./test_data/contracts-abi.json",
+10 | |     namespace = "test_namespace",
+11 | |     schema = "./test_data/badschema.graphql",
+12 | | )]
+   | |__^
+   |
+   = help: message: Schema definition not found!
+
+error[E0433]: failed to resolve: use of undeclared type `Receipt`
+  --> test_data/fail_badschema.rs:37:21
+   |
+37 |                     Receipt::Call {
+   |                     ^^^^^^^ use of undeclared type `Receipt`
+
+error[E0433]: failed to resolve: use of undeclared type `Receipt`
+  --> test_data/fail_badschema.rs:48:21
+   |
+48 |                     Receipt::ReturnData {
+   |                     ^^^^^^^ use of undeclared type `Receipt`
+
+error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
+  --> test_data/fail_badschema.rs:25:13
+   |
+25 |     let s = SomeEvent {
+   |             ^^^^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `BlockData` in this scope
+  --> test_data/fail_badschema.rs:32:19
+   |
+32 |     let data: Vec<BlockData> = vec![
+   |                   ^^^^^^^^^ not found in this scope
+   |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::BlockData;
+   |
+2  | use fuel_indexer_schema::BlockData;
+   |
+
+error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
+  --> test_data/fail_badschema.rs:33:9
+   |
+33 |         BlockData {
+   |         ^^^^^^^^^ not found in this scope
+   |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::BlockData;
+   |
+2  | use fuel_indexer_schema::BlockData;
+   |
+
+error[E0425]: cannot find function `serialize` in this scope
+  --> test_data/fail_badschema.rs:62:21
+   |
+62 |     let mut bytes = serialize(&data);
+   |                     ^^^^^^^^^ not found in this scope
+   |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::serialize;
+   |
+2  | use fuel_indexer_schema::serialize;
+   |
+2  | use fuels::node::chain_config::serialization::serde_hex::serialize;
+   |
+
+error[E0425]: cannot find function `handle_events` in this scope
+  --> test_data/fail_badschema.rs:67:5
+   |
+67 |     handle_events(ptr, len);
+   |     ^^^^^^^^^^^^^ not found in this scope
+
+error: unused import: `Tokenizable`
+  --> test_data/fail_badschema.rs:23:47
+   |
+23 |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+   |                                               ^^^^^^^^^^^
+   |
+   = note: `-D unused-imports` implied by `-D warnings`
