@@ -20,7 +20,7 @@ use hyper::Client;
 use hyper_tls::HttpsConnector;
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::{process, process::Command};
+use std::time::Instant;
 use thiserror::Error;
 use tracing::error;
 
@@ -70,26 +70,12 @@ pub async fn query_graph(
 pub async fn health_check(
     Extension(config): Extension<Arc<IndexerConfig>>,
     Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(start_time): Extension<Arc<Instant>>,
 ) -> (StatusCode, Json<Value>) {
     // Get database status
     let db_status = pool.is_connected().await.unwrap_or(ServiceStatus::NotOk);
 
-    // Get service uptime
-    let proc = Command::new("ps")
-        .arg("-o")
-        .arg("etime")
-        .arg("-p")
-        .arg(process::id().to_string())
-        .output()
-        .expect("Failed to call ps.");
-
-    let mut ps_status: Vec<String> = String::from_utf8_lossy(&proc.stdout)
-        .split('\n')
-        .map(|x| x.trim().to_string())
-        .filter(|x| !x.is_empty())
-        .collect();
-
-    let uptime = ps_status.pop().expect("Malformed stdout.");
+    let uptime = start_time.elapsed().as_millis().to_string();
 
     // Get fuel-core status
     let https = HttpsConnector::new();
@@ -129,6 +115,7 @@ impl GraphQlApi {
             .expect("SchemaManager create failed");
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = Arc::new(config.clone());
+        let start_time = Arc::new(Instant::now());
         let listen_on = config
             .graphql_api
             .derive_socket_addr()
@@ -150,7 +137,8 @@ impl GraphQlApi {
         let health_route = Router::new()
             .route("/health", get(health_check))
             .layer(Extension(config.clone()))
-            .layer(Extension(pool));
+            .layer(Extension(pool))
+            .layer(Extension(start_time));
 
         let api_routes = Router::new()
             .nest("/graph", graph_route)
