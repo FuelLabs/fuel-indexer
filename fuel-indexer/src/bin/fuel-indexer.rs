@@ -61,7 +61,7 @@ pub async fn main() -> Result<()> {
         file.read_to_string(&mut contents).await?;
         let manifest: Manifest = serde_yaml::from_str(&contents)?;
 
-        service.add_wasm_indexer(manifest, false).await?;
+        service.add_indexer(manifest, false).await?;
     }
 
     let service_handle = tokio::spawn(service.run());

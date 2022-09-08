@@ -1,77 +1,68 @@
-#![no_std]
 extern crate alloc;
-use alloc::vec::Vec;
-use core::convert::TryFrom;
-use fuel_indexer_macros::handler;
-use fuel_indexer_plugin::types::*;
-use fuels_core::{ParamType, Token};
+use fuel_indexer_macros::indexer;
 
-struct Logger;
-impl Logger {
-    pub fn info(_: &str) {}
-}
+#[no_mangle]
+fn ff_log_data(_inp: ()) {}
 
-struct SomeEvent {
-    id: u64,
-    account: Address,
-}
 
-impl SomeEvent {
-    fn param_types() -> Vec<ParamType> {
-        let mut t = Vec::new();
-        t.push(ParamType::U64);
-        t.push(ParamType::B256);
-        t
+#[indexer(
+    abi = "./test_data/contracts-abi.json",
+    namespace = "test_namespace",
+    schema = "./test_data/schema.graphql",
+)]
+mod indexer {
+    fn function_one(event: SomeEvent) {
+        let SomeEvent { id, account } = event;
+
+        assert_eq!(id, 9);
+        assert_eq!(account, [48u8; 32]);
     }
-
-    fn into_token(self) -> Token {
-        let mut t = Vec::new();
-        t.push(Token::U64(self.id));
-        t.push(Token::B256(self.account.into()));
-        Token::Struct(t)
-    }
-
-    fn new_from_tokens(tokens: &[Token]) -> SomeEvent {
-        let id = match tokens[0] {
-            Token::U64(i) => i,
-            _ => panic!("Should be a U64"),
-        };
-
-        let addr = match tokens[1] {
-            Token::B256(b) => b,
-            _ => panic!("Should be a U256"),
-        };
-
-        SomeEvent { id, account: Address::from(addr) }
-    }
-}
-
-#[handler]
-fn function_one(event: SomeEvent) {
-    let SomeEvent { id, account } = event;
-
-    assert_eq!(id, 0);
-    assert_eq!(account, Address::try_from([0; 32]).expect("failed"));
 }
 
 fn main() {
-    use fuels_core::abi_encoder::ABIEncoder;
-    use alloc::vec;
+    use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
 
     let s = SomeEvent {
-        id: 0,
-        account: Address::try_from([0; 32]).expect("failed"),
+        id: 9,
+        account: [48u8; 32],
     };
 
-    let mut bytes = ABIEncoder::new().encode(&[s.into_token()]).expect("Failed compile test");
+    let bytes = ABIEncoder::new().encode(&[s.into_token()]).expect("Failed compile test");
+
+    let data: Vec<BlockData> = vec![
+        BlockData {
+            height: 0,
+            transactions: vec![
+                vec![
+                    Receipt::Call {
+                        id: [0u8; 32].into(),
+                        to: [0u8; 32].into(),
+                        amount: 400,
+                        asset_id: [0u8; 32].into(),
+                        gas: 4,
+                        param1: 2048508220,
+                        param2: 0,
+                        pc: 0,
+                        is: 0,
+                    },
+                    Receipt::ReturnData {
+                        id: [0u8; 32].into(),
+                        ptr: 2342143,
+                        len: bytes.len() as u64,
+                        digest: [0u8; 32].into(),
+                        data: bytes,
+                        pc: 0,
+                        is: 0,
+                    },
+                ]
+            ]
+        }
+    ];
+
+    let mut bytes = serialize(&data);
 
     let ptr = bytes.as_mut_ptr();
     let len = bytes.len();
-    core::mem::forget(bytes);
-    let mut ptrs = vec![ptr];
-    let mut lens = vec![len];
-    let ptrs = ptrs.as_mut_ptr();
-    let lens = lens.as_mut_ptr();
 
-    function_one(ptrs, lens, 1);
+    handle_events(ptr, len);
 }

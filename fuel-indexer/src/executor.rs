@@ -1,20 +1,20 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::handler::{Handle, ReceiptEvent};
-use crate::{IndexerError, IndexerResult, Manifest};
+use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult, Manifest};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
-use fuel_tx::Receipt;
-use std::collections::HashMap;
+use fuel_indexer_schema::{deserialize, serialize, BlockData};
 use std::path::Path;
 use thiserror::Error;
-use tokio::task::spawn_blocking;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
+use tokio::{net::TcpStream, task::spawn_blocking};
 use tracing::error;
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store, WasmerEnv,
 };
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_universal::Universal;
+
 fn compiler() -> Cranelift {
     Cranelift::default()
 }
@@ -25,12 +25,7 @@ where
     Self: Sized,
 {
     fn from_file(index: &Path) -> IndexerResult<Self>;
-    async fn trigger_event(
-        &self,
-        event_name: ReceiptEvent,
-        bytes: Vec<Vec<u8>>,
-        receipt: Option<Receipt>,
-    ) -> IndexerResult<()>;
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
 }
 
 #[derive(Error, Debug)]
@@ -51,18 +46,15 @@ pub struct IndexEnv {
 }
 
 pub struct NativeIndexExecutor {
-    handles: Vec<Handle>,
     db: Arc<Mutex<Database>>,
     #[allow(dead_code)]
     manifest: Manifest,
+    _process: tokio::process::Child,
+    stream: TcpStream,
 }
 
 impl NativeIndexExecutor {
-    pub async fn new(
-        db_conn: &str,
-        manifest: Manifest,
-        handles: Vec<Handle>,
-    ) -> IndexerResult<Self> {
+    pub async fn new(db_conn: &str, manifest: Manifest, path: String) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(
             Database::new(db_conn)
                 .await
@@ -71,10 +63,28 @@ impl NativeIndexExecutor {
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
 
+        let mut process = tokio::process::Command::new(path)
+            .kill_on_drop(true)
+            .spawn()?;
+
+        let mut reader = BufReader::new(
+            process
+                .stdout
+                .take()
+                .ok_or(IndexerError::ExecutorInitError)?,
+        );
+        let mut out = String::new();
+        reader.read_line(&mut out).await?;
+
+        let port: u16 = out.parse()?;
+
+        let stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
+
         Ok(Self {
-            handles,
             db,
             manifest,
+            _process: process,
+            stream,
         })
     }
 }
@@ -85,38 +95,42 @@ impl Executor for NativeIndexExecutor {
         unimplemented!()
     }
 
-    async fn trigger_event(
-        &self,
-        _event: ReceiptEvent,
-        _bytes: Vec<Vec<u8>>,
-        receipt: Option<Receipt>,
-    ) -> IndexerResult<()> {
-        for handle in self.handles.iter() {
-            self.db.lock().await.start_transaction().await?;
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+        let mut buf = [0u8; 4096];
 
-            if let Some(receipt) = receipt.clone() {
-                let data = receipt
-                    .data()
-                    .expect("Failed to extract data from receipt")
-                    .to_vec();
-                if let Some(result) = handle(receipt) {
-                    match result {
-                        Ok(result) => {
-                            self.db
-                                .lock()
-                                .await
-                                .put_object(result.0, result.1, data)
-                                .await;
+        let msg = serialize(&IndexerResponse::Blocks(blocks));
 
-                            self.db.lock().await.commit_transaction().await?;
-                        }
-                        Err(e) => {
-                            error!("Indexer failed {e:?}");
-                            self.db.lock().await.revert_transaction().await?;
-                            return Err(IndexerError::HandlerError);
-                        }
+        self.stream.write_u64(msg.len() as u64).await?;
+        self.stream.write_all(&msg).await?;
+
+        loop {
+            let size = self.stream.read_u64().await? as usize;
+
+            if self.stream.read_exact(&mut buf[..size]).await? < size {
+                return Err(IndexerError::HandlerError);
+            }
+
+            let object: IndexerRequest =
+                deserialize(&buf[..size]).expect("Could not deserialize message from indexer!");
+
+            match object {
+                IndexerRequest::GetObject(type_id, object_id) => {
+                    let object = self.db.lock().await.get_object(type_id, object_id).await;
+                    if let Some(obj) = object {
+                        self.stream.write_u64(obj.len() as u64).await?;
+                        self.stream.write_all(&obj).await?
+                    } else {
+                        self.stream.write_u64(0).await?;
                     }
-                };
+                }
+                IndexerRequest::PutObject(type_id, bytes, columns) => {
+                    self.db
+                        .lock()
+                        .await
+                        .put_object(type_id, columns, bytes)
+                        .await;
+                }
+                IndexerRequest::Commit => break,
             }
         }
         Ok(())
@@ -141,14 +155,13 @@ pub struct WasmIndexExecutor {
     instance: Instance,
     _module: Module,
     _store: Store,
-    events: HashMap<ReceiptEvent, Vec<String>>,
     db: Arc<Mutex<Database>>,
 }
 
 impl WasmIndexExecutor {
     pub async fn new(
         db_conn: String,
-        manifest: Manifest,
+        _manifest: Manifest,
         wasm_bytes: impl AsRef<[u8]>,
     ) -> IndexerResult<Self> {
         let store = Store::new(&Universal::new(compiler()).engine());
@@ -164,23 +177,17 @@ impl WasmIndexExecutor {
         env.init_with_instance(&instance)?;
         env.db.lock().await.load_schema_wasm(&instance).await?;
 
-        let mut events = HashMap::new();
-
-        for handler in manifest.handlers {
-            let handlers = events.entry(handler.event).or_insert_with(Vec::new);
-
-            if !instance.exports.contains(&handler.handler) {
-                return Err(IndexerError::MissingHandler(handler.handler));
-            }
-
-            handlers.push(handler.handler);
+        if !instance
+            .exports
+            .contains(ffi::MODULE_ENTRYPOINT.to_string())
+        {
+            return Err(IndexerError::MissingHandler);
         }
 
         Ok(WasmIndexExecutor {
             instance,
             _module: module,
             _store: store,
-            events,
             db: env.db.clone(),
         })
     }
@@ -194,41 +201,28 @@ impl Executor for WasmIndexExecutor {
     }
 
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    async fn trigger_event(
-        &self,
-        event_name: ReceiptEvent,
-        bytes: Vec<Vec<u8>>,
-        _receipt: Option<Receipt>,
-    ) -> IndexerResult<()> {
-        let mut args = Vec::with_capacity(bytes.len());
-        for arg in bytes.into_iter() {
-            args.push(ffi::WasmArg::new(&self.instance, arg)?)
-        }
-        let arg_list = ffi::WasmArgList::new(&self.instance, args.iter().collect())?;
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+        let bytes = serialize(&blocks);
+        let arg = ffi::WasmArg::new(&self.instance, bytes)?;
 
-        if let Some(handlers) = self.events.get(&event_name) {
-            for handler in handlers.iter() {
-                let fun = self
-                    .instance
-                    .exports
-                    .get_native_function::<(u32, u32, u32), ()>(handler)?;
+        let fun = self
+            .instance
+            .exports
+            .get_native_function::<(u32, u32), ()>(ffi::MODULE_ENTRYPOINT)?;
 
-                self.db.lock().await.start_transaction().await?;
+        self.db.lock().await.start_transaction().await?;
 
-                let ptrs = arg_list.get_ptrs();
-                let lens = arg_list.get_lens();
-                let len = arg_list.get_len();
+        let ptr = arg.get_ptr();
+        let len = arg.get_len();
 
-                let res = spawn_blocking(move || fun.call(ptrs, lens, len)).await?;
+        let res = spawn_blocking(move || fun.call(ptr, len)).await?;
 
-                if let Err(e) = res {
-                    error!("Indexer failed {e:?}");
-                    self.db.lock().await.revert_transaction().await?;
-                    return Err(IndexerError::RuntimeError(e));
-                } else {
-                    self.db.lock().await.commit_transaction().await?;
-                }
-            }
+        if let Err(e) = res {
+            error!("Indexer failed {e:?}");
+            self.db.lock().await.revert_transaction().await?;
+            return Err(IndexerError::RuntimeError(e));
+        } else {
+            self.db.lock().await.commit_transaction().await?;
         }
         Ok(())
     }
@@ -237,15 +231,17 @@ impl Executor for WasmIndexExecutor {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use fuel_tx::Receipt;
     use fuels_abigen_macro::abigen;
     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
     use sqlx::{Connection, Row};
 
     const MANIFEST: &str = include_str!("test_data/manifest.yaml");
     const BAD_MANIFEST: &str = include_str!("test_data/bad_manifest.yaml");
+    const BAD_WASM_BYTES: &[u8] = include_bytes!("test_data/bad_simple_wasm.wasm");
     const WASM_BYTES: &[u8] = include_bytes!("test_data/simple_wasm.wasm");
 
-    abigen!(MyContract, "fuel-indexer/src/test_data/my_struct.json");
+    abigen!(MyContract, "fuel-indexer/src/test_data/contracts-abi.json");
 
     #[derive(Debug)]
     struct Thing1 {
@@ -313,28 +309,16 @@ mod tests {
         let bad_manifest: Manifest = serde_yaml::from_str(BAD_MANIFEST).expect("Bad yaml file.");
 
         let executor =
-            WasmIndexExecutor::new(database_url.to_string(), bad_manifest, WASM_BYTES).await;
+            WasmIndexExecutor::new(database_url.to_string(), bad_manifest, BAD_WASM_BYTES).await;
         match executor {
-            Err(IndexerError::MissingHandler(o)) if o == "fn_one" => (),
+            Err(IndexerError::MissingHandler) => (),
             e => panic!("Expected missing handler error {:#?}", e),
         }
 
         let executor = WasmIndexExecutor::new(database_url.to_string(), manifest, WASM_BYTES).await;
         assert!(executor.is_ok());
 
-        let executor = executor.expect("Failed to create WasmIndexExecutor");
-
-        let result = executor
-            .trigger_event(
-                ReceiptEvent::an_event_name,
-                vec![b"ejfiaiddiie".to_vec()],
-                None,
-            )
-            .await;
-        match result {
-            Err(IndexerError::RuntimeError(_)) => (),
-            e => panic!("Should have been a runtime error {:#?}", e),
-        }
+        let mut executor = executor.unwrap();
 
         let evt1 = SomeEvent {
             id: 1020,
@@ -342,21 +326,67 @@ mod tests {
         };
         let evt2 = AnotherEvent {
             id: 100,
+            account: [0x5a; 32],
             hash: [0x43; 32],
-            bar: true,
         };
 
-        let encoded = vec![
-            ABIEncoder::new()
-                .encode(&[evt1.into_token()])
-                .expect("Failed to encode"),
-            ABIEncoder::new()
-                .encode(&[evt2.into_token()])
-                .expect("Failed to encode"),
-        ];
+        let some_event = ABIEncoder::new()
+            .encode(&[evt1.into_token()])
+            .expect("Failed to encode");
+        let another_event = ABIEncoder::new()
+            .encode(&[evt2.into_token()])
+            .expect("Failed to encode");
 
         let result = executor
-            .trigger_event(ReceiptEvent::an_event_name, encoded, None)
+            .handle_events(vec![BlockData {
+                height: 0,
+                transactions: vec![
+                    vec![
+                        Receipt::Call {
+                            id: [0u8; 32].into(),
+                            to: [0u8; 32].into(),
+                            amount: 400,
+                            asset_id: [0u8; 32].into(),
+                            gas: 4,
+                            param1: 2048508220,
+                            param2: 0,
+                            pc: 0,
+                            is: 0,
+                        },
+                        Receipt::ReturnData {
+                            id: [0u8; 32].into(),
+                            ptr: 2342143,
+                            len: some_event.len() as u64,
+                            digest: [0u8; 32].into(),
+                            data: some_event,
+                            pc: 0,
+                            is: 0,
+                        },
+                    ],
+                    vec![
+                        Receipt::Call {
+                            id: [0u8; 32].into(),
+                            to: [0u8; 32].into(),
+                            amount: 400,
+                            asset_id: [0u8; 32].into(),
+                            gas: 4,
+                            param1: 2379805026,
+                            param2: 0,
+                            pc: 0,
+                            is: 0,
+                        },
+                        Receipt::ReturnData {
+                            id: [0u8; 32].into(),
+                            ptr: 2342143,
+                            len: another_event.len() as u64,
+                            digest: [0u8; 32].into(),
+                            data: another_event,
+                            pc: 0,
+                            is: 0,
+                        },
+                    ],
+                ],
+            }])
             .await;
         assert!(result.is_ok());
     }
