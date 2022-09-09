@@ -7,6 +7,7 @@ use std::{fs::File, io::Read};
 pub struct Manifest {
     pub namespace: String,
     pub graphql_schema: String,
+    pub identifier: String,
     pub module: Module,
     pub start_block: Option<u64>,
     pub test_events: Option<Vec<Event>>,
@@ -43,6 +44,10 @@ impl Manifest {
         file.read_to_string(&mut schema)?;
 
         Ok(schema)
+    }
+
+    pub fn uid(&self) -> String {
+        format!("{}.{}", &self.namespace, &self.identifier)
     }
 }
 

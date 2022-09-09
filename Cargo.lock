@@ -645,6 +645,7 @@ dependencies = [
  "matchit",
  "memchr",
  "mime",
+ "multer",
  "percent-encoding",
  "pin-project-lite",
  "serde",
@@ -2370,12 +2371,15 @@ dependencies = [
  "bincode",
  "cfg-if",
  "chrono",
+ "clap",
  "fuel-core 0.6.4",
  "fuel-crypto 0.5.0",
  "fuel-gql-client 0.6.4",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
+ "fuel-indexer-postgres",
  "fuel-indexer-schema",
+ "fuel-indexer-sqlite",
  "fuel-storage 0.1.0",
  "fuel-tx 0.9.0",
  "fuel-types 0.3.1",
@@ -2431,8 +2435,10 @@ name = "fuel-indexer-lib"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-std",
  "clap",
  "serde",
+ "serde_yaml",
  "tracing",
 ]
 
@@ -2469,6 +2475,7 @@ name = "fuel-indexer-postgres"
 version = "0.1.0"
 dependencies = [
  "fuel-indexer-database-types",
+ "fuel-indexer-lib",
  "sqlx",
 ]
 
@@ -2498,6 +2505,7 @@ name = "fuel-indexer-sqlite"
 version = "0.1.0"
 dependencies = [
  "fuel-indexer-database-types",
+ "fuel-indexer-lib",
  "sqlx",
 ]
 
@@ -5202,6 +5210,7 @@ dependencies = [
  "sqlx-rt",
  "stringprep",
  "thiserror",
+ "time 0.3.14",
  "tokio-stream",
  "url",
  "webpki-roots 0.22.4",

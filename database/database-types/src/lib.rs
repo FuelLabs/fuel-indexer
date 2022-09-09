@@ -203,3 +203,13 @@ impl From<&str> for ColumnType {
         }
     }
 }
+
+#[derive(Debug)]
+pub struct AssetRegistry {
+    pub id: i64,
+    pub namespace: String,
+    pub identifier: String,
+    pub wasm: Vec<u8>,
+    pub manifest: Vec<u8>,
+    pub schema: Vec<u8>,
+}

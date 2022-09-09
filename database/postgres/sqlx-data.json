@@ -172,6 +172,75 @@
     },
     "query": "SELECT\n               c.type_id as type_id,\n               t.table_name as table_name,\n               c.column_position as column_position,\n               c.column_name as column_name,\n               c.column_type as \"column_type: String\"\n           FROM graph_registry_type_ids as t\n           INNER JOIN graph_registry_columns as c\n           ON t.id = c.type_id\n           WHERE t.schema_name = $1\n           AND t.schema_version = $2\n           ORDER BY c.type_id, c.column_position"
   },
+  "854e8ca4458e90e7102ae864ecdbc637c2465a83877c9233b96fef53c3e229a4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "namespace",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "identifier",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "wasm",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "manifest",
+          "ordinal": 4,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "schema",
+          "ordinal": 5,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 6,
+          "type_info": "Int8"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 7,
+          "type_info": "Int8"
+        },
+        {
+          "name": "active",
+          "ordinal": 8,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT * FROM asset_registry WHERE namespace = $1 AND identifier = $2"
+  },
   "a3eaf437c002e776fbf79f2d1461f797cec299713648da4df5ba4e262dda4e6e": {
     "describe": {
       "columns": [
@@ -247,6 +316,72 @@
       }
     },
     "query": "SELECT id AS \"id: i64\", type_id, column_position, column_name, column_type AS \"column_type: String\", nullable, graphql_type FROM graph_registry_columns WHERE type_id = $1"
+  },
+  "db78389941ca7fa17ed4aa13353546ac0f69e4d7b6d74b067ed8d28cd75665d7": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "namespace",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "identifier",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "wasm",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "manifest",
+          "ordinal": 4,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "schema",
+          "ordinal": 5,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 6,
+          "type_info": "Int8"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 7,
+          "type_info": "Int8"
+        },
+        {
+          "name": "active",
+          "ordinal": 8,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT * FROM asset_registry"
   },
   "ee7e6f84bb6541909ddfec641a828287d6e414337988b0bc346b765f8766479e": {
     "describe": {

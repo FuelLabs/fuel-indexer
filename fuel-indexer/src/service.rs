@@ -1,21 +1,21 @@
 use crate::{
-    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, SchemaManager,
-    WasmIndexExecutor,
+    config::{IndexerConfig, MutableConfig},
+    manifest::Module,
+    Executor, IndexerResult, Manifest, NativeIndexExecutor, SchemaManager, WasmIndexExecutor,
 };
-use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_lib::config::{
-    AdjustableConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs,
+use fuel_indexer_postgres;
+use fuel_indexer_schema::{
+    db::{IndexerConnection, IndexerConnectionPool},
+    BlockData,
 };
-use fuel_indexer_schema::BlockData;
+use fuel_indexer_sqlite;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::future::Future;
 use std::marker::{Send, Sync};
 use std::net::SocketAddr;
-use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     task::JoinHandle,
@@ -26,88 +26,8 @@ use tracing::{debug, error, info, warn};
 
 const RETRY_LIMIT: usize = 5;
 
-#[derive(Clone, Deserialize, Default, Debug)]
-pub struct IndexerConfig {
-    pub fuel_node: FuelNodeConfig,
-    pub graphql_api: GraphQLConfig,
-    pub database: DatabaseConfig,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct TmpIndexerConfig {
-    pub fuel_node: Option<FuelNodeConfig>,
-    pub graphql_api: Option<GraphQLConfig>,
-    pub database: Option<DatabaseConfig>,
-}
-
-impl IndexerConfig {
-    pub fn upgrade_optionals(&mut self, tmp: TmpIndexerConfig) {
-        if let Some(cfg) = tmp.fuel_node {
-            self.fuel_node = cfg;
-        }
-
-        if let Some(cfg) = tmp.database {
-            self.database = cfg;
-        }
-
-        if let Some(cfg) = tmp.graphql_api {
-            self.graphql_api = cfg;
-        }
-    }
-
-    pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
-        let database = match args.database.as_str() {
-            "postgres" => DatabaseConfig::Postgres {
-                user: args.postgres_user,
-                password: args.postgres_password,
-                host: args.postgres_host,
-                port: args.postgres_port,
-                database: args.postgres_database,
-            },
-            "sqlite" => DatabaseConfig::Sqlite {
-                path: args.sqlite_database,
-            },
-            _ => {
-                panic!("Unrecognized database type in options.");
-            }
-        };
-
-        IndexerConfig {
-            database,
-            fuel_node: FuelNodeConfig {
-                host: args.fuel_node_host,
-                port: args.fuel_node_port,
-            },
-            graphql_api: GraphQLConfig {
-                host: args.graphql_api_host,
-                port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
-            },
-        }
-    }
-
-    pub async fn from_file(path: &Path) -> Result<Self> {
-        let mut file = File::open(path).await?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).await?;
-
-        let mut config = IndexerConfig::default();
-        let tmp_config: TmpIndexerConfig = serde_yaml::from_str(&contents)?;
-
-        config.upgrade_optionals(tmp_config);
-        config.inject_env_vars();
-
-        Ok(config)
-    }
-
-    pub fn inject_env_vars(&mut self) {
-        let _ = self.fuel_node.inject_env_vars();
-        let _ = self.database.inject_env_vars();
-        let _ = self.graphql_api.inject_env_vars();
-    }
-}
-
 pub struct IndexerService {
+    config: IndexerConfig,
     fuel_node_addr: SocketAddr,
     manager: SchemaManager,
     database_url: String,
@@ -117,65 +37,118 @@ pub struct IndexerService {
 
 impl IndexerService {
     pub async fn new(config: IndexerConfig) -> IndexerResult<IndexerService> {
-        let IndexerConfig {
-            fuel_node,
-            database,
-            ..
-        } = config;
-        let manager = SchemaManager::new(&database.to_string()).await?;
+        let database_url = config.database.to_string().clone();
 
-        let fuel_node_addr = fuel_node
+        let manager = SchemaManager::new(&database_url).await?;
+
+        let fuel_node_addr = config
+            .fuel_node
+            .clone()
             .derive_socket_addr()
             .expect("Could not parse Fuel node addr for IndexerService.");
 
         Ok(IndexerService {
+            config,
             fuel_node_addr,
             manager,
-            database_url: database.to_string(),
+            database_url,
             handles: HashMap::default(),
             killers: HashMap::default(),
         })
     }
 
-    pub async fn add_indexer(&mut self, manifest: Manifest, run_once: bool) -> IndexerResult<()> {
-        let name = manifest.namespace.clone();
-        let start_block = manifest.start_block;
+    // TODO: run_once should be configurable (on a per-index basis  - e.g., in the manifest)
+    pub async fn register_indices(
+        &mut self,
+        manifest: Option<Manifest>,
+        run_once: bool,
+    ) -> IndexerResult<()> {
+        match manifest {
+            Some(manifest) => {
+                let namespace = manifest.namespace.clone();
+                let identifier = manifest.uid().clone();
+                let database_url = self.database_url.clone();
 
-        let schema = manifest
-            .graphql_schema()
-            .expect("Manifest should include GraphQL schema");
-        self.manager.new_schema(&name, &schema).await?;
-        let db_url = self.database_url.clone();
+                let schema = manifest
+                    .graphql_schema()
+                    .expect("Manifest should include GraphQL schema");
+                self.manager.new_schema(&namespace, &schema).await?;
 
-        let (kill_switch, handle) = match manifest.module {
+                let (kill_switch, handle) = self
+                    .spawn_execution_tasks(manifest, run_once, database_url.clone())
+                    .await?;
+
+                // TODO: indices hsould be indexed by UID
+                info!("Registered indexer {}", identifier);
+                self.handles.insert(namespace.clone(), handle);
+                self.killers.insert(namespace, kill_switch);
+            }
+            None => {
+                let database_url = self.database_url.clone();
+
+                let conn =
+                    IndexerConnectionPool::connect(&self.config.database.to_string()).await?;
+                let pool = conn.acquire().await?;
+
+                let registered_assets = match pool {
+                    IndexerConnection::Postgres(mut c) => {
+                        fuel_indexer_postgres::all_registered_assets(&mut c).await
+                    }
+                    IndexerConnection::Sqlite(mut c) => {
+                        fuel_indexer_sqlite::all_registered_assets(&mut c).await
+                    }
+                }
+                .expect("Failed");
+
+                for asset in registered_assets {
+                    let manifest: Manifest = serde_yaml::from_slice(&asset.manifest).expect("Bar");
+
+                    let (kill_switch, handle) = self
+                        .spawn_execution_tasks(manifest.clone(), run_once, database_url.clone())
+                        .await?;
+
+                    // TODO: indices hsould be indexed by UID
+                    info!("Registered indexer {}", manifest.uid());
+                    self.handles.insert(manifest.namespace.clone(), handle);
+                    self.killers.insert(manifest.namespace, kill_switch);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    async fn spawn_execution_tasks(
+        &self,
+        manifest: Manifest,
+        run_once: bool,
+        database_url: String,
+    ) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>)> {
+        let start_block = manifest.start_block.clone();
+
+        match manifest.module {
             Module::Wasm(ref module) => {
                 let mut bytes = Vec::<u8>::new();
                 let mut file = File::open(module).await?;
                 file.read_to_end(&mut bytes).await?;
 
-                let executor = WasmIndexExecutor::new(db_url, manifest, bytes).await?;
+                let executor = WasmIndexExecutor::new(database_url, manifest, bytes).await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
                 let handle =
                     tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
 
-                (kill_switch, handle)
+                Ok((kill_switch, handle))
             }
             Module::Native(ref path) => {
                 let path = path.clone();
-                let executor = NativeIndexExecutor::new(&db_url, manifest, path).await?;
+                let executor = NativeIndexExecutor::new(&database_url, manifest, path).await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
                 let handle =
                     tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
 
-                (kill_switch, handle)
+                Ok((kill_switch, handle))
             }
-        };
-
-        info!("Registered indexer {}", name);
-        self.handles.insert(name.clone(), handle);
-        self.killers.insert(name, kill_switch);
-
-        Ok(())
+        }
     }
 
     pub fn stop_indexer(&mut self, executor_name: &str) {

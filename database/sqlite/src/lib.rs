@@ -332,3 +332,111 @@ pub async fn columns_get_schema(
 
     Ok(results)
 }
+
+pub async fn asset_registry_for_index(
+    conn: &mut PoolConnection<Sqlite>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<AssetRegistry> {
+    let query = format!(
+        "SELECT * FROM asset_registry WHERE namespace = '{}' AND identifier = '{}'",
+        namespace, identifier
+    );
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let id = row.get(0);
+    let namespace = row.get(1);
+    let identifier = row.get(2);
+    let wasm = row.get(3);
+    let manifest = row.get(4);
+    let schema = row.get(5);
+
+    Ok(AssetRegistry {
+        id,
+        namespace,
+        identifier,
+        wasm,
+        manifest,
+        schema,
+    })
+}
+
+pub async fn asset_is_registered(
+    conn: &mut PoolConnection<Sqlite>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<Option<i64>> {
+    let row = sqlx::query(&format!(
+        "SELECT id FROM asset_registry WHERE namespace = '{}' AND identifier = '{}'",
+        namespace, identifier
+    ))
+    .fetch_one(conn)
+    .await?;
+
+    Ok(row.try_get::<'_, Option<i64>, usize>(0).unwrap_or(None))
+}
+
+pub async fn register_index_assets(
+    conn: &mut PoolConnection<Sqlite>,
+    namespace: &str,
+    identifier: &str,
+    wasm: Option<&Vec<u8>>,
+    manifest: Option<&Vec<u8>>,
+    schema: Option<&Vec<u8>>,
+) -> sqlx::Result<()> {
+    match asset_is_registered(conn, &namespace, &identifier).await? {
+        Some(id) => {
+            let query = format!(r#"UPDATE asset_registry SET () WHERE id = {}"#, id);
+
+            let mut builder: sqlx::QueryBuilder<'_, Sqlite> = sqlx::QueryBuilder::new(query);
+            let query_builder = builder.build();
+
+            let result = query_builder.execute(conn).await?;
+        }
+        None => {
+            let query = format!(
+                r#"INSERT INTO asset_registry (namespace, identifier, wasm, manifest, schema) VALUES ('{}', '{}', $1, $2, $3)"#,
+                namespace, identifier,
+            );
+
+            let mut builder: sqlx::QueryBuilder<'_, Sqlite> = sqlx::QueryBuilder::new(query);
+            let query_builder = builder.build().bind(wasm).bind(manifest).bind(schema);
+
+            let result = query_builder.execute(conn).await?;
+        }
+    };
+
+    Ok(())
+}
+
+pub async fn all_registered_assets(
+    conn: &mut PoolConnection<Sqlite>,
+) -> sqlx::Result<Vec<AssetRegistry>> {
+    let row = sqlx::query("SELECT * FROM asset_registry")
+        .fetch_all(conn)
+        .await?;
+
+    let assets = row
+        .iter()
+        .map(|row| {
+            let id = row.get(0);
+            let namespace = row.get(1);
+            let identifier = row.get(2);
+            let wasm = row.get(3);
+            let manifest = row.get(4);
+            let schema = row.get(5);
+
+            AssetRegistry {
+                id,
+                namespace,
+                identifier,
+                wasm,
+                manifest,
+                schema,
+            }
+        })
+        .collect();
+
+    Ok(assets)
+}

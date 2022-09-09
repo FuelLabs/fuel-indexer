@@ -1,25 +1,31 @@
-use crate::{IndexerConfig, SchemaManager};
+use crate::{
+    config::{IndexerConfig, MutableConfig},
+    SchemaManager,
+};
+use anyhow::Result;
 use async_std::sync::{Arc, RwLock};
 use axum::{
-    extract::{Extension, Json, Path},
+    extract::{multipart::Multipart, Extension, Json, Path},
+    http::{Request, StatusCode},
+    middleware::{self, Next},
+    response::Response,
     routing::{get, post},
     Router,
 };
-use fuel_indexer_lib::{
-    config::AdjustableConfig,
-    utils::{FuelNodeHealthResponse, ServiceStatus},
-};
+use fuel_indexer_lib::utils::{FuelNodeHealthResponse, ServiceStatus};
+use fuel_indexer_postgres;
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
     models, run_migration,
     tables::Schema,
     IndexerConnectionPool,
 };
-use http::StatusCode;
+use fuel_indexer_sqlite;
 use hyper::Client;
 use hyper_tls::HttpsConnector;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use std::time::Instant;
 use thiserror::Error;
 use tracing::error;
@@ -106,6 +112,110 @@ pub async fn health_check(
     )
 }
 
+async fn authenticate_user(_user_id: &str) -> Option<Result<bool, APIError>> {
+    // TODO: Placeholder until actual authentication scheme is in place
+    Some(Ok(true))
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct AssetMetadata {
+    namespace: String,
+    identifier: String,
+}
+
+async fn authorize_middleware<B>(
+    mut req: Request<B>,
+    next: Next<B>,
+) -> Result<Response, StatusCode> {
+    let header = req
+        .headers()
+        .get(http::header::AUTHORIZATION)
+        .and_then(|header| header.to_str().ok());
+    let auth_header = if let Some(auth_header) = header {
+        auth_header
+    } else {
+        return Err(StatusCode::UNAUTHORIZED);
+    };
+
+    if let Some(current_user) = authenticate_user(auth_header).await {
+        req.extensions_mut().insert(current_user);
+        Ok(next.run(req).await)
+    } else {
+        Err(StatusCode::UNAUTHORIZED)
+    }
+}
+
+pub async fn asset_upload(
+    Path(name): Path<String>,
+    Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+    multipart: Option<Multipart>,
+) -> (StatusCode, Json<Value>) {
+    let schema = schema_manager.read().await.load_schema_wasm(&name).await;
+
+    if schema.is_err() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(Value::String(format!(
+                "The graph {} was not found ({:?})",
+                name, schema
+            ))),
+        );
+    }
+
+    if let Some(mut multipart) = multipart {
+        let mut items: HashMap<String, Vec<u8>> = HashMap::new();
+
+        while let Some(field) = multipart.next_field().await.unwrap() {
+            let name = field.name().unwrap().to_string();
+            let data = field.bytes().await.unwrap();
+
+            items.insert(name.to_string(), data.to_vec());
+        }
+
+        // Metadata is a required field
+        let metadata: AssetMetadata = serde_json::from_slice(
+            items
+                .get("metadata")
+                .expect("'metadata' field required in multipart upload."),
+        )
+        .expect("Failed to deserialize metadata.");
+
+        match pool {
+            IndexerConnectionPool::Postgres(p) => {
+                let mut conn = p.acquire().await.expect("Failed to get pool connection");
+                fuel_indexer_postgres::register_index_assets(
+                    &mut conn,
+                    &metadata.identifier,
+                    &metadata.namespace,
+                    items.get("wasm"),
+                    items.get("manifest"),
+                    items.get("schema"),
+                )
+                .await
+                .expect("Foobar");
+            }
+            IndexerConnectionPool::Sqlite(p) => {
+                let mut conn = p.acquire().await.expect("Failed to get pool connection");
+                fuel_indexer_sqlite::register_index_assets(
+                    &mut conn,
+                    &metadata.identifier,
+                    &metadata.namespace,
+                    items.get("wasm"),
+                    items.get("manifest"),
+                    items.get("schema"),
+                )
+                .await
+                .expect("Barfoo");
+            }
+        }
+
+        // TODO: reload new data into service
+    }
+
+    (StatusCode::OK, Json(Value::String("Success".to_string())))
+}
+
 pub struct GraphQlApi;
 
 impl GraphQlApi {
@@ -131,18 +241,26 @@ impl GraphQlApi {
 
         let graph_route = Router::new()
             .route("/:name", post(query_graph))
+            .layer(Extension(schema_manager.clone()))
+            .layer(Extension(pool.clone()));
+
+        let asset_route = Router::new()
+            .route("/:name", post(asset_upload))
+            .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(schema_manager))
+            .layer(Extension(config.clone()))
             .layer(Extension(pool.clone()));
 
         let health_route = Router::new()
             .route("/health", get(health_check))
-            .layer(Extension(config.clone()))
+            .layer(Extension(config))
             .layer(Extension(pool))
             .layer(Extension(start_time));
 
         let api_routes = Router::new()
-            .nest("/graph", graph_route)
-            .nest("/", health_route);
+            .nest("/", health_route)
+            .nest("/asset", asset_route)
+            .nest("/graph", graph_route);
 
         let app = Router::new().nest("/api", api_routes);
 
