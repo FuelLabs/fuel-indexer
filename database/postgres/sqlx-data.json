@@ -204,27 +204,9 @@
           "name": "schema",
           "ordinal": 5,
           "type_info": "Bytea"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 6,
-          "type_info": "Int8"
-        },
-        {
-          "name": "updated_at",
-          "ordinal": 7,
-          "type_info": "Int8"
-        },
-        {
-          "name": "active",
-          "ordinal": 8,
-          "type_info": "Bool"
         }
       ],
       "nullable": [
-        false,
-        false,
-        false,
         false,
         false,
         false,
@@ -349,27 +331,9 @@
           "name": "schema",
           "ordinal": 5,
           "type_info": "Bytea"
-        },
-        {
-          "name": "created_at",
-          "ordinal": 6,
-          "type_info": "Int8"
-        },
-        {
-          "name": "updated_at",
-          "ordinal": 7,
-          "type_info": "Int8"
-        },
-        {
-          "name": "active",
-          "ordinal": 8,
-          "type_info": "Bool"
         }
       ],
       "nullable": [
-        false,
-        false,
-        false,
         false,
         false,
         false,

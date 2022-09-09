@@ -394,14 +394,14 @@ impl IndexerConfig {
                 database: args.postgres_database,
             },
             "sqlite" => DatabaseConfig::Sqlite {
-                path: args.sqlite_database.into(),
+                path: args.sqlite_database,
             },
             _ => {
                 panic!("Unrecognized database type in options.");
             }
         };
 
-        let config = IndexerConfig {
+        IndexerConfig {
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -412,9 +412,7 @@ impl IndexerConfig {
                 port: args.graphql_api_port,
                 run_migrations: args.run_migrations,
             },
-        };
-
-        config
+        }
     }
 
     pub async fn from_file(path: &Path) -> Result<Self> {

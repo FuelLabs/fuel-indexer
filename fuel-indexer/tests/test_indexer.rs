@@ -4,7 +4,7 @@ extern crate alloc;
 mod tests {
     use fuel_indexer::{
         config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
-        IndexerService, Manifest, Module,
+        IndexerService, Manifest,
     };
     use fuels::node::{
         chain_config::{ChainConfig, StateConfig},
@@ -79,7 +79,7 @@ mod tests {
         let _ = contract.gimme_anotherevent(899).call().await;
 
         let dir = std::env::current_dir().unwrap();
-        let test_data = dir.join("tests/test_data");
+        let _test_data = dir.join("tests/test_data");
 
         let config = IndexerConfig {
             fuel_node: FuelNodeConfig::from(
@@ -100,7 +100,7 @@ mod tests {
         let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
 
         indexer_service
-            .register_indices(manifest, true)
+            .register_indices(Some(manifest), true)
             .await
             .expect("Failed to initialize indexer");
 

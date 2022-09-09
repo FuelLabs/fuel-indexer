@@ -333,7 +333,7 @@ pub async fn columns_get_schema(
     Ok(results)
 }
 
-pub async fn asset_registry_for_index(
+pub async fn assets_registered_to_index(
     conn: &mut PoolConnection<Sqlite>,
     namespace: &str,
     identifier: &str,
@@ -381,18 +381,18 @@ pub async fn register_index_assets(
     conn: &mut PoolConnection<Sqlite>,
     namespace: &str,
     identifier: &str,
-    wasm: Option<&Vec<u8>>,
-    manifest: Option<&Vec<u8>>,
-    schema: Option<&Vec<u8>>,
+    wasm: Option<Vec<u8>>,
+    manifest: Option<Vec<u8>>,
+    schema: Option<Vec<u8>>,
 ) -> sqlx::Result<()> {
-    match asset_is_registered(conn, &namespace, &identifier).await? {
+    match asset_is_registered(conn, namespace, identifier).await? {
         Some(id) => {
             let query = format!(r#"UPDATE asset_registry SET () WHERE id = {}"#, id);
 
             let mut builder: sqlx::QueryBuilder<'_, Sqlite> = sqlx::QueryBuilder::new(query);
             let query_builder = builder.build();
 
-            let result = query_builder.execute(conn).await?;
+            let _ = query_builder.execute(conn).await?;
         }
         None => {
             let query = format!(
@@ -403,7 +403,7 @@ pub async fn register_index_assets(
             let mut builder: sqlx::QueryBuilder<'_, Sqlite> = sqlx::QueryBuilder::new(query);
             let query_builder = builder.build().bind(wasm).bind(manifest).bind(schema);
 
-            let result = query_builder.execute(conn).await?;
+            let _ = query_builder.execute(conn).await?;
         }
     };
 

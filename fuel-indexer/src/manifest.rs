@@ -38,6 +38,13 @@ impl Manifest {
         Ok(manifest)
     }
 
+    pub fn to_bytes(&self) -> Vec<u8> {
+        serde_yaml::to_string(&self)
+            .expect("Failed here")
+            .as_bytes()
+            .to_vec()
+    }
+
     pub fn graphql_schema(&self) -> Result<String> {
         let mut file = File::open(&self.graphql_schema)?;
         let mut schema = String::new();

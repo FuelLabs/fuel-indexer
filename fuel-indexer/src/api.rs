@@ -74,7 +74,7 @@ pub async fn query_graph(
 
 #[allow(unused_variables)]
 pub async fn health_check(
-    Extension(config): Extension<Arc<IndexerConfig>>,
+    Extension(config): Extension<IndexerConfig>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(start_time): Extension<Arc<Instant>>,
 ) -> (StatusCode, Json<Value>) {
@@ -146,23 +146,10 @@ async fn authorize_middleware<B>(
 }
 
 pub async fn asset_upload(
-    Path(name): Path<String>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     multipart: Option<Multipart>,
 ) -> (StatusCode, Json<Value>) {
-    let schema = schema_manager.read().await.load_schema_wasm(&name).await;
-
-    if schema.is_err() {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(Value::String(format!(
-                "The graph {} was not found ({:?})",
-                name, schema
-            ))),
-        );
-    }
-
     if let Some(mut multipart) = multipart {
         let mut items: HashMap<String, Vec<u8>> = HashMap::new();
 
@@ -181,6 +168,10 @@ pub async fn asset_upload(
         )
         .expect("Failed to deserialize metadata.");
 
+        let wasm = items.get("wasm").map(|x| x.to_owned());
+        let manifest = items.get("manifest").map(|x| x.to_owned());
+        let schema = items.get("schema").map(|x| x.to_owned());
+
         match pool {
             IndexerConnectionPool::Postgres(p) => {
                 let mut conn = p.acquire().await.expect("Failed to get pool connection");
@@ -188,9 +179,9 @@ pub async fn asset_upload(
                     &mut conn,
                     &metadata.identifier,
                     &metadata.namespace,
-                    items.get("wasm"),
-                    items.get("manifest"),
-                    items.get("schema"),
+                    wasm,
+                    manifest,
+                    schema.clone(),
                 )
                 .await
                 .expect("Foobar");
@@ -201,9 +192,9 @@ pub async fn asset_upload(
                     &mut conn,
                     &metadata.identifier,
                     &metadata.namespace,
-                    items.get("wasm"),
-                    items.get("manifest"),
-                    items.get("schema"),
+                    wasm,
+                    manifest,
+                    schema.clone(),
                 )
                 .await
                 .expect("Barfoo");
@@ -211,6 +202,15 @@ pub async fn asset_upload(
         }
 
         // TODO: reload new data into service
+        // update schema manager
+        if let Some(s) = schema {
+            schema_manager
+                .write()
+                .await
+                .new_schema(&metadata.namespace, &String::from_utf8_lossy(&s))
+                .await
+                .expect("Bird");
+        }
     }
 
     (StatusCode::OK, Json(Value::String("Success".to_string())))
@@ -224,7 +224,7 @@ impl GraphQlApi {
             .await
             .expect("SchemaManager create failed");
         let schema_manager = Arc::new(RwLock::new(sm));
-        let config = Arc::new(config.clone());
+        let config = config.clone();
         let start_time = Arc::new(Instant::now());
         let listen_on = config
             .graphql_api
@@ -248,7 +248,6 @@ impl GraphQlApi {
             .route("/:name", post(asset_upload))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(schema_manager))
-            .layer(Extension(config.clone()))
             .layer(Extension(pool.clone()));
 
         let health_route = Router::new()
