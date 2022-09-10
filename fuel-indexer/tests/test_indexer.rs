@@ -78,9 +78,6 @@ mod tests {
         let _ = contract.gimme_someevent(78).call().await;
         let _ = contract.gimme_anotherevent(899).call().await;
 
-        let dir = std::env::current_dir().unwrap();
-        let _test_data = dir.join("tests/test_data");
-
         let config = IndexerConfig {
             fuel_node: FuelNodeConfig::from(
                 FUEL_NODE_ADDR.parse::<std::net::SocketAddr>().unwrap(),

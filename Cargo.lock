@@ -2435,10 +2435,7 @@ name = "fuel-indexer-lib"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-std",
- "clap",
  "serde",
- "serde_yaml",
  "tracing",
 ]
 
@@ -2475,7 +2472,6 @@ name = "fuel-indexer-postgres"
 version = "0.1.0"
 dependencies = [
  "fuel-indexer-database-types",
- "fuel-indexer-lib",
  "sqlx",
 ]
 
@@ -2505,7 +2501,6 @@ name = "fuel-indexer-sqlite"
 version = "0.1.0"
 dependencies = [
  "fuel-indexer-database-types",
- "fuel-indexer-lib",
  "sqlx",
 ]
 
