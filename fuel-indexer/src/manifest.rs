@@ -46,7 +46,6 @@ impl Manifest {
     }
 
     pub fn graphql_schema(&self) -> Result<String> {
-        println!(">> OPENING: {}", self.graphql_schema);
         let mut file = File::open(&self.graphql_schema)?;
         let mut schema = String::new();
         file.read_to_string(&mut schema)?;

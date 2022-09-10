@@ -8,6 +8,7 @@ fn ff_log_data(_inp: ()) {}
 #[indexer(
     abi = "./test_data/contracts-abi.json",
     namespace = "test_namespace",
+    identifier = "executor1",
     schema = "./test_data/schema.graphql",
 )]
 mod indexer {

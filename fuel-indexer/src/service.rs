@@ -77,7 +77,7 @@ impl IndexerService {
                 self.manager.new_schema(&namespace, &schema).await?;
 
                 let (kill_switch, handle, wasm_bytes) = self
-                    .spawn_index_from_manifest(&manifest, run_once, database_url.clone())
+                    .spawn_executor_from_manifest(&manifest, run_once, database_url.clone())
                     .await?;
 
                 match pool {
@@ -126,7 +126,7 @@ impl IndexerService {
                     let manifest: Manifest = serde_yaml::from_slice(&asset.manifest).expect("Bar");
 
                     let (kill_switch, handle) = self
-                        .spawn_index_from_registry(&manifest, run_once, asset.wasm)
+                        .spwan_executor_from_asset_registry(&manifest, run_once, asset.wasm)
                         .await?;
 
                     // TODO: indices hsould be indexed by UID
@@ -140,7 +140,7 @@ impl IndexerService {
         Ok(())
     }
 
-    async fn spawn_index_from_manifest(
+    async fn spawn_executor_from_manifest(
         &self,
         manifest: &Manifest,
         run_once: bool,
@@ -176,7 +176,7 @@ impl IndexerService {
         }
     }
 
-    async fn spawn_index_from_registry(
+    async fn spwan_executor_from_asset_registry(
         &self,
         manifest: &Manifest,
         run_once: bool,
@@ -210,42 +210,6 @@ impl IndexerService {
             }
         }
     }
-
-    // async fn spawn_indexer_task(
-    //     &self,
-    //     manifest: &Manifest,
-    //     run_once: bool,
-    //     database_url: String,
-    // ) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>, Option<Vec<u8>>)> {
-    //     let start_block = manifest.start_block;
-
-    //     match manifest.module {
-    //         Module::Wasm(ref module) => {
-    //             let mut bytes = Vec::<u8>::new();
-    //             let mut file = File::open(module).await?;
-    //             file.read_to_end(&mut bytes).await?;
-
-    //             let executor =
-    //                 WasmIndexExecutor::new(database_url, manifest.to_owned(), bytes.clone())
-    //                     .await?;
-    //             let kill_switch = Arc::new(AtomicBool::new(run_once));
-    //             let handle =
-    //                 tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
-
-    //             Ok((kill_switch, handle, Some(bytes)))
-    //         }
-    //         Module::Native(ref path) => {
-    //             let path = path.clone();
-    //             let executor =
-    //                 NativeIndexExecutor::new(&database_url, manifest.to_owned(), path).await?;
-    //             let kill_switch = Arc::new(AtomicBool::new(run_once));
-    //             let handle =
-    //                 tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
-
-    //             Ok((kill_switch, handle, None))
-    //         }
-    //     }
-    // }
 
     pub fn stop_indexer(&mut self, executor_name: &str) {
         if let Some(killer) = self.killers.remove(executor_name) {

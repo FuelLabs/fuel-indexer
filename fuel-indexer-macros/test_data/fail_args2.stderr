@@ -1,4 +1,4 @@
-error: schema specification is required in indexer definition!
+error: schema specification is required in indexer definition. (>'')>
  --> test_data/fail_args2.rs:3:1
   |
 3 | / #[indexer(
