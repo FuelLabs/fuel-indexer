@@ -59,7 +59,7 @@ cd fuel-indexer/examples/counter/web-api-and-fuel-node && cargo run
 ```bash
 cargo build -p fuel-indexer
 
-./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml --fuel-node-port 4004 --graphql-api-host 127.0.0.1 --postgres-database indexer
+./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml --graphql-api-host 127.0.0.1 --postgres-database indexer
 ```
 
 ### Send a transaction to the smartcontract via the webserver

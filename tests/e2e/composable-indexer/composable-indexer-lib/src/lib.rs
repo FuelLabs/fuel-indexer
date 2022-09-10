@@ -4,6 +4,7 @@ use fuel_indexer_macros::indexer;
 #[indexer(
     abi = "tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping-abi.json",
     namespace = "composability_test",
+    identifier = "index1",
     schema = "schema/schema.graphql"
 )]
 mod composability_test {

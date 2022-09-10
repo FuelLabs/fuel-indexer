@@ -205,11 +205,39 @@ impl From<&str> for ColumnType {
 }
 
 #[derive(Debug)]
-pub struct AssetRegistry {
+pub struct IndexAssetRegistry {
     pub id: i64,
     pub namespace: String,
     pub identifier: String,
     pub wasm: Vec<u8>,
     pub manifest: Vec<u8>,
     pub schema: Vec<u8>,
+}
+
+#[derive(Debug, Eq, PartialEq, Hash)]
+pub enum IndexAsset {
+    Wasm,
+    Manifest,
+    Schema,
+}
+
+impl ToString for IndexAsset {
+    fn to_string(&self) -> String {
+        match self {
+            IndexAsset::Wasm => "wasm".to_string(),
+            IndexAsset::Manifest => "manifest".to_string(),
+            IndexAsset::Schema => "schema".to_string(),
+        }
+    }
+}
+
+impl From<String> for IndexAsset {
+    fn from(a: String) -> Self {
+        match a.as_str() {
+            "wasm" => Self::Wasm,
+            "manifest" => Self::Manifest,
+            "schema" => Self::Schema,
+            _ => panic!("Unrecognized IndexAsset."),
+        }
+    }
 }

@@ -333,11 +333,11 @@ pub async fn columns_get_schema(
     Ok(results)
 }
 
-pub async fn assets_registered_to_index(
+pub async fn get_assets_for_index(
     conn: &mut PoolConnection<Sqlite>,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<AssetRegistry> {
+) -> sqlx::Result<IndexAssetRegistry> {
     let query = format!(
         "SELECT * FROM asset_registry WHERE namespace = '{}' AND identifier = '{}'",
         namespace, identifier
@@ -352,7 +352,7 @@ pub async fn assets_registered_to_index(
     let manifest = row.get(4);
     let schema = row.get(5);
 
-    Ok(AssetRegistry {
+    Ok(IndexAssetRegistry {
         id,
         namespace,
         identifier,
@@ -362,7 +362,7 @@ pub async fn assets_registered_to_index(
     })
 }
 
-pub async fn asset_is_registered(
+pub async fn index_has_registerd_assets(
     conn: &mut PoolConnection<Sqlite>,
     namespace: &str,
     identifier: &str,
@@ -385,12 +385,37 @@ pub async fn register_index_assets(
     manifest: Option<Vec<u8>>,
     schema: Option<Vec<u8>>,
 ) -> sqlx::Result<()> {
-    match asset_is_registered(conn, namespace, identifier).await? {
+    match index_has_registerd_assets(conn, namespace, identifier).await? {
         Some(id) => {
-            let query = format!(r#"UPDATE asset_registry SET () WHERE id = {}"#, id);
+            let params: Vec<(IndexAsset, Vec<u8>)> = [
+                (IndexAsset::Wasm, wasm),
+                (IndexAsset::Schema, schema),
+                (IndexAsset::Manifest, manifest),
+            ]
+            .into_iter()
+            .filter(|(_k, v)| v.is_some())
+            .map(|(k, v)| (k, v.unwrap()))
+            .collect();
+
+            let columns: Vec<String> = params.iter().map(|(key, _)| key.to_string()).collect();
+            let value_bindings: Vec<String> = columns
+                .iter()
+                .enumerate()
+                .map(|(i, x)| format!("{}=${}", x, i + 1))
+                .collect();
+
+            let query = format!(
+                "UPDATE asset_registry SET {} WHERE id = {}",
+                value_bindings.join(", "),
+                id
+            );
 
             let mut builder: sqlx::QueryBuilder<'_, Sqlite> = sqlx::QueryBuilder::new(query);
-            let query_builder = builder.build();
+
+            let mut query_builder = builder.build();
+            for (_, asset_bytes) in params {
+                query_builder = query_builder.bind(asset_bytes);
+            }
 
             let _ = query_builder.execute(conn).await?;
         }
@@ -410,9 +435,9 @@ pub async fn register_index_assets(
     Ok(())
 }
 
-pub async fn all_registered_assets(
+pub async fn get_all_registered_assets(
     conn: &mut PoolConnection<Sqlite>,
-) -> sqlx::Result<Vec<AssetRegistry>> {
+) -> sqlx::Result<Vec<IndexAssetRegistry>> {
     let row = sqlx::query("SELECT * FROM asset_registry")
         .fetch_all(conn)
         .await?;
@@ -427,7 +452,7 @@ pub async fn all_registered_assets(
             let manifest = row.get(4);
             let schema = row.get(5);
 
-            AssetRegistry {
+            IndexAssetRegistry {
                 id,
                 namespace,
                 identifier,

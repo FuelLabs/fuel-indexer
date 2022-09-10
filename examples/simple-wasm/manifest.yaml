@@ -1,6 +1,6 @@
 ---
 namespace: test_namespace
-identifier: simple_wasm
+identifier: simple_wasm_executor
 graphql_schema: examples/simple-wasm/schema/schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/simple_wasm.wasm

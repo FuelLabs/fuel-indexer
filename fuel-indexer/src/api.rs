@@ -12,6 +12,7 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use fuel_indexer_database_types::IndexAsset;
 use fuel_indexer_lib::utils::{FuelNodeHealthResponse, ServiceStatus};
 use fuel_indexer_postgres;
 use fuel_indexer_schema::db::{
@@ -72,7 +73,6 @@ pub async fn query_graph(
     }
 }
 
-#[allow(unused_variables)]
 pub async fn health_check(
     Extension(config): Extension<IndexerConfig>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -112,15 +112,9 @@ pub async fn health_check(
     )
 }
 
-async fn authenticate_user(_user_id: &str) -> Option<Result<bool, APIError>> {
+async fn authenticate_user(_signature: &str) -> Option<Result<bool, APIError>> {
     // TODO: Placeholder until actual authentication scheme is in place
     Some(Ok(true))
-}
-
-#[derive(Debug, Clone, Deserialize)]
-pub struct AssetMetadata {
-    namespace: String,
-    identifier: String,
 }
 
 async fn authorize_middleware<B>(
@@ -146,39 +140,34 @@ async fn authorize_middleware<B>(
 }
 
 pub async fn asset_upload(
+    Path((namespace, identifier)): Path<(String, String)>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     multipart: Option<Multipart>,
 ) -> (StatusCode, Json<Value>) {
+    // TODO - get namespace and identifier from path
     if let Some(mut multipart) = multipart {
-        let mut items: HashMap<String, Vec<u8>> = HashMap::new();
+        let mut items: HashMap<IndexAsset, Vec<u8>> = HashMap::new();
 
+        // FIXME: DOS ?
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap().to_string();
             let data = field.bytes().await.unwrap();
 
-            items.insert(name.to_string(), data.to_vec());
+            items.insert(name.into(), data.to_vec());
         }
 
-        // Metadata is a required field
-        let metadata: AssetMetadata = serde_json::from_slice(
-            items
-                .get("metadata")
-                .expect("'metadata' field required in multipart upload."),
-        )
-        .expect("Failed to deserialize metadata.");
-
-        let wasm = items.get("wasm").map(|x| x.to_owned());
-        let manifest = items.get("manifest").map(|x| x.to_owned());
-        let schema = items.get("schema").map(|x| x.to_owned());
+        let wasm = items.get(&IndexAsset::Wasm).map(|x| x.to_owned());
+        let manifest = items.get(&IndexAsset::Manifest).map(|x| x.to_owned());
+        let schema = items.get(&IndexAsset::Schema).map(|x| x.to_owned());
 
         match pool {
             IndexerConnectionPool::Postgres(p) => {
                 let mut conn = p.acquire().await.expect("Failed to get pool connection");
                 fuel_indexer_postgres::register_index_assets(
                     &mut conn,
-                    &metadata.identifier,
-                    &metadata.namespace,
+                    &identifier,
+                    &namespace,
                     wasm,
                     manifest,
                     schema.clone(),
@@ -190,8 +179,8 @@ pub async fn asset_upload(
                 let mut conn = p.acquire().await.expect("Failed to get pool connection");
                 fuel_indexer_sqlite::register_index_assets(
                     &mut conn,
-                    &metadata.identifier,
-                    &metadata.namespace,
+                    &identifier,
+                    &namespace,
                     wasm,
                     manifest,
                     schema.clone(),
@@ -207,7 +196,7 @@ pub async fn asset_upload(
             schema_manager
                 .write()
                 .await
-                .new_schema(&metadata.namespace, &String::from_utf8_lossy(&s))
+                .new_schema(&namespace, &String::from_utf8_lossy(&s))
                 .await
                 .expect("Bird");
         }
@@ -240,12 +229,13 @@ impl GraphQlApi {
         }
 
         let graph_route = Router::new()
-            .route("/:name", post(query_graph))
+            .route("/:namespace", post(query_graph))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()));
 
+        // TODO: /:namespace/:identifier
         let asset_route = Router::new()
-            .route("/:name", post(asset_upload))
+            .route("/:namespace/:identifier", post(asset_upload))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()));

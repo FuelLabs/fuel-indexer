@@ -72,5 +72,6 @@ pub async fn main() -> Result<()> {
     GraphQlApi::run(config).await;
 
     service_handle.await?;
+
     Ok(())
 }

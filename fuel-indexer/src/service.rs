@@ -77,7 +77,7 @@ impl IndexerService {
                 self.manager.new_schema(&namespace, &schema).await?;
 
                 let (kill_switch, handle, wasm_bytes) = self
-                    .spawn_tasks(manifest.clone(), run_once, database_url.clone())
+                    .spawn_index_from_manifest(&manifest, run_once, database_url.clone())
                     .await?;
 
                 match pool {
@@ -114,10 +114,10 @@ impl IndexerService {
             None => {
                 let registered_assets = match pool {
                     IndexerConnection::Postgres(mut c) => {
-                        fuel_indexer_postgres::all_registered_assets(&mut c).await
+                        fuel_indexer_postgres::get_all_registered_assets(&mut c).await
                     }
                     IndexerConnection::Sqlite(mut c) => {
-                        fuel_indexer_sqlite::all_registered_assets(&mut c).await
+                        fuel_indexer_sqlite::get_all_registered_assets(&mut c).await
                     }
                 }
                 .expect("Failed");
@@ -125,8 +125,8 @@ impl IndexerService {
                 for asset in registered_assets {
                     let manifest: Manifest = serde_yaml::from_slice(&asset.manifest).expect("Bar");
 
-                    let (kill_switch, handle, _wasm_bytes) = self
-                        .spawn_tasks(manifest.clone(), run_once, database_url.clone())
+                    let (kill_switch, handle) = self
+                        .spawn_index_from_registry(&manifest, run_once, asset.wasm)
                         .await?;
 
                     // TODO: indices hsould be indexed by UID
@@ -140,9 +140,9 @@ impl IndexerService {
         Ok(())
     }
 
-    async fn spawn_tasks(
+    async fn spawn_index_from_manifest(
         &self,
-        manifest: Manifest,
+        manifest: &Manifest,
         run_once: bool,
         database_url: String,
     ) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>, Option<Vec<u8>>)> {
@@ -155,7 +155,8 @@ impl IndexerService {
                 file.read_to_end(&mut bytes).await?;
 
                 let executor =
-                    WasmIndexExecutor::new(database_url, manifest, bytes.clone()).await?;
+                    WasmIndexExecutor::new(database_url, manifest.to_owned(), bytes.clone())
+                        .await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
                 let handle =
                     tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
@@ -164,7 +165,8 @@ impl IndexerService {
             }
             Module::Native(ref path) => {
                 let path = path.clone();
-                let executor = NativeIndexExecutor::new(&database_url, manifest, path).await?;
+                let executor =
+                    NativeIndexExecutor::new(&database_url, manifest.to_owned(), path).await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
                 let handle =
                     tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
@@ -173,6 +175,77 @@ impl IndexerService {
             }
         }
     }
+
+    async fn spawn_index_from_registry(
+        &self,
+        manifest: &Manifest,
+        run_once: bool,
+        wasm_bytes: Vec<u8>,
+    ) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>)> {
+        let start_block = manifest.start_block;
+
+        match manifest.module {
+            Module::Wasm(ref _module) => {
+                let executor = WasmIndexExecutor::new(
+                    self.database_url.clone(),
+                    manifest.to_owned(),
+                    wasm_bytes,
+                )
+                .await?;
+                let kill_switch = Arc::new(AtomicBool::new(run_once));
+                let handle =
+                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+
+                Ok((kill_switch, handle))
+            }
+            Module::Native(ref path) => {
+                let path = path.clone();
+                let executor =
+                    NativeIndexExecutor::new(&self.database_url, manifest.to_owned(), path).await?;
+                let kill_switch = Arc::new(AtomicBool::new(run_once));
+                let handle =
+                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+
+                Ok((kill_switch, handle))
+            }
+        }
+    }
+
+    // async fn spawn_indexer_task(
+    //     &self,
+    //     manifest: &Manifest,
+    //     run_once: bool,
+    //     database_url: String,
+    // ) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>, Option<Vec<u8>>)> {
+    //     let start_block = manifest.start_block;
+
+    //     match manifest.module {
+    //         Module::Wasm(ref module) => {
+    //             let mut bytes = Vec::<u8>::new();
+    //             let mut file = File::open(module).await?;
+    //             file.read_to_end(&mut bytes).await?;
+
+    //             let executor =
+    //                 WasmIndexExecutor::new(database_url, manifest.to_owned(), bytes.clone())
+    //                     .await?;
+    //             let kill_switch = Arc::new(AtomicBool::new(run_once));
+    //             let handle =
+    //                 tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+
+    //             Ok((kill_switch, handle, Some(bytes)))
+    //         }
+    //         Module::Native(ref path) => {
+    //             let path = path.clone();
+    //             let executor =
+    //                 NativeIndexExecutor::new(&database_url, manifest.to_owned(), path).await?;
+    //             let kill_switch = Arc::new(AtomicBool::new(run_once));
+    //             let handle =
+    //                 tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+
+    //             Ok((kill_switch, handle, None))
+    //         }
+    //     }
+    // }
 
     pub fn stop_indexer(&mut self, executor_name: &str) {
         if let Some(killer) = self.killers.remove(executor_name) {
