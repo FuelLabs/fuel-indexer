@@ -76,10 +76,10 @@ error[E0425]: cannot find function `handle_events` in this scope
 68 |     handle_events(ptr, len);
    |     ^^^^^^^^^^^^^ not found in this scope
 
-warning: unused import: `Tokenizable`
+error: unused import: `Tokenizable`
   --> test_data/fail_unknown_type.rs:24:47
    |
 24 |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
    |                                               ^^^^^^^^^^^
    |
-   = note: `#[warn(unused_imports)]` on by default
+   = note: `-D unused-imports` implied by `-D warnings`

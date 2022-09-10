@@ -55,7 +55,7 @@ impl IndexerService {
         })
     }
 
-    // TODO: run_once should be configurable (on a per-index basis  - e.g., in the manifest)
+    // TODO: run_once should come from the index's manifest
     pub async fn register_indices(
         &mut self,
         manifest: Option<Manifest>,
@@ -73,7 +73,7 @@ impl IndexerService {
 
                 let schema = manifest
                     .graphql_schema()
-                    .expect("Manifest should include GraphQL schema");
+                    .expect("Manifest should include GraphQL schema.");
                 self.manager.new_schema(&namespace, &schema).await?;
 
                 let (kill_switch, handle, wasm_bytes) = self
@@ -104,9 +104,8 @@ impl IndexerService {
                         .await
                     }
                 }
-                .expect("Failed");
+                .expect("Failed to register index assets.");
 
-                // TODO: indices hsould be indexed by UID
                 info!("Registered indexer {}", identifier);
                 self.handles.insert(namespace.clone(), handle);
                 self.killers.insert(namespace, kill_switch);
@@ -120,16 +119,16 @@ impl IndexerService {
                         fuel_indexer_sqlite::get_all_registered_assets(&mut c).await
                     }
                 }
-                .expect("Failed");
+                .expect("Failed to retrieve all registered assets.");
 
                 for asset in registered_assets {
-                    let manifest: Manifest = serde_yaml::from_slice(&asset.manifest).expect("Bar");
+                    let manifest: Manifest = serde_yaml::from_slice(&asset.manifest)
+                        .expect("Could not read manifest in registry.");
 
                     let (kill_switch, handle) = self
                         .spwan_executor_from_asset_registry(&manifest, run_once, asset.wasm)
                         .await?;
 
-                    // TODO: indices hsould be indexed by UID
                     info!("Registered indexer {}", manifest.uid());
                     self.handles.insert(manifest.namespace.clone(), handle);
                     self.killers.insert(manifest.namespace, kill_switch);
