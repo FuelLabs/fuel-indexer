@@ -9,7 +9,7 @@ use axum::{
     http::{Request, StatusCode},
     middleware::{self, Next},
     response::Response,
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use fuel_indexer_database_types::IndexAsset;
@@ -139,7 +139,63 @@ async fn authorize_middleware<B>(
     }
 }
 
-pub async fn asset_upload(
+pub async fn remove_index_assets(
+    Path((namespace, identifier)): Path<(String, String)>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+) -> (StatusCode, Json<Value>) {
+    match pool {
+        IndexerConnectionPool::Postgres(ref p) => {
+            let mut conn = p
+                .acquire()
+                .await
+                .expect("Failed to get Postgres connection.");
+            fuel_indexer_postgres::remove_index_assets(&mut conn, &namespace, &identifier)
+                .await
+                .expect("Failed to remove indexer assets.");
+        }
+        IndexerConnectionPool::Sqlite(ref p) => {
+            let mut conn = p.acquire().await.expect("Failed to get SQLite connection.");
+            fuel_indexer_sqlite::remove_index_assets(&mut conn, &namespace, &identifier)
+                .await
+                .expect("Failed to remove indexer assets.");
+        }
+    };
+
+    let namespace_assets = match pool {
+        IndexerConnectionPool::Postgres(ref p) => {
+            let mut conn = p
+                .acquire()
+                .await
+                .expect("Failed to get Postgres connection.");
+
+            fuel_indexer_postgres::get_namespace_assets(&mut conn, &namespace)
+                .await
+                .expect("Could not retrieve assets.")
+        }
+        IndexerConnectionPool::Sqlite(ref p) => {
+            let mut conn = p.acquire().await.expect("Failed to get Sqlite connection.");
+
+            fuel_indexer_sqlite::get_namespace_assets(&mut conn, &namespace)
+                .await
+                .expect("Could not retrieve assets.")
+        }
+    };
+
+    let index_names: Vec<String> = namespace_assets.iter().map(|x| x.uid()).collect();
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "success": "true",
+            "details": &format!("Assets removed for index '{}.{}'", namespace, identifier),
+            "namespace": {
+                "active_indices": index_names
+            }
+        })),
+    )
+}
+
+pub async fn upload_index_assets(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -162,9 +218,10 @@ pub async fn asset_upload(
                 _ => {
                     return (
                         StatusCode::BAD_REQUEST,
-                        Json(Value::String(
-                            "Accepted fields are wasm, schema, and manifest.".to_string(),
-                        )),
+                        Json(json!({
+                            "success": "false",
+                            "details": "Accepted fields are wasm, schema, and manifest.",
+                        })),
                     )
                 }
             }
@@ -176,36 +233,36 @@ pub async fn asset_upload(
         let schema = items.get(&IndexAsset::Schema).map(|x| x.to_owned());
 
         match pool {
-            IndexerConnectionPool::Postgres(p) => {
+            IndexerConnectionPool::Postgres(ref p) => {
                 let mut conn = p
                     .acquire()
                     .await
                     .expect("Failed to get Postgres connection.");
                 fuel_indexer_postgres::register_index_assets(
                     &mut conn,
-                    &identifier,
                     &namespace,
+                    &identifier,
                     wasm,
                     manifest,
                     schema.clone(),
                 )
                 .await
-                .expect("Failed to register assets with Postgres.");
+                .expect("Failed to register assets.");
             }
-            IndexerConnectionPool::Sqlite(p) => {
+            IndexerConnectionPool::Sqlite(ref p) => {
                 let mut conn = p.acquire().await.expect("Failed to get SQLite connection.");
                 fuel_indexer_sqlite::register_index_assets(
                     &mut conn,
-                    &identifier,
                     &namespace,
+                    &identifier,
                     wasm,
                     manifest,
                     schema.clone(),
                 )
                 .await
-                .expect("Failed to register assets with SQLite.");
+                .expect("Failed to register assets.");
             }
-        }
+        };
 
         if let Some(s) = schema {
             schema_manager
@@ -216,10 +273,41 @@ pub async fn asset_upload(
                 .expect("Failed to generate new schema for asset.");
         }
 
-        // TODO: Reload service
+        // TODO: Signal service reload
     }
 
-    (StatusCode::OK, Json(Value::String("Success".to_string())))
+    let namespace_assets = match pool {
+        IndexerConnectionPool::Postgres(ref p) => {
+            let mut conn = p
+                .acquire()
+                .await
+                .expect("Failed to get Postgres connection.");
+
+            fuel_indexer_postgres::get_namespace_assets(&mut conn, &namespace)
+                .await
+                .expect("Could not retrieve assets.")
+        }
+        IndexerConnectionPool::Sqlite(ref p) => {
+            let mut conn = p.acquire().await.expect("Failed to get Sqlite connection.");
+
+            fuel_indexer_sqlite::get_namespace_assets(&mut conn, &namespace)
+                .await
+                .expect("Could not retrieve assets.")
+        }
+    };
+
+    let index_names: Vec<String> = namespace_assets.iter().map(|x| x.uid()).collect();
+
+    (
+        StatusCode::OK,
+        Json(json!({
+            "success": "true",
+            "details": &format!("Successfully registered assets for index: '{}.{}'", namespace, identifier),
+            "namespace": {
+                "active_indices": index_names
+            }
+        })),
+    )
 }
 
 pub struct GraphQlApi;
@@ -251,9 +339,12 @@ impl GraphQlApi {
             .layer(Extension(pool.clone()));
 
         let asset_route = Router::new()
-            .route("/:namespace/:identifier", post(asset_upload))
+            .route("/:namespace/:identifier", post(upload_index_assets))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(schema_manager))
+            .layer(Extension(pool.clone()))
+            .route("/:namespace/:identifier", delete(remove_index_assets))
+            .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(pool.clone()));
 
         let health_route = Router::new()

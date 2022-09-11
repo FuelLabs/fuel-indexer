@@ -214,6 +214,12 @@ pub struct IndexAssetRegistry {
     pub schema: Vec<u8>,
 }
 
+impl IndexAssetRegistry {
+    pub fn uid(&self) -> String {
+        format!("{}.{}", self.namespace, self.identifier)
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub enum IndexAsset {
     Wasm,

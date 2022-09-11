@@ -1,6 +1,6 @@
 namespace: counter
 graphql_schema: examples/counter/schema/counter.graphql
-identifier: counter
+identifier: index1
 module:
   wasm: target/wasm32-unknown-unknown/release/counter_indexer.wasm
 handlers:

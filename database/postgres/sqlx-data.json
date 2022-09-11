@@ -347,6 +347,56 @@
     },
     "query": "SELECT * FROM asset_registry"
   },
+  "ec77568078fc69f71f53483fa351793fbe9a3235270e8d15f0fe3e02b28ef58d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "namespace",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "identifier",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "wasm",
+          "ordinal": 3,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "manifest",
+          "ordinal": 4,
+          "type_info": "Bytea"
+        },
+        {
+          "name": "schema",
+          "ordinal": 5,
+          "type_info": "Bytea"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT * FROM asset_registry WHERE namespace = $1"
+  },
   "ee7e6f84bb6541909ddfec641a828287d6e414337988b0bc346b765f8766479e": {
     "describe": {
       "columns": [

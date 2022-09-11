@@ -249,7 +249,7 @@ pub async fn columns_get_schema(
     .await
 }
 
-pub async fn get_assets_for_index(
+pub async fn get_index_assets(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
@@ -339,10 +339,50 @@ pub async fn register_index_assets(
     Ok(())
 }
 
+pub async fn get_namespace_assets(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+) -> sqlx::Result<Vec<IndexAssetRegistry>> {
+    sqlx::query_as!(
+        IndexAssetRegistry,
+        r#"SELECT * FROM asset_registry WHERE namespace = $1"#,
+        namespace,
+    )
+    .fetch_all(conn)
+    .await
+}
+
 pub async fn get_all_registered_assets(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<Vec<IndexAssetRegistry>> {
     sqlx::query_as!(IndexAssetRegistry, "SELECT * FROM asset_registry")
         .fetch_all(conn)
         .await
+}
+
+pub async fn remove_index_assets(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    let query = format!(
+        "DELETE FROM asset_registry WHERE namespace = '{}' AND identifier = '{}'",
+        namespace, identifier
+    );
+    let _ = sqlx::QueryBuilder::new(query).build().execute(conn).await?;
+
+    Ok(())
+}
+
+pub async fn remove_namespace_assets(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+) -> sqlx::Result<()> {
+    let query = format!(
+        "DELETE FROM asset_registry WHERE namespace = '{}'",
+        namespace
+    );
+    let _ = sqlx::QueryBuilder::new(query).build().execute(conn).await?;
+
+    Ok(())
 }

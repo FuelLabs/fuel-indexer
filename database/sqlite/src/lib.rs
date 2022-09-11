@@ -333,7 +333,7 @@ pub async fn columns_get_schema(
     Ok(results)
 }
 
-pub async fn get_assets_for_index(
+pub async fn get_index_assets(
     conn: &mut PoolConnection<Sqlite>,
     namespace: &str,
     identifier: &str,
@@ -435,14 +435,18 @@ pub async fn register_index_assets(
     Ok(())
 }
 
-pub async fn get_all_registered_assets(
+pub async fn get_namespace_assets(
     conn: &mut PoolConnection<Sqlite>,
+    namespace: &str,
 ) -> sqlx::Result<Vec<IndexAssetRegistry>> {
-    let row = sqlx::query("SELECT * FROM asset_registry")
-        .fetch_all(conn)
-        .await?;
+    let rows = sqlx::query(&format!(
+        "SELECT * FROM asset_registry WHERE namespace = '{}'",
+        namespace
+    ))
+    .fetch_all(conn)
+    .await?;
 
-    let assets = row
+    let assets = rows
         .iter()
         .map(|row| {
             let id = row.get(0);
@@ -464,4 +468,62 @@ pub async fn get_all_registered_assets(
         .collect();
 
     Ok(assets)
+}
+
+pub async fn get_all_registered_assets(
+    conn: &mut PoolConnection<Sqlite>,
+) -> sqlx::Result<Vec<IndexAssetRegistry>> {
+    let rows = sqlx::query("SELECT * FROM asset_registry")
+        .fetch_all(conn)
+        .await?;
+
+    let assets = rows
+        .iter()
+        .map(|row| {
+            let id = row.get(0);
+            let namespace = row.get(1);
+            let identifier = row.get(2);
+            let wasm = row.get(3);
+            let manifest = row.get(4);
+            let schema = row.get(5);
+
+            IndexAssetRegistry {
+                id,
+                namespace,
+                identifier,
+                wasm,
+                manifest,
+                schema,
+            }
+        })
+        .collect();
+
+    Ok(assets)
+}
+
+pub async fn remove_index_assets(
+    conn: &mut PoolConnection<Sqlite>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    let query = format!(
+        "DELETE FROM asset_registry WHERE namespace = '{}' AND identifier = '{}'",
+        namespace, identifier
+    );
+    let _ = sqlx::QueryBuilder::new(query).build().execute(conn).await?;
+
+    Ok(())
+}
+
+pub async fn remove_namespace_assets(
+    conn: &mut PoolConnection<Sqlite>,
+    namespace: &str,
+) -> sqlx::Result<()> {
+    let query = format!(
+        "DELETE FROM asset_registry WHERE namespace = '{}'",
+        namespace
+    );
+    let _ = sqlx::QueryBuilder::new(query).build().execute(conn).await?;
+
+    Ok(())
 }
