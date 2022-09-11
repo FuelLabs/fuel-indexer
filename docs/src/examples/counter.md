@@ -80,7 +80,7 @@ With our Fuel node and web server up and running, we'll next start our Fuel Inde
 ```bash
 cargo build -p fuel-indexer
 
-./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml --fuel-node-port 4004 --graphql-api-host 127.0.0.1 --postgres-database indexer
+./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml --fuel-node-port --graphql-api-host 127.0.0.1 --postgres-database indexer
 ```
 
 ### Send a transaction to the smart contract via the web server

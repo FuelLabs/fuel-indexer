@@ -7,7 +7,7 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0"
+anyhow = { version = "1.0", default-features = false }
 async-std = "1.10.0"
 async-trait = "0.1"
 axum = { version = "0.4", features = ["multipart"] }
@@ -16,11 +16,12 @@ cfg-if = "1.0"
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-core = { version = "0.6.4" }
 fuel-gql-client = { version = "0.6.4" }
-fuel-indexer-database-types = { path = "../database/database-types" }
+fuel-indexer-database = { path =  "../fuel-indexer-database" }
+fuel-indexer-database-types = { path = "../fuel-indexer-database/database-types" }
 fuel-indexer-lib = { path = "../fuel-indexer-lib" }
-fuel-indexer-postgres = { path = "../database/postgres" }
+fuel-indexer-postgres = { path = "../fuel-indexer-database/postgres" }
 fuel-indexer-schema = { path = "../fuel-indexer-schema", features = ["db-models"] }
-fuel-indexer-sqlite = { path = "../database/sqlite" }
+fuel-indexer-sqlite = { path = "../fuel-indexer-database/sqlite" }
 fuel-tx = "0.9"
 fuel-types = "0.3"
 fuel-vm = { version = "0.8" }

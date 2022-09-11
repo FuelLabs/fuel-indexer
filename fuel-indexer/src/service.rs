@@ -5,10 +5,9 @@ use crate::{
 };
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_schema::{
-    db::{IndexerConnection, IndexerConnectionPool},
-    BlockData,
-};
+use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_database_types::IndexAssetType;
+use fuel_indexer_schema::BlockData;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::collections::HashMap;
 use std::future::Future;
@@ -63,70 +62,71 @@ impl IndexerService {
     ) -> IndexerResult<()> {
         let database_url = self.database_url.clone();
 
-        let conn = IndexerConnectionPool::connect(&self.config.database.to_string()).await?;
-        let pool = conn.acquire().await?;
+        let pool = IndexerConnectionPool::connect(&self.config.database.to_string()).await?;
+        let mut conn = pool.acquire().await?;
 
         match manifest {
             Some(manifest) => {
                 let namespace = manifest.namespace.clone();
                 let identifier = manifest.identifier.clone();
 
+                let index = queries::register_index(&mut conn, &namespace, &identifier).await?;
+
                 let schema = manifest
                     .graphql_schema()
                     .expect("Manifest should include GraphQL schema.");
+
+                let schema_bytes = schema.as_bytes().to_vec();
+
                 self.manager.new_schema(&namespace, &schema).await?;
 
                 let (kill_switch, handle, wasm_bytes) = self
                     .spawn_executor_from_manifest(&manifest, run_once, database_url.clone())
                     .await?;
 
-                match pool {
-                    IndexerConnection::Postgres(mut c) => {
-                        fuel_indexer_postgres::register_index_assets(
-                            &mut c,
+                let mut items = vec![
+                    (IndexAssetType::Wasm, wasm_bytes.unwrap()),
+                    (IndexAssetType::Manifest, manifest.to_bytes()),
+                    (IndexAssetType::Schema, schema_bytes),
+                ];
+
+                while let Some((asset_type, bytes)) = items.pop() {
+                    if !queries::asset_already_exists(
+                        &mut conn,
+                        asset_type.clone(),
+                        bytes.clone(),
+                        &index.id,
+                    )
+                    .await?
+                    {
+                        queries::register_index_asset(
+                            &mut conn,
                             &namespace,
                             &identifier,
-                            Some(wasm_bytes.unwrap()),
-                            Some(manifest.to_bytes()),
-                            Some(schema.as_bytes().to_vec()),
+                            bytes,
+                            asset_type,
                         )
-                        .await
-                    }
-                    IndexerConnection::Sqlite(mut c) => {
-                        fuel_indexer_sqlite::register_index_assets(
-                            &mut c,
-                            &namespace,
-                            &identifier,
-                            None,
-                            Some(manifest.to_bytes()),
-                            Some(schema.as_bytes().to_vec()),
-                        )
-                        .await
+                        .await?;
                     }
                 }
-                .expect("Failed to register index assets.");
 
                 info!("Registered indexer {}", identifier);
                 self.handles.insert(namespace.clone(), handle);
                 self.killers.insert(namespace, kill_switch);
             }
             None => {
-                let registered_assets = match pool {
-                    IndexerConnection::Postgres(mut c) => {
-                        fuel_indexer_postgres::get_all_registered_assets(&mut c).await
-                    }
-                    IndexerConnection::Sqlite(mut c) => {
-                        fuel_indexer_sqlite::get_all_registered_assets(&mut c).await
-                    }
-                }
-                .expect("Failed to retrieve all registered assets.");
-
-                for asset in registered_assets {
-                    let manifest: Manifest = serde_yaml::from_slice(&asset.manifest)
+                let indices = queries::registered_indices(&mut conn).await?;
+                for index in indices {
+                    let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
+                    let manifest: Manifest = serde_yaml::from_slice(&assets.manifest.bytes)
                         .expect("Could not read manifest in registry.");
 
                     let (kill_switch, handle) = self
-                        .spwan_executor_from_asset_registry(&manifest, run_once, asset.wasm)
+                        .spawn_executor_from_index_asset_registry(
+                            &manifest,
+                            run_once,
+                            assets.wasm.bytes,
+                        )
                         .await?;
 
                     info!("Registered indexer {}", manifest.uid());
@@ -175,7 +175,7 @@ impl IndexerService {
         }
     }
 
-    async fn spwan_executor_from_asset_registry(
+    async fn spawn_executor_from_index_asset_registry(
         &self,
         manifest: &Manifest,
         run_once: bool,

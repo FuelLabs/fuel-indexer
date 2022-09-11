@@ -1,14 +1,11 @@
-use crate::database::models::IdCol;
+use fuel_indexer_schema::db::models::IdCol;
 use std::collections::HashMap;
 use wasmer::Instance;
 
 use crate::{ffi, IndexerError, IndexerResult, Manifest};
+use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_schema::{
-    db::{
-        models,
-        tables::{Schema, SchemaBuilder},
-        IndexerConnection, IndexerConnectionPool,
-    },
+    db::tables::{Schema, SchemaBuilder},
     schema_version, FtColumn,
 };
 
@@ -31,7 +28,7 @@ impl SchemaManager {
         //       do graph schema upgrades
         let version = schema_version(schema);
 
-        if !models::schema_exists(&mut connection, name, &version).await? {
+        if !queries::schema_exists(&mut connection, name, &version).await? {
             let _db_schema = SchemaBuilder::new(name, &version, self.pool.database_type())
                 .build(schema)
                 .commit_metadata(&mut connection)
@@ -77,7 +74,7 @@ impl Database {
 
     pub async fn start_transaction(&mut self) -> IndexerResult<usize> {
         let mut conn = self.pool.acquire().await?;
-        let result = models::execute_query(&mut conn, "BEGIN".into()).await?;
+        let result = queries::execute_query(&mut conn, "BEGIN".into()).await?;
 
         self.stashed = Some(conn);
 
@@ -89,7 +86,7 @@ impl Database {
             .stashed
             .take()
             .ok_or(IndexerError::NoTransactionError)?;
-        Ok(models::execute_query(&mut conn, "COMMIT".into()).await?)
+        Ok(queries::execute_query(&mut conn, "COMMIT".into()).await?)
     }
 
     pub async fn revert_transaction(&mut self) -> IndexerResult<usize> {
@@ -97,7 +94,7 @@ impl Database {
             .stashed
             .take()
             .ok_or(IndexerError::NoTransactionError)?;
-        Ok(models::execute_query(&mut conn, "ROLLBACK".into()).await?)
+        Ok(queries::execute_query(&mut conn, "ROLLBACK".into()).await?)
     }
 
     fn upsert_query(
@@ -151,7 +148,7 @@ impl Database {
             .stashed
             .as_mut()
             .expect("No transaction has been opened!");
-        let query = models::put_object(conn, query_text, bytes).await;
+        let query = queries::put_object(conn, query_text, bytes).await;
 
         query.expect("Query failed");
     }
@@ -164,7 +161,7 @@ impl Database {
             .stashed
             .as_mut()
             .expect("No transaction has been opened!");
-        match models::get_object(conn, query).await {
+        match queries::get_object(conn, query).await {
             Ok(object) => Some(object),
             Err(sqlx::Error::RowNotFound) => None,
             e => {
@@ -177,9 +174,10 @@ impl Database {
         self.namespace = manifest.namespace;
 
         let mut conn = self.pool.acquire().await?;
-        self.version = models::type_id_latest(&mut conn, &self.namespace).await?;
+        self.version = queries::type_id_latest(&mut conn, &self.namespace).await?;
 
-        let results = models::columns_get_schema(&mut conn, &self.namespace, &self.version).await?;
+        let results =
+            queries::columns_get_schema(&mut conn, &self.namespace, &self.version).await?;
 
         for column in results {
             let table = &column.table_name;
@@ -204,7 +202,8 @@ impl Database {
         self.version = ffi::get_version(instance)?;
 
         let mut conn = self.pool.acquire().await?;
-        let results = models::columns_get_schema(&mut conn, &self.namespace, &self.version).await?;
+        let results =
+            queries::columns_get_schema(&mut conn, &self.namespace, &self.version).await?;
 
         for column in results {
             let table = &column.table_name;
@@ -298,7 +297,7 @@ mod tests {
             .acquire()
             .await
             .expect("Failed to acquire indexer connection");
-        let results = models::columns_get_schema(&mut conn, "test_namespace", &version)
+        let results = queries::columns_get_schema(&mut conn, "test_namespace", &version)
             .await
             .expect("Metadata query failed");
 

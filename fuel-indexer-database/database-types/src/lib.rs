@@ -205,45 +205,51 @@ impl From<&str> for ColumnType {
 }
 
 #[derive(Debug)]
-pub struct IndexAssetRegistry {
+pub struct IndexAsset {
     pub id: i64,
-    pub namespace: String,
-    pub identifier: String,
-    pub wasm: Vec<u8>,
-    pub manifest: Vec<u8>,
-    pub schema: Vec<u8>,
+    pub index_id: i64,
+    pub bytes: Vec<u8>,
+    pub version: i64,
 }
 
-impl IndexAssetRegistry {
-    pub fn uid(&self) -> String {
-        format!("{}.{}", self.namespace, self.identifier)
-    }
+#[derive(Debug)]
+pub struct RegisteredIndexAssets {
+    pub schema: IndexAsset,
+    pub manifest: IndexAsset,
+    pub wasm: IndexAsset,
 }
 
-#[derive(Debug, Eq, PartialEq, Hash)]
-pub enum IndexAsset {
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub enum IndexAssetType {
     Wasm,
     Manifest,
     Schema,
 }
 
-impl ToString for IndexAsset {
+impl ToString for IndexAssetType {
     fn to_string(&self) -> String {
         match self {
-            IndexAsset::Wasm => "wasm".to_string(),
-            IndexAsset::Manifest => "manifest".to_string(),
-            IndexAsset::Schema => "schema".to_string(),
+            IndexAssetType::Wasm => "wasm".to_string(),
+            IndexAssetType::Manifest => "manifest".to_string(),
+            IndexAssetType::Schema => "schema".to_string(),
         }
     }
 }
 
-impl From<String> for IndexAsset {
+impl From<String> for IndexAssetType {
     fn from(a: String) -> Self {
         match a.as_str() {
             "wasm" => Self::Wasm,
             "manifest" => Self::Manifest,
             "schema" => Self::Schema,
-            _ => panic!("Unrecognized IndexAsset."),
+            _ => panic!("Unrecognized IndexAssetType."),
         }
     }
+}
+
+#[derive(Debug)]
+pub struct RegisteredIndex {
+    pub id: i64,
+    pub namespace: String,
+    pub identifier: String,
 }

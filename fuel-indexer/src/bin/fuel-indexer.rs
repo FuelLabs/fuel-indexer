@@ -5,7 +5,7 @@ use fuel_indexer::{
     config::{IndexerArgs, Parser},
     GraphQlApi, IndexerConfig, IndexerService, Manifest,
 };
-use fuel_indexer_schema::db::run_migration;
+use fuel_indexer_database::queries;
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
@@ -30,7 +30,7 @@ pub async fn main() -> Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    run_migration(&config.database.to_string()).await;
+    queries::run_migration(&config.database.to_string()).await;
 
     let _local_node = if opt.local {
         let s = FuelService::new_node(Config::local_node())

@@ -249,140 +249,181 @@ pub async fn columns_get_schema(
     .await
 }
 
-pub async fn get_index_assets(
+pub async fn index_is_registered(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<IndexAssetRegistry> {
-    sqlx::query_as!(
-        IndexAssetRegistry,
-        r#"SELECT * FROM asset_registry WHERE namespace = $1 AND identifier = $2"#,
+) -> sqlx::Result<Option<RegisteredIndex>> {
+    match sqlx::query_as!(
+        RegisteredIndex,
+        "SELECT * FROM index_registry WHERE namespace = $1 AND identifier = $2",
         namespace,
         identifier
     )
     .fetch_one(conn)
     .await
-}
-
-pub async fn index_has_registerd_assets(
-    conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-    identifier: &str,
-) -> sqlx::Result<Option<i64>> {
-    match sqlx::query(&format!(
-        "SELECT id FROM asset_registry WHERE namespace = '{}' AND identifier = '{}'",
-        namespace, identifier
-    ))
-    .fetch_one(conn)
-    .await
     {
-        Ok(row) => Ok(row.try_get::<'_, Option<i64>, usize>(0).unwrap_or(None)),
+        Ok(row) => Ok(Some(row)),
         Err(_e) => Ok(None),
     }
 }
 
-pub async fn register_index_assets(
+pub async fn register_index(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-    wasm: Option<Vec<u8>>,
-    manifest: Option<Vec<u8>>,
-    schema: Option<Vec<u8>>,
-) -> sqlx::Result<()> {
-    match index_has_registerd_assets(conn, namespace, identifier).await? {
-        Some(id) => {
-            let params: Vec<(IndexAsset, Vec<u8>)> = [
-                (IndexAsset::Wasm, wasm),
-                (IndexAsset::Schema, schema),
-                (IndexAsset::Manifest, manifest),
-            ]
-            .into_iter()
-            .filter(|(_k, v)| v.is_some())
-            .map(|(k, v)| (k, v.unwrap()))
-            .collect();
+) -> sqlx::Result<RegisteredIndex> {
+    if let Some(index) = index_is_registered(conn, namespace, identifier).await? {
+        return Ok(index);
+    }
 
-            let columns: Vec<String> = params.iter().map(|(key, _)| key.to_string()).collect();
-            let value_bindings: Vec<String> = columns
-                .iter()
-                .enumerate()
-                .map(|(i, x)| format!("{}=${}", x, i + 1))
-                .collect();
+    let query = format!(
+        r#"INSERT INTO index_registry (namespace, identifier) VALUES ('{}', '{}') RETURNING *"#,
+        namespace, identifier,
+    );
 
-            let query = format!(
-                "UPDATE asset_registry SET {} WHERE id = {}",
-                value_bindings.join(", "),
-                id
-            );
+    let row = sqlx::QueryBuilder::new(query)
+        .build()
+        .fetch_one(conn)
+        .await?;
 
-            let mut builder: sqlx::QueryBuilder<'_, Postgres> = sqlx::QueryBuilder::new(query);
+    let id = row.get(0);
+    let namespace = row.get(1);
+    let identifier = row.get(2);
 
-            let mut query_builder = builder.build();
-            for (_, asset_bytes) in params {
-                query_builder = query_builder.bind(asset_bytes);
-            }
-
-            let _ = query_builder.execute(conn).await?;
-        }
-        None => {
-            let query = format!(
-                r#"INSERT INTO asset_registry (namespace, identifier, wasm, manifest, schema) VALUES ('{}', '{}', $1, $2, $3)"#,
-                namespace, identifier,
-            );
-
-            let mut builder: sqlx::QueryBuilder<'_, Postgres> = sqlx::QueryBuilder::new(query);
-            let query_builder = builder.build().bind(wasm).bind(manifest).bind(schema);
-
-            let _ = query_builder.execute(conn).await?;
-        }
-    };
-
-    Ok(())
-}
-
-pub async fn get_namespace_assets(
-    conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-) -> sqlx::Result<Vec<IndexAssetRegistry>> {
-    sqlx::query_as!(
-        IndexAssetRegistry,
-        r#"SELECT * FROM asset_registry WHERE namespace = $1"#,
+    Ok(RegisteredIndex {
+        id,
         namespace,
-    )
-    .fetch_all(conn)
-    .await
+        identifier,
+    })
 }
 
-pub async fn get_all_registered_assets(
+pub async fn registered_indices(
     conn: &mut PoolConnection<Postgres>,
-) -> sqlx::Result<Vec<IndexAssetRegistry>> {
-    sqlx::query_as!(IndexAssetRegistry, "SELECT * FROM asset_registry")
+) -> sqlx::Result<Vec<RegisteredIndex>> {
+    sqlx::query_as!(RegisteredIndex, "SELECT * FROM index_registry",)
         .fetch_all(conn)
         .await
 }
 
-pub async fn remove_index_assets(
+pub async fn index_asset_version(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<i64> {
+    match sqlx::query(&format!(
+        "SELECT COUNT(*) FROM index_asset_registry_{} WHERE namespace = '{}' AND identifier = '{}'",
+        asset_type.to_string(),
+        namespace,
+        identifier
+    ))
+    .fetch_one(conn)
+    .await
+    {
+        Ok(row) => Ok(row.try_get::<'_, i64, usize>(0).unwrap_or(0)),
+        Err(_e) => Ok(0),
+    }
+}
+
+pub async fn register_index_asset(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+    bytes: Vec<u8>,
+    asset_type: IndexAssetType,
 ) -> sqlx::Result<()> {
+    let index = match index_is_registered(conn, namespace, identifier).await? {
+        Some(index) => index,
+        None => register_index(conn, namespace, identifier).await?,
+    };
+
+    let current_version = index_asset_version(conn, namespace, identifier, asset_type.clone())
+        .await
+        .expect("Failed to get asset version.");
+
     let query = format!(
-        "DELETE FROM asset_registry WHERE namespace = '{}' AND identifier = '{}'",
-        namespace, identifier
+        "INSERT INTO index_asset_registry_{} (index_id, bytes, version) VALUES ({}, $1, {})",
+        asset_type.to_string(),
+        index.id,
+        current_version + 1,
     );
-    let _ = sqlx::QueryBuilder::new(query).build().execute(conn).await?;
+
+    let _ = sqlx::QueryBuilder::new(query)
+        .build()
+        .bind(bytes)
+        .execute(conn)
+        .await;
 
     Ok(())
 }
 
-pub async fn remove_namespace_assets(
+pub async fn latest_asset_for_index(
     conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-) -> sqlx::Result<()> {
+    index_id: &i64,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
     let query = format!(
-        "DELETE FROM asset_registry WHERE namespace = '{}'",
-        namespace
+        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1",
+        asset_type.to_string(),
+        index_id
     );
-    let _ = sqlx::QueryBuilder::new(query).build().execute(conn).await?;
 
-    Ok(())
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let id = row.get(0);
+    let index_id = row.get(1);
+    let bytes = row.get(2);
+    let version = row.get(3);
+
+    Ok(IndexAsset {
+        id,
+        index_id,
+        bytes,
+        version,
+    })
+}
+
+pub async fn latest_assets_for_index(
+    conn: &mut PoolConnection<Postgres>,
+    index_id: &i64,
+) -> sqlx::Result<RegisteredIndexAssets> {
+    let wasm = latest_asset_for_index(conn, index_id, IndexAssetType::Wasm)
+        .await
+        .expect("Failed to retrieve wasm asset.");
+    let schema = latest_asset_for_index(conn, index_id, IndexAssetType::Schema)
+        .await
+        .expect("Failed to retrieve schema asset.");
+    let manifest = latest_asset_for_index(conn, index_id, IndexAssetType::Manifest)
+        .await
+        .expect("Failed to retrieve manifest asset.");
+
+    Ok(RegisteredIndexAssets {
+        wasm,
+        schema,
+        manifest,
+    })
+}
+
+pub async fn asset_already_exists(
+    conn: &mut PoolConnection<Postgres>,
+    asset_type: IndexAssetType,
+    bytes: Vec<u8>,
+    index_id: &i64,
+) -> sqlx::Result<bool> {
+    let query = format!(
+        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} AND bytes = $1",
+        asset_type.to_string(),
+        index_id
+    );
+
+    match sqlx::QueryBuilder::new(query)
+        .build()
+        .bind(bytes)
+        .execute(conn)
+        .await
+    {
+        Ok(_) => Ok(true),
+        Err(_) => Ok(false),
+    }
 }
