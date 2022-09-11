@@ -1,26 +1,3 @@
--- create table if not exists index_asset_registry_wasm (
---    id integer primary key autoincrement,
---    namespace varchar(32) not null,
---    identifier varchar(32) not null,
---    bytes bytea not null
--- );
-
--- create table if not exists index_asset_registry_schema (
---    id integer primary key autoincrement,
---    namespace varchar(32) not null,
---    identifier varchar(32) not null,
---    bytes bytea not null
--- );
-
--- create table if not exists index_asset_registry_manifest (
---    id integer primary key autoincrement,
---    namespace varchar(32) not null,
---    identifier varchar(32) not null,
---    bytes bytea not null
--- );
-
-
-
 create table if not exists index_registry (
    id integer primary key autoincrement,
    namespace varchar(32) not null,
