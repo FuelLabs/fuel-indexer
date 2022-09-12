@@ -2,8 +2,15 @@ pub mod utils {
 
     use anyhow::Result;
     use serde::{Deserialize, Serialize};
+    use sha2::{Digest, Sha256};
     use std::net::{SocketAddr, ToSocketAddrs};
     use tracing::{info, warn};
+
+    pub fn sha256_digest(blob: &Vec<u8>) -> String {
+        let mut hasher = Sha256::new();
+        hasher.update(blob.as_slice());
+        format!("{:x}", hasher.finalize())
+    }
 
     pub fn trim_env_key(key: &str) -> &str {
         // Abmiguous key: $FOO, non-ambiguous key: ${FOO}

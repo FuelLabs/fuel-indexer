@@ -141,11 +141,14 @@ pub async fn register_index_assets(
     multipart: Option<Multipart>,
 ) -> (StatusCode, Json<Value>) {
     if let Some(mut multipart) = multipart {
-        // FIXME: start database transaction
         let mut conn = pool
             .acquire()
             .await
             .expect("Failed to get database connection.");
+
+        let _ = queries::start_transaction(&mut conn)
+            .await
+            .expect("Could not start database transaction");
 
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field
@@ -196,7 +199,12 @@ pub async fn register_index_assets(
             }
         }
 
-        // FIXME: commit database transaction
+        let _ = match queries::commit_transaction(&mut conn).await {
+            Ok(v) => v,
+            Err(_e) => queries::revert_transaction(&mut conn)
+                .await
+                .expect("Could not revert database transaction"),
+        };
 
         return (
             StatusCode::OK,
@@ -261,7 +269,7 @@ impl GraphQlApi {
 
         let api_routes = Router::new()
             .nest("/", health_route)
-            .nest("/asset", asset_route)
+            .nest("/index", asset_route)
             .nest("/graph", graph_route);
 
         let app = Router::new().nest("/api", api_routes);

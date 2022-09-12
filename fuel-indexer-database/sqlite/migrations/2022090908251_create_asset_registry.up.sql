@@ -9,6 +9,7 @@ create table if not exists index_asset_registry_wasm (
    id integer primary key autoincrement,
    index_id integer not null,
    version integer not null,
+   digest varchar(64) not null,
    bytes blob not null,
     constraint fk_index_registry_id
         foreign key(index_id)
@@ -21,6 +22,7 @@ create table if not exists index_asset_registry_schema (
    id integer primary key autoincrement,
    index_id integer not null,
    version integer not null,
+   digest varchar(64) not null,
    bytes blob not null,
     constraint fk_index_registry_id
         foreign key(index_id)
@@ -32,10 +34,10 @@ create table if not exists index_asset_registry_manifest (
    id integer primary key autoincrement,
    index_id integer not null,
    version integer not null,
+   digest varchar(64) not null,
    bytes blob not null,
     constraint fk_index_registry_id
         foreign key(index_id)
             references index_registry(id)
             on delete cascade
 );
-

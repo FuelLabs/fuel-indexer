@@ -65,6 +65,10 @@ impl IndexerService {
         let pool = IndexerConnectionPool::connect(&self.config.database.to_string()).await?;
         let mut conn = pool.acquire().await?;
 
+        let _ = queries::start_transaction(&mut conn)
+            .await
+            .expect("Could not start database transaction");
+
         match manifest {
             Some(manifest) => {
                 let namespace = manifest.namespace.clone();
@@ -91,13 +95,11 @@ impl IndexerService {
                 ];
 
                 while let Some((asset_type, bytes)) = items.pop() {
-                    if !queries::asset_already_exists(
-                        &mut conn,
-                        asset_type.clone(),
-                        bytes.clone(),
-                        &index.id,
-                    )
-                    .await?
+                    info!(
+                        "Registering Asset({:?}) for Index({})",
+                        asset_type,
+                        index.uid()
+                    );
                     {
                         queries::register_index_asset(
                             &mut conn,
@@ -135,6 +137,13 @@ impl IndexerService {
                 }
             }
         }
+
+        let _ = match queries::commit_transaction(&mut conn).await {
+            Ok(v) => v,
+            Err(_e) => queries::revert_transaction(&mut conn)
+                .await
+                .expect("Could not revert database transaction"),
+        };
 
         Ok(())
     }

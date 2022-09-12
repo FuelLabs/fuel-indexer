@@ -1,5 +1,7 @@
 use fuel_indexer_database_types::*;
+use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection};
+use tracing::info;
 
 pub async fn put_object(
     conn: &mut PoolConnection<Sqlite>,
@@ -29,6 +31,7 @@ pub async fn run_migration(database_url: &str) {
     let mut conn = SqliteConnection::connect(database_url)
         .await
         .expect("Failed to open sqlite database.");
+
     sqlx::migrate!()
         .run(&mut conn)
         .await
@@ -417,15 +420,13 @@ pub async fn registered_indices(
 
 pub async fn index_asset_version(
     conn: &mut PoolConnection<Sqlite>,
-    namespace: &str,
-    identifier: &str,
+    index_id: &i64,
     asset_type: IndexAssetType,
 ) -> sqlx::Result<i64> {
     match sqlx::query(&format!(
-        "SELECT COUNT(*) FROM index_asset_registry_{} WHERE namespace = '{}' AND identifier = '{}'",
+        "SELECT COUNT(*) FROM index_asset_registry_{} WHERE index_id = {}",
         asset_type.to_string(),
-        namespace,
-        identifier
+        index_id,
     ))
     .fetch_one(conn)
     .await
@@ -442,17 +443,46 @@ pub async fn register_index_asset(
     bytes: Vec<u8>,
     asset_type: IndexAssetType,
 ) -> sqlx::Result<()> {
+    let index = match index_is_registered(conn, namespace, identifier).await? {
+        Some(index) => index,
+        None => register_index(conn, namespace, identifier).await?,
+    };
+
+    let digest = sha256_digest(&bytes);
+
+    if asset_already_exists(conn, asset_type.clone(), &bytes, &index.id).await? {
+        info!(
+            "Asset({:?}) for Index({}) already registered.",
+            asset_type,
+            index.uid()
+        );
+        return Ok(());
+    }
+
+    let current_version = index_asset_version(conn, &index.id, asset_type.clone())
+        .await
+        .expect("Failed to get asset version.");
+
     let query = format!(
-        r#"INSERT INTO index_asset_registry_{} (namespace, identifier, bytes) VALUES ('{}', '{}', $1)"#,
+        "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{}')",
         asset_type.to_string(),
-        namespace,
-        identifier,
+        index.id,
+        current_version + 1,
+        digest,
     );
 
-    let mut builder: sqlx::QueryBuilder<'_, Sqlite> = sqlx::QueryBuilder::new(query);
-    let query_builder = builder.build().bind(bytes);
+    let _ = sqlx::QueryBuilder::new(query)
+        .build()
+        .bind(bytes)
+        .execute(conn)
+        .await?;
 
-    let _ = query_builder.execute(conn).await?;
+    info!(
+        "Registered Asset({:?}) to Index({}).",
+        asset_type,
+        index.uid()
+    );
+
     Ok(())
 }
 
@@ -471,21 +501,23 @@ pub async fn latest_asset_for_index(
 
     let id = row.get(0);
     let index_id = row.get(1);
-    let bytes = row.get(2);
-    let version = row.get(3);
+    let version = row.get(2);
+    let digest = row.get(3);
+    let bytes = row.get(4);
 
     Ok(IndexAsset {
         id,
         index_id,
-        bytes,
         version,
+        digest,
+        bytes,
     })
 }
 
 pub async fn latest_assets_for_index(
     conn: &mut PoolConnection<Sqlite>,
     index_id: &i64,
-) -> sqlx::Result<RegisteredIndexAssets> {
+) -> sqlx::Result<IndexAssetBundle> {
     let wasm = latest_asset_for_index(conn, index_id, IndexAssetType::Wasm)
         .await
         .expect("Failed to retrieve wasm asset.");
@@ -496,7 +528,7 @@ pub async fn latest_assets_for_index(
         .await
         .expect("Failed to retrieve manifest asset.");
 
-    Ok(RegisteredIndexAssets {
+    Ok(IndexAssetBundle {
         wasm,
         schema,
         manifest,
@@ -506,22 +538,32 @@ pub async fn latest_assets_for_index(
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Sqlite>,
     asset_type: IndexAssetType,
-    bytes: Vec<u8>,
+    bytes: &Vec<u8>,
     index_id: &i64,
 ) -> sqlx::Result<bool> {
+    let digest = sha256_digest(bytes);
+
     let query = format!(
-        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} AND bytes = $1",
+        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} AND digest = '{}'",
         asset_type.to_string(),
-        index_id
+        index_id,
+        digest
     );
 
-    match sqlx::QueryBuilder::new(query)
-        .build()
-        .bind(bytes)
-        .execute(conn)
-        .await
-    {
+    match sqlx::QueryBuilder::new(query).build().fetch_one(conn).await {
         Ok(_) => Ok(true),
-        Err(_) => Ok(false),
+        Err(_e) => Ok(false),
     }
+}
+
+pub async fn start_transaction(conn: &mut PoolConnection<Sqlite>) -> sqlx::Result<usize> {
+    execute_query(conn, "BEGIN".into()).await
+}
+
+pub async fn commit_transaction(conn: &mut PoolConnection<Sqlite>) -> sqlx::Result<usize> {
+    execute_query(conn, "COMMIT".into()).await
+}
+
+pub async fn revert_transaction(conn: &mut PoolConnection<Sqlite>) -> sqlx::Result<usize> {
+    execute_query(conn, "ROLLBACK".into()).await
 }

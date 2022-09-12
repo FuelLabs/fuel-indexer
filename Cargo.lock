@@ -2444,6 +2444,9 @@ dependencies = [
 [[package]]
 name = "fuel-indexer-database-types"
 version = "0.1.0"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "fuel-indexer-lib"
@@ -2451,6 +2454,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "serde",
+ "sha2 0.9.9",
  "tracing",
 ]
 
@@ -2487,7 +2491,9 @@ name = "fuel-indexer-postgres"
 version = "0.1.0"
 dependencies = [
  "fuel-indexer-database-types",
+ "fuel-indexer-lib",
  "sqlx",
+ "tracing",
 ]
 
 [[package]]
@@ -2516,7 +2522,9 @@ name = "fuel-indexer-sqlite"
 version = "0.1.0"
 dependencies = [
  "fuel-indexer-database-types",
+ "fuel-indexer-lib",
  "sqlx",
+ "tracing",
 ]
 
 [[package]]

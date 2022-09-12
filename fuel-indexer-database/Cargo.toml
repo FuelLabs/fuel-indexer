@@ -10,6 +10,6 @@ fuel-indexer-database-types = { path = "./database-types" }
 fuel-indexer-lib = { path = "../fuel-indexer-lib" }
 fuel-indexer-postgres = { path = "./postgres" }
 fuel-indexer-sqlite = { path = "./sqlite" }
-sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres", "offline"] }
+sqlx = { version = "0.6" }
 thiserror = { version = "1.0" }
 url = "2.2"

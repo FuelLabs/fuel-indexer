@@ -9,6 +9,7 @@ create table if not exists index_asset_registry_wasm (
    id bigserial primary key,
    index_id bigserial,
    version integer not null,
+   digest varchar(64) not null,
    bytes bytea not null,
     constraint fk_index_registry_id
         foreign key(index_id)
@@ -22,6 +23,7 @@ create table if not exists index_asset_registry_schema (
    id bigserial primary key,
    index_id bigserial,
    version integer not null,
+   digest varchar(64) not null,
    bytes bytea not null,
     constraint fk_index_registry_id
         foreign key(index_id)
@@ -34,6 +36,7 @@ create table if not exists index_asset_registry_manifest (
    id bigserial primary key,
    index_id bigserial,
    version integer not null,
+   digest varchar(64) not null,
    bytes bytea not null,
     constraint fk_index_registry_id
         foreign key(index_id)

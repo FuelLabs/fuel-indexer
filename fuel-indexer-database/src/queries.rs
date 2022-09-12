@@ -200,16 +200,15 @@ pub async fn registered_indices(
 
 pub async fn index_asset_version(
     conn: &mut IndexerConnection,
-    namespace: &str,
-    identifier: &str,
+    index_id: &i64,
     asset_type: IndexAssetType,
 ) -> sqlx::Result<i64> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::index_asset_version(c, namespace, identifier, asset_type).await
+            postgres::index_asset_version(c, index_id, asset_type).await
         }
         IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::index_asset_version(c, namespace, identifier, asset_type).await
+            sqlite::index_asset_version(c, index_id, asset_type).await
         }
     }
 }
@@ -249,7 +248,7 @@ pub async fn latest_asset_for_index(
 pub async fn latest_assets_for_index(
     conn: &mut IndexerConnection,
     index_id: &i64,
-) -> sqlx::Result<RegisteredIndexAssets> {
+) -> sqlx::Result<IndexAssetBundle> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::latest_assets_for_index(c, index_id).await
@@ -261,7 +260,7 @@ pub async fn latest_assets_for_index(
 pub async fn asset_already_exists(
     conn: &mut IndexerConnection,
     asset_type: IndexAssetType,
-    bytes: Vec<u8>,
+    bytes: &Vec<u8>,
     index_id: &i64,
 ) -> sqlx::Result<bool> {
     match conn {
@@ -271,6 +270,27 @@ pub async fn asset_already_exists(
         IndexerConnection::Sqlite(ref mut c) => {
             sqlite::asset_already_exists(c, asset_type, bytes, index_id).await
         }
+    }
+}
+
+pub async fn start_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::start_transaction(c).await,
+        IndexerConnection::Sqlite(ref mut c) => sqlite::start_transaction(c).await,
+    }
+}
+
+pub async fn commit_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::commit_transaction(c).await,
+        IndexerConnection::Sqlite(ref mut c) => sqlite::commit_transaction(c).await,
+    }
+}
+
+pub async fn revert_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::revert_transaction(c).await,
+        IndexerConnection::Sqlite(ref mut c) => sqlite::revert_transaction(c).await,
     }
 }
 
@@ -289,3 +309,6 @@ pub async fn run_migration(database_url: &str) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {}
