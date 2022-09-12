@@ -13,6 +13,7 @@ use axum::{
     Router,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_database_types::IndexAsset;
 use fuel_indexer_lib::utils::{FuelNodeHealthResponse, ServiceStatus};
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
@@ -150,27 +151,26 @@ pub async fn register_index_assets(
             .await
             .expect("Could not start database transaction");
 
+        let mut assets: Vec<IndexAsset> = Vec::new();
+
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field
                 .name()
                 .expect("Failed to read multipart field.")
                 .to_string();
             let data = field.bytes().await.expect("Failed to read multipart body.");
-
-            match name.as_str() {
-                "wasm" | "manifest" => {
-                    queries::register_index_asset(
-                        &mut conn,
-                        &namespace,
-                        &identifier,
-                        data.to_vec(),
-                        name.into(),
-                    )
-                    .await
-                    .expect("Failed to register index asset.");
-                }
+            let asset = match name.as_str() {
+                "wasm" | "manifest" => queries::register_index_asset(
+                    &mut conn,
+                    &namespace,
+                    &identifier,
+                    data.to_vec(),
+                    name.into(),
+                )
+                .await
+                .expect("Failed to register index asset."),
                 "schema" => {
-                    queries::register_index_asset(
+                    let asset = queries::register_index_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
@@ -186,6 +186,8 @@ pub async fn register_index_assets(
                         .new_schema(&namespace, &String::from_utf8_lossy(&data))
                         .await
                         .expect("Failed to generate new schema for asset.");
+
+                    asset
                 }
                 _ => {
                     return (
@@ -196,7 +198,9 @@ pub async fn register_index_assets(
                         })),
                     )
                 }
-            }
+            };
+
+            assets.push(asset);
         }
 
         let _ = match queries::commit_transaction(&mut conn).await {
@@ -210,10 +214,7 @@ pub async fn register_index_assets(
             StatusCode::OK,
             Json(json!({
                 "success": "true",
-                "details": &format!("Successfully registered assets for index: '{}.{}'", namespace, identifier),
-                "namespace": {
-                    "active_indices": []
-                }
+                "assets": assets,
             })),
         );
     }

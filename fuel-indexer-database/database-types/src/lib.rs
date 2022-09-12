@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use thiserror::Error;
 
@@ -205,12 +206,13 @@ impl From<&str> for ColumnType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct IndexAsset {
     pub id: i64,
     pub index_id: i64,
     pub version: i32,
     pub digest: String,
+    #[serde(skip_serializing)]
     pub bytes: Vec<u8>,
 }
 
@@ -249,7 +251,7 @@ impl From<String> for IndexAssetType {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RegisteredIndex {
     pub id: i64,
     pub namespace: String,

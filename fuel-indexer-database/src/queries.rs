@@ -219,7 +219,7 @@ pub async fn register_index_asset(
     identifier: &str,
     bytes: Vec<u8>,
     asset_type: IndexAssetType,
-) -> sqlx::Result<()> {
+) -> sqlx::Result<IndexAsset> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::register_index_asset(c, namespace, identifier, bytes, asset_type).await
@@ -262,7 +262,7 @@ pub async fn asset_already_exists(
     asset_type: IndexAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
-) -> sqlx::Result<bool> {
+) -> sqlx::Result<Option<IndexAsset>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::asset_already_exists(c, asset_type, bytes, index_id).await

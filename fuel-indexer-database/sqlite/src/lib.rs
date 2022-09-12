@@ -442,7 +442,7 @@ pub async fn register_index_asset(
     identifier: &str,
     bytes: Vec<u8>,
     asset_type: IndexAssetType,
-) -> sqlx::Result<()> {
+) -> sqlx::Result<IndexAsset> {
     let index = match index_is_registered(conn, namespace, identifier).await? {
         Some(index) => index,
         None => register_index(conn, namespace, identifier).await?,
@@ -450,13 +450,13 @@ pub async fn register_index_asset(
 
     let digest = sha256_digest(&bytes);
 
-    if asset_already_exists(conn, asset_type.clone(), &bytes, &index.id).await? {
+    if let Some(asset) = asset_already_exists(conn, asset_type.clone(), &bytes, &index.id).await? {
         info!(
             "Asset({:?}) for Index({}) already registered.",
             asset_type,
             index.uid()
         );
-        return Ok(());
+        return Ok(asset);
     }
 
     let current_version = index_asset_version(conn, &index.id, asset_type.clone())
@@ -464,17 +464,17 @@ pub async fn register_index_asset(
         .expect("Failed to get asset version.");
 
     let query = format!(
-        "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{}')",
+        "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{}') RETURNING *",
         asset_type.to_string(),
         index.id,
         current_version + 1,
         digest,
     );
 
-    let _ = sqlx::QueryBuilder::new(query)
+    let row = sqlx::QueryBuilder::new(query)
         .build()
         .bind(bytes)
-        .execute(conn)
+        .fetch_one(conn)
         .await?;
 
     info!(
@@ -483,7 +483,19 @@ pub async fn register_index_asset(
         index.uid()
     );
 
-    Ok(())
+    let id = row.get(0);
+    let index_id = row.get(1);
+    let version = row.get(2);
+    let digest = row.get(3);
+    let bytes = row.get(4);
+
+    Ok(IndexAsset {
+        id,
+        index_id,
+        version,
+        digest,
+        bytes,
+    })
 }
 
 pub async fn latest_asset_for_index(
@@ -540,7 +552,7 @@ pub async fn asset_already_exists(
     asset_type: IndexAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
-) -> sqlx::Result<bool> {
+) -> sqlx::Result<Option<IndexAsset>> {
     let digest = sha256_digest(bytes);
 
     let query = format!(
@@ -551,8 +563,22 @@ pub async fn asset_already_exists(
     );
 
     match sqlx::QueryBuilder::new(query).build().fetch_one(conn).await {
-        Ok(_) => Ok(true),
-        Err(_e) => Ok(false),
+        Ok(row) => {
+            let id = row.get(0);
+            let index_id = row.get(1);
+            let version = row.get(2);
+            let digest = row.get(3);
+            let bytes = row.get(4);
+
+            Ok(Some(IndexAsset {
+                id,
+                index_id,
+                version,
+                digest,
+                bytes,
+            }))
+        }
+        Err(_e) => Ok(None),
     }
 }
 
