@@ -451,7 +451,9 @@ serde = { version = &quot;1.0&quot;, default-features = false, features = [&quot
 <pre><code class="language-yaml">---
 namespace: hello_namespace
 graphql_schema: schema.graphql
-wasm_module: hello_indexer.wasm
+module:
+  wasm:
+    hello_indexer.wasm
 handlers:
   - event: an_event_name
     handler: function_one
@@ -459,7 +461,7 @@ handlers:
 <ul>
 <li><code>namespace</code> - your graph will live within this namespace in the database, and will be important to remember once you get to querying your data.</li>
 <li><code>graphql_schema</code> - we'll have more to say about this in the next section on data types, but this is a file specifying your indexed data types.</li>
-<li><code>wasm_module</code> - the compiled code you'll be writing to transform your data</li>
+<li><code>module</code> - the code you'll be writing to transform your data</li>
 <li><code>handlers</code> - this maps event types to the function names in your WASM that should handle the events</li>
 </ul>
 <h2 id="defining-your-data-types"><a class="header" href="#defining-your-data-types">Defining your data types</a></h2>
