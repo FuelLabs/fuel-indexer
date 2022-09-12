@@ -1,7 +1,9 @@
 ---
 namespace: test_namespace
 graphql_schema: schema.graphql
-wasm_module: simple_wasm.wasm
+module:
+  wasm:
+    simple_wasm.wasm
 handlers:
   - event: an_event_name
     handler: fn_one

@@ -1,21 +1,17 @@
 extern crate proc_macro;
 use proc_macro::TokenStream;
 
-mod handler;
+mod indexer;
+mod native;
+mod parse;
 mod schema;
-use handler::process_handler_attr;
-use schema::process_graphql_schema;
-
-#[proc_macro_error::proc_macro_error]
-#[proc_macro]
-pub fn graphql_schema(inputs: TokenStream) -> TokenStream {
-    process_graphql_schema(inputs)
-}
+mod wasm;
+use indexer::process_indexer_module;
 
 #[proc_macro_error::proc_macro_error]
 #[proc_macro_attribute]
-pub fn handler(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    process_handler_attr(attrs, item)
+pub fn indexer(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    process_indexer_module(attrs, item)
 }
 
 #[cfg(test)]
@@ -23,11 +19,15 @@ mod tests {
     #[test]
     fn test_macros() {
         let t = trybuild::TestCases::new();
+        std::env::set_var("COMPILE_TEST_PREFIX", env!("CARGO_MANIFEST_DIR"));
 
         t.compile_fail("test_data/fail_self.rs");
         t.compile_fail("test_data/fail_args.rs");
+        t.compile_fail("test_data/fail_args2.rs");
         t.pass("test_data/success.rs");
-        t.compile_fail("test_data/fail_noschema.rs");
-        //t.compile_fail("test_data/fail_badschema.rs");
+        t.pass("test_data/success2.rs");
+        t.compile_fail("test_data/fail_badschema.rs");
+        t.compile_fail("test_data/fail_unknown_type.rs");
+        t.compile_fail("test_data/fail_empty.rs");
     }
 }

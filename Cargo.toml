@@ -3,10 +3,10 @@
 resolver = "2"
 members = [
    "database/*",
-   "examples/indexer-demo",
-   "examples/simple-native",
-   "examples/simple-native/counter-rs",
-   "examples/simple-wasm",
+   "examples/counter/counter-indexer",
+   "examples/counter/web-api-and-fuel-node",
+   "examples/simple-wasm/simple-wasm",
+   "examples/simple-wasm/simple",
    "fuel-indexer-api-server",
    "fuel-indexer-lib",
    "fuel-indexer-macros",

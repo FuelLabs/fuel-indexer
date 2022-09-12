@@ -1,8 +1,8 @@
 extern crate alloc;
 use alloc::vec::Vec;
 use fuel_indexer_schema::{
-    deserialize, serialize, FtColumn, NativeHandlerResult, LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR,
-    LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
+    deserialize, serialize, FtColumn, LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO,
+    LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 
 pub mod types {
@@ -62,17 +62,13 @@ pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
             if !ptr.is_null() {
                 let len = u32::from_le_bytes(buflen) as usize;
                 let bytes = Vec::from_raw_parts(ptr, len, len);
-                let vec = deserialize(&bytes);
+                let vec = deserialize(&bytes).expect("Bad serialization.");
 
                 Some(Self::from_row(vec))
             } else {
                 None
             }
         }
-    }
-
-    fn pack(&self) -> NativeHandlerResult {
-        NativeHandlerResult(Self::TYPE_ID, self.to_row())
     }
 
     fn save(&self) {

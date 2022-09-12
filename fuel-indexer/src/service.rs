@@ -1,6 +1,6 @@
 use crate::{
-    handler::Handle, Executor, IndexerResult, Manifest, NativeIndexExecutor, ReceiptEvent,
-    SchemaManager, WasmIndexExecutor,
+    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, SchemaManager,
+    WasmIndexExecutor,
 };
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
@@ -8,7 +8,7 @@ use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, Pagina
 use fuel_indexer_lib::config::{
     AdjustableConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs,
 };
-use fuel_tx::Receipt;
+use fuel_indexer_schema::BlockData;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -24,6 +24,8 @@ use tokio::{
 
 use tracing::{debug, error, info, warn};
 
+const RETRY_LIMIT: usize = 5;
+
 #[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
     pub fuel_node: FuelNodeConfig,
@@ -31,7 +33,7 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct TmpIndexerConfig {
     pub fuel_node: Option<FuelNodeConfig>,
     pub graphql_api: Option<GraphQLConfig>,
@@ -135,12 +137,7 @@ impl IndexerService {
         })
     }
 
-    pub async fn add_native_indexer(
-        &mut self,
-        manifest: Manifest,
-        run_once: bool,
-        handles: Vec<Handle>,
-    ) -> IndexerResult<()> {
+    pub async fn add_indexer(&mut self, manifest: Manifest, run_once: bool) -> IndexerResult<()> {
         let name = manifest.namespace.clone();
         let start_block = manifest.start_block;
 
@@ -148,48 +145,31 @@ impl IndexerService {
             .graphql_schema()
             .expect("Manifest should include GraphQL schema");
         self.manager.new_schema(&name, &schema).await?;
-        let executor =
-            NativeIndexExecutor::new(&self.database_url.clone(), manifest, handles).await?;
+        let db_url = self.database_url.clone();
 
-        let kill_switch = Arc::new(AtomicBool::new(run_once));
-        let handle = tokio::spawn(self.make_task(
-            ReceiptEvent::Other,
-            kill_switch.clone(),
-            executor,
-            start_block,
-        ));
+        let (kill_switch, handle) = match manifest.module {
+            Module::Wasm(ref module) => {
+                let mut bytes = Vec::<u8>::new();
+                let mut file = File::open(module).await?;
+                file.read_to_end(&mut bytes).await?;
 
-        info!("Registered indexer {}", name);
-        self.handles.insert(name.clone(), handle);
-        self.killers.insert(name, kill_switch);
+                let executor = WasmIndexExecutor::new(db_url, manifest, bytes).await?;
+                let kill_switch = Arc::new(AtomicBool::new(run_once));
+                let handle =
+                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
 
-        Ok(())
-    }
+                (kill_switch, handle)
+            }
+            Module::Native(ref path) => {
+                let path = path.clone();
+                let executor = NativeIndexExecutor::new(&db_url, manifest, path).await?;
+                let kill_switch = Arc::new(AtomicBool::new(run_once));
+                let handle =
+                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
 
-    pub async fn add_wasm_indexer(
-        &mut self,
-        manifest: Manifest,
-        run_once: bool,
-    ) -> IndexerResult<()> {
-        let name = manifest.namespace.clone();
-        let start_block = manifest.start_block;
-
-        let schema = manifest
-            .graphql_schema()
-            .expect("Manifest should include GraphQL schema");
-        let wasm_bytes = manifest.wasm_module().expect("Could not load wasm module");
-
-        self.manager.new_schema(&name, &schema).await?;
-        let executor =
-            WasmIndexExecutor::new(self.database_url.clone(), manifest, wasm_bytes).await?;
-
-        let kill_switch = Arc::new(AtomicBool::new(run_once));
-        let handle = tokio::spawn(self.make_task(
-            ReceiptEvent::Other,
-            kill_switch.clone(),
-            executor,
-            start_block,
-        ));
+                (kill_switch, handle)
+            }
+        };
 
         info!("Registered indexer {}", name);
         self.handles.insert(name.clone(), handle);
@@ -208,23 +188,23 @@ impl IndexerService {
 
     fn make_task<T: 'static + Executor + Send + Sync>(
         &self,
-        _event_name: ReceiptEvent,
         kill_switch: Arc<AtomicBool>,
-        executor: T,
+        mut executor: T,
         start_block: Option<u64>,
     ) -> impl Future<Output = ()> {
         let mut next_cursor = None;
         let mut next_block = start_block.unwrap_or(1);
         let client = FuelClient::from(self.fuel_node_addr);
-        let executor = Arc::new(executor);
 
         async move {
+            let mut retry_count = 0;
+
             loop {
                 debug!("Fetching paginated results from {:?}", next_cursor);
                 // TODO: can we have a "start at height" option?
                 let PaginatedResult { cursor, results } = client
                     .blocks(PaginationRequest {
-                        cursor: next_cursor,
+                        cursor: next_cursor.clone(),
                         results: 10,
                         direction: PageDirection::Forward,
                     })
@@ -232,72 +212,49 @@ impl IndexerService {
                     .expect("Failed to retrieve blocks");
 
                 debug!("Processing {} results", results.len());
-                let exec = executor.clone();
 
-                let mut receipts = Vec::new();
+                let mut block_info = Vec::new();
                 for block in results.into_iter().rev() {
                     if block.height.0 != next_block {
                         continue;
                     }
                     next_block = block.height.0 + 1;
+
+                    // NOTE: for now assuming we have a single contract instance,
+                    //       we'll need to watch contract creation events here in
+                    //       case an indexer would be interested in processing it.
+                    let mut transactions = Vec::new();
                     for trans in block.transactions {
                         match client.receipts(&trans.id.to_string()).await {
                             Ok(r) => {
-                                receipts.extend(r);
+                                transactions.push(r);
                             }
                             Err(e) => {
                                 error!("Client communication error {:?}", e);
                             }
                         }
                     }
+
+                    let block = BlockData {
+                        height: block.height.0,
+                        transactions,
+                    };
+
+                    block_info.push(block);
                 }
 
-                let result = tokio::task::spawn(async move {
-                    for receipt in receipts {
-                        let receipt_cp = receipt.clone();
-                        match receipt {
-                            Receipt::LogData {
-                                // TODO: use data field for now, the rest will be useful later
-                                data,
-                                ..
-                            } => {
-                                // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec
-                                    .trigger_event(
-                                        ReceiptEvent::LogData,
-                                        vec![data],
-                                        Some(receipt_cp),
-                                    )
-                                    .await
-                                {
-                                    error!("Event processing failed {:?}", e);
-                                }
-                            }
-                            Receipt::ReturnData {
-                                // TODO: use data field for now, the rest will be useful later
-                                data,
-                                ..
-                            } => {
-                                // TODO: should wrap this in a db transaction.
-                                if let Err(e) = exec
-                                    .trigger_event(
-                                        ReceiptEvent::ReturnData,
-                                        vec![data],
-                                        Some(receipt_cp),
-                                    )
-                                    .await
-                                {
-                                    error!("Event processing failed {:?}", e);
-                                }
-                            }
-                            o => warn!("Unhandled receipt type: {:?}", o),
-                        }
-                    }
-                })
-                .await;
+                let result = executor.handle_events(block_info).await;
 
                 if let Err(e) = result {
-                    error!("Indexer executor failed {e:?}");
+                    error!("Indexer executor failed {e:?}, retrying.");
+                    sleep(Duration::from_secs(5)).await;
+                    retry_count += 1;
+                    if retry_count < RETRY_LIMIT {
+                        continue;
+                    } else {
+                        error!("Indexer failed after retries, giving up!");
+                        break;
+                    }
                 }
 
                 next_cursor = cursor;
@@ -305,6 +262,7 @@ impl IndexerService {
                     info!("No next page, sleeping");
                     sleep(Duration::from_secs(5)).await;
                 };
+                retry_count = 0;
 
                 if kill_switch.load(Ordering::SeqCst) {
                     break;
@@ -317,7 +275,7 @@ impl IndexerService {
         let IndexerService { handles, .. } = self;
         let mut futs = FuturesUnordered::from_iter(handles.into_values());
         while let Some(fut) = futs.next().await {
-            info!("Retired a future {fut:?}");
+            debug!("Retired a future {fut:?}");
         }
     }
 }

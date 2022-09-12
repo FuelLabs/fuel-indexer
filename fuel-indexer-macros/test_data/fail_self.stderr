@@ -1,13 +1,17 @@
-error: 'self' in function signature not allowed here
+error: `self` argument not allowed in handler function.
  --> test_data/fail_self.rs:4:1
   |
-4 | #[handler]
-  | ^^^^^^^^^^
+4 | / #[indexer(
+5 | |     abi = "./test_data/contracts-abi.json",
+6 | |     namespace = "test_namespace",
+7 | |     schema = "./test_data/schema.graphql",
+8 | | )]
+  | |__^
   |
-  = note: this error originates in the attribute macro `handler` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0601]: `main` function not found in crate `$CRATE`
-  --> test_data/fail_self.rs:10:2
+  --> test_data/fail_self.rs:16:2
    |
-10 | }
+16 | }
    |  ^ consider adding a `main` function to `$DIR/test_data/fail_self.rs`

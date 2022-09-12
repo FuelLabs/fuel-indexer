@@ -3,7 +3,7 @@
 The Fuel Indexer service can currently be used in two different ways:
 
 1. The service can either be run as a standalone binary, outside the scope of a Sway project.
-2. The service can be included in a Sway project, and as a tandem service.
+2. The service can be included in a Sway project, as a tandem service.
 
 We'll describe these two different implementations below.
 
@@ -13,28 +13,38 @@ When running a Fuel Indexer service as a standalone binary, you can just start t
 
 ## With a Sway project
 
-When running a Fuel Indexer service as a tandem service inside of a larger Sway project, the convention is to typically include your indexer binary (`main.rs`) inside an `indexer/` folder in the root of the project (`my-project`). From here, you can easily run your indexer with WASM execution, or non-WASM execution (or both!).
-
 The convetion for a Sway project layout including a Fuel Indexer is:
 
 ```text
-➜  my-project tree .
+➜  my-project tree . -I target/ -I out/
 .
-├── Forc.toml
 ├── contracts
-│   └── main.sw
+│   └── my-contract
+│       ├── Forc.lock
+│       ├── Forc.toml
+│       ├── out
+│       │   └── debug
+│       │       ├── my-contract-abi.json
+│       │       ├── my-contract-storage_slots.json
+│       │       └── my-contract.bin
+│       ├── src
+│       │   └── main.sw
+│       └── tests
+│           └── harness.rs
 ├── frontend
 │   └── index.html
-├── indexer
-│   ├── contracts
-│   │   └── my-project-abi.json
-│   ├── lib.rs
-│   ├── main.rs
-│   ├── manifest.yaml
-│   └── schema
-│       └── my-project-schema.graphql
-└── tests
-    └── harness.rs
+└── indexer
+    ├── contracts
+    │   └── my-contract-abi.json
+    ├── my-index.manifest.yaml
+    ├── my-indexer
+    │   ├── Cargo.toml
+    │   └── src
+    │       ├── my-index.rs
+    │       └── my-second-index.rs
+    ├── my-second-index.manifest.yaml
+    └── schema
+        └── schema.graphql
 
-6 directories, 9 files
+12 directories, 15 files
 ```

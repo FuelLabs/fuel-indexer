@@ -45,9 +45,14 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update -y \
     tzdata \
     ca-certificates \
     libpq-dev \
+    wget \
     # Clean up
     && apt-get autoremove -y \
     && apt-get clean -y
+
+# https://stackoverflow.com/a/72633324
+RUN wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
+RUN dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
 
 COPY --from=builder /build/target/release/fuel-indexer .
 COPY --from=builder /build/target/release/fuel-indexer.d .
