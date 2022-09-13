@@ -30,15 +30,15 @@ spec:
             - "{{ .Values.app.fuel_node_host }}"
             - "--fuel-node-port"
             - "{{ .Values.app.fuel_node_port }}"
-            - "--postgres-host"
-            - "{{ .Release.Name }}-postgres"
-
           env:
           - name: POSTGRES_PASSWORD
             valueFrom:
               secretKeyRef:
                 name: {{ .Release.Name }} 
                 key: POSTGRES_PASSWORD
+
+          - name: POSTGRES_HOST
+            value: "{{ .Release.Name }}-postgres"
 
 
           resources: {}
