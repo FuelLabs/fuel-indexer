@@ -1,0 +1,19 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    block: Block
+    transaction: Transaction
+}
+
+type Block {
+    id: ID!
+    height: UInt8
+}
+
+
+type Transaction {
+    id: ID!
+    block: Block!
+}

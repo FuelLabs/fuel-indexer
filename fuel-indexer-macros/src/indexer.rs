@@ -11,7 +11,7 @@ use std::collections::HashSet;
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
+use syn::{parse_macro_input, FnArg, Ident, Item, ItemFn, ItemMod, PatType, Type};
 
 const DISALLOWED: &[&str] = &["Vec"];
 
@@ -101,6 +101,44 @@ fn decode_snippet(ty_id: u64, ty: &Ident, name: &Ident) -> proc_macro2::TokenStr
     }
 }
 
+fn process_block_fn_items(input: ItemFn) -> (proc_macro2::TokenStream, ItemFn) {
+    let mut input_checks = Vec::new();
+    let mut arg_list = Vec::new();
+
+    for inp in &input.sig.inputs {
+        match inp {
+            FnArg::Receiver(_) => {
+                proc_macro_error::abort_call_site!(
+                    "`self` argument not allowed in handler function."
+                )
+            }
+            FnArg::Typed(PatType { ty, .. }) => {
+                if let Type::Path(path) = &**ty {
+                    let path = path.path.segments.last().unwrap();
+
+                    let name = rust_name(&path.ident.to_string());
+                    input_checks.push(quote! { self.#name.len() > 0 });
+                    arg_list.push(quote! { self.#name[0].clone() });
+                } else {
+                    proc_macro_error::abort_call_site!(
+                        "Arguments must be types defined in the abi.json."
+                    )
+                }
+            }
+        }
+    }
+
+    let fn_name = &input.sig.ident;
+
+    (
+        quote! {
+        if ( #(#input_checks)&&* ) {
+            #fn_name(#(#arg_list),*);
+        }},
+        input,
+    )
+}
+
 fn process_fn_items(
     abi: String,
     input: ItemMod,
@@ -178,6 +216,17 @@ fn process_fn_items(
 
     let contents = input.content.unwrap().1;
     let mut handler_fns = Vec::with_capacity(contents.len());
+    let mut block_dispatchers: Vec<TokenStream> = Vec::new();
+
+    fn is_block_fn(input: ItemFn) -> bool {
+        if &input.attrs.len() == &1 {
+            let path = &input.attrs[0].path;
+            if path.get_ident().unwrap() == "block" {
+                return true;
+            }
+        }
+        false
+    };
 
     for item in contents {
         match item {
@@ -185,55 +234,61 @@ fn process_fn_items(
                 let mut input_checks = Vec::new();
                 let mut arg_list = Vec::new();
 
-                //NOTE: To keep things simple, assume no Vec<SomeType> or anything like that, 1:1 mapping of function inputs.
-                //      This should fail to compile if a user tries things like Vec<SomeType>, but we'll have to consider whether we want
-                //      this type of feature.
-                for inp in &fn_item.sig.inputs {
-                    match inp {
-                        FnArg::Receiver(_) => {
-                            proc_macro_error::abort_call_site!(
-                                "`self` argument not allowed in handler function."
-                            )
-                        }
-                        FnArg::Typed(PatType { ty, .. }) => {
-                            if let Type::Path(path) = &**ty {
-                                let path = path.path.segments.last().unwrap();
-                                let ty_id = type_id(path.ident.to_string().as_bytes());
-
-                                if disallowed_types.contains(&path.ident.to_string()) {
+                match is_block_fn(fn_item.clone()) {
+                    true => {
+                        let (_, fn_item) = process_block_fn_items(fn_item);
+                        // handler_fns.push(fn_item);
+                        // block_dispatchers.push(dispatcher);
+                    }
+                    false => {
+                        for inp in &fn_item.sig.inputs {
+                            match inp {
+                                FnArg::Receiver(_) => {
                                     proc_macro_error::abort_call_site!(
-                                        "Type {:?} currently not supported",
-                                        path.ident
+                                        "`self` argument not allowed in handler function."
                                     )
                                 }
+                                FnArg::Typed(PatType { ty, .. }) => {
+                                    if let Type::Path(path) = &**ty {
+                                        let path = path.path.segments.last().unwrap();
+                                        let ty_id = type_id(path.ident.to_string().as_bytes());
 
-                                if !types.contains(&ty_id) {
-                                    proc_macro_error::abort_call_site!(
-                                        "Type {:?} not defined in the ABI.",
-                                        path.ident,
-                                    )
+                                        if disallowed_types.contains(&path.ident.to_string()) {
+                                            proc_macro_error::abort_call_site!(
+                                                "Type {:?} currently not supported",
+                                                path.ident
+                                            )
+                                        }
+
+                                        if !types.contains(&ty_id) {
+                                            proc_macro_error::abort_call_site!(
+                                                "Type {:?} not defined in the ABI.",
+                                                path.ident,
+                                            )
+                                        }
+
+                                        let name = rust_name(&path.ident.to_string());
+                                        input_checks.push(quote! { self.#name.len() > 0 });
+                                        arg_list.push(quote! { self.#name[0].clone() });
+                                    } else {
+                                        proc_macro_error::abort_call_site!(
+                                            "Arguments must be types defined in the abi.json."
+                                        )
+                                    }
                                 }
-
-                                let name = rust_name(&path.ident.to_string());
-                                input_checks.push(quote! { self.#name.len() > 0 });
-                                arg_list.push(quote! { self.#name[0].clone() });
-                            } else {
-                                proc_macro_error::abort_call_site!(
-                                    "Arguments must be types defined in the abi.json."
-                                )
                             }
                         }
+
+                        let fn_name = &fn_item.sig.ident;
+                        dispatchers.push(quote! {
+                            if ( #(#input_checks)&&* ) {
+                                #fn_name(#(#arg_list),*);
+                            }
+                        });
+
+                        handler_fns.push(fn_item);
                     }
                 }
-
-                let fn_name = &fn_item.sig.ident;
-                dispatchers.push(quote! {
-                    if ( #(#input_checks)&&* ) {
-                        #fn_name(#(#arg_list),*);
-                    }
-                });
-
-                handler_fns.push(fn_item);
             }
             i => {
                 proc_macro_error::abort_call_site!("Unsupported item in indexer module {:?}", i)
@@ -314,7 +369,6 @@ fn process_fn_items(
 }
 
 pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    #[allow(unused_variables)]
     let IndexerConfig {
         abi,
         namespace,
@@ -349,6 +403,8 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let graphql_tokens = process_graphql_schema(namespace, schema_string);
 
+    // println!(">> GRAPHQL {:?}", graphql_tokens);
+
     let (handler_block, fn_items) = process_fn_items(abi_string, indexer);
 
     let handler_block = if native {
@@ -363,14 +419,26 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use fuel_indexer_plugin::types::*;
         use fuels_core::{abi_decoder::ABIDecoder, ParamType, Parameterize};
         use fuel_tx::Receipt;
+        use fuel_indexer_macros::block;
 
         #abi_tokens
 
         #graphql_tokens
 
-        #handler_block
+        // #handler_block
 
-        #fn_items
+        // #fn_items
+    };
+
+    proc_macro::TokenStream::from(output)
+}
+
+pub fn process_block_attribute_fn(_attrs: TokenStream, item: TokenStream) -> TokenStream {
+    let block_fn = parse_macro_input!(item as ItemFn);
+
+    let output = quote! {
+
+        #block_fn
     };
 
     proc_macro::TokenStream::from(output)

@@ -840,6 +840,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "block-explorer"
+version = "0.1.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx 0.9.0",
+ "fuels-core",
+ "getrandom 0.2.7",
+ "serde",
+]
+
+[[package]]
 name = "block-padding"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

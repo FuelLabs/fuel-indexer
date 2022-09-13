@@ -224,6 +224,8 @@ pub(crate) fn process_graphql_schema(
     let mut text = String::new();
     file.read_to_string(&mut text).expect("IO error");
 
+    println!(">> STRING {}", text);
+
     let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
         Ok(ast) => ast,
         Err(e) => {
