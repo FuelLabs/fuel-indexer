@@ -6,12 +6,18 @@ mod native;
 mod parse;
 mod schema;
 mod wasm;
-use indexer::process_indexer_module;
+use indexer::{process_block_attribute_fn, process_indexer_module};
 
 #[proc_macro_error::proc_macro_error]
 #[proc_macro_attribute]
 pub fn indexer(attrs: TokenStream, item: TokenStream) -> TokenStream {
     process_indexer_module(attrs, item)
+}
+
+#[proc_macro_error::proc_macro_error]
+#[proc_macro_attribute]
+pub fn block(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    process_block_attribute_fn(attrs, item)
 }
 
 #[cfg(test)]

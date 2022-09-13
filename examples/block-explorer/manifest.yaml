@@ -1,0 +1,8 @@
+namespace: block_explorer
+graphql_schema: examples/block-explorer/schema/block.graphql
+identifier: block_index1
+module:
+  wasm: target/wasm32-unknown-unknown/release/block_explorer.wasm
+handlers:
+  - event: LogData
+    handler: count_handler

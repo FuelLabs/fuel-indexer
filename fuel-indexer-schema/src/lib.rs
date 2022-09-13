@@ -31,7 +31,7 @@ pub type UInt4 = u32;
 pub type UInt8 = u64;
 pub type Timestamp = u64;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct BlockData {
     pub height: u64,
     pub transactions: Vec<Vec<Receipt>>,
