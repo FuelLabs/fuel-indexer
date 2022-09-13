@@ -32,15 +32,14 @@ spec:
             - "{{ .Values.app.fuel_node_port }}"
             - "--postgres-host"
             - "{{ .Release.Name }}-postgres"
-            - "--postgres-password"
-            - "$POSTGRES_PASSWORD"
 
           env:
-             - name: POSTGRES_PASSWORD 
-               valueFrom:
-                 secretKeyRef:
-                    key: POSTGRES_PASSWORD
-                    name: {{ .Release.Name }}
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Release.Name }} 
+                key: POSTGRES_PASSWORD
+
 
           resources: {}
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}

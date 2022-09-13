@@ -8,3 +8,5 @@ docs/book/
 *.db
 *.db*
 
+
+.idea
