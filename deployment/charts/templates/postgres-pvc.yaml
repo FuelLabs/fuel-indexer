@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Release.Name }}
+  name: {{ .Release.Name }}-postgres
 spec:
-  storageClassName: {{ .storageClass }}
+  storageClassName: {{ .Values.app.volume.storageclass }}
   accessModes:
     - ReadWriteOnce
   resources:

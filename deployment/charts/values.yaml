@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 
 password: "password"
+fuelIndexerImage: ghcr.io/fuellabs/fuel-indexer:latest
 
 app:
   name: fuel-indexer
@@ -12,7 +13,6 @@ app:
   http_port: 80
   target_port: 29987
   image:
-    fuelIndexerImage: ghcr.io/fuellabs/fuel-indexer:latest
     pullPolicy: Always
   volume: 
     pvname: fuel-indexer-db-volume

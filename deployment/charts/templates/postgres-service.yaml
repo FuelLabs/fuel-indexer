@@ -3,7 +3,7 @@ kind: Service
 metadata:
   name: {{ .Release.Name }}-postgres
   labels:
-    app.kubernetes.io/name: postgres-12
+    app.kubernetes.io/name: {{ .Release.Name }}-postgres
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
@@ -15,5 +15,5 @@ spec:
       name: postgres-12
 
   selector:
-    app.kubernetes.io/name: postgres-12
+    app.kubernetes.io/name: {{ .Release.Name }}-postgres
     app.kubernetes.io/instance: {{ .Release.Name }}
