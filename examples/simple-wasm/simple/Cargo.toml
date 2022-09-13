@@ -8,12 +8,16 @@ edition = "2021"
 [dependencies]
 bytes = "0.4"
 env_logger = "0.9"
-fuel-core = "0.6"
-fuel-crypto = "0.5"
-fuel-gql-client = "0.6"
-fuel-tx = "0.9"
-fuels = "0.15"
-fuels-abigen-macro = "0.15"
+fuel-core = "0.10"
+fuel-crypto = "0.6"
+fuel-gql-client = "0.10"
+fuel-tx = "0.18"
+#fuels-core = "0.23"
+#fuels-abigen-macro = "0.23"
+fuels = { path = "/home/tj/fuels-rs/packages/fuels" }
+fuels-core = { path = "/home/tj/fuels-rs/packages/fuels-core" }
+fuels-types = { path = "/home/tj/fuels-rs/packages/fuels-types" }
+fuels-abigen-macro = { path = "/home/tj/fuels-rs/packages/fuels-abigen-macro" }
 log = "0.4"
 pretty_env_logger = "0.4"
 rand = "0.8"

@@ -4,14 +4,15 @@ extern crate alloc;
 mod tests {
     use fuel_indexer::{IndexerConfig, IndexerService, Manifest, Module};
     use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
-    use fuels::node::{
+    use fuel_core::{
         chain_config::{ChainConfig, StateConfig},
         service::DbType,
     };
     use fuels::prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, LocalWallet,
+        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, WalletUnlocked,
         Provider, TxParameters, DEFAULT_COIN_AMOUNT,
     };
+    use fuels_core::parameters::StorageConfiguration;
     use fuels::signers::Signer;
     use fuels_abigen_macro::abigen;
     use std::path::Path;
@@ -26,7 +27,7 @@ mod tests {
         let gas_price = 0;
         let gas_limit = 1_000_000;
         let byte_price = 0;
-        TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price), None)
+        TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
     }
 
     #[tokio::test]
@@ -36,11 +37,11 @@ mod tests {
         let p = workdir.join("./tests/test_data/wallet.json");
         let path = p.as_os_str().to_str().unwrap();
         let mut wallet =
-            LocalWallet::load_keystore(&path, "password", None).expect("Could load keys");
+            WalletUnlocked::load_keystore(&path, "password", None).expect("Could load keys");
 
         let p = workdir.join("./tests/test_data/contracts.bin");
         let path = p.as_os_str().to_str().unwrap();
-        let _compiled = Contract::load_sway_contract(path).unwrap();
+        let _compiled = Contract::load_sway_contract(path, &None).unwrap();
 
         let number_of_coins = 11;
         let asset_id = AssetId::zeroed();
@@ -64,15 +65,15 @@ mod tests {
             ..Config::local_node()
         };
 
-        let (client, _) = setup_test_client(coins, config).await;
+        let (client, _) = setup_test_client(coins, Some(config), None).await;
 
         let provider = Provider::new(client);
 
         wallet.set_provider(provider.clone());
 
-        let contract_id = Contract::deploy(path, &wallet, tx_params()).await.unwrap();
+        let contract_id = Contract::deploy(path, &wallet, tx_params(), StorageConfiguration::default()).await.unwrap();
 
-        let contract: Simple = Simple::new(contract_id.to_string(), wallet);
+        let contract: Simple = SimpleBuilder::new(contract_id.to_string(), wallet).build();
         let _ = contract.gimme_someevent(78).call().await;
         let _ = contract.gimme_anotherevent(899).call().await;
 

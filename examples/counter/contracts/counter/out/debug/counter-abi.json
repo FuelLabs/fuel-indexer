@@ -1,103 +1,144 @@
-[
-  {
-    "type": "function",
-    "inputs": [
-      {
-        "name": "value",
-        "type": "u64",
-        "components": null
-      }
-    ],
-    "name": "init_counter",
-    "outputs": [
-      {
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "str[24]",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "str[26]",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "struct AnotherCountEvent",
+      "components": [
+        {
+          "name": "id",
+          "type": 5,
+          "typeArguments": null
+        },
+        {
+          "name": "count",
+          "type": 5,
+          "typeArguments": null
+        },
+        {
+          "name": "timestamp",
+          "type": 5,
+          "typeArguments": null
+        },
+        {
+          "name": "address",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "struct CountEvent",
+      "components": [
+        {
+          "name": "id",
+          "type": 5,
+          "typeArguments": null
+        },
+        {
+          "name": "count",
+          "type": 5,
+          "typeArguments": null
+        },
+        {
+          "name": "timestamp",
+          "type": 5,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 5,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [
+        {
+          "name": "value",
+          "type": 5,
+          "typeArguments": null
+        }
+      ],
+      "name": "init_counter",
+      "output": {
         "name": "",
-        "type": "struct CountEvent",
-        "components": [
-          {
-            "name": "id",
-            "type": "u64",
-            "components": null
-          },
-          {
-            "name": "count",
-            "type": "u64",
-            "components": null
-          },
-          {
-            "name": "timestamp",
-            "type": "u64",
-            "components": null
-          }
-        ]
+        "type": 4,
+        "typeArguments": null
       }
-    ]
-  },
-  {
-    "type": "function",
-    "inputs": [],
-    "name": "get_count",
-    "outputs": [
-      {
+    },
+    {
+      "inputs": [],
+      "name": "get_count",
+      "output": {
         "name": "",
-        "type": "struct AnotherCountEvent",
-        "components": [
-          {
-            "name": "id",
-            "type": "u64",
-            "components": null
-          },
-          {
-            "name": "count",
-            "type": "u64",
-            "components": null
-          },
-          {
-            "name": "timestamp",
-            "type": "u64",
-            "components": null
-          },
-          {
-            "name": "address",
-            "type": "b256",
-            "components": null
-          }
-        ]
+        "type": 3,
+        "typeArguments": null
       }
-    ]
-  },
-  {
-    "type": "function",
-    "inputs": [
-      {
-        "name": "amount",
-        "type": "u64",
-        "components": null
-      }
-    ],
-    "name": "increment_counter",
-    "outputs": [
-      {
+    },
+    {
+      "inputs": [
+        {
+          "name": "amount",
+          "type": 5,
+          "typeArguments": null
+        }
+      ],
+      "name": "increment_counter",
+      "output": {
         "name": "",
-        "type": "struct CountEvent",
-        "components": [
-          {
-            "name": "id",
-            "type": "u64",
-            "components": null
-          },
-          {
-            "name": "count",
-            "type": "u64",
-            "components": null
-          },
-          {
-            "name": "timestamp",
-            "type": "u64",
-            "components": null
-          }
-        ]
+        "type": 4,
+        "typeArguments": null
       }
-    ]
-  }
-]
+    }
+  ],
+  "loggedTypes": [
+    {
+      "logId": 1018177,
+      "loggedType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": null
+      }
+    },
+    {
+      "logId": 1018201,
+      "loggedType": {
+        "name": "",
+        "type": 1,
+        "typeArguments": null
+      }
+    },
+    {
+      "logId": 1018523,
+      "loggedType": {
+        "name": "",
+        "type": 2,
+        "typeArguments": null
+      }
+    }
+  ]
+}

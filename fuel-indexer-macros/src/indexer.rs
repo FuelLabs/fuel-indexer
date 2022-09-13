@@ -3,11 +3,10 @@ use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
 use fuels_core::{
-    abi_encoder::ABIEncoder, code_gen::abigen::Abigen, json_abi::ABIParser, source::Source,
+    code_gen::abigen::Abigen, source::Source, utils::first_four_bytes_of_sha256_hash,
 };
-use fuels_types::JsonABI;
-use sha2::{Digest, Sha256};
-use std::collections::HashSet;
+use fuels_types::{function_selector::build_fn_selector, ProgramABI, TypeDeclaration};
+use std::collections::{HashMap, HashSet};
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
@@ -15,7 +14,7 @@ use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
 
 const DISALLOWED: &[&str] = &["Vec"];
 
-fn get_json_abi(abi: String) -> JsonABI {
+fn get_json_abi(abi: String) -> ProgramABI {
     let src = match Source::parse(abi) {
         Ok(src) => src,
         Err(e) => {
@@ -41,48 +40,54 @@ fn get_json_abi(abi: String) -> JsonABI {
     }
 }
 
-fn rust_name(ty: &str) -> Ident {
-    if ty.contains(' ') {
+fn rust_name_str(ty: &String) -> Ident {
+    format_ident! { "{}_decoded", ty.to_ascii_lowercase() }
+}
+
+fn rust_name(ty: &TypeDeclaration) -> Ident {
+    if ty.components.is_some() {
         let ty = ty
+            .type_field
             .split(' ')
             .last()
             .unwrap()
-            .to_string()
-            .to_ascii_lowercase();
-        format_ident! { "{}_decoded", ty }
+            .to_string();
+        rust_name_str(&ty)
     } else {
-        let ty = ty.to_ascii_lowercase();
-        format_ident! { "{}_decoded", ty }
+        let ty = ty.type_field.replace("[", "_").replace("]", "_");
+        rust_name_str(&ty)
     }
 }
 
-fn rust_type(ty: &String) -> Ident {
-    if ty.contains(' ') {
-        let ty = ty.split(' ').last().unwrap().to_string();
-        format_ident! { "{}", ty }
+fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
+    if ty.components.is_some() {
+        let ty = ty.type_field.split(' ').last().unwrap().to_string();
+        let ident = format_ident! { "{}", ty };
+        quote! { #ident }
     } else {
-        format_ident! { "{}", ty }
+        // TODO: decode all the types
+        match ty.type_field.as_str() {
+            "bool" => quote! { bool },
+            "u8" => quote! { u8 },
+            "u16" => quote! { u16 },
+            "u32" => quote! { u32 },
+            "u64" => quote! { u64 },
+            "b256" => quote! { B256 },
+            o if o.starts_with("str[") => quote! { String },
+            o => {
+                proc_macro_error::abort_call_site!("Unrecognized primitive type! {:?}", o)
+            }
+        }
     }
 }
 
-fn type_id(bytes: &[u8]) -> u64 {
-    let mut hasher = Sha256::new();
-    hasher.update(bytes);
-    let result = hasher.finalize();
-
-    let mut output = [0u8; 8];
-    output.copy_from_slice(&result[..8]);
-
-    u64::from_be_bytes(output)
-}
-
-fn is_primitive(ty: &Ident) -> bool {
+fn is_primitive(ty: &proc_macro2::TokenStream) -> bool {
     let ident_str = ty.to_string();
     // TODO: complete the list
-    matches!(ident_str.as_str(), "u8" | "u16" | "u32" | "u64" | "bool")
+    matches!(ident_str.as_str(), "u8" | "u16" | "u32" | "u64" | "bool" | "B256" | "String")
 }
 
-fn decode_snippet(ty_id: u64, ty: &Ident, name: &Ident) -> proc_macro2::TokenStream {
+fn decode_snippet(ty_id: usize, ty: &proc_macro2::TokenStream, name: &Ident) -> proc_macro2::TokenStream {
     if is_primitive(ty) {
         // TODO: do we want decoder for primitive? Might need something a little smarte to identify what the primitive is for... and to which handler it will go.
         quote! {
@@ -93,8 +98,8 @@ fn decode_snippet(ty_id: u64, ty: &Ident, name: &Ident) -> proc_macro2::TokenStr
     } else {
         quote! {
             #ty_id => {
-                let decoded = ABIDecoder::decode(&#ty::param_types(), &data).expect("Failed decoding");
-                let obj = #ty::new_from_tokens(&decoded);
+                let decoded = ABIDecoder::decode_single(&#ty::param_type(), &data).expect("Failed decoding");
+                let obj = #ty::from_token(decoded).expect("Failed detokenizing");
                 self.#name.push(obj);
             }
         }
@@ -122,58 +127,51 @@ fn process_fn_items(
     let mut type_vecs = Vec::new();
     let mut dispatchers = Vec::new();
 
-    for function in parsed {
-        if function.outputs.len() > 1 {
-            proc_macro_error::abort_call_site!("Multiple returns not supported!")
-        }
+    let mut type_map = HashMap::new();
+    let mut type_ids = HashMap::new();
+    for typ in parsed.types {
+        type_map.insert(typ.type_id, typ.clone());
 
-        let sig = match ABIParser::new().build_fn_selector(&function.name, &function.inputs) {
+        let ty = rust_type(&typ);
+        let name = rust_name(&typ);
+        let ty_id = typ.type_id;
+
+        type_ids.insert(ty.to_string(), ty_id);
+
+        if !types.contains(&ty_id) {
+            type_vecs.push(quote! {
+                #name: Vec<#ty>
+            });
+
+            decoders.push(decode_snippet(ty_id, &ty, &name));
+            types.insert(ty_id);
+        }
+    }
+
+    for function in parsed.functions {
+        let inputs: Vec<_> = function.inputs.iter().map(|inp| {
+            match type_map.get(&inp.type_field) {
+                Some(t) => t.clone(),
+                None => {
+                    proc_macro_error::abort_call_site!("Unknown type encountered in the ABI!")
+                }
+            }
+        }).collect();
+
+        let sig = match build_fn_selector(&function.name, &inputs, &type_map) {
             Ok(s) => s,
             Err(e) => {
                 proc_macro_error::abort_call_site!("Could not calculate fn selector! {:?}", e)
             }
         };
 
-        let selector = ABIEncoder::encode_function_selector(sig.as_bytes());
+        let selector = first_four_bytes_of_sha256_hash(&sig);
         let selector = u64::from_be_bytes(selector);
+        let ty_id = function.output.type_field;
 
-        if let Some(out) = &function.outputs.first() {
-            let output = out.type_field.clone();
-
-            let ty = rust_type(&output);
-            let name = rust_name(&output);
-            let ty_id = type_id(ty.to_string().as_bytes());
-
-            if !types.contains(&ty_id) {
-                type_vecs.push(quote! {
-                    #name: Vec<#ty>
-                });
-
-                decoders.push(decode_snippet(ty_id, &ty, &name));
-                types.insert(ty_id);
-            }
-
-            selectors.push(quote! {
-                #selector => #ty_id,
-            });
-        }
-
-        for input in function.inputs {
-            let input = input.type_field.clone();
-
-            let ty = rust_type(&input);
-            let name = rust_name(&input);
-            let ty_id = type_id(ty.to_string().as_bytes());
-
-            if !types.contains(&ty_id) {
-                type_vecs.push(quote! {
-                    #name: Vec<#ty>
-                });
-
-                decoders.push(decode_snippet(ty_id, &ty, &name));
-                types.insert(ty_id);
-            }
-        }
+        selectors.push(quote! {
+            #selector => #ty_id,
+        });
     }
 
     let contents = input.content.unwrap().1;
@@ -198,7 +196,13 @@ fn process_fn_items(
                         FnArg::Typed(PatType { ty, .. }) => {
                             if let Type::Path(path) = &**ty {
                                 let path = path.path.segments.last().unwrap();
-                                let ty_id = type_id(path.ident.to_string().as_bytes());
+                                // NOTE: may need to get something else for primitives...
+                                let ty_id = match type_ids.get(&path.ident.to_string()) {
+                                    Some(id) => id,
+                                    None => {
+                                        proc_macro_error::abort_call_site!("Type with ident {:?} not defined in the ABI.", path.ident);
+                                    }
+                                };
 
                                 if disallowed_types.contains(&path.ident.to_string()) {
                                     proc_macro_error::abort_call_site!(
@@ -214,7 +218,7 @@ fn process_fn_items(
                                     )
                                 }
 
-                                let name = rust_name(&path.ident.to_string());
+                                let name = rust_name_str(&path.ident.to_string());
                                 input_checks.push(quote! { self.#name.len() > 0 });
                                 arg_list.push(quote! { self.#name[0].clone() });
                             } else {
@@ -248,7 +252,7 @@ fn process_fn_items(
         }
 
         impl Decoders {
-            fn selector_to_type_id(&self, sel: u64) -> u64 {
+            fn selector_to_type_id(&self, sel: u64) -> usize {
                 match sel {
                     #(#selectors)*
                     //TODO: should handle this a little more gently
@@ -256,7 +260,7 @@ fn process_fn_items(
                 }
             }
 
-            fn decode_type(&mut self, ty_id: u64, data: Vec<u8>) {
+            fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
                     #(#decoders),*
                     _ => panic!("Unkown type id {}", ty_id),
@@ -359,8 +363,9 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use alloc::{format, vec, vec::Vec};
         use fuel_indexer_plugin::{Entity, Logger};
         use fuel_indexer_plugin::types::*;
-        use fuels_core::{abi_decoder::ABIDecoder, ParamType, Parameterize};
+        use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use fuel_tx::Receipt;
+        type B256 = [u8; 32];
 
         #abi_tokens
 

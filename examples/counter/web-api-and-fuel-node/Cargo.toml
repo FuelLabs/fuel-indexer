@@ -11,11 +11,16 @@ async-mutex = "1"
 bytes = "0.4"
 dotenv = "0.14"
 env_logger = "0.9"
-fuel-core = "0.6"
-fuel-gql-client = "0.6"
-fuel-tx = "0.9"
-fuels = "0.15"
-fuels-abigen-macro = "0.15"
+fuel-core = "0.10"
+fuel-gql-client = "0.10"
+fuel-tx = "0.18"
+#fuels = "0.23"
+#fuels-abigen-macro = "0.23"
+#fuels-core = "0.23"
+fuels = { path = "/home/tj/fuels-rs/packages/fuels" }
+fuels-abigen-macro = { path = "/home/tj/fuels-rs/packages/fuels-abigen-macro" }
+fuels-core = { path = "/home/tj/fuels-rs/packages/fuels-core" }
+#fuels-types = { path = "/home/tj/fuels-rs/packages/fuels-types" }
 log = "0.4"
 pretty_env_logger = "0.4"
 rand = "0.8"

@@ -28,7 +28,7 @@ abi Counter {
 }
 
 storage {
-    counter: u64,
+    counter: u64 = 0,
 }
 
 impl Counter for Contract {

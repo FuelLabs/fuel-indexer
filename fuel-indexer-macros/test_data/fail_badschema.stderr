@@ -66,7 +66,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_schema::serialize;
    |
-2  | use fuels::node::chain_config::serialization::serde_hex::serialize;
+2  | use fuels::prelude::serde_hex::serialize;
    |
 
 error[E0425]: cannot find function `handle_events` in this scope

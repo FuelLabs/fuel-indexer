@@ -202,7 +202,7 @@ impl IndexerService {
             loop {
                 debug!("Fetching paginated results from {:?}", next_cursor);
                 // TODO: can we have a "start at height" option?
-                let PaginatedResult { cursor, results } = client
+                let PaginatedResult { cursor, results, .. } = client
                     .blocks(PaginationRequest {
                         cursor: next_cursor.clone(),
                         results: 10,

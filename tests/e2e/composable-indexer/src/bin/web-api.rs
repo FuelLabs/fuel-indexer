@@ -2,8 +2,7 @@ use async_std::sync::{Arc, Mutex};
 use axum::{extract::Extension, routing::post, Router};
 use clap::Parser;
 use composable_indexer::defaults;
-use fuel_indexer_lib::utils::derive_socket_addr;
-use fuels::prelude::{Contract, LocalWallet, Provider, TxParameters};
+use fuels::prelude::{Contract, WalletUnlocked, Provider, TxParameters};
 use fuels_abigen_macro::abigen;
 use std::{
     net::SocketAddr,
@@ -16,7 +15,7 @@ pub fn tx_params() -> TxParameters {
     let gas_price = 0;
     let gas_limit = 1_000_000;
     let byte_price = 0;
-    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price), None)
+    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
 }
 
 abigen!(
@@ -38,11 +37,14 @@ pub struct Args {
 }
 
 #[axum_macros::debug_handler]
-async fn ping(Extension(contract): Extension<Arc<Mutex<Message>>>) -> String {
+async fn ping(contract: Extension<Arc<Mutex<Message>>>) -> String {
     let contract = contract.lock().await;
-    let result = contract.ping().tx_params(tx_params()).call().await.unwrap();
-    let pong: Ping = result.value;
-    pong.value.to_string()
+    let _res = contract.ping().tx_params(tx_params()).call();
+    //res.await.unwrap();
+    println!("TJDEBUG wowo");
+    "".into()
+    //let pong: Ping = result.value;
+    //pong.value.to_string()
 }
 
 #[tokio::main]
@@ -76,14 +78,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .fuel_node_port
         .unwrap_or_else(|| defaults::FUEL_NODE_PORT.to_string());
 
-    let fuel_node_addr = derive_socket_addr(&fuel_node_host, &fuel_node_port).unwrap();
+    let fuel_node_addr = format!("{}:{}", fuel_node_host, fuel_node_port);
 
     tracing_subscriber::fmt::Subscriber::builder()
         .with_writer(std::io::stderr)
         .with_env_filter(filter)
         .init();
 
-    let provider = Provider::connect(fuel_node_addr).await.unwrap();
+    let provider = Provider::connect(&fuel_node_addr).await.unwrap();
 
     let wallet_path = opts
         .wallet_path
@@ -92,11 +94,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Wallet keystore at: {}", wallet_path.display());
 
     let wallet =
-        LocalWallet::load_keystore(&wallet_path, defaults::WALLET_PASSWORD, Some(provider))?;
+        WalletUnlocked::load_keystore(&wallet_path, defaults::WALLET_PASSWORD, Some(provider))?;
 
-    info!("Connected to fuel client at {}", fuel_node_addr.to_string());
+    info!("Connected to fuel client at {}", fuel_node_addr);
 
-    let contract = Message::new(defaults::PING_CONTRACT_ID.to_string(), wallet);
+    let contract: Message = MessageBuilder::new(defaults::PING_CONTRACT_ID.to_string(), wallet).build();
 
     let bin_path = opts.bin_path.unwrap_or_else(|| {
         Path::join(
@@ -106,8 +108,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let compiled =
-        Contract::load_sway_contract(&bin_path.into_os_string().into_string().unwrap()).unwrap();
-    let id = Contract::compute_contract_id(&compiled).to_string();
+        Contract::load_sway_contract(&bin_path.into_os_string().into_string().unwrap(), &None).unwrap();
+    let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
     info!("Using contract at {}", id);
 
     let state = Arc::new(Mutex::new(contract));

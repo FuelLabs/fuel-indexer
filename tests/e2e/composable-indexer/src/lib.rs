@@ -4,7 +4,7 @@ pub fn tx_params() -> TxParameters {
     let gas_price = 0;
     let gas_limit = 1_000_000;
     let byte_price = 0;
-    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price), None)
+    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
 }
 
 pub mod defaults {

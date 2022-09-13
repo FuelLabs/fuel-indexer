@@ -27,7 +27,7 @@ fn main() {
         account: [48u8; 32],
     };
 
-    let bytes = ABIEncoder::new().encode(&[s.into_token()]).expect("Failed compile test");
+    let bytes = ABIEncoder::encode(&[s.into_token()]).expect("Failed compile test");
 
     let data: Vec<BlockData> = vec![
         BlockData {

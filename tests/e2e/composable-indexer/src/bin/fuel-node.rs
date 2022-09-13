@@ -1,16 +1,17 @@
 use clap::Parser;
 use composable_indexer::{defaults, tx_params};
-use fuels::{
-    node::{
+use fuel_core::{
         chain_config::{ChainConfig, StateConfig},
         service::DbType,
-    },
+};
+use fuels::{
     prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, LocalWallet,
+        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, WalletUnlocked,
         Provider, DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
+use fuels_core::parameters::StorageConfiguration;
 use fuels_abigen_macro::abigen;
 use std::path::{Path, PathBuf};
 use tracing::info;
@@ -63,7 +64,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Wallet keystore at: {}", wallet_path.display());
 
-    let mut wallet = LocalWallet::load_keystore(&wallet_path, defaults::WALLET_PASSWORD, None)?;
+    let mut wallet = WalletUnlocked::load_keystore(&wallet_path, defaults::WALLET_PASSWORD, None)?;
 
     info!("Using wallet address at: {}", wallet.address());
 
@@ -89,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Config::local_node()
     };
 
-    let (client, _) = setup_test_client(coins, config).await;
+    let (client, _) = setup_test_client(coins, Some(config), None).await;
 
     info!("Fuel client started at {:?}", client);
 
@@ -108,6 +109,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &bin_path.into_os_string().into_string().unwrap(),
         &wallet,
         tx_params(),
+        StorageConfiguration::default(),
     )
     .await
     .unwrap();

@@ -28,7 +28,7 @@ mod indexer {
 }
 
 fn main() {
-    use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+    use fuels_core::abi_encoder::ABIEncoder;
 
     let s1 = SomeEvent {
         id: 9,
@@ -41,8 +41,8 @@ fn main() {
         hash: [56u8; 32],
     };
 
-    let bytes1 = ABIEncoder::new().encode(&[s1.into_token()]).expect("Failed compile test");
-    let bytes2 = ABIEncoder::new().encode(&[s2.into_token()]).expect("Failed compile test");
+    let bytes1 = ABIEncoder::encode(&[s1.into_token()]).expect("Failed compile test");
+    let bytes2 = ABIEncoder::encode(&[s2.into_token()]).expect("Failed compile test");
 
     let data: Vec<BlockData> = vec![
         BlockData {

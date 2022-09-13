@@ -20,14 +20,14 @@ mod indexer {
 }
 
 fn main() {
-    use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+    use fuels_core::abi_encoder::ABIEncoder;
 
     let s = SomeEvent {
         id: 9,
         account: [48u8; 32],
     };
 
-    let bytes = ABIEncoder::new().encode(&[s.into_token()]).expect("Failed compile test");
+    let bytes = ABIEncoder::encode(&[s.into_token()]).expect("Failed compile test");
 
     let data: Vec<BlockData> = vec![
         BlockData {

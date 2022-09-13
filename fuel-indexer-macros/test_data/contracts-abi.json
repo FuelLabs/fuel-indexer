@@ -1,74 +1,88 @@
-[
-  {
-    "type": "function",
-    "inputs": [
-      {
-        "name": "num",
-        "type": "u64",
-        "components": null,
-        "typeArguments": null
-      }
-    ],
-    "name": "gimme_someevent",
-    "outputs": [
-      {
+{
+  "types": [
+    {
+      "typeId": 0,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "struct AnotherEvent",
+      "components": [
+        {
+          "name": "id",
+          "type": 3,
+          "typeArguments": null
+        },
+        {
+          "name": "account",
+          "type": 0,
+          "typeArguments": null
+        },
+        {
+          "name": "hash",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 2,
+      "type": "struct SomeEvent",
+      "components": [
+        {
+          "name": "id",
+          "type": 3,
+          "typeArguments": null
+        },
+        {
+          "name": "account",
+          "type": 0,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 3,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
+    }
+  ],
+  "functions": [
+    {
+      "inputs": [
+        {
+          "name": "num",
+          "type": 3,
+          "typeArguments": null
+        }
+      ],
+      "name": "gimme_someevent",
+      "output": {
         "name": "",
-        "type": "struct SomeEvent",
-        "components": [
-          {
-            "name": "id",
-            "type": "u64",
-            "components": null,
-            "typeArguments": null
-          },
-          {
-            "name": "account",
-            "type": "b256",
-            "components": null,
-            "typeArguments": null
-          }
-        ],
+        "type": 2,
         "typeArguments": null
       }
-    ]
-  },
-  {
-    "type": "function",
-    "inputs": [
-      {
-        "name": "num",
-        "type": "u64",
-        "components": null,
-        "typeArguments": null
-      }
-    ],
-    "name": "gimme_anotherevent",
-    "outputs": [
-      {
+    },
+    {
+      "inputs": [
+        {
+          "name": "num",
+          "type": 3,
+          "typeArguments": null
+        }
+      ],
+      "name": "gimme_anotherevent",
+      "output": {
         "name": "",
-        "type": "struct AnotherEvent",
-        "components": [
-          {
-            "name": "id",
-            "type": "u64",
-            "components": null,
-            "typeArguments": null
-          },
-          {
-            "name": "account",
-            "type": "b256",
-            "components": null,
-            "typeArguments": null
-          },
-          {
-            "name": "hash",
-            "type": "b256",
-            "components": null,
-            "typeArguments": null
-          }
-        ],
+        "type": 1,
         "typeArguments": null
       }
-    ]
-  }
-]
+    }
+  ],
+  "loggedTypes": []
+}

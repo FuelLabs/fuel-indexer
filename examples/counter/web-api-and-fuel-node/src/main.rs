@@ -5,18 +5,18 @@ extern crate pretty_env_logger;
 
 use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use async_mutex::Mutex;
+use fuel_core::{
+    chain_config::{ChainConfig, StateConfig},
+    service::DbType,
+};
 use fuels::{
-    node::{
-        chain_config::{ChainConfig, StateConfig},
-        service::DbType,
-    },
     prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, LocalWallet,
+        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, WalletUnlocked,
         Provider, TxParameters, DEFAULT_COIN_AMOUNT,
     },
-    signers::wallet::Wallet,
     signers::Signer,
 };
+use fuels_core::parameters::StorageConfiguration;
 use fuels_abigen_macro::abigen;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddr};
@@ -25,7 +25,7 @@ pub fn tx_params() -> TxParameters {
     let gas_price = 0;
     let gas_limit = 1_000_000;
     let byte_price = 0;
-    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price), None)
+    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
 }
 
 abigen!(
@@ -33,23 +33,23 @@ abigen!(
     "examples/counter/contracts/counter/out/debug/counter-abi.json"
 );
 
-async fn get_contract_id(wallet: &Wallet) -> String {
+async fn get_contract_id(wallet: &WalletUnlocked) -> String {
     dotenv::dotenv().ok();
     debug!("Creating new deployment for non-existent contract");
 
     let _compiled =
-        Contract::load_sway_contract("./../contracts/counter/out/debug/counter.bin").unwrap();
+        Contract::load_sway_contract("./../contracts/counter/out/debug/counter.bin", &None).unwrap();
 
     let bin_path = "./../contracts/counter/out/debug/counter.bin".to_string();
-    let contract_id = Contract::deploy(&bin_path, wallet, tx_params())
+    let contract_id = Contract::deploy(&bin_path, wallet, tx_params(), StorageConfiguration::default())
         .await
         .unwrap();
 
     contract_id.to_string()
 }
 
-async fn setup_provider_and_wallet() -> (Provider, Wallet) {
-    let mut wallet = LocalWallet::new_random(None);
+async fn setup_provider_and_wallet() -> (Provider, WalletUnlocked) {
+    let mut wallet = WalletUnlocked::new_random(None);
 
     let number_of_coins = 11;
     let asset_id = AssetId::zeroed();
@@ -73,7 +73,7 @@ async fn setup_provider_and_wallet() -> (Provider, Wallet) {
         ..Config::local_node()
     };
 
-    let (client, _) = setup_test_client(coins, config).await;
+    let (client, _) = setup_test_client(coins, Some(config), None).await;
 
     info!("Fuel client started at {:?}", client);
 
@@ -132,7 +132,7 @@ async fn main() -> std::io::Result<()> {
     let (_provider, wallet) = setup_provider_and_wallet().await;
     let contract_id: String = get_contract_id(&wallet).await;
     info!("Using contract at {}", contract_id);
-    let contract: Counter = Counter::new(contract_id, wallet);
+    let contract: Counter = CounterBuilder::new(contract_id, wallet).build();
 
     let state = web::Data::new(Mutex::new(contract));
 

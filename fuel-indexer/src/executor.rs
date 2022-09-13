@@ -330,11 +330,9 @@ mod tests {
             hash: [0x43; 32],
         };
 
-        let some_event = ABIEncoder::new()
-            .encode(&[evt1.into_token()])
+        let some_event = ABIEncoder::encode(&[evt1.into_token()])
             .expect("Failed to encode");
-        let another_event = ABIEncoder::new()
-            .encode(&[evt2.into_token()])
+        let another_event = ABIEncoder::encode(&[evt2.into_token()])
             .expect("Failed to encode");
 
         let result = executor
