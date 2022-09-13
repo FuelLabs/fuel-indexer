@@ -24,10 +24,7 @@ async-std = "1.10.0"
 axum = "0.4"
 axum-macros = "0.2"
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
-fuel-core = "0.6"
-fuel-gql-client = "0.6"
 fuel-indexer-lib = { path = "../../../fuel-indexer-lib" }
-fuel-tx = "0.9"
 fuel-types = "0.5"
 fuels = "0.15"
 fuels-abigen-macro = "0.15"

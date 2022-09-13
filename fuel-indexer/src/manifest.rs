@@ -31,7 +31,7 @@ impl Module {
 
 impl Manifest {
     pub fn from_file(path: &Path) -> Result<Self> {
-        let mut file = File::open(&path)?;
+        let mut file = File::open(path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let manifest: Manifest = serde_yaml::from_str(&contents)?;

@@ -38,7 +38,7 @@ mod tests {
         let p = workdir.join("./tests/test_data/wallet.json");
         let path = p.as_os_str().to_str().unwrap();
         let mut wallet =
-            LocalWallet::load_keystore(&path, "password", None).expect("Could load keys");
+            LocalWallet::load_keystore(path, "password", None).expect("Could load keys");
 
         let p = workdir.join("./tests/test_data/contracts.bin");
         let path = p.as_os_str().to_str().unwrap();
