@@ -16,7 +16,7 @@ name = "fuel-indexer-api-server"
 path = "src/main.rs"
 
 [dependencies]
-anyhow = { version = "1.0", default-features = false }
+anyhow = "1.0"
 async-std = "1.10.0"
 axum = "0.4"
 fuel-indexer = { path = "../fuel-indexer" }

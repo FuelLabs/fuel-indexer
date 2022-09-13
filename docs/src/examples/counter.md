@@ -51,18 +51,11 @@ In this section we'll cover the exact steps needed to spin up this example.
 
 We'll start by creating a database. This step assumes some familiarity with [creating Postgres roles and databases](https://learn.coderslang.com/0120-databases-roles-and-tables-in-postgresql/). In this example we're using an `indexer` database owned by a `postgres` role without a password.
 
-> Note that some of these commands may differ based on your local setup
+
+Next we'll bootstrap our database by running some migrations.
 
 ```bash
-createdb -U postgres indexer
-```
-
-Next we'll bootstrap our database by running some migrations. These migrations are responsible for creating our `graph_registry`. 
-
-> The `graph_registry` is a component that is responsible for keeping track of database columns and column types. The `graph_registry` is largely abstracted away from the user, but can be seen by inspecting the `graph_registry` schema.
-
-```bash
-DATABASE_URL=postgres://postgres@localhost/indexer bash scripts/run_migrations.local.sh
+DATABASE_URL=postgres://postgres@127.0.0.1 bash scripts/run_migrations.local.sh
 ```
 
 ### Starting the web server & Fuel node
@@ -80,7 +73,7 @@ With our Fuel node and web server up and running, we'll next start our Fuel Inde
 ```bash
 cargo build -p fuel-indexer
 
-./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml --fuel-node-port --graphql-api-host 127.0.0.1 --postgres-database indexer
+./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml
 ```
 
 ### Send a transaction to the smart contract via the web server
@@ -94,7 +87,7 @@ curl -X POST http://127.0.0.1:8080/count | json_pp
 In this example we just created an entity with `id = 1`
 
 ```bash
-➜  echo "SELECT max(id) FROM counter.count;" | psql -U postgres -d indexer
+➜  echo "SELECT max(id) FROM counter.count;" | psql -U postgres -d postgres
  max
 -----
    1
@@ -104,7 +97,7 @@ In this example we just created an entity with `id = 1`
 So that's what we query for
 
 ```
-curl -X POST http://localhost:29987/api/graph/counter -H 'content-type: application/json' -d '{"query": "query { count(id: 1) { id count timestamp } }", "params": "b"}' | json_pp
+curl -X POST http://127.0.0.1:29987/api/graph/counter -H 'content-type: application/json' -d '{"query": "query { count(id: 1) { id count timestamp } }", "params": "b"}' | json_pp
 [
    {
       "count" : 1,

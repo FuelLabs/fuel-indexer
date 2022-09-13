@@ -5223,7 +5223,6 @@ dependencies = [
  "sqlx-rt",
  "stringprep",
  "thiserror",
- "time 0.3.14",
  "tokio-stream",
  "url",
  "webpki-roots 0.22.4",

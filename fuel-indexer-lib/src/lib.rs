@@ -77,7 +77,7 @@ pub mod defaults {
     pub const FUEL_NODE_HOST: &str = "127.0.0.1";
     pub const FUEL_NODE_PORT: &str = "4000";
 
-    pub const GRAPHQL_API_HOST: &str = "0.0.0.0";
+    pub const GRAPHQL_API_HOST: &str = "127.0.0.1";
     pub const GRAPHQL_API_PORT: &str = "29987";
 
     pub const DATABASE: &str = "postgres";
