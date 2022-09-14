@@ -30,6 +30,16 @@ spec:
             - "{{ .Values.app.fuel_node_host }}"
             - "--fuel-node-port"
             - "{{ .Values.app.fuel_node_port }}"
+            - "--postgres-password"
+            - "{{ .Values.password }}"
+            - "--postgres-host"
+            - "{{ .Release.Name }}-postgres"
+            - "--postgres-port"
+            - "5432"
+            - "--postgres-user"
+            - "postgres"
+            - "--postgres-database"
+            - "postgres"
           env:
           - name: POSTGRES_PASSWORD
             valueFrom:
@@ -39,6 +49,15 @@ spec:
 
           - name: POSTGRES_HOST
             value: "{{ .Release.Name }}-postgres"
+
+          - name: POSTGRES_USER
+            value: "postgres"
+
+          - name: POSTGRES_PORT
+            value: "5432"
+
+          - name: POSTGRES_DATABASE
+            value: "postgres"
 
 
           resources: {}
