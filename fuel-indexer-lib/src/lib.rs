@@ -12,7 +12,7 @@ pub mod utils {
         format!("{:x}", hasher.finalize())
     }
 
-    pub fn trim_env_key(key: &str) -> &str {
+    pub fn trim_opt_env_key(key: &str) -> &str {
         // Abmiguous key: $FOO, non-ambiguous key: ${FOO}
         let not_ambiguous = key.starts_with("${");
         match not_ambiguous {
@@ -21,7 +21,7 @@ pub mod utils {
         }
     }
 
-    pub fn is_env_var(key: &str) -> bool {
+    pub fn is_opt_env_var(key: &str) -> bool {
         key.starts_with('$') || (key.starts_with("${") && key.ends_with('}'))
     }
 
@@ -85,6 +85,7 @@ pub mod defaults {
     pub const POSTGRES_USER: &str = "postgres";
     pub const POSTGRES_HOST: &str = "127.0.0.1";
     pub const POSTGRES_PORT: &str = "5432";
+    pub const POSTGRES_PASSWORD: &str = "";
 
     pub const SQLITE_DATABASE: &str = "sqlite.db";
 

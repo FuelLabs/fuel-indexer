@@ -3,12 +3,40 @@ use async_std::{fs::File, io::ReadExt};
 pub use clap::Parser;
 use fuel_indexer_lib::{
     defaults,
-    utils::{derive_socket_addr, is_env_var, trim_env_key},
+    utils::{derive_socket_addr, is_opt_env_var, trim_opt_env_key},
 };
 use serde::Deserialize;
-use std::fmt::Write;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+
+#[derive(Debug)]
+pub enum EnvVar {
+    PostgresHost,
+    PostgresPassword,
+    PostgresDatabase,
+    PostgresPort,
+    PostgresUser,
+}
+
+impl std::string::ToString for EnvVar {
+    fn to_string(&self) -> String {
+        match self {
+            EnvVar::PostgresHost => "POSTGRES_HOST".to_string(),
+            EnvVar::PostgresPassword => "POSTGRES_PASSWORD".to_string(),
+            EnvVar::PostgresDatabase => "POSTGRES_DATABASE".to_string(),
+            EnvVar::PostgresUser => "POSTGRES_USER".to_string(),
+            EnvVar::PostgresPort => "POSTGRES_PORT".to_string(),
+        }
+    }
+}
+
+pub fn env_or_default(var: EnvVar, default: String) -> String {
+    let var_str = var.to_string();
+    match std::env::var(&var_str) {
+        Ok(v) => v,
+        Err(_e) => default,
+    }
+}
 
 #[derive(Debug, Parser, Clone)]
 #[clap(
@@ -16,43 +44,42 @@ use std::path::{Path, PathBuf};
     about = "Standalone binary for the fuel indexer service"
 )]
 pub struct IndexerArgs {
-    #[clap(short, long, help = "Run local test node.")]
+    #[clap(short, long, help = "Run local test node")]
     pub local: bool,
-    #[clap(short, long, parse(from_os_str), help = "Indexer service config file.")]
+    #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
     pub config: Option<PathBuf>,
-    #[clap(
-        short,
-        long,
-        parse(from_os_str),
-        help = "Manifest file used to bootstrap the indexer service."
-    )]
+    #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
     pub manifest: Option<PathBuf>,
     #[clap(
-            long,
-            help = "Listening IP of the running Fuel node.)",
-            default_value = defaults::FUEL_NODE_HOST
-        )]
+        long,
+        help = "Listening IP of the running Fuel node.",
+        default_value = defaults::FUEL_NODE_HOST
+    )]
     pub fuel_node_host: String,
-    #[clap(long, help = "Listening port of the running Fuel node.", default_value = defaults::FUEL_NODE_PORT)]
+    #[clap(
+        long,
+        help = "Listening port of the running Fuel node.",
+        default_value = defaults::FUEL_NODE_PORT
+    )]
     pub fuel_node_port: String,
-    #[clap(long, help = "GraphQL API IP.", default_value = defaults::GRAPHQL_API_HOST )]
+    #[clap(long, help = "GraphQL API IP.", default_value = defaults::GRAPHQL_API_HOST)]
     pub graphql_api_host: String,
-    #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT )]
+    #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
     pub graphql_api_port: String,
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres", "sqlite"]))]
     pub database: String,
     #[clap(long, help = "Sqlite database.", default_value = defaults::SQLITE_DATABASE)]
     pub sqlite_database: PathBuf,
-    #[clap(long, help = "Postgres username.", default_value = defaults::POSTGRES_USER)]
-    pub postgres_user: String,
-    #[clap(long, help = "Postgres database.", default_value = defaults::POSTGRES_DATABASE )]
-    pub postgres_database: String,
+    #[clap(long, help = "Postgres username.")]
+    pub postgres_user: Option<String>,
+    #[clap(long, help = "Postgres database.")]
+    pub postgres_database: Option<String>,
     #[clap(long, help = "Postgres password.")]
     pub postgres_password: Option<String>,
-    #[clap(long, help = "Postgres host.", default_value = defaults::POSTGRES_HOST)]
-    pub postgres_host: String,
-    #[clap(long, help = "Postgres port.", default_value = defaults::POSTGRES_PORT)]
-    pub postgres_port: String,
+    #[clap(long, help = "Postgres host.")]
+    pub postgres_host: Option<String>,
+    #[clap(long, help = "Postgres port.")]
+    pub postgres_port: Option<String>,
     #[clap(long, help = "Run database migrations for the GraphQL API service.")]
     pub run_migrations: Option<bool>,
 }
@@ -66,20 +93,16 @@ pub struct ApiServerArgs {
     pub graphql_api_host: String,
     #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
     pub graphql_api_port: String,
-    #[clap(long, help = "Database type", default_value = defaults::DATABASE, value_parser(["postgres", "sqlite"]))]
-    pub database: String,
-    #[clap(long, default_value = defaults::SQLITE_DATABASE, help = "Sqlite database.")]
-    pub sqlite_database: PathBuf,
-    #[clap(long, help = "Postgres username.", default_value = defaults::POSTGRES_USER)]
-    pub postgres_user: String,
-    #[clap(long, help = "Postgres database.", default_value = defaults::POSTGRES_DATABASE)]
-    pub postgres_database: String,
+    #[clap(long, help = "Postgres username.")]
+    pub postgres_user: Option<String>,
+    #[clap(long, help = "Postgres database.")]
+    pub postgres_database: Option<String>,
     #[clap(long, help = "Postgres password.")]
     pub postgres_password: Option<String>,
-    #[clap(long, help = "Postgres host.", default_value = defaults::POSTGRES_HOST)]
-    pub postgres_host: String,
-    #[clap(long, help = "Postgres port.", default_value = defaults::POSTGRES_PORT)]
-    pub postgres_port: String,
+    #[clap(long, help = "Postgres host.")]
+    pub postgres_host: Option<String>,
+    #[clap(long, help = "Postgres port.")]
+    pub postgres_port: Option<String>,
 }
 
 fn http_url(host: &String, port: &String) -> String {
@@ -92,7 +115,7 @@ fn http_url(host: &String, port: &String) -> String {
 }
 
 pub trait MutableConfig {
-    fn inject_env_vars(&mut self) -> Result<()>;
+    fn inject_opt_env_vars(&mut self) -> Result<()>;
     fn derive_socket_addr(&self) -> Result<SocketAddr>;
     fn http_url(&self) -> String;
 }
@@ -104,14 +127,14 @@ pub struct FuelNodeConfig {
 }
 
 impl MutableConfig for FuelNodeConfig {
-    fn inject_env_vars(&mut self) -> Result<()> {
-        if is_env_var(&self.host) {
-            self.host = std::env::var(trim_env_key(&self.host))
+    fn inject_opt_env_vars(&mut self) -> Result<()> {
+        if is_opt_env_var(&self.host) {
+            self.host = std::env::var(trim_opt_env_key(&self.host))
                 .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
         }
 
-        if is_env_var(&self.port) {
-            self.port = std::env::var(trim_env_key(&self.port))
+        if is_opt_env_var(&self.port) {
+            self.port = std::env::var(trim_opt_env_key(&self.port))
                 .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
         }
 
@@ -159,7 +182,7 @@ pub enum DatabaseConfig {
     },
     Postgres {
         user: String,
-        password: Option<String>,
+        password: String,
         host: String,
         port: String,
         database: String,
@@ -167,7 +190,7 @@ pub enum DatabaseConfig {
 }
 
 impl MutableConfig for DatabaseConfig {
-    fn inject_env_vars(&mut self) -> Result<()> {
+    fn inject_opt_env_vars(&mut self) -> Result<()> {
         match self {
             DatabaseConfig::Postgres {
                 user,
@@ -176,40 +199,38 @@ impl MutableConfig for DatabaseConfig {
                 port,
                 database,
             } => {
-                if is_env_var(user) {
-                    *user = std::env::var(trim_env_key(user))
-                        .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &user));
+                if is_opt_env_var(user) {
+                    *user = std::env::var(trim_opt_env_key(user))
+                        .expect("Failed to read POSTGRES_USER from env.");
+                }
+                if is_opt_env_var(password) {
+                    *password = std::env::var(trim_opt_env_key(password))
+                        .expect("Failed to read POSTGRES_PASSWORD from env.");
                 }
 
-                if let Some(pass) = &password {
-                    if is_env_var(pass) {
-                        *password = Some(
-                            std::env::var(trim_env_key(pass))
-                                .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &pass)),
-                        );
-                    }
+                if is_opt_env_var(host) {
+                    *host = std::env::var(trim_opt_env_key(host))
+                        .expect("Failed to read POSTGRES_HOST from env.");
                 }
 
-                if is_env_var(host) {
-                    *host = std::env::var(trim_env_key(host))
-                        .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &host));
+                if is_opt_env_var(port) {
+                    *port = std::env::var(trim_opt_env_key(port))
+                        .expect("Failed to read POSTGRES_PORT from env.");
                 }
 
-                if is_env_var(port) {
-                    *port = std::env::var(trim_env_key(port))
-                        .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &port));
-                }
-
-                if is_env_var(database) {
-                    *database = std::env::var(trim_env_key(database))
-                        .unwrap_or_else(|_| format!("Failed to read '{}' from env", &database));
+                if is_opt_env_var(database) {
+                    *database = std::env::var(trim_opt_env_key(database))
+                        .expect("Failed to read POSTGRES_DATABASE from env.");
                 }
             }
             DatabaseConfig::Sqlite { path } => {
-                let os_str = path.as_os_str().to_str().unwrap();
-                if is_env_var(os_str) {
+                let os_str = path
+                    .as_os_str()
+                    .to_str()
+                    .expect("Failed to convert path to &str slice");
+                if is_opt_env_var(os_str) {
                     *path = PathBuf::from(
-                        std::env::var(trim_env_key(os_str))
+                        std::env::var(trim_opt_env_key(os_str))
                             .unwrap_or_else(|_| format!("Failed to read '{}' from env", os_str)),
                     );
                 }
@@ -242,15 +263,10 @@ impl std::string::ToString for DatabaseConfig {
                 port,
                 database,
             } => {
-                let mut uri: String = format!("postgres://{}", user);
-
-                if let Some(pass) = &password {
-                    let _ = write!(uri, ":{}", pass);
-                }
-
-                let _ = write!(uri, "@{}:{}/{}", host, port, database);
-
-                uri
+                format!(
+                    "postgres://{}:{}@{}:{}/{}",
+                    user, password, host, port, database
+                )
             }
             DatabaseConfig::Sqlite { path } => {
                 format!("sqlite://{}", path.display())
@@ -291,7 +307,7 @@ impl Default for DatabaseConfig {
     fn default() -> Self {
         DatabaseConfig::Postgres {
             user: defaults::POSTGRES_USER.into(),
-            password: None,
+            password: defaults::POSTGRES_PASSWORD.into(),
             host: defaults::POSTGRES_HOST.into(),
             port: defaults::POSTGRES_PORT.into(),
             database: defaults::POSTGRES_DATABASE.into(),
@@ -331,14 +347,14 @@ impl From<GraphQLConfig> for SocketAddr {
 }
 
 impl MutableConfig for GraphQLConfig {
-    fn inject_env_vars(&mut self) -> Result<()> {
-        if is_env_var(&self.host) {
-            self.host = std::env::var(trim_env_key(&self.host))
+    fn inject_opt_env_vars(&mut self) -> Result<()> {
+        if is_opt_env_var(&self.host) {
+            self.host = std::env::var(trim_opt_env_key(&self.host))
                 .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
         }
 
-        if is_env_var(&self.port) {
-            self.port = std::env::var(trim_env_key(&self.port))
+        if is_opt_env_var(&self.port) {
+            self.port = std::env::var(trim_opt_env_key(&self.port))
                 .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
         }
 
@@ -361,37 +377,31 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
 }
 
-#[derive(Deserialize)]
-pub struct TmpIndexerConfig {
-    pub fuel_node: Option<FuelNodeConfig>,
-    pub graphql_api: Option<GraphQLConfig>,
-    pub database: Option<DatabaseConfig>,
-}
-
 impl IndexerConfig {
-    // FIXME
-    pub fn upgrade_optionals(&mut self, tmp: TmpIndexerConfig) {
-        if let Some(cfg) = tmp.fuel_node {
-            self.fuel_node = cfg;
-        }
-
-        if let Some(cfg) = tmp.database {
-            self.database = cfg;
-        }
-
-        if let Some(cfg) = tmp.graphql_api {
-            self.graphql_api = cfg;
-        }
-    }
-
     pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
         let database = match args.database.as_str() {
             "postgres" => DatabaseConfig::Postgres {
-                user: args.postgres_user,
-                password: args.postgres_password,
-                host: args.postgres_host,
-                port: args.postgres_port,
-                database: args.postgres_database,
+                user: args.postgres_user.unwrap_or_else(|| {
+                    env_or_default(EnvVar::PostgresUser, defaults::POSTGRES_USER.to_string())
+                }),
+                password: args.postgres_password.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresPassword,
+                        defaults::POSTGRES_PASSWORD.to_string(),
+                    )
+                }),
+                host: args.postgres_host.unwrap_or_else(|| {
+                    env_or_default(EnvVar::PostgresHost, defaults::POSTGRES_HOST.to_string())
+                }),
+                port: args.postgres_port.unwrap_or_else(|| {
+                    env_or_default(EnvVar::PostgresPort, defaults::POSTGRES_PORT.to_string())
+                }),
+                database: args.postgres_database.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresDatabase,
+                        defaults::POSTGRES_DATABASE.to_string(),
+                    )
+                }),
             },
             "sqlite" => DatabaseConfig::Sqlite {
                 path: args.sqlite_database,
@@ -401,7 +411,7 @@ impl IndexerConfig {
             }
         };
 
-        IndexerConfig {
+        let mut config = IndexerConfig {
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -412,7 +422,11 @@ impl IndexerConfig {
                 port: args.graphql_api_port,
                 run_migrations: args.run_migrations,
             },
-        }
+        };
+
+        config.inject_opt_env_vars();
+
+        config
     }
 
     pub async fn from_file(path: &Path) -> Result<Self> {
@@ -422,14 +436,14 @@ impl IndexerConfig {
 
         let mut config = IndexerConfig::default();
 
-        config.inject_env_vars();
+        config.inject_opt_env_vars();
 
         Ok(config)
     }
 
-    pub fn inject_env_vars(&mut self) {
-        let _ = self.fuel_node.inject_env_vars();
-        let _ = self.database.inject_env_vars();
-        let _ = self.graphql_api.inject_env_vars();
+    pub fn inject_opt_env_vars(&mut self) {
+        let _ = self.fuel_node.inject_opt_env_vars();
+        let _ = self.database.inject_opt_env_vars();
+        let _ = self.graphql_api.inject_opt_env_vars();
     }
 }
