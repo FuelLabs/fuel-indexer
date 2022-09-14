@@ -1,9 +1,10 @@
 ---
 namespace: test_namespace
-graphql_schema: schema.graphql
+graphql_schema: ./tests/test_data/schema.graphql
+identifier: index1
 module:
   wasm:
-    simple_wasm.wasm
+    ./tests/test_data/simple_wasm.wasm
 handlers:
   - event: an_event_name
     handler: function_one

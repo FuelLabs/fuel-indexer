@@ -1,37 +1,38 @@
-error: Type Ident { ident: "BadType", span: #0 bytes(274..281) } not defined in the ABI.
+error: Type Ident { ident: "BadType", span: #0 bytes(304..311) } not defined in the ABI.
   --> test_data/fail_unknown_type.rs:8:1
    |
 8  | / #[indexer(
 9  | |     abi = "./test_data/contracts-abi.json",
 10 | |     namespace = "test_namespace",
-11 | |     schema = "./test_data/schema.graphql",
-12 | | )]
+11 | |     identifier = "executor1",
+12 | |     schema = "./test_data/schema.graphql",
+13 | | )]
    | |__^
    |
    = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
-  --> test_data/fail_unknown_type.rs:37:21
+  --> test_data/fail_unknown_type.rs:38:21
    |
-37 |                     Receipt::Call {
+38 |                     Receipt::Call {
    |                     ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
-  --> test_data/fail_unknown_type.rs:48:21
+  --> test_data/fail_unknown_type.rs:49:21
    |
-48 |                     Receipt::ReturnData {
+49 |                     Receipt::ReturnData {
    |                     ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
-  --> test_data/fail_unknown_type.rs:25:13
+  --> test_data/fail_unknown_type.rs:26:13
    |
-25 |     let s = SomeEvent {
+26 |     let s = SomeEvent {
    |             ^^^^^^^^^ not found in this scope
 
 error[E0412]: cannot find type `BlockData` in this scope
-  --> test_data/fail_unknown_type.rs:32:19
+  --> test_data/fail_unknown_type.rs:33:19
    |
-32 |     let data: Vec<BlockData> = vec![
+33 |     let data: Vec<BlockData> = vec![
    |                   ^^^^^^^^^ not found in this scope
    |
 help: consider importing one of these items
@@ -42,9 +43,9 @@ help: consider importing one of these items
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
-  --> test_data/fail_unknown_type.rs:33:9
+  --> test_data/fail_unknown_type.rs:34:9
    |
-33 |         BlockData {
+34 |         BlockData {
    |         ^^^^^^^^^ not found in this scope
    |
 help: consider importing one of these items
@@ -55,9 +56,9 @@ help: consider importing one of these items
    |
 
 error[E0425]: cannot find function `serialize` in this scope
-  --> test_data/fail_unknown_type.rs:62:21
+  --> test_data/fail_unknown_type.rs:63:21
    |
-62 |     let mut bytes = serialize(&data);
+63 |     let mut bytes = serialize(&data);
    |                     ^^^^^^^^^ not found in this scope
    |
 help: consider importing one of these items
@@ -70,15 +71,15 @@ help: consider importing one of these items
    |
 
 error[E0425]: cannot find function `handle_events` in this scope
-  --> test_data/fail_unknown_type.rs:67:5
+  --> test_data/fail_unknown_type.rs:68:5
    |
-67 |     handle_events(ptr, len);
+68 |     handle_events(ptr, len);
    |     ^^^^^^^^^^^^^ not found in this scope
 
 error: unused import: `Tokenizable`
-  --> test_data/fail_unknown_type.rs:23:47
+  --> test_data/fail_unknown_type.rs:24:47
    |
-23 |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+24 |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
    |                                               ^^^^^^^^^^^
    |
    = note: `-D unused-imports` implied by `-D warnings`

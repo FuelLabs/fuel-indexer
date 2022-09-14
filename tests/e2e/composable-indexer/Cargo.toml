@@ -19,7 +19,7 @@ name = "composable_indexer"
 path = "src/lib.rs"
 
 [dependencies]
-anyhow = "1.0.53"
+anyhow = { version = "1.0", default-features = false }
 async-std = "1.10.0"
 axum = "0.4"
 axum-macros = "0.2"

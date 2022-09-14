@@ -1,4 +1,6 @@
 ---
 namespace: test_namespace
-graphql_schema: /home/tj/fuel-indexer/examples/simple-wasm/schema/schema.graphql
-wasm_module: /home/tj/fuel-indexer/target/wasm32-unknown-unknown/release/simple_wasm.wasm
+identifier: simple_wasm_executor
+graphql_schema: examples/simple-wasm/schema/schema.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/release/simple_wasm.wasm

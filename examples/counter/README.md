@@ -40,12 +40,12 @@ A simple app that shows indexer functionality.
 
 ### Run migrations
 
-- In this example we're using an `indexer` database owned by a `postgres` role without a password
+- In this example we're using the default `postgres` database owned by the default `postgres` role without a password
 
 ```bash
 createdb indexer -U postgres
 
-DATABASE_URL=postgres://postgres@localhost/indexer bash scripts/run_migrations.local.sh
+DATABASE_URL=postgres://postgres@127.0.0.1 bash scripts/run_migrations.local.sh
 ```
 
 ### Start fuel node and use small webserver as contract proxy
@@ -59,7 +59,7 @@ cd fuel-indexer/examples/counter/web-api-and-fuel-node && cargo run
 ```bash
 cargo build -p fuel-indexer
 
-./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml --fuel-node-port 4004 --graphql-api-host 127.0.0.1 --postgres-database indexer
+./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml
 ```
 
 ### Send a transaction to the smartcontract via the webserver
@@ -73,7 +73,7 @@ curl -X POST http://127.0.0.1:8080/count | json_pp
 In this example we just created an entity with `id = 1`
 
 ```bash
-➜  echo "SELECT max(id) FROM counter.count;" | psql -U postgres -d indexer
+➜  echo "SELECT max(id) FROM counter.count;" | psql -U postgres -d postgres
  max
 -----
    1
@@ -83,7 +83,7 @@ In this example we just created an entity with `id = 1`
 So that's what we query for
 
 ```
-curl -X POST http://localhost:29987/api/graph/counter -H 'content-type: application/json' -d '{"query": "query { count(id: 1) { id count timestamp } }", "params": "b"}' | json_pp
+curl -X POST http://127.0.0.1:29987/api/graph/counter -H 'content-type: application/json' -d '{"query": "query { count(id: 1) { id count timestamp } }", "params": "b"}' | json_pp
 [
    {
       "count" : 1,

@@ -1,5 +1,7 @@
 use fuel_indexer_database_types::*;
+use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, types::JsonValue, Connection, PgConnection, Postgres, Row};
+use tracing::info;
 
 pub async fn put_object(
     conn: &mut PoolConnection<Postgres>,
@@ -32,6 +34,7 @@ pub async fn run_migration(database_url: &str) {
     let mut conn = PgConnection::connect(database_url)
         .await
         .expect("Failed to establish postgres connection.");
+
     sqlx::migrate!()
         .run(&mut conn)
         .await
@@ -247,4 +250,237 @@ pub async fn columns_get_schema(
     )
     .fetch_all(conn)
     .await
+}
+
+pub async fn index_is_registered(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<Option<RegisteredIndex>> {
+    match sqlx::query_as!(
+        RegisteredIndex,
+        "SELECT * FROM index_registry WHERE namespace = $1 AND identifier = $2",
+        namespace,
+        identifier
+    )
+    .fetch_one(conn)
+    .await
+    {
+        Ok(row) => Ok(Some(row)),
+        Err(_e) => Ok(None),
+    }
+}
+
+pub async fn register_index(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<RegisteredIndex> {
+    if let Some(index) = index_is_registered(conn, namespace, identifier).await? {
+        return Ok(index);
+    }
+
+    let query = format!(
+        r#"INSERT INTO index_registry (namespace, identifier) VALUES ('{}', '{}') RETURNING *"#,
+        namespace, identifier,
+    );
+
+    let row = sqlx::QueryBuilder::new(query)
+        .build()
+        .fetch_one(conn)
+        .await?;
+
+    let id = row.get(0);
+    let namespace = row.get(1);
+    let identifier = row.get(2);
+
+    Ok(RegisteredIndex {
+        id,
+        namespace,
+        identifier,
+    })
+}
+
+pub async fn registered_indices(
+    conn: &mut PoolConnection<Postgres>,
+) -> sqlx::Result<Vec<RegisteredIndex>> {
+    sqlx::query_as!(RegisteredIndex, "SELECT * FROM index_registry",)
+        .fetch_all(conn)
+        .await
+}
+
+pub async fn index_asset_version(
+    conn: &mut PoolConnection<Postgres>,
+    index_id: &i64,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<i64> {
+    match sqlx::query(&format!(
+        "SELECT COUNT(*) FROM index_asset_registry_{} WHERE index_id = {}",
+        asset_type.to_string(),
+        index_id,
+    ))
+    .fetch_one(conn)
+    .await
+    {
+        Ok(row) => Ok(row.try_get::<'_, i64, usize>(0).unwrap_or(0)),
+        Err(_e) => Ok(0),
+    }
+}
+
+pub async fn register_index_asset(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+    bytes: Vec<u8>,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
+    let index = match index_is_registered(conn, namespace, identifier).await? {
+        Some(index) => index,
+        None => register_index(conn, namespace, identifier).await?,
+    };
+
+    let digest = sha256_digest(&bytes);
+
+    if let Some(asset) = asset_already_exists(conn, asset_type.clone(), &bytes, &index.id).await? {
+        info!(
+            "Asset({:?}) for Index({}) already registered.",
+            asset_type,
+            index.uid()
+        );
+        return Ok(asset);
+    }
+
+    let current_version = index_asset_version(conn, &index.id, asset_type.clone())
+        .await
+        .expect("Failed to get asset version.");
+
+    let query = format!(
+        "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{}') RETURNING *",
+        asset_type.to_string(),
+        index.id,
+        current_version + 1,
+        digest,
+    );
+
+    let row = sqlx::QueryBuilder::new(query)
+        .build()
+        .bind(bytes)
+        .fetch_one(conn)
+        .await?;
+
+    info!(
+        "Registered Asset({:?}) to Index({}).",
+        asset_type,
+        index.uid()
+    );
+
+    let id = row.get(0);
+    let index_id = row.get(1);
+    let version = row.get(2);
+    let digest = row.get(3);
+    let bytes = row.get(4);
+
+    Ok(IndexAsset {
+        id,
+        index_id,
+        version,
+        digest,
+        bytes,
+    })
+}
+
+pub async fn latest_asset_for_index(
+    conn: &mut PoolConnection<Postgres>,
+    index_id: &i64,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
+    let query = format!(
+        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1",
+        asset_type.to_string(),
+        index_id
+    );
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let id = row.get(0);
+    let index_id = row.get(1);
+    let version = row.get(2);
+    let digest = row.get(3);
+    let bytes = row.get(4);
+
+    Ok(IndexAsset {
+        id,
+        index_id,
+        version,
+        digest,
+        bytes,
+    })
+}
+
+pub async fn latest_assets_for_index(
+    conn: &mut PoolConnection<Postgres>,
+    index_id: &i64,
+) -> sqlx::Result<IndexAssetBundle> {
+    let wasm = latest_asset_for_index(conn, index_id, IndexAssetType::Wasm)
+        .await
+        .expect("Failed to retrieve wasm asset.");
+    let schema = latest_asset_for_index(conn, index_id, IndexAssetType::Schema)
+        .await
+        .expect("Failed to retrieve schema asset.");
+    let manifest = latest_asset_for_index(conn, index_id, IndexAssetType::Manifest)
+        .await
+        .expect("Failed to retrieve manifest asset.");
+
+    Ok(IndexAssetBundle {
+        wasm,
+        schema,
+        manifest,
+    })
+}
+
+pub async fn asset_already_exists(
+    conn: &mut PoolConnection<Postgres>,
+    asset_type: IndexAssetType,
+    bytes: &Vec<u8>,
+    index_id: &i64,
+) -> sqlx::Result<Option<IndexAsset>> {
+    let digest = sha256_digest(bytes);
+
+    let query = format!(
+        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} AND digest = '{}'",
+        asset_type.to_string(),
+        index_id,
+        digest
+    );
+
+    match sqlx::QueryBuilder::new(query).build().fetch_one(conn).await {
+        Ok(row) => {
+            let id = row.get(0);
+            let index_id = row.get(1);
+            let version = row.get(2);
+            let digest = row.get(3);
+            let bytes = row.get(4);
+
+            Ok(Some(IndexAsset {
+                id,
+                index_id,
+                version,
+                digest,
+                bytes,
+            }))
+        }
+        Err(_e) => Ok(None),
+    }
+}
+
+pub async fn start_transaction(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<usize> {
+    execute_query(conn, "BEGIN".into()).await
+}
+
+pub async fn commit_transaction(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<usize> {
+    execute_query(conn, "COMMIT".into()).await
+}
+
+pub async fn revert_transaction(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<usize> {
+    execute_query(conn, "ROLLBACK".into()).await
 }

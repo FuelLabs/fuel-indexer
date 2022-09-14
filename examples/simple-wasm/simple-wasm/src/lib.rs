@@ -4,6 +4,7 @@ use fuel_indexer_macros::indexer;
 #[indexer(
     abi = "examples/simple-wasm/contracts/out/debug/contracts-abi.json",
     namespace = "test_namespace",
+    identifier = "simple_wasm_executor",
     schema = "../schema/schema.graphql"
 )]
 pub mod test_namespace {

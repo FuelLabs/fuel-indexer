@@ -2,8 +2,10 @@ extern crate alloc;
 
 #[cfg(test)]
 mod tests {
-    use fuel_indexer::{IndexerConfig, IndexerService, Manifest, Module};
-    use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
+    use fuel_indexer::{
+        config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
+        IndexerService, Manifest,
+    };
     use fuels::node::{
         chain_config::{ChainConfig, StateConfig},
         service::DbType,
@@ -76,9 +78,6 @@ mod tests {
         let _ = contract.gimme_someevent(78).call().await;
         let _ = contract.gimme_anotherevent(899).call().await;
 
-        let dir = std::env::current_dir().unwrap();
-        let test_data = dir.join("tests/test_data");
-
         let config = IndexerConfig {
             fuel_node: FuelNodeConfig::from(
                 FUEL_NODE_ADDR.parse::<std::net::SocketAddr>().unwrap(),
@@ -95,17 +94,10 @@ mod tests {
 
         let mut indexer_service = IndexerService::new(config).await.unwrap();
 
-        let mut manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
-
-        manifest.graphql_schema = test_data
-            .join(manifest.graphql_schema)
-            .display()
-            .to_string();
-        manifest.module =
-            Module::Wasm(test_data.join(manifest.module.path()).display().to_string());
+        let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
 
         indexer_service
-            .add_indexer(manifest, true)
+            .register_indices(Some(manifest), true)
             .await
             .expect("Failed to initialize indexer");
 

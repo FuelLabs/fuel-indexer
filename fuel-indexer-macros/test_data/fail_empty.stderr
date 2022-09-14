@@ -4,14 +4,15 @@ error: No module body, must specify at least one handler function!
 8  | / #[indexer(
 9  | |     abi = "./test_data/contracts-abi.json",
 10 | |     namespace = "test_namespace",
-11 | |     schema = "./test_data/schema.graphql",
-12 | | )]
+11 | |     identifier = "foo",
+12 | |     schema = "./test_data/schema.graphql",
+13 | | )]
    | |__^
    |
    = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0601]: `main` function not found in crate `$CRATE`
-  --> test_data/fail_empty.rs:14:2
+  --> test_data/fail_empty.rs:15:2
    |
-14 | }
+15 | }
    |  ^ consider adding a `main` function to `$DIR/test_data/fail_empty.rs`

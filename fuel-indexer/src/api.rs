@@ -1,21 +1,24 @@
-use crate::{IndexerConfig, SchemaManager};
+use crate::{
+    config::{IndexerConfig, MutableConfig},
+    SchemaManager,
+};
+use anyhow::Result;
 use async_std::sync::{Arc, RwLock};
 use axum::{
-    extract::{Extension, Json, Path},
+    extract::{multipart::Multipart, Extension, Json, Path},
+    http::{Request, StatusCode},
+    middleware::{self, Next},
+    response::Response,
     routing::{get, post},
     Router,
 };
-use fuel_indexer_lib::{
-    config::AdjustableConfig,
-    utils::{FuelNodeHealthResponse, ServiceStatus},
-};
+use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_database_types::IndexAsset;
+use fuel_indexer_lib::utils::{FuelNodeHealthResponse, ServiceStatus};
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
-    models, run_migration,
     tables::Schema,
-    IndexerConnectionPool,
 };
-use http::StatusCode;
 use hyper::Client;
 use hyper_tls::HttpsConnector;
 use serde::Deserialize;
@@ -66,9 +69,8 @@ pub async fn query_graph(
     }
 }
 
-#[allow(unused_variables)]
 pub async fn health_check(
-    Extension(config): Extension<Arc<IndexerConfig>>,
+    Extension(config): Extension<IndexerConfig>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(start_time): Extension<Arc<Instant>>,
 ) -> (StatusCode, Json<Value>) {
@@ -106,6 +108,126 @@ pub async fn health_check(
     )
 }
 
+async fn authenticate_user(_signature: &str) -> Option<Result<bool, APIError>> {
+    // TODO: Placeholder until actual authentication scheme is in place
+    Some(Ok(true))
+}
+
+async fn authorize_middleware<B>(
+    mut req: Request<B>,
+    next: Next<B>,
+) -> Result<Response, StatusCode> {
+    let header = req
+        .headers()
+        .get(http::header::AUTHORIZATION)
+        .and_then(|header| header.to_str().ok());
+    let auth_header = if let Some(auth_header) = header {
+        auth_header
+    } else {
+        return Err(StatusCode::UNAUTHORIZED);
+    };
+
+    if let Some(current_user) = authenticate_user(auth_header).await {
+        req.extensions_mut().insert(current_user);
+        Ok(next.run(req).await)
+    } else {
+        Err(StatusCode::UNAUTHORIZED)
+    }
+}
+
+pub async fn register_index_assets(
+    Path((namespace, identifier)): Path<(String, String)>,
+    Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+    multipart: Option<Multipart>,
+) -> (StatusCode, Json<Value>) {
+    if let Some(mut multipart) = multipart {
+        let mut conn = pool
+            .acquire()
+            .await
+            .expect("Failed to get database connection.");
+
+        let _ = queries::start_transaction(&mut conn)
+            .await
+            .expect("Could not start database transaction");
+
+        let mut assets: Vec<IndexAsset> = Vec::new();
+
+        while let Some(field) = multipart.next_field().await.unwrap() {
+            let name = field
+                .name()
+                .expect("Failed to read multipart field.")
+                .to_string();
+            let data = field.bytes().await.expect("Failed to read multipart body.");
+            let asset = match name.as_str() {
+                "wasm" | "manifest" => queries::register_index_asset(
+                    &mut conn,
+                    &namespace,
+                    &identifier,
+                    data.to_vec(),
+                    name.into(),
+                )
+                .await
+                .expect("Failed to register index asset."),
+                "schema" => {
+                    let asset = queries::register_index_asset(
+                        &mut conn,
+                        &namespace,
+                        &identifier,
+                        data.to_vec(),
+                        name.into(),
+                    )
+                    .await
+                    .expect("Failed to register index asset.");
+
+                    schema_manager
+                        .write()
+                        .await
+                        .new_schema(&namespace, &String::from_utf8_lossy(&data))
+                        .await
+                        .expect("Failed to generate new schema for asset.");
+
+                    asset
+                }
+                _ => {
+                    return (
+                        StatusCode::BAD_REQUEST,
+                        Json(json!({
+                            "success": "false",
+                            "details": "Accepted fields are wasm, schema, and manifest.",
+                        })),
+                    )
+                }
+            };
+
+            assets.push(asset);
+        }
+
+        let _ = match queries::commit_transaction(&mut conn).await {
+            Ok(v) => v,
+            Err(_e) => queries::revert_transaction(&mut conn)
+                .await
+                .expect("Could not revert database transaction"),
+        };
+
+        return (
+            StatusCode::OK,
+            Json(json!({
+                "success": "true",
+                "assets": assets,
+            })),
+        );
+    }
+
+    (
+        StatusCode::BAD_REQUEST,
+        Json(json!({
+            "success": "false",
+            "details": "No multipart data provided.",
+        })),
+    )
+}
+
 pub struct GraphQlApi;
 
 impl GraphQlApi {
@@ -114,7 +236,7 @@ impl GraphQlApi {
             .await
             .expect("SchemaManager create failed");
         let schema_manager = Arc::new(RwLock::new(sm));
-        let config = Arc::new(config.clone());
+        let config = config.clone();
         let start_time = Arc::new(Instant::now());
         let listen_on = config
             .graphql_api
@@ -126,23 +248,30 @@ impl GraphQlApi {
             .expect("Failed to establish connection pool");
 
         if config.graphql_api.run_migrations.is_some() {
-            run_migration(&config.database.to_string()).await;
+            queries::run_migration(&config.database.to_string()).await;
         }
 
         let graph_route = Router::new()
-            .route("/:name", post(query_graph))
+            .route("/:namespace", post(query_graph))
+            .layer(Extension(schema_manager.clone()))
+            .layer(Extension(pool.clone()));
+
+        let asset_route = Router::new()
+            .route("/:namespace/:identifier", post(register_index_assets))
+            .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()));
 
         let health_route = Router::new()
             .route("/health", get(health_check))
-            .layer(Extension(config.clone()))
+            .layer(Extension(config))
             .layer(Extension(pool))
             .layer(Extension(start_time));
 
         let api_routes = Router::new()
-            .nest("/graph", graph_route)
-            .nest("/", health_route);
+            .nest("/", health_route)
+            .nest("/index", asset_route)
+            .nest("/graph", graph_route);
 
         let app = Router::new().nest("/api", api_routes);
 
@@ -165,7 +294,7 @@ pub async fn run_query(
 
     let mut conn = pool.acquire().await?;
 
-    match models::run_query(&mut conn, queries).await {
+    match queries::run_query(&mut conn, queries).await {
         Ok(ans) => {
             let row: Value = serde_json::from_value(ans)?;
             Ok(row)

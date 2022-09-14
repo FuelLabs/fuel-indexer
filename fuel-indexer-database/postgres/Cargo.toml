@@ -1,5 +1,5 @@
 [package]
-name = "fuel-indexer-sqlite"
+name = "fuel-indexer-postgres"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 fuel-indexer-database-types = { path = "../database-types" }
-sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "sqlite", "offline"] }
+fuel-indexer-lib = { path = "../../fuel-indexer-lib" }
+sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres", "offline"] }
+tracing = "0.1"

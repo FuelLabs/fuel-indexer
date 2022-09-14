@@ -7,6 +7,7 @@ use std::{fs::File, io::Read};
 pub struct Manifest {
     pub namespace: String,
     pub graphql_schema: String,
+    pub identifier: String,
     pub module: Module,
     pub start_block: Option<u64>,
     pub test_events: Option<Vec<Event>>,
@@ -37,12 +38,23 @@ impl Manifest {
         Ok(manifest)
     }
 
+    pub fn to_bytes(&self) -> Vec<u8> {
+        serde_yaml::to_string(&self)
+            .expect("Failed converting manifest to bytes.")
+            .as_bytes()
+            .to_vec()
+    }
+
     pub fn graphql_schema(&self) -> Result<String> {
         let mut file = File::open(&self.graphql_schema)?;
         let mut schema = String::new();
         file.read_to_string(&mut schema)?;
 
         Ok(schema)
+    }
+
+    pub fn uid(&self) -> String {
+        format!("{}.{}", &self.namespace, &self.identifier)
     }
 }
 

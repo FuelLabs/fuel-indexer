@@ -1,25 +1,18 @@
 use crate::{
-    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, SchemaManager,
-    WasmIndexExecutor,
+    config::{IndexerConfig, MutableConfig},
+    manifest::Module,
+    Executor, IndexerResult, Manifest, NativeIndexExecutor, SchemaManager, WasmIndexExecutor,
 };
-use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_lib::{
-    config::{
-        env_or_default, AdjustableConfig, DatabaseConfig, EnvVar, FuelNodeConfig, GraphQLConfig,
-        IndexerArgs,
-    },
-    defaults,
-};
+use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_database_types::IndexAssetType;
 use fuel_indexer_schema::BlockData;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::future::Future;
 use std::marker::{Send, Sync};
 use std::net::SocketAddr;
-use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     task::JoinHandle,
@@ -30,85 +23,8 @@ use tracing::{debug, error, info, warn};
 
 const RETRY_LIMIT: usize = 5;
 
-#[derive(Clone, Deserialize, Default, Debug)]
-pub struct IndexerConfig {
-    pub fuel_node: FuelNodeConfig,
-    pub graphql_api: GraphQLConfig,
-    pub database: DatabaseConfig,
-}
-
-impl IndexerConfig {
-    pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
-        let database = match args.database.as_str() {
-            "postgres" => DatabaseConfig::Postgres {
-                user: args.postgres_user.unwrap_or_else(|| {
-                    env_or_default(EnvVar::PostgresUser, defaults::POSTGRES_USER.to_string())
-                }),
-                password: args.postgres_password.unwrap_or_else(|| {
-                    env_or_default(
-                        EnvVar::PostgresPassword,
-                        defaults::POSTGRES_PASSWORD.to_string(),
-                    )
-                }),
-                host: args.postgres_host.unwrap_or_else(|| {
-                    env_or_default(EnvVar::PostgresHost, defaults::POSTGRES_HOST.to_string())
-                }),
-                port: args.postgres_port.unwrap_or_else(|| {
-                    env_or_default(EnvVar::PostgresPort, defaults::POSTGRES_PORT.to_string())
-                }),
-                database: args.postgres_database.unwrap_or_else(|| {
-                    env_or_default(
-                        EnvVar::PostgresDatabase,
-                        defaults::POSTGRES_DATABASE.to_string(),
-                    )
-                }),
-            },
-            "sqlite" => DatabaseConfig::Sqlite {
-                path: args.sqlite_database,
-            },
-            _ => {
-                panic!("Unrecognized database type in options.");
-            }
-        };
-
-        let mut config = IndexerConfig {
-            database,
-            fuel_node: FuelNodeConfig {
-                host: args.fuel_node_host,
-                port: args.fuel_node_port,
-            },
-            graphql_api: GraphQLConfig {
-                host: args.graphql_api_host,
-                port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
-            },
-        };
-
-        config.inject_opt_env_vars();
-
-        config
-    }
-
-    pub async fn from_file(path: &Path) -> Result<Self> {
-        let mut file = File::open(path).await?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).await?;
-
-        let mut config = IndexerConfig::default();
-
-        config.inject_opt_env_vars();
-
-        Ok(config)
-    }
-
-    pub fn inject_opt_env_vars(&mut self) {
-        let _ = self.fuel_node.inject_opt_env_vars();
-        let _ = self.database.inject_opt_env_vars();
-        let _ = self.graphql_api.inject_opt_env_vars();
-    }
-}
-
 pub struct IndexerService {
+    config: IndexerConfig,
     fuel_node_addr: SocketAddr,
     manager: SchemaManager,
     database_url: String,
@@ -118,65 +34,189 @@ pub struct IndexerService {
 
 impl IndexerService {
     pub async fn new(config: IndexerConfig) -> IndexerResult<IndexerService> {
-        let IndexerConfig {
-            fuel_node,
-            database,
-            ..
-        } = config;
-        let manager = SchemaManager::new(&database.to_string()).await?;
+        let database_url = config.database.to_string().clone();
 
-        let fuel_node_addr = fuel_node
+        let manager = SchemaManager::new(&database_url).await?;
+
+        let fuel_node_addr = config
+            .fuel_node
+            .clone()
             .derive_socket_addr()
             .expect("Could not parse Fuel node addr for IndexerService.");
 
         Ok(IndexerService {
+            config,
             fuel_node_addr,
             manager,
-            database_url: database.to_string(),
+            database_url,
             handles: HashMap::default(),
             killers: HashMap::default(),
         })
     }
 
-    pub async fn add_indexer(&mut self, manifest: Manifest, run_once: bool) -> IndexerResult<()> {
-        let name = manifest.namespace.clone();
+    // TODO: run_once should come from the index's manifest
+    pub async fn register_indices(
+        &mut self,
+        manifest: Option<Manifest>,
+        run_once: bool,
+    ) -> IndexerResult<()> {
+        let database_url = self.database_url.clone();
+
+        let pool = IndexerConnectionPool::connect(&self.config.database.to_string()).await?;
+        let mut conn = pool.acquire().await?;
+
+        let _ = queries::start_transaction(&mut conn)
+            .await
+            .expect("Could not start database transaction");
+
+        match manifest {
+            Some(manifest) => {
+                let namespace = manifest.namespace.clone();
+                let identifier = manifest.identifier.clone();
+
+                let index = queries::register_index(&mut conn, &namespace, &identifier).await?;
+
+                let schema = manifest
+                    .graphql_schema()
+                    .expect("Manifest should include GraphQL schema.");
+
+                let schema_bytes = schema.as_bytes().to_vec();
+
+                self.manager.new_schema(&namespace, &schema).await?;
+
+                let (kill_switch, handle, wasm_bytes) = self
+                    .spawn_executor_from_manifest(&manifest, run_once, database_url.clone())
+                    .await?;
+
+                let mut items = vec![
+                    (IndexAssetType::Wasm, wasm_bytes.unwrap()),
+                    (IndexAssetType::Manifest, manifest.to_bytes()),
+                    (IndexAssetType::Schema, schema_bytes),
+                ];
+
+                while let Some((asset_type, bytes)) = items.pop() {
+                    info!(
+                        "Registering Asset({:?}) for Index({})",
+                        asset_type,
+                        index.uid()
+                    );
+                    {
+                        queries::register_index_asset(
+                            &mut conn,
+                            &namespace,
+                            &identifier,
+                            bytes,
+                            asset_type,
+                        )
+                        .await?;
+                    }
+                }
+
+                info!("Registered indexer {}", identifier);
+                self.handles.insert(namespace.clone(), handle);
+                self.killers.insert(namespace, kill_switch);
+            }
+            None => {
+                let indices = queries::registered_indices(&mut conn).await?;
+                for index in indices {
+                    let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
+                    let manifest: Manifest = serde_yaml::from_slice(&assets.manifest.bytes)
+                        .expect("Could not read manifest in registry.");
+
+                    let (kill_switch, handle) = self
+                        .spawn_executor_from_index_asset_registry(
+                            &manifest,
+                            run_once,
+                            assets.wasm.bytes,
+                        )
+                        .await?;
+
+                    info!("Registered indexer {}", manifest.uid());
+                    self.handles.insert(manifest.namespace.clone(), handle);
+                    self.killers.insert(manifest.namespace, kill_switch);
+                }
+            }
+        }
+
+        let _ = match queries::commit_transaction(&mut conn).await {
+            Ok(v) => v,
+            Err(_e) => queries::revert_transaction(&mut conn)
+                .await
+                .expect("Could not revert database transaction"),
+        };
+
+        Ok(())
+    }
+
+    async fn spawn_executor_from_manifest(
+        &self,
+        manifest: &Manifest,
+        run_once: bool,
+        database_url: String,
+    ) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>, Option<Vec<u8>>)> {
         let start_block = manifest.start_block;
 
-        let schema = manifest
-            .graphql_schema()
-            .expect("Manifest should include GraphQL schema");
-        self.manager.new_schema(&name, &schema).await?;
-        let db_url = self.database_url.clone();
-
-        let (kill_switch, handle) = match manifest.module {
+        match manifest.module {
             Module::Wasm(ref module) => {
                 let mut bytes = Vec::<u8>::new();
                 let mut file = File::open(module).await?;
                 file.read_to_end(&mut bytes).await?;
 
-                let executor = WasmIndexExecutor::new(db_url, manifest, bytes).await?;
+                let executor =
+                    WasmIndexExecutor::new(database_url, manifest.to_owned(), bytes.clone())
+                        .await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
                 let handle =
                     tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
 
-                (kill_switch, handle)
+                Ok((kill_switch, handle, Some(bytes)))
             }
             Module::Native(ref path) => {
                 let path = path.clone();
-                let executor = NativeIndexExecutor::new(&db_url, manifest, path).await?;
+                let executor =
+                    NativeIndexExecutor::new(&database_url, manifest.to_owned(), path).await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
                 let handle =
                     tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
 
-                (kill_switch, handle)
+                Ok((kill_switch, handle, None))
             }
-        };
+        }
+    }
 
-        info!("Registered indexer {}", name);
-        self.handles.insert(name.clone(), handle);
-        self.killers.insert(name, kill_switch);
+    async fn spawn_executor_from_index_asset_registry(
+        &self,
+        manifest: &Manifest,
+        run_once: bool,
+        wasm_bytes: Vec<u8>,
+    ) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>)> {
+        let start_block = manifest.start_block;
 
-        Ok(())
+        match manifest.module {
+            Module::Wasm(ref _module) => {
+                let executor = WasmIndexExecutor::new(
+                    self.database_url.clone(),
+                    manifest.to_owned(),
+                    wasm_bytes,
+                )
+                .await?;
+                let kill_switch = Arc::new(AtomicBool::new(run_once));
+                let handle =
+                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+
+                Ok((kill_switch, handle))
+            }
+            Module::Native(ref path) => {
+                let path = path.clone();
+                let executor =
+                    NativeIndexExecutor::new(&self.database_url, manifest.to_owned(), path).await?;
+                let kill_switch = Arc::new(AtomicBool::new(run_once));
+                let handle =
+                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+
+                Ok((kill_switch, handle))
+            }
+        }
     }
 
     pub fn stop_indexer(&mut self, executor_name: &str) {

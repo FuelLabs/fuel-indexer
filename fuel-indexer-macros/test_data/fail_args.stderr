@@ -1,4 +1,4 @@
-error: abi specification is required in indexer definition!
+error: abi specification is required in indexer definition. <(-_-<)
  --> test_data/fail_args.rs:3:1
   |
 3 | #[indexer()]

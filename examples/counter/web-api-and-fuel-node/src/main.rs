@@ -69,7 +69,7 @@ async fn setup_provider_and_wallet() -> (Provider, Wallet) {
         },
         database_type: DbType::InMemory,
         utxo_validation: false,
-        addr: SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), 4004),
+        addr: SocketAddr::new(Ipv4Addr::new(127, 0, 0, 1).into(), 4000),
         ..Config::local_node()
     };
 
