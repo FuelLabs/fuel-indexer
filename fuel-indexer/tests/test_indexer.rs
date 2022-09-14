@@ -85,7 +85,7 @@ mod tests {
             ),
             database: DatabaseConfig::Postgres {
                 user: "postgres".into(),
-                password: Some("my-secret".into()),
+                password: "my-secret".into(),
                 host: "127.0.0.1".into(),
                 port: "5432".into(),
                 database: "postgres".to_string(),

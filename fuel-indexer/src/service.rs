@@ -5,8 +5,12 @@ use crate::{
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
-use fuel_indexer_lib::config::{
-    AdjustableConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerArgs,
+use fuel_indexer_lib::{
+    config::{
+        env_or_default, AdjustableConfig, DatabaseConfig, EnvVar, FuelNodeConfig, GraphQLConfig,
+        IndexerArgs,
+    },
+    defaults,
 };
 use fuel_indexer_schema::BlockData;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
@@ -33,36 +37,31 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct TmpIndexerConfig {
-    pub fuel_node: Option<FuelNodeConfig>,
-    pub graphql_api: Option<GraphQLConfig>,
-    pub database: Option<DatabaseConfig>,
-}
-
 impl IndexerConfig {
-    pub fn upgrade_optionals(&mut self, tmp: TmpIndexerConfig) {
-        if let Some(cfg) = tmp.fuel_node {
-            self.fuel_node = cfg;
-        }
-
-        if let Some(cfg) = tmp.database {
-            self.database = cfg;
-        }
-
-        if let Some(cfg) = tmp.graphql_api {
-            self.graphql_api = cfg;
-        }
-    }
-
     pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
         let database = match args.database.as_str() {
             "postgres" => DatabaseConfig::Postgres {
-                user: args.postgres_user,
-                password: args.postgres_password,
-                host: args.postgres_host,
-                port: args.postgres_port,
-                database: args.postgres_database,
+                user: args.postgres_user.unwrap_or_else(|| {
+                    env_or_default(EnvVar::PostgresUser, defaults::POSTGRES_USER.to_string())
+                }),
+                password: args.postgres_password.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresPassword,
+                        defaults::POSTGRES_PASSWORD.to_string(),
+                    )
+                }),
+                host: args.postgres_host.unwrap_or_else(|| {
+                    env_or_default(EnvVar::PostgresHost, defaults::POSTGRES_HOST.to_string())
+                }),
+                port: args.postgres_port.unwrap_or_else(|| {
+                    env_or_default(EnvVar::PostgresPort, defaults::POSTGRES_PORT.to_string())
+                }),
+                database: args.postgres_database.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresDatabase,
+                        defaults::POSTGRES_DATABASE.to_string(),
+                    )
+                }),
             },
             "sqlite" => DatabaseConfig::Sqlite {
                 path: args.sqlite_database,
@@ -72,7 +71,7 @@ impl IndexerConfig {
             }
         };
 
-        IndexerConfig {
+        let mut config = IndexerConfig {
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -83,7 +82,11 @@ impl IndexerConfig {
                 port: args.graphql_api_port,
                 run_migrations: args.run_migrations,
             },
-        }
+        };
+
+        config.inject_opt_env_vars();
+
+        config
     }
 
     pub async fn from_file(path: &Path) -> Result<Self> {
@@ -92,18 +95,16 @@ impl IndexerConfig {
         file.read_to_string(&mut contents).await?;
 
         let mut config = IndexerConfig::default();
-        let tmp_config: TmpIndexerConfig = serde_yaml::from_str(&contents)?;
 
-        config.upgrade_optionals(tmp_config);
-        config.inject_env_vars();
+        config.inject_opt_env_vars();
 
         Ok(config)
     }
 
-    pub fn inject_env_vars(&mut self) {
-        let _ = self.fuel_node.inject_env_vars();
-        let _ = self.database.inject_env_vars();
-        let _ = self.graphql_api.inject_env_vars();
+    pub fn inject_opt_env_vars(&mut self) {
+        let _ = self.fuel_node.inject_opt_env_vars();
+        let _ = self.database.inject_opt_env_vars();
+        let _ = self.graphql_api.inject_opt_env_vars();
     }
 }
 
