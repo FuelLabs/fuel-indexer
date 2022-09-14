@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="examples/counter.html"><strong aria-hidden="true">2.2.</strong> Counter</a></li></ol></li><li class="chapter-item expanded "><a href="components/index.html"><strong aria-hidden="true">3.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/gql-server.html"><strong aria-hidden="true">3.1.</strong> GraphQL</a></li><li class="chapter-item expanded "><a href="components/database/index.html"><strong aria-hidden="true">3.2.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/database/types.html"><strong aria-hidden="true">3.2.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="components/database/conventions.html"><strong aria-hidden="true">3.2.2.</strong> Conventions</a></li><li class="chapter-item expanded "><a href="components/database/foreign-keys.html"><strong aria-hidden="true">3.2.3.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="components/database/directives.html"><strong aria-hidden="true">3.2.4.</strong> Directives</a></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="examples/counter.html"><strong aria-hidden="true">2.2.</strong> Counter</a></li></ol></li><li class="chapter-item expanded "><a href="components/index.html"><strong aria-hidden="true">3.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/manifest.html"><strong aria-hidden="true">3.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="components/gql-server.html"><strong aria-hidden="true">3.2.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/schema.html"><strong aria-hidden="true">3.2.1.</strong> Schema</a></li></ol></li><li class="chapter-item expanded "><a href="components/database/index.html"><strong aria-hidden="true">3.3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/database/types.html"><strong aria-hidden="true">3.3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="components/database/conventions.html"><strong aria-hidden="true">3.3.2.</strong> Conventions</a></li><li class="chapter-item expanded "><a href="components/database/foreign-keys.html"><strong aria-hidden="true">3.3.3.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="components/database/directives.html"><strong aria-hidden="true">3.3.4.</strong> Directives</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -688,6 +688,28 @@ curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: appli
 <li><a href="components/./gql-server.html">GraphQL API</a></li>
 <li><a href="components/./database/index.html">Database</a></li>
 </ul>
+<h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
+<p>A manifest serves as the configuration for your indexer and it is written in YAML format. A proper manifest has the following structure:</p>
+<pre><code class="language-yaml">---
+namespace: ...
+graphql_schema: ...
+module:
+  wasm:
+    ...
+handlers:
+  - event: ...
+    handler: ...
+</code></pre>
+<h2 id="namespace"><a class="header" href="#namespace">Namespace</a></h2>
+<p>Your graph will live within the namespace set as part of this field. As such, it's important that you remember it when querying the API endpoint for your data. For example, if the field is set to <code>my_special_space</code>, then your queries would look similar to this:</p>
+<pre><code class="language-sh">curl -s localhost:29987/api/graph/my_special_space -XPOST -H ...
+</code></pre>
+<h2 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h2>
+<p>The <code>graphql_schema</code> field contains the file path to a GraphQL schema. This schema holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file <a href="components/schema.html">here</a>.</p>
+<h2 id="module"><a class="header" href="#module">Module</a></h2>
+<p>The <code>module</code> field contains a file path to custom code that will be executed as part of the indexer. There are two available options: <code>wasm</code> and <code>native</code>. If you choose to use WASM, the path must lead to a compiled WASM module. Alternatively, if you choose to use the native option, the path must lead to a module that contains native Rust code. In both cases, the functions included as part of the <code>handlers</code> field should be present in the module.</p>
+<h2 id="handlers"><a class="header" href="#handlers">Handlers</a></h2>
+<p>The <code>handlers</code> field maps event types to the names of function that will handle each event. The event should map to an input type that is present in a contract's ABI specification.</p>
 <h1 id="graphql-server"><a class="header" href="#graphql-server">GraphQL Server</a></h1>
 <p>The <code>fuel-indexer-api-server</code> crate of the Fuel Indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the data layer.</p>
 <p>Note that the main binary of the <code>fuel-indexer</code> crate <em>also</em> contains a queryable GraphQL API endpoint. However, the <code>fuel-indexer-api-server</code> crate offers a standalone GraphQL API endpoint, whereas the <code>fuel-indexer-api-server</code> bundles its GraphQL API endpoint with other Fuel Indexer functionality (e.g., execution, handling, data-layer contruction, etc).</p>
@@ -697,6 +719,30 @@ curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: appli
 RUST_LOG=debug cargo run --bin fuel-indexer-api-server -- --config config.yaml
 </code></pre>
 <p>Where <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">the default service configuration file</a>.</p>
+<h1 id="graphql-schema-1"><a class="header" href="#graphql-schema-1">GraphQL Schema</a></h1>
+<p>The GraphQL schema is a required component of the Fuel Indexer. When data is indexed and placed into the database, it will be done through the use of data structures defined in the schema.</p>
+<p>In its most basic form, a schema should have a <code>schema</code> definition that contains a defined query type. The rest of the implementation is up to you. Here's an example of a well-formed schema:</p>
+<pre><code class="language-graphql">schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    thing1: FirstThing
+    thing2: SecondThing
+}
+
+type FirstThing {
+    id: ID!
+    value: UInt8!
+}
+
+type SecondThing {
+    id: ID!
+    other_value: UInt8!
+    timestamp: Timestamp!
+}
+</code></pre>
+<p>You should also familiarize yourself with the information under the <a href="components/database/index.html">Database</a> section in order to ensure that data from your Sway contract is stored in the database as intended.</p>
 <h1 id="database"><a class="header" href="#database">Database</a></h1>
 <p>The Fuel Indexer uses <a href="https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile">Postgres</a> as the database on the data layer.</p>
 <ul>

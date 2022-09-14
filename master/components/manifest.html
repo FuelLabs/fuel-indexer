@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Getting Started - The Fuel Indexer Service</title>
+        <title>Manifest - The Fuel Indexer Service</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="../getting-started/index.html" class="active"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="../getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="../getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="../examples/counter.html"><strong aria-hidden="true">2.2.</strong> Counter</a></li></ol></li><li class="chapter-item expanded "><a href="../components/index.html"><strong aria-hidden="true">3.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/manifest.html"><strong aria-hidden="true">3.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../components/gql-server.html"><strong aria-hidden="true">3.2.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/schema.html"><strong aria-hidden="true">3.2.1.</strong> Schema</a></li></ol></li><li class="chapter-item expanded "><a href="../components/database/index.html"><strong aria-hidden="true">3.3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/database/types.html"><strong aria-hidden="true">3.3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="../components/database/conventions.html"><strong aria-hidden="true">3.3.2.</strong> Conventions</a></li><li class="chapter-item expanded "><a href="../components/database/foreign-keys.html"><strong aria-hidden="true">3.3.3.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="../components/database/directives.html"><strong aria-hidden="true">3.3.4.</strong> Directives</a></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="../getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="../getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="../getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="../examples/counter.html"><strong aria-hidden="true">2.2.</strong> Counter</a></li></ol></li><li class="chapter-item expanded "><a href="../components/index.html"><strong aria-hidden="true">3.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/manifest.html" class="active"><strong aria-hidden="true">3.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../components/gql-server.html"><strong aria-hidden="true">3.2.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/schema.html"><strong aria-hidden="true">3.2.1.</strong> Schema</a></li></ol></li><li class="chapter-item expanded "><a href="../components/database/index.html"><strong aria-hidden="true">3.3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/database/types.html"><strong aria-hidden="true">3.3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="../components/database/conventions.html"><strong aria-hidden="true">3.3.2.</strong> Conventions</a></li><li class="chapter-item expanded "><a href="../components/database/foreign-keys.html"><strong aria-hidden="true">3.3.3.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="../components/database/directives.html"><strong aria-hidden="true">3.3.4.</strong> Directives</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -167,36 +167,41 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
-<p>This section provides an outline regarding how to get started using a Fuel Indexer, including dependency installation, basic usage, as well as examples.</p>
-<ul>
-<li><a href="./setup.html">Setting up</a>
-<ul>
-<li><a href="./system-dependencies.html">System dependencies</a></li>
-<li><a href="./application-dependencies.html">Application dependencies</a></li>
-<li><a href="./configuration.html">Indexer Configuration</a></li>
-</ul>
-</li>
-<li><a href="./fuel-indexer-project.html">Project Structure</a></li>
-<li><a href="./../examples/index.html">Examples</a>
-<ul>
-<li><a href="./../examples/hello-indexer.html">Hello World</a></li>
-</ul>
-</li>
-</ul>
+                        <h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
+<p>A manifest serves as the configuration for your indexer and it is written in YAML format. A proper manifest has the following structure:</p>
+<pre><code class="language-yaml">---
+namespace: ...
+graphql_schema: ...
+module:
+  wasm:
+    ...
+handlers:
+  - event: ...
+    handler: ...
+</code></pre>
+<h2 id="namespace"><a class="header" href="#namespace">Namespace</a></h2>
+<p>Your graph will live within the namespace set as part of this field. As such, it's important that you remember it when querying the API endpoint for your data. For example, if the field is set to <code>my_special_space</code>, then your queries would look similar to this:</p>
+<pre><code class="language-sh">curl -s localhost:29987/api/graph/my_special_space -XPOST -H ...
+</code></pre>
+<h2 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h2>
+<p>The <code>graphql_schema</code> field contains the file path to a GraphQL schema. This schema holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file <a href="schema.html">here</a>.</p>
+<h2 id="module"><a class="header" href="#module">Module</a></h2>
+<p>The <code>module</code> field contains a file path to custom code that will be executed as part of the indexer. There are two available options: <code>wasm</code> and <code>native</code>. If you choose to use WASM, the path must lead to a compiled WASM module. Alternatively, if you choose to use the native option, the path must lead to a module that contains native Rust code. In both cases, the functions included as part of the <code>handlers</code> field should be present in the module.</p>
+<h2 id="handlers"><a class="header" href="#handlers">Handlers</a></h2>
+<p>The <code>handlers</code> field maps event types to the names of function that will handle each event. The event should map to an input type that is present in a contract's ABI specification.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../the-fuel-indexer.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../components/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../getting-started/setup.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../components/gql-server.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -208,13 +213,13 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../the-fuel-indexer.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../components/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../getting-started/setup.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../components/gql-server.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
