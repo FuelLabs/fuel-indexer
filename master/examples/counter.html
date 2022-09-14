@@ -213,16 +213,8 @@
 <p>In this section we'll cover the exact steps needed to spin up this example.</p>
 <h3 id="database-setup"><a class="header" href="#database-setup">Database setup</a></h3>
 <p>We'll start by creating a database. This step assumes some familiarity with <a href="https://learn.coderslang.com/0120-databases-roles-and-tables-in-postgresql/">creating Postgres roles and databases</a>. In this example we're using an <code>indexer</code> database owned by a <code>postgres</code> role without a password.</p>
-<blockquote>
-<p>Note that some of these commands may differ based on your local setup</p>
-</blockquote>
-<pre><code class="language-bash">createdb -U postgres indexer
-</code></pre>
-<p>Next we'll bootstrap our database by running some migrations. These migrations are responsible for creating our <code>graph_registry</code>. </p>
-<blockquote>
-<p>The <code>graph_registry</code> is a component that is responsible for keeping track of database columns and column types. The <code>graph_registry</code> is largely abstracted away from the user, but can be seen by inspecting the <code>graph_registry</code> schema.</p>
-</blockquote>
-<pre><code class="language-bash">DATABASE_URL=postgres://postgres@localhost/indexer bash scripts/run_migrations.local.sh
+<p>Next we'll bootstrap our database by running some migrations.</p>
+<pre><code class="language-bash">DATABASE_URL=postgres://postgres@127.0.0.1 bash scripts/run_migrations.local.sh
 </code></pre>
 <h3 id="starting-the-web-server--fuel-node"><a class="header" href="#starting-the-web-server--fuel-node">Starting the web server &amp; Fuel node</a></h3>
 <p>As previously mentioned, <code>web-api-and-fuel-node</code> contains both a tiny web server used to pass messages to/from our Sway smart contract, as well as our Fuel node that we use to interact with the blockchain. We will start both of these services with the following command.</p>
@@ -232,21 +224,21 @@
 <p>With our Fuel node and web server up and running, we'll next start our Fuel Indexer service.</p>
 <pre><code class="language-bash">cargo build -p fuel-indexer
 
-./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml --fuel-node-port 4004 --graphql-api-host 127.0.0.1 --postgres-database indexer
+./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml
 </code></pre>
 <h3 id="send-a-transaction-to-the-smart-contract-via-the-web-server"><a class="header" href="#send-a-transaction-to-the-smart-contract-via-the-web-server">Send a transaction to the smart contract via the web server</a></h3>
 <pre><code class="language-bash">curl -X POST http://127.0.0.1:8080/count | json_pp
 </code></pre>
 <h3 id="verify-data-was-posted-to-the-database"><a class="header" href="#verify-data-was-posted-to-the-database">Verify data was posted to the database</a></h3>
 <p>In this example we just created an entity with <code>id = 1</code></p>
-<pre><code class="language-bash">➜  echo &quot;SELECT max(id) FROM counter.count;&quot; | psql -U postgres -d indexer
+<pre><code class="language-bash">➜  echo &quot;SELECT max(id) FROM counter.count;&quot; | psql -U postgres -d postgres
  max
 -----
    1
 (1 row)
 </code></pre>
 <p>So that's what we query for</p>
-<pre><code>curl -X POST http://localhost:29987/api/graph/counter -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { count(id: 1) { id count timestamp } }&quot;, &quot;params&quot;: &quot;b&quot;}' | json_pp
+<pre><code>curl -X POST http://127.0.0.1:29987/api/graph/counter -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { count(id: 1) { id count timestamp } }&quot;, &quot;params&quot;: &quot;b&quot;}' | json_pp
 [
    {
       &quot;count&quot; : 1,
