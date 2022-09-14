@@ -1,6 +1,5 @@
 use fuel_indexer_database::DbType;
 use fuel_indexer_database_types::*;
-// use sqlx::types::JsonValue;
 use std::fmt::Write;
 
 pub struct IdCol {}

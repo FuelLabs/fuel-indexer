@@ -40,7 +40,7 @@ impl Manifest {
 
     pub fn to_bytes(&self) -> Vec<u8> {
         serde_yaml::to_string(&self)
-            .expect("Failed here")
+            .expect("Failed converting manifest to bytes.")
             .as_bytes()
             .to_vec()
     }
