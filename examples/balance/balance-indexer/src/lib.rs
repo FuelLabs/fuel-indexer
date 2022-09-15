@@ -18,15 +18,4 @@ mod balance {
 
         balance.save()
     }
-
-    fn add_balance_handler(event: AddBalanceEvent) {
-        let add_balance = AddBalance {
-            id: event.id,
-            address: event.address,
-            amount: event.amount,
-            timestamp: event.timestamp,
-        }
-
-        add_balance.save()
-    }
 }

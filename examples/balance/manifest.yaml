@@ -6,5 +6,3 @@ module:
 handlers:
   - event: BalanceEvent
     handler: balance_handler
-  - event: BalanceAddEvent
-    handler: add_balance_handler

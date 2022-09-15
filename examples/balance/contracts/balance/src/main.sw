@@ -5,26 +5,19 @@ use std::address::Address;
 
 struct BalanceEvent {
     id: u64,
-    timestamp: u64,
     amount: u64,
-}
-
-struct AddBalanceEvent {
-    id: u64,
-    address: b256,
     timestamp: u64,
-    amount: u64,
 }
 
 abi Balance {
     #[storage(write, read)]
-    fn init_balance(value: u64) -> BalanceEvent;
+    fn init_balance() -> BalanceEvent;
 
     #[storage(read)]
     fn get_balance() -> BalanceEvent;
 
     #[storage(write, read)]
-    fn increment_balance(sender: b256, amount: u64) -> AddBalanceEvent;
+    fn liquidate_balance() -> BalanceEvent;
 }
 
 storage {
@@ -33,14 +26,14 @@ storage {
 
 impl Balance for Contract {
     #[storage(write, read)]
-    fn init_balance(value: u64) -> BalanceEvent {
-        storage.balance = value;
+    fn init_balance() -> BalanceEvent {
+        storage.balance = 100;
         log("Balance initialized");
         
         BalanceEvent {
             id: 1,
             amount: storage.balance,
-            timestamp: 1000,
+            timestamp: 500,
         }
     }
 
@@ -56,17 +49,15 @@ impl Balance for Contract {
     }
 
     #[storage(write, read)]
-    fn increment_balance(sender: b256, amount: u64) -> AddBalanceEvent {
-        let new_total = storage.balance + amount;
-        storage.balance = new_total;
+    fn liquidate_balance() -> BalanceEvent {
+        storage.balance = 0;
 
-        log("Balanced incremented");
+        log("Balanced liquidated");
 
-        AddBalanceEvent {
+        BalanceEvent {
             id: 1,
-            address: sender,
             amount: storage.balance,
-            timestamp: 1000,
+            timestamp: 2000,
         }
     }
 }

@@ -11,10 +11,3 @@ type Balance {
     amount: UInt8!
     timestamp: UInt8!
 }
-
-type AddBalance {
-    id: ID!
-    address: Address! @indexed
-    timestamp: UInt8!
-    amount: UInt8!
-}

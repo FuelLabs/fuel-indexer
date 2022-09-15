@@ -1,0 +1,19 @@
+[project]
+name = "balance"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fuel-indexer-macros = { path = "../../../fuel-indexer-macros", default-features = false }
+fuel-indexer-plugin = { path = "../../../fuel-indexer-plugin" }
+fuel-indexer-schema = { path = "../../../fuel-indexer-schema", default-features = false }
+fuel-tx = "0.9"
+fuels-core = "0.15"
+getrandom = { version = "0.2", features = ["js"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+
+[workspace]
