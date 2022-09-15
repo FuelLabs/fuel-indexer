@@ -39,12 +39,13 @@ pub struct Args {
 #[axum_macros::debug_handler]
 async fn ping(contract: Extension<Arc<Mutex<Message>>>) -> String {
     let contract = contract.lock().await;
-    let _res = contract.ping().tx_params(tx_params()).call();
-    //res.await.unwrap();
-    println!("TJDEBUG wowo");
-    "".into()
-    //let pong: Ping = result.value;
-    //pong.value.to_string()
+    let ping_thing = contract.ping().tx_params(tx_params());
+
+    tokio::task::spawn(async move {
+        let result = ping_thing.call().await.unwrap();
+        let pong: Ping = result.value;
+        pong.value.to_string()
+    }).await.unwrap()
 }
 
 #[tokio::main]

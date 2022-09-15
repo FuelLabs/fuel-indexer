@@ -65,7 +65,7 @@ mod tests {
             ..Config::local_node()
         };
 
-        let (client, _) = setup_test_client(coins, Some(config), None).await;
+        let (client, _) = setup_test_client(coins, vec![], Some(config), None).await;
 
         let provider = Provider::new(client);
 

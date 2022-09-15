@@ -3,9 +3,9 @@ use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
 use fuels_core::{
-    code_gen::abigen::Abigen, source::Source, utils::first_four_bytes_of_sha256_hash,
+    code_gen::{abigen::Abigen, function_selector::resolve_fn_selector}, source::Source, utils::first_four_bytes_of_sha256_hash,
 };
-use fuels_types::{function_selector::build_fn_selector, ProgramABI, TypeDeclaration};
+use fuels_types::{ProgramABI, TypeDeclaration};
 use std::collections::{HashMap, HashSet};
 
 use proc_macro::TokenStream;
@@ -149,25 +149,11 @@ fn process_fn_items(
     }
 
     for function in parsed.functions {
-        let inputs: Vec<_> = function.inputs.iter().map(|inp| {
-            match type_map.get(&inp.type_field) {
-                Some(t) => t.clone(),
-                None => {
-                    proc_macro_error::abort_call_site!("Unknown type encountered in the ABI!")
-                }
-            }
-        }).collect();
-
-        let sig = match build_fn_selector(&function.name, &inputs, &type_map) {
-            Ok(s) => s,
-            Err(e) => {
-                proc_macro_error::abort_call_site!("Could not calculate fn selector! {:?}", e)
-            }
-        };
+        let sig = resolve_fn_selector(&function, &type_map);
 
         let selector = first_four_bytes_of_sha256_hash(&sig);
         let selector = u64::from_be_bytes(selector);
-        let ty_id = function.output.type_field;
+        let ty_id = function.output.type_id;
 
         selectors.push(quote! {
             #selector => #ty_id,

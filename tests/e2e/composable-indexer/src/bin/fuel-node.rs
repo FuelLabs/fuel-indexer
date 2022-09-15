@@ -90,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ..Config::local_node()
     };
 
-    let (client, _) = setup_test_client(coins, Some(config), None).await;
+    let (client, _) = setup_test_client(coins, vec![], Some(config), None).await;
 
     info!("Fuel client started at {:?}", client);
 
