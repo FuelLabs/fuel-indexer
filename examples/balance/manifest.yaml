@@ -1,0 +1,10 @@
+namespace: balance
+graphql_schema: examples/balance/schema/balance.graphql
+identifier: index1
+module:
+  wasm: target/wasm32-unknown-unknown/release/balance_indexer.wasm
+handlers:
+  - event: BalanceEvent
+    handler: balance_handler
+  - event: BalanceAddEvent
+    handler: add_balance_handler
