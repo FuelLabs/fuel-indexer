@@ -2,6 +2,8 @@
 # Use the new resolver to prevent dev-deps and build-deps from enabling debugging or test features in production.
 resolver = "2"
 members = [
+   "examples/balance/balance-indexer",
+   "examples/balance/web-api-and-node",
    "examples/counter/counter-indexer",
    "examples/counter/web-api-and-fuel-node",
    "examples/simple-wasm/simple-wasm",

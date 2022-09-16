@@ -4,7 +4,7 @@ use fuel_indexer_macros::indexer;
 #[indexer(
     abi = "examples/balance/contracts/balance/out/debug/balance-abi.json",
     namespace = "balance",
-    identifier = "index1"
+    identifier = "index1",
     schema = "../schema/balance.graphql"
 )]
 

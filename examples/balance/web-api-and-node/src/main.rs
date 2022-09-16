@@ -30,7 +30,7 @@ pub fn tx_params() -> TxParameters {
 
 abigen!(
     Balance,
-    "./../contracts/balance/out/debug/balance-abi.json"
+    "examples/balance/contracts/balance/out/debug/balance-abi.json"
 );
 
 async fn get_contract_id(wallet: &Wallet) -> String {
