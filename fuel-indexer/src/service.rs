@@ -7,7 +7,7 @@ use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
-use fuel_indexer_schema::BlockData;
+use fuel_indexer_schema::{Address, BlockData, Bytes32};
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::collections::HashMap;
 use std::future::Future;
@@ -277,7 +277,10 @@ impl IndexerService {
                     }
 
                     let block = BlockData {
+                        id: Bytes32::from(block.id),
+                        time: block.time.timestamp(),
                         height: block.height.0,
+                        producer: Address::from(block.producer),
                         transactions,
                     };
 

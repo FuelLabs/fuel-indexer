@@ -15,7 +15,6 @@
 #
 # type Block {
 #     id: ID!
-
 #     height: UInt8!
 #     timestamp: Int8!
 #     miner: Address!
@@ -24,7 +23,6 @@
 #     size_bytes: UInt8!
 #     gas_used: UInt8!
 #     gas_limit: UInt8!
-
 #     hash: Bytes32!
 #     parent_hash: Bytes32!
 #     state_root: Bytes32!
@@ -34,36 +32,34 @@
 
 # type Transaction {
 #     id: ID!
-
 #     hash: Bytes32!
 #     status: Bytes8!
 #     block: Block!
 #     timestamp: Int8!
 #     from: Address!
 #     to: Address!
-#     tokens_transferred: Bytes32!
+#     tokens_transferred: Jsonb!
 #     value: UInt8!
 #     transaction_fee: UInt8!
-
 #     gas_limit: UInt8!
 #     gas_used: UInt8!
 #     gas_price: UInt8!
 #     nonce: Int8!
-#     input_data: Bytes32!
+#     input_data: Jsonb!
 # }
 
 # type Account {
 #     address: Address!
 #     balance: UInt8!
-#     tokens: Bytes32!
+#     tokens: Jsonb!
 # }
 
 
 # type Contract {
 #     creator: Address!
 #     creation_transaction: Transaction!
-#     source_code: Bytes32!
-#     abi: Bytes32!
-#     creation_code: Bytes32!
+#     source_code: Jsonb!
+#     abi: Jsonb!
+#     creation_code: Jsonb!
 #     events: Bytes32!
 # }

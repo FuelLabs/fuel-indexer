@@ -37,6 +37,9 @@ pub type Timestamp = u64;
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct BlockData {
     pub height: u64,
+    pub id: Bytes32,
+    pub time: i64,
+    pub producer: Address,
     pub transactions: Vec<Vec<Receipt>>,
 }
 
