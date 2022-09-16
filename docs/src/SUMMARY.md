@@ -9,6 +9,7 @@
   - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
     - [Configuration](./getting-started/configuration.md)
 - [Examples](./examples/index.md)
+  - [Basic Usage](./examples/basic-usage.md)
   - [Hello World](./examples/hello-indexer.md)
   - [Counter](./examples/counter.md)
 - [Components](./components/index.md)

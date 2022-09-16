@@ -82,14 +82,12 @@ bash scripts/run_migrations.local.sh
 
 ## Set Up the Indexer
 
-Let's look at an example. We'll be indexing events from a contract that supports querying and adding to a balance. The indexer will be set up alongside our Sway contract using the following structure:
+Let's look at an example; you can find the source for this example [here](https://github.com/FuelLabs/fuel-indexer/tree/master/examples). We'll be indexing events from a contract that supports querying and adding to a balance. The indexer will be set up alongside our Sway contract using the following structure:
 
 ```sh
 .
-├── Cargo.toml
 ├── balance-indexer
-│   ├── .cargo
-│   │   └── config
+│   ├── Cargo.toml
 │   └── src
 │       └── lib.rs
 ├── contracts
@@ -107,17 +105,22 @@ Let's look at an example. We'll be indexing events from a contract that supports
 │           └── harness.rs
 ├── frontend
 ├── manifest.yaml
-└── schema
-    └── balance.graphql
+├── schema
+│   └── balance.graphql
+└── web-api-and-node
+    ├── Cargo.toml
+    └── src
+        └── main.rs
 ```
 
-As you can see, this structure has five main parts:
+As you can see, this structure has six parts:
 
+- `balance-indexer/src` - contains handlers for smart contract events
 - `contracts` - contains ABI and other generated files for Sway smart contract
 - `frontend` - contains assets for front-end use (not used here)
 - `manifest.yaml` - contains configuration for your indexer; you can read more about its structure [here](../components/manifest.md)
 - `schema` - contains data structures defining your index; more information can be found in the [Schema](../components/schema.md) page
-- `balance-indexer/src` - contains handlers for smart contract events
+- `web-api-and-node` - contains utilities to start a Fuel node and small web server for use in this example
 
 This is the contract for our example; for more information about Sway contracts, please refer to [The Sway Book](https://fuellabs.github.io/sway/latest/).
 
@@ -129,26 +132,19 @@ use std::address::Address;
 
 struct BalanceEvent {
     id: u64,
-    timestamp: u64,
     amount: u64,
-}
-
-struct AddBalanceEvent {
-    id: u64,
-    address: b256,
     timestamp: u64,
-    amount: u64,
 }
 
 abi Balance {
     #[storage(write, read)]
-    fn init_balance(value: u64) -> BalanceEvent;
+    fn init_balance() -> BalanceEvent;
 
     #[storage(read)]
     fn get_balance() -> BalanceEvent;
 
     #[storage(write, read)]
-    fn increment_balance(sender: b256, amount: u64) -> AddBalanceEvent;
+    fn liquidate_balance() -> BalanceEvent;
 }
 
 storage {
@@ -157,14 +153,14 @@ storage {
 
 impl Balance for Contract {
     #[storage(write, read)]
-    fn init_balance(value: u64) -> BalanceEvent {
-        storage.balance = value;
+    fn init_balance() -> BalanceEvent {
+        storage.balance = 100;
         log("Balance initialized");
         
         BalanceEvent {
             id: 1,
             amount: storage.balance,
-            timestamp: 1000,
+            timestamp: 500,
         }
     }
 
@@ -173,30 +169,30 @@ impl Balance for Contract {
         log("Balance retrieved");
         
         BalanceEvent {
-            id: 1,
+            id: 2,
             amount: storage.balance,
             timestamp: 1000,
         }
     }
 
     #[storage(write, read)]
-    fn increment_balance(sender: b256, amount: u64) -> AddBalanceEvent {
-        let new_total = storage.balance + amount;
-        storage.balance = new_total;
+    fn liquidate_balance() -> BalanceEvent {
+        storage.balance = 0;
 
-        log("Balanced incremented");
+        log("Balanced liquidated");
 
-        AddBalanceEvent {
-            id: 1,
-            address: sender,
+        BalanceEvent {
+            id: 3,
             amount: storage.balance,
-            timestamp: 1000,
+            timestamp: 2000,
         }
     }
 }
 ```
 
-As you can see, the contract has two event types: `BalanceEvent` and `BalanceAddEvent`. We can then create a GraphQL schema to define how these events should be stored in the indexer. One should note that types used here correspond to their Sway equivalent; see the [Data Types](../components/database/types.md) page for more details.
+After creating the contract, run `forc build` to generate the corresponding ABI specification for use in the indexer (note: at the time of writing, `forc` v0.18.0 was used).
+
+We can then create a GraphQL schema to define how these events should be stored in the indexer. One should note that types used here correspond to their Sway equivalent; see the [Data Types](../components/database/types.md) page for more details.
 
 ```txt
 schema {
@@ -211,13 +207,6 @@ type Balance {
     id: ID!
     amount: UInt8!
     timestamp: UInt8!
-}
-
-type AddBalance {
-    id: ID!
-    address: Address! @indexed
-    timestamp: UInt8!
-    amount: UInt8!
 }
 ```
 
@@ -244,17 +233,6 @@ mod balance {
 
         balance.save()
     }
-
-    fn add_balance_handler(event: AddBalanceEvent) {
-        let add_balance = AddBalance {
-            id: event.id,
-            address: event.address,
-            amount: event.amount,
-            timestamp: event.timestamp,
-        }
-
-        add_balance.save()
-    }
 }
 ```
 
@@ -271,6 +249,57 @@ module:
 handlers:
   - event: BalanceEvent
     handler: balance_handler
-  - event: AddBalanceEvent
-    handler: add_balance_handler
 ```
+
+## Run the Indexer
+
+Now that we have all of the necessary pieces, we can test the indexer. As stated earlier, the `web-api-and-node` folder contains a small web server that we'll use to interact with a Fuel node. Start the node and web server by running the following command —
+
+```sh
+cd examples/balance/web-api-and-node && cargo run
+```
+
+— and then run the indexer by building and starting it with the `--manifest` option:
+
+```sh
+cargo build -p fuel-indexer
+
+./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml
+```
+
+Send a transaction to the smart contract by sending a request to one of the endpoints of the web server:
+
+```sh
+curl -X POST http://127.0.0.1:8080/init_balance
+```
+
+The endpoint should return a successful JSON response that looks similar to `{"success":true,"balance":100}`. We can verify that the data has been inserted into the database by checking for an entity where `id = 1` (in this example, `init_balance` has a hardcoded ID of `1`). Connect to your database and look for an ID matching that value:
+
+```sql
+SELECT MAX(id) FROM balance.balance;
+```
+
+```txt
+ max
+-----
+   1
+(1 row)
+```
+
+Finally, we can query our GraphQL API endpoint to return the details of the event:
+
+```sh
+curl -X POST http://127.0.0.1:29987/api/graph/balance -H 'content-type: application/json' -d '{"query": "query { balance(id: 1) { id amount timestamp } }", "params": "b"}' | json_pp
+```
+
+```txt
+[
+   {
+      "balance" : 100,
+      "id" : 1,
+      "timestamp" : 500
+   }
+]
+```
+
+That's it! We've created a Fuel Indexer service. Feel free to play around and test the other web API endpoints as well and query for the appropriate values.

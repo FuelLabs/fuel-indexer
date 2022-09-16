@@ -42,7 +42,7 @@ impl Balance for Contract {
         log("Balance retrieved");
         
         BalanceEvent {
-            id: 1,
+            id: 2,
             amount: storage.balance,
             timestamp: 1000,
         }
@@ -55,7 +55,7 @@ impl Balance for Contract {
         log("Balanced liquidated");
 
         BalanceEvent {
-            id: 1,
+            id: 3,
             amount: storage.balance,
             timestamp: 2000,
         }
