@@ -6,6 +6,7 @@ A manifest serves as the configuration for your indexer and it is written in YAM
 ---
 namespace: ...
 graphql_schema: ...
+identifier: ...
 module:
   wasm:
     ...
@@ -25,6 +26,10 @@ curl -s localhost:29987/api/graph/my_special_space -XPOST -H ...
 ## GraphQL Schema
 
 The `graphql_schema` field contains the file path to a GraphQL schema. This schema holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file [here](schema.md).
+
+## Identifier
+
+The `identifier` field serves to differentiate indexes that are part of the same namespace.
 
 ## Module
 
