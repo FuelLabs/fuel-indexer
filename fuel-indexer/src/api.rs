@@ -82,21 +82,50 @@ pub async fn health_check(
     // Get fuel-core status
     let https = HttpsConnector::new();
     let client = Client::builder().build::<_, hyper::Body>(https);
-    let resp = client
-        .get(
-            format!("{}/health", config.fuel_node.http_url())
-                .parse()
-                .expect("Failed to parse string into URI"),
-        )
-        .await
-        .expect("Failed to get fuel-client status.");
 
-    let body_bytes = hyper::body::to_bytes(resp.into_body())
-        .await
-        .expect("Failed to parse response body.");
+    let uri = match format!("{}/health", config.fuel_node.http_url()).parse() {
+        Ok(s) => s,
+        Err(e) => {
+            error!("Failed to parse string into URI: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(Value::String("Failed to parse string into URI".into())),
+            );
+        }
+    };
 
-    let fuel_node_health: FuelNodeHealthResponse =
-        serde_json::from_slice(&body_bytes).expect("Failed to parse response.");
+    let resp = match client.get(uri).await {
+        Ok(response) => response,
+        Err(e) => {
+            error!("Failed to get fuel-client status: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(Value::String("Failed to get fuel-client status".into())),
+            );
+        }
+    };
+
+    let body_bytes = match hyper::body::to_bytes(resp.into_body()).await {
+        Ok(bytes) => bytes,
+        Err(e) => {
+            error!("Failed to parse response body: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(Value::String("Failed to parse response body".into())),
+            );
+        }
+    };
+
+    let fuel_node_health: FuelNodeHealthResponse = match serde_json::from_slice(&body_bytes) {
+        Ok(r) => r,
+        Err(e) => {
+            error!("Failed to parse response: {}", e);
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(Value::String("Failed to parse response".into())),
+            );
+        }
+    };
 
     (
         StatusCode::OK,
@@ -142,35 +171,56 @@ pub async fn register_index_assets(
     multipart: Option<Multipart>,
 ) -> (StatusCode, Json<Value>) {
     if let Some(mut multipart) = multipart {
-        let mut conn = pool
-            .acquire()
-            .await
-            .expect("Failed to get database connection.");
+        let mut conn = match pool.acquire().await {
+            Ok(c) => c,
+            Err(e) => {
+                error!("Failed to get database connection: {}", e);
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(Value::String("Failed to get database connection".into())),
+                );
+            }
+        };
 
-        let _ = queries::start_transaction(&mut conn)
-            .await
-            .expect("Could not start database transaction");
+        match queries::start_transaction(&mut conn).await {
+            Ok(_) => {}
+            Err(e) => {
+                error!("Could not start database transaction: {}", e);
+                return (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    Json(Value::String("Could not start database transaction".into())),
+                );
+            }
+        };
 
         let mut assets: Vec<IndexAsset> = Vec::new();
 
         while let Some(field) = multipart.next_field().await.unwrap() {
-            let name = field
-                .name()
-                .expect("Failed to read multipart field.")
-                .to_string();
-            let data = field.bytes().await.expect("Failed to read multipart body.");
+            let name = match field.name() {
+                Some(n) => n.to_string(),
+                None => {
+                    error!("Failed to read multipart field");
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(Value::String("Failed to read multipart field".into())),
+                    );
+                }
+            };
+
+            let data = match field.bytes().await {
+                Ok(bytes) => bytes,
+                Err(e) => {
+                    error!("Failed to read multipart body: {}", e);
+                    return (
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(Value::String("Failed to read multipart body".into())),
+                    );
+                }
+            };
+
             let asset = match name.as_str() {
-                "wasm" | "manifest" => queries::register_index_asset(
-                    &mut conn,
-                    &namespace,
-                    &identifier,
-                    data.to_vec(),
-                    name.into(),
-                )
-                .await
-                .expect("Failed to register index asset."),
-                "schema" => {
-                    let asset = queries::register_index_asset(
+                "wasm" | "manifest" => {
+                    match queries::register_index_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
@@ -178,14 +228,60 @@ pub async fn register_index_assets(
                         name.into(),
                     )
                     .await
-                    .expect("Failed to register index asset.");
+                    {
+                        Ok(a) => a,
+                        Err(e) => {
+                            error!(
+                                "Failed to register index asset of type wasm or manifest: {}",
+                                e
+                            );
+                            return (
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                Json(Value::String(
+                                    "Failed to register index asset of type wasm or manifest"
+                                        .into(),
+                                )),
+                            );
+                        }
+                    }
+                }
 
-                    schema_manager
+                "schema" => {
+                    let asset = match queries::register_index_asset(
+                        &mut conn,
+                        &namespace,
+                        &identifier,
+                        data.to_vec(),
+                        name.into(),
+                    )
+                    .await
+                    {
+                        Ok(a) => a,
+                        Err(e) => {
+                            error!("Failed to register index asset of type schema: {}", e);
+                            return (
+                                StatusCode::INTERNAL_SERVER_ERROR,
+                                Json(Value::String(
+                                    "Failed to register index asset of type schema".into(),
+                                )),
+                            );
+                        }
+                    };
+
+                    if (schema_manager
                         .write()
                         .await
                         .new_schema(&namespace, &String::from_utf8_lossy(&data))
-                        .await
-                        .expect("Failed to generate new schema for asset.");
+                        .await)
+                        .is_err()
+                    {
+                        return (
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                            Json(Value::String(
+                                "Failed to generate new schema for asset".into(),
+                            )),
+                        );
+                    }
 
                     asset
                 }
@@ -203,11 +299,15 @@ pub async fn register_index_assets(
             assets.push(asset);
         }
 
-        let _ = match queries::commit_transaction(&mut conn).await {
-            Ok(v) => v,
-            Err(_e) => queries::revert_transaction(&mut conn)
-                .await
-                .expect("Could not revert database transaction"),
+        if (queries::commit_transaction(&mut conn).await).is_err()
+            && (queries::revert_transaction(&mut conn).await).is_err()
+        {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(Value::String(
+                    "Could not revert database transaction".into(),
+                )),
+            );
         };
 
         return (
