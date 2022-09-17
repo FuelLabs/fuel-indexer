@@ -80,7 +80,10 @@ fn type_id(bytes: &[u8]) -> u64 {
 fn is_primitive(ty: &Ident) -> bool {
     let ident_str = ty.to_string();
     // TODO: complete the list
-    matches!(ident_str.as_str(), "u8" | "u16" | "u32" | "u64" | "bool")
+    matches!(
+        ident_str.as_str(),
+        "u8" | "u16" | "u32" | "u64" | "bool" | "BlockData"
+    )
 }
 
 fn decode_snippet(ty_id: u64, ty: &Ident, name: &Ident) -> proc_macro2::TokenStream {
@@ -122,7 +125,6 @@ fn process_fn_items(
     let mut decoders = Vec::new();
     let mut type_vecs = Vec::new();
     let mut dispatchers = Vec::new();
-    let mut block_dispatchers = Vec::new();
 
     for function in parsed {
         if function.outputs.len() > 1 {
@@ -181,7 +183,7 @@ fn process_fn_items(
     let contents = input.content.unwrap().1;
     let mut handler_fns = Vec::with_capacity(contents.len());
 
-    fn is_block_fn(input: ItemFn) -> bool {
+    fn is_block_fn(input: &ItemFn) -> bool {
         if input.attrs.len() == 1 {
             let path = &input.attrs[0].path;
             if path.get_ident().unwrap() == "block" {
@@ -191,16 +193,34 @@ fn process_fn_items(
         false
     }
 
+    let mut block_dispatchers = Vec::new();
+
+    let mut blockdata_decoding = quote! {};
+
     for item in contents {
         match item {
             Item::Fn(fn_item) => {
                 let mut input_checks = Vec::new();
                 let mut arg_list = Vec::new();
-                let is_block_fn = is_block_fn(fn_item.clone());
 
-                if is_block_fn {
-                    let ty_id = type_id(BlockData::ident().as_bytes());
-                    types.insert(ty_id);
+                if is_block_fn(&fn_item) {
+                    let input = BlockData::ident();
+
+                    let ty = rust_type(&input);
+                    let name = rust_name(&input);
+                    let ty_id = type_id(ty.to_string().as_bytes());
+
+                    if !types.contains(&ty_id) {
+                        type_vecs.push(quote! {
+                            #name: Vec<#ty>
+                        });
+
+                        types.insert(ty_id);
+                    }
+
+                    block_dispatchers.push(quote! { self.#name.push(data); });
+
+                    blockdata_decoding = quote! { decoder.decode_blockdata(block.clone()); };
                 }
 
                 for inp in &fn_item.sig.inputs {
@@ -231,6 +251,7 @@ fn process_fn_items(
 
                                 let name = rust_name(&path.ident.to_string());
                                 input_checks.push(quote! { self.#name.len() > 0 });
+
                                 arg_list.push(quote! { self.#name[0].clone() });
                             } else {
                                 proc_macro_error::abort_call_site!(
@@ -243,19 +264,11 @@ fn process_fn_items(
 
                 let fn_name = &fn_item.sig.ident;
 
-                if is_block_fn {
-                    block_dispatchers.push(quote! {
-                        if ( #(#input_checks)&&* ) {
-                            #fn_name(#(#arg_list),*);
-                        }
-                    });
-                } else {
-                    dispatchers.push(quote! {
-                        if ( #(#input_checks)&&* ) {
-                            #fn_name(#(#arg_list),*);
-                        }
-                    });
-                }
+                dispatchers.push(quote! {
+                    if ( #(#input_checks)&&* ) {
+                        #fn_name(#(#arg_list),*);
+                    }
+                });
 
                 handler_fns.push(fn_item);
             }
@@ -264,25 +277,6 @@ fn process_fn_items(
             }
         }
     }
-
-    let block_decoder_struct = quote! {
-
-        // A manual implementation of the `Decoders` struct
-        #[derive(Default)]
-        struct BlockDataDecoder {
-            blockdata_decoded: Vec<BlockData>,
-        }
-
-        impl BlockDataDecoder {
-            pub fn push(&mut self, block: BlockData) {
-                self.blockdata_decoded.push(block);
-            }
-
-            pub fn dispatch(&self) {
-                #(#block_dispatchers)*
-            }
-        }
-    };
 
     let decoder_struct = quote! {
         #[derive(Default)]
@@ -306,6 +300,10 @@ fn process_fn_items(
                 }
             }
 
+            pub fn decode_blockdata(&mut self, data: BlockData) {
+                #(#block_dispatchers)*
+            }
+
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
                 let ty_id = self.selector_to_type_id(sel);
 
@@ -324,12 +322,11 @@ fn process_fn_items(
     (
         quote! {
             for block in blocks {
-                let mut blockdata_decoder = BlockDataDecoder::default();
-                blockdata_decoder.push(block.clone());
-                blockdata_decoder.dispatch();
+                let mut decoder = Decoders::default();
+
+                #blockdata_decoding
 
                 for tx in block.transactions {
-                    let mut decoder = Decoders::default();
                     let mut return_types = Vec::new();
 
                     for receipt in tx {
@@ -354,8 +351,6 @@ fn process_fn_items(
         },
         quote! {
             #decoder_struct
-
-            #block_decoder_struct
 
             #(#handler_fns)*
         },

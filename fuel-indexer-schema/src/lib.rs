@@ -24,7 +24,7 @@ pub mod db;
 
 pub use fuel_types::{Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word};
 
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug)]
+#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Jsonb(pub String);
 
 pub type ID = u64;
@@ -111,7 +111,7 @@ pub fn get_schema_types(ast: &Document<String>) -> (HashSet<String>, HashSet<Str
     (types, directives)
 }
 
-#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
     ID(u64),
     Address(Address),

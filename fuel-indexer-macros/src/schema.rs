@@ -90,6 +90,7 @@ fn process_type_def<'a>(
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
 ) -> Option<proc_macro2::TokenStream> {
+    let copy_traits: HashSet<String> = HashSet::from_iter(["Jsonb"].iter().map(|x| x.to_string()));
     match typ {
         TypeDefinition::Object(obj) => {
             if obj.name == *query_root {
@@ -112,7 +113,13 @@ fn process_type_def<'a>(
                     (type_name, field_name, ext) = process_fk_field(types, field);
                 }
 
-                processed.insert(type_name_str);
+                processed.insert(type_name_str.clone());
+
+                let decoder = if copy_traits.contains(&type_name_str) {
+                    quote! { FtColumn::#type_name(self.#field_name.clone()), }
+                } else {
+                    quote! { FtColumn::#type_name(self.#field_name), }
+                };
 
                 block = quote! {
                     #block
@@ -132,7 +139,7 @@ fn process_type_def<'a>(
 
                 flattened = quote! {
                     #flattened
-                    FtColumn::#type_name(self.#field_name.clone()),
+                    #decoder
                 };
             }
             let strct = format_ident! {"{}", name};
