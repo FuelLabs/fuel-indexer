@@ -8,11 +8,11 @@ use axum::{
     extract::{multipart::Multipart, Extension, Json, Path},
     http::{Request, StatusCode},
     middleware::{self, Next},
-    response::Response,
+    response::{IntoResponse, Response},
     routing::{get, post},
     Router,
 };
-use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_database_types::IndexAsset;
 use fuel_indexer_lib::utils::{FuelNodeHealthResponse, ServiceStatus};
 use fuel_indexer_schema::db::{
@@ -31,10 +31,41 @@ use tracing::error;
 pub enum APIError {
     #[error("Query builder error {0:?}")]
     Graphql(#[from] GraphqlError),
-    #[error("Serde Error {0:?}")]
+    #[error("Serialization error {0:?}")]
     Serde(#[from] serde_json::Error),
-    #[error("Sqlx Error {0:?}")]
+    #[error("IndexerDatabase error {0:?}")]
+    IndexerDatabase(#[from] IndexerDatabaseError),
+    #[error("Sqlx error {0:?}")]
     Sqlx(#[from] sqlx::Error),
+}
+
+impl IntoResponse for APIError {
+    fn into_response(self) -> Response {
+        let (status, error_message) = match self {
+            APIError::Graphql(msg) => {
+                error!("APIError::Graphql: {}", msg);
+                (StatusCode::INTERNAL_SERVER_ERROR, "GraphQL error.")
+            }
+            APIError::Serde(msg) => {
+                error!("APIError::Serde: {}", msg);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Serialization error.")
+            }
+            APIError::IndexerDatabase(msg) => {
+                error!("APIError::IndexerDatabase: {}", msg);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database error.")
+            }
+            APIError::Sqlx(msg) => {
+                error!("APIError::Sqlx: {}", msg);
+                (StatusCode::INTERNAL_SERVER_ERROR, "Database error.")
+            }
+        };
+        let body = Json(json!({
+            "success": "false",
+            "details": error_message,
+        }));
+
+        (status, body).into_response()
+    }
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -49,7 +80,7 @@ pub async fn query_graph(
     Json(query): Json<Query>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
-) -> (StatusCode, Json<Value>) {
+) -> impl IntoResponse {
     match manager.read().await.load_schema_wasm(&name).await {
         Ok(schema) => match run_query(query, schema, &pool).await {
             Ok(response) => (StatusCode::OK, Json(response)),
@@ -228,6 +259,13 @@ pub async fn register_index_assets(
     )
 }
 
+pub async fn foo_route() -> impl IntoResponse {
+    (
+        StatusCode::INTERNAL_SERVER_ERROR,
+        APIError::IndexerDatabase(IndexerDatabaseError::Unknown),
+    )
+}
+
 pub struct GraphQlApi;
 
 impl GraphQlApi {
@@ -262,6 +300,8 @@ impl GraphQlApi {
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()));
 
+        let foo = Router::new().route("/foo", post(foo_route));
+
         let health_route = Router::new()
             .route("/health", get(health_check))
             .layer(Extension(config))
@@ -270,6 +310,7 @@ impl GraphQlApi {
 
         let api_routes = Router::new()
             .nest("/", health_route)
+            .nest("/", foo)
             .nest("/index", asset_route)
             .nest("/graph", graph_route);
 

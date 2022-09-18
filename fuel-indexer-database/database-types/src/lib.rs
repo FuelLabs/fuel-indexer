@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use thiserror::Error;
 
 #[derive(Debug)]
 pub struct RootColumns {
@@ -262,12 +261,4 @@ impl RegisteredIndex {
     pub fn uid(&self) -> String {
         format!("{}.{}", self.namespace, self.identifier)
     }
-}
-
-#[derive(Debug, Error)]
-pub enum QueryError {
-    #[error("No transaction is open")]
-    NoTransactionError,
-    #[error("Unknown error")]
-    Unknown,
 }

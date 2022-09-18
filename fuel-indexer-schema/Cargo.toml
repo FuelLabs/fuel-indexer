@@ -33,5 +33,5 @@ db-models = [
     "thiserror",
     "fuel-indexer-postgres",
     "fuel-indexer-sqlite",
-    "fuel-indexer-database"
+    "fuel-indexer-database",
 ]

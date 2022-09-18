@@ -1,24 +1,33 @@
+pub use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::ServiceStatus;
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_sqlite as sqlite;
-use sqlx::pool::PoolConnection;
+use sqlx::{pool::PoolConnection, Error as SqlxError};
 use std::cmp::Ordering;
 use thiserror::Error;
 
 pub mod queries;
 
-#[derive(Debug)]
-pub enum IndexerConnection {
-    Postgres(Box<PoolConnection<sqlx::Postgres>>),
-    Sqlite(PoolConnection<sqlx::Sqlite>),
-}
-
-#[derive(Clone, Debug, Error)]
-pub enum DatabaseError {
+#[derive(Debug, Error)]
+pub enum IndexerDatabaseError {
     #[error("Invalid connection string: {0:?}")]
     InvalidConnectionString(String),
     #[error("Database backend not supported: {0:?}")]
     BackendNotSupported(String),
+    #[error("No transaction is open.")]
+    NoTransactionError,
+    #[error("Error from sqlx: {0:#?}")]
+    SqlxError(#[from] SqlxError),
+    #[error("Unknown error")]
+    Unknown,
+}
+
+// pub type IndexerDatabaseResult<T> = Result<T, IndexerDatabaseError>;
+
+#[derive(Debug)]
+pub enum IndexerConnection {
+    Postgres(Box<PoolConnection<sqlx::Postgres>>),
+    Sqlite(PoolConnection<sqlx::Sqlite>),
 }
 
 #[derive(Clone, Debug)]
@@ -56,10 +65,14 @@ impl IndexerConnectionPool {
         }
     }
 
-    pub async fn connect(database_url: &str) -> Result<IndexerConnectionPool, DatabaseError> {
+    pub async fn connect(
+        database_url: &str,
+    ) -> Result<IndexerConnectionPool, IndexerDatabaseError> {
         let url = url::Url::parse(database_url);
         if url.is_err() {
-            return Err(DatabaseError::InvalidConnectionString(database_url.into()));
+            return Err(IndexerDatabaseError::InvalidConnectionString(
+                database_url.into(),
+            ));
         }
         let url = url.expect("Database URL should be correctly formed");
 
@@ -76,7 +89,7 @@ impl IndexerConnectionPool {
                     .expect("Could not connect to sqlite backend!");
                 Ok(IndexerConnectionPool::Sqlite(pool))
             }
-            err => Err(DatabaseError::BackendNotSupported(err.into())),
+            err => Err(IndexerDatabaseError::BackendNotSupported(err.into())),
         }
     }
 
