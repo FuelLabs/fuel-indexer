@@ -29,13 +29,9 @@ fuel-gql-client = "0.10"
 fuel-indexer-lib = { path = "../../../fuel-indexer-lib" }
 fuel-tx = "0.18"
 fuel-types = "0.5"
-#fuels = { version = "0.23", features = ["fuel-core-lib"] }
-#fuels-abigen-macro = "0.23"
-#fuels-core = "0.23"
-#fuels-types = { path = "/home/tj/fuels-rs/packages/fuels-types" }
-fuels = {  path = "/home/tj/fuels-rs/packages/fuels", features = ["fuel-core-lib"] }
-fuels-abigen-macro = {  path = "/home/tj/fuels-rs/packages/fuels-abigen-macro" }
-fuels-core = { path = "/home/tj/fuels-rs/packages/fuels-core" }
+fuels = { version = "0.24", features = ["fuel-core-lib"] }
+fuels-abigen-macro = "0.24"
+fuels-core = "0.24"
 rand = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }

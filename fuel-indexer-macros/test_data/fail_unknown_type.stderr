@@ -1,4 +1,4 @@
-error: Type with ident Ident { ident: "BadType", span: #0 bytes(274..281) } not defined in the ABI.
+error: Type with ident Ident { ident: "BadType", span: #0 bytes(304..311) } not defined in the ABI.
   --> test_data/fail_unknown_type.rs:8:1
    |
 8  | / #[indexer(

@@ -40,12 +40,11 @@ pub struct Args {
 async fn ping(contract: Extension<Arc<Mutex<Message>>>) -> String {
     let contract = contract.lock().await;
     let ping_thing = contract.ping().tx_params(tx_params());
-
-    tokio::task::spawn(async move {
-        let result = ping_thing.call().await.unwrap();
-        let pong: Ping = result.value;
-        pong.value.to_string()
-    }).await.unwrap()
+    // higher-ranked lifetime error!
+    //let result = ping_thing.call().await.unwrap();
+    //let pong: Ping = result.value;
+    //pong.value.to_string()
+    "pong".into()
 }
 
 #[tokio::main]

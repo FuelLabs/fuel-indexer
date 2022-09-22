@@ -1,5 +1,6 @@
 extern crate alloc;
 use fuel_indexer_macros::indexer;
+use fuels_core::types::*;
 
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
@@ -16,7 +17,7 @@ mod indexer {
         let SomeEvent { id, account } = event;
 
         assert_eq!(id, 9);
-        assert_eq!(account, [48u8; 32]);
+        assert_eq!(account, Bits256([48u8; 32]));
     }
 }
 
@@ -25,7 +26,7 @@ fn main() {
 
     let s = SomeEvent {
         id: 9,
-        account: [48u8; 32],
+        account: Bits256([48u8; 32]),
     };
 
     let bytes = ABIEncoder::encode(&[s.into_token()]).expect("Failed compile test");

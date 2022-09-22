@@ -12,9 +12,7 @@ fuel-indexer-macros = { path = "../../../fuel-indexer-macros", default-features 
 fuel-indexer-plugin = { path = "../../../fuel-indexer-plugin" }
 fuel-indexer-schema = { path = "../../../fuel-indexer-schema", default-features = false }
 fuel-tx = "0.18"
-#fuels-core = "0.23"
-#fuels-types = "0.23"
-fuels-core = { path = "/home/tj/fuels-rs/packages/fuels-core" }
-fuels-types = { path = "/home/tj/fuels-rs/packages/fuels-types" }
+fuels-core = "0.24"
+fuels-types = "0.24"
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }

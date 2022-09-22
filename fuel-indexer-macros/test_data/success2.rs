@@ -1,5 +1,6 @@
 extern crate alloc;
 use fuel_indexer_macros::indexer;
+use fuels_core::types::*;
 
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
@@ -16,15 +17,15 @@ mod indexer {
         let SomeEvent { id, account } = event;
 
         assert_eq!(id, 9);
-        assert_eq!(account, [48u8; 32]);
+        assert_eq!(account, Bits256([48u8; 32]));
     }
 
     fn function_two(_event: SomeEvent, event2: AnotherEvent) {
         let AnotherEvent { id, account, hash } = event2;
 
         assert_eq!(id, 9);
-        assert_eq!(account, [48u8; 32]);
-        assert_eq!(hash, [56u8; 32]);
+        assert_eq!(account, Bits256([48u8; 32]));
+        assert_eq!(hash, Bits256([56u8; 32]));
     }
 }
 
@@ -33,13 +34,13 @@ fn main() {
 
     let s1 = SomeEvent {
         id: 9,
-        account: [48u8; 32],
+        account: Bits256([48u8; 32]),
     };
 
     let s2 = AnotherEvent {
         id: 9,
-        account: [48u8; 32],
-        hash: [56u8; 32],
+        account: Bits256([48u8; 32]),
+        hash: Bits256([56u8; 32]),
     };
 
     let bytes1 = ABIEncoder::encode(&[s1.into_token()]).expect("Failed compile test");

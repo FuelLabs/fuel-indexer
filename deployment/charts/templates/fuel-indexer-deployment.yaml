@@ -40,6 +40,8 @@ spec:
             - "postgres"
             - "--postgres-database"
             - "postgres"
+            - "--graphql-api-host"
+            - "0.0.0.0"
           env:
           - name: POSTGRES_PASSWORD
             valueFrom:

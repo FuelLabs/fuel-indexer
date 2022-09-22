@@ -12,12 +12,10 @@ fuel-core = "0.10"
 fuel-crypto = "0.6"
 fuel-gql-client = "0.10"
 fuel-tx = "0.18"
-#fuels-core = "0.23"
-#fuels-abigen-macro = "0.23"
-fuels = { path = "/home/tj/fuels-rs/packages/fuels" }
-fuels-core = { path = "/home/tj/fuels-rs/packages/fuels-core" }
-fuels-types = { path = "/home/tj/fuels-rs/packages/fuels-types" }
-fuels-abigen-macro = { path = "/home/tj/fuels-rs/packages/fuels-abigen-macro" }
+fuels = "0.24"
+fuels-core = "0.24"
+fuels-abigen-macro = "0.24"
+fuels-types = "0.24"
 log = "0.4"
 pretty_env_logger = "0.4"
 rand = "0.8"
