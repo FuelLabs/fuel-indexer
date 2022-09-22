@@ -1,5 +1,6 @@
-use crate::db::{models::*, DbType, IndexerConnection, IndexerConnectionPool};
+use crate::db::models::{ColumnIndex, CreateStatement, ForeignKey, IdCol, IndexMethod};
 use crate::{get_schema_types, type_id, BASE_SCHEMA};
+use fuel_indexer_database::{queries, DbType, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_database_types::*;
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{Definition, Field, SchemaDefinition, Type, TypeDefinition};
@@ -116,9 +117,9 @@ impl SchemaBuilder {
             query: query.clone(),
             schema,
         };
-        new_graph_root(conn, new_root).await?;
+        queries::new_graph_root(conn, new_root).await?;
 
-        let latest = graph_root_latest(conn, &namespace).await?;
+        let latest = queries::graph_root_latest(conn, &namespace).await?;
 
         let field_defs = query_fields.get(&query).expect("No query root!");
 
@@ -131,22 +132,22 @@ impl SchemaBuilder {
             })
             .collect();
 
-        new_root_columns(conn, cols).await?;
+        queries::new_root_columns(conn, cols).await?;
 
         for query in statements {
-            execute_query(conn, query).await?;
+            queries::execute_query(conn, query).await?;
         }
 
         for fk in foreign_keys {
-            execute_query(conn, fk.create_statement()).await?;
+            queries::execute_query(conn, fk.create_statement()).await?;
         }
 
         for idx in indices {
-            execute_query(conn, idx.create_statement()).await?;
+            queries::execute_query(conn, idx.create_statement()).await?;
         }
 
-        type_id_insert(conn, type_ids).await?;
-        new_column_insert(conn, columns).await?;
+        queries::type_id_insert(conn, type_ids).await?;
+        queries::new_column_insert(conn, columns).await?;
 
         Ok(Schema {
             version,
@@ -338,9 +339,10 @@ pub struct Schema {
 impl Schema {
     pub async fn load_from_db(pool: &IndexerConnectionPool, name: &str) -> sqlx::Result<Self> {
         let mut conn = pool.acquire().await?;
-        let root = graph_root_latest(&mut conn, name).await?;
-        let root_cols = root_columns_list_by_id(&mut conn, root.id).await?;
-        let typeids = type_id_list_by_name(&mut conn, &root.schema_name, &root.version).await?;
+        let root = queries::graph_root_latest(&mut conn, name).await?;
+        let root_cols = queries::root_columns_list_by_id(&mut conn, root.id).await?;
+        let typeids =
+            queries::type_id_list_by_name(&mut conn, &root.schema_name, &root.version).await?;
 
         let mut types = HashSet::new();
         let mut fields = HashMap::new();
@@ -356,7 +358,7 @@ impl Schema {
         for tid in typeids {
             types.insert(tid.graphql_name.clone());
 
-            let columns = list_column_by_id(&mut conn, tid.id).await?;
+            let columns = queries::list_column_by_id(&mut conn, tid.id).await?;
             fields.insert(
                 tid.graphql_name,
                 columns

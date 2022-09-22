@@ -4,6 +4,7 @@ use fuel_indexer_macros::indexer;
 #[indexer(
     abi = "./test_data/contracts-abi.json",
     namespace = "test_namespace",
+    identifier = "bar",
     schema = "./test_data/schema.graphql",
 )]
 mod indexer {

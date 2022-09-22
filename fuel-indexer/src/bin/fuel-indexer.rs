@@ -1,9 +1,11 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
-use fuel_indexer::{GraphQlApi, IndexerConfig, IndexerService, Manifest};
-use fuel_indexer_lib::config::{IndexerArgs, Parser};
-use fuel_indexer_schema::db::run_migration;
+use fuel_indexer::{
+    config::{IndexerArgs, Parser},
+    GraphQlApi, IndexerConfig, IndexerService, Manifest,
+};
+use fuel_indexer_database::queries;
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
@@ -28,7 +30,7 @@ pub async fn main() -> Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    run_migration(&config.database.to_string()).await;
+    queries::run_migration(&config.database.to_string()).await;
 
     let _local_node = if opt.local {
         let s = FuelService::new_node(Config::local_node())
@@ -47,7 +49,8 @@ pub async fn main() -> Result<()> {
 
     let mut service = IndexerService::new(config.clone()).await?;
 
-    // TODO: need an API endpoint to upload/create these things.....
+    let mut manifest: Option<Manifest> = None;
+
     if opt.manifest.is_some() {
         let path = opt.manifest.expect("Could not get path from manifest");
 
@@ -59,14 +62,16 @@ pub async fn main() -> Result<()> {
         let mut file = File::open(&path).await?;
         let mut contents = String::new();
         file.read_to_string(&mut contents).await?;
-        let manifest: Manifest = serde_yaml::from_str(&contents)?;
-
-        service.add_indexer(manifest, false).await?;
+        let local_manifest: Manifest = serde_yaml::from_str(&contents)?;
+        manifest = Some(local_manifest);
     }
+
+    service.register_indices(manifest, false).await?;
 
     let service_handle = tokio::spawn(service.run());
     GraphQlApi::run(config).await;
 
     service_handle.await?;
+
     Ok(())
 }

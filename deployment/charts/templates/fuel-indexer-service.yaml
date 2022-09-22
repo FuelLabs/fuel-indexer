@@ -1,0 +1,19 @@
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: {{ template "fuel-indexer.name" . }}
+    chart: {{ template "fuel-indexer.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+  name: {{ template "fuel-indexer.name" . }}-service
+spec:
+  type: NodePort
+  selector:
+    app: {{ template "fuel-indexer.name" . }}
+  ports:
+    - name: http
+      port: {{ .Values.app.http_port }}
+      protocol: TCP
+      targetPort: {{ .Values.app.target_port }}
+

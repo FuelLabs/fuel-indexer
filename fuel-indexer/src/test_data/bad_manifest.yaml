@@ -1,6 +1,7 @@
 ---
 namespace: test_namespace
 graphql_schema: schema.graphql
+identifier: test_simple_wasm
 module:
   wasm:
     simple_wasm.wasm

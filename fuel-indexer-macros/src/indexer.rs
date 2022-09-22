@@ -304,9 +304,11 @@ fn process_fn_items(
 }
 
 pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStream {
+    #[allow(unused_variables)]
     let IndexerConfig {
         abi,
         namespace,
+        identifier,
         schema,
         native,
     } = parse_macro_input!(attrs as IndexerConfig);

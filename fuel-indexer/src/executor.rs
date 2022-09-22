@@ -322,12 +322,12 @@ mod tests {
 
         let evt1 = SomeEvent {
             id: 1020,
-            account: [0xaf; 32],
+            account: fuels_core::types::Bits256([0xaf; 32]),
         };
         let evt2 = AnotherEvent {
             id: 100,
-            account: [0x5a; 32],
-            hash: [0x43; 32],
+            account: fuels_core::types::Bits256([0x5a; 32]),
+            hash: fuels_core::types::Bits256([0x43; 32]),
         };
 
         let some_event = ABIEncoder::encode(&[evt1.into_token()])

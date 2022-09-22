@@ -4,14 +4,15 @@ error: `self` argument not allowed in handler function.
 4 | / #[indexer(
 5 | |     abi = "./test_data/contracts-abi.json",
 6 | |     namespace = "test_namespace",
-7 | |     schema = "./test_data/schema.graphql",
-8 | | )]
+7 | |     identifier = "bar",
+8 | |     schema = "./test_data/schema.graphql",
+9 | | )]
   | |__^
   |
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0601]: `main` function not found in crate `$CRATE`
-  --> test_data/fail_self.rs:16:2
+  --> test_data/fail_self.rs:17:2
    |
-16 | }
+17 | }
    |  ^ consider adding a `main` function to `$DIR/test_data/fail_self.rs`

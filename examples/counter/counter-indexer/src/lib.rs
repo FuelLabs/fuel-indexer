@@ -4,6 +4,7 @@ use fuel_indexer_macros::indexer;
 #[indexer(
     abi = "examples/counter/contracts/counter/out/debug/counter-abi.json",
     namespace = "counter",
+    identifier = "index1",
     schema = "../schema/counter.graphql"
 )]
 mod simple_native {

@@ -7,10 +7,12 @@ mod kw {
     syn::custom_keyword!(schema);
     syn::custom_keyword!(namespace);
     syn::custom_keyword!(native);
+    syn::custom_keyword!(identifier);
 }
 
 pub(crate) struct IndexerConfig {
     pub abi: String,
+    pub identifier: String,
     pub namespace: String,
     pub schema: String,
     pub native: bool,
@@ -18,6 +20,7 @@ pub(crate) struct IndexerConfig {
 
 struct ConfigBuilder {
     abi: Option<Abi>,
+    identifier: Option<Identifier>,
     schema: Option<Schema>,
     namespace: Option<Namespace>,
     native: bool,
@@ -28,6 +31,7 @@ impl ConfigBuilder {
         ConfigBuilder {
             abi: None,
             schema: None,
+            identifier: None,
             namespace: None,
             native: false,
         }
@@ -35,6 +39,10 @@ impl ConfigBuilder {
 
     fn set_abi(&mut self, abi: Abi) {
         self.abi = Some(abi);
+    }
+
+    fn set_identifier(&mut self, identifier: Identifier) {
+        self.identifier = Some(identifier);
     }
 
     fn set_namespace(&mut self, namespace: Namespace) {
@@ -52,6 +60,7 @@ impl ConfigBuilder {
     fn build(self) -> IndexerConfig {
         let ConfigBuilder {
             abi,
+            identifier,
             namespace,
             schema,
             native,
@@ -59,26 +68,36 @@ impl ConfigBuilder {
 
         if abi.is_none() {
             proc_macro_error::abort_call_site!(
-                "abi specification is required in indexer definition!"
+                "abi specification is required in indexer definition. <(-_-<)"
             )
         }
 
         if schema.is_none() {
             proc_macro_error::abort_call_site!(
-                "schema specification is required in indexer definition!"
+                "schema specification is required in indexer definition. (>'')>"
             )
         }
 
         if namespace.is_none() {
-            proc_macro_error::abort_call_site!("namespace is required in indexer definition!")
+            proc_macro_error::abort_call_site!(
+                "namespace is required in indexer definition. <( '.' )>"
+            )
+        }
+
+        if identifier.is_none() {
+            proc_macro_error::abort_call_site!(
+                "namespace is required in indexer definition. <('-'<)"
+            )
         }
 
         let namespace = namespace.unwrap();
         let schema = schema.unwrap();
+        let identifier = identifier.unwrap();
         let abi = abi.unwrap();
 
         IndexerConfig {
             abi: abi.name.value(),
+            identifier: identifier.name.value(),
             schema: schema.name.value(),
             namespace: namespace.name.value(),
             native,
@@ -95,6 +114,7 @@ impl Parse for IndexerConfig {
         for item in items {
             match item {
                 ConfigItem::Abi(s) => config.set_abi(s),
+                ConfigItem::Identifier(s) => config.set_identifier(s),
                 ConfigItem::Schema(s) => config.set_schema(s),
                 ConfigItem::Namespace(s) => config.set_namespace(s),
                 ConfigItem::Native => config.set_native(),
@@ -108,6 +128,7 @@ impl Parse for IndexerConfig {
 enum ConfigItem {
     Abi(Abi),
     Schema(Schema),
+    Identifier(Identifier),
     Namespace(Namespace),
     Native,
 }
@@ -122,6 +143,8 @@ impl Parse for ConfigItem {
             Ok(input.parse().map(ConfigItem::Abi)?)
         } else if lookahead.peek(kw::namespace) {
             Ok(input.parse().map(ConfigItem::Namespace)?)
+        } else if lookahead.peek(kw::identifier) {
+            Ok(input.parse().map(ConfigItem::Identifier)?)
         } else if lookahead.peek(kw::native) {
             let _: kw::native = input.parse()?;
             Ok(ConfigItem::Native)
@@ -156,6 +179,20 @@ impl Parse for Namespace {
         let name = input.parse()?;
 
         Ok(Namespace { name })
+    }
+}
+
+struct Identifier {
+    name: LitStr,
+}
+
+impl Parse for Identifier {
+    fn parse(input: ParseStream) -> syn::Result<Identifier> {
+        let _: kw::identifier = input.parse()?;
+        let _: Token![=] = input.parse()?;
+        let name = input.parse()?;
+
+        Ok(Identifier { name })
     }
 }
 

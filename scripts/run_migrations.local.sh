@@ -10,10 +10,10 @@ else
 fi
 
 if [[ $DATABASE_URL = postgres* ]]; then
-    cd database/postgres
+    cd fuel-indexer-database/postgres
     DATABASE_URL=$DATABASE_URL sqlx migrate run
 elif [[ $DATABASE_URL = sqlite* ]]; then
-    cd database/sqlite
+    cd fuel-indexer-database/sqlite
     DATABASE_URL=$DATABASE_URL sqlx database create
     DATABASE_URL=$DATABASE_URL sqlx migrate run
 else

@@ -1,4 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
+use thiserror::Error;
 
 #[derive(Debug)]
 pub struct RootColumns {
@@ -202,4 +204,70 @@ impl From<&str> for ColumnType {
             _ => panic!("Invalid column type! {}", name),
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct IndexAsset {
+    pub id: i64,
+    pub index_id: i64,
+    pub version: i32,
+    pub digest: String,
+    #[serde(skip_serializing)]
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Debug)]
+pub struct IndexAssetBundle {
+    pub schema: IndexAsset,
+    pub manifest: IndexAsset,
+    pub wasm: IndexAsset,
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+pub enum IndexAssetType {
+    Wasm,
+    Manifest,
+    Schema,
+}
+
+impl ToString for IndexAssetType {
+    fn to_string(&self) -> String {
+        match self {
+            IndexAssetType::Wasm => "wasm".to_string(),
+            IndexAssetType::Manifest => "manifest".to_string(),
+            IndexAssetType::Schema => "schema".to_string(),
+        }
+    }
+}
+
+impl From<String> for IndexAssetType {
+    fn from(a: String) -> Self {
+        match a.as_str() {
+            "wasm" => Self::Wasm,
+            "manifest" => Self::Manifest,
+            "schema" => Self::Schema,
+            _ => panic!("Unrecognized IndexAssetType."),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RegisteredIndex {
+    pub id: i64,
+    pub namespace: String,
+    pub identifier: String,
+}
+
+impl RegisteredIndex {
+    pub fn uid(&self) -> String {
+        format!("{}.{}", self.namespace, self.identifier)
+    }
+}
+
+#[derive(Debug, Error)]
+pub enum QueryError {
+    #[error("No transaction is open")]
+    NoTransactionError,
+    #[error("Unknown error")]
+    Unknown,
 }

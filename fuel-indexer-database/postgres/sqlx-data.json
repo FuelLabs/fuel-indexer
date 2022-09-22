@@ -83,6 +83,69 @@
     },
     "query": "SELECT id, schema_version, schema_name, graphql_name, table_name FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_version = $2"
   },
+  "4c73704cce4724de27f4aa91f6105aeac0fded522a6c6d111197e2f1288027ea": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "namespace",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "identifier",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "SELECT * FROM index_registry WHERE namespace = $1 AND identifier = $2"
+  },
+  "5b93a393328db44db231b71f4fd3fafca13efa1be7d021003f15774fec107015": {
+    "describe": {
+      "columns": [
+        {
+          "name": "id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "namespace",
+          "ordinal": 1,
+          "type_info": "Varchar"
+        },
+        {
+          "name": "identifier",
+          "ordinal": 2,
+          "type_info": "Varchar"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "SELECT * FROM index_registry"
+  },
   "6daf0d3b6d1ec9412ba138cae993af3736a64100a1fca6ee15520513e0cc580e": {
     "describe": {
       "columns": [

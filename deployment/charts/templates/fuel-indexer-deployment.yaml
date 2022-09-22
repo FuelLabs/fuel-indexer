@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }} 
+    chart: {{ template "fuel-indexer.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }} 
+      release: {{ .Release.Name }}
+  replicas: {{ .Values.app.replicas }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Values.app.name }}
+          image: {{ .Values.fuelIndexerImage }} 
+          command: ["./fuel-indexer"]
+          args:
+            - "--fuel-node-host"
+            - "{{ .Values.app.fuel_node_host }}"
+            - "--fuel-node-port"
+            - "{{ .Values.app.fuel_node_port }}"
+            - "--postgres-password"
+            - "{{ .Values.password }}"
+            - "--postgres-host"
+            - "{{ .Release.Name }}-postgres"
+            - "--postgres-port"
+            - "5432"
+            - "--postgres-user"
+            - "postgres"
+            - "--postgres-database"
+            - "postgres"
+          env:
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Release.Name }} 
+                key: POSTGRES_PASSWORD
+
+          - name: POSTGRES_HOST
+            value: "{{ .Release.Name }}-postgres"
+
+          - name: POSTGRES_USER
+            value: "postgres"
+
+          - name: POSTGRES_PORT
+            value: "5432"
+
+          - name: POSTGRES_DATABASE
+            value: "postgres"
+
+
+          resources: {}
+          imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.app.target_port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: {{ .Values.app.target_port }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 10
+          volumeMounts:
+            - name: {{ .Release.Name }}
+              mountPath: "{{ .Values.app.volume.mountPath }}"
+      volumes:
+        - name: {{ .Release.Name }}
+          persistentVolumeClaim:
+            claimName: {{ .Release.Name }}
