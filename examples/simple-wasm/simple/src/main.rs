@@ -3,11 +3,9 @@ extern crate log;
 
 extern crate pretty_env_logger;
 
-use fuels::{
-    prelude::{Contract, WalletUnlocked, Provider, TxParameters},
-};
-use fuels_core::parameters::StorageConfiguration;
+use fuels::prelude::{Contract, Provider, TxParameters, WalletUnlocked};
 use fuels_abigen_macro::abigen;
+use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
 
 pub fn tx_params() -> TxParameters {
@@ -25,12 +23,18 @@ abigen!(
 async fn get_contract_id(wallet: &WalletUnlocked) -> String {
     debug!("Creating new deployment for non-existent contract");
 
-    let _compiled = Contract::load_sway_contract("../contracts/out/debug/contracts.bin", &None).unwrap();
+    let _compiled =
+        Contract::load_sway_contract("../contracts/out/debug/contracts.bin", &None).unwrap();
 
     let bin_path = "../contracts/out/debug/contracts.bin".to_string();
-    let contract_id = Contract::deploy(&bin_path, wallet, tx_params(), StorageConfiguration::default())
-        .await
-        .unwrap();
+    let contract_id = Contract::deploy(
+        &bin_path,
+        wallet,
+        tx_params(),
+        StorageConfiguration::default(),
+    )
+    .await
+    .unwrap();
 
     contract_id.to_string()
 }

@@ -3,7 +3,9 @@ use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
 use fuels_core::{
-    code_gen::{abigen::Abigen, function_selector::resolve_fn_selector}, source::Source, utils::first_four_bytes_of_sha256_hash,
+    code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
+    source::Source,
+    utils::first_four_bytes_of_sha256_hash,
 };
 use fuels_types::{ProgramABI, TypeDeclaration};
 use std::collections::{HashMap, HashSet};
@@ -46,12 +48,7 @@ fn rust_name_str(ty: &String) -> Ident {
 
 fn rust_name(ty: &TypeDeclaration) -> Ident {
     if ty.components.is_some() {
-        let ty = ty
-            .type_field
-            .split(' ')
-            .last()
-            .unwrap()
-            .to_string();
+        let ty = ty.type_field.split(' ').last().unwrap().to_string();
         rust_name_str(&ty)
     } else {
         let ty = ty.type_field.replace("[", "_").replace("]", "_");
@@ -84,10 +81,17 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
 fn is_primitive(ty: &proc_macro2::TokenStream) -> bool {
     let ident_str = ty.to_string();
     // TODO: complete the list
-    matches!(ident_str.as_str(), "u8" | "u16" | "u32" | "u64" | "bool" | "B256" | "String")
+    matches!(
+        ident_str.as_str(),
+        "u8" | "u16" | "u32" | "u64" | "bool" | "B256" | "String"
+    )
 }
 
-fn decode_snippet(ty_id: usize, ty: &proc_macro2::TokenStream, name: &Ident) -> proc_macro2::TokenStream {
+fn decode_snippet(
+    ty_id: usize,
+    ty: &proc_macro2::TokenStream,
+    name: &Ident,
+) -> proc_macro2::TokenStream {
     if is_primitive(ty) {
         // TODO: do we want decoder for primitive? Might need something a little smarte to identify what the primitive is for... and to which handler it will go.
         quote! {
@@ -186,7 +190,10 @@ fn process_fn_items(
                                 let ty_id = match type_ids.get(&path.ident.to_string()) {
                                     Some(id) => id,
                                     None => {
-                                        proc_macro_error::abort_call_site!("Type with ident {:?} not defined in the ABI.", path.ident);
+                                        proc_macro_error::abort_call_site!(
+                                            "Type with ident {:?} not defined in the ABI.",
+                                            path.ident
+                                        );
                                     }
                                 };
 

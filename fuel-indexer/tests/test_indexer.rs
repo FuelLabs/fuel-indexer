@@ -2,18 +2,21 @@ extern crate alloc;
 
 #[cfg(test)]
 mod tests {
-    use fuel_indexer::{config::{IndexerConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig}, IndexerService, Manifest};
     use fuel_core::{
         chain_config::{ChainConfig, StateConfig},
         service::DbType,
     };
-    use fuels::prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, WalletUnlocked,
-        Provider, TxParameters, DEFAULT_COIN_AMOUNT,
+    use fuel_indexer::{
+        config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
+        IndexerService, Manifest,
     };
-    use fuels_core::parameters::StorageConfiguration;
+    use fuels::prelude::{
+        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, Provider,
+        TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+    };
     use fuels::signers::Signer;
     use fuels_abigen_macro::abigen;
+    use fuels_core::parameters::StorageConfiguration;
     use std::path::Path;
 
     const MANIFEST: &str = include_str!("./test_data/manifest.yaml");
@@ -70,7 +73,10 @@ mod tests {
 
         wallet.set_provider(provider.clone());
 
-        let contract_id = Contract::deploy(path, &wallet, tx_params(), StorageConfiguration::default()).await.unwrap();
+        let contract_id =
+            Contract::deploy(path, &wallet, tx_params(), StorageConfiguration::default())
+                .await
+                .unwrap();
 
         let contract: Simple = SimpleBuilder::new(contract_id.to_string(), wallet).build();
         let _ = contract.gimme_someevent(78).call().await;

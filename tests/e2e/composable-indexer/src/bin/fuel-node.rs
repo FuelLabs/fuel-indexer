@@ -1,18 +1,18 @@
 use clap::Parser;
 use composable_indexer::{defaults, tx_params};
 use fuel_core::{
-        chain_config::{ChainConfig, StateConfig},
-        service::DbType,
+    chain_config::{ChainConfig, StateConfig},
+    service::DbType,
 };
 use fuels::{
     prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, WalletUnlocked,
-        Provider, DEFAULT_COIN_AMOUNT,
+        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, Provider,
+        WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
-use fuels_core::parameters::StorageConfiguration;
 use fuels_abigen_macro::abigen;
+use fuels_core::parameters::StorageConfiguration;
 use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;

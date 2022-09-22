@@ -11,13 +11,13 @@ use fuel_core::{
 };
 use fuels::{
     prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, WalletUnlocked,
-        Provider, TxParameters, DEFAULT_COIN_AMOUNT,
+        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, Provider,
+        TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
-use fuels_core::parameters::StorageConfiguration;
 use fuels_abigen_macro::abigen;
+use fuels_core::parameters::StorageConfiguration;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddr};
 
@@ -38,12 +38,18 @@ async fn get_contract_id(wallet: &WalletUnlocked) -> String {
     debug!("Creating new deployment for non-existent contract");
 
     let _compiled =
-        Contract::load_sway_contract("./../contracts/counter/out/debug/counter.bin", &None).unwrap();
+        Contract::load_sway_contract("./../contracts/counter/out/debug/counter.bin", &None)
+            .unwrap();
 
     let bin_path = "./../contracts/counter/out/debug/counter.bin".to_string();
-    let contract_id = Contract::deploy(&bin_path, wallet, tx_params(), StorageConfiguration::default())
-        .await
-        .unwrap();
+    let contract_id = Contract::deploy(
+        &bin_path,
+        wallet,
+        tx_params(),
+        StorageConfiguration::default(),
+    )
+    .await
+    .unwrap();
 
     contract_id.to_string()
 }

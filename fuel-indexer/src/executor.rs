@@ -330,10 +330,8 @@ mod tests {
             hash: fuels_core::types::Bits256([0x43; 32]),
         };
 
-        let some_event = ABIEncoder::encode(&[evt1.into_token()])
-            .expect("Failed to encode");
-        let another_event = ABIEncoder::encode(&[evt2.into_token()])
-            .expect("Failed to encode");
+        let some_event = ABIEncoder::encode(&[evt1.into_token()]).expect("Failed to encode");
+        let another_event = ABIEncoder::encode(&[evt2.into_token()]).expect("Failed to encode");
 
         let result = executor
             .handle_events(vec![BlockData {

@@ -2,7 +2,7 @@ use async_std::sync::{Arc, Mutex};
 use axum::{extract::Extension, routing::post, Router};
 use clap::Parser;
 use composable_indexer::defaults;
-use fuels::prelude::{Contract, WalletUnlocked, Provider, TxParameters};
+use fuels::prelude::{Contract, Provider, TxParameters, WalletUnlocked};
 use fuels_abigen_macro::abigen;
 use std::{
     net::SocketAddr,
@@ -98,7 +98,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Connected to fuel client at {}", fuel_node_addr);
 
-    let contract: Message = MessageBuilder::new(defaults::PING_CONTRACT_ID.to_string(), wallet).build();
+    let contract: Message =
+        MessageBuilder::new(defaults::PING_CONTRACT_ID.to_string(), wallet).build();
 
     let bin_path = opts.bin_path.unwrap_or_else(|| {
         Path::join(
@@ -108,7 +109,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let compiled =
-        Contract::load_sway_contract(&bin_path.into_os_string().into_string().unwrap(), &None).unwrap();
+        Contract::load_sway_contract(&bin_path.into_os_string().into_string().unwrap(), &None)
+            .unwrap();
     let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
     info!("Using contract at {}", id);
 
