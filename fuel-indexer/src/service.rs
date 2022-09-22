@@ -277,9 +277,9 @@ impl IndexerService {
                     }
 
                     let block = BlockData {
+                        height: block.height.0,
                         id: Bytes32::from(block.id),
                         time: block.time.timestamp(),
-                        height: block.height.0,
                         producer: Address::from(block.producer),
                         transactions,
                     };
