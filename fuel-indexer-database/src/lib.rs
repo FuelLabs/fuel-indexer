@@ -4,8 +4,13 @@ use fuel_indexer_sqlite as sqlite;
 use sqlx::pool::PoolConnection;
 use std::cmp::Ordering;
 use thiserror::Error;
+use tokio::time::{sleep, Duration};
+use tracing::warn;
 
 pub mod queries;
+
+const RETRY_LIMIT: usize = 5;
+const INITIAL_RETRY_DELAY: u64 = 15;
 
 #[derive(Debug)]
 pub enum IndexerConnection {
@@ -63,21 +68,7 @@ impl IndexerConnectionPool {
         }
         let url = url.expect("Database URL should be correctly formed");
 
-        match url.scheme() {
-            "postgres" => {
-                let pool = sqlx::Pool::<sqlx::Postgres>::connect(database_url)
-                    .await
-                    .expect("Could not connect to postgres backend!");
-                Ok(IndexerConnectionPool::Postgres(pool))
-            }
-            "sqlite" => {
-                let pool = sqlx::Pool::<sqlx::Sqlite>::connect(database_url)
-                    .await
-                    .expect("Could not connect to sqlite backend!");
-                Ok(IndexerConnectionPool::Sqlite(pool))
-            }
-            err => Err(DatabaseError::BackendNotSupported(err.into())),
-        }
+        attempt_connection(database_url, url.scheme()).await
     }
 
     pub async fn is_connected(&self) -> sqlx::Result<ServiceStatus> {
@@ -114,5 +105,63 @@ impl IndexerConnectionPool {
             }
             IndexerConnectionPool::Sqlite(p) => Ok(IndexerConnection::Sqlite(p.acquire().await?)),
         }
+    }
+}
+
+async fn attempt_connection(
+    database_url: &str,
+    scheme: &str,
+) -> Result<IndexerConnectionPool, DatabaseError> {
+    let mut remaining_retries = RETRY_LIMIT;
+    let mut delay = INITIAL_RETRY_DELAY;
+
+    match scheme {
+        "postgres" => {
+            let pool = loop {
+                match sqlx::Pool::<sqlx::Postgres>::connect(database_url).await {
+                    Ok(p) => break p,
+                    Err(_) => {
+                        if remaining_retries > 0 {
+                            warn!(
+                                "Could not connect to postgres backend, retrying in {} seconds...",
+                                delay
+                            );
+                            remaining_retries -= 1;
+                            sleep(Duration::from_secs(delay)).await;
+                            delay *= 2;
+                        } else {
+                            panic!(
+                                "Retry attempts exceeded; could not connect to postgres backend!"
+                            )
+                        }
+                    }
+                }
+            };
+
+            Ok(IndexerConnectionPool::Postgres(pool))
+        }
+        "sqlite" => {
+            let pool = loop {
+                match sqlx::Pool::<sqlx::Sqlite>::connect(database_url).await {
+                    Ok(p) => break p,
+                    Err(_) => {
+                        if remaining_retries > 0 {
+                            warn!(
+                                "Could not connect to sqlite backend, retrying in {} seconds...",
+                                delay
+                            );
+                            remaining_retries -= 1;
+                            sleep(Duration::from_secs(delay)).await;
+                            delay *= 2;
+                        } else {
+                            panic!("Retry attempts exceeded; could not connect to sqlite backend!")
+                        }
+                    }
+                }
+            };
+
+            Ok(IndexerConnectionPool::Sqlite(pool))
+        }
+        err => Err(DatabaseError::BackendNotSupported(err.into())),
     }
 }

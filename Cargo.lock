@@ -2425,6 +2425,8 @@ dependencies = [
  "fuel-indexer-sqlite",
  "sqlx",
  "thiserror",
+ "tokio",
+ "tracing",
  "url",
 ]
 
