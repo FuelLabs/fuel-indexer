@@ -39,9 +39,9 @@ pub struct Args {
 #[axum_macros::debug_handler]
 async fn ping(contract: Extension<Arc<Mutex<Message>>>) -> String {
     let contract = contract.lock().await;
-    let ping_thing = contract.ping().tx_params(tx_params());
+    let _call = contract.ping().tx_params(tx_params());
     // higher-ranked lifetime error!
-    //let result = ping_thing.call().await.unwrap();
+    //let result = _call.call().await.unwrap();
     //let pong: Ping = result.value;
     //pong.value.to_string()
     "pong".into()
