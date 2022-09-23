@@ -10,7 +10,7 @@ use tracing::warn;
 pub mod queries;
 
 const RETRY_LIMIT: usize = 5;
-const INITIAL_RETRY_DELAY: u64 = 15;
+const INITIAL_RETRY_DELAY: u64 = 2;
 
 #[derive(Debug)]
 pub enum IndexerConnection {

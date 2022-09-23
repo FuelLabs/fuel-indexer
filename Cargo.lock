@@ -2483,6 +2483,7 @@ dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "sqlx",
+ "tokio",
  "tracing",
 ]
 
@@ -2514,6 +2515,7 @@ dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "sqlx",
+ "tokio",
  "tracing",
 ]
 
