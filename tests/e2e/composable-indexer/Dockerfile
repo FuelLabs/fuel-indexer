@@ -1,4 +1,4 @@
-FROM lukemathwalker/cargo-chef:latest-rust-1.62 AS installer
+FROM lukemathwalker/cargo-chef:latest-rust-1.64 AS installer
 RUN apt-get update -y && \
     apt-get install -y --no-install-recommends \
     build-essential \
