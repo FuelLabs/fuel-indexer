@@ -9,4 +9,5 @@ edition = "2021"
 fuel-indexer-database-types = { path = "../database-types" }
 fuel-indexer-lib = { path = "../../fuel-indexer-lib" }
 sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres", "offline"] }
+tokio = { version = "1.8", features = ["time"] }
 tracing = "0.1"
