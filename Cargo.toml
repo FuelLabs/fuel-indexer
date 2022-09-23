@@ -16,8 +16,7 @@ members = [
    "fuel-indexer-plugin",
    "fuel-indexer-schema",
    "fuel-indexer",
-   "tests/e2e/composable-indexer",
-   "tests/e2e/composable-indexer/composable-indexer-lib",
+   "tests/components/web"
 ]
 
 [profile.release]
