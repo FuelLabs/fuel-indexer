@@ -10,4 +10,6 @@ edition = "2021"
 anyhow = { version = "1.0", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 sha2 = "0.9"
+sqlx = { version = "0.6", features = ["runtime-tokio-rustls"] }
+tokio = { version = "1.8", features = ["time"] }
 tracing = "0.1"
