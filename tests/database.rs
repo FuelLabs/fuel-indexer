@@ -1,15 +1,15 @@
-use fuel_indexer::{IndexEnv, database::*};
-use fuel_types::Address;
-use wasmer::{imports, Instance, Module, Store, WasmerEnv};
-use wasmer_compiler_cranelift::Cranelift;
-use wasmer_engine_universal::Universal;
-
-fn compiler() -> Cranelift {
-    Cranelift::default()
-}
-
 #[cfg(test)]
 mod tests {
+    use fuel_indexer::database::*;
+    use crate::IndexEnv;
+    use fuel_types::Address;
+    use wasmer::{imports, Instance, Module, Store, WasmerEnv};
+    use wasmer_compiler_cranelift::Cranelift;
+    use wasmer_engine_universal::Universal;
+
+    fn compiler() -> Cranelift {
+        Cranelift::default()
+    }
 
     // TODO: sqlite and postgres now....
     const GRAPHQL_SCHEMA: &str = include_str!("test_data/schema.graphql");
