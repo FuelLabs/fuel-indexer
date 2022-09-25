@@ -1,18 +1,21 @@
-error: No module body, must specify at least one handler function!
-  --> test_data/fail_empty.rs:8:1
+error: custom attribute panicked
+  --> $WORKSPACE/tests/assets/macro-data/fail_if_indexer_module_is_empty.rs
    |
-8  | / #[indexer(
-9  | |     abi = "./test_data/contracts-abi.json",
-10 | |     namespace = "test_namespace",
-11 | |     identifier = "foo",
-12 | |     schema = "./test_data/schema.graphql",
-13 | | )]
+   | / #[indexer(
+   | |     abi = "./test_data/contracts-abi.json",
+   | |     namespace = "test_namespace",
+   | |     identifier = "foo",
+   | |     schema = "./test_data/schema.graphql",
+   | | )]
    | |__^
    |
-   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+   = help: message: called `Result::unwrap()` on an `Err` value: failed to read artifact JSON file with path $DIR/./test_data/contracts-abi.json
+
+           Caused by:
+               No such file or directory (os error 2)
 
 error[E0601]: `main` function not found in crate `$CRATE`
-  --> test_data/fail_empty.rs:15:2
+  --> $WORKSPACE/tests/assets/macro-data/fail_if_indexer_module_is_empty.rs
    |
-15 | }
-   |  ^ consider adding a `main` function to `$DIR/test_data/fail_empty.rs`
+   | }
+   |  ^ consider adding a `main` function to `$WORKSPACE/tests/assets/macro-data/fail_if_indexer_module_is_empty.rs`

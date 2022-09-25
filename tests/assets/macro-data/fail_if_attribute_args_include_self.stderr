@@ -1,18 +1,21 @@
-error: `self` argument not allowed in handler function.
- --> test_data/fail_self.rs:4:1
+error: custom attribute panicked
+ --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_args_include_self.rs
   |
-4 | / #[indexer(
-5 | |     abi = "./test_data/contracts-abi.json",
-6 | |     namespace = "test_namespace",
-7 | |     identifier = "bar",
-8 | |     schema = "./test_data/schema.graphql",
-9 | | )]
+  | / #[indexer(
+  | |     abi = "./test_data/contracts-abi.json",
+  | |     namespace = "test_namespace",
+  | |     identifier = "bar",
+  | |     schema = "./test_data/schema.graphql",
+  | | )]
   | |__^
   |
-  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = help: message: called `Result::unwrap()` on an `Err` value: failed to read artifact JSON file with path $DIR/./test_data/contracts-abi.json
+
+          Caused by:
+              No such file or directory (os error 2)
 
 error[E0601]: `main` function not found in crate `$CRATE`
-  --> test_data/fail_self.rs:17:2
+  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_args_include_self.rs
    |
-17 | }
-   |  ^ consider adding a `main` function to `$DIR/test_data/fail_self.rs`
+   | }
+   |  ^ consider adding a `main` function to `$WORKSPACE/tests/assets/macro-data/fail_if_attribute_args_include_self.rs`

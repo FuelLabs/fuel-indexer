@@ -16,7 +16,7 @@ members = [
    "fuel-indexer-plugin",
    "fuel-indexer-schema",
    "fuel-indexer",
-   "tests/components/web"
+   "tests/components/web",
 ]
 
 [profile.release]

@@ -17,23 +17,25 @@ pub fn indexer(attrs: TokenStream, item: TokenStream) -> TokenStream {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test_macros() {
+    fn test_success_and_failure_macros() {
         let t = trybuild::TestCases::new();
-        std::env::set_var("COMPILE_TEST_PREFIX", env!("CARGO_MANIFEST_DIR"));
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        std::env::set_var("COMPILE_TEST_PREFIX", manifest_dir);
 
-        t.compile_fail("./../../tests/assets/macro-data/fail_if_attribute_args_include_self.rs");
-        t.compile_fail("./../../tests/assets/macro-data/fail_if_attribute_args_not_included.rs");
-        t.compile_fail(
-            "./../../tests/assets/macro-data/fail_if_all_attribute_args_not_included.rs",
-        );
-        t.pass("./../../tests/assets/macro-data/pass_if_indexer_is_valid_single_type.rs");
-        t.pass("./../../tests/assets/macro-data/pass_if_indexer_is_valid_multi_type.rs");
-        t.compile_fail(
-            "./../../tests/assets/macro-data/fail_if_attribute_schema_arg_is_invalid.rs",
-        );
-        t.compile_fail(
-            "./../../tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs",
-        );
-        t.compile_fail("./../../tests/assets/macro-data/fail_if_indexer_module_is_empty.rs");
+        let macro_data_root = std::path::Path::new(manifest_dir)
+            .parent()
+            .unwrap()
+            .join("tests")
+            .join("assets")
+            .join("macro-data");
+
+        t.compile_fail(macro_data_root.join("fail_if_attribute_args_include_self.rs"));
+        t.compile_fail(macro_data_root.join("fail_if_attribute_args_not_included.rs"));
+        t.compile_fail(macro_data_root.join("fail_if_all_attribute_args_not_included.rs"));
+        t.pass(macro_data_root.join("pass_if_indexer_is_valid_single_type.rs"));
+        t.pass(macro_data_root.join("pass_if_indexer_is_valid_multi_type.rs"));
+        t.compile_fail(macro_data_root.join("fail_if_attribute_schema_arg_is_invalid.rs"));
+        t.compile_fail(macro_data_root.join("fail_if_attribute_abi_arg_includes_invalid_type.rs"));
+        t.compile_fail(macro_data_root.join("fail_if_indexer_module_is_empty.rs"));
     }
 }
