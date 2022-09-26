@@ -14,12 +14,12 @@ pub struct Ping {
     message: str[32],
 }
 
-abi Message {
+abi FuelIndexer {
     fn ping() -> Ping;
     fn pong() -> Pong;
 }
 
-impl Message for Contract {
+impl FuelIndexer for Contract {
     fn ping() -> Ping {
         let p = Ping{
             id: 1,

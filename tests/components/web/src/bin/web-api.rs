@@ -20,8 +20,8 @@ pub fn tx_params() -> TxParameters {
 }
 
 abigen!(
-    Message,
-    "tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping-abi.json"
+    FuelIndexer,
+    "tests/contracts/fuel-indexer/out/debug/fuel-indexer-abi.json"
 );
 
 #[derive(Debug, Parser, Clone)]
@@ -37,11 +37,17 @@ pub struct Args {
     pub bin_path: Option<PathBuf>,
 }
 
-#[axum_macros::debug_handler]
-async fn ping(Extension(contract): Extension<Arc<Mutex<Message>>>) -> String {
+async fn ping(Extension(contract): Extension<Arc<Mutex<FuelIndexer>>>) -> String {
     let contract = contract.lock().await;
     let result = contract.ping().tx_params(tx_params()).call().await.unwrap();
-    let pong: Ping = result.value;
+    let ping: Ping = result.value;
+    ping.value.to_string()
+}
+
+async fn pong(Extension(contract): Extension<Arc<Mutex<FuelIndexer>>>) -> String {
+    let contract = contract.lock().await;
+    let result = contract.pong().tx_params(tx_params()).call().await.unwrap();
+    let pong: Pong = result.value;
     pong.value.to_string()
 }
 
@@ -96,12 +102,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Connected to fuel client at {}", fuel_node_addr.to_string());
 
-    let contract = Message::new(defaults::PING_CONTRACT_ID.to_string(), wallet);
+    let contract = FuelIndexer::new(defaults::PING_CONTRACT_ID.to_string(), wallet);
 
     let bin_path = opts.bin_path.unwrap_or_else(|| {
         Path::join(
             manifest_dir,
-            "composable-indexer-lib/contracts/ping/out/debug/ping.bin",
+            "../../contracts/fuel-indexer/out/debug/fuel-indexer.bin",
         )
     });
 
@@ -116,6 +122,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let app = Router::new()
         .route("/ping", post(ping))
+        .layer(Extension(state.clone()))
+        .route("/pong", post(pong))
         .layer(Extension(state.clone()));
 
     let addr: SocketAddr = defaults::WEB_API_ADDR.parse().unwrap();

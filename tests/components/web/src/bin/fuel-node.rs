@@ -17,8 +17,8 @@ use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
 abigen!(
-    Message,
-    "tests/e2e/composable-indexer/composable-indexer-lib/contracts/ping/out/debug/ping-abi.json"
+    FuelIndexer,
+    "tests/contracts/fuel-indexer/out/debug/fuel-indexer-abi.json"
 );
 
 #[derive(Debug, Parser, Clone)]
@@ -100,7 +100,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bin_path = opts.bin_path.unwrap_or_else(|| {
         Path::join(
             manifest_dir,
-            "composable-indexer-lib/contracts/ping/out/debug/ping.bin",
+            "../../contracts/fuel-indexer/out/debug/fuel-indexer.bin",
         )
     });
 

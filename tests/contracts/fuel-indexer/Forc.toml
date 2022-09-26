@@ -2,6 +2,6 @@
 authors = ["Rashad Alston"]
 entry = "main.sw"
 license = "Apache-2.0"
-name = "ping"
+name = "fuel-indexer"
 
 [dependencies]
