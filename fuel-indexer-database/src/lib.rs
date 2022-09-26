@@ -122,7 +122,7 @@ impl IndexerConnectionPool {
 async fn attempt_connection(
     database_url: &str,
     scheme: &str,
-) -> Result<IndexerConnectionPool, DatabaseError> {
+) -> Result<IndexerConnectionPool, IndexerDatabaseError> {
     let mut remaining_retries = DB_CONN_ATTEMPTS;
     let mut delay = DB_CONN_RETRY_FACTOR;
 
@@ -173,6 +173,6 @@ async fn attempt_connection(
 
             Ok(IndexerConnectionPool::Sqlite(pool))
         }
-        err => Err(DatabaseError::BackendNotSupported(err.into())),
+        err => Err(IndexerDatabaseError::BackendNotSupported(err.into())),
     }
 }
