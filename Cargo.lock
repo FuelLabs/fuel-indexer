@@ -2425,7 +2425,6 @@ dependencies = [
  "fuel-indexer-sqlite",
  "sqlx",
  "thiserror",
- "tokio",
  "tracing",
  "url",
 ]
@@ -2444,6 +2443,7 @@ dependencies = [
  "anyhow",
  "serde",
  "sha2 0.9.9",
+ "tokio",
  "tracing",
 ]
 
@@ -2482,7 +2482,6 @@ dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "sqlx",
- "tokio",
  "tracing",
 ]
 
@@ -2514,7 +2513,6 @@ dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "sqlx",
- "tokio",
  "tracing",
 ]
 
