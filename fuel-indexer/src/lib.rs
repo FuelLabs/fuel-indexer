@@ -13,7 +13,7 @@ pub use api::GraphQlApi;
 pub use config::IndexerConfig;
 pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
-pub use fuel_indexer_database::DatabaseError;
+pub use fuel_indexer_database::IndexerDatabaseError;
 pub use fuel_indexer_schema::{BlockData, FtColumn};
 pub use fuel_types::{Address, ContractId};
 pub use manifest::{Manifest, Module};
@@ -45,7 +45,7 @@ pub enum IndexerError {
     #[error("Indexer transaction error {0:?}")]
     TxError(#[from] crate::executor::TxError),
     #[error("Database error {0:?}")]
-    DatabaseError(#[from] DatabaseError),
+    DatabaseError(#[from] IndexerDatabaseError),
     #[error("Invalid address {0:?}")]
     InvalidAddress(#[from] std::net::AddrParseError),
     #[error("Join Error {0:?}")]

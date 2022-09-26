@@ -1,9 +1,11 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
-use sqlx::{
-    pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection,
-};
-use tracing::info;
+use sqlx::{pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection};
+use tokio::time::{sleep, Duration};
+use tracing::{info, warn};
+
+const RETRY_LIMIT: usize = 5;
+const INITIAL_RETRY_DELAY: u64 = 2;
 
 pub async fn put_object(
     conn: &mut PoolConnection<Sqlite>,
@@ -33,9 +35,27 @@ pub async fn get_object(
 }
 
 pub async fn run_migration(database_url: &str) {
-    let mut conn = SqliteConnection::connect(database_url)
-        .await
-        .expect("Failed to open sqlite database.");
+    let mut remaining_retries = RETRY_LIMIT;
+    let mut delay = INITIAL_RETRY_DELAY;
+
+    let mut conn = loop {
+        match SqliteConnection::connect(database_url).await {
+            Ok(c) => break c,
+            Err(_) => {
+                if remaining_retries > 0 {
+                    warn!(
+                        "Could not connect to sqlite backend, retrying in {} seconds...",
+                        delay
+                    );
+                    remaining_retries -= 1;
+                    sleep(Duration::from_secs(delay)).await;
+                    delay *= 2;
+                } else {
+                    panic!("Retry attempts exceeded; could not connect to sqlite backend!")
+                }
+            }
+        }
+    };
 
     sqlx::migrate!()
         .run(&mut conn)
@@ -426,11 +446,11 @@ pub async fn registered_indices(
 pub async fn index_asset_version(
     conn: &mut PoolConnection<Sqlite>,
     index_id: &i64,
-    asset_type: IndexAssetType,
+    asset_type: &IndexAssetType,
 ) -> sqlx::Result<i64> {
     match sqlx::query(&format!(
         "SELECT COUNT(*) FROM index_asset_registry_{} WHERE index_id = {}",
-        asset_type.to_string(),
+        asset_type.as_str(),
         index_id,
     ))
     .fetch_one(conn)
@@ -455,9 +475,7 @@ pub async fn register_index_asset(
 
     let digest = sha256_digest(&bytes);
 
-    if let Some(asset) =
-        asset_already_exists(conn, asset_type.clone(), &bytes, &index.id).await?
-    {
+    if let Some(asset) = asset_already_exists(conn, &asset_type, &bytes, &index.id).await? {
         info!(
             "Asset({:?}) for Index({}) already registered.",
             asset_type,
@@ -466,7 +484,7 @@ pub async fn register_index_asset(
         return Ok(asset);
     }
 
-    let current_version = index_asset_version(conn, &index.id, asset_type.clone())
+    let current_version = index_asset_version(conn, &index.id, &asset_type)
         .await
         .expect("Failed to get asset version.");
 
@@ -556,7 +574,7 @@ pub async fn latest_assets_for_index(
 
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Sqlite>,
-    asset_type: IndexAssetType,
+    asset_type: &IndexAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
 ) -> sqlx::Result<Option<IndexAsset>> {

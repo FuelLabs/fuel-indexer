@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use thiserror::Error;
 
 #[derive(Debug)]
 pub struct RootColumns {
@@ -232,12 +231,33 @@ pub enum IndexAssetType {
     Schema,
 }
 
+impl IndexAssetType {
+    pub fn as_str(&self) -> &str {
+        match self {
+            IndexAssetType::Wasm => "wasm",
+            IndexAssetType::Manifest => "manifest",
+            IndexAssetType::Schema => "schema",
+        }
+    }
+}
+
 impl ToString for IndexAssetType {
     fn to_string(&self) -> String {
         match self {
             IndexAssetType::Wasm => "wasm".to_string(),
             IndexAssetType::Manifest => "manifest".to_string(),
             IndexAssetType::Schema => "schema".to_string(),
+        }
+    }
+}
+
+impl From<&str> for IndexAssetType {
+    fn from(a: &str) -> Self {
+        match a {
+            "wasm" => Self::Wasm,
+            "manifest" => Self::Manifest,
+            "schema" => Self::Schema,
+            _ => panic!("Unrecognized IndexAssetType."),
         }
     }
 }
@@ -264,12 +284,4 @@ impl RegisteredIndex {
     pub fn uid(&self) -> String {
         format!("{}.{}", self.namespace, self.identifier)
     }
-}
-
-#[derive(Debug, Error)]
-pub enum QueryError {
-    #[error("No transaction is open")]
-    NoTransactionError,
-    #[error("Unknown error")]
-    Unknown,
 }

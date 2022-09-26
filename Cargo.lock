@@ -2083,6 +2083,8 @@ dependencies = [
  "fuel-indexer-sqlite",
  "sqlx",
  "thiserror",
+ "tokio",
+ "tracing",
  "url",
 ]
 
@@ -2091,7 +2093,6 @@ name = "fuel-indexer-database-types"
 version = "0.1.0"
 dependencies = [
  "serde",
- "thiserror",
 ]
 
 [[package]]
@@ -2139,6 +2140,7 @@ dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "sqlx",
+ "tokio",
  "tracing",
 ]
 
@@ -2170,6 +2172,7 @@ dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "sqlx",
+ "tokio",
  "tracing",
 ]
 

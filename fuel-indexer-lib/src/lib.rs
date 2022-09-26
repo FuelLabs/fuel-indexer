@@ -66,7 +66,7 @@ pub mod utils {
         }
     }
 
-    #[derive(Serialize, Deserialize)]
+    #[derive(Serialize, Deserialize, Default)]
     pub struct FuelNodeHealthResponse {
         up: bool,
     }
