@@ -58,6 +58,32 @@ fn process_field<'a>(
     (typ, ident, extractor)
 }
 
+fn process_fk_field<'a>(
+    types: &HashSet<String>,
+    field: &Field<'a, String>,
+) -> (
+    proc_macro2::TokenStream,
+    proc_macro2::Ident,
+    proc_macro2::TokenStream,
+) {
+    let Field { name, .. } = field;
+
+    let field_type = Type::NamedType("ID".to_string());
+    let typ = process_type(types, &field_type, false);
+    let ident = format_ident! {"{}", name.to_lowercase()};
+
+    let extractor = quote! {
+        let item = vec.pop().expect("Missing item in row");
+        let #ident = match item {
+            FtColumn::#typ(t) => t,
+            _ => panic!("Invalid column type {:?}", item),
+        };
+
+    };
+
+    (typ, ident, extractor)
+}
+
 fn process_type_def<'a>(
     query_root: &str,
     namespace: &str,
@@ -66,6 +92,7 @@ fn process_type_def<'a>(
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
 ) -> Option<proc_macro2::TokenStream> {
+    let copy_traits: HashSet<String> = HashSet::from_iter(["Jsonb"].iter().map(|x| x.to_string()));
     match typ {
         TypeDefinition::Object(obj) => {
             if obj.name == *query_root {
@@ -74,24 +101,27 @@ fn process_type_def<'a>(
 
             let name = &obj.name;
             let type_id = type_id(namespace, name);
-            // TODO: ignore directives for now, could do some useful things with them though.
             let mut block = quote! {};
             let mut row_extractors = quote! {};
             let mut construction = quote! {};
             let mut flattened = quote! {};
 
             for field in &obj.fields {
-                let (type_name, field_name, ext) = process_field(types, field);
+                let (mut type_name, mut field_name, mut ext) = process_field(types, field);
 
                 let type_name_str = type_name.to_string();
 
-                if processed.contains(&type_name_str)
-                    && !primitives.contains(&type_name_str)
-                {
-                    continue;
+                if processed.contains(&type_name_str) && !primitives.contains(&type_name_str) {
+                    (type_name, field_name, ext) = process_fk_field(types, field);
                 }
 
-                processed.insert(type_name_str);
+                processed.insert(type_name_str.clone());
+
+                let decoder = if copy_traits.contains(&type_name_str) {
+                    quote! { FtColumn::#type_name(self.#field_name.clone()), }
+                } else {
+                    quote! { FtColumn::#type_name(self.#field_name), }
+                };
 
                 block = quote! {
                     #block
@@ -111,7 +141,7 @@ fn process_type_def<'a>(
 
                 flattened = quote! {
                     #flattened
-                    FtColumn::#type_name(self.#field_name),
+                    #decoder
                 };
             }
             let strct = format_ident! {"{}", name};

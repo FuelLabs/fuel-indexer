@@ -24,6 +24,9 @@ pub mod db;
 
 pub use fuel_types::{Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word};
 
+#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
+pub struct Jsonb(pub String);
+
 pub type ID = u64;
 pub type Int4 = i32;
 pub type Int8 = i64;
@@ -31,10 +34,19 @@ pub type UInt4 = u32;
 pub type UInt8 = u64;
 pub type Timestamp = u64;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct BlockData {
     pub height: u64,
+    pub id: Bytes32,
+    pub time: i64,
+    pub producer: Address,
     pub transactions: Vec<Vec<Receipt>>,
+}
+
+impl BlockData {
+    pub fn ident() -> String {
+        "BlockData".to_string()
+    }
 }
 
 // serde_scale for now, can look at other options if necessary.
@@ -101,7 +113,7 @@ pub fn get_schema_types(ast: &Document<String>) -> (HashSet<String>, HashSet<Str
     (types, directives)
 }
 
-#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
     ID(u64),
     Address(Address),
@@ -116,6 +128,7 @@ pub enum FtColumn {
     UInt8(u64),
     Timestamp(u64),
     Salt(Salt),
+    Jsonb(Jsonb),
 }
 
 impl FtColumn {
@@ -197,6 +210,9 @@ impl FtColumn {
             ColumnType::ForeignKey => {
                 panic!("ForeignKey not supported for FtColumn!");
             }
+            ColumnType::Jsonb => {
+                FtColumn::Jsonb(Jsonb(String::from_utf8_lossy(&bytes[..size]).to_string()))
+            }
         }
     }
 
@@ -240,6 +256,9 @@ impl FtColumn {
             }
             FtColumn::Salt(value) => {
                 format!("'{:x}'", value)
+            }
+            FtColumn::Jsonb(value) => {
+                format!("'{}'", value.0)
             }
         }
     }

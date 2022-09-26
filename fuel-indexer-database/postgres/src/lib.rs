@@ -1,4 +1,5 @@
 use fuel_indexer_database_types::*;
+<<<<<<< HEAD
 use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{
     pool::PoolConnection, types::JsonValue, Connection, PgConnection, Postgres, Row,
@@ -8,6 +9,11 @@ use tracing::{info, warn};
 
 const RETRY_LIMIT: usize = 5;
 const INITIAL_RETRY_DELAY: u64 = 2;
+=======
+use fuel_indexer_lib::utils::{attempt_database_connection, sha256_digest};
+use sqlx::{pool::PoolConnection, types::JsonValue, Connection, PgConnection, Postgres, Row};
+use tracing::info;
+>>>>>>> 74f30fb3abf9709c74dd07d1cede44930077bc78
 
 pub async fn put_object(
     conn: &mut PoolConnection<Postgres>,
@@ -37,6 +43,7 @@ pub async fn get_object(
 }
 
 pub async fn run_migration(database_url: &str) {
+<<<<<<< HEAD
     let mut remaining_retries = RETRY_LIMIT;
     let mut delay = INITIAL_RETRY_DELAY;
 
@@ -60,6 +67,9 @@ pub async fn run_migration(database_url: &str) {
             }
         }
     };
+=======
+    let mut conn = attempt_database_connection(|| PgConnection::connect(database_url)).await;
+>>>>>>> 74f30fb3abf9709c74dd07d1cede44930077bc78
 
     sqlx::migrate!()
         .run(&mut conn)

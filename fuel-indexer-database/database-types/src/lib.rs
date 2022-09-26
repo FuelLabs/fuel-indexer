@@ -98,9 +98,8 @@ impl NewColumn {
             ColumnType::UInt8 => "bigint",
             ColumnType::Timestamp => "timestamp",
             ColumnType::Blob => "bytea",
-            ColumnType::ForeignKey => {
-                panic!("ForeignKey ColumnType is a reference type only.")
-            }
+            ColumnType::ForeignKey => panic!("ForeignKey ColumnType is a reference type only."),
+            ColumnType::Jsonb => "jsonb",
         }
     }
 }
@@ -131,6 +130,7 @@ pub enum ColumnType {
     Timestamp = 12,
     Blob = 13,
     ForeignKey = 14,
+    Jsonb = 15,
 }
 
 impl From<ColumnType> for i32 {
@@ -151,6 +151,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Timestamp => 12,
             ColumnType::Blob => 13,
             ColumnType::ForeignKey => 14,
+            ColumnType::Jsonb => 15,
         }
     }
 }
@@ -179,6 +180,7 @@ impl From<i32> for ColumnType {
             12 => ColumnType::Timestamp,
             13 => ColumnType::Blob,
             14 => ColumnType::ForeignKey,
+            15 => ColumnType::Jsonb,
             _ => panic!("Invalid column type!"),
         }
     }
@@ -202,6 +204,7 @@ impl From<&str> for ColumnType {
             "Timestamp" => ColumnType::Timestamp,
             "Blob" => ColumnType::Blob,
             "ForeignKey" => ColumnType::ForeignKey,
+            "Jsonb" => ColumnType::Jsonb,
             _ => panic!("Invalid column type! {}", name),
         }
     }

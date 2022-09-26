@@ -12,6 +12,7 @@ mod kw {
 
 pub(crate) struct IndexerConfig {
     pub abi: String,
+    #[allow(unused)]
     pub identifier: String,
     pub namespace: String,
     pub schema: String,

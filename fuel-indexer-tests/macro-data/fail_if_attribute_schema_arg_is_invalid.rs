@@ -32,6 +32,9 @@ fn main() {
     let data: Vec<BlockData> = vec![
         BlockData {
             height: 0,
+            id: [0u8; 32].into(),
+            producer: [0u8; 32].into(),
+            time: 1,
             transactions: vec![
                 vec![
                     Receipt::Call {

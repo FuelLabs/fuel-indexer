@@ -2,6 +2,7 @@ use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
+use fuel_indexer_schema::BlockData;
 use fuels_core::{
     abi_encoder::ABIEncoder, code_gen::abigen::Abigen, json_abi::ABIParser,
     source::Source,
@@ -12,7 +13,7 @@ use std::collections::HashSet;
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
+use syn::{parse_macro_input, FnArg, Ident, Item, ItemFn, ItemMod, PatType, Type};
 
 const DISALLOWED: &[&str] = &["Vec"];
 
@@ -80,7 +81,10 @@ fn type_id(bytes: &[u8]) -> u64 {
 fn is_primitive(ty: &Ident) -> bool {
     let ident_str = ty.to_string();
     // TODO: complete the list
-    matches!(ident_str.as_str(), "u8" | "u16" | "u32" | "u64" | "bool")
+    matches!(
+        ident_str.as_str(),
+        "u8" | "u16" | "u32" | "u64" | "bool" | "BlockData"
+    )
 }
 
 fn decode_snippet(ty_id: u64, ty: &Ident, name: &Ident) -> proc_macro2::TokenStream {
@@ -184,15 +188,46 @@ fn process_fn_items(
     let contents = input.content.unwrap().1;
     let mut handler_fns = Vec::with_capacity(contents.len());
 
+    fn is_block_fn(input: &ItemFn) -> bool {
+        if input.attrs.len() == 1 {
+            let path = &input.attrs[0].path;
+            if path.get_ident().unwrap() == "block" {
+                return true;
+            }
+        }
+        false
+    }
+
+    let mut block_dispatchers = Vec::new();
+
+    let mut blockdata_decoding = quote! {};
+
     for item in contents {
         match item {
             Item::Fn(fn_item) => {
                 let mut input_checks = Vec::new();
                 let mut arg_list = Vec::new();
 
-                //NOTE: To keep things simple, assume no Vec<SomeType> or anything like that, 1:1 mapping of function inputs.
-                //      This should fail to compile if a user tries things like Vec<SomeType>, but we'll have to consider whether we want
-                //      this type of feature.
+                if is_block_fn(&fn_item) {
+                    let input = BlockData::ident();
+
+                    let ty = rust_type(&input);
+                    let name = rust_name(&input);
+                    let ty_id = type_id(ty.to_string().as_bytes());
+
+                    if !types.contains(&ty_id) {
+                        type_vecs.push(quote! {
+                            #name: Vec<#ty>
+                        });
+
+                        types.insert(ty_id);
+                    }
+
+                    block_dispatchers.push(quote! { self.#name.push(data); });
+
+                    blockdata_decoding = quote! { decoder.decode_blockdata(block.clone()); };
+                }
+
                 for inp in &fn_item.sig.inputs {
                     match inp {
                         FnArg::Receiver(_) => {
@@ -221,6 +256,7 @@ fn process_fn_items(
 
                                 let name = rust_name(&path.ident.to_string());
                                 input_checks.push(quote! { self.#name.len() > 0 });
+
                                 arg_list.push(quote! { self.#name[0].clone() });
                             } else {
                                 proc_macro_error::abort_call_site!(
@@ -232,6 +268,7 @@ fn process_fn_items(
                 }
 
                 let fn_name = &fn_item.sig.ident;
+
                 dispatchers.push(quote! {
                     if ( #(#input_checks)&&* ) {
                         #fn_name(#(#arg_list),*);
@@ -271,6 +308,10 @@ fn process_fn_items(
                 }
             }
 
+            pub fn decode_blockdata(&mut self, data: BlockData) {
+                #(#block_dispatchers)*
+            }
+
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
                 let ty_id = self.selector_to_type_id(sel);
 
@@ -289,8 +330,11 @@ fn process_fn_items(
     (
         quote! {
             for block in blocks {
+                let mut decoder = Decoders::default();
+
+                #blockdata_decoding
+
                 for tx in block.transactions {
-                    let mut decoder = Decoders::default();
                     let mut return_types = Vec::new();
 
                     for receipt in tx {
@@ -322,14 +366,16 @@ fn process_fn_items(
 }
 
 pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStream {
-    #[allow(unused_variables)]
+    let config = parse_macro_input!(attrs as IndexerConfig);
+
     let IndexerConfig {
         abi,
         namespace,
-        identifier,
         schema,
         native,
-    } = parse_macro_input!(attrs as IndexerConfig);
+        ..
+    } = config;
+
     let indexer = parse_macro_input!(item as ItemMod);
 
     let (abi_string, schema_string) = match std::env::var("COMPILE_TEST_PREFIX") {
@@ -374,6 +420,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use fuel_indexer_plugin::types::*;
         use fuels_core::{abi_decoder::ABIDecoder, ParamType, Parameterize};
         use fuel_tx::Receipt;
+        use fuel_indexer_macros::block;
 
         #abi_tokens
 
@@ -382,6 +429,17 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         #handler_block
 
         #fn_items
+    };
+
+    proc_macro::TokenStream::from(output)
+}
+
+pub fn process_block_attribute_fn(_attrs: TokenStream, item: TokenStream) -> TokenStream {
+    let block_fn = parse_macro_input!(item as ItemFn);
+
+    let output = quote! {
+
+        #block_fn
     };
 
     proc_macro::TokenStream::from(output)

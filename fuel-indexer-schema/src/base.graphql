@@ -13,6 +13,7 @@ scalar Timestamp
 scalar Color
 scalar ContractId
 scalar Salt
+scalar Jsonb
 
 enum IndexType {
     Btree,
