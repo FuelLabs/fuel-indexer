@@ -3,7 +3,8 @@ use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
 use fuels_core::{
-    abi_encoder::ABIEncoder, code_gen::abigen::Abigen, json_abi::ABIParser, source::Source,
+    abi_encoder::ABIEncoder, code_gen::abigen::Abigen, json_abi::ABIParser,
+    source::Source,
 };
 use fuels_types::JsonABI;
 use sha2::{Digest, Sha256};
@@ -127,12 +128,16 @@ fn process_fn_items(
             proc_macro_error::abort_call_site!("Multiple returns not supported!")
         }
 
-        let sig = match ABIParser::new().build_fn_selector(&function.name, &function.inputs) {
-            Ok(s) => s,
-            Err(e) => {
-                proc_macro_error::abort_call_site!("Could not calculate fn selector! {:?}", e)
-            }
-        };
+        let sig =
+            match ABIParser::new().build_fn_selector(&function.name, &function.inputs) {
+                Ok(s) => s,
+                Err(e) => {
+                    proc_macro_error::abort_call_site!(
+                        "Could not calculate fn selector! {:?}",
+                        e
+                    )
+                }
+            };
 
         let selector = ABIEncoder::encode_function_selector(sig.as_bytes());
         let selector = u64::from_be_bytes(selector);
@@ -236,7 +241,10 @@ fn process_fn_items(
                 handler_fns.push(fn_item);
             }
             i => {
-                proc_macro_error::abort_call_site!("Unsupported item in indexer module {:?}", i)
+                proc_macro_error::abort_call_site!(
+                    "Unsupported item in indexer module {:?}",
+                    i
+                )
             }
         }
     }
@@ -339,7 +347,10 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         Ok(abi) => match abi.no_std().expand() {
             Ok(tokens) => tokens,
             Err(e) => {
-                proc_macro_error::abort_call_site!("Could not generate tokens for abi! {:?}", e)
+                proc_macro_error::abort_call_site!(
+                    "Could not generate tokens for abi! {:?}",
+                    e
+                )
             }
         },
         Err(e) => {

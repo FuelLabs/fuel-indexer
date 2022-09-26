@@ -1,0 +1,15 @@
+error: schema specification is required in indexer definition. (>'')>
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_all_attribute_args_not_included.rs
+  |
+  | / #[indexer(
+  | |     abi = "./some/file/name.json",
+  | | )]
+  | |__^
+  |
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0601]: `main` function not found in crate `$CRATE`
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_all_attribute_args_not_included.rs
+   |
+   | }
+   |  ^ consider adding a `main` function to `$WORKSPACE/fuel-indexer-tests/macro-data/fail_if_all_attribute_args_not_included.rs`

@@ -1,6 +1,8 @@
 use fuel_indexer_schema::{get_schema_types, schema_version, type_id, BASE_SCHEMA};
 use graphql_parser::parse_schema;
-use graphql_parser::schema::{Definition, Document, Field, SchemaDefinition, Type, TypeDefinition};
+use graphql_parser::schema::{
+    Definition, Document, Field, SchemaDefinition, Type, TypeDefinition,
+};
 use quote::{format_ident, quote};
 use std::collections::HashSet;
 use std::fs::File;
@@ -83,7 +85,9 @@ fn process_type_def<'a>(
 
                 let type_name_str = type_name.to_string();
 
-                if processed.contains(&type_name_str) && !primitives.contains(&type_name_str) {
+                if processed.contains(&type_name_str)
+                    && !primitives.contains(&type_name_str)
+                {
                     continue;
                 }
 
@@ -217,7 +221,11 @@ pub(crate) fn process_graphql_schema(
     let mut file = match File::open(&current) {
         Ok(f) => f,
         Err(e) => {
-            proc_macro_error::abort_call_site!("Could not open schema file {:?} {:?}", current, e)
+            proc_macro_error::abort_call_site!(
+                "Could not open schema file {:?} {:?}",
+                current,
+                e
+            )
         }
     };
 

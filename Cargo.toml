@@ -14,8 +14,9 @@ members = [
    "fuel-indexer-plugin",
    "fuel-indexer-schema",
    "fuel-indexer",
-   "tests/components/indices/counter",
-   "tests/components/web",
+   "fuel-indexer-tests/components/indices/counter",
+   "fuel-indexer-tests/components/web",
+   "fuel-indexer-tests",
 ]
 
 [profile.release]

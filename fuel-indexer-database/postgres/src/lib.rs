@@ -1,6 +1,8 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
-use sqlx::{pool::PoolConnection, types::JsonValue, Connection, PgConnection, Postgres, Row};
+use sqlx::{
+    pool::PoolConnection, types::JsonValue, Connection, PgConnection, Postgres, Row,
+};
 use tracing::info;
 
 pub async fn put_object(
@@ -341,7 +343,9 @@ pub async fn register_index_asset(
 
     let digest = sha256_digest(&bytes);
 
-    if let Some(asset) = asset_already_exists(conn, asset_type.clone(), &bytes, &index.id).await? {
+    if let Some(asset) =
+        asset_already_exists(conn, asset_type.clone(), &bytes, &index.id).await?
+    {
         info!(
             "Asset({:?}) for Index({}) already registered.",
             asset_type,
@@ -473,14 +477,20 @@ pub async fn asset_already_exists(
     }
 }
 
-pub async fn start_transaction(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<usize> {
+pub async fn start_transaction(
+    conn: &mut PoolConnection<Postgres>,
+) -> sqlx::Result<usize> {
     execute_query(conn, "BEGIN".into()).await
 }
 
-pub async fn commit_transaction(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<usize> {
+pub async fn commit_transaction(
+    conn: &mut PoolConnection<Postgres>,
+) -> sqlx::Result<usize> {
     execute_query(conn, "COMMIT".into()).await
 }
 
-pub async fn revert_transaction(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<usize> {
+pub async fn revert_transaction(
+    conn: &mut PoolConnection<Postgres>,
+) -> sqlx::Result<usize> {
     execute_query(conn, "ROLLBACK".into()).await
 }

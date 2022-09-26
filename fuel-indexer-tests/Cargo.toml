@@ -1,0 +1,41 @@
+
+
+[package]
+name = "fuel-indexer-tests"
+version = "0.0.0"
+edition = "2021"
+license = "BUSL-1.1"
+publish = false
+# Disable automatic test target discovery. This allows us to run all the integ tests as a single binary target (lib.rs)
+# instead of each integ test file being its own compiled & linked binary which is the default behavior. Linking with
+# RocksDB is expensive so we want to minimize the amount of work on ld. This is also how other projects like diesel-rs
+# structure their integ tests.
+autotests = false
+autobenches = false
+
+[[test]]
+name = "integration_tests"
+path = "tests/lib.rs"
+harness = true
+
+[dependencies]
+async-std = "1.12"
+chrono = { version = "0.4", features = ["serde"] }
+fuel-indexer = { path = "./../fuel-indexer" }
+fuel-indexer-schema = { path = "./../fuel-indexer-schema" }
+fuel-indexer-database = { path = "./../fuel-indexer-database" }
+fuel-types = "0.3"
+fuels = "0.15"
+fuels-abigen-macro = "0.15"
+futures = "0.3"
+insta = "1.8"
+itertools = "0.10"
+rand = "0.8"
+reqwest = { version = "0.11", default-features = false, features = ["rustls-tls"] }
+rstest = "0.15"
+serde_json = "1.0"
+serde_yaml = "0.8"
+tokio = { version = "1.8", features = ["macros", "rt-multi-thread"] }
+wasmer = "2.0"
+wasmer-compiler-cranelift = { version = "2.0" }
+wasmer-engine-universal = "2.0"

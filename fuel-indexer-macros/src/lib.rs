@@ -30,11 +30,17 @@ mod tests {
 
         t.compile_fail(macro_data_root.join("fail_if_attribute_args_include_self.rs"));
         t.compile_fail(macro_data_root.join("fail_if_attribute_args_not_included.rs"));
-        t.compile_fail(macro_data_root.join("fail_if_all_attribute_args_not_included.rs"));
+        t.compile_fail(
+            macro_data_root.join("fail_if_all_attribute_args_not_included.rs"),
+        );
         t.pass(macro_data_root.join("pass_if_indexer_is_valid_single_type.rs"));
         t.pass(macro_data_root.join("pass_if_indexer_is_valid_multi_type.rs"));
-        t.compile_fail(macro_data_root.join("fail_if_attribute_schema_arg_is_invalid.rs"));
-        t.compile_fail(macro_data_root.join("fail_if_attribute_abi_arg_includes_invalid_type.rs"));
+        t.compile_fail(
+            macro_data_root.join("fail_if_attribute_schema_arg_is_invalid.rs"),
+        );
+        t.compile_fail(
+            macro_data_root.join("fail_if_attribute_abi_arg_includes_invalid_type.rs"),
+        );
         t.compile_fail(macro_data_root.join("fail_if_indexer_module_is_empty.rs"));
     }
 }

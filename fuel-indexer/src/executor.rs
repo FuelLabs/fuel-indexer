@@ -10,7 +10,8 @@ use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::{net::TcpStream, task::spawn_blocking};
 use tracing::error;
 use wasmer::{
-    imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store, WasmerEnv,
+    imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store,
+    WasmerEnv,
 };
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_universal::Universal;
@@ -54,7 +55,11 @@ pub struct NativeIndexExecutor {
 }
 
 impl NativeIndexExecutor {
-    pub async fn new(db_conn: &str, manifest: Manifest, path: String) -> IndexerResult<Self> {
+    pub async fn new(
+        db_conn: &str,
+        manifest: Manifest,
+        path: String,
+    ) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(
             Database::new(db_conn)
                 .await
@@ -110,12 +115,13 @@ impl Executor for NativeIndexExecutor {
                 return Err(IndexerError::HandlerError);
             }
 
-            let object: IndexerRequest =
-                deserialize(&buf[..size]).expect("Could not deserialize message from indexer!");
+            let object: IndexerRequest = deserialize(&buf[..size])
+                .expect("Could not deserialize message from indexer!");
 
             match object {
                 IndexerRequest::GetObject(type_id, object_id) => {
-                    let object = self.db.lock().await.get_object(type_id, object_id).await;
+                    let object =
+                        self.db.lock().await.get_object(type_id, object_id).await;
                     if let Some(obj) = object {
                         self.stream.write_u64(obj.len() as u64).await?;
                         self.stream.write_all(&obj).await?
@@ -236,14 +242,18 @@ mod tests {
     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
     use sqlx::{Connection, Row};
 
-    const MANIFEST: &str = include_str!("./../../tests/assets/manifest/simple_wasm.yaml");
-    const BAD_MANIFEST: &str = include_str!("./../../tests/assets/manifest/bad_simple_wasm.yaml");
-    const BAD_WASM_BYTES: &[u8] = include_bytes!("./../../tests/assets/wasm/bad_simple_wasm.wasm");
-    const WASM_BYTES: &[u8] = include_bytes!("./../../tests/assets/wasm/simple_wasm.wasm");
+    const MANIFEST: &str =
+        include_str!("./../../fuel-indexer-tests/assets/simple_wasm.yaml");
+    const BAD_MANIFEST: &str =
+        include_str!("./../../fuel-indexer-tests/assets/bad_simple_wasm.yaml");
+    const BAD_WASM_BYTES: &[u8] =
+        include_bytes!("./../../fuel-indexer-tests/assets/bad_simple_wasm.wasm");
+    const WASM_BYTES: &[u8] =
+        include_bytes!("./../../fuel-indexer-tests/assets/simple_wasm.wasm");
 
     abigen!(
         MyContract,
-        "tests/contracts/simple_wasm/out/debug/contracts-abi.json"
+        "examples/simple-wasm/contracts/out/debug/contracts-abi.json"
     );
 
     #[derive(Debug)]
@@ -262,10 +272,11 @@ mod tests {
             .await
             .expect("Database connection failed!");
 
-        let row = sqlx::query("select id,account from test_namespace.thing1 where id = 1020;")
-            .fetch_one(&mut conn)
-            .await
-            .expect("Database query failed");
+        let row =
+            sqlx::query("select id,account from test_namespace.thing1 where id = 1020;")
+                .fetch_one(&mut conn)
+                .await
+                .expect("Database query failed");
 
         let id = row.get(0);
         let account = row.get(1);
@@ -309,16 +320,22 @@ mod tests {
 
     async fn create_wasm_executor_and_handle_events(database_url: &str) {
         let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file.");
-        let bad_manifest: Manifest = serde_yaml::from_str(BAD_MANIFEST).expect("Bad yaml file.");
+        let bad_manifest: Manifest =
+            serde_yaml::from_str(BAD_MANIFEST).expect("Bad yaml file.");
 
-        let executor =
-            WasmIndexExecutor::new(database_url.to_string(), bad_manifest, BAD_WASM_BYTES).await;
+        let executor = WasmIndexExecutor::new(
+            database_url.to_string(),
+            bad_manifest,
+            BAD_WASM_BYTES,
+        )
+        .await;
         match executor {
             Err(IndexerError::MissingHandler) => (),
             e => panic!("Expected missing handler error {:#?}", e),
         }
 
-        let executor = WasmIndexExecutor::new(database_url.to_string(), manifest, WASM_BYTES).await;
+        let executor =
+            WasmIndexExecutor::new(database_url.to_string(), manifest, WASM_BYTES).await;
         assert!(executor.is_ok());
 
         let mut executor = executor.unwrap();

@@ -12,7 +12,9 @@ use tracing_subscriber::filter::EnvFilter;
 #[tokio::main]
 pub async fn main() -> Result<()> {
     let filter = match std::env::var_os("RUST_LOG") {
-        Some(_) => EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided"),
+        Some(_) => {
+            EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
+        }
         None => EnvFilter::new("info"),
     };
 

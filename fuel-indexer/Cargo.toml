@@ -32,7 +32,7 @@ hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}
 hyper-tls = "0.5"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
-serde_yaml = "0.8.19"
+serde_yaml = "0.8"
 sqlx = "0.6"
 thiserror = "1.0"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread"] }
@@ -53,7 +53,7 @@ fuels = "0.15"
 fuels-abigen-macro = { version = "0.15" }
 itertools = { version = "0.10" }
 rand = "0.8"
-serde_yaml = "0.8.19"
+serde_yaml = "0.8"
 
 [features]
 default = []
