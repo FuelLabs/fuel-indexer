@@ -201,7 +201,7 @@ pub async fn registered_indices(
 pub async fn index_asset_version(
     conn: &mut IndexerConnection,
     index_id: &i64,
-    asset_type: IndexAssetType,
+    asset_type: &IndexAssetType,
 ) -> sqlx::Result<i64> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -259,7 +259,7 @@ pub async fn latest_assets_for_index(
 
 pub async fn asset_already_exists(
     conn: &mut IndexerConnection,
-    asset_type: IndexAssetType,
+    asset_type: &IndexAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
 ) -> sqlx::Result<Option<IndexAsset>> {

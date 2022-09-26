@@ -334,11 +334,11 @@ pub async fn registered_indices(
 pub async fn index_asset_version(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
-    asset_type: IndexAssetType,
+    asset_type: &IndexAssetType,
 ) -> sqlx::Result<i64> {
     match sqlx::query(&format!(
         "SELECT COUNT(*) FROM index_asset_registry_{} WHERE index_id = {}",
-        asset_type.to_string(),
+        asset_type.as_str(),
         index_id,
     ))
     .fetch_one(conn)
@@ -363,7 +363,7 @@ pub async fn register_index_asset(
 
     let digest = sha256_digest(&bytes);
 
-    if let Some(asset) = asset_already_exists(conn, asset_type.clone(), &bytes, &index.id).await? {
+    if let Some(asset) = asset_already_exists(conn, &asset_type, &bytes, &index.id).await? {
         info!(
             "Asset({:?}) for Index({}) already registered.",
             asset_type,
@@ -372,7 +372,7 @@ pub async fn register_index_asset(
         return Ok(asset);
     }
 
-    let current_version = index_asset_version(conn, &index.id, asset_type.clone())
+    let current_version = index_asset_version(conn, &index.id, &asset_type)
         .await
         .expect("Failed to get asset version.");
 
@@ -462,7 +462,7 @@ pub async fn latest_assets_for_index(
 
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Postgres>,
-    asset_type: IndexAssetType,
+    asset_type: &IndexAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
 ) -> sqlx::Result<Option<IndexAsset>> {
