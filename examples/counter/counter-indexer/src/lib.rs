@@ -7,9 +7,8 @@ use fuel_indexer_macros::indexer;
     identifier = "index1",
     schema = "../schema/counter.graphql"
 )]
-mod simple_native {
+mod counter {
     fn count_handler(event: CountEvent) {
-        // Using the Count entity from the GraphQL schema
         let count = Count {
             id: event.id,
             timestamp: event.timestamp,
