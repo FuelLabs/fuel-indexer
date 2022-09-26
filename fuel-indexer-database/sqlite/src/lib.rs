@@ -1,7 +1,11 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection};
-use tracing::info;
+use tokio::time::{sleep, Duration};
+use tracing::{info, warn};
+
+const RETRY_LIMIT: usize = 5;
+const INITIAL_RETRY_DELAY: u64 = 2;
 
 pub async fn put_object(
     conn: &mut PoolConnection<Sqlite>,
@@ -28,9 +32,27 @@ pub async fn get_object(conn: &mut PoolConnection<Sqlite>, query: String) -> sql
 }
 
 pub async fn run_migration(database_url: &str) {
-    let mut conn = SqliteConnection::connect(database_url)
-        .await
-        .expect("Failed to open sqlite database.");
+    let mut remaining_retries = RETRY_LIMIT;
+    let mut delay = INITIAL_RETRY_DELAY;
+
+    let mut conn = loop {
+        match SqliteConnection::connect(database_url).await {
+            Ok(c) => break c,
+            Err(_) => {
+                if remaining_retries > 0 {
+                    warn!(
+                        "Could not connect to sqlite backend, retrying in {} seconds...",
+                        delay
+                    );
+                    remaining_retries -= 1;
+                    sleep(Duration::from_secs(delay)).await;
+                    delay *= 2;
+                } else {
+                    panic!("Retry attempts exceeded; could not connect to sqlite backend!")
+                }
+            }
+        }
+    };
 
     sqlx::migrate!()
         .run(&mut conn)
