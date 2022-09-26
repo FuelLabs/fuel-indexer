@@ -26,7 +26,6 @@ mod tests {
             .parent()
             .unwrap()
             .join("tests")
-            .join("assets")
             .join("macro-data");
 
         t.compile_fail(macro_data_root.join("fail_if_attribute_args_include_self.rs"));

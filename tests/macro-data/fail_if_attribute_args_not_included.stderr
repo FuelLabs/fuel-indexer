@@ -1,5 +1,5 @@
 error: abi specification is required in indexer definition. <(-_-<)
- --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_args_not_included.rs
+ --> $WORKSPACE/tests/macro-data/fail_if_attribute_args_not_included.rs
   |
   | #[indexer()]
   | ^^^^^^^^^^^^
@@ -7,7 +7,7 @@ error: abi specification is required in indexer definition. <(-_-<)
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0601]: `main` function not found in crate `$CRATE`
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_args_not_included.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_args_not_included.rs
    |
    | }
-   |  ^ consider adding a `main` function to `$WORKSPACE/tests/assets/macro-data/fail_if_attribute_args_not_included.rs`
+   |  ^ consider adding a `main` function to `$WORKSPACE/tests/macro-data/fail_if_attribute_args_not_included.rs`

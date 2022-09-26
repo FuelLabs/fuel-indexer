@@ -6303,23 +6303,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "web-api-and-fuel-node"
-version = "0.1.0"
-dependencies = [
- "actix-web",
- "async-mutex",
- "dotenv",
- "fuels",
- "fuels-abigen-macro",
- "log",
- "pretty_env_logger",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "tokio",
-]
-
-[[package]]
 name = "web-sys"
 version = "0.3.55"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,5 +1,5 @@
 error: custom attribute panicked
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    | / #[indexer(
    | |     abi = "./test_data/contracts-abi.json",
@@ -15,25 +15,25 @@ error: custom attribute panicked
                No such file or directory (os error 2)
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |                     Receipt::Call {
    |                     ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |                     Receipt::ReturnData {
    |                     ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |     let s = SomeEvent {
    |             ^^^^^^^^^ not found in this scope
 
 error[E0412]: cannot find type `BlockData` in this scope
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |     let data: Vec<BlockData> = vec![
    |                   ^^^^^^^^^ not found in this scope
@@ -46,7 +46,7 @@ help: consider importing one of these items
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |         BlockData {
    |         ^^^^^^^^^ not found in this scope
@@ -59,7 +59,7 @@ help: consider importing one of these items
    |
 
 error[E0425]: cannot find function `serialize` in this scope
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |     let mut bytes = serialize(&data);
    |                     ^^^^^^^^^ not found in this scope
@@ -74,13 +74,13 @@ help: consider importing one of these items
    |
 
 error[E0425]: cannot find function `handle_events` in this scope
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |     handle_events(ptr, len);
    |     ^^^^^^^^^^^^^ not found in this scope
 
 error: unused import: `Tokenizable`
-  --> $WORKSPACE/tests/assets/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  --> $WORKSPACE/tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
    |                                               ^^^^^^^^^^^

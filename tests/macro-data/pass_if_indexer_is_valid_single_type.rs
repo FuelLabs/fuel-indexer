@@ -6,7 +6,7 @@ fn ff_log_data(_inp: ()) {}
 
 
 #[indexer(
-    abi = "./../tests/assets/contracts/simple_wasm/out/debug/contracts-abi.json",
+    abi = "./../tests/contracts/simple_wasm/out/debug/contracts-abi.json",
     namespace = "test_namespace",
     identifier = "index1",
     schema = "./../tests/assets/schema/simple_wasm.graphql",

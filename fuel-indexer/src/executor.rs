@@ -243,7 +243,7 @@ mod tests {
 
     abigen!(
         MyContract,
-        "tests/assets/contracts/simple_wasm/out/debug/contracts-abi.json"
+        "tests/contracts/simple_wasm/out/debug/contracts-abi.json"
     );
 
     #[derive(Debug)]

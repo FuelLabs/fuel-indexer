@@ -19,7 +19,7 @@ const MANIFEST: &str = include_str!("./assets/manifest/simple_wasm.yaml");
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 const FUEL_NODE_ADDR: &str = "0.0.0.0:4000";
 
-abigen!(Simple, "tests/assets/contracts/simple_wasm/debug/out/contracts-abi.json");
+abigen!(Simple, "tests/contracts/simple_wasm/debug/out/contracts-abi.json");
 
 fn tx_params() -> TxParameters {
     let gas_price = 0;
