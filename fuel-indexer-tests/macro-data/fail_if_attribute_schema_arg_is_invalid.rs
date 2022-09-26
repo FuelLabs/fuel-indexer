@@ -4,12 +4,11 @@ use fuel_indexer_macros::indexer;
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
 
-
 #[indexer(
-    abi = "./../contracts/simple_wasm/out/debug/contracts-abi.json",
+    abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
     namespace = "test_namespace",
     identifier = "foo",
-    schema = "./../schema/bad_simple_wasm.graphql",
+    schema = "./../fuel-indexer-tests/assets/bad_simple_wasm.graphql",
 )]
 mod indexer {
     fn function_one(event: SomeEvent) {

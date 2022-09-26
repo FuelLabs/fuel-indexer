@@ -6,10 +6,10 @@ fn ff_log_data(_inp: ()) {}
 
 
 #[indexer(
-    abi = "./test_data/contracts-abi.json",
+    abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
     namespace = "test_namespace",
-    identifier = "foo",
-    schema = "./test_data/schema.graphql",
+    identifier = "index1",
+    schema = "./../examples/simple-wasm/schema/schema.graphql",
 )]
 mod indexer {
 }

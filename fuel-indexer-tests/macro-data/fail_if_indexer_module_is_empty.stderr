@@ -1,18 +1,15 @@
-error: custom attribute panicked
+error: No module body, must specify at least one handler function!
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_indexer_module_is_empty.rs
    |
    | / #[indexer(
-   | |     abi = "./test_data/contracts-abi.json",
+   | |     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
    | |     namespace = "test_namespace",
-   | |     identifier = "foo",
-   | |     schema = "./test_data/schema.graphql",
+   | |     identifier = "index1",
+   | |     schema = "./../examples/simple-wasm/schema/schema.graphql",
    | | )]
    | |__^
    |
-   = help: message: called `Result::unwrap()` on an `Err` value: failed to read artifact JSON file with path $DIR/./test_data/contracts-abi.json
-
-           Caused by:
-               No such file or directory (os error 2)
+   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0601]: `main` function not found in crate `$CRATE`
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_indexer_module_is_empty.rs

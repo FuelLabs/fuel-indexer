@@ -25,7 +25,7 @@ mod tests {
         let macro_data_root = std::path::Path::new(manifest_dir)
             .parent()
             .unwrap()
-            .join("tests")
+            .join("fuel-indexer-tests")
             .join("macro-data");
 
         t.compile_fail(macro_data_root.join("fail_if_attribute_args_include_self.rs"));
