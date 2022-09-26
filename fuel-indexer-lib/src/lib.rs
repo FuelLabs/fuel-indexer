@@ -3,7 +3,6 @@ pub mod utils {
     use anyhow::Result;
     use serde::{Deserialize, Serialize};
     use sha2::{Digest, Sha256};
-    use sqlx::Error;
     use std::{
         future::Future,
         net::{SocketAddr, ToSocketAddrs},
@@ -63,10 +62,11 @@ pub mod utils {
     /// can't be made. This function takes a closure with a database connection
     /// function as an argument; said function should return a future that
     /// resolves to a final value of type Result<T, sqlx::Error>.
-    pub async fn attempt_database_connection<F, Fut, T>(mut fut: F) -> T
+    pub async fn attempt_database_connection<F, Fut, T, U>(mut fut: F) -> T
     where
         F: FnMut() -> Fut,
-        Fut: Future<Output = Result<T, Error>>,
+        Fut: Future<Output = Result<T, U>>,
+        U: std::error::Error,
     {
         let mut remaining_retries = MAX_DATABASE_CONNECTION_ATTEMPTS;
         let mut delay = INITIAL_RETRY_DELAY_SECS;

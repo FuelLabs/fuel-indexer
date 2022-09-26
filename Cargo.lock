@@ -2443,7 +2443,6 @@ dependencies = [
  "anyhow",
  "serde",
  "sha2 0.9.9",
- "sqlx",
  "tokio",
  "tracing",
 ]

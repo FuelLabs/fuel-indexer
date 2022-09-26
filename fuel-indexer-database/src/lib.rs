@@ -7,14 +7,8 @@ use thiserror::Error;
 
 pub mod queries;
 
-#[derive(Debug)]
-pub enum IndexerConnection {
-    Postgres(Box<PoolConnection<sqlx::Postgres>>),
-    Sqlite(PoolConnection<sqlx::Sqlite>),
-}
-
-#[derive(Clone, Debug, Error)]
-pub enum DatabaseError {
+#[derive(Debug, Error)]
+pub enum IndexerDatabaseError {
     #[error("Invalid connection string: {0:?}")]
     InvalidConnectionString(String),
     #[error("Database backend not supported: {0:?}")]
@@ -95,7 +89,7 @@ impl IndexerConnectionPool {
 
                 Ok(IndexerConnectionPool::Sqlite(pool))
             }
-            err => Err(DatabaseError::BackendNotSupported(err.into())),
+            err => Err(IndexerDatabaseError::BackendNotSupported(err.into())),
         }
     }
 
