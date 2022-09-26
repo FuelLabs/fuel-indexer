@@ -12,7 +12,9 @@ use axum::{
     routing::{get, post},
     Router,
 };
-use fuel_indexer_database::{queries, IndexAssetType, IndexerConnectionPool, IndexerDatabaseError};
+use fuel_indexer_database::{
+    queries, IndexAssetType, IndexerConnectionPool, IndexerDatabaseError,
+};
 use fuel_indexer_database_types::IndexAsset;
 use fuel_indexer_lib::utils::{FuelNodeHealthResponse, ServiceStatus};
 use fuel_indexer_schema::db::{
@@ -175,7 +177,10 @@ async fn authenticate_user(_signature: &str) -> Option<Result<bool, ApiError>> {
     Some(Ok(true))
 }
 
-async fn authorize_middleware<B>(mut req: Request<B>, next: Next<B>) -> impl IntoResponse {
+async fn authorize_middleware<B>(
+    mut req: Request<B>,
+    next: Next<B>,
+) -> impl IntoResponse {
     let header = req
         .headers()
         .get(http::header::AUTHORIZATION)

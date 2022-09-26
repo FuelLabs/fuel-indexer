@@ -1,6 +1,8 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
-use sqlx::{pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection};
+use sqlx::{
+    pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection,
+};
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
 
@@ -51,7 +53,9 @@ pub async fn run_migration(database_url: &str) {
                     sleep(Duration::from_secs(delay)).await;
                     delay *= 2;
                 } else {
-                    panic!("Retry attempts exceeded; could not connect to sqlite backend!")
+                    panic!(
+                        "Retry attempts exceeded; could not connect to sqlite backend!"
+                    )
                 }
             }
         }
@@ -475,7 +479,9 @@ pub async fn register_index_asset(
 
     let digest = sha256_digest(&bytes);
 
-    if let Some(asset) = asset_already_exists(conn, &asset_type, &bytes, &index.id).await? {
+    if let Some(asset) =
+        asset_already_exists(conn, &asset_type, &bytes, &index.id).await?
+    {
         info!(
             "Asset({:?}) for Index({}) already registered.",
             asset_type,
