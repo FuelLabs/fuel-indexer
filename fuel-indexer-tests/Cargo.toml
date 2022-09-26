@@ -22,17 +22,14 @@ harness = true
 async-std = "1.12"
 chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { path = "./../fuel-indexer" }
-fuel-indexer-schema = { path = "./../fuel-indexer-schema" }
 fuel-indexer-database = { path = "./../fuel-indexer-database" }
+fuel-indexer-schema = { path = "./../fuel-indexer-schema" }
 fuel-types = "0.3"
 fuels = "0.15"
 fuels-abigen-macro = "0.15"
 futures = "0.3"
-insta = "1.8"
 itertools = "0.10"
 rand = "0.8"
-reqwest = { version = "0.11", default-features = false, features = ["rustls-tls"] }
-rstest = "0.15"
 serde_json = "1.0"
 serde_yaml = "0.8"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread"] }
