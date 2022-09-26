@@ -12,15 +12,15 @@ error: Type Ident { ident: "BadType", span: #0 bytes(304..311) } not defined in 
    = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
-  --> test_data/fail_unknown_type.rs:38:21
+  --> test_data/fail_unknown_type.rs:41:21
    |
-38 |                     Receipt::Call {
+41 |                     Receipt::Call {
    |                     ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
-  --> test_data/fail_unknown_type.rs:49:21
+  --> test_data/fail_unknown_type.rs:52:21
    |
-49 |                     Receipt::ReturnData {
+52 |                     Receipt::ReturnData {
    |                     ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
@@ -56,9 +56,9 @@ help: consider importing one of these items
    |
 
 error[E0425]: cannot find function `serialize` in this scope
-  --> test_data/fail_unknown_type.rs:63:21
+  --> test_data/fail_unknown_type.rs:66:21
    |
-63 |     let mut bytes = serialize(&data);
+66 |     let mut bytes = serialize(&data);
    |                     ^^^^^^^^^ not found in this scope
    |
 help: consider importing one of these items
@@ -71,9 +71,9 @@ help: consider importing one of these items
    |
 
 error[E0425]: cannot find function `handle_events` in this scope
-  --> test_data/fail_unknown_type.rs:68:5
+  --> test_data/fail_unknown_type.rs:71:5
    |
-68 |     handle_events(ptr, len);
+71 |     handle_events(ptr, len);
    |     ^^^^^^^^^^^^^ not found in this scope
 
 error: unused import: `Tokenizable`

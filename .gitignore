@@ -7,4 +7,3 @@ docs/book/
 *.swp
 *.db
 *.db*
-*.wasm
