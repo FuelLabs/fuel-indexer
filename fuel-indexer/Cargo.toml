@@ -25,7 +25,6 @@ fuel-indexer-sqlite = { path = "../fuel-indexer-database/sqlite" }
 fuel-tx = "0.9"
 fuel-types = "0.3"
 fuel-vm = { version = "0.8" }
-fuels-core = { version = "0.15" }
 futures = "0.3"
 http = "0.2"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}
@@ -45,12 +44,9 @@ wasmer-engine-universal = "2.0"
 [dev-dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 fuel-core = { version = "0.6.4", features = ["test-helpers"] }
-fuel-crypto = "0.5"
 fuel-gql-client = { version = "0.6.4", features = ["test-helpers"] }
 fuel-storage = { version = "0.1" }
 fuel-types = "0.3"
-fuels = "0.15"
-fuels-abigen-macro = { version = "0.15" }
 itertools = { version = "0.10" }
 rand = "0.8"
 serde_yaml = "0.8"
