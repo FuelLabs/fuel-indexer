@@ -92,7 +92,8 @@ fn process_type_def<'a>(
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
 ) -> Option<proc_macro2::TokenStream> {
-    let copy_traits: HashSet<String> = HashSet::from_iter(["Jsonb"].iter().map(|x| x.to_string()));
+    let copy_traits: HashSet<String> =
+        HashSet::from_iter(["Jsonb"].iter().map(|x| x.to_string()));
     match typ {
         TypeDefinition::Object(obj) => {
             if obj.name == *query_root {
@@ -107,11 +108,14 @@ fn process_type_def<'a>(
             let mut flattened = quote! {};
 
             for field in &obj.fields {
-                let (mut type_name, mut field_name, mut ext) = process_field(types, field);
+                let (mut type_name, mut field_name, mut ext) =
+                    process_field(types, field);
 
                 let type_name_str = type_name.to_string();
 
-                if processed.contains(&type_name_str) && !primitives.contains(&type_name_str) {
+                if processed.contains(&type_name_str)
+                    && !primitives.contains(&type_name_str)
+                {
                     (type_name, field_name, ext) = process_fk_field(types, field);
                 }
 

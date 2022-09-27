@@ -225,7 +225,8 @@ fn process_fn_items(
 
                     block_dispatchers.push(quote! { self.#name.push(data); });
 
-                    blockdata_decoding = quote! { decoder.decode_blockdata(block.clone()); };
+                    blockdata_decoding =
+                        quote! { decoder.decode_blockdata(block.clone()); };
                 }
 
                 for inp in &fn_item.sig.inputs {

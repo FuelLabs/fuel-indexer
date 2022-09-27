@@ -210,9 +210,9 @@ impl FtColumn {
             ColumnType::ForeignKey => {
                 panic!("ForeignKey not supported for FtColumn!");
             }
-            ColumnType::Jsonb => {
-                FtColumn::Jsonb(Jsonb(String::from_utf8_lossy(&bytes[..size]).to_string()))
-            }
+            ColumnType::Jsonb => FtColumn::Jsonb(Jsonb(
+                String::from_utf8_lossy(&bytes[..size]).to_string(),
+            )),
         }
     }
 

@@ -98,7 +98,9 @@ impl NewColumn {
             ColumnType::UInt8 => "bigint",
             ColumnType::Timestamp => "timestamp",
             ColumnType::Blob => "bytea",
-            ColumnType::ForeignKey => panic!("ForeignKey ColumnType is a reference type only."),
+            ColumnType::ForeignKey => {
+                panic!("ForeignKey ColumnType is a reference type only.")
+            }
             ColumnType::Jsonb => "jsonb",
         }
     }

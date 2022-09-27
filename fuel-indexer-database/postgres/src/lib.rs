@@ -1,6 +1,8 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::{attempt_database_connection, sha256_digest};
-use sqlx::{pool::PoolConnection, types::JsonValue, Connection, PgConnection, Postgres, Row};
+use sqlx::{
+    pool::PoolConnection, types::JsonValue, Connection, PgConnection, Postgres, Row,
+};
 use tracing::info;
 
 pub async fn put_object(
@@ -31,7 +33,8 @@ pub async fn get_object(
 }
 
 pub async fn run_migration(database_url: &str) {
-    let mut conn = attempt_database_connection(|| PgConnection::connect(database_url)).await;
+    let mut conn =
+        attempt_database_connection(|| PgConnection::connect(database_url)).await;
 
     sqlx::migrate!()
         .run(&mut conn)
