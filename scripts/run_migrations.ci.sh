@@ -6,7 +6,8 @@ sqlx migrate run
 
 cd -
 
-export DATABASE_URL="sqlite://${PWD}/fuel-indexer/test.db"
+touch $PWD/fuel-indexer-tests/test.db
+export DATABASE_URL="sqlite://${PWD}/fuel-indexer-tests/test.db"
 cd fuel-indexer-database/sqlite
 sqlx database create
 sqlx migrate run
