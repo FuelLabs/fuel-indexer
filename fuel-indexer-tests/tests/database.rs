@@ -48,7 +48,7 @@ async fn test_schema_manager_generates_and_loads_schema_postgres() {
 
 #[tokio::test]
 async fn test_schema_manager_generates_and_loads_schema_sqlite() {
-    let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("..");
+    let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
     let database_url = format!("sqlite://{}/test.db", workspace_root.display());
     generate_schema_then_load_schema_from_wasm_module(&database_url).await;
 }

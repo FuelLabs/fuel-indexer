@@ -49,9 +49,8 @@ async fn test_can_create_wasm_executor_and_index_abi_entity_in_postgres() {
 
 #[tokio::test]
 async fn test_can_create_wasm_executor_and_index_abi_entity_in_sqlite() {
-    let workspace_root = env!("CARGO_MANIFEST_DIR");
-    let sqlite_test_db = std::path::Path::new(workspace_root).join("..");
-    let database_url = format!("sqlite://{}/test.db", sqlite_test_db.display());
+    let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let database_url = format!("sqlite://{}/test.db", workspace_root.display());
 
     create_wasm_executor_and_handle_events(&database_url).await;
 
