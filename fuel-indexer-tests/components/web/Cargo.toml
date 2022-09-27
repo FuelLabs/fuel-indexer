@@ -9,14 +9,9 @@ edition = "2021"
 name = "web-api"
 path = "src/bin/web-api.rs"
 
-
 [[bin]]
 name = "fuel-node"
 path = "src/bin/fuel-node.rs"
-
-[lib]
-name = "composable_indexer"
-path = "src/lib.rs"
 
 [dependencies]
 anyhow = { version = "1.0", default-features = false }
@@ -35,3 +30,4 @@ thiserror = "1.0"
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.2", features = ["env-filter"] }
+fuel-indexer-tests = { path = "./../../../fuel-indexer-tests" }

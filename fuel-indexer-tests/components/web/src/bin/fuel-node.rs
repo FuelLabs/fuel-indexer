@@ -1,5 +1,5 @@
 use clap::Parser;
-use composable_indexer::{defaults, tx_params};
+use fuel_indexer_tests::{defaults, utils::tx_params};
 use fuels::{
     node::{
         chain_config::{ChainConfig, StateConfig},

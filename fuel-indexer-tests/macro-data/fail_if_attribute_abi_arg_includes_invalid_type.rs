@@ -4,12 +4,11 @@ use fuel_indexer_macros::indexer;
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
 
-
 #[indexer(
     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
     namespace = "test_namespace",
     identifier = "index2",
-    schema = "./../examples/simple-wasm/schema/schema.graphql",
+    schema = "./../examples/simple-wasm/schema/schema.graphql"
 )]
 mod indexer {
     fn function_one(event: BadType) {
@@ -28,40 +27,38 @@ fn main() {
         account: [48u8; 32],
     };
 
-    let bytes = ABIEncoder::new().encode(&[s.into_token()]).expect("Failed compile test");
+    let bytes = ABIEncoder::new()
+        .encode(&[s.into_token()])
+        .expect("Failed compile test");
 
-    let data: Vec<BlockData> = vec![
-        BlockData {
-            height: 0,
-            id: [0u8; 32].into(),
-            producer: [0u8; 32].into(),
-            time: 1,
-            transactions: vec![
-                vec![
-                    Receipt::Call {
-                        id: [0u8; 32].into(),
-                        to: [0u8; 32].into(),
-                        amount: 400,
-                        asset_id: [0u8; 32].into(),
-                        gas: 4,
-                        param1: 2048508220,
-                        param2: 0,
-                        pc: 0,
-                        is: 0,
-                    },
-                    Receipt::ReturnData {
-                        id: [0u8; 32].into(),
-                        ptr: 2342143,
-                        len: bytes.len() as u64,
-                        digest: [0u8; 32].into(),
-                        data: bytes,
-                        pc: 0,
-                        is: 0,
-                    },
-                ]
-            ]
-        }
-    ];
+    let data: Vec<BlockData> = vec![BlockData {
+        height: 0,
+        id: [0u8; 32].into(),
+        producer: [0u8; 32].into(),
+        time: 1,
+        transactions: vec![vec![
+            Receipt::Call {
+                id: [0u8; 32].into(),
+                to: [0u8; 32].into(),
+                amount: 400,
+                asset_id: [0u8; 32].into(),
+                gas: 4,
+                param1: 2048508220,
+                param2: 0,
+                pc: 0,
+                is: 0,
+            },
+            Receipt::ReturnData {
+                id: [0u8; 32].into(),
+                ptr: 2342143,
+                len: bytes.len() as u64,
+                digest: [0u8; 32].into(),
+                data: bytes,
+                pc: 0,
+                is: 0,
+            },
+        ]],
+    }];
 
     let mut bytes = serialize(&data);
 

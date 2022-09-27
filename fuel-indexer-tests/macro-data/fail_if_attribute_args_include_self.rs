@@ -4,7 +4,7 @@ use fuel_indexer_macros::indexer;
     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
     namespace = "test_namespace",
     identifier = "bar",
-    schema = "./../examples/simple-wasm/schema/schema.graphql",
+    schema = "./../examples/simple-wasm/schema/schema.graphql"
 )]
 mod indexer {
     fn function_one(self, event: SomeEvent) {
@@ -14,5 +14,3 @@ mod indexer {
         t1.save();
     }
 }
-
-

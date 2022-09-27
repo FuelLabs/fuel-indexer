@@ -1,9 +1,9 @@
 use async_std::sync::{Arc, Mutex};
 use axum::{extract::Extension, routing::post, Router};
 use clap::Parser;
-use composable_indexer::defaults;
 use fuel_indexer_lib::utils::derive_socket_addr;
-use fuels::prelude::{Contract, LocalWallet, Provider, TxParameters};
+use fuel_indexer_tests::{defaults, utils::tx_params};
+use fuels::prelude::{Contract, LocalWallet, Provider};
 use fuels_abigen_macro::abigen;
 use std::{
     net::SocketAddr,
@@ -11,13 +11,6 @@ use std::{
 };
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
-
-pub fn tx_params() -> TxParameters {
-    let gas_price = 0;
-    let gas_limit = 1_000_000;
-    let byte_price = 0;
-    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price), None)
-}
 
 abigen!(
     FuelIndexer,
@@ -27,10 +20,10 @@ abigen!(
 #[derive(Debug, Parser, Clone)]
 #[clap(name = "Indexer test web api", about = "Test")]
 pub struct Args {
-    #[clap(long, help = "Test node host")]
-    pub fuel_node_host: Option<String>,
-    #[clap(long, help = "Test node port")]
-    pub fuel_node_port: Option<String>,
+    #[clap(long, default_value = "127.0.0.1", help = "Test node host")]
+    pub fuel_node_host: String,
+    #[clap(long, default_value = "4000", help = "Test node port")]
+    pub fuel_node_port: String,
     #[clap(long, help = "Test wallet filepath")]
     pub wallet_path: Option<PathBuf>,
     #[clap(long, help = "Contract bin filepath")]
@@ -76,15 +69,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let opts = Args::from_args();
 
-    let fuel_node_host = opts
-        .fuel_node_host
-        .unwrap_or_else(|| defaults::FUEL_NODE_HOST.to_string());
-
-    let fuel_node_port = opts
-        .fuel_node_port
-        .unwrap_or_else(|| defaults::FUEL_NODE_PORT.to_string());
-
-    let fuel_node_addr = derive_socket_addr(&fuel_node_host, &fuel_node_port).unwrap();
+    let fuel_node_addr =
+        derive_socket_addr(&opts.fuel_node_host, &opts.fuel_node_port).unwrap();
 
     tracing_subscriber::fmt::Subscriber::builder()
         .with_writer(std::io::stderr)
