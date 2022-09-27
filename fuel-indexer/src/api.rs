@@ -12,15 +12,8 @@ use axum::{
     routing::{get, post},
     Router,
 };
-<<<<<<< HEAD
-use fuel_indexer_database::{
-    queries, IndexAssetType, IndexerConnectionPool, IndexerDatabaseError,
-};
-use fuel_indexer_database_types::IndexAsset;
-=======
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_database_types::{IndexAsset, IndexAssetType};
->>>>>>> 74f30fb3abf9709c74dd07d1cede44930077bc78
 use fuel_indexer_lib::utils::{FuelNodeHealthResponse, ServiceStatus};
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},

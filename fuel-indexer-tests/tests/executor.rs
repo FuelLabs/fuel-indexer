@@ -118,6 +118,9 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
 
     let result = executor
         .handle_events(vec![BlockData {
+            id: [0u8; 32].into(),
+            producer: [0u8; 32].into(),
+            time: 1,
             height: 0,
             transactions: vec![
                 vec![

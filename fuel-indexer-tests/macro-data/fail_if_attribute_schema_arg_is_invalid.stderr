@@ -12,7 +12,6 @@ error: custom attribute panicked
    = help: message: Schema definition not found!
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
-<<<<<<< HEAD:fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.stderr
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
    |
    |                     Receipt::Call {
@@ -22,17 +21,6 @@ error[E0433]: failed to resolve: use of undeclared type `Receipt`
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
    |
    |                     Receipt::ReturnData {
-=======
-  --> test_data/fail_badschema.rs:41:21
-   |
-41 |                     Receipt::Call {
-   |                     ^^^^^^^ use of undeclared type `Receipt`
-
-error[E0433]: failed to resolve: use of undeclared type `Receipt`
-  --> test_data/fail_badschema.rs:52:21
-   |
-52 |                     Receipt::ReturnData {
->>>>>>> 74f30fb3abf9709c74dd07d1cede44930077bc78:fuel-indexer-macros/test_data/fail_badschema.stderr
    |                     ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
@@ -68,15 +56,9 @@ help: consider importing one of these items
    |
 
 error[E0425]: cannot find function `serialize` in this scope
-<<<<<<< HEAD:fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.stderr
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
    |
    |     let mut bytes = serialize(&data);
-=======
-  --> test_data/fail_badschema.rs:66:21
-   |
-66 |     let mut bytes = serialize(&data);
->>>>>>> 74f30fb3abf9709c74dd07d1cede44930077bc78:fuel-indexer-macros/test_data/fail_badschema.stderr
    |                     ^^^^^^^^^ not found in this scope
    |
 help: consider importing one of these items
@@ -89,15 +71,9 @@ help: consider importing one of these items
    |
 
 error[E0425]: cannot find function `handle_events` in this scope
-<<<<<<< HEAD:fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.stderr
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
    |
    |     handle_events(ptr, len);
-=======
-  --> test_data/fail_badschema.rs:71:5
-   |
-71 |     handle_events(ptr, len);
->>>>>>> 74f30fb3abf9709c74dd07d1cede44930077bc78:fuel-indexer-macros/test_data/fail_badschema.stderr
    |     ^^^^^^^^^^^^^ not found in this scope
 
 error: unused import: `Tokenizable`
