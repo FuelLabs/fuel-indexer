@@ -3,13 +3,6 @@ use fuel_indexer_tests::fixtures::{http_client, postgres_connection};
 use sqlx::Row;
 use tokio::time::{sleep, Duration};
 
-// --------------------------------------
-// Start the dependencies of this harness
-// --------------------------------------
-// cargo run --bin fuel-indexer -- \
-//     --manifest fuel-indexer-tests/assets/fuel_indexer_test.yaml \
-//     --fuel-node-host 0.0.0.0
-
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_ping_event() {
@@ -18,7 +11,7 @@ async fn test_can_trigger_and_index_ping_event() {
 
     let client = http_client();
     let response: u64 = client
-        .post("http://0.0.0.0:8000/ping")
+        .post("http://127.0.0.1:8000/ping")
         .send()
         .await
         .unwrap()
@@ -29,7 +22,7 @@ async fn test_can_trigger_and_index_ping_event() {
     assert_eq!(response, 123);
 
     // Events are not triggered immediately
-    sleep(Duration::from_millis(3000)).await;
+    sleep(Duration::from_millis(5000)).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.message where id = 1")
         .fetch_one(&mut conn)
