@@ -132,6 +132,7 @@ impl Database {
         columns: Vec<FtColumn>,
         bytes: Vec<u8>,
     ) {
+        println!(">> FOO: {} \n {:?} \n {:?}", type_id, columns, self.tables);
         let table = &self.tables[&type_id];
         let inserts: Vec<_> = columns.iter().map(|col| col.query_fragment()).collect();
         let updates: Vec<_> = self.schema[table]
@@ -213,8 +214,16 @@ impl Database {
             queries::columns_get_schema(&mut conn, &self.namespace, &self.version)
                 .await?;
 
+        println!(
+            ">>> NAMESPACE: {} | VERSION: {}",
+            self.namespace, self.version
+        );
+        println!(">>> RESULTS {:?}", results);
+
         for column in results {
             let table = &column.table_name;
+
+            println!(">> LOADING COLUMN: {:?} \n {}", column, table);
 
             self.tables
                 .entry(column.type_id as u64)

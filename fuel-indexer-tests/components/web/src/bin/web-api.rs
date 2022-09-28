@@ -14,13 +14,13 @@ use tracing_subscriber::filter::EnvFilter;
 
 abigen!(
     FuelIndexer,
-    "fuel-indexer-tests/contracts/fuel-indexer/out/debug/fuel-indexer-abi.json"
+    "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-abi.json"
 );
 
 #[derive(Debug, Parser, Clone)]
 #[clap(name = "Indexer test web api", about = "Test")]
 pub struct Args {
-    #[clap(long, default_value = "127.0.0.1", help = "Test node host")]
+    #[clap(long, default_value = "0.0.0.0", help = "Test node host")]
     pub fuel_node_host: String,
     #[clap(long, default_value = "4000", help = "Test node port")]
     pub fuel_node_port: String,
@@ -98,7 +98,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let bin_path = opts.bin_path.unwrap_or_else(|| {
         Path::join(
             manifest_dir,
-            "../../contracts/fuel-indexer/out/debug/fuel-indexer.bin",
+            "../../contracts/fuel-indexer-test/out/debug/fuel-indexer.bin",
         )
     });
 

@@ -1,13 +1,9 @@
-use fuel_indexer::Manifest;
 use fuel_indexer_tests::fixtures::{http_client, postgres_connection};
 use sqlx;
 use sqlx::Row;
-use std::path::Path;
-
-const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 #[tokio::test]
-async fn test_can_trigger_ping_event() {
+async fn test_can_trigger_and_index_ping_event() {
     let pool = postgres_connection("postgres://postgres@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
@@ -28,5 +24,12 @@ async fn test_can_trigger_ping_event() {
         .await
         .unwrap();
 
-    assert_eq!(row.len(), 1);
+    let id: i64 = row.get(0);
+    let ping: i64 = row.get(1);
+    let pong: i64 = row.get(2);
+    let _message: String = row.get(3);
+
+    assert_eq!(id, 1);
+    assert_eq!(ping, 123);
+    assert_eq!(pong, 456);
 }

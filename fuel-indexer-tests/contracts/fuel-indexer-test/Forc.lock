@@ -4,7 +4,7 @@ source = 'path+from-root-C3A89E5FB60D0337'
 dependencies = []
 
 [[package]]
-name = 'fuel-indexer'
+name = 'fuel-indexer-test'
 source = 'root'
 dependencies = ['std']
 
