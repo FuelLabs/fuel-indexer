@@ -168,8 +168,9 @@ jobs:
       - run: ./scripts/run_migrations.ci.sh
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
-      - run: bash scripts/start.bash
       - run: |
+          bash scripts/start.bash
+          
           ./fuel-indexer-tests/components/web/src/bin/fuel-indexer \
             --manifest fuel-indexer-tests/assets/fuel_indexer_test.yaml \
             --postgres-password my-secret \
