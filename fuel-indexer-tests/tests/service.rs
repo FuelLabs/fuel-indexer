@@ -32,6 +32,7 @@ fn tx_params() -> TxParameters {
 }
 
 #[tokio::test]
+#[cfg_attr(feature = "e2e", ignore)]
 async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres() {
     let workdir = Path::new(WORKSPACE_DIR);
 

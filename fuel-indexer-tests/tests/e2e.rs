@@ -1,5 +1,4 @@
 use fuel_indexer_tests::fixtures::{http_client, postgres_connection};
-use sqlx;
 use sqlx::Row;
 
 // --------------------------------------
@@ -10,6 +9,7 @@ use sqlx::Row;
 //     --fuel-node-host 0.0.0.0
 
 #[tokio::test]
+#[cfg_attr(not(feature = "e2e"), ignore)]
 async fn test_can_trigger_and_index_ping_event() {
     let pool = postgres_connection("postgres://postgres@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
