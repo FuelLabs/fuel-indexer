@@ -173,15 +173,8 @@ jobs:
           # Build the indexer
           cargo build -p fuel-indexer --release
 
-          # Start the test fuel node using the e2e test contract
-          ./fuel-indexer-tests/components/web/src/bin/fuel-node \
-            --wallet-path ./fuel-indexer-tests/components/web/wallet.json \
-            --bin-path ./fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
-
-          # STart the web api using the e2e test contract
-          ./fuel-indexer-tests/components/web/src/bin/web-api \
-            --wallet-path ./fuel-indexer-tests/components/web/wallet.json \
-            --bin-path ./fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
+          # Start the test web components
+          bash scripts/start.bash
 
           # Start the indexer with the e2e test manifest
           ./target/release/fuel-indexer \
@@ -192,9 +185,7 @@ jobs:
           RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --workspace --all-features --all-targets
 
           # Kill the running test procs
-          kill -9 ($lsof -ti:4000)
-          kill -9 ($lsof -ti:29987)
-          kill -9 ($lsof -ti:8000)
+          bash scripts/kill.bash
 
   cargo-fmt-workspace-check:
     needs: cancel-previous-runs
