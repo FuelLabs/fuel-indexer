@@ -166,13 +166,19 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
       - run: ./scripts/run_migrations.ci.sh
+
+      - name: Build fuel-indexer and test web components
+        uses: actions-rs/cargo@v1
+      - run: cargo build -p fuel-indexer-test-web -p fuel-indexer --release 
+
+      - name: Start test web components
+        run: bash scripts/start.bash
+
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
       - run: |
-          bash scripts/start.bash
-          
-          ./fuel-indexer-tests/components/web/src/bin/fuel-indexer \
-            --manifest fuel-indexer-tests/assets/fuel_indexer_test.yaml \
+          ./target/release/fuel-indexer \
+            --manifest ./fuel-indexer-tests/assets/fuel_indexer_test.yaml \
             --postgres-password my-secret \
             --fuel-node-host 0.0.0.0 &
       - run: RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --workspace --all-features --all-targets

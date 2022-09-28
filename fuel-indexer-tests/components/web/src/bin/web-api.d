@@ -1,1 +1,0 @@
-/Users/rashad/Development/repos/fuel-indexer/target/release/web-api: /Users/rashad/Development/repos/fuel-indexer/fuel-indexer-lib/src/lib.rs /Users/rashad/Development/repos/fuel-indexer/fuel-indexer-tests/components/web/src/bin/web-api.rs /Users/rashad/Development/repos/fuel-indexer/fuel-indexer-tests/components/web/src/lib.rs
