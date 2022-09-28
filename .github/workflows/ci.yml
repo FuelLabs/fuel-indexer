@@ -168,24 +168,14 @@ jobs:
       - run: ./scripts/run_migrations.ci.sh
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
+      - run: bash scripts/start.bash
       - run: |
-
-          # Build the indexer
-          cargo build -p fuel-indexer --release
-
-          # Start the test web components
-          bash scripts/start.bash
-
-          # Start the indexer with the e2e test manifest
-          ./target/release/fuel-indexer \
+          ./fuel-indexer-tests/components/web/src/bin/fuel-indexer \
             --manifest fuel-indexer-tests/assets/fuel_indexer_test.yaml \
+            --postgres-password my-secret \
             --fuel-node-host 0.0.0.0 &
-
-          # Run the tests
-          RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --workspace --all-features --all-targets
-
-          # Kill the running test procs
-          bash scripts/kill.bash
+      - run: RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --workspace --all-features --all-targets
+      - run: bash scripts/kill.bash
 
   cargo-fmt-workspace-check:
     needs: cancel-previous-runs

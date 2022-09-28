@@ -1,7 +1,7 @@
-#[allow(unused)]
+#![cfg_attr(not(feature = "e2e"), allow(dead_code, unused_imports))]
 use fuel_indexer_tests::fixtures::{http_client, postgres_connection};
-#[allow(unused)]
 use sqlx::Row;
+use tokio::time::{sleep, Duration};
 
 // --------------------------------------
 // Start the dependencies of this harness
@@ -13,7 +13,7 @@ use sqlx::Row;
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_ping_event() {
-    let pool = postgres_connection("postgres://postgres@127.0.0.1").await;
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
     let client = http_client();
@@ -27,6 +27,9 @@ async fn test_can_trigger_and_index_ping_event() {
         .unwrap();
 
     assert_eq!(response, 123);
+
+    // Events are not triggered immediately
+    sleep(Duration::from_millis(3000)).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.message where id = 1")
         .fetch_one(&mut conn)
