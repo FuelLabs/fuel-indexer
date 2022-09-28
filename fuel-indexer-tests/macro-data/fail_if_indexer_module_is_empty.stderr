@@ -5,7 +5,7 @@ error: No module body, must specify at least one handler function!
    | |     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
    | |     namespace = "test_namespace",
    | |     identifier = "index1",
-   | |     schema = "./../examples/simple-wasm/schema/schema.graphql",
+   | |     schema = "./../examples/simple-wasm/schema/schema.graphql"
    | | )]
    | |__^
    |
@@ -14,5 +14,5 @@ error: No module body, must specify at least one handler function!
 error[E0601]: `main` function not found in crate `$CRATE`
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_indexer_module_is_empty.rs
    |
-   | }
-   |  ^ consider adding a `main` function to `$WORKSPACE/fuel-indexer-tests/macro-data/fail_if_indexer_module_is_empty.rs`
+   | mod indexer {}
+   |               ^ consider adding a `main` function to `$WORKSPACE/fuel-indexer-tests/macro-data/fail_if_indexer_module_is_empty.rs`

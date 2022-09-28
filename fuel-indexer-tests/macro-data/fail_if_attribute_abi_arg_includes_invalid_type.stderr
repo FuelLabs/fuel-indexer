@@ -1,11 +1,11 @@
-error: Type Ident { ident: "BadType", span: #0 bytes(356..363) } not defined in the ABI.
+error: Type Ident { ident: "BadType", span: #0 bytes(354..361) } not defined in the ABI.
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    | / #[indexer(
    | |     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
    | |     namespace = "test_namespace",
    | |     identifier = "index2",
-   | |     schema = "./../examples/simple-wasm/schema/schema.graphql",
+   | |     schema = "./../examples/simple-wasm/schema/schema.graphql"
    | | )]
    | |__^
    |
@@ -14,14 +14,14 @@ error: Type Ident { ident: "BadType", span: #0 bytes(356..363) } not defined in 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
-   |                     Receipt::Call {
-   |                     ^^^^^^^ use of undeclared type `Receipt`
+   |             Receipt::Call {
+   |             ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
-   |                     Receipt::ReturnData {
-   |                     ^^^^^^^ use of undeclared type `Receipt`
+   |             Receipt::ReturnData {
+   |             ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -32,7 +32,7 @@ error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scop
 error[E0412]: cannot find type `BlockData` in this scope
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
-   |     let data: Vec<BlockData> = vec![
+   |     let data: Vec<BlockData> = vec![BlockData {
    |                   ^^^^^^^^^ not found in this scope
    |
 help: consider importing one of these items
@@ -45,8 +45,8 @@ help: consider importing one of these items
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
-   |         BlockData {
-   |         ^^^^^^^^^ not found in this scope
+   |     let data: Vec<BlockData> = vec![BlockData {
+   |                                     ^^^^^^^^^ not found in this scope
    |
 help: consider importing one of these items
    |

@@ -5,7 +5,7 @@ error: `self` argument not allowed in handler function.
   | |     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
   | |     namespace = "test_namespace",
   | |     identifier = "bar",
-  | |     schema = "./../examples/simple-wasm/schema/schema.graphql",
+  | |     schema = "./../examples/simple-wasm/schema/schema.graphql"
   | | )]
   | |__^
   |
