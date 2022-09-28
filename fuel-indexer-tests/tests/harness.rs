@@ -2,6 +2,13 @@ use fuel_indexer_tests::fixtures::{http_client, postgres_connection};
 use sqlx;
 use sqlx::Row;
 
+// --------------------------------------
+// Start the dependencies of this harness
+// --------------------------------------
+// cargo run --bin fuel-indexer -- \
+//     --manifest fuel-indexer-tests/assets/fuel_indexer_test.yaml \
+//     --fuel-node-host 0.0.0.0
+
 #[tokio::test]
 async fn test_can_trigger_and_index_ping_event() {
     let pool = postgres_connection("postgres://postgres@127.0.0.1").await;
