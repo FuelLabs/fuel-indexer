@@ -214,16 +214,8 @@ impl Database {
             queries::columns_get_schema(&mut conn, &self.namespace, &self.version)
                 .await?;
 
-        println!(
-            ">>> NAMESPACE: {} | VERSION: {}",
-            self.namespace, self.version
-        );
-        println!(">>> RESULTS {:?}", results);
-
         for column in results {
             let table = &column.table_name;
-
-            println!(">> LOADING COLUMN: {:?} \n {}", column, table);
 
             self.tables
                 .entry(column.type_id as u64)

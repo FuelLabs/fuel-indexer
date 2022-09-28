@@ -2038,7 +2038,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2058,7 +2058,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2072,14 +2072,14 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "fuel-indexer-lib"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -2118,7 +2118,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2149,7 +2149,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-sqlite"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2159,7 +2159,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-test"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
@@ -2172,7 +2172,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-test-web"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -4744,7 +4744,7 @@ checksum = "62ac7f900db32bf3fd12e0117dd3dc4da74bc52ebaac97f39668446d89694803"
 
 [[package]]
 name = "simple"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fuel-crypto 0.5.0",
  "fuels",
@@ -4768,7 +4768,7 @@ dependencies = [
 
 [[package]]
 name = "simple-wasm"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",

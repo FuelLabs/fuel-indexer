@@ -35,7 +35,7 @@ target = "wasm32-unknown-unknown"
 ```toml
 [package]
 name = "hello-indexer"
-version = "0.1.0"
+version = "0.0.0"
 edition = "2021"
 publish = false
 

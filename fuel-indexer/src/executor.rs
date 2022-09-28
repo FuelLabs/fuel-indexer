@@ -181,7 +181,6 @@ impl WasmIndexExecutor {
 
         let instance = Instance::new(&module, &import_object)?;
         env.init_with_instance(&instance)?;
-        println!(">>>> LOADING WASM");
         env.db.lock().await.load_schema_wasm(&instance).await?;
 
         if !instance

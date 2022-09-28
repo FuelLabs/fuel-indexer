@@ -1,6 +1,6 @@
 #!/bin/bash
 
-bash ./scripts/kill.bash
+bash ./scripts/kill_test_components.bash
 
 ./target/release/fuel-node \
     --wallet-path ./fuel-indexer-tests/components/web/wallet.json \
