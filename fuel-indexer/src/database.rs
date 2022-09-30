@@ -132,7 +132,6 @@ impl Database {
         columns: Vec<FtColumn>,
         bytes: Vec<u8>,
     ) {
-        println!(">> FOO: {} \n {:?} \n {:?}", type_id, columns, self.tables);
         let table = &self.tables[&type_id];
         let inserts: Vec<_> = columns.iter().map(|col| col.query_fragment()).collect();
         let updates: Vec<_> = self.schema[table]
