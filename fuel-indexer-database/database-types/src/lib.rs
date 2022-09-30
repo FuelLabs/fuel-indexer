@@ -1,6 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use thiserror::Error;
 
 #[derive(Debug)]
 pub struct RootColumns {
@@ -99,7 +98,10 @@ impl NewColumn {
             ColumnType::UInt8 => "bigint",
             ColumnType::Timestamp => "timestamp",
             ColumnType::Blob => "bytea",
-            ColumnType::ForeignKey => panic!("ForeignKey ColumnType is a reference type only."),
+            ColumnType::ForeignKey => {
+                panic!("ForeignKey ColumnType is a reference type only.")
+            }
+            ColumnType::Jsonb => "jsonb",
         }
     }
 }
@@ -130,6 +132,7 @@ pub enum ColumnType {
     Timestamp = 12,
     Blob = 13,
     ForeignKey = 14,
+    Jsonb = 15,
 }
 
 impl From<ColumnType> for i32 {
@@ -150,6 +153,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Timestamp => 12,
             ColumnType::Blob => 13,
             ColumnType::ForeignKey => 14,
+            ColumnType::Jsonb => 15,
         }
     }
 }
@@ -178,6 +182,7 @@ impl From<i32> for ColumnType {
             12 => ColumnType::Timestamp,
             13 => ColumnType::Blob,
             14 => ColumnType::ForeignKey,
+            15 => ColumnType::Jsonb,
             _ => panic!("Invalid column type!"),
         }
     }
@@ -201,6 +206,7 @@ impl From<&str> for ColumnType {
             "Timestamp" => ColumnType::Timestamp,
             "Blob" => ColumnType::Blob,
             "ForeignKey" => ColumnType::ForeignKey,
+            "Jsonb" => ColumnType::Jsonb,
             _ => panic!("Invalid column type! {}", name),
         }
     }
@@ -230,12 +236,33 @@ pub enum IndexAssetType {
     Schema,
 }
 
+impl IndexAssetType {
+    pub fn as_str(&self) -> &str {
+        match self {
+            IndexAssetType::Wasm => "wasm",
+            IndexAssetType::Manifest => "manifest",
+            IndexAssetType::Schema => "schema",
+        }
+    }
+}
+
 impl ToString for IndexAssetType {
     fn to_string(&self) -> String {
         match self {
             IndexAssetType::Wasm => "wasm".to_string(),
             IndexAssetType::Manifest => "manifest".to_string(),
             IndexAssetType::Schema => "schema".to_string(),
+        }
+    }
+}
+
+impl From<&str> for IndexAssetType {
+    fn from(a: &str) -> Self {
+        match a {
+            "wasm" => Self::Wasm,
+            "manifest" => Self::Manifest,
+            "schema" => Self::Schema,
+            _ => panic!("Unrecognized IndexAssetType."),
         }
     }
 }
@@ -262,12 +289,4 @@ impl RegisteredIndex {
     pub fn uid(&self) -> String {
         format!("{}.{}", self.namespace, self.identifier)
     }
-}
-
-#[derive(Debug, Error)]
-pub enum QueryError {
-    #[error("No transaction is open")]
-    NoTransactionError,
-    #[error("Unknown error")]
-    Unknown,
 }

@@ -24,6 +24,9 @@ pub mod db;
 
 pub use fuel_types::{Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word};
 
+#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
+pub struct Jsonb(pub String);
+
 pub type ID = u64;
 pub type Int4 = i32;
 pub type Int8 = i64;
@@ -31,10 +34,19 @@ pub type UInt4 = u32;
 pub type UInt8 = u64;
 pub type Timestamp = u64;
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct BlockData {
     pub height: u64,
+    pub id: Bytes32,
+    pub time: i64,
+    pub producer: Address,
     pub transactions: Vec<Vec<Receipt>>,
+}
+
+impl BlockData {
+    pub fn ident() -> String {
+        "BlockData".to_string()
+    }
 }
 
 // serde_scale for now, can look at other options if necessary.
@@ -51,7 +63,9 @@ pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String>
 
 pub fn type_id(namespace: &str, type_name: &str) -> u64 {
     let mut bytes = [0u8; 8];
-    bytes.copy_from_slice(&Sha256::digest(format!("{}:{}", namespace, type_name).as_bytes())[..8]);
+    bytes.copy_from_slice(
+        &Sha256::digest(format!("{}:{}", namespace, type_name).as_bytes())[..8],
+    );
     u64::from_le_bytes(bytes)
 }
 
@@ -99,7 +113,7 @@ pub fn get_schema_types(ast: &Document<String>) -> (HashSet<String>, HashSet<Str
     (types, directives)
 }
 
-#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone)]
+#[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
     ID(u64),
     Address(Address),
@@ -114,34 +128,41 @@ pub enum FtColumn {
     UInt8(u64),
     Timestamp(u64),
     Salt(Salt),
+    Jsonb(Jsonb),
 }
 
 impl FtColumn {
     pub fn new(ty: ColumnType, size: usize, bytes: &[u8]) -> FtColumn {
         match ty {
             ColumnType::ID => {
-                let ident =
-                    u64::from_le_bytes(bytes[..size].try_into().expect("Invalid slice length"));
+                let ident = u64::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
                 FtColumn::ID(ident)
             }
             ColumnType::Address => {
-                let address = Address::try_from(&bytes[..size]).expect("Invalid slice length");
+                let address =
+                    Address::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Address(address)
             }
             ColumnType::AssetId => {
-                let asset_id = AssetId::try_from(&bytes[..size]).expect("Invalid slice length");
+                let asset_id =
+                    AssetId::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::AssetId(asset_id)
             }
             ColumnType::Bytes4 => {
-                let bytes = Bytes4::try_from(&bytes[..size]).expect("Invalid slice length");
+                let bytes =
+                    Bytes4::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Bytes4(bytes)
             }
             ColumnType::Bytes8 => {
-                let bytes = Bytes8::try_from(&bytes[..size]).expect("Invalid slice length");
+                let bytes =
+                    Bytes8::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Bytes8(bytes)
             }
             ColumnType::Bytes32 => {
-                let bytes = Bytes32::try_from(&bytes[..size]).expect("Invalid slice length");
+                let bytes =
+                    Bytes32::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Bytes32(bytes)
             }
             ColumnType::ContractId => {
@@ -154,28 +175,33 @@ impl FtColumn {
                 FtColumn::Salt(salt)
             }
             ColumnType::Int4 => {
-                let int4 =
-                    i32::from_le_bytes(bytes[..size].try_into().expect("Invalid slice length"));
+                let int4 = i32::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
                 FtColumn::Int4(int4)
             }
             ColumnType::Int8 => {
-                let int8 =
-                    i64::from_le_bytes(bytes[..size].try_into().expect("Invalid slice length"));
+                let int8 = i64::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
                 FtColumn::Int8(int8)
             }
             ColumnType::UInt4 => {
-                let int4 =
-                    u32::from_le_bytes(bytes[..size].try_into().expect("Invalid slice length"));
+                let int4 = u32::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
                 FtColumn::UInt4(int4)
             }
             ColumnType::UInt8 => {
-                let int8 =
-                    u64::from_le_bytes(bytes[..size].try_into().expect("Invalid slice length"));
+                let int8 = u64::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
                 FtColumn::UInt8(int8)
             }
             ColumnType::Timestamp => {
-                let uint8 =
-                    u64::from_le_bytes(bytes[..size].try_into().expect("Invalid slice length"));
+                let uint8 = u64::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
                 FtColumn::Timestamp(uint8)
             }
             ColumnType::Blob => {
@@ -184,6 +210,9 @@ impl FtColumn {
             ColumnType::ForeignKey => {
                 panic!("ForeignKey not supported for FtColumn!");
             }
+            ColumnType::Jsonb => FtColumn::Jsonb(Jsonb(
+                String::from_utf8_lossy(&bytes[..size]).to_string(),
+            )),
         }
     }
 
@@ -228,6 +257,9 @@ impl FtColumn {
             FtColumn::Salt(value) => {
                 format!("'{:x}'", value)
             }
+            FtColumn::Jsonb(value) => {
+                format!("'{}'", value.0)
+            }
         }
     }
 }
@@ -239,11 +271,14 @@ mod tests {
 
         let id = FtColumn::ID(123456);
         let addr = FtColumn::Address(Address::try_from([0x12; 32]).expect("Bad bytes"));
-        let asset_id = FtColumn::AssetId(AssetId::try_from([0xA5; 32]).expect("Bad bytes"));
+        let asset_id =
+            FtColumn::AssetId(AssetId::try_from([0xA5; 32]).expect("Bad bytes"));
         let bytes4 = FtColumn::Bytes4(Bytes4::try_from([0xF0; 4]).expect("Bad bytes"));
         let bytes8 = FtColumn::Bytes8(Bytes8::try_from([0x9D; 8]).expect("Bad bytes"));
-        let bytes32 = FtColumn::Bytes32(Bytes32::try_from([0xEE; 32]).expect("Bad bytes"));
-        let contractid = FtColumn::ContractId(ContractId::try_from([0x78; 32]).expect("Bad bytes"));
+        let bytes32 =
+            FtColumn::Bytes32(Bytes32::try_from([0xEE; 32]).expect("Bad bytes"));
+        let contractid =
+            FtColumn::ContractId(ContractId::try_from([0x78; 32]).expect("Bad bytes"));
         let int4 = FtColumn::Int4(i32::from_le_bytes([0x78; 4]));
         let int8 = FtColumn::Int8(i64::from_le_bytes([0x78; 8]));
         let uint4 = FtColumn::UInt4(u32::from_le_bytes([0x78; 4]));

@@ -230,8 +230,9 @@ impl MutableConfig for DatabaseConfig {
                     .expect("Failed to convert path to &str slice");
                 if is_opt_env_var(os_str) {
                     *path = PathBuf::from(
-                        std::env::var(trim_opt_env_key(os_str))
-                            .unwrap_or_else(|_| format!("Failed to read '{}' from env", os_str)),
+                        std::env::var(trim_opt_env_key(os_str)).unwrap_or_else(|_| {
+                            format!("Failed to read '{}' from env", os_str)
+                        }),
                     );
                 }
             }
@@ -243,7 +244,9 @@ impl MutableConfig for DatabaseConfig {
         match self {
             DatabaseConfig::Postgres { host, port, .. } => derive_socket_addr(host, port),
             _ => {
-                panic!("Cannot use MutableConfig::derive_socket_addr on a SQLite database.")
+                panic!(
+                    "Cannot use MutableConfig::derive_socket_addr on a SQLite database."
+                )
             }
         }
     }
@@ -382,7 +385,10 @@ impl IndexerConfig {
         let database = match args.database.as_str() {
             "postgres" => DatabaseConfig::Postgres {
                 user: args.postgres_user.unwrap_or_else(|| {
-                    env_or_default(EnvVar::PostgresUser, defaults::POSTGRES_USER.to_string())
+                    env_or_default(
+                        EnvVar::PostgresUser,
+                        defaults::POSTGRES_USER.to_string(),
+                    )
                 }),
                 password: args.postgres_password.unwrap_or_else(|| {
                     env_or_default(
@@ -391,10 +397,16 @@ impl IndexerConfig {
                     )
                 }),
                 host: args.postgres_host.unwrap_or_else(|| {
-                    env_or_default(EnvVar::PostgresHost, defaults::POSTGRES_HOST.to_string())
+                    env_or_default(
+                        EnvVar::PostgresHost,
+                        defaults::POSTGRES_HOST.to_string(),
+                    )
                 }),
                 port: args.postgres_port.unwrap_or_else(|| {
-                    env_or_default(EnvVar::PostgresPort, defaults::POSTGRES_PORT.to_string())
+                    env_or_default(
+                        EnvVar::PostgresPort,
+                        defaults::POSTGRES_PORT.to_string(),
+                    )
                 }),
                 database: args.postgres_database.unwrap_or_else(|| {
                     env_or_default(

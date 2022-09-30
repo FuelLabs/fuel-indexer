@@ -1,6 +1,8 @@
 use quote::quote;
 
-pub fn handler_block_wasm(handler_block: proc_macro2::TokenStream) -> proc_macro2::TokenStream {
+pub fn handler_block_wasm(
+    handler_block: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
     quote! {
         #[no_mangle]
         fn handle_events(blob: *mut u8, len: usize) {

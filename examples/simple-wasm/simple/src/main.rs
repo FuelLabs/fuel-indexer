@@ -24,7 +24,8 @@ async fn get_contract_id(wallet: &WalletUnlocked) -> String {
     debug!("Creating new deployment for non-existent contract");
 
     let _compiled =
-        Contract::load_sway_contract("../contracts/out/debug/contracts.bin", &None).unwrap();
+        Contract::load_sway_contract("../contracts/out/debug/contracts.bin", &None)
+            .unwrap();
 
     let bin_path = "../contracts/out/debug/contracts.bin".to_string();
     let contract_id = Contract::deploy(
@@ -46,7 +47,8 @@ async fn setup_provider_and_wallet(port: u16) -> (Provider, WalletUnlocked) {
     let provider = Provider::connect(&address).await.unwrap();
 
     let path = Path::new(manifest_dir).join("wallet.json");
-    let wallet = WalletUnlocked::load_keystore(&path, "password", Some(provider.clone())).unwrap();
+    let wallet =
+        WalletUnlocked::load_keystore(&path, "password", Some(provider.clone())).unwrap();
 
     (provider, wallet)
 }

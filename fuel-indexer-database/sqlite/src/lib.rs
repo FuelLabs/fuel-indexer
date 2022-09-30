@@ -1,6 +1,8 @@
 use fuel_indexer_database_types::*;
-use fuel_indexer_lib::utils::sha256_digest;
-use sqlx::{pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection};
+use fuel_indexer_lib::utils::{attempt_database_connection, sha256_digest};
+use sqlx::{
+    pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection,
+};
 use tracing::info;
 
 pub async fn put_object(
@@ -17,7 +19,10 @@ pub async fn put_object(
     Ok(result.rows_affected() as usize)
 }
 
-pub async fn get_object(conn: &mut PoolConnection<Sqlite>, query: String) -> sqlx::Result<Vec<u8>> {
+pub async fn get_object(
+    conn: &mut PoolConnection<Sqlite>,
+    query: String,
+) -> sqlx::Result<Vec<u8>> {
     let mut builder = sqlx::QueryBuilder::new(query);
 
     let query = builder.build();
@@ -28,9 +33,8 @@ pub async fn get_object(conn: &mut PoolConnection<Sqlite>, query: String) -> sql
 }
 
 pub async fn run_migration(database_url: &str) {
-    let mut conn = SqliteConnection::connect(database_url)
-        .await
-        .expect("Failed to open sqlite database.");
+    let mut conn =
+        attempt_database_connection(|| SqliteConnection::connect(database_url)).await;
 
     sqlx::migrate!()
         .run(&mut conn)
@@ -421,11 +425,11 @@ pub async fn registered_indices(
 pub async fn index_asset_version(
     conn: &mut PoolConnection<Sqlite>,
     index_id: &i64,
-    asset_type: IndexAssetType,
+    asset_type: &IndexAssetType,
 ) -> sqlx::Result<i64> {
     match sqlx::query(&format!(
         "SELECT COUNT(*) FROM index_asset_registry_{} WHERE index_id = {}",
-        asset_type.to_string(),
+        asset_type.as_str(),
         index_id,
     ))
     .fetch_one(conn)
@@ -450,7 +454,9 @@ pub async fn register_index_asset(
 
     let digest = sha256_digest(&bytes);
 
-    if let Some(asset) = asset_already_exists(conn, asset_type.clone(), &bytes, &index.id).await? {
+    if let Some(asset) =
+        asset_already_exists(conn, &asset_type, &bytes, &index.id).await?
+    {
         info!(
             "Asset({:?}) for Index({}) already registered.",
             asset_type,
@@ -459,7 +465,7 @@ pub async fn register_index_asset(
         return Ok(asset);
     }
 
-    let current_version = index_asset_version(conn, &index.id, asset_type.clone())
+    let current_version = index_asset_version(conn, &index.id, &asset_type)
         .await
         .expect("Failed to get asset version.");
 
@@ -549,7 +555,7 @@ pub async fn latest_assets_for_index(
 
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Sqlite>,
-    asset_type: IndexAssetType,
+    asset_type: &IndexAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
 ) -> sqlx::Result<Option<IndexAsset>> {
@@ -586,10 +592,14 @@ pub async fn start_transaction(conn: &mut PoolConnection<Sqlite>) -> sqlx::Resul
     execute_query(conn, "BEGIN".into()).await
 }
 
-pub async fn commit_transaction(conn: &mut PoolConnection<Sqlite>) -> sqlx::Result<usize> {
+pub async fn commit_transaction(
+    conn: &mut PoolConnection<Sqlite>,
+) -> sqlx::Result<usize> {
     execute_query(conn, "COMMIT".into()).await
 }
 
-pub async fn revert_transaction(conn: &mut PoolConnection<Sqlite>) -> sqlx::Result<usize> {
+pub async fn revert_transaction(
+    conn: &mut PoolConnection<Sqlite>,
+) -> sqlx::Result<usize> {
     execute_query(conn, "ROLLBACK".into()).await
 }

@@ -10,7 +10,6 @@
     - [Configuration](./getting-started/configuration.md)
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-indexer.md)
-  - [Counter](./examples/counter.md)
 - [Components](./components/index.md)
   - [Manifest](./components/manifest.md)
   - [GraphQL](./components/gql-server.md)
