@@ -1,0 +1,85 @@
+error: custom attribute panicked
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+   |
+   | / #[indexer(
+   | |     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
+   | |     namespace = "test_namespace",
+   | |     identifier = "foo",
+   | |     schema = "./../fuel-indexer-tests/assets/bad_simple_wasm.graphql"
+   | | )]
+   | |__^
+   |
+   = help: message: Schema definition not found!
+
+error[E0433]: failed to resolve: use of undeclared type `Receipt`
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+   |
+   |             Receipt::Call {
+   |             ^^^^^^^ use of undeclared type `Receipt`
+
+error[E0433]: failed to resolve: use of undeclared type `Receipt`
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+   |
+   |             Receipt::ReturnData {
+   |             ^^^^^^^ use of undeclared type `Receipt`
+
+error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+   |
+   |     let s = SomeEvent {
+   |             ^^^^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `BlockData` in this scope
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+   |
+   |     let data: Vec<BlockData> = vec![BlockData {
+   |                   ^^^^^^^^^ not found in this scope
+   |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::BlockData;
+   |
+2  | use fuel_indexer_schema::BlockData;
+   |
+
+error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+   |
+   |     let data: Vec<BlockData> = vec![BlockData {
+   |                                     ^^^^^^^^^ not found in this scope
+   |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::BlockData;
+   |
+2  | use fuel_indexer_schema::BlockData;
+   |
+
+error[E0425]: cannot find function `serialize` in this scope
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+   |
+   |     let mut bytes = serialize(&data);
+   |                     ^^^^^^^^^ not found in this scope
+   |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::serialize;
+   |
+2  | use fuel_indexer_schema::serialize;
+   |
+2  | use fuels::node::chain_config::serialization::serde_hex::serialize;
+   |
+
+error[E0425]: cannot find function `handle_events` in this scope
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+   |
+   |     handle_events(ptr, len);
+   |     ^^^^^^^^^^^^^ not found in this scope
+
+error: unused import: `Tokenizable`
+  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+   |
+   |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+   |                                               ^^^^^^^^^^^
+   |
+   = note: `-D unused-imports` implied by `-D warnings`

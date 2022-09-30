@@ -92,7 +92,10 @@ impl SchemaBuilder {
         self
     }
 
-    pub async fn commit_metadata(self, conn: &mut IndexerConnection) -> sqlx::Result<Schema> {
+    pub async fn commit_metadata(
+        self,
+        conn: &mut IndexerConnection,
+    ) -> sqlx::Result<Schema> {
         #[allow(unused_variables)]
         let SchemaBuilder {
             version,
@@ -300,7 +303,8 @@ impl SchemaBuilder {
 
                 let table_name = o.name.to_lowercase();
                 let type_id = type_id(&self.namespace, &o.name);
-                let columns = self.generate_columns(type_id as i64, &o.fields, &table_name);
+                let columns =
+                    self.generate_columns(type_id as i64, &o.fields, &table_name);
 
                 let sql_table = self.db_type.table_name(&self.namespace, &table_name);
 
@@ -337,12 +341,16 @@ pub struct Schema {
 }
 
 impl Schema {
-    pub async fn load_from_db(pool: &IndexerConnectionPool, name: &str) -> sqlx::Result<Self> {
+    pub async fn load_from_db(
+        pool: &IndexerConnectionPool,
+        name: &str,
+    ) -> sqlx::Result<Self> {
         let mut conn = pool.acquire().await?;
         let root = queries::graph_root_latest(&mut conn, name).await?;
         let root_cols = queries::root_columns_list_by_id(&mut conn, root.id).await?;
         let typeids =
-            queries::type_id_list_by_name(&mut conn, &root.schema_name, &root.version).await?;
+            queries::type_id_list_by_name(&mut conn, &root.schema_name, &root.version)
+                .await?;
 
         let mut types = HashSet::new();
         let mut fields = HashMap::new();
@@ -442,7 +450,8 @@ mod tests {
             ")"
         );
 
-        let sb = SchemaBuilder::new("test_namespace", "a_version_string", DbType::Postgres);
+        let sb =
+            SchemaBuilder::new("test_namespace", "a_version_string", DbType::Postgres);
 
         let SchemaBuilder { statements, .. } = sb.build(graphql_schema);
 
@@ -482,11 +491,13 @@ mod tests {
         assert_eq!(indices.len(), 2);
         assert_eq!(
             indices[0].create_statement(),
-            "CREATE INDEX payer_account_idx ON namespace.payer USING btree (account);".to_string()
+            "CREATE INDEX payer_account_idx ON namespace.payer USING btree (account);"
+                .to_string()
         );
         assert_eq!(
             indices[1].create_statement(),
-            "CREATE INDEX payee_hash_idx ON namespace.payee USING btree (hash);".to_string()
+            "CREATE INDEX payee_hash_idx ON namespace.payee USING btree (hash);"
+                .to_string()
         );
     }
 

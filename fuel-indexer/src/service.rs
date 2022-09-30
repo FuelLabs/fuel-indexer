@@ -1,10 +1,13 @@
 use crate::{
     config::{IndexerConfig, MutableConfig},
     manifest::Module,
-    Executor, IndexerResult, Manifest, NativeIndexExecutor, SchemaManager, WasmIndexExecutor,
+    Executor, IndexerResult, Manifest, NativeIndexExecutor, SchemaManager,
+    WasmIndexExecutor,
 };
 use async_std::{fs::File, io::ReadExt, sync::Arc};
-use fuel_gql_client::client::{FuelClient, PageDirection, PaginatedResult, PaginationRequest};
+use fuel_gql_client::client::{
+    FuelClient, PageDirection, PaginatedResult, PaginationRequest,
+};
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
 use fuel_indexer_schema::{Address, BlockData, Bytes32};
@@ -62,7 +65,8 @@ impl IndexerService {
     ) -> IndexerResult<()> {
         let database_url = self.database_url.clone();
 
-        let pool = IndexerConnectionPool::connect(&self.config.database.to_string()).await?;
+        let pool =
+            IndexerConnectionPool::connect(&self.config.database.to_string()).await?;
         let mut conn = pool.acquire().await?;
 
         let _ = queries::start_transaction(&mut conn)
@@ -74,7 +78,8 @@ impl IndexerService {
                 let namespace = manifest.namespace.clone();
                 let identifier = manifest.identifier.clone();
 
-                let index = queries::register_index(&mut conn, &namespace, &identifier).await?;
+                let index =
+                    queries::register_index(&mut conn, &namespace, &identifier).await?;
 
                 let schema = manifest
                     .graphql_schema()
@@ -85,7 +90,11 @@ impl IndexerService {
                 self.manager.new_schema(&namespace, &schema).await?;
 
                 let (kill_switch, handle, wasm_bytes) = self
-                    .spawn_executor_from_manifest(&manifest, run_once, database_url.clone())
+                    .spawn_executor_from_manifest(
+                        &manifest,
+                        run_once,
+                        database_url.clone(),
+                    )
                     .await?;
 
                 let mut items = vec![
@@ -119,9 +128,11 @@ impl IndexerService {
             None => {
                 let indices = queries::registered_indices(&mut conn).await?;
                 for index in indices {
-                    let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
-                    let manifest: Manifest = serde_yaml::from_slice(&assets.manifest.bytes)
-                        .expect("Could not read manifest in registry.");
+                    let assets =
+                        queries::latest_assets_for_index(&mut conn, &index.id).await?;
+                    let manifest: Manifest =
+                        serde_yaml::from_slice(&assets.manifest.bytes)
+                            .expect("Could not read manifest in registry.");
 
                     let (kill_switch, handle) = self
                         .spawn_executor_from_index_asset_registry(
@@ -162,22 +173,32 @@ impl IndexerService {
                 let mut file = File::open(module).await?;
                 file.read_to_end(&mut bytes).await?;
 
-                let executor =
-                    WasmIndexExecutor::new(database_url, manifest.to_owned(), bytes.clone())
-                        .await?;
+                let executor = WasmIndexExecutor::new(
+                    database_url,
+                    manifest.to_owned(),
+                    bytes.clone(),
+                )
+                .await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
-                let handle =
-                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+                let handle = tokio::spawn(self.make_task(
+                    kill_switch.clone(),
+                    executor,
+                    start_block,
+                ));
 
                 Ok((kill_switch, handle, Some(bytes)))
             }
             Module::Native(ref path) => {
                 let path = path.clone();
                 let executor =
-                    NativeIndexExecutor::new(&database_url, manifest.to_owned(), path).await?;
+                    NativeIndexExecutor::new(&database_url, manifest.to_owned(), path)
+                        .await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
-                let handle =
-                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+                let handle = tokio::spawn(self.make_task(
+                    kill_switch.clone(),
+                    executor,
+                    start_block,
+                ));
 
                 Ok((kill_switch, handle, None))
             }
@@ -201,18 +222,28 @@ impl IndexerService {
                 )
                 .await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
-                let handle =
-                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+                let handle = tokio::spawn(self.make_task(
+                    kill_switch.clone(),
+                    executor,
+                    start_block,
+                ));
 
                 Ok((kill_switch, handle))
             }
             Module::Native(ref path) => {
                 let path = path.clone();
-                let executor =
-                    NativeIndexExecutor::new(&self.database_url, manifest.to_owned(), path).await?;
+                let executor = NativeIndexExecutor::new(
+                    &self.database_url,
+                    manifest.to_owned(),
+                    path,
+                )
+                .await?;
                 let kill_switch = Arc::new(AtomicBool::new(run_once));
-                let handle =
-                    tokio::spawn(self.make_task(kill_switch.clone(), executor, start_block));
+                let handle = tokio::spawn(self.make_task(
+                    kill_switch.clone(),
+                    executor,
+                    start_block,
+                ));
 
                 Ok((kill_switch, handle))
             }

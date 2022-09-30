@@ -166,13 +166,27 @@ jobs:
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
       - run: ./scripts/run_migrations.ci.sh
-      - name: Cargo Test Workspace
+
+      - name: Build fuel-indexer and fuel-indexer-test-web
         uses: actions-rs/cargo@v1
         with:
-          command: test
-          args: --locked --workspace --all-features --all-targets
+          command: build
+          args: -p fuel-indexer -p fuel-indexer-test-web --locked --release
         env:
           RUSTFLAGS: '-D warnings'
+
+      - name: Start test web components
+        run: bash scripts/start_test_components.bash
+
+      - name: Cargo Test Workspace
+        uses: actions-rs/cargo@v1
+      - run: |
+          ./target/release/fuel-indexer \
+            --manifest ./fuel-indexer-tests/assets/fuel_indexer_test.yaml \
+            --postgres-password my-secret &
+        
+      - run: RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --workspace --all-features --all-targets
+      - run: bash scripts/kill_test_components.bash
 
   cargo-fmt-workspace-check:
     needs: cancel-previous-runs
@@ -459,4 +473,4 @@ jobs:
         env:
           K8S: 'eks'
           CONFIG: 'fuel-dev1'
-          ENV: 'fueldevsway.env'
+          ENV: 'fueldevsway.env' 

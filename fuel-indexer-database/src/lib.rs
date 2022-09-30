@@ -97,9 +97,10 @@ impl IndexerConnectionPool {
         match self {
             IndexerConnectionPool::Postgres(p) => {
                 let mut conn = p.acquire().await.expect("Failed to get pool connection");
-                let result = postgres::execute_query(&mut conn, "SELECT true;".to_string())
-                    .await
-                    .expect("Failed to test Postgres connection.");
+                let result =
+                    postgres::execute_query(&mut conn, "SELECT true;".to_string())
+                        .await
+                        .expect("Failed to test Postgres connection.");
 
                 match result.cmp(&1) {
                     Ordering::Equal => Ok(ServiceStatus::OK),
@@ -125,7 +126,9 @@ impl IndexerConnectionPool {
             IndexerConnectionPool::Postgres(p) => {
                 Ok(IndexerConnection::Postgres(Box::new(p.acquire().await?)))
             }
-            IndexerConnectionPool::Sqlite(p) => Ok(IndexerConnection::Sqlite(p.acquire().await?)),
+            IndexerConnectionPool::Sqlite(p) => {
+                Ok(IndexerConnection::Sqlite(p.acquire().await?))
+            }
         }
     }
 }

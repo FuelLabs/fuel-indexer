@@ -25,7 +25,8 @@ abigen!(
 async fn get_contract_id(wallet: &Wallet) -> String {
     debug!("Creating new deployment for non-existent contract");
 
-    let _compiled = Contract::load_sway_contract("../contracts/out/debug/contracts.bin").unwrap();
+    let _compiled =
+        Contract::load_sway_contract("../contracts/out/debug/contracts.bin").unwrap();
 
     let bin_path = "../contracts/out/debug/contracts.bin".to_string();
     let contract_id = Contract::deploy(&bin_path, wallet, tx_params())
@@ -42,7 +43,8 @@ async fn setup_provider_and_wallet(port: u16) -> (Provider, Wallet) {
     let provider = Provider::connect(address.parse().unwrap()).await.unwrap();
 
     let path = Path::new(manifest_dir).join("wallet.json");
-    let wallet = LocalWallet::load_keystore(&path, "password", Some(provider.clone())).unwrap();
+    let wallet =
+        LocalWallet::load_keystore(&path, "password", Some(provider.clone())).unwrap();
 
     (provider, wallet)
 }

@@ -1,6 +1,8 @@
 use fuel_indexer_schema::{get_schema_types, schema_version, type_id, BASE_SCHEMA};
 use graphql_parser::parse_schema;
-use graphql_parser::schema::{Definition, Document, Field, SchemaDefinition, Type, TypeDefinition};
+use graphql_parser::schema::{
+    Definition, Document, Field, SchemaDefinition, Type, TypeDefinition,
+};
 use quote::{format_ident, quote};
 use std::collections::HashSet;
 use std::fs::File;
@@ -90,7 +92,8 @@ fn process_type_def<'a>(
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
 ) -> Option<proc_macro2::TokenStream> {
-    let copy_traits: HashSet<String> = HashSet::from_iter(["Jsonb"].iter().map(|x| x.to_string()));
+    let copy_traits: HashSet<String> =
+        HashSet::from_iter(["Jsonb"].iter().map(|x| x.to_string()));
     match typ {
         TypeDefinition::Object(obj) => {
             if obj.name == *query_root {
@@ -105,11 +108,14 @@ fn process_type_def<'a>(
             let mut flattened = quote! {};
 
             for field in &obj.fields {
-                let (mut type_name, mut field_name, mut ext) = process_field(types, field);
+                let (mut type_name, mut field_name, mut ext) =
+                    process_field(types, field);
 
                 let type_name_str = type_name.to_string();
 
-                if processed.contains(&type_name_str) && !primitives.contains(&type_name_str) {
+                if processed.contains(&type_name_str)
+                    && !primitives.contains(&type_name_str)
+                {
                     (type_name, field_name, ext) = process_fk_field(types, field);
                 }
 
@@ -249,7 +255,11 @@ pub(crate) fn process_graphql_schema(
     let mut file = match File::open(&current) {
         Ok(f) => f,
         Err(e) => {
-            proc_macro_error::abort_call_site!("Could not open schema file {:?} {:?}", current, e)
+            proc_macro_error::abort_call_site!(
+                "Could not open schema file {:?} {:?}",
+                current,
+                e
+            )
         }
     };
 

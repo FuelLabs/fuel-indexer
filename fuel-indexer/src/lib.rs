@@ -5,7 +5,7 @@ pub mod api;
 pub mod config;
 mod database;
 pub mod executor;
-mod ffi;
+pub mod ffi;
 mod manifest;
 mod service;
 

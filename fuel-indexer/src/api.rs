@@ -175,7 +175,10 @@ async fn authenticate_user(_signature: &str) -> Option<Result<bool, ApiError>> {
     Some(Ok(true))
 }
 
-async fn authorize_middleware<B>(mut req: Request<B>, next: Next<B>) -> impl IntoResponse {
+async fn authorize_middleware<B>(
+    mut req: Request<B>,
+    next: Next<B>,
+) -> impl IntoResponse {
     let header = req
         .headers()
         .get(http::header::AUTHORIZATION)

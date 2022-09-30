@@ -47,9 +47,9 @@ pub mod utils {
                     .unwrap_or_else(|_| panic!("Unable to resolve domain for '{}'", host))
                     .collect();
 
-                let addr = addrs
-                    .pop()
-                    .unwrap_or_else(|| panic!("Could not derive SocketAddr from '{}'", host));
+                let addr = addrs.pop().unwrap_or_else(|| {
+                    panic!("Could not derive SocketAddr from '{}'", host)
+                });
 
                 info!("Parsed SocketAddr '{}' from '{}'", addr.to_string(), host);
 

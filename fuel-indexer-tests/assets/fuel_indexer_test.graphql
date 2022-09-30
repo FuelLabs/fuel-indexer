@@ -1,0 +1,19 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    message: Message
+}
+
+type Message {
+    id: ID!
+    ping: UInt8!
+    pong: UInt8!
+    message: Bytes32!
+}
+
+type PongEntity {
+    id: ID!
+    value: UInt8!
+}
