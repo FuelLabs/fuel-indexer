@@ -2564,31 +2564,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuel-indexer-test-web"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "async-std",
- "axum",
- "clap",
- "fuel-core",
- "fuel-gql-client",
- "fuel-indexer-lib",
- "fuel-indexer-tests",
- "fuel-tx 0.18.0",
- "fuels",
- "fuels-abigen-macro",
- "fuels-core",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.2.25",
-]
-
-[[package]]
 name = "fuel-indexer-tests"
 version = "0.0.0"
 dependencies = [

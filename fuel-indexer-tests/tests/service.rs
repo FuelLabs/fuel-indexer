@@ -67,7 +67,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
         ..Config::local_node()
     };
 
-    let (client, _) = setup_test_client(coins, config).await;
+    let (client, _) = setup_test_client(coins, vec![], Some(config), None).await;
 
     let provider = Provider::new(client);
 

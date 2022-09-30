@@ -30,8 +30,27 @@ pub mod defaults {
 }
 
 pub mod fixtures {
+    use super::defaults;
+    use super::utils::tx_params;
     use fuel_indexer_database::IndexerConnectionPool;
+    use fuels::{
+        prelude::{
+            setup_single_asset_coins, setup_test_client, AssetId, Config, Contract,
+            Provider, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+        },
+        signers::Signer,
+    };
+    use fuels_abigen_macro::abigen;
+    use fuels_core::parameters::StorageConfiguration;
     use sqlx::{pool::Pool, Postgres};
+    use std::path::Path;
+
+    abigen!(
+        FuelIndexer,
+        "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
+    );
+
+    const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
     pub async fn postgres_connection(db_url: &str) -> Pool<Postgres> {
         match IndexerConnectionPool::connect(db_url).await.unwrap() {
@@ -42,5 +61,54 @@ pub mod fixtures {
 
     pub fn http_client() -> reqwest::Client {
         reqwest::Client::new()
+    }
+
+    pub async fn setup_fuel_client() {
+        let workspace_dir = Path::new(WORKSPACE_DIR);
+
+        let wallet_path = workspace_dir.join("assets//wallet.json");
+        let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
+
+        let mut wallet = WalletUnlocked::load_keystore(
+            &wallet_path_str,
+            defaults::WALLET_PASSWORD,
+            None,
+        ).unwrap();
+
+        let bin_path = workspace_dir
+            .join("contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin");
+        let bin_path_str = bin_path.as_os_str().to_str().unwrap();
+        let _compiled = Contract::load_sway_contract(bin_path_str, &None).unwrap();
+
+        let number_of_coins = 11;
+        let asset_id = AssetId::zeroed();
+        let coins = setup_single_asset_coins(
+            wallet.address(),
+            asset_id,
+            number_of_coins,
+            DEFAULT_COIN_AMOUNT,
+        );
+
+        let config = Config {
+            utxo_validation: false,
+            addr: defaults::FUEL_NODE_ADDR.parse().unwrap(),
+            ..Config::local_node()
+        };
+
+        let (client, _) = setup_test_client(coins, vec![], Some(config), None).await;
+
+        let provider = Provider::new(client);
+
+        wallet.set_provider(provider.clone());
+
+        let contract_id = Contract::deploy(
+            &bin_path_str,
+            &wallet,
+            tx_params(),
+            StorageConfiguration::default(),
+        )
+        .await
+        .unwrap();
+        let contract = FuelIndexerBuilder::new(contract_id.to_string(), wallet);
     }
 }

@@ -10,16 +10,15 @@ async fn test_can_trigger_and_index_ping_event() {
     let mut conn = pool.acquire().await.unwrap();
 
     let client = http_client();
-    let response: u64 = client
-        .post("http://127.0.0.1:8000/ping")
-        .send()
-        .await
-        .unwrap()
-        .json::<u64>()
-        .await
-        .unwrap();
-
-    assert_eq!(response, 123);
+    // let response: u64 = client
+    //     .post("http://127.0.0.1:8000/ping")
+    //     .send()
+    //     .await
+    //     .unwrap()
+    //     .json::<u64>()
+    //     .await
+    //     .unwrap();
+    let assert_eq!(response, 123);
 
     // Events are not triggered immediately
     sleep(Duration::from_millis(5000)).await;
