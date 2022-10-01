@@ -15,38 +15,34 @@ mod indexer {
         let SomeEvent { id, account } = event;
 
         assert_eq!(id, 9);
-        assert_eq!(account, [48u8; 32]);
+        assert_eq!(account, Bits256([48u8; 32]));
     }
 
     fn function_two(_event: SomeEvent, event2: AnotherEvent) {
         let AnotherEvent { id, account, hash } = event2;
 
         assert_eq!(id, 9);
-        assert_eq!(account, [48u8; 32]);
-        assert_eq!(hash, [56u8; 32]);
+        assert_eq!(account, Bits256([48u8; 32]));
+        assert_eq!(hash, Bits256([56u8; 32]));
     }
 }
 
 fn main() {
-    use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+    use fuels_core::{abi_encoder::ABIEncoder};
 
     let s1 = SomeEvent {
         id: 9,
-        account: [48u8; 32],
+        account: Bits256([48u8; 32]),
     };
 
     let s2 = AnotherEvent {
         id: 9,
-        account: [48u8; 32],
-        hash: [56u8; 32],
+        account: Bits256([48u8; 32]),
+        hash: Bits256([56u8; 32]),
     };
 
-    let bytes1 = ABIEncoder::new()
-        .encode(&[s1.into_token()])
-        .expect("Failed compile test");
-    let bytes2 = ABIEncoder::new()
-        .encode(&[s2.into_token()])
-        .expect("Failed compile test");
+    let bytes1 = ABIEncoder::encode(&[s1.into_token()]).expect("Failed compile test");
+    let bytes2 = ABIEncoder::encode(&[s2.into_token()]).expect("Failed compile test");
 
     let data: Vec<BlockData> = vec![BlockData {
         height: 0,

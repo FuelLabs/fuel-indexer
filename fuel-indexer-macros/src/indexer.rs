@@ -44,7 +44,7 @@ fn get_json_abi(abi: String) -> ProgramABI {
     }
 }
 
-fn rust_name_str(ty: &String) -> Ident {
+fn rust_name_str(ty: &str) -> Ident {
     format_ident! { "{}_decoded", ty.to_ascii_lowercase() }
 }
 
@@ -53,7 +53,7 @@ fn rust_name(ty: &TypeDeclaration) -> Ident {
         let ty = ty.type_field.split(' ').last().unwrap().to_string();
         rust_name_str(&ty)
     } else {
-        let ty = ty.type_field.replace("[", "_").replace("]", "_");
+        let ty = ty.type_field.replace('[', "_").replace(']', "_");
         rust_name_str(&ty)
     }
 }
@@ -254,7 +254,7 @@ fn process_fn_items(
                                     )
                                 }
 
-                                if !types.contains(&ty_id) {
+                                if !types.contains(ty_id) {
                                     proc_macro_error::abort_call_site!(
                                         "Type {:?} not defined in the ABI.",
                                         path.ident,
@@ -427,6 +427,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use fuel_indexer_plugin::types::*;
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use fuel_tx::Receipt;
+        use fuel_indexer_schema::BlockData;
         use fuel_indexer_macros::block;
 
         type B256 = [u8; 32];

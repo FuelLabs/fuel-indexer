@@ -1,4 +1,4 @@
-error: Type Ident { ident: "BadType", span: #0 bytes(354..361) } not defined in the ABI.
+error: Type with ident Ident { ident: "BadType", span: #0 bytes(354..361) } not defined in the ABI.
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
    |
    | / #[indexer(
@@ -67,7 +67,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_schema::serialize;
    |
-2  | use fuels::node::chain_config::serialization::serde_hex::serialize;
+2  | use fuels::prelude::serde_hex::serialize;
    |
 
 error[E0425]: cannot find function `handle_events` in this scope

@@ -22,6 +22,7 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 #[cfg(feature = "db-models")]
 pub mod db;
 
+pub use fuels_core::types::Bits256;
 pub use fuel_types::{Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word};
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]

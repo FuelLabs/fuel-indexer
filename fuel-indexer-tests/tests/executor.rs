@@ -5,7 +5,7 @@ use fuel_indexer_schema::BlockData;
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
 use fuel_tx::Receipt;
 use fuels_abigen_macro::abigen;
-use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+use fuels_core::{abi_encoder::ABIEncoder, types::Bits256, Tokenizable};
 use sqlx::{Connection, Row};
 
 abigen!(
@@ -100,20 +100,18 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
 
     let evt1 = SomeEvent {
         id: 1020,
-        account: [0xaf; 32],
+        account: Bits256([0xaf; 32]),
     };
     let evt2 = AnotherEvent {
         id: 100,
-        account: [0x5a; 32],
-        hash: [0x43; 32],
+        account: Bits256([0x5a; 32]),
+        hash: Bits256([0x43; 32]),
     };
 
-    let some_event = ABIEncoder::new()
-        .encode(&[evt1.into_token()])
-        .expect("Failed to encode");
-    let another_event = ABIEncoder::new()
-        .encode(&[evt2.into_token()])
-        .expect("Failed to encode");
+    let some_event =
+        ABIEncoder::encode(&[evt1.into_token()]).expect("Failed compile test");
+    let another_event =
+        ABIEncoder::encode(&[evt2.into_token()]).expect("Failed compile test");
 
     let result = executor
         .handle_events(vec![BlockData {

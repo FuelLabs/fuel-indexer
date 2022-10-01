@@ -2405,10 +2405,6 @@ dependencies = [
  "fuel-tx 0.18.0",
  "fuel-types",
  "fuel-vm 0.18.2",
- "fuels",
- "fuels-abigen-macro",
- "fuels-core",
- "fuels-types",
  "futures",
  "http",
  "hyper",
@@ -2530,6 +2526,7 @@ dependencies = [
  "fuel-indexer-sqlite",
  "fuel-tx 0.18.0",
  "fuel-types",
+ "fuels-core",
  "graphql-parser",
  "insta",
  "itertools",
@@ -2569,13 +2566,13 @@ version = "0.0.0"
 dependencies = [
  "async-std",
  "chrono",
- "env_logger 0.9.1",
  "fuel-core",
  "fuel-gql-client",
  "fuel-indexer",
  "fuel-indexer-database",
  "fuel-indexer-schema",
  "fuel-tx 0.18.0",
+ "fuel-types",
  "fuels",
  "fuels-abigen-macro",
  "fuels-core",
@@ -2782,7 +2779,6 @@ version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14ceac6434755b93f71bf25d4814e4c1d08b01b243d9f7992105fe9dba1de761"
 dependencies = [
- "fuel-core",
  "fuel-gql-client",
  "fuels-abigen-macro",
  "fuels-contract",
@@ -2893,7 +2889,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a41a1c136cb0db23701dad46ca0165d6c54a7c46173b4b43a57207bf29d0622"
 dependencies = [
  "anyhow",
- "fuel-core",
  "fuel-core-interfaces",
  "fuel-gql-client",
  "fuel-types",

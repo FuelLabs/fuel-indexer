@@ -5,17 +5,6 @@ pub mod assets {
     pub const WASM_BYTES: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
 }
 
-pub mod utils {
-    use fuels::prelude::TxParameters;
-
-    pub fn tx_params() -> TxParameters {
-        let gas_price = 0;
-        let gas_limit = 1_000_000;
-        let byte_price = 0;
-        TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
-    }
-}
-
 pub mod defaults {
     use std::time::Duration;
 
@@ -31,12 +20,15 @@ pub mod defaults {
 
 pub mod fixtures {
     use super::defaults;
-    use super::utils::tx_params;
+    use fuel_indexer::{
+        config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
+        IndexerService, Manifest,
+    };
     use fuel_indexer_database::IndexerConnectionPool;
     use fuels::{
         prelude::{
             setup_single_asset_coins, setup_test_client, AssetId, Config, Contract,
-            Provider, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+            Provider, TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
         },
         signers::Signer,
     };
@@ -45,8 +37,15 @@ pub mod fixtures {
     use sqlx::{pool::Pool, Postgres};
     use std::path::Path;
 
+    pub fn tx_params() -> TxParameters {
+        let gas_price = 0;
+        let gas_limit = 1_000_000;
+        let byte_price = 0;
+        TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
+    }
+
     abigen!(
-        FuelIndexer,
+        FuelIndexerTest,
         "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
     );
 
@@ -59,11 +58,38 @@ pub mod fixtures {
         }
     }
 
-    pub fn http_client() -> reqwest::Client {
-        reqwest::Client::new()
+    pub async fn setup_indexer_service() {
+        let config = IndexerConfig {
+            fuel_node: FuelNodeConfig::from(
+                defaults::FUEL_NODE_ADDR
+                    .parse::<std::net::SocketAddr>()
+                    .unwrap(),
+            ),
+            database: DatabaseConfig::Postgres {
+                user: "postgres".into(),
+                password: "my-secret".into(),
+                host: "127.0.0.1".into(),
+                port: "5432".into(),
+                database: "postgres".to_string(),
+            },
+            graphql_api: GraphQLConfig::default(),
+        };
+
+        let mut indexer_service = IndexerService::new(config).await.unwrap();
+
+        let manifest_path =
+            Path::new(WORKSPACE_DIR).join("assets/fuel_indexer_test.yaml");
+        let manifest: Manifest = Manifest::from_file(&manifest_path).unwrap();
+
+        indexer_service
+            .register_indices(Some(manifest), true)
+            .await
+            .expect("Failed to initialize indexer");
+
+        indexer_service.run().await;
     }
 
-    pub async fn setup_fuel_client() {
+    pub async fn setup_test_client_and_wallet() -> WalletUnlocked {
         let workspace_dir = Path::new(WORKSPACE_DIR);
 
         let wallet_path = workspace_dir.join("assets//wallet.json");
@@ -73,7 +99,8 @@ pub mod fixtures {
             &wallet_path_str,
             defaults::WALLET_PASSWORD,
             None,
-        ).unwrap();
+        )
+        .unwrap();
 
         let bin_path = workspace_dir
             .join("contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin");
@@ -99,16 +126,27 @@ pub mod fixtures {
 
         let provider = Provider::new(client);
 
-        wallet.set_provider(provider.clone());
+        wallet.set_provider(provider);
+
+        wallet
+    }
+
+    pub async fn setup_contract(wallet: WalletUnlocked) -> FuelIndexerTest {
+        let workspace_dir = Path::new(WORKSPACE_DIR);
+
+        let bin_path = workspace_dir
+            .join("contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin");
+        let bin_path_str = bin_path.as_os_str().to_str().unwrap();
 
         let contract_id = Contract::deploy(
-            &bin_path_str,
+            bin_path_str,
             &wallet,
             tx_params(),
             StorageConfiguration::default(),
         )
         .await
         .unwrap();
-        let contract = FuelIndexerBuilder::new(contract_id.to_string(), wallet);
+
+        FuelIndexerTestBuilder::new(contract_id.to_string(), wallet).build()
     }
 }

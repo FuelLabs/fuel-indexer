@@ -3,16 +3,14 @@ use fuel_indexer::{
     config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
     IndexerService, Manifest,
 };
-use fuels::node::{
-    chain_config::{ChainConfig, StateConfig},
-    service::DbType,
-};
+use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::prelude::{
-    setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, LocalWallet,
-    Provider, TxParameters, DEFAULT_COIN_AMOUNT,
+    setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, Provider,
+    WalletUnlocked, DEFAULT_COIN_AMOUNT,
 };
 use fuels::signers::Signer;
 use fuels_abigen_macro::abigen;
+use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
 
 const MANIFEST: &str = include_str!("./../assets/simple_wasm.yaml");
@@ -24,26 +22,22 @@ abigen!(
     "examples/simple-wasm/contracts/out/debug/contracts-abi.json"
 );
 
-fn tx_params() -> TxParameters {
-    let gas_price = 0;
-    let gas_limit = 1_000_000;
-    let byte_price = 0;
-    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price), None)
-}
-
 #[tokio::test]
 #[cfg_attr(feature = "e2e", ignore)]
 async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres() {
     let workdir = Path::new(WORKSPACE_DIR);
 
-    let p = workdir.join("components/web/wallet.json");
-    let path = p.as_os_str().to_str().unwrap();
-    let mut wallet =
-        LocalWallet::load_keystore(&path, "password", None).expect("Could load keys");
+    let wallet_path = workdir.join("assets/wallet.json");
+    let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
-    let p = workdir.join("../examples/simple-wasm/contracts/out/debug/contracts.bin");
-    let path = p.as_os_str().to_str().unwrap();
-    let _compiled = Contract::load_sway_contract(path).unwrap();
+    let mut wallet =
+        WalletUnlocked::load_keystore(&wallet_path_str, defaults::WALLET_PASSWORD, None)
+            .unwrap();
+
+    let bin_path =
+        workdir.join("../examples/simple-wasm/contracts/out/debug/contracts.bin");
+    let bin_path_str = bin_path.as_os_str().to_str().unwrap();
+    let _compiled = Contract::load_sway_contract(bin_path_str, &None).unwrap();
 
     let number_of_coins = 11;
     let asset_id = AssetId::zeroed();
@@ -55,13 +49,6 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
     );
 
     let config = Config {
-        chain_conf: ChainConfig {
-            initial_state: Some(StateConfig {
-                ..StateConfig::default()
-            }),
-            ..ChainConfig::local_testnet()
-        },
-        database_type: DbType::InMemory,
         utxo_validation: false,
         addr: FUEL_NODE_ADDR.parse().unwrap(),
         ..Config::local_node()
@@ -73,9 +60,17 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     wallet.set_provider(provider.clone());
 
-    let contract_id = Contract::deploy(path, &wallet, tx_params()).await.unwrap();
+    let contract_id = Contract::deploy(
+        bin_path_str,
+        &wallet,
+        tx_params(),
+        StorageConfiguration::default(),
+    )
+    .await
+    .unwrap();
 
-    let contract: Simple = Simple::new(contract_id.to_string(), wallet);
+    let contract = SimpleBuilder::new(contract_id.to_string(), wallet).build();
+
     let _ = contract.gimme_someevent(78).call().await;
     let _ = contract.gimme_anotherevent(899).call().await;
 

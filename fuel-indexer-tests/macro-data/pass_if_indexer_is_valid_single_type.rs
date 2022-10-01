@@ -15,21 +15,19 @@ mod indexer {
         let SomeEvent { id, account } = event;
 
         assert_eq!(id, 9);
-        assert_eq!(account, [48u8; 32]);
+        assert_eq!(account, Bits256([48u8; 32]));
     }
 }
 
 fn main() {
-    use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
-
+    use fuels_core::{abi_encoder::ABIEncoder};
+    
     let s = SomeEvent {
         id: 9,
-        account: [48u8; 32],
+        account: Bits256([48u8; 32]),
     };
 
-    let bytes = ABIEncoder::new()
-        .encode(&[s.into_token()])
-        .expect("Failed compile test");
+    let bytes = ABIEncoder::encode(&[s.into_token()]).expect("Failed compile test");
 
     let data: Vec<BlockData> = vec![BlockData {
         height: 0,
