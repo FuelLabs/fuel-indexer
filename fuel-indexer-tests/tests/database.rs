@@ -26,28 +26,18 @@ const TEST_COLUMNS: [(&str, i32, &str); 7] = [
 
 async fn load_wasm_module(database_url: &str) -> IndexerResult<Instance> {
     let compiler = compiler();
-    println!(">> 1");
     let store = Store::new(&Universal::new(compiler).engine());
-    println!(">> 2");
     let module = Module::new(&store, WASM_BYTES)?;
-    println!(">> 3");
 
     let mut import_object = imports! {};
-    println!(">> 4");
-
     let mut env = IndexEnv::new(database_url.to_string()).await?;
-    println!(">> 5");
-    let exports = ffi::get_exports(&env, &store);
-    println!(">> 6");
-    import_object.register("env", exports);
-    println!(">> 7");
 
-    println!(">> MODULE: {:?}", module);
+    let exports = ffi::get_exports(&env, &store);
+    import_object.register("env", exports);
 
     let instance = Instance::new(&module, &import_object)?;
-    println!(">> 8");
     env.init_with_instance(&instance)?;
-    println!(">> 9");
+
     Ok(instance)
 }
 

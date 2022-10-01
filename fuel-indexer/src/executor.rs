@@ -46,6 +46,18 @@ pub struct IndexEnv {
     pub db: Arc<Mutex<Database>>,
 }
 
+impl IndexEnv {
+    pub async fn new(db_conn: String) -> IndexerResult<IndexEnv> {
+        let db = Arc::new(Mutex::new(Database::new(&db_conn).await?));
+        Ok(IndexEnv {
+            memory: Default::default(),
+            alloc: Default::default(),
+            dealloc: Default::default(),
+            db,
+        })
+    }
+}
+
 pub struct NativeIndexExecutor {
     db: Arc<Mutex<Database>>,
     #[allow(dead_code)]
@@ -140,18 +152,6 @@ impl Executor for NativeIndexExecutor {
             }
         }
         Ok(())
-    }
-}
-
-impl IndexEnv {
-    pub async fn new(db_conn: String) -> IndexerResult<IndexEnv> {
-        let db = Arc::new(Mutex::new(Database::new(&db_conn).await?));
-        Ok(IndexEnv {
-            memory: Default::default(),
-            alloc: Default::default(),
-            dealloc: Default::default(),
-            db,
-        })
     }
 }
 
