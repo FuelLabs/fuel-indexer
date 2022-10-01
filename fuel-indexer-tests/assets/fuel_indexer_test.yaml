@@ -1,8 +1,8 @@
 namespace: fuel_indexer_test
-graphql_schema: ./../fuel-indexer-tests/assets/fuel_indexer_test.graphql
+graphql_schema: ./fuel-indexer-tests/assets/fuel_indexer_test.graphql
 identifier: index1
 module:
-  wasm: ./../fuel-indexer-tests/assets/fuel_indexer_test.wasm
+  wasm: ./fuel-indexer-tests/assets/fuel_indexer_test.wasm
 handlers:
   - event: LogData
     handler: function_one

@@ -24,7 +24,6 @@ fuel-indexer-schema = { path = "../fuel-indexer-schema", features = ["db-models"
 fuel-indexer-sqlite = { path = "../fuel-indexer-database/sqlite" }
 fuel-tx = "0.18"
 fuel-types = "0.5"
-fuel-vm = { version = "0.18" }
 futures = "0.3"
 http = "0.2"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}
@@ -46,7 +45,6 @@ chrono = { version = "0.4", features = ["serde"] }
 fuel-core = { version = "0.10", features = ["test-helpers"] }
 fuel-crypto = "0.6"
 fuel-gql-client = { version = "0.10", features = ["test-helpers"] }
-fuel-storage = { version = "0.3" }
 fuel-types = "0.5"
 itertools = { version = "0.10" }
 rand = "0.8"

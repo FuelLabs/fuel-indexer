@@ -28,7 +28,6 @@ e2e = []
 [dependencies]
 async-std = "1.12"
 chrono = { version = "0.4", features = ["serde"] }
-fuel-core = "0.10"
 fuel-gql-client = "0.10"
 fuel-indexer = { path = "./../fuel-indexer" }
 fuel-indexer-database = { path = "./../fuel-indexer-database" }
@@ -41,7 +40,6 @@ fuels-core = "0.24"
 futures = "0.3"
 itertools = "0.10"
 rand = "0.8"
-reqwest = { version = "0.11", features = ["json"] }
 serde_json = "1.0"
 serde_yaml = "0.8"
 sqlx = "0.6"
