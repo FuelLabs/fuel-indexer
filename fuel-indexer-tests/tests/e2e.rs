@@ -22,7 +22,7 @@ async fn test_can_trigger_and_index_ping_event() {
     assert_eq!(ping.value.to_string(), "123".to_string());
 
     // Events are not triggered immediately
-    sleep(Duration::from_millis(3000)).await;
+    sleep(Duration::from_millis(500)).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.message where id = 1")
         .fetch_one(&mut conn)
