@@ -6,7 +6,8 @@ use fuel_indexer_schema::{
 };
 
 pub mod types {
-    pub use fuel_indexer_schema::*;
+    pub use fuel_indexer_schema::types::*;
+    pub use fuel_indexer_schema::FtColumn;
 }
 
 extern "C" {

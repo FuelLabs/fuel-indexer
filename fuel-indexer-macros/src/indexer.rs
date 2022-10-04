@@ -2,7 +2,12 @@ use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
-use fuel_indexer_schema::{type_id, BlockData};
+use fuel_indexer_schema::{
+    type_id,
+    types::{
+        BlockData, Identity, Log, LogData, ReceiptType, Transfer, FUEL_TYPES_NAMESPACE,
+    },
+};
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
@@ -16,7 +21,17 @@ use quote::{format_ident, quote};
 use syn::{parse_macro_input, FnArg, Ident, Item, ItemFn, ItemMod, PatType, Type};
 
 const DISALLOWED: &[&str] = &["Vec"];
-const FUEL_TYPES_NAMESPACE: &str = "fuel";
+const EMPTY_TUPLE_TYPE: &str = "()";
+
+lazy_static! {
+    static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
+        Transfer::path_ident_str(),
+        BlockData::path_ident_str(),
+        "B256",
+        Log::path_ident_str(),
+        LogData::path_ident_str()
+    ]);
+}
 
 fn get_json_abi(abi: String) -> ProgramABI {
     let src = match Source::parse(abi) {
@@ -83,7 +98,7 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
 fn is_fuel_primitive(ty: &proc_macro2::TokenStream) -> bool {
     // TODO: complete as needed
     let ident_str = ty.to_string();
-    matches!(ident_str.as_str(), "BlockData" | "B256")
+    FUEL_PRIMITIVES.contains(ident_str.as_str())
 }
 
 fn is_rust_primitive(ty: &proc_macro2::TokenStream) -> bool {
@@ -105,7 +120,8 @@ fn decode_snippet(
     name: &Ident,
 ) -> proc_macro2::TokenStream {
     if is_primitive(ty) {
-        // TODO: do we want decoder for primitive? Might need something a little smarte to identify what the primitive is for... and to which handler it will go.
+        // TODO: do we want decoder for primitive? Might need something a little smarter to
+        // identify what the primitive is for and to which handler it will go.
         quote! {
             #ty_id => {
                 Logger::warn("Skipping primitive decoder");
@@ -131,7 +147,7 @@ fn process_fn_items(
 
     if input.content.is_none() || input.content.as_ref().unwrap().1.is_empty() {
         proc_macro_error::abort_call_site!(
-            "No module body, must specify at least one handler function!"
+            "No module body, must specify at least one handler function."
         )
     }
 
@@ -144,8 +160,22 @@ fn process_fn_items(
     let mut dispatchers = Vec::new();
 
     let mut type_map = HashMap::new();
-    let mut type_ids = HashMap::new();
+    let mut type_ids = FUEL_PRIMITIVES
+        .iter()
+        .map(|x| {
+            (
+                x.to_string(),
+                type_id(FUEL_TYPES_NAMESPACE, &x.to_string()) as usize,
+            )
+        })
+        .collect::<HashMap<String, usize>>();
+
     for typ in parsed.types {
+        if typ.type_field == EMPTY_TUPLE_TYPE {
+            println!("Won't process empty tuple type.");
+            continue;
+        }
+
         type_map.insert(typ.type_id, typ.clone());
 
         let ty = rust_type(&typ);
@@ -190,6 +220,9 @@ fn process_fn_items(
     }
 
     let mut block_dispatchers = Vec::new();
+    let mut transfer_dispatchers = Vec::new();
+    let mut log_dispatchers = Vec::new();
+    let mut logdata_dispatchers = Vec::new();
 
     let mut blockdata_decoding = quote! {};
 
@@ -200,10 +233,12 @@ fn process_fn_items(
                 let mut arg_list = Vec::new();
 
                 if is_block_fn(&fn_item) {
+                    let path_ident_str = String::from(BlockData::path_ident_str());
+                    let type_id = type_id(FUEL_TYPES_NAMESPACE, &path_ident_str) as usize;
+
                     let typ = TypeDeclaration {
-                        type_id: type_id(FUEL_TYPES_NAMESPACE, &BlockData::ident())
-                            as usize,
-                        type_field: BlockData::ident(),
+                        type_id,
+                        type_field: path_ident_str,
                         type_parameters: None,
                         components: None,
                     };
@@ -236,8 +271,9 @@ fn process_fn_items(
                         FnArg::Typed(PatType { ty, .. }) => {
                             if let Type::Path(path) = &**ty {
                                 let path = path.path.segments.last().unwrap();
+                                let path_ident_str = path.ident.to_string();
                                 // NOTE: may need to get something else for primitives...
-                                let ty_id = match type_ids.get(&path.ident.to_string()) {
+                                let ty_id = match type_ids.get(&path_ident_str) {
                                     Some(id) => id,
                                     None => {
                                         proc_macro_error::abort_call_site!(
@@ -247,7 +283,7 @@ fn process_fn_items(
                                     }
                                 };
 
-                                if disallowed_types.contains(&path.ident.to_string()) {
+                                if disallowed_types.contains(&path_ident_str) {
                                     proc_macro_error::abort_call_site!(
                                         "Type {:?} currently not supported",
                                         path.ident
@@ -255,10 +291,43 @@ fn process_fn_items(
                                 }
 
                                 if !types.contains(ty_id) {
-                                    proc_macro_error::abort_call_site!(
-                                        "Type {:?} not defined in the ABI.",
-                                        path.ident,
-                                    )
+                                    // If the fn parameter type is in `type_ids` but not in `types` that means it's a fuel primitive
+                                    // for which there is no ABI JSON
+
+                                    if FUEL_PRIMITIVES.contains(path_ident_str.as_str()) {
+                                        let typ = TypeDeclaration {
+                                            type_id: *ty_id,
+                                            type_field: path_ident_str.clone(),
+                                            type_parameters: None,
+                                            components: None,
+                                        };
+
+                                        let name = rust_name(&typ);
+
+                                        type_vecs.push(quote! {
+                                            #name: Vec<#ty>
+                                        });
+
+                                        match path_ident_str.into() {
+                                            ReceiptType::Transfer => {
+                                                transfer_dispatchers.push(quote! { self.#name.push(data); });
+                                            }
+                                            ReceiptType::Log => {
+                                                log_dispatchers.push(quote!{ self.#name.push(data); });
+                                            }
+
+                                            ReceiptType::LogData => {
+                                                logdata_dispatchers.push(quote!{ self.#name.push(data); });
+                                                decoders.push(decode_snippet(*ty_id, &rust_type(&typ), &name));
+                                            }
+                                            _ => panic!("Unsupported ReceiptType in function signature"),
+                                        }
+                                    } else {
+                                        proc_macro_error::abort_call_site!(
+                                            "Type {:?} not defined in the ABI.",
+                                            path.ident,
+                                        )
+                                    }
                                 }
 
                                 let name = rust_name_str(&path.ident.to_string());
@@ -304,11 +373,11 @@ fn process_fn_items(
                 match sel {
                     #(#selectors)*
                     //TODO: should handle this a little more gently
-                    _ => panic!("Unknown type id!"),
+                    _ => panic!("Unknown type id."),
                 }
             }
 
-            fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
+            pub fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
                     #(#decoders),*
                     _ => panic!("Unkown type id {}", ty_id),
@@ -321,12 +390,20 @@ fn process_fn_items(
 
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
                 let ty_id = self.selector_to_type_id(sel);
-
-                self.decode_type(ty_id, data);
+                self.decode_type(ty_id, data)
             }
 
-            pub fn decode_log_data(&self) {
-                todo!("Finish this off")
+            pub fn decode_transfer(&mut self, data: Transfer) {
+                #(#transfer_dispatchers)*
+            }
+
+            pub fn decode_log(&mut self, data: Log) {
+                #(#log_dispatchers)*
+            }
+
+            pub fn decode_logdata(&mut self, rb: u64, data: Vec<u8>) {
+                // TODO: Make sure rb and Pung type_id (from ABI JSON) are the same
+                self.decode_type(rb as usize, data)
             }
 
             pub fn dispatch(&self) {
@@ -350,11 +427,28 @@ fn process_fn_items(
                                 return_types.push(param1);
                             }
                             Receipt::ReturnData { data, .. } => {
-                                let selector = return_types.pop().expect("No return type available!");
+                                let selector = return_types.pop().expect("No return type available. <('-'<)");
                                 decoder.decode_return_type(selector, data);
                             }
-                            other => {
-                                Logger::info("This type is not handled yet!");
+
+                            Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
+                                let data = Transfer{ contract_id: id, to, asset_id, amount, pc, is };
+                                decoder.decode_transfer(data);
+                            }
+
+                            Receipt::Log { id, ra, rb, .. } => {
+                                let data = Log{ contract_id: id, ra, rb };
+                                decoder.decode_log(data);
+                            }
+
+                            Receipt::LogData { rb, data, ptr, len, id, .. } => {
+                                // TODO: use rb to determine which struct from ABI JSON to decode into
+                                decoder.decode_logdata(rb, data);
+
+                            }
+
+                            _ => {
+                                Logger::info("This type is not handled yet. (>'.')>");
                             }
                         }
                     }
@@ -401,13 +495,13 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             Ok(tokens) => tokens,
             Err(e) => {
                 proc_macro_error::abort_call_site!(
-                    "Could not generate tokens for abi! {:?}",
+                    "Could not generate tokens for abi. {:?}",
                     e
                 )
             }
         },
         Err(e) => {
-            proc_macro_error::abort_call_site!("Could not generate abi object! {:?}", e)
+            proc_macro_error::abort_call_site!("Could not generate abi object. {:?}", e)
         }
     };
 
@@ -427,7 +521,6 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use fuel_indexer_plugin::types::*;
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use fuel_tx::Receipt;
-        use fuel_indexer_schema::BlockData;
         use fuel_indexer_macros::block;
 
         type B256 = [u8; 32];
