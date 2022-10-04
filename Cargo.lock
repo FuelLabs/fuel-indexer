@@ -2625,6 +2625,7 @@ dependencies = [
  "fuels-core",
  "fuels-types",
  "graphql-parser",
+ "lazy_static",
  "proc-macro-error",
  "proc-macro2",
  "quote",

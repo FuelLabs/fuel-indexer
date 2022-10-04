@@ -83,7 +83,7 @@ pub mod utils {
                         sleep(Duration::from_secs(delay)).await;
                         delay *= 2;
                     } else {
-                        panic!("Retry attempts exceeded; could not connect to database backend!")
+                        panic!("Retry attempts exceeded; could not connect to database backend.")
                     }
                 }
             }

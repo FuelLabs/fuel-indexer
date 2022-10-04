@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate proc_macro;
 use proc_macro::TokenStream;
 

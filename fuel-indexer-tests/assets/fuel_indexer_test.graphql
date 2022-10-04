@@ -17,3 +17,26 @@ type PongEntity {
     id: ID!
     value: UInt8!
 }
+
+type TransferEntity {
+    id: ID!
+    contract_id: ContractId!
+    to: ContractId!
+    amount: UInt8!
+    asset_id: AssetId!
+}
+
+
+type LogEntity {
+    id: ID!
+    contract_id: ContractId!
+    ra: UInt8!
+    rb: UInt8!
+}
+
+# TODO: LogData is a bit different in that we don't save the actual LogData but the 
+# struct inside of the LogData payload
+type LogDataEntity {
+    id: ID!
+    contract_id: ContractId! 
+}
