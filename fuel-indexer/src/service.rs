@@ -10,7 +10,7 @@ use fuel_gql_client::client::{
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
-use fuel_indexer_schema::{Address, BlockData, Bytes32};
+use fuel_indexer_schema::types::{Address, BlockData, Bytes32};
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::collections::HashMap;
 use std::future::Future;

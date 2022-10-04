@@ -17,3 +17,11 @@ type PongEntity {
     id: ID!
     value: UInt8!
 }
+
+type TransferEntity {
+    id: ID!
+    contract_id: ContractId!
+    to: ContractId!
+    amount: UInt8!
+    asset_id: AssetId!
+}

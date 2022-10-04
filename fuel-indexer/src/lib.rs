@@ -14,7 +14,7 @@ pub use config::IndexerConfig;
 pub use database::{Database, SchemaManager};
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
 pub use fuel_indexer_database::IndexerDatabaseError;
-pub use fuel_indexer_schema::{BlockData, FtColumn};
+pub use fuel_indexer_schema::{types::BlockData, FtColumn};
 pub use fuel_types::{Address, ContractId};
 pub use manifest::{Manifest, Module};
 use serde::{Deserialize, Serialize};

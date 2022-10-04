@@ -2,7 +2,7 @@ use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
-use fuel_indexer_schema::{type_id, BlockData};
+use fuel_indexer_schema::{type_id, types};
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
@@ -17,6 +17,11 @@ use syn::{parse_macro_input, FnArg, Ident, Item, ItemFn, ItemMod, PatType, Type}
 
 const DISALLOWED: &[&str] = &["Vec"];
 const FUEL_TYPES_NAMESPACE: &str = "fuel";
+
+lazy_static! {
+    static ref FUEL_PRIMITIVES: HashSet<&'static str> =
+        HashSet::from(["Transfer", "BlockData", "B256"]);
+}
 
 fn get_json_abi(abi: String) -> ProgramABI {
     let src = match Source::parse(abi) {
@@ -83,7 +88,7 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
 fn is_fuel_primitive(ty: &proc_macro2::TokenStream) -> bool {
     // TODO: complete as needed
     let ident_str = ty.to_string();
-    matches!(ident_str.as_str(), "BlockData" | "B256")
+    FUEL_PRIMITIVES.contains(ident_str.as_str())
 }
 
 fn is_rust_primitive(ty: &proc_macro2::TokenStream) -> bool {
@@ -144,7 +149,16 @@ fn process_fn_items(
     let mut dispatchers = Vec::new();
 
     let mut type_map = HashMap::new();
-    let mut type_ids = HashMap::new();
+    let mut type_ids = FUEL_PRIMITIVES
+        .iter()
+        .map(|x| {
+            (
+                x.to_string(),
+                type_id(FUEL_TYPES_NAMESPACE, &x.to_string()) as usize,
+            )
+        })
+        .collect::<HashMap<String, usize>>();
+
     for typ in parsed.types {
         type_map.insert(typ.type_id, typ.clone());
 
@@ -190,6 +204,7 @@ fn process_fn_items(
     }
 
     let mut block_dispatchers = Vec::new();
+    let mut transfer_dispatchers = Vec::new();
 
     let mut blockdata_decoding = quote! {};
 
@@ -201,9 +216,9 @@ fn process_fn_items(
 
                 if is_block_fn(&fn_item) {
                     let typ = TypeDeclaration {
-                        type_id: type_id(FUEL_TYPES_NAMESPACE, &BlockData::ident())
+                        type_id: type_id(FUEL_TYPES_NAMESPACE, &types::BlockData::ident())
                             as usize,
-                        type_field: BlockData::ident(),
+                        type_field: types::BlockData::ident(),
                         type_parameters: None,
                         components: None,
                     };
@@ -255,10 +270,41 @@ fn process_fn_items(
                                 }
 
                                 if !types.contains(ty_id) {
-                                    proc_macro_error::abort_call_site!(
-                                        "Type {:?} not defined in the ABI.",
-                                        path.ident,
-                                    )
+                                    // If the fn parameter type is in `type_ids` but not in `types` that means it's a fuel primitive
+                                    // for which there is no ABI JSON
+
+                                    if FUEL_PRIMITIVES
+                                        .contains(path.ident.to_string().as_str())
+                                    {
+                                        let typ = TypeDeclaration {
+                                            type_id: type_id(
+                                                FUEL_TYPES_NAMESPACE,
+                                                &path.ident.to_string(),
+                                            )
+                                                as usize,
+                                            type_field: path.ident.to_string(),
+                                            type_parameters: None,
+                                            components: None,
+                                        };
+
+                                        let name = rust_name(&typ);
+
+                                        type_vecs.push(quote! {
+                                            #name: Vec<#ty>
+                                        });
+
+                                        match path.ident.to_string().into() {
+                                            types::ReceiptType::Transfer => {
+                                                transfer_dispatchers.push(quote! { self.#name.push(data); });
+                                            }
+                                            _ => panic!("Unsupported ReceiptType in function signature"),
+                                        }
+                                    } else {
+                                        proc_macro_error::abort_call_site!(
+                                            "Type {:?} not defined in the ABI.",
+                                            path.ident,
+                                        )
+                                    }
                                 }
 
                                 let name = rust_name_str(&path.ident.to_string());
@@ -319,6 +365,10 @@ fn process_fn_items(
                 #(#block_dispatchers)*
             }
 
+            pub fn decode_transfer(&mut self, data: Transfer) {
+                #(#transfer_dispatchers)*
+            }
+
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
                 let ty_id = self.selector_to_type_id(sel);
 
@@ -352,6 +402,10 @@ fn process_fn_items(
                             Receipt::ReturnData { data, .. } => {
                                 let selector = return_types.pop().expect("No return type available!");
                                 decoder.decode_return_type(selector, data);
+                            }
+                            Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
+                                let data = Transfer{ contract_id: id, to, asset_id, amount, pc, is };
+                                decoder.decode_transfer(data);
                             }
                             other => {
                                 Logger::info("This type is not handled yet!");
@@ -427,7 +481,6 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use fuel_indexer_plugin::types::*;
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use fuel_tx::Receipt;
-        use fuel_indexer_schema::BlockData;
         use fuel_indexer_macros::block;
 
         type B256 = [u8; 32];
