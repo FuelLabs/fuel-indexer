@@ -2,44 +2,33 @@
   "types": [
     {
       "typeId": 0,
+      "type": "()",
+      "components": [],
+      "typeParameters": null
+    },
+    {
+      "typeId": 1,
       "type": "str[32]",
       "components": null,
       "typeParameters": null
     },
     {
-      "typeId": 1,
+      "typeId": 2,
       "type": "struct Ping",
       "components": [
         {
           "name": "id",
-          "type": 3,
+          "type": 5,
           "typeArguments": null
         },
         {
           "name": "value",
-          "type": 3,
+          "type": 5,
           "typeArguments": null
         },
         {
           "name": "message",
-          "type": 0,
-          "typeArguments": null
-        }
-      ],
-      "typeParameters": null
-    },
-    {
-      "typeId": 2,
-      "type": "struct Pong",
-      "components": [
-        {
-          "name": "id",
-          "type": 3,
-          "typeArguments": null
-        },
-        {
-          "name": "value",
-          "type": 3,
+          "type": 1,
           "typeArguments": null
         }
       ],
@@ -47,6 +36,40 @@
     },
     {
       "typeId": 3,
+      "type": "struct Pong",
+      "components": [
+        {
+          "name": "id",
+          "type": 5,
+          "typeArguments": null
+        },
+        {
+          "name": "value",
+          "type": 5,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "struct Pung",
+      "components": [
+        {
+          "name": "id",
+          "type": 5,
+          "typeArguments": null
+        },
+        {
+          "name": "value",
+          "type": 5,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 5,
       "type": "u64",
       "components": null,
       "typeParameters": null
@@ -55,37 +78,64 @@
   "functions": [
     {
       "inputs": [],
-      "name": "ping",
+      "name": "trigger_ping",
       "output": {
         "name": "",
-        "type": 1,
+        "type": 2,
         "typeArguments": null
       }
     },
     {
       "inputs": [],
-      "name": "pong",
+      "name": "trigger_pong",
       "output": {
         "name": "",
-        "type": 2,
+        "type": 3,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [],
+      "name": "trigger_transfer",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [],
+      "name": "trigger_log",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [],
+      "name": "trigger_logdata",
+      "output": {
+        "name": "",
+        "type": 0,
         "typeArguments": null
       }
     }
   ],
   "loggedTypes": [
     {
-      "logId": 1018161,
+      "logId": 1018195,
       "loggedType": {
         "name": "",
-        "type": 1,
+        "type": 5,
         "typeArguments": null
       }
     },
     {
-      "logId": 1018185,
+      "logId": 1018221,
       "loggedType": {
         "name": "",
-        "type": 2,
+        "type": 4,
         "typeArguments": null
       }
     }

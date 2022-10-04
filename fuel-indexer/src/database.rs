@@ -116,7 +116,7 @@ impl Database {
         let conn = self
             .stashed
             .as_mut()
-            .expect("No transaction has been opened!");
+            .expect("No transaction has been opened.");
         let query = queries::put_object(conn, query_text, bytes).await;
 
         query.expect("Query failed");
@@ -129,7 +129,7 @@ impl Database {
         let conn = self
             .stashed
             .as_mut()
-            .expect("No transaction has been opened!");
+            .expect("No transaction has been opened.");
         match queries::get_object(conn, query).await {
             Ok(object) => Some(object),
             Err(sqlx::Error::RowNotFound) => None,

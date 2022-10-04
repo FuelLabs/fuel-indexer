@@ -9,7 +9,7 @@ mod service;
 pub use database::Database;
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
 pub use fuel_indexer_database::IndexerDatabaseError;
-pub use fuel_indexer_schema::{BlockData, FtColumn};
+pub use fuel_indexer_schema::{types::BlockData, FtColumn};
 pub use fuel_types::{Address, ContractId};
 use serde::{Deserialize, Serialize};
 pub use service::IndexerService;
@@ -50,7 +50,7 @@ pub enum IndexerError {
     HandlerError,
     #[error("Invalid port {0:?}")]
     InvalidPortNumber(#[from] core::num::ParseIntError),
-    #[error("No transaction is open!")]
+    #[error("No transaction is open.")]
     NoTransactionError,
     #[error("Unknown error")]
     Unknown,

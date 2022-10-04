@@ -30,8 +30,51 @@ pub struct Args {
     pub bin_path: Option<PathBuf>,
 }
 
-async fn ping(contract: web::Data<Arc<FuelIndexerTest>>) -> impl Responder {
-    let _ = contract.ping().tx_params(tx_params()).call().await.unwrap();
+async fn fuel_indexer_test_ping(
+    contract: web::Data<Arc<FuelIndexerTest>>,
+) -> impl Responder {
+    let _ = contract
+        .trigger_ping()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
+    HttpResponse::Ok()
+}
+
+async fn fuel_indexer_test_transfer(
+    contract: web::Data<Arc<FuelIndexerTest>>,
+) -> impl Responder {
+    let _ = contract
+        .trigger_transfer()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
+    HttpResponse::Ok()
+}
+
+async fn fuel_indexer_test_log(
+    contract: web::Data<Arc<FuelIndexerTest>>,
+) -> impl Responder {
+    let _ = contract
+        .trigger_log()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
+    HttpResponse::Ok()
+}
+
+async fn fuel_indexer_test_logdata(
+    contract: web::Data<Arc<FuelIndexerTest>>,
+) -> impl Responder {
+    let _ = contract
+        .trigger_logdata()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
     HttpResponse::Ok()
 }
 
@@ -115,7 +158,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = HttpServer::new(move || {
         App::new()
             .app_data(contract.clone())
-            .route("/ping", web::post().to(ping))
+            .route("/ping", web::post().to(fuel_indexer_test_ping))
+            .route("/transfer", web::post().to(fuel_indexer_test_transfer))
+            .route("/log", web::post().to(fuel_indexer_test_log))
+            .route("/logdata", web::post().to(fuel_indexer_test_logdata))
     })
     .bind(defaults::WEB_API_ADDR)
     .unwrap()

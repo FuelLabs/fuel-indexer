@@ -9,7 +9,7 @@ use fuel_indexer_lib::config::{FuelNodeConfig, IndexerConfig};
 use fuel_indexer_lib::manifest::{Manifest, Module};
 use fuel_indexer_lib::utils::AssetReloadRequest;
 use fuel_indexer_schema::db::tables::SchemaManager;
-use fuel_indexer_schema::{Address, BlockData, Bytes32};
+use fuel_indexer_schema::types::{Address, BlockData, Bytes32};
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::cell::RefCell;
 use std::collections::HashMap;
