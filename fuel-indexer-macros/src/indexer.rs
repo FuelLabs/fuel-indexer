@@ -20,7 +20,7 @@ const FUEL_TYPES_NAMESPACE: &str = "fuel";
 
 lazy_static! {
     static ref FUEL_PRIMITIVES: HashSet<&'static str> =
-        HashSet::from(["Transfer", "BlockData", "B256"]);
+        HashSet::from(["Transfer", "BlockData", "B256", "Log"]);
 }
 
 fn get_json_abi(abi: String) -> ProgramABI {
@@ -205,6 +205,7 @@ fn process_fn_items(
 
     let mut block_dispatchers = Vec::new();
     let mut transfer_dispatchers = Vec::new();
+    let mut log_dispatchers = Vec::new();
 
     let mut blockdata_decoding = quote! {};
 
@@ -297,6 +298,9 @@ fn process_fn_items(
                                             types::ReceiptType::Transfer => {
                                                 transfer_dispatchers.push(quote! { self.#name.push(data); });
                                             }
+                                            types::ReceiptType::Log => {
+                                                log_dispatchers.push(quote!{ self.#name.push(data); });
+                                            }
                                             _ => panic!("Unsupported ReceiptType in function signature"),
                                         }
                                     } else {
@@ -369,6 +373,10 @@ fn process_fn_items(
                 #(#transfer_dispatchers)*
             }
 
+            pub fn decode_log(&mut self, data: Log) {
+                #(#log_dispatchers)*
+            }
+
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
                 let ty_id = self.selector_to_type_id(sel);
 
@@ -406,6 +414,10 @@ fn process_fn_items(
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 let data = Transfer{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transfer(data);
+                            }
+                            Receipt::Log { id, ra, rb, .. } => {
+                                let data = Log{ contract_id: id, ra, rb };
+                                decoder.decode_log(data);
                             }
                             other => {
                                 Logger::info("This type is not handled yet!");

@@ -39,4 +39,17 @@ mod fuel_indexer_test {
 
         entity.save();
     }
+
+    fn fuel_indexer_test_log(log: Log) {
+        Logger::info("fuel_indexer_test_log handling Log event.");
+
+        let entity = LogEntity {
+            id: 1,
+            contract_id: log.contract_id,
+            ra: log.ra,
+            rb: log.rb,
+        };
+
+        entity.save();
+    }
 }

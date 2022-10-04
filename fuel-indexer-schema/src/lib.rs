@@ -78,6 +78,13 @@ pub mod types {
         pub is: u64,
     }
 
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct Log {
+        pub contract_id: ContractId,
+        pub ra: u64,
+        pub rb: u64,
+    }
+
     #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
     pub struct Jsonb(pub String);
 

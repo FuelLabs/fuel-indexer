@@ -25,3 +25,11 @@ type TransferEntity {
     amount: UInt8!
     asset_id: AssetId!
 }
+
+
+type LogEntity {
+    id: ID!
+    contract_id: ContractId!
+    ra: UInt8!
+    rb: UInt8!
+}
