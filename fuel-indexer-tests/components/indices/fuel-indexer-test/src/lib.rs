@@ -5,7 +5,7 @@ use fuel_indexer_macros::indexer;
     abi = "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json",
     namespace = "fuel_indexer_test",
     identifier = "index1",
-    schema = "./../../assets/fuel_indexer_test.graphql"
+    schema = "./../../../assets/fuel_indexer_test.graphql"
 )]
 mod fuel_indexer_test {
     fn function_one(ping: Ping) {

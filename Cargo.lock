@@ -2539,11 +2539,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-test-web"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "async-std",
+ "axum",
+ "clap",
+ "fuel-indexer-lib",
+ "fuel-indexer-tests",
+ "fuel-tx",
+ "fuel-types",
+ "fuels",
+ "fuels-abigen-macro",
+ "fuels-core",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.2.25",
+]
+
+[[package]]
 name = "fuel-indexer-tests"
 version = "0.0.0"
 dependencies = [
  "async-std",
  "chrono",
+ "fuel-core",
  "fuel-gql-client",
  "fuel-indexer",
  "fuel-indexer-database",
@@ -2699,6 +2724,7 @@ version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14ceac6434755b93f71bf25d4814e4c1d08b01b243d9f7992105fe9dba1de761"
 dependencies = [
+ "fuel-core",
  "fuel-gql-client",
  "fuels-abigen-macro",
  "fuels-contract",
@@ -2809,6 +2835,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a41a1c136cb0db23701dad46ca0165d6c54a7c46173b4b43a57207bf29d0622"
 dependencies = [
  "anyhow",
+ "fuel-core",
  "fuel-core-interfaces",
  "fuel-gql-client",
  "fuel-types",

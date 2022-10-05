@@ -1,0 +1,34 @@
+[package]
+name = "fuel-indexer-test-web"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "web-api"
+path = "src/bin/web-api.rs"
+
+[[bin]]
+name = "fuel-node"
+path = "src/bin/fuel-node.rs"
+
+[dependencies]
+anyhow = { version = "1.0", default-features = false }
+async-std = "1.10.0"
+axum = "0.4"
+clap = { version = "3.1", features = ["cargo", "derive", "env"] }
+fuel-indexer-lib = { path = "../../../fuel-indexer-lib" }
+fuel-indexer-tests = { path = "./../../../fuel-indexer-tests" }
+fuel-tx = "0.18"
+fuel-types = "0.5"
+fuels = { version = "0.24", features = ["fuel-core-lib"] }
+fuels-abigen-macro = "0.24"
+fuels-core = "0.24"
+rand = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["raw_value"] }
+thiserror = "1.0"
+tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.2", features = ["env-filter"] }

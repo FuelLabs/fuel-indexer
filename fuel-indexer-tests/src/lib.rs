@@ -27,8 +27,8 @@ pub mod fixtures {
     use fuel_indexer_database::IndexerConnectionPool;
     use fuels::{
         prelude::{
-            setup_single_asset_coins, setup_test_client, AssetId, Config, Contract,
-            Provider, TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+            setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
+            TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
         },
         signers::Signer,
     };
@@ -44,10 +44,7 @@ pub mod fixtures {
         TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
     }
 
-    abigen!(
-        FuelIndexerTest,
-        "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
-    );
+    abigen!(FuelIndexerTest, "fuel-indexer-test-abi.json");
 
     const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
@@ -78,7 +75,7 @@ pub mod fixtures {
         let mut indexer_service = IndexerService::new(config).await.unwrap();
 
         let manifest_path =
-            Path::new(WORKSPACE_DIR).join("assets/fuel_indexer_test.yaml");
+            Path::new(WORKSPACE_DIR).join("assets/fuel_indexer_test_unit.yaml");
         let manifest: Manifest = Manifest::from_file(&manifest_path).unwrap();
 
         indexer_service
@@ -92,7 +89,7 @@ pub mod fixtures {
     pub async fn setup_test_client_and_wallet() -> WalletUnlocked {
         let workspace_dir = Path::new(WORKSPACE_DIR);
 
-        let wallet_path = workspace_dir.join("assets//wallet.json");
+        let wallet_path = workspace_dir.join("assets/wallet.json");
         let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
         let mut wallet = WalletUnlocked::load_keystore(
@@ -116,13 +113,7 @@ pub mod fixtures {
             DEFAULT_COIN_AMOUNT,
         );
 
-        let config = Config {
-            utxo_validation: false,
-            addr: defaults::FUEL_NODE_ADDR.parse().unwrap(),
-            ..Config::local_node()
-        };
-
-        let (client, _) = setup_test_client(coins, vec![], Some(config), None).await;
+        let (client, _) = setup_test_client(coins, vec![], None, None).await;
 
         let provider = Provider::new(client);
 

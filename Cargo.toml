@@ -13,9 +13,10 @@ members = [
    "fuel-indexer-macros",
    "fuel-indexer-plugin",
    "fuel-indexer-schema",
-   "fuel-indexer",
-   "fuel-indexer-tests/indices/fuel-indexer-test",
    "fuel-indexer-tests",
+   "fuel-indexer-tests/components/indices/fuel-indexer-test",
+   "fuel-indexer-tests/components/web",
+   "fuel-indexer",
 ]
 
 [profile.release]

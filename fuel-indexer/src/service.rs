@@ -295,8 +295,8 @@ impl IndexerService {
                     next_block = block.height.0 + 1;
 
                     // NOTE: for now assuming we have a single contract instance,
-                    //       we'll need to watch contract creation events here in
-                    //       case an indexer would be interested in processing it.
+                    // we'll need to watch contract creation events here in
+                    // case an indexer would be interested in processing it.
                     let mut transactions = Vec::new();
                     for trans in block.transactions {
                         match client.receipts(&trans.id.to_string()).await {

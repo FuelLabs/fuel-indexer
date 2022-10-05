@@ -20,5 +20,5 @@ git clone git@github.com:FuelLabs/fuel-indexer.git
 ### Run migrations
 
 ```bash
-DATABASE_URL=postgres://postgres@localhost sh scripts/run_migrations.local.sh
+DATABASE_URL=postgres://postgres@localhost sh scripts/run_migrations.sh
 ```
