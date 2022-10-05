@@ -1,6 +1,6 @@
 use crate::{
     config::{IndexerConfig, MutableConfig},
-    IndexerError, SchemaManager,
+    ExecutionRequest, ExecutionResponse, IndexerError, SchemaManager,
 };
 use anyhow::Result;
 use async_std::sync::{Arc, RwLock};
@@ -25,6 +25,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::time::Instant;
 use thiserror::Error;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::error;
 
 #[derive(Debug, Error)]
@@ -199,6 +200,7 @@ async fn authorize_middleware<B>(
 
 pub async fn register_index_assets(
     Path((namespace, identifier)): Path<(String, String)>,
+    Extension(execution_request_tx): Extension<Sender<ExecutionRequest>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     multipart: Option<Multipart>,
@@ -276,6 +278,12 @@ pub async fn register_index_assets(
             return Err(e.into());
         };
 
+        let _ = execution_request_tx
+            .send(ExecutionRequest {
+                index_id: assets[0].index_id,
+            })
+            .await;
+
         return Ok(Json(json!({
             "success": "true",
             "assets": assets,
@@ -288,7 +296,10 @@ pub async fn register_index_assets(
 pub struct GraphQlApi;
 
 impl GraphQlApi {
-    pub async fn run(config: IndexerConfig) {
+    pub async fn run(
+        config: IndexerConfig,
+        execution_request_tx: Sender<ExecutionRequest>,
+    ) {
         let sm = SchemaManager::new(&config.database.to_string())
             .await
             .expect("SchemaManager create failed");
@@ -316,6 +327,8 @@ impl GraphQlApi {
         let asset_route = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
             .route_layer(middleware::from_fn(authorize_middleware))
+            .layer(Extension(execution_request_tx))
+            // .layer(Extension(execution_response_rx))
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()));
 
