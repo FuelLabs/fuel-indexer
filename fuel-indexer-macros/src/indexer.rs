@@ -2,7 +2,10 @@ use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
-use fuel_indexer_schema::{type_id, types};
+use fuel_indexer_schema::{
+    type_id,
+    types::{BlockData, ReceiptType},
+};
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
@@ -191,7 +194,7 @@ fn process_fn_items(
     fn is_block_fn(input: &ItemFn) -> bool {
         if input.attrs.len() == 1 {
             let path = &input.attrs[0].path;
-            if path.get_ident().unwrap() == "block" {
+            if path.get_ident().unwrap() == BlockData::macro_attribute_ident_str() {
                 return true;
             }
         }
@@ -211,8 +214,8 @@ fn process_fn_items(
                 let mut arg_list = Vec::new();
 
                 if is_block_fn(&fn_item) {
-                    let path_ident_str = types::BlockData::ident();
-                    let type_id = type_id(FUEL_TYPES_NAMESPACE, &path_ident_str);
+                    let path_ident_str = BlockData::path_ident_string();
+                    let type_id = type_id(FUEL_TYPES_NAMESPACE, &path_ident_str) as usize;
 
                     let typ = TypeDeclaration {
                         type_id,
@@ -223,14 +226,13 @@ fn process_fn_items(
 
                     let ty = rust_type(&typ);
                     let name = rust_name(&typ);
-                    let ty_id = typ.type_id;
 
-                    if !types.contains(&ty_id) {
+                    if !types.contains(&type_id) {
                         type_vecs.push(quote! {
                             #name: Vec<#ty>
                         });
 
-                        types.insert(ty_id);
+                        types.insert(type_id);
                     }
 
                     block_dispatchers.push(quote! { self.#name.push(data); });
@@ -291,10 +293,10 @@ fn process_fn_items(
                                         });
 
                                         match path_ident_str.into() {
-                                            types::ReceiptType::Transfer => {
+                                            ReceiptType::Transfer => {
                                                 transfer_dispatchers.push(quote! { self.#name.push(data); });
                                             }
-                                            types::ReceiptType::Log => {
+                                            ReceiptType::Log => {
                                                 log_dispatchers.push(quote!{ self.#name.push(data); });
                                             }
                                             _ => panic!("Unsupported ReceiptType in function signature"),

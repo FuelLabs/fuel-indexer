@@ -64,8 +64,12 @@ pub mod types {
     }
 
     impl BlockData {
-        pub fn ident() -> String {
+        pub fn path_ident_string() -> String {
             "BlockData".to_string()
+        }
+
+        pub fn macro_attribute_ident_str() -> &'static str {
+            "block"
         }
     }
 

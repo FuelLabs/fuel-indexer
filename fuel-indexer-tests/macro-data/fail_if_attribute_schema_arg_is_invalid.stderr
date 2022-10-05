@@ -9,7 +9,7 @@ error: custom attribute panicked
    | | )]
    | |__^
    |
-   = help: message: Schema definition not found!
+   = help: message: Schema definition not found.
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
