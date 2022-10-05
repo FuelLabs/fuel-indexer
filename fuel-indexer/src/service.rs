@@ -329,7 +329,7 @@ impl IndexerService {
                     if retry_count < RETRY_LIMIT {
                         continue;
                     } else {
-                        error!("Indexer failed after retries, giving up!");
+                        error!("Indexer failed after retries, giving up.");
                         break;
                     }
                 }

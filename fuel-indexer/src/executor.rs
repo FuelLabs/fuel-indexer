@@ -128,7 +128,7 @@ impl Executor for NativeIndexExecutor {
             }
 
             let object: IndexerRequest = deserialize(&buf[..size])
-                .expect("Could not deserialize message from indexer!");
+                .expect("Could not deserialize message from indexer.");
 
             match object {
                 IndexerRequest::GetObject(type_id, object_id) => {

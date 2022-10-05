@@ -53,6 +53,7 @@ pub mod types {
         }
     }
 
+    // NOTE: We could also create ABI JSON files with these native Fuel indexer-macro types <( '.' )>
     #[derive(Deserialize, Serialize, Debug, Clone)]
     pub struct BlockData {
         pub height: u64,
@@ -253,10 +254,10 @@ impl FtColumn {
                 FtColumn::Timestamp(uint8)
             }
             ColumnType::Blob => {
-                panic!("Blob not supported for FtColumn!");
+                panic!("Blob not supported for FtColumn.");
             }
             ColumnType::ForeignKey => {
-                panic!("ForeignKey not supported for FtColumn!");
+                panic!("ForeignKey not supported for FtColumn.");
             }
             ColumnType::Jsonb => FtColumn::Jsonb(types::Jsonb(
                 String::from_utf8_lossy(&bytes[..size]).to_string(),

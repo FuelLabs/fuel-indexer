@@ -136,7 +136,7 @@ fn process_fn_items(
 
     if input.content.is_none() || input.content.as_ref().unwrap().1.is_empty() {
         proc_macro_error::abort_call_site!(
-            "No module body, must specify at least one handler function!"
+            "No module body, must specify at least one handler function."
         )
     }
 
@@ -211,10 +211,12 @@ fn process_fn_items(
                 let mut arg_list = Vec::new();
 
                 if is_block_fn(&fn_item) {
+                    let path_ident_str = types::BlockData::ident();
+                    let type_id = type_id(FUEL_TYPES_NAMESPACE, &path_ident_str);
+
                     let typ = TypeDeclaration {
-                        type_id: type_id(FUEL_TYPES_NAMESPACE, &types::BlockData::ident())
-                            as usize,
-                        type_field: types::BlockData::ident(),
+                        type_id,
+                        type_field: path_ident_str,
                         type_parameters: None,
                         components: None,
                     };
@@ -247,8 +249,9 @@ fn process_fn_items(
                         FnArg::Typed(PatType { ty, .. }) => {
                             if let Type::Path(path) = &**ty {
                                 let path = path.path.segments.last().unwrap();
+                                let path_ident_str = path.ident.to_string();
                                 // NOTE: may need to get something else for primitives...
-                                let ty_id = match type_ids.get(&path.ident.to_string()) {
+                                let ty_id = match type_ids.get(&path_ident_str) {
                                     Some(id) => id,
                                     None => {
                                         proc_macro_error::abort_call_site!(
@@ -258,7 +261,7 @@ fn process_fn_items(
                                     }
                                 };
 
-                                if disallowed_types.contains(&path.ident.to_string()) {
+                                if disallowed_types.contains(&path_ident_str) {
                                     proc_macro_error::abort_call_site!(
                                         "Type {:?} currently not supported",
                                         path.ident
@@ -269,16 +272,14 @@ fn process_fn_items(
                                     // If the fn parameter type is in `type_ids` but not in `types` that means it's a fuel primitive
                                     // for which there is no ABI JSON
 
-                                    if FUEL_PRIMITIVES
-                                        .contains(path.ident.to_string().as_str())
-                                    {
+                                    if FUEL_PRIMITIVES.contains(path_ident_str.as_str()) {
                                         let typ = TypeDeclaration {
                                             type_id: type_id(
                                                 FUEL_TYPES_NAMESPACE,
-                                                &path.ident.to_string(),
+                                                &path_ident_str,
                                             )
                                                 as usize,
-                                            type_field: path.ident.to_string(),
+                                            type_field: path_ident_str.clone(),
                                             type_parameters: None,
                                             components: None,
                                         };
@@ -289,7 +290,7 @@ fn process_fn_items(
                                             #name: Vec<#ty>
                                         });
 
-                                        match path.ident.to_string().into() {
+                                        match path_ident_str.into() {
                                             types::ReceiptType::Transfer => {
                                                 transfer_dispatchers.push(quote! { self.#name.push(data); });
                                             }
@@ -349,7 +350,7 @@ fn process_fn_items(
                 match sel {
                     #(#selectors)*
                     //TODO: should handle this a little more gently
-                    _ => panic!("Unknown type id!"),
+                    _ => panic!("Unknown type id."),
                 }
             }
 
@@ -403,7 +404,7 @@ fn process_fn_items(
                                 return_types.push(param1);
                             }
                             Receipt::ReturnData { data, .. } => {
-                                let selector = return_types.pop().expect("No return type available!");
+                                let selector = return_types.pop().expect("No return type available. <('-'<)");
                                 decoder.decode_return_type(selector, data);
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
@@ -415,7 +416,7 @@ fn process_fn_items(
                                 decoder.decode_log(data);
                             }
                             other => {
-                                Logger::info("This type is not handled yet!");
+                                Logger::info("This type is not handled yet. (>'.')>");
                             }
                         }
                     }
@@ -462,13 +463,13 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             Ok(tokens) => tokens,
             Err(e) => {
                 proc_macro_error::abort_call_site!(
-                    "Could not generate tokens for abi! {:?}",
+                    "Could not generate tokens for abi. {:?}",
                     e
                 )
             }
         },
         Err(e) => {
-            proc_macro_error::abort_call_site!("Could not generate abi object! {:?}", e)
+            proc_macro_error::abort_call_site!("Could not generate abi object. {:?}", e)
         }
     };
 

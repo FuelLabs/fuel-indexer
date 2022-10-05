@@ -27,7 +27,7 @@ async fn test_can_create_wasm_executor_and_index_abi_entity_in_postgres() {
 
     let mut conn = sqlx::PgConnection::connect(database_url)
         .await
-        .expect("Database connection failed!");
+        .expect("Database connection failed.");
 
     let row =
         sqlx::query("select id,account from test_namespace.thing1 where id = 1020;")
@@ -56,7 +56,7 @@ async fn test_can_create_wasm_executor_and_index_abi_entity_in_sqlite() {
 
     let mut conn = sqlx::SqliteConnection::connect(&database_url)
         .await
-        .expect("Database connection failed!");
+        .expect("Database connection failed.");
 
     let row = sqlx::query("select id,account from thing1 where id = 1020;")
         .fetch_one(&mut conn)
