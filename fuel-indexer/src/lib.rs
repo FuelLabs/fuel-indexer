@@ -74,3 +74,13 @@ pub enum IndexerRequest {
     PutObject(u64, Vec<u8>, Vec<FtColumn>),
     Commit,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ExecutionRequest {
+    index_id: i64,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ExecutionResponse {
+    executed: bool,
+}

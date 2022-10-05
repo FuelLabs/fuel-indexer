@@ -1,14 +1,14 @@
 use crate::{
     config::{IndexerConfig, MutableConfig},
     manifest::Module,
-    Executor, IndexerResult, Manifest, NativeIndexExecutor, SchemaManager,
-    WasmIndexExecutor,
+    ExecutionRequest, ExecutionResponse, Executor, IndexerResult, Manifest,
+    NativeIndexExecutor, SchemaManager, WasmIndexExecutor,
 };
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
-use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
 use fuel_indexer_schema::{Address, BlockData, Bytes32};
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
@@ -18,6 +18,7 @@ use std::marker::{Send, Sync};
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
+    sync::mpsc::{Receiver, Sender},
     task::JoinHandle,
     time::{sleep, Duration},
 };
@@ -33,10 +34,14 @@ pub struct IndexerService {
     database_url: String,
     handles: HashMap<String, JoinHandle<()>>,
     killers: HashMap<String, Arc<AtomicBool>>,
+    execution_request_rx: Receiver<ExecutionRequest>,
 }
 
 impl IndexerService {
-    pub async fn new(config: IndexerConfig) -> IndexerResult<IndexerService> {
+    pub async fn new(
+        config: IndexerConfig,
+        execution_request_rx: Receiver<ExecutionRequest>,
+    ) -> IndexerResult<IndexerService> {
         let database_url = config.database.to_string().clone();
 
         let manager = SchemaManager::new(&database_url).await?;
@@ -54,6 +59,7 @@ impl IndexerService {
             database_url,
             handles: HashMap::default(),
             killers: HashMap::default(),
+            execution_request_rx,
         })
     }
 
@@ -346,11 +352,46 @@ impl IndexerService {
         }
     }
 
-    pub async fn run(self) {
-        let IndexerService { handles, .. } = self;
-        let mut futs = FuturesUnordered::from_iter(handles.into_values());
-        while let Some(fut) = futs.next().await {
-            debug!("Retired a future {fut:?}");
+    pub async fn run(&mut self) {
+        let database_url = self.config.database.clone().to_string();
+        let pool = IndexerConnectionPool::connect(&database_url)
+            .await
+            .expect("Execution task could not establish connection to database pool");
+
+        while let Some(request) = self.execution_request_rx.recv().await {
+            let mut conn = pool
+                .acquire()
+                .await
+                .expect("Execution task could not acquire connection from pool");
+            let assets = queries::latest_assets_for_index(&mut conn, &request.index_id)
+                .await
+                .expect("Could not get latest assets for index");
+
+            let manifest: Manifest = serde_yaml::from_slice(&assets.manifest.bytes)
+                .expect("Could not read manifest in registry.");
+
+            let (kill_switch, handle) = self
+                .spawn_executor_from_index_asset_registry(
+                    &manifest,
+                    false,
+                    assets.wasm.bytes,
+                )
+                .await
+                .expect("msbalhg");
+
+            self.handles.insert(manifest.namespace.clone(), handle);
+            self.killers.insert(manifest.namespace, kill_switch);
+
+            // let _ = self
+            //     .execution_response_tx
+            //     .send(ExecutionResponse { executed: true })
+            //     .await;
+            // tokio::spawn(self.execute_new_assets(conn, request));
         }
+
+        // let mut futs = FuturesUnordered::from_iter(self.handles.into_values());
+        // while let Some(fut) = futs.next().await {
+        //     debug!("Retired a future {fut:?}");
+        // }
     }
 }

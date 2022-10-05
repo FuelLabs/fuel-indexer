@@ -3,9 +3,10 @@ use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
 use fuel_indexer::{
     config::{IndexerArgs, Parser},
-    GraphQlApi, IndexerConfig, IndexerService, Manifest,
+    ExecutionRequest, GraphQlApi, IndexerConfig, IndexerService, Manifest,
 };
 use fuel_indexer_database::queries;
+use tokio::sync::mpsc;
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
@@ -49,7 +50,10 @@ pub async fn main() -> Result<()> {
         &config.fuel_node.to_string()
     );
 
-    let mut service = IndexerService::new(config.clone()).await?;
+    let (execution_request_tx, execution_request_rx) =
+        mpsc::channel::<ExecutionRequest>(100);
+
+    let mut service = IndexerService::new(config.clone(), execution_request_rx).await?;
 
     let mut manifest: Option<Manifest> = None;
 
@@ -71,7 +75,7 @@ pub async fn main() -> Result<()> {
     service.register_indices(manifest, false).await?;
 
     let service_handle = tokio::spawn(service.run());
-    GraphQlApi::run(config).await;
+    GraphQlApi::run(config, execution_request_tx).await;
 
     service_handle.await?;
 
