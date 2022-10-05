@@ -32,6 +32,8 @@ pub mod types {
         Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word,
     };
 
+    pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
+
     pub enum ReceiptType {
         Log,
         LogData,
@@ -53,6 +55,10 @@ pub mod types {
         }
     }
 
+    pub trait Identity {
+        fn path_ident_str() -> &'static str;
+    }
+
     // NOTE: We could also create ABI JSON files with these native Fuel indexer-macro types <( '.' )>
     #[derive(Deserialize, Serialize, Debug, Clone)]
     pub struct BlockData {
@@ -63,11 +69,13 @@ pub mod types {
         pub transactions: Vec<Vec<Receipt>>,
     }
 
-    impl BlockData {
-        pub fn path_ident_string() -> String {
-            "BlockData".to_string()
+    impl Identity for BlockData {
+        fn path_ident_str() -> &'static str {
+            "BlockData"
         }
+    }
 
+    impl BlockData {
         pub fn macro_attribute_ident_str() -> &'static str {
             "block"
         }
@@ -83,11 +91,39 @@ pub mod types {
         pub is: u64,
     }
 
+    impl Identity for Transfer {
+        fn path_ident_str() -> &'static str {
+            "Transfer"
+        }
+    }
+
     #[derive(Deserialize, Serialize, Debug, Clone)]
     pub struct Log {
         pub contract_id: ContractId,
         pub ra: u64,
         pub rb: u64,
+    }
+
+    impl Identity for Log {
+        fn path_ident_str() -> &'static str {
+            "Log"
+        }
+    }
+
+    // Keeping for now, but I don't believe we need this
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct LogData {
+        pub contract_id: ContractId,
+        pub data: Vec<u8>,
+        pub rb: u64,
+        pub len: u64,
+        pub ptr: u64,
+    }
+
+    impl Identity for LogData {
+        fn path_ident_str() -> &'static str {
+            "LogData"
+        }
     }
 
     #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]

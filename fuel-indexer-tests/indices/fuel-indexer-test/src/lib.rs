@@ -52,4 +52,10 @@ mod fuel_indexer_test {
 
         entity.save();
     }
+
+    fn fuel_indexer_test_logdata(logdata: Pung) {
+        Logger::info("fuel_indexer_test_logdata handling Log event.");
+
+        println!("This entity came from the LogData: {:?}", logdata);
+    }
 }

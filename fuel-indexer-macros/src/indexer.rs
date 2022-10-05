@@ -4,7 +4,9 @@ use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
 use fuel_indexer_schema::{
     type_id,
-    types::{BlockData, ReceiptType},
+    types::{
+        BlockData, Identity, Log, LogData, ReceiptType, Transfer, FUEL_TYPES_NAMESPACE,
+    },
 };
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
@@ -19,11 +21,15 @@ use quote::{format_ident, quote};
 use syn::{parse_macro_input, FnArg, Ident, Item, ItemFn, ItemMod, PatType, Type};
 
 const DISALLOWED: &[&str] = &["Vec"];
-const FUEL_TYPES_NAMESPACE: &str = "fuel";
 
 lazy_static! {
-    static ref FUEL_PRIMITIVES: HashSet<&'static str> =
-        HashSet::from(["Transfer", "BlockData", "B256", "Log"]);
+    static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
+        Transfer::path_ident_str(),
+        BlockData::path_ident_str(),
+        "B256",
+        Log::path_ident_str(),
+        LogData::path_ident_str()
+    ]);
 }
 
 fn get_json_abi(abi: String) -> ProgramABI {
@@ -204,6 +210,7 @@ fn process_fn_items(
     let mut block_dispatchers = Vec::new();
     let mut transfer_dispatchers = Vec::new();
     let mut log_dispatchers = Vec::new();
+    let mut logdata_dispatchers = Vec::new();
 
     let mut blockdata_decoding = quote! {};
 
@@ -214,7 +221,7 @@ fn process_fn_items(
                 let mut arg_list = Vec::new();
 
                 if is_block_fn(&fn_item) {
-                    let path_ident_str = BlockData::path_ident_string();
+                    let path_ident_str = String::from(BlockData::path_ident_str());
                     let type_id = type_id(FUEL_TYPES_NAMESPACE, &path_ident_str) as usize;
 
                     let typ = TypeDeclaration {
@@ -276,11 +283,7 @@ fn process_fn_items(
 
                                     if FUEL_PRIMITIVES.contains(path_ident_str.as_str()) {
                                         let typ = TypeDeclaration {
-                                            type_id: type_id(
-                                                FUEL_TYPES_NAMESPACE,
-                                                &path_ident_str,
-                                            )
-                                                as usize,
+                                            type_id: *ty_id,
                                             type_field: path_ident_str.clone(),
                                             type_parameters: None,
                                             components: None,
@@ -298,6 +301,10 @@ fn process_fn_items(
                                             }
                                             ReceiptType::Log => {
                                                 log_dispatchers.push(quote!{ self.#name.push(data); });
+                                            }
+                                            ReceiptType::LogData => {
+                                                logdata_dispatchers.push(quote!{ self.#name.push(data); });
+                                                decoders.push(decode_snippet(*ty_id, &rust_type(&typ), &name));
                                             }
                                             _ => panic!("Unsupported ReceiptType in function signature"),
                                         }
@@ -356,7 +363,7 @@ fn process_fn_items(
                 }
             }
 
-            fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
+            pub fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
                     #(#decoders),*
                     _ => panic!("Unkown type id {}", ty_id),
@@ -367,6 +374,12 @@ fn process_fn_items(
                 #(#block_dispatchers)*
             }
 
+            pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
+                let ty_id = self.selector_to_type_id(sel);
+
+                self.decode_type(ty_id, data);
+            }
+
             pub fn decode_transfer(&mut self, data: Transfer) {
                 #(#transfer_dispatchers)*
             }
@@ -375,14 +388,9 @@ fn process_fn_items(
                 #(#log_dispatchers)*
             }
 
-            pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
-                let ty_id = self.selector_to_type_id(sel);
-
-                self.decode_type(ty_id, data);
-            }
-
-            pub fn decode_log_data(&self) {
-                todo!("Finish this off")
+            pub fn decode_logdata(&mut self, rb: u64, data: Vec<u8>) {
+                // TODO: Make sure rb and Pung type_id (from ABI JSON) are the same
+                self.decode_type(rb as usize, data)
             }
 
             pub fn dispatch(&self) {
@@ -416,6 +424,11 @@ fn process_fn_items(
                             Receipt::Log { id, ra, rb, .. } => {
                                 let data = Log{ contract_id: id, ra, rb };
                                 decoder.decode_log(data);
+                            }
+                            Receipt::LogData { rb, data, ptr, len, id, .. } => {
+                                // TODO: use rb to determine which struct from ABI JSON to decode into
+                                decoder.decode_logdata(rb, data);
+
                             }
                             other => {
                                 Logger::info("This type is not handled yet. (>'.')>");
