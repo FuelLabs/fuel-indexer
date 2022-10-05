@@ -5,7 +5,7 @@ use fuel_indexer::{
 };
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::prelude::{
-    setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, Provider,
+    setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
     WalletUnlocked, DEFAULT_COIN_AMOUNT,
 };
 use fuels::signers::Signer;
@@ -15,7 +15,6 @@ use std::path::Path;
 
 const MANIFEST: &str = include_str!("./../assets/simple_wasm.yaml");
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
-const FUEL_NODE_ADDR: &str = "0.0.0.0:4000";
 
 abigen!(
     Simple,
@@ -48,13 +47,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
         DEFAULT_COIN_AMOUNT,
     );
 
-    let config = Config {
-        utxo_validation: false,
-        addr: FUEL_NODE_ADDR.parse().unwrap(),
-        ..Config::local_node()
-    };
-
-    let (client, _) = setup_test_client(coins, vec![], Some(config), None).await;
+    let (client, _) = setup_test_client(coins, vec![], None, None).await;
 
     let provider = Provider::new(client);
 
@@ -76,7 +69,9 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::from(
-            FUEL_NODE_ADDR.parse::<std::net::SocketAddr>().unwrap(),
+            defaults::FUEL_NODE_ADDR
+                .parse::<std::net::SocketAddr>()
+                .unwrap(),
         ),
         database: DatabaseConfig::Postgres {
             user: "postgres".into(),

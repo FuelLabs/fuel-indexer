@@ -36,6 +36,7 @@ pub mod fixtures {
     use fuels_core::parameters::StorageConfiguration;
     use sqlx::{pool::Pool, Postgres};
     use std::path::Path;
+    use tracing_subscriber::filter::EnvFilter;
 
     pub fn tx_params() -> TxParameters {
         let gas_price = 0;
@@ -44,10 +45,11 @@ pub mod fixtures {
         TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
     }
 
-    abigen!(
-        FuelIndexerTest,
-        "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
-    );
+    // TODO: We have this ABI JSON temporarily defined in multiple places due to (what is
+    // currently believed to be) somewhat inconsistent behavior with regard to path resolution
+    // in the abigen! macro. A formal Github issue is pending. The real/original ABI JSON file
+    // lives under contracts/fuel-indexer-test. The others are temporary copies.
+    abigen!(FuelIndexerTest, "fuel-indexer-test-abi.json");
 
     const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
@@ -78,7 +80,7 @@ pub mod fixtures {
         let mut indexer_service = IndexerService::new(config).await.unwrap();
 
         let manifest_path =
-            Path::new(WORKSPACE_DIR).join("assets/fuel_indexer_test.yaml");
+            Path::new(WORKSPACE_DIR).join("assets/fuel_indexer_test_unit.yaml");
         let manifest: Manifest = Manifest::from_file(&manifest_path).unwrap();
 
         indexer_service
@@ -90,9 +92,21 @@ pub mod fixtures {
     }
 
     pub async fn setup_test_client_and_wallet() -> WalletUnlocked {
+        let filter = match std::env::var_os("RUST_LOG") {
+            Some(_) => {
+                EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
+            }
+            None => EnvFilter::new("info"),
+        };
+
+        tracing_subscriber::fmt::Subscriber::builder()
+            .with_writer(std::io::stderr)
+            .with_env_filter(filter)
+            .init();
+
         let workspace_dir = Path::new(WORKSPACE_DIR);
 
-        let wallet_path = workspace_dir.join("assets//wallet.json");
+        let wallet_path = workspace_dir.join("assets/wallet.json");
         let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
         let mut wallet = WalletUnlocked::load_keystore(
