@@ -1,7 +1,7 @@
 use fuel_indexer::{
     executor::WasmIndexExecutor, Executor, IndexerError, Manifest, SchemaManager,
 };
-use fuel_indexer_schema::BlockData;
+use fuel_indexer_schema::types::BlockData;
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
 use fuel_tx::Receipt;
 use fuels_abigen_macro::abigen;

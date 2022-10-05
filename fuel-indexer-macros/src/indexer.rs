@@ -151,12 +151,7 @@ fn process_fn_items(
     let mut type_map = HashMap::new();
     let mut type_ids = FUEL_PRIMITIVES
         .iter()
-        .map(|x| {
-            (
-                x.to_string(),
-                type_id(FUEL_TYPES_NAMESPACE, &x.to_string()) as usize,
-            )
-        })
+        .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
     for typ in parsed.types {
@@ -491,10 +486,12 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use alloc::{format, vec, vec::Vec};
         use fuel_indexer_plugin::{Entity, Logger};
         use fuel_indexer_plugin::types::*;
+        use fuel_indexer_schema::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use fuel_tx::Receipt;
         use fuel_indexer_macros::block;
 
+        // TODO: Put this somewhere else?
         type B256 = [u8; 32];
 
         #abi_tokens
