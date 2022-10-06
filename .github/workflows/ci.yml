@@ -84,6 +84,36 @@ jobs:
         env:
           RUSTFLAGS: '-D warnings'
 
+  cargo-build-wasm-example:
+    needs: cancel-previous-runs
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - run: cargo install sqlx-cli
+      - run: ./scripts/run_migrations.ci.sh
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+        name: Cargo Build WASM Example
+        with:
+          command: build
+          args: -p simple-wasm --locked --all-features --all-targets
+        env:
+          RUSTFLAGS: '-D warnings'
+
   cargo-test-workspace-default-features:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
