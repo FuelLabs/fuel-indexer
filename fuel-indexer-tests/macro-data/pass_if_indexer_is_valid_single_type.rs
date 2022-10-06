@@ -21,7 +21,7 @@ mod indexer {
 
 fn main() {
     use fuels_core::{abi_encoder::ABIEncoder};
-    
+
     let s = SomeEvent {
         id: 9,
         account: Bits256([48u8; 32]),

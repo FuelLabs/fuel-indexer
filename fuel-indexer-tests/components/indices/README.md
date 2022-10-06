@@ -1,3 +1,3 @@
-# fuel-indexer-tests/indices
+# fuel-indexer-tests/components/indices
 
 Indices used for testing

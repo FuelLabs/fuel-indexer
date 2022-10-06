@@ -1,8 +1,5 @@
 #![cfg_attr(not(feature = "e2e"), allow(dead_code, unused_imports))]
-use fuel_indexer_tests::fixtures::{
-    postgres_connection, setup_contract, setup_indexer_service,
-    setup_test_client_and_wallet, tx_params,
-};
+use fuel_indexer_tests::fixtures::{http_client, postgres_connection};
 use sqlx::Row;
 use tokio::time::{sleep, Duration};
 
@@ -12,15 +9,15 @@ async fn test_can_trigger_and_index_ping_event() {
     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
-    let wallet = setup_test_client_and_wallet().await;
-    let contract = setup_contract(wallet).await;
-
-    setup_indexer_service().await;
-
-    let _ = contract.ping().tx_params(tx_params()).call().await.unwrap();
+    let client = http_client();
+    let _ = client
+        .post("http://127.0.0.1:8000/ping")
+        .send()
+        .await
+        .unwrap();
 
     // Events are not triggered immediately
-    sleep(Duration::from_millis(500)).await;
+    sleep(Duration::from_secs(4)).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.message where id = 1")
         .fetch_one(&mut conn)
