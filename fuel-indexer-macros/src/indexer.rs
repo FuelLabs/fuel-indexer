@@ -68,7 +68,7 @@ fn rust_name(ty: &TypeDeclaration) -> Ident {
         let ty = ty.type_field.split(' ').last().unwrap().to_string();
         rust_name_str(&ty)
     } else {
-        let ty = ty.type_field.replace('[', "_").replace(']', "_");
+        let ty = ty.type_field.replace(['[', ']'], "_");
         rust_name_str(&ty)
     }
 }
@@ -162,12 +162,7 @@ fn process_fn_items(
     let mut type_map = HashMap::new();
     let mut type_ids = FUEL_PRIMITIVES
         .iter()
-        .map(|x| {
-            (
-                x.to_string(),
-                type_id(FUEL_TYPES_NAMESPACE, &x.to_string()) as usize,
-            )
-        })
+        .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
     for typ in parsed.types {
@@ -243,7 +238,7 @@ fn process_fn_items(
                         components: None,
                     };
 
-                    let ty = rust_type(&typ);
+                    let ty = quote! { BlockData };
                     let name = rust_name(&typ);
                     let ty_id = typ.type_id;
 
@@ -521,7 +516,6 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use fuel_indexer_plugin::types::*;
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use fuel_tx::Receipt;
-        use fuel_indexer_macros::block;
 
         type B256 = [u8; 32];
 

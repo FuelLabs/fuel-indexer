@@ -30,6 +30,18 @@ pub struct Args {
     pub bin_path: Option<PathBuf>,
 }
 
+async fn fuel_indexer_test_blocks(
+    contract: web::Data<Arc<FuelIndexerTest>>,
+) -> impl Responder {
+    let _ = contract
+        .trigger_ping()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
+    HttpResponse::Ok()
+}
+
 async fn fuel_indexer_test_ping(
     contract: web::Data<Arc<FuelIndexerTest>>,
 ) -> impl Responder {
@@ -114,7 +126,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
     let mut wallet =
-        WalletUnlocked::load_keystore(&wallet_path_str, defaults::WALLET_PASSWORD, None)
+        WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
             .unwrap();
 
     let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
@@ -158,6 +170,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = HttpServer::new(move || {
         App::new()
             .app_data(contract.clone())
+            .route("/block", web::post().to(fuel_indexer_test_blocks))
             .route("/ping", web::post().to(fuel_indexer_test_ping))
             .route("/transfer", web::post().to(fuel_indexer_test_transfer))
             .route("/log", web::post().to(fuel_indexer_test_log))
