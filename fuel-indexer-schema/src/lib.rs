@@ -356,7 +356,7 @@ impl FtColumn {
 mod tests {
     #[test]
     fn test_fragments() {
-        use super::*;
+        use super::{types::*, *};
 
         let id = FtColumn::ID(123456);
         let addr = FtColumn::Address(Address::try_from([0x12; 32]).expect("Bad bytes"));

@@ -1,5 +1,5 @@
 extern crate alloc;
-use fuel_indexer_macros::indexer;
+use fuel_indexer_macros::{block, indexer};
 
 #[indexer(
     abi = "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json",
@@ -11,19 +11,38 @@ mod fuel_indexer_test {
     fn fuel_indexer_test_ping(ping: Ping) {
         Logger::info("fuel_indexer_test_ping handling a Ping event.");
 
-        let message: String = ping.message.into();
-
-        let mut bytes: [u8; 32] = [0u8; 32];
-        bytes.copy_from_slice(&message.as_bytes()[..32]);
-
-        let entity = Message {
+        let entity = PingEntity {
             id: ping.id,
-            ping: ping.value,
-            pong: 456,
-            message: Bytes32::from(bytes),
+            value: ping.value,
         };
 
         entity.save();
+    }
+
+    #[block]
+    fn fuel_indexer_test_blocks(block: BlockData) {
+        let blk = BlockEntity {
+            id: block.height,
+            hash: block.id,
+            height: block.height,
+            producer: block.producer,
+            timestamp: block.time,
+        };
+
+        blk.save();
+
+        let input_data = r#"{"foo":"bar"}"#.to_string();
+
+        for (i, _receipts) in block.transactions.iter().enumerate() {
+            let tx = TransactionEntity {
+                id: i as u64,
+                hash: [0u8; 32].into(),
+                block: blk.id,
+                timestamp: block.time,
+                input_data: Jsonb(input_data.clone()),
+            };
+            tx.save();
+        }
     }
 
     fn fuel_indexer_test_transfer(transfer: Transfer) {
@@ -32,7 +51,7 @@ mod fuel_indexer_test {
         let entity = TransferEntity {
             id: 1,
             contract_id: transfer.contract_id,
-            to: transfer.to,
+            recipient: transfer.to,
             amount: 1,
             asset_id: transfer.asset_id,
         };
