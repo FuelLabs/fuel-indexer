@@ -30,7 +30,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
     let id: i64 = row.get(0);
     let height: i64 = row.get(1);
     let producer: String = row.get(2);
-    let hash: String = row.get(3);
+    let _hash: String = row.get(3);
     let timestamp: i64 = row.get(4);
 
     assert_eq!(height, id);
@@ -79,25 +79,25 @@ async fn test_can_trigger_and_index_ping_event() {
     assert_eq!(value, 123);
 }
 
-#[tokio::test]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_transfer_event() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
+// #[tokio::test]
+// #[cfg(feature = "e2e")]
+// async fn test_can_trigger_and_index_transfer_event() {
+//     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+//     let mut conn = pool.acquire().await.unwrap();
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/transfer")
-        .send()
-        .await
-        .unwrap();
+//     let client = http_client();
+//     let _ = client
+//         .post("http://127.0.0.1:8000/transfer")
+//         .send()
+//         .await
+//         .unwrap();
 
-    // Events are not triggered immediately
-    sleep(Duration::from_secs(3)).await;
+//     // Events are not triggered immediately
+//     sleep(Duration::from_secs(3)).await;
 
-    // TODO: finish
-    assert_eq!(1, 1);
-}
+//     // TODO: finish
+//     assert_eq!(1, 1);
+// }
 
 #[tokio::test]
 #[cfg(feature = "e2e")]
@@ -115,26 +115,35 @@ async fn test_can_trigger_and_index_log_event() {
     // Events are not triggered immediately
     sleep(Duration::from_secs(3)).await;
 
-    // TODO: finish
-    assert_eq!(1, 1);
-}
-
-#[tokio::test]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_logdata_event() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
-
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/logdata")
-        .send()
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.logentity where id = 1")
+        .fetch_one(&mut conn)
         .await
         .unwrap();
 
-    // Events are not triggered immediately
-    sleep(Duration::from_secs(3)).await;
+    let _id: i64 = row.get(0);
+    let _contract_id: String = row.get(1);
+    let ra: i64 = row.get(2);
+    let _rb: i64 = row.get(3);
 
-    // TODO: finish
-    assert_eq!(1, 1);
+    assert_eq!(ra, 8675309); // value is defined in test contract
 }
+
+// #[tokio::test]
+// #[cfg(feature = "e2e")]
+// async fn test_can_trigger_and_index_logdata_event() {
+//     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+//     let mut conn = pool.acquire().await.unwrap();
+
+//     let client = http_client();
+//     let _ = client
+//         .post("http://127.0.0.1:8000/logdata")
+//         .send()
+//         .await
+//         .unwrap();
+
+//     // Events are not triggered immediately
+//     sleep(Duration::from_secs(3)).await;
+
+//     // TODO: finish
+//     assert_eq!(1, 1);
+// }

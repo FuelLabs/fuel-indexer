@@ -15,6 +15,19 @@ type QueryRoot {
 type PingEntity {
     id: ID!
     value: UInt8!
+    # message: Bytes32!
+}
+
+type PongEntity {
+    id: ID!
+    value: UInt8!
+}
+
+
+type PungEntity {
+    id: ID!
+    value: UInt8!
+    is_pung: Int4!
 }
 
 type BlockEntity {

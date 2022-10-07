@@ -16,6 +16,7 @@ pub struct Ping {
 pub struct Pung {
     id: u64,
     value: u64,
+    is_pung: bool,
 }
 
 abi FuelIndexer {
@@ -56,6 +57,7 @@ impl FuelIndexer for Contract {
         let p = Pung {
             id: 1,
             value: 456,
+            is_pung: true,
         };
         log(p);
     }

@@ -1,4 +1,4 @@
-error: No module body, must specify at least one handler function!
+error: No module body, must specify at least one handler function.
   --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_indexer_module_is_empty.rs
    |
    | / #[indexer(
