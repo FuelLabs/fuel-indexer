@@ -397,7 +397,7 @@ fn process_fn_items(
             }
 
             pub fn decode_logdata(&mut self, rb: u64, data: Vec<u8>) {
-                // TODO: Make sure rb and Pung type_id (from ABI JSON) are the same
+                // TODO: Use rb here to determine what the `type` is, then use `type` (the type id) to decode_type()
                 self.decode_type(rb as usize, data)
             }
 
@@ -512,8 +512,8 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let output = quote! {
         use alloc::{format, vec, vec::Vec};
-        use fuel_indexer_plugin::{Entity, Logger};
-        use fuel_indexer_plugin::types::*;
+        use fuel_indexer_schema::{serialize, deserialize};
+        use fuel_indexer_plugin::{Entity, Logger, types::*};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use fuel_tx::Receipt;
 

@@ -8,44 +8,33 @@
     },
     {
       "typeId": 1,
-      "type": "str[32]",
+      "type": "bool",
       "components": null,
       "typeParameters": null
     },
     {
       "typeId": 2,
-      "type": "struct Ping",
-      "components": [
-        {
-          "name": "id",
-          "type": 5,
-          "typeArguments": null
-        },
-        {
-          "name": "value",
-          "type": 5,
-          "typeArguments": null
-        },
-        {
-          "name": "message",
-          "type": 1,
-          "typeArguments": null
-        }
-      ],
+      "type": "str[32]",
+      "components": null,
       "typeParameters": null
     },
     {
       "typeId": 3,
-      "type": "struct Pong",
+      "type": "struct Ping",
       "components": [
         {
           "name": "id",
-          "type": 5,
+          "type": 6,
           "typeArguments": null
         },
         {
           "name": "value",
-          "type": 5,
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "message",
+          "type": 2,
           "typeArguments": null
         }
       ],
@@ -53,16 +42,16 @@
     },
     {
       "typeId": 4,
-      "type": "struct Pung",
+      "type": "struct Pong",
       "components": [
         {
           "name": "id",
-          "type": 5,
+          "type": 6,
           "typeArguments": null
         },
         {
           "name": "value",
-          "type": 5,
+          "type": 6,
           "typeArguments": null
         }
       ],
@@ -70,6 +59,28 @@
     },
     {
       "typeId": 5,
+      "type": "struct Pung",
+      "components": [
+        {
+          "name": "id",
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "value",
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "is_pung",
+          "type": 1,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 6,
       "type": "u64",
       "components": null,
       "typeParameters": null
@@ -81,7 +92,7 @@
       "name": "trigger_ping",
       "output": {
         "name": "",
-        "type": 2,
+        "type": 3,
         "typeArguments": null
       }
     },
@@ -90,7 +101,7 @@
       "name": "trigger_pong",
       "output": {
         "name": "",
-        "type": 3,
+        "type": 4,
         "typeArguments": null
       }
     },
@@ -124,18 +135,18 @@
   ],
   "loggedTypes": [
     {
-      "logId": 1018195,
+      "logId": 1018197,
       "loggedType": {
         "name": "",
-        "type": 5,
+        "type": 6,
         "typeArguments": null
       }
     },
     {
-      "logId": 1018221,
+      "logId": 1018225,
       "loggedType": {
         "name": "",
-        "type": 4,
+        "type": 5,
         "typeArguments": null
       }
     }
