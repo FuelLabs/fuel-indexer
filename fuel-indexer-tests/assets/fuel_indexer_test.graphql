@@ -3,25 +3,42 @@ schema {
 }
 
 type QueryRoot {
-    message: Message
+    message: MessageEntity
+    pong: PingEntity
+    block: BlockEntity
+    transaction: TransactionEntity
+    transfer: TransferEntity
+    log: LogEntity
+    logdata: LogDataEntity
 }
 
-type Message {
-    id: ID!
-    ping: UInt8!
-    pong: UInt8!
-    message: Bytes32!
-}
-
-type PongEntity {
+type PingEntity {
     id: ID!
     value: UInt8!
+}
+
+type BlockEntity {
+    id: ID!
+    height: UInt8!
+    producer: Address!
+    hash: Bytes32!
+    timestamp: Int8!
+}
+
+
+type TransactionEntity {
+    id: ID!
+    hash: Bytes32!
+    block: BlockEntity!
+    input_data: Jsonb!
+    timestamp: Int8!
 }
 
 type TransferEntity {
     id: ID!
     contract_id: ContractId!
-    to: ContractId!
+    # 'to' is a reserved SQL word
+    recipient: ContractId!
     amount: UInt8!
     asset_id: AssetId!
 }
