@@ -11,9 +11,10 @@ mod fuel_indexer_test {
     fn function_one(ping: Ping) {
         Logger::info("function_one handling a Ping event.");
 
-        let mut bytes: [u8; 32] = [0u8; 32];
+        let message: String = ping.message.into();
 
-        bytes.copy_from_slice(&ping.message.as_bytes()[..32]);
+        let mut bytes: [u8; 32] = [0u8; 32];
+        bytes.copy_from_slice(&message.as_bytes()[..32]);
 
         let entity = Message {
             id: ping.id,

@@ -30,13 +30,14 @@ async fn load_wasm_module(database_url: &str) -> IndexerResult<Instance> {
     let module = Module::new(&store, WASM_BYTES)?;
 
     let mut import_object = imports! {};
-
     let mut env = IndexEnv::new(database_url.to_string()).await?;
+
     let exports = ffi::get_exports(&env, &store);
     import_object.register("env", exports);
 
     let instance = Instance::new(&module, &import_object)?;
     env.init_with_instance(&instance)?;
+
     Ok(instance)
 }
 

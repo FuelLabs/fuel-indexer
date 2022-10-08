@@ -14,16 +14,17 @@ name = "fuel-node"
 path = "src/bin/fuel-node.rs"
 
 [dependencies]
+actix-web = { version = "4", default-features = false }
 anyhow = { version = "1.0", default-features = false }
 async-std = "1.10.0"
-axum = "0.4"
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-indexer-lib = { path = "../../../fuel-indexer-lib" }
 fuel-indexer-tests = { path = "./../../../fuel-indexer-tests" }
+fuel-tx = "0.18"
 fuel-types = "0.5"
-fuels = "0.15"
-fuels-abigen-macro = "0.15"
-fuels-core = "0.15"
+fuels = { version = "0.24", features = ["fuel-core-lib"] }
+fuels-abigen-macro = "0.24"
+fuels-core = { version = "0.24", default-features = false }
 rand = "0.8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }

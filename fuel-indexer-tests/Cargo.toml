@@ -22,20 +22,17 @@ name = "integration_tests"
 path = "tests/lib.rs"
 harness = true
 
-[features]
-e2e = []
-
 [dependencies]
 async-std = "1.12"
 chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { path = "./../fuel-indexer" }
 fuel-indexer-database = { path = "./../fuel-indexer-database" }
 fuel-indexer-schema = { path = "./../fuel-indexer-schema" }
-fuel-tx = "0.9"
-fuel-types = "0.3"
-fuels = "0.15"
-fuels-abigen-macro = "0.15"
-fuels-core = { version = "0.15" }
+fuel-tx = "0.18"
+fuel-types = "0.5"
+fuels = { version = "0.24", features = ["fuel-core-lib"] }
+fuels-abigen-macro = "0.24"
+fuels-core = "0.24"
 futures = "0.3"
 itertools = "0.10"
 rand = "0.8"
@@ -47,3 +44,6 @@ tokio = { version = "1.8", features = ["macros", "rt-multi-thread"] }
 wasmer = "2.0"
 wasmer-compiler-cranelift = { version = "2.0" }
 wasmer-engine-universal = "2.0"
+
+[features]
+e2e = []

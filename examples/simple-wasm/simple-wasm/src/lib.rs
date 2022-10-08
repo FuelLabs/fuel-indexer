@@ -15,14 +15,14 @@ pub mod test_namespace {
 
         let t1 = Thing1 {
             id,
-            account: Address::from(account),
+            account: Address::from(account.0),
         };
         t1.save();
 
         let t2 = Thing2 {
             id,
-            account: Address::from(account),
-            hash: Bytes32::from(hash),
+            account: Address::from(account.0),
+            hash: Bytes32::from(hash.0),
         };
 
         t2.save();
@@ -35,14 +35,14 @@ pub mod test_namespace {
             Some(o) => o,
             None => Thing1 {
                 id,
-                account: Address::from(hash),
+                account: Address::from(hash.0),
             },
         };
 
         let t2 = Thing2 {
             id,
             account,
-            hash: Bytes32::from(hash),
+            hash: Bytes32::from(hash.0),
         };
 
         t2.save();
@@ -52,7 +52,7 @@ pub mod test_namespace {
         let SomeEvent { id, account } = event;
         let t1 = Thing1 {
             id,
-            account: Address::from(account),
+            account: Address::from(account.0),
         };
         t1.save();
     }

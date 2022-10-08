@@ -6,9 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fuel-crypto = "0.5"
-fuels = "0.15"
-fuels-abigen-macro = "0.15"
+fuel-crypto = "0.6"
+fuel-gql-client = "0.10"
+fuel-tx = "0.18"
+fuels = "0.24"
+fuels-abigen-macro = "0.24"
+fuels-core = "0.24"
+fuels-types = "0.24"
 log = "0.4"
 pretty_env_logger = "0.4"
 rand = "0.8"

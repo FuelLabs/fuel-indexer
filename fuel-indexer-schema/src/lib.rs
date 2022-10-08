@@ -23,6 +23,7 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub mod db;
 
 pub use fuel_types::{Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word};
+pub use fuels_core::types::Bits256;
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Jsonb(pub String);

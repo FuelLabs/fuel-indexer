@@ -274,7 +274,9 @@ impl IndexerService {
             loop {
                 debug!("Fetching paginated results from {:?}", next_cursor);
                 // TODO: can we have a "start at height" option?
-                let PaginatedResult { cursor, results } = client
+                let PaginatedResult {
+                    cursor, results, ..
+                } = client
                     .blocks(PaginationRequest {
                         cursor: next_cursor.clone(),
                         results: 10,
@@ -293,8 +295,8 @@ impl IndexerService {
                     next_block = block.height.0 + 1;
 
                     // NOTE: for now assuming we have a single contract instance,
-                    //       we'll need to watch contract creation events here in
-                    //       case an indexer would be interested in processing it.
+                    // we'll need to watch contract creation events here in
+                    // case an indexer would be interested in processing it.
                     let mut transactions = Vec::new();
                     for trans in block.transactions {
                         match client.receipts(&trans.id.to_string()).await {

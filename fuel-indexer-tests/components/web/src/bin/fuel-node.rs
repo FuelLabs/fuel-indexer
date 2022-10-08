@@ -1,24 +1,21 @@
 use clap::Parser;
-use fuel_indexer_tests::{defaults, utils::tx_params};
+use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::{
-    node::{
-        chain_config::{ChainConfig, StateConfig},
-        service::DbType,
-    },
     prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract,
-        LocalWallet, Provider, DEFAULT_COIN_AMOUNT,
+        setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, Provider,
+        WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
 use fuels_abigen_macro::abigen;
+use fuels_core::parameters::StorageConfiguration;
 use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
 abigen!(
     FuelIndexer,
-    "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-abi.json"
+    "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
 );
 
 #[derive(Debug, Parser, Clone)]
@@ -63,12 +60,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .wallet_path
         .unwrap_or_else(|| Path::new(&manifest_dir).join("wallet.json"));
 
-    info!("Wallet keystore at: {}", wallet_path.display());
+    let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
     let mut wallet =
-        LocalWallet::load_keystore(&wallet_path, defaults::WALLET_PASSWORD, None)?;
+        WalletUnlocked::load_keystore(&wallet_path_str, defaults::WALLET_PASSWORD, None)
+            .unwrap();
 
-    info!("Using wallet address at: {}", wallet.address());
+    info!(
+        "Wallet({}) keystore at: {}",
+        wallet.address(),
+        wallet_path.display()
+    );
+
+    let bin_path = opts.bin_path.unwrap_or_else(|| {
+        Path::join(
+            manifest_dir,
+            "../../contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin",
+        )
+    });
+
+    let bin_path_str = bin_path.as_os_str().to_str().unwrap();
+    let _compiled = Contract::load_sway_contract(bin_path_str, &None).unwrap();
 
     let number_of_coins = 11;
     let asset_id = AssetId::zeroed();
@@ -80,37 +92,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     let config = Config {
-        chain_conf: ChainConfig {
-            initial_state: Some(StateConfig {
-                ..StateConfig::default()
-            }),
-            ..ChainConfig::local_testnet()
-        },
-        database_type: DbType::InMemory,
         utxo_validation: false,
         addr: defaults::FUEL_NODE_ADDR.parse().unwrap(),
         ..Config::local_node()
     };
 
-    let (client, _) = setup_test_client(coins, config).await;
-
-    info!("Fuel client started at {:?}", client);
+    let (client, _) = setup_test_client(coins, vec![], Some(config), None).await;
 
     let provider = Provider::new(client);
 
     wallet.set_provider(provider.clone());
 
-    let bin_path = opts.bin_path.unwrap_or_else(|| {
-        Path::join(
-            manifest_dir,
-            "../../contracts/fuel-indexer-test/out/debug/fuel-indexer.bin",
-        )
-    });
-
     let contract_id = Contract::deploy(
-        &bin_path.into_os_string().into_string().unwrap(),
+        bin_path_str,
         &wallet,
         tx_params(),
+        StorageConfiguration::default(),
     )
     .await
     .unwrap();

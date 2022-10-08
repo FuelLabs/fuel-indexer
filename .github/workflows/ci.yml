@@ -44,7 +44,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.ci.sh
+      - run: ./scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         name: Cargo Check Workspace Locked
@@ -74,7 +74,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.ci.sh
+      - run: ./scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         name: Cargo Build Workspace
@@ -104,7 +104,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.ci.sh
+      - run: ./scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         name: Cargo Build WASM Example
@@ -134,7 +134,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.ci.sh
+      - run: ./scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
@@ -164,7 +164,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.ci.sh
+      - run: ./scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
@@ -195,7 +195,7 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.ci.sh
+      - run: ./scripts/run_migrations.bash
 
       - name: Build fuel-indexer and fuel-indexer-test-web
         uses: actions-rs/cargo@v1
@@ -210,11 +210,6 @@ jobs:
 
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
-      - run: |
-          ./target/release/fuel-indexer \
-            --manifest ./fuel-indexer-tests/assets/fuel_indexer_test.yaml \
-            --postgres-password my-secret &
-        
       - run: RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --workspace --all-features --all-targets
       - run: bash scripts/kill_test_components.bash
 
@@ -271,7 +266,7 @@ jobs:
           default: true
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.ci.sh
+      - run: ./scripts/run_migrations.bash
       - name: Install cargo-udeps
         uses: actions-rs/cargo@v1
         with:
@@ -303,7 +298,7 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.ci.sh
+      - run: ./scripts/run_migrations.bash
       - name: Check Clippy Linter
         uses: actions-rs/cargo@v1
         with:
@@ -503,4 +498,4 @@ jobs:
         env:
           K8S: 'eks'
           CONFIG: 'fuel-dev1'
-          ENV: 'fueldevsway.env' 
+          ENV: 'fueldevsway.env'

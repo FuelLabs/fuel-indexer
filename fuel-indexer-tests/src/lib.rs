@@ -5,17 +5,6 @@ pub mod assets {
     pub const WASM_BYTES: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
 }
 
-pub mod utils {
-    use fuels::prelude::TxParameters;
-
-    pub fn tx_params() -> TxParameters {
-        let gas_price = 0;
-        let gas_limit = 1_000_000;
-        let byte_price = 0;
-        TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price), None)
-    }
-}
-
 pub mod defaults {
     use std::time::Duration;
 
@@ -30,7 +19,9 @@ pub mod defaults {
 }
 
 pub mod fixtures {
+
     use fuel_indexer_database::IndexerConnectionPool;
+    use fuels::prelude::TxParameters;
     use sqlx::{pool::Pool, Postgres};
 
     pub async fn postgres_connection(db_url: &str) -> Pool<Postgres> {
@@ -42,5 +33,12 @@ pub mod fixtures {
 
     pub fn http_client() -> reqwest::Client {
         reqwest::Client::new()
+    }
+
+    pub fn tx_params() -> TxParameters {
+        let gas_price = 0;
+        let gas_limit = 1_000_000;
+        let byte_price = 0;
+        TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
     }
 }
