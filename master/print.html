@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="examples/counter.html"><strong aria-hidden="true">2.2.</strong> Counter</a></li></ol></li><li class="chapter-item expanded "><a href="components/index.html"><strong aria-hidden="true">3.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/manifest.html"><strong aria-hidden="true">3.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="components/gql-server.html"><strong aria-hidden="true">3.2.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/schema.html"><strong aria-hidden="true">3.2.1.</strong> Schema</a></li></ol></li><li class="chapter-item expanded "><a href="components/database/index.html"><strong aria-hidden="true">3.3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/database/types.html"><strong aria-hidden="true">3.3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="components/database/conventions.html"><strong aria-hidden="true">3.3.2.</strong> Conventions</a></li><li class="chapter-item expanded "><a href="components/database/foreign-keys.html"><strong aria-hidden="true">3.3.3.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="components/database/directives.html"><strong aria-hidden="true">3.3.4.</strong> Directives</a></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="components/index.html"><strong aria-hidden="true">3.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/manifest.html"><strong aria-hidden="true">3.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="components/gql-server.html"><strong aria-hidden="true">3.2.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/schema.html"><strong aria-hidden="true">3.2.1.</strong> Schema</a></li></ol></li><li class="chapter-item expanded "><a href="components/database/index.html"><strong aria-hidden="true">3.3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/database/types.html"><strong aria-hidden="true">3.3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="components/database/conventions.html"><strong aria-hidden="true">3.3.2.</strong> Conventions</a></li><li class="chapter-item expanded "><a href="components/database/foreign-keys.html"><strong aria-hidden="true">3.3.3.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="components/database/directives.html"><strong aria-hidden="true">3.3.4.</strong> Directives</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -393,11 +393,6 @@ the <code>fuel-indexer-api-server</code> binary, these options will apply to tha
 <li>This example includes WASM execution</li>
 </ul>
 </li>
-<li><a href="examples/./counter.html">Counter</a>
-<ul>
-<li>A simple example of a fully-fledged Fuel Indexer project used with a Counter app.</li>
-</ul>
-</li>
 </ul>
 <h1 id="a-basic-hello-world-indexer"><a class="header" href="#a-basic-hello-world-indexer">A basic &quot;Hello World&quot; indexer</a></h1>
 <h2 id="write-your-contract"><a class="header" href="#write-your-contract">Write your contract</a></h2>
@@ -593,87 +588,6 @@ curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: appli
   &quot;count&quot;: 7
 }
 </code></pre>
-<h1 id="counter"><a class="header" href="#counter">Counter</a></h1>
-<blockquote>
-<p>In this example project we'll walk through how to run a Fuel Indexer service that uses WASM-based execution. We'll go through project structure, how to actually use the service, as well as a few key concepts.</p>
-</blockquote>
-<h2 id="setup"><a class="header" href="#setup">Setup</a></h2>
-<p>First we'll walk through the basic setup and usage of the project</p>
-<pre><code class="language-text">➜  tree . -I 'target/'
-.
-├── README.md
-├── contracts
-│   └── counter
-│       ├── Forc.lock
-│       ├── Forc.toml
-│       ├── out
-│       │   └── debug
-│       │       ├── counter-abi.json
-│       │       └── counter.bin
-│       └── src
-│           └── main.sw
-├── counter-indexer
-│   ├── Cargo.toml
-│   └── src
-│       └── lib.rs
-├── frontend
-│   └── index.html
-├── manifest.yaml
-├── schema
-│   └── counter.graphql
-└── web-api-and-fuel-node
-    ├── Cargo.toml
-    └── src
-        └── main.rs
-
-11 directories, 13 files
-</code></pre>
-<p>With this <a href="examples/../getting-started/fuel-indexer-project.html">recommended project structure</a> you'll notice:</p>
-<ul>
-<li><code>contracts</code> is where our Sway smart contract <code>counter</code> is located.</li>
-<li><code>web-api-and-fuel-node</code> is a combination of a tiny HTTP web application, and a simple Fuel node, that we use to pass messages to/from the <code>counter</code> contract.</li>
-<li><code>frontend</code> is unused (as there is no frontend for this small example)</li>
-<li><code>manifest.yaml</code> is the configuration file for the index that we will be using.</li>
-</ul>
-<h2 id="usage-1"><a class="header" href="#usage-1">Usage</a></h2>
-<p>In this section we'll cover the exact steps needed to spin up this example.</p>
-<h3 id="database-setup"><a class="header" href="#database-setup">Database setup</a></h3>
-<p>We'll start by creating a database. This step assumes some familiarity with <a href="https://learn.coderslang.com/0120-databases-roles-and-tables-in-postgresql/">creating Postgres roles and databases</a>. In this example we're using an <code>indexer</code> database owned by a <code>postgres</code> role without a password.</p>
-<p>Next we'll bootstrap our database by running some migrations.</p>
-<pre><code class="language-bash">DATABASE_URL=postgres://postgres@127.0.0.1 bash scripts/run_migrations.local.sh
-</code></pre>
-<h3 id="starting-the-web-server--fuel-node"><a class="header" href="#starting-the-web-server--fuel-node">Starting the web server &amp; Fuel node</a></h3>
-<p>As previously mentioned, <code>web-api-and-fuel-node</code> contains both a tiny web server used to pass messages to/from our Sway smart contract, as well as our Fuel node that we use to interact with the blockchain. We will start both of these services with the following command.</p>
-<pre><code class="language-bash">cd fuel-indexer/examples/counter/web-api-and-fuel-node &amp;&amp; cargo run
-</code></pre>
-<h3 id="start-the-fuel-indexer-service"><a class="header" href="#start-the-fuel-indexer-service">Start the Fuel Indexer service</a></h3>
-<p>With our Fuel node and web server up and running, we'll next start our Fuel Indexer service.</p>
-<pre><code class="language-bash">cargo build -p fuel-indexer
-
-./target/debug/fuel-indexer --manifest examples/counter/manifest.yaml
-</code></pre>
-<h3 id="send-a-transaction-to-the-smart-contract-via-the-web-server"><a class="header" href="#send-a-transaction-to-the-smart-contract-via-the-web-server">Send a transaction to the smart contract via the web server</a></h3>
-<pre><code class="language-bash">curl -X POST http://127.0.0.1:8080/count | json_pp
-</code></pre>
-<h3 id="verify-data-was-posted-to-the-database"><a class="header" href="#verify-data-was-posted-to-the-database">Verify data was posted to the database</a></h3>
-<p>In this example we just created an entity with <code>id = 1</code></p>
-<pre><code class="language-bash">➜  echo &quot;SELECT max(id) FROM counter.count;&quot; | psql -U postgres -d postgres
- max
------
-   1
-(1 row)
-</code></pre>
-<p>So that's what we query for</p>
-<pre><code>curl -X POST http://127.0.0.1:29987/api/graph/counter -H 'content-type: application/json' -d '{&quot;query&quot;: &quot;query { count(id: 1) { id count timestamp } }&quot;, &quot;params&quot;: &quot;b&quot;}' | json_pp
-[
-   {
-      &quot;count&quot; : 1,
-      &quot;id&quot; : 1,
-      &quot;timestamp&quot; : 123
-   }
-]
-</code></pre>
-<p>Hooray! 🎉 we've successfully created our first Fuel Indexer service.</p>
 <h1 id="components"><a class="header" href="#components">Components</a></h1>
 <p>A list of components used by the Fuel Indexer.</p>
 <ul>
