@@ -6,11 +6,13 @@ use std::{fs::File, io::Read};
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Manifest {
     pub namespace: String,
-    pub graphql_schema: String,
+    pub abi: String,
     pub identifier: String,
+    pub graphql_schema: String,
     pub module: Module,
+    pub contract_id: Option<String>,
     pub start_block: Option<u64>,
-    pub test_events: Option<Vec<Event>>,
+    pub test_events: Option<Vec<Event>>, // TODO: Remove this
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -31,7 +33,9 @@ impl Module {
 
 impl Manifest {
     pub fn from_file(path: &Path) -> Result<Self> {
-        let mut file = File::open(path)?;
+        let mut file = File::open(path).unwrap_or_else(|_| {
+            panic!("Manifest at '{}' does not exist", path.display())
+        });
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let manifest: Manifest = serde_yaml::from_str(&contents)?;
@@ -55,6 +59,13 @@ impl Manifest {
 
     pub fn uid(&self) -> String {
         format!("{}.{}", &self.namespace, &self.identifier)
+    }
+
+    pub fn is_native(&self) -> bool {
+        match &self.module {
+            Module::Native(_o) => true,
+            Module::Wasm(_o) => false,
+        }
     }
 }
 

@@ -1,6 +1,6 @@
----
 namespace: test_namespace
 identifier: simple_wasm_executor
-graphql_schema: examples/simple-wasm/schema/schema.graphql
+abi: /Users/rashad/Development/repos/fuel-indexer/examples/simple-wasm/contracts/out/debug/contracts-abi.json
+graphql_schema: ./../schema/schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/simple_wasm.wasm

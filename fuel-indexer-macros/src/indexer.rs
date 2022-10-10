@@ -2,6 +2,7 @@ use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
+use fuel_indexer::Manifest;
 use fuel_indexer_schema::{
     type_id,
     types::{
@@ -15,10 +16,9 @@ use fuels_core::{
     utils::first_four_bytes_of_sha256_hash,
 };
 use fuels_types::{param_types::ParamType, ProgramABI, TypeDeclaration};
-use std::collections::{HashMap, HashSet};
-
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
+use std::collections::{HashMap, HashSet};
 use syn::{parse_macro_input, FnArg, Ident, Item, ItemFn, ItemMod, PatType, Type};
 
 const DISALLOWED: &[&str] = &["Vec"];
@@ -507,13 +507,19 @@ fn process_fn_items(
 pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let config = parse_macro_input!(attrs as IndexerConfig);
 
-    let IndexerConfig {
+    let IndexerConfig { manifest } = config;
+    let cargo_dir = std::env::var("CARGO_MANIFEST_DIR").expect("Manifest dir unknown");
+
+    let manifest_file = std::path::PathBuf::from(cargo_dir).join(manifest);
+
+    let manifest = Manifest::from_file(&manifest_file).unwrap();
+
+    let Manifest {
         abi,
         namespace,
-        schema,
-        native,
+        graphql_schema,
         ..
-    } = config;
+    } = manifest.clone();
 
     let indexer = parse_macro_input!(item as ItemMod);
 
@@ -521,11 +527,11 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         Ok(prefix) => {
             let prefixed = std::path::Path::new(&prefix).join(&abi);
             let abi_string = prefixed.into_os_string().to_str().unwrap().to_string();
-            let prefixed = std::path::Path::new(&prefix).join(&schema);
+            let prefixed = std::path::Path::new(&prefix).join(&graphql_schema);
             let schema_string = prefixed.into_os_string().to_str().unwrap().to_string();
             (abi_string, schema_string)
         }
-        Err(_) => (abi, schema),
+        Err(_) => (abi, graphql_schema),
     };
 
     let abi_tokens = match Abigen::new(&namespace, &abi_string) {
@@ -547,7 +553,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let (handler_block, fn_items) = process_fn_items(abi_string, indexer);
 
-    let handler_block = if native {
+    let handler_block = if manifest.is_native() {
         handler_block_native(handler_block)
     } else {
         handler_block_wasm(handler_block)
