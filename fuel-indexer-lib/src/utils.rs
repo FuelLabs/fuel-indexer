@@ -11,6 +11,12 @@ use tracing::{info, warn};
 const MAX_DATABASE_CONNECTION_ATTEMPTS: usize = 5;
 const INITIAL_RETRY_DELAY_SECS: u64 = 2;
 
+#[derive(Debug)]
+pub struct AssetReloadRequest {
+    pub namespace: String,
+    pub identifier: String,
+}
+
 pub fn sha256_digest(blob: &Vec<u8>) -> String {
     let mut hasher = Sha256::new();
     hasher.update(blob.as_slice());

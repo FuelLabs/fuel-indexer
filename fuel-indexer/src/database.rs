@@ -2,8 +2,9 @@ use fuel_indexer_schema::db::models::IdCol;
 use std::collections::HashMap;
 use wasmer::Instance;
 
-use crate::{ffi, IndexerError, IndexerResult, Manifest};
+use crate::{ffi, IndexerError, IndexerResult};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
+use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_schema::{
     db::tables::{Schema, SchemaBuilder},
     schema_version, FtColumn,

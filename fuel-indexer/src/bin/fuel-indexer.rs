@@ -1,12 +1,11 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
-use fuel_indexer::{
-    config::{IndexerArgs, Parser},
-    GraphQlApi, IndexerConfig, IndexerService, Manifest,
-};
+use fuel_indexer::{GraphQlApi, IndexerService};
 use fuel_indexer_database::queries;
+use fuel_indexer_lib::config::{IndexerArgs, IndexerConfig, Parser};
 use fuel_indexer_lib::defaults::ASSET_REFRESH_CHANNEL_SIZE;
+use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_lib::utils::AssetReloadRequest;
 use tokio::sync::mpsc;
 use tracing::info;

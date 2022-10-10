@@ -1,7 +1,5 @@
-use crate::{
-    config::{IndexerConfig, MutableConfig},
-    IndexerError, SchemaManager,
-};
+use crate::{IndexerError, SchemaManager};
+
 use anyhow::Result;
 use async_std::sync::{Arc, RwLock};
 use axum::{
@@ -14,6 +12,7 @@ use axum::{
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_database_types::{IndexAsset, IndexAssetType};
+use fuel_indexer_lib::config::{IndexerConfig, MutableConfig};
 use fuel_indexer_lib::utils::{
     AssetReloadRequest, FuelNodeHealthResponse, ServiceStatus,
 };

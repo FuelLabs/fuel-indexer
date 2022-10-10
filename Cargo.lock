@@ -2531,7 +2531,6 @@ dependencies = [
  "bincode",
  "cfg-if",
  "chrono",
- "clap",
  "fuel-core",
  "fuel-crypto",
  "fuel-gql-client",
@@ -2608,7 +2607,10 @@ name = "fuel-indexer-lib"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "async-std",
+ "clap",
  "serde",
+ "serde_yaml",
  "sha2 0.9.9",
  "tokio",
  "tracing",
