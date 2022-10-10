@@ -62,15 +62,11 @@ graphql_schema: schema.graphql
 module:
   wasm:
     hello_indexer.wasm
-handlers:
-  - event: an_event_name
-    handler: function_one
 ```
 
 - `namespace` - your graph will live within this namespace in the database, and will be important to remember once you get to querying your data.
 - `graphql_schema` - we'll have more to say about this in the next section on data types, but this is a file specifying your indexed data types.
 - `module` - the code you'll be writing to transform your data
-- `handlers` - this maps event types to the function names in your WASM that should handle the events
 
 ## Defining your data types
 

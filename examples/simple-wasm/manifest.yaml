@@ -1,6 +1,6 @@
----
 namespace: test_namespace
 identifier: simple_wasm_executor
+abi: examples/simple-wasm/contracts/simple-wasm/out/debug/contracts-abi.json
 graphql_schema: examples/simple-wasm/schema/schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/simple_wasm.wasm

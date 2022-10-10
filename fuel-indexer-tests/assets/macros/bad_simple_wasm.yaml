@@ -1,0 +1,6 @@
+namespace: test_namespace
+identifier: test_simple_wasm
+abi: ./../fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json
+graphql_schema: schema.graphql
+module:
+  wasm: ./../fuel-indexer-tests/assets/simple_wasm.wasm

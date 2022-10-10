@@ -1,6 +1,12 @@
 contract;
 
-use std::logging::log;
+use std::{
+    logging::log,
+    address::Address,
+    constants::BASE_ASSET_ID,
+    token::transfer,
+    identity::Identity,
+};
 
 pub struct Pong {
     id: u64,
@@ -46,7 +52,8 @@ impl FuelIndexer for Contract {
     }
 
     fn trigger_transfer() {
-        // TODO: Do the transfer here
+        const RECEIVER = ~Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
+        transfer(1, BASE_ASSET_ID, Identity::Address(RECEIVER));
     }
 
     fn trigger_log() {

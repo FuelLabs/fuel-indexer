@@ -13,7 +13,6 @@
   - namespace: The unique namespace this graphql schema lives in. This will correspond to the SQL database schema as well.
   - graphql_schema: file path for the graphql schema.
   - wasm_module: file path for the indexer WASM.
-  - handlers: list of mappings from event -> event_handler_name.
   - list of test events to run through the indexer
 - schema.rs - SQL table schema builder
 

@@ -1,14 +1,15 @@
 #[macro_use]
 extern crate lazy_static;
 extern crate proc_macro;
-use proc_macro::TokenStream;
 
 mod indexer;
 mod native;
 mod parse;
 mod schema;
 mod wasm;
+
 use indexer::process_indexer_module;
+use proc_macro::TokenStream;
 
 #[proc_macro_error::proc_macro_error]
 #[proc_macro_attribute]
@@ -32,9 +33,6 @@ mod tests {
 
         t.compile_fail(macro_data_root.join("fail_if_attribute_args_include_self.rs"));
         t.compile_fail(macro_data_root.join("fail_if_attribute_args_not_included.rs"));
-        t.compile_fail(
-            macro_data_root.join("fail_if_all_attribute_args_not_included.rs"),
-        );
         t.pass(macro_data_root.join("pass_if_indexer_is_valid_single_type.rs"));
         t.pass(macro_data_root.join("pass_if_indexer_is_valid_multi_type.rs"));
         t.compile_fail(

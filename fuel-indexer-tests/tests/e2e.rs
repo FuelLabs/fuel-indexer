@@ -124,7 +124,7 @@ async fn test_can_trigger_and_index_log_event() {
     let ra: i64 = row.get(2);
     let _rb: i64 = row.get(3);
 
-    assert_eq!(ra, 8675309); // value is defined in test contract
+    assert_eq!(ra, defaults::PONG_EVENT_VALUE); // value is defined in test contract
 }
 
 // #[tokio::test]

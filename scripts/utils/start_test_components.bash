@@ -1,9 +1,11 @@
 #!/bin/bash
 #
-# Usage: bash scripts/startt_test_components.bash
+# Usage: bash scripts/utils/start_test_components.bash
 #
 # Expects binaries for test components to have already been built via:
 #   cargo build -p fuel-indexer-test-web --release
+
+set -x
 
 bash ./scripts/kill_test_components.bash
 
@@ -24,3 +26,5 @@ if [[ ! -z $CI ]] ; then
         --manifest fuel-indexer-tests/assets/fuel_indexer_test.yaml \
         --postgres-password my-secret &
 fi
+
+set +x

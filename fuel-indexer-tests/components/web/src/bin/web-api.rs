@@ -52,18 +52,14 @@ async fn fuel_indexer_test_ping(state: web::Data<Arc<AppState>>) -> impl Respond
     HttpResponse::Ok()
 }
 
-// FIXME: Make sure this works
+// FIXME: This errors and reverts -- how to do a simple transfer without reversion?
 async fn fuel_indexer_test_transfer(state: web::Data<Arc<AppState>>) -> impl Responder {
-    let mut to_wallet = WalletUnlocked::new_random(None);
-    let provider = state.wallet.get_provider().unwrap().clone();
-    to_wallet.set_provider(provider);
-
-    let asset_id = Default::default();
     let _ = state
-        .wallet
-        .transfer(to_wallet.address(), 1, asset_id, tx_params())
-        .await
-        .unwrap();
+        .contract
+        .trigger_transfer()
+        .tx_params(tx_params())
+        .call()
+        .await;
 
     HttpResponse::Ok()
 }
@@ -92,7 +88,6 @@ async fn fuel_indexer_test_logdata(state: web::Data<Arc<AppState>>) -> impl Resp
 
 pub struct AppState {
     pub contract: FuelIndexerTest,
-    pub wallet: WalletUnlocked,
 }
 
 #[tokio::main]
@@ -172,7 +167,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Starting server at {}", defaults::WEB_API_ADDR);
 
-    let state = web::Data::new(Arc::new(AppState { contract, wallet }));
+    let state = web::Data::new(Arc::new(AppState { contract }));
 
     let _ = HttpServer::new(move || {
         App::new()

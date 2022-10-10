@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 if [[ -z $CI ]] ; then
     if [ -z "$DATABASE_URL" ]; then
@@ -35,3 +35,5 @@ else
     sqlx database create
     sqlx migrate run
 fi
+
+set +ex

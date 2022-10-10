@@ -44,7 +44,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.bash
+      - run: bash scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         name: Cargo Check Workspace Locked
@@ -74,7 +74,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.bash
+      - run: bash scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
         name: Cargo Build Workspace
@@ -133,7 +133,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.bash
+      - run: bash scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
@@ -163,7 +163,7 @@ jobs:
           profile: minimal
           toolchain: stable
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.bash
+      - run: bash scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
@@ -194,7 +194,7 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.bash
+      - run: bash scripts/run_migrations.bash
 
       - name: Build fuel-indexer and fuel-indexer-test-web
         uses: actions-rs/cargo@v1
@@ -205,12 +205,12 @@ jobs:
           RUSTFLAGS: '-D warnings'
 
       - name: Start test web components
-        run: bash scripts/start_test_components.bash
+        run: bash scripts/utils/start_test_components.bash
 
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
       - run: RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --workspace --all-features --all-targets
-      - run: bash scripts/kill_test_components.bash
+      - run: bash scripts/utils/kill_test_components.bash
 
   cargo-fmt-workspace-check:
     needs: cancel-previous-runs
@@ -265,7 +265,7 @@ jobs:
           default: true
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.bash
+      - run: bash scripts/run_migrations.bash
       - name: Install cargo-udeps
         uses: actions-rs/cargo@v1
         with:
@@ -297,7 +297,7 @@ jobs:
           toolchain: stable
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
-      - run: ./scripts/run_migrations.bash
+      - run: bash scripts/run_migrations.bash
       - name: Check Clippy Linter
         uses: actions-rs/cargo@v1
         with:

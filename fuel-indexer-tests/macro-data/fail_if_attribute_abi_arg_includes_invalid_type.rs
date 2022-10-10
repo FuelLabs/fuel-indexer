@@ -5,10 +5,7 @@ use fuel_indexer_macros::indexer;
 fn ff_log_data(_inp: ()) {}
 
 #[indexer(
-    abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
-    namespace = "test_namespace",
-    identifier = "index2",
-    schema = "./../examples/simple-wasm/schema/schema.graphql"
+    manifest = "fuel-indexer-tests/assets/macros/simple_wasm.yaml"
 )]
 mod indexer {
     fn function_one(event: BadType) {

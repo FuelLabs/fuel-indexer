@@ -13,12 +13,12 @@ use fuels_abigen_macro::abigen;
 use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
 
-const MANIFEST: &str = include_str!("./../assets/simple_wasm.yaml");
+const MANIFEST: &str = include_str!("./../assets/macros/simple_wasm.yaml");
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 abigen!(
     Simple,
-    "examples/simple-wasm/contracts/out/debug/contracts-abi.json"
+    "fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json"
 );
 
 #[tokio::test]
@@ -33,8 +33,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
         WalletUnlocked::load_keystore(&wallet_path_str, defaults::WALLET_PASSWORD, None)
             .unwrap();
 
-    let bin_path =
-        workdir.join("../examples/simple-wasm/contracts/out/debug/contracts.bin");
+    let bin_path = workdir.join("contracts/simple-wasm/out/debug/contracts.bin");
     let bin_path_str = bin_path.as_os_str().to_str().unwrap();
     let _compiled = Contract::load_sway_contract(bin_path_str, &None).unwrap();
 
@@ -85,12 +84,12 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     let mut indexer_service = IndexerService::new(config, None).await.unwrap();
 
-    let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
+    let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file.");
 
     indexer_service
         .register_indices(Some(manifest), true)
         .await
-        .expect("Failed to initialize indexer");
+        .expect("Failed to initialize indexer.");
 
     indexer_service.run().await;
 }

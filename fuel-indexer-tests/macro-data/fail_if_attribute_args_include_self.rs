@@ -1,10 +1,7 @@
 use fuel_indexer_macros::indexer;
 
 #[indexer(
-    abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
-    namespace = "test_namespace",
-    identifier = "bar",
-    schema = "./../examples/simple-wasm/schema/schema.graphql"
+    manifest = "fuel-indexer-tests/assets/macros/simple_wasm.yaml"
 )]
 mod indexer {
     fn function_one(self, event: SomeEvent) {

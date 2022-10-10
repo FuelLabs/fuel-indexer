@@ -6,8 +6,8 @@ Web components used for testing
 
 ```bash
 # Start the processes
-bash scripts/start_test_components.bash
+bash scripts/utils/start_test_components.bash
 
 # Kill the processes
-bash scripts/kill_test_components.bash
+bash scripts/utils/kill_test_components.bash
 ```

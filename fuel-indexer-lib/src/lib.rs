@@ -1,17 +1,50 @@
 pub mod utils {
 
+    use crate::defaults;
     use anyhow::Result;
     use serde::{Deserialize, Serialize};
     use sha2::{Digest, Sha256};
     use std::{
+        fs::canonicalize,
         future::Future,
         net::{SocketAddr, ToSocketAddrs},
+        path::Path,
     };
     use tokio::time::{sleep, Duration};
     use tracing::{info, warn};
 
-    const MAX_DATABASE_CONNECTION_ATTEMPTS: usize = 5;
-    const INITIAL_RETRY_DELAY_SECS: u64 = 2;
+    const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
+
+    // Testing assets use relative paths, while production assets will use absolute paths
+    //
+    // If we can successfully find the local project root, then we're in the repository,
+    // and should prefix all relative asset paths with the project root. If we can't find
+    // the project root, then it's assumed we're not in a local repository, thus no prefix.
+    pub fn local_repository_root() -> Option<String> {
+        let curr_filepath = canonicalize(file!()).unwrap();
+        let mut curr_dir = Path::new(&curr_filepath);
+
+        let mut depth = 3;
+        while depth > 0 {
+            match curr_dir.parent() {
+                Some(p) => {
+                    curr_dir = p;
+                    depth -= 1;
+                }
+                None => {
+                    return None;
+                }
+            }
+        }
+
+        if !curr_dir.is_dir() || curr_dir.file_name().unwrap() != ROOT_DIRECTORY_NAME {
+            return None;
+        }
+
+        let root_dir = curr_dir.as_os_str().to_str().unwrap().to_string();
+
+        Some(root_dir)
+    }
 
     #[derive(Debug)]
     pub struct AssetReloadRequest {
@@ -74,8 +107,8 @@ pub mod utils {
         Fut: Future<Output = Result<T, U>>,
         U: std::error::Error,
     {
-        let mut remaining_retries = MAX_DATABASE_CONNECTION_ATTEMPTS;
-        let mut delay = INITIAL_RETRY_DELAY_SECS;
+        let mut remaining_retries = defaults::MAX_DATABASE_CONNECTION_ATTEMPTS;
+        let mut delay = defaults::INITIAL_RETRY_DELAY_SECS;
         loop {
             match fut().await {
                 Ok(t) => break t,
@@ -137,4 +170,85 @@ pub mod defaults {
     pub const GRAPHQL_API_RUN_MIGRATIONS: Option<bool> = None;
 
     pub const ASSET_REFRESH_CHANNEL_SIZE: usize = 100;
+
+    pub const MAX_DATABASE_CONNECTION_ATTEMPTS: usize = 5;
+    pub const INITIAL_RETRY_DELAY_SECS: u64 = 2;
+}
+
+pub mod manifest {
+    use anyhow::Result;
+    use serde::{Deserialize, Serialize};
+    use std::path::Path;
+    use std::{fs::File, io::Read};
+
+    #[derive(Debug, Deserialize, Serialize, Clone)]
+    pub struct Manifest {
+        pub namespace: String,
+        pub abi: String,
+        pub identifier: String,
+        pub graphql_schema: String,
+        pub module: Module,
+        pub contract_id: Option<String>,
+        pub start_block: Option<u64>,
+    }
+
+    #[derive(Debug, Deserialize, Serialize, Clone)]
+    #[serde(rename_all = "lowercase")]
+    pub enum Module {
+        Wasm(String),
+        Native(String),
+    }
+
+    impl Module {
+        pub fn path(&self) -> String {
+            match self {
+                Self::Wasm(o) => o.clone(),
+                Self::Native(o) => o.clone(),
+            }
+        }
+    }
+
+    impl Manifest {
+        pub fn from_file(path: &Path) -> Result<Self> {
+            let mut file = File::open(path).unwrap_or_else(|_| {
+                panic!("Manifest at '{}' does not exist", path.display())
+            });
+            let mut contents = String::new();
+            file.read_to_string(&mut contents)?;
+            let manifest: Manifest = serde_yaml::from_str(&contents)?;
+            Ok(manifest)
+        }
+
+        pub fn to_bytes(&self) -> Vec<u8> {
+            serde_yaml::to_string(&self)
+                .expect("Failed converting manifest to bytes.")
+                .as_bytes()
+                .to_vec()
+        }
+
+        pub fn graphql_schema(&self) -> Result<String> {
+            let mut file = File::open(&self.graphql_schema)?;
+            let mut schema = String::new();
+            file.read_to_string(&mut schema)?;
+
+            Ok(schema)
+        }
+
+        pub fn uid(&self) -> String {
+            format!("{}.{}", &self.namespace, &self.identifier)
+        }
+
+        pub fn is_native(&self) -> bool {
+            match &self.module {
+                Module::Native(_o) => true,
+                Module::Wasm(_o) => false,
+            }
+        }
+    }
+
+    #[derive(Clone, Debug, Deserialize, Serialize)]
+    pub struct Event {
+        pub trigger: String,
+        pub payload: String,
+    }
 }
