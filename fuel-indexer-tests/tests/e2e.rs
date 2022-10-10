@@ -18,7 +18,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
         .unwrap();
 
     // Events are not triggered immediately
-    sleep(Duration::from_secs(3)).await;
+    sleep(Duration::from_secs(4)).await;
 
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test.blockentity ORDER BY id DESC LIMIT 1",
@@ -65,7 +65,7 @@ async fn test_can_trigger_and_index_ping_event() {
         .unwrap();
 
     // Events are not triggered immediately
-    sleep(Duration::from_secs(3)).await;
+    sleep(Duration::from_secs(4)).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.pingentity where id = 1")
         .fetch_one(&mut conn)
@@ -93,7 +93,7 @@ async fn test_can_trigger_and_index_ping_event() {
 //         .unwrap();
 
 //     // Events are not triggered immediately
-//     sleep(Duration::from_secs(3)).await;
+//     sleep(Duration::from_secs(4)).await;
 
 //     // TODO: finish
 //     assert_eq!(1, 1);
@@ -113,7 +113,7 @@ async fn test_can_trigger_and_index_log_event() {
         .unwrap();
 
     // Events are not triggered immediately
-    sleep(Duration::from_secs(3)).await;
+    sleep(Duration::from_secs(4)).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.logentity where id = 1")
         .fetch_one(&mut conn)
@@ -142,7 +142,7 @@ async fn test_can_trigger_and_index_log_event() {
 //         .unwrap();
 
 //     // Events are not triggered immediately
-//     sleep(Duration::from_secs(3)).await;
+//     sleep(Duration::from_secs(4)).await;
 
 //     // TODO: finish
 //     assert_eq!(1, 1);

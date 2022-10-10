@@ -3,11 +3,10 @@ use async_std::sync::Arc;
 use clap::Parser;
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::{
-    prelude::{Contract, Provider, WalletUnlocked},
+    prelude::{Contract, Provider, StorageConfiguration, WalletUnlocked},
     signers::Signer,
 };
 use fuels_abigen_macro::abigen;
-use fuels_core::parameters::StorageConfiguration;
 use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
@@ -34,6 +33,7 @@ async fn fuel_indexer_test_blocks(
     contract: web::Data<Arc<FuelIndexerTest>>,
 ) -> impl Responder {
     let _ = contract
+        .methods()
         .trigger_ping()
         .tx_params(tx_params())
         .call()
@@ -46,6 +46,7 @@ async fn fuel_indexer_test_ping(
     contract: web::Data<Arc<FuelIndexerTest>>,
 ) -> impl Responder {
     let _ = contract
+        .methods()
         .trigger_ping()
         .tx_params(tx_params())
         .call()
@@ -58,6 +59,7 @@ async fn fuel_indexer_test_transfer(
     contract: web::Data<Arc<FuelIndexerTest>>,
 ) -> impl Responder {
     let _ = contract
+        .methods()
         .trigger_transfer()
         .tx_params(tx_params())
         .call()
@@ -70,6 +72,7 @@ async fn fuel_indexer_test_log(
     contract: web::Data<Arc<FuelIndexerTest>>,
 ) -> impl Responder {
     let _ = contract
+        .methods()
         .trigger_log()
         .tx_params(tx_params())
         .call()
@@ -82,6 +85,7 @@ async fn fuel_indexer_test_logdata(
     contract: web::Data<Arc<FuelIndexerTest>>,
 ) -> impl Responder {
     let _ = contract
+        .methods()
         .trigger_logdata()
         .tx_params(tx_params())
         .call()
@@ -147,7 +151,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let bin_path_str = bin_path.as_os_str().to_str().unwrap();
-    let _compiled = Contract::load_sway_contract(bin_path_str, &None).unwrap();
+    let _compiled = Contract::load_contract(bin_path_str, &None).unwrap();
 
     let contract_id = Contract::deploy(
         bin_path_str,
@@ -162,7 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Using contract at {}", contract_id);
 
-    let contract = FuelIndexerTestBuilder::new(contract_id.to_string(), wallet).build();
+    let contract = FuelIndexerTest::new(contract_id.to_string(), wallet);
     let contract = web::Data::new(Arc::new(contract));
 
     info!("Starting server at {}", defaults::WEB_API_ADDR);

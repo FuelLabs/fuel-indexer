@@ -3,12 +3,11 @@ use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::{
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Config, Contract, Provider,
-        WalletUnlocked, DEFAULT_COIN_AMOUNT,
+        StorageConfiguration, WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
 use fuels_abigen_macro::abigen;
-use fuels_core::parameters::StorageConfiguration;
 use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
@@ -80,7 +79,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let bin_path_str = bin_path.as_os_str().to_str().unwrap();
-    let _compiled = Contract::load_sway_contract(bin_path_str, &None).unwrap();
+    let _compiled = Contract::load_contract(bin_path_str, &None).unwrap();
 
     let number_of_coins = 11;
     let asset_id = AssetId::zeroed();

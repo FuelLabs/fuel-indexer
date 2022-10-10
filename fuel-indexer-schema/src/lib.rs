@@ -26,11 +26,11 @@ pub mod types {
     use fuel_tx::Receipt;
     use serde::{Deserialize, Serialize};
 
-    pub use fuels_core::types::Bits256;
-
     pub use fuel_types::{
         Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word,
     };
+    pub use fuels_core::types::Bits256;
+    use fuels_types::param_types::ParamType;
 
     pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
 
@@ -55,8 +55,9 @@ pub mod types {
         }
     }
 
-    pub trait Identity {
+    pub trait NativeFuelType {
         fn path_ident_str() -> &'static str;
+        fn to_param_type() -> ParamType;
     }
 
     // NOTE: We could also create ABI JSON files with these native Fuel indexer-macro types <( '.' )>
@@ -69,9 +70,24 @@ pub mod types {
         pub transactions: Vec<Vec<Receipt>>,
     }
 
-    impl Identity for BlockData {
+    impl NativeFuelType for BlockData {
         fn path_ident_str() -> &'static str {
             "BlockData"
+        }
+
+        fn to_param_type() -> ParamType {
+            ParamType::Struct {
+                fields: vec![
+                    ParamType::U64,
+                    ParamType::B256,
+                    ParamType::U64,
+                    ParamType::B256,
+                    ParamType::Vector(Box::new(ParamType::Vector(Box::new(
+                        ParamType::U8,
+                    )))),
+                ],
+                generics: vec![],
+            }
         }
     }
 
@@ -91,9 +107,23 @@ pub mod types {
         pub is: u64,
     }
 
-    impl Identity for Transfer {
+    impl NativeFuelType for Transfer {
         fn path_ident_str() -> &'static str {
             "Transfer"
+        }
+
+        fn to_param_type() -> ParamType {
+            ParamType::Struct {
+                fields: vec![
+                    ParamType::B256,
+                    ParamType::B256,
+                    ParamType::U64,
+                    ParamType::B256,
+                    ParamType::U64,
+                    ParamType::U64,
+                ],
+                generics: vec![],
+            }
         }
     }
 
@@ -104,9 +134,16 @@ pub mod types {
         pub rb: u64,
     }
 
-    impl Identity for Log {
+    impl NativeFuelType for Log {
         fn path_ident_str() -> &'static str {
             "Log"
+        }
+
+        fn to_param_type() -> ParamType {
+            ParamType::Struct {
+                fields: vec![ParamType::B256, ParamType::U64, ParamType::U64],
+                generics: vec![],
+            }
         }
     }
 
@@ -120,9 +157,22 @@ pub mod types {
         pub ptr: u64,
     }
 
-    impl Identity for LogData {
+    impl NativeFuelType for LogData {
         fn path_ident_str() -> &'static str {
             "LogData"
+        }
+
+        fn to_param_type() -> ParamType {
+            ParamType::Struct {
+                fields: vec![
+                    ParamType::B256,
+                    ParamType::Vector(Box::new(ParamType::U8)),
+                    ParamType::U64,
+                    ParamType::U64,
+                    ParamType::U64,
+                ],
+                generics: vec![],
+            }
         }
     }
 
