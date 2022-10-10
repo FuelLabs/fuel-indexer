@@ -5,7 +5,8 @@ use crate::wasm::handler_block_wasm;
 use fuel_indexer_schema::{
     type_id,
     types::{
-        BlockData, Identity, Log, LogData, ReceiptType, Transfer, FUEL_TYPES_NAMESPACE,
+        BlockData, Log, LogData, NativeFuelType, ReceiptType, Transfer,
+        FUEL_TYPES_NAMESPACE,
     },
 };
 use fuels_core::{
@@ -13,7 +14,7 @@ use fuels_core::{
     source::Source,
     utils::first_four_bytes_of_sha256_hash,
 };
-use fuels_types::{ProgramABI, TypeDeclaration};
+use fuels_types::{param_types::ParamType, ProgramABI, TypeDeclaration};
 use std::collections::{HashMap, HashSet};
 
 use proc_macro::TokenStream;
@@ -89,7 +90,7 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "b256" => quote! { B256 },
             o if o.starts_with("str[") => quote! { String },
             o => {
-                proc_macro_error::abort_call_site!("Unrecognized primitive type! {:?}", o)
+                proc_macro_error::abort_call_site!("Unrecognized primitive type: {:?}", o)
             }
         }
     }
@@ -112,6 +113,35 @@ fn is_rust_primitive(ty: &proc_macro2::TokenStream) -> bool {
 
 fn is_primitive(ty: &proc_macro2::TokenStream) -> bool {
     is_rust_primitive(ty) || is_fuel_primitive(ty)
+}
+
+#[allow(unused)]
+fn primitive_to_param_type(name: &str) -> ParamType {
+    match name {
+        "bool" => ParamType::Bool,
+        "u8" => ParamType::U8,
+        "u16" => ParamType::U16,
+        "u32" => ParamType::U32,
+        "u64" => ParamType::U64,
+        "b256" => ParamType::B256,
+        o if o.starts_with("str[") => {
+            let x_str = &o[4..o.len() - 2].to_string();
+            let x = x_str
+                .parse::<usize>()
+                .expect("Could not parse str[] length.");
+            ParamType::String(x)
+        }
+        "BlockData" => BlockData::to_param_type(),
+        "Tranfer" => Transfer::to_param_type(),
+        "Log" => Log::to_param_type(),
+        "LogData" => LogData::to_param_type(),
+        e => {
+            proc_macro_error::abort_call_site!(
+                "Unrecognized rust primitive type: {:?}",
+                e
+            )
+        }
+    }
 }
 
 fn decode_snippet(
@@ -159,19 +189,22 @@ fn process_fn_items(
     let mut type_vecs = Vec::new();
     let mut dispatchers = Vec::new();
 
-    let mut type_map = HashMap::new();
     let mut type_ids = FUEL_PRIMITIVES
         .iter()
         .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
+    let mut log_types = HashMap::new();
+    if let Some(logged_types) = parsed.logged_types {
+        for typ in logged_types {
+            log_types.insert(typ.log_id, typ.application.type_id);
+        }
+    }
+
     for typ in parsed.types {
         if typ.type_field == EMPTY_TUPLE_TYPE {
-            println!("Won't process empty tuple type.");
             continue;
         }
-
-        type_map.insert(typ.type_id, typ.clone());
 
         let ty = rust_type(&typ);
         let name = rust_name(&typ);
@@ -190,9 +223,18 @@ fn process_fn_items(
     }
 
     for function in parsed.functions {
-        let sig = resolve_fn_selector(&function, &type_map);
+        // let param_types: Vec<ParamType> = function
+        //     .inputs
+        //     .iter()
+        //     .map(|x| x.type_arguments.unwrap_or_else(|| vec![]))
+        //     .map(|x| primitive_to_param_type(&x.name))
+        //     .collect();
 
-        let selector = first_four_bytes_of_sha256_hash(&sig);
+        let sig = resolve_fn_selector(&function.name, &[]);
+
+        let sig = std::str::from_utf8(&sig)
+            .expect("Could not parse signature from resolve_fn_selector.");
+        let selector = first_four_bytes_of_sha256_hash(sig);
         let selector = u64::from_be_bytes(selector);
         let ty_id = function.output.type_id;
 
@@ -207,7 +249,7 @@ fn process_fn_items(
     fn is_block_fn(input: &ItemFn) -> bool {
         if input.attrs.len() == 1 {
             let path = &input.attrs[0].path;
-            if path.get_ident().unwrap() == "block" {
+            if path.get_ident().unwrap() == BlockData::path_ident_str() {
                 return true;
             }
         }
@@ -398,7 +440,8 @@ fn process_fn_items(
 
             pub fn decode_logdata(&mut self, rb: u64, data: Vec<u8>) {
                 // TODO: Use rb here to determine what the `type` is, then use `type` (the type id) to decode_type()
-                self.decode_type(rb as usize, data)
+                let type_id = log_types.get(&rb).expect(&format!("LogData rb({}) does not exist logged types."));
+                self.decode_type(type_id, data)
             }
 
             pub fn dispatch(&self) {

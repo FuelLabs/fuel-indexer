@@ -24,8 +24,7 @@ async fn get_contract_id(wallet: &WalletUnlocked) -> String {
     debug!("Creating new deployment for non-existent contract");
 
     let _compiled =
-        Contract::load_sway_contract("../contracts/out/debug/contracts.bin", &None)
-            .unwrap();
+        Contract::load_contract("../contracts/out/debug/contracts.bin", &None).unwrap();
 
     let bin_path = "../contracts/out/debug/contracts.bin".to_string();
     let contract_id = Contract::deploy(
@@ -60,10 +59,10 @@ async fn main() -> std::io::Result<()> {
     let (_provider, wallet) = setup_provider_and_wallet(4000).await;
     let contract_id: String = get_contract_id(&wallet).await;
     info!("Using contract at {}", contract_id);
-    let contract: Simple = SimpleBuilder::new(contract_id, wallet).build();
+    let contract: Simple = Simple::new(contract_id, wallet);
 
-    let _ = contract.gimme_someevent(7980).call().await;
-    let _ = contract.gimme_anotherevent(7890).call().await;
+    let _ = contract.methods().gimme_someevent(7980).call().await;
+    let _ = contract.methods().gimme_anotherevent(7890).call().await;
 
     Ok(())
 }
