@@ -168,6 +168,13 @@ impl From<SocketAddr> for FuelNodeConfig {
     }
 }
 
+#[allow(clippy::from_over_into)]
+impl Into<SocketAddr> for FuelNodeConfig {
+    fn into(self) -> SocketAddr {
+        format!("{}:{}", self.host, self.port).parse().unwrap()
+    }
+}
+
 impl std::string::ToString for FuelNodeConfig {
     fn to_string(&self) -> String {
         format!("{}:{}", self.host, self.port)

@@ -476,6 +476,23 @@ pub async fn asset_already_exists(
     }
 }
 
+pub async fn index_id_for(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<i64> {
+    let query = format!(
+        "SELECT id FROM index_registry WHERE namespace = '{}' AND identifier = '{}'",
+        namespace, identifier
+    );
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let id: i64 = row.get(0);
+
+    Ok(id)
+}
+
 pub async fn start_transaction(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<usize> {
