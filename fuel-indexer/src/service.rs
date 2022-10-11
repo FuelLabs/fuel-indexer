@@ -353,59 +353,49 @@ impl IndexerService {
             ..
         } = self;
         let mut futs = FuturesUnordered::from_iter(handles.take().into_values());
-        let mut wait = true;
 
-        loop {
-            if let Some(fut) = futs.next().await {
-                debug!("Retired a future {fut:?}");
-                wait = false;
-            }
+        while let Some(fut) = futs.next().await {
+            debug!("Retired a future {fut:?}");
+        }
 
-            if let Some(ref mut rx) = rx {
-                if let Some(request) = rx.recv().await {
-                    debug!("Retired a future {request:?}");
-                    wait = false;
+        if let Some(ref mut rx) = rx {
+            while let Some(request) = rx.recv().await {
+                debug!("Retired a future {request:?}");
 
-                    let database_url = self.config.database.clone().to_string();
-                    let pool =
-                        IndexerConnectionPool::connect(&database_url).await.unwrap();
+                let database_url = self.config.database.clone().to_string();
+                let pool = IndexerConnectionPool::connect(&database_url).await.unwrap();
 
-                    let mut conn = pool.acquire().await.unwrap();
+                let mut conn = pool.acquire().await.unwrap();
 
-                    let index_id = queries::index_id_for(
-                        &mut conn,
-                        &request.namespace,
-                        &request.identifier,
-                    )
+                let index_id = queries::index_id_for(
+                    &mut conn,
+                    &request.namespace,
+                    &request.identifier,
+                )
+                .await
+                .unwrap();
+
+                let assets = queries::latest_assets_for_index(&mut conn, &index_id)
                     .await
-                    .unwrap();
+                    .expect("Could not get latest assets for index");
 
-                    let assets = queries::latest_assets_for_index(&mut conn, &index_id)
-                        .await
-                        .expect("Could not get latest assets for index");
+                let manifest: Manifest =
+                    serde_yaml::from_slice(&assets.manifest.bytes).unwrap();
 
-                    let manifest: Manifest =
-                        serde_yaml::from_slice(&assets.manifest.bytes).unwrap();
+                let (kill_switch, handle) = spawn_executor_from_index_asset_registry(
+                    self.config.fuel_node.clone(),
+                    self.config.database.to_string(),
+                    &manifest,
+                    false,
+                    assets.wasm.bytes,
+                )
+                .await
+                .unwrap();
 
-                    let (kill_switch, handle) = spawn_executor_from_index_asset_registry(
-                        self.config.fuel_node.clone(),
-                        self.config.database.to_string(),
-                        &manifest,
-                        false,
-                        assets.wasm.bytes,
-                    )
-                    .await
-                    .unwrap();
-
-                    handles
-                        .borrow_mut()
-                        .insert(request.namespace.clone(), handle);
-                    killers.insert(request.namespace, kill_switch);
-                }
-            }
-
-            if wait {
-                sleep(Duration::from_secs(1)).await;
+                handles
+                    .borrow_mut()
+                    .insert(request.namespace.clone(), handle);
+                killers.insert(request.namespace, kill_switch);
             }
         }
     }
