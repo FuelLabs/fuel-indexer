@@ -83,7 +83,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
         graphql_api: GraphQLConfig::default(),
     };
 
-    let mut indexer_service = IndexerService::new(config).await.unwrap();
+    let mut indexer_service = IndexerService::new(config, None).await.unwrap();
 
     let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file");
 

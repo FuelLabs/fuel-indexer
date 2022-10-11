@@ -312,6 +312,21 @@ pub async fn asset_already_exists(
     }
 }
 
+pub async fn index_id_for(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<i64> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::index_id_for(c, namespace, identifier).await
+        }
+        IndexerConnection::Sqlite(ref mut c) => {
+            sqlite::index_id_for(c, namespace, identifier).await
+        }
+    }
+}
+
 pub async fn start_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::start_transaction(c).await,

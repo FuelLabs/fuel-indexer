@@ -14,7 +14,9 @@ use axum::{
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_database_types::{IndexAsset, IndexAssetType};
-use fuel_indexer_lib::utils::{FuelNodeHealthResponse, ServiceStatus};
+use fuel_indexer_lib::utils::{
+    AssetReloadRequest, FuelNodeHealthResponse, ServiceStatus,
+};
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
     tables::Schema,
@@ -25,6 +27,7 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::time::Instant;
 use thiserror::Error;
+use tokio::sync::mpsc::Sender;
 use tracing::error;
 
 #[derive(Debug, Error)]
@@ -199,6 +202,7 @@ async fn authorize_middleware<B>(
 
 pub async fn register_index_assets(
     Path((namespace, identifier)): Path<(String, String)>,
+    Extension(tx): Extension<Option<Sender<AssetReloadRequest>>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     multipart: Option<Multipart>,
@@ -276,6 +280,15 @@ pub async fn register_index_assets(
             return Err(e.into());
         };
 
+        if let Some(tx) = tx {
+            tx.send(AssetReloadRequest {
+                namespace,
+                identifier,
+            })
+            .await
+            .unwrap();
+        }
+
         return Ok(Json(json!({
             "success": "true",
             "assets": assets,
@@ -288,7 +301,7 @@ pub async fn register_index_assets(
 pub struct GraphQlApi;
 
 impl GraphQlApi {
-    pub async fn run(config: IndexerConfig) {
+    pub async fn run(config: IndexerConfig, tx: Option<Sender<AssetReloadRequest>>) {
         let sm = SchemaManager::new(&config.database.to_string())
             .await
             .expect("SchemaManager create failed");
@@ -316,6 +329,7 @@ impl GraphQlApi {
         let asset_route = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
             .route_layer(middleware::from_fn(authorize_middleware))
+            .layer(Extension(tx))
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()));
 

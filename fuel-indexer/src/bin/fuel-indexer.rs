@@ -6,6 +6,9 @@ use fuel_indexer::{
     GraphQlApi, IndexerConfig, IndexerService, Manifest,
 };
 use fuel_indexer_database::queries;
+use fuel_indexer_lib::defaults::ASSET_REFRESH_CHANNEL_SIZE;
+use fuel_indexer_lib::utils::AssetReloadRequest;
+use tokio::sync::mpsc;
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
@@ -49,7 +52,8 @@ pub async fn main() -> Result<()> {
         &config.fuel_node.to_string()
     );
 
-    let mut service = IndexerService::new(config.clone()).await?;
+    let (tx, rx) = mpsc::channel::<AssetReloadRequest>(ASSET_REFRESH_CHANNEL_SIZE);
+    let mut service = IndexerService::new(config.clone(), Some(rx)).await?;
 
     let mut manifest: Option<Manifest> = None;
 
@@ -71,7 +75,7 @@ pub async fn main() -> Result<()> {
     service.register_indices(manifest, false).await?;
 
     let service_handle = tokio::spawn(service.run());
-    GraphQlApi::run(config).await;
+    GraphQlApi::run(config, Some(tx)).await;
 
     service_handle.await?;
 

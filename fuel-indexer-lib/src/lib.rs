@@ -13,6 +13,12 @@ pub mod utils {
     const MAX_DATABASE_CONNECTION_ATTEMPTS: usize = 5;
     const INITIAL_RETRY_DELAY_SECS: u64 = 2;
 
+    #[derive(Debug)]
+    pub struct AssetReloadRequest {
+        pub namespace: String,
+        pub identifier: String,
+    }
+
     pub fn sha256_digest(blob: &Vec<u8>) -> String {
         let mut hasher = Sha256::new();
         hasher.update(blob.as_slice());
@@ -129,4 +135,6 @@ pub mod defaults {
     pub const SQLITE_DATABASE: &str = "sqlite.db";
 
     pub const GRAPHQL_API_RUN_MIGRATIONS: Option<bool> = None;
+
+    pub const ASSET_REFRESH_CHANNEL_SIZE: usize = 100;
 }
