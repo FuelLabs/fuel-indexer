@@ -1,16 +1,25 @@
 # Application dependencies
 
-We'll need to install the [`diesel` CLI](https://github.com/diesel-rs/diesel/tree/HEAD/diesel_cli)
+We'll need a few application-level dependencies to get our indexer up and running
+
+## `sqlx-cli`
 
 ```bash
-cargo install diesel_cli --no-default-features --features "postgres sqlite"
+cargo install sqlx-cli --features postgres,sqlite
 ```
 
-And we'll run the migrations to create our graph registry, types, and columns. Note that this part assumes that you're familiar with basic steps involved in [getting a postgres user/role and database setup.](https://medium.com/coding-blocks/creating-user-database-and-adding-access-on-postgresql-8bfcd2f4a91e)
+- More info on [`sqlx-cli`](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md#enable-building-in-offline-mode-with-query)
+- We can then run migrations using
 
 ```bash
-cd fuel-indexer/
+DATABASE_URL=postgres://john:doe@localhost bash scripts/run_migrations.bash
+```
 
-DATABASE_URL=postgres://postgres@localhost/your-database \
-    bash scripts/run_migrations.local.sh
+
+## `wasm-snip`
+
+> As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash).
+
+```bash
+cargo install wasm-snip
 ```

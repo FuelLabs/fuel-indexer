@@ -6,7 +6,7 @@
   - [Setting up](./getting-started/setup.md)
     - [System dependencies](./getting-started/system-dependencies.md)
     - [Application dependencies](./getting-started/application-dependencies.md)
-  - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
+  - [A Fuel indexer Project](./getting-started/fuel-indexer-project.md)
     - [Configuration](./getting-started/configuration.md)
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-indexer.md)

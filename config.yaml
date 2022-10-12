@@ -1,9 +1,9 @@
-## The following is an example Fuel Indexer configuration file.
+## The following is an example Fuel indexer configuration file.
 ##
 ## This configuration spec is intended to be used for a single instance
-## of a Fuel Indexer node or service.
+## of a Fuel indexer node or service.
 ##
-## For more info on how the Fuel Indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
+## For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
 ## or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
 ## Fuel Node configuration

@@ -1,35 +1,37 @@
 # Manifest
 
-A manifest serves as the configuration for your indexer and it is written in YAML format. A proper manifest has the following structure:
+A manifest serves as the YAML configuration file for a given index. A proper manifest has the following structure:
 
 ```yaml
----
-namespace: ...
-graphql_schema: ...
+namespace: fuel_indexer_test
+graphql_schema: fuel-indexer-tests/assets/fuel_indexer_test.graphql
+identifier: index1
 module:
-  wasm:
-    ...
+  wasm: fuel-indexer-tests/assets/fuel_indexer_test.wasm
 handlers:
-  - event: ...
-    handler: ...
+  - event: LogData
+    handler: function_one
 ```
 
-## Namespace
+## `namespace`
 
-Your graph will live within the namespace set as part of this field. As such, it's important that you remember it when querying the API endpoint for your data. For example, if the field is set to `my_special_space`, then your queries would look similar to this:
+- Think of the `namespace` as an organization identifier. If you're familiar with say, [Java package naming](https://stackoverflow.com/questions/6247849/java-package-naming), then think of an index's `namespace` as being its _domain name_. The `namespace` is unique to a given index operator -- i.e., index operators will not be able to support more than one `namespace` of the same name.
 
-```sh
-curl -s localhost:29987/api/graph/my_special_space -XPOST -H ...
-```
+## `graphql_schema`
 
-## GraphQL Schema
+- The `graphql_schema` field contains the file path that points to the GraphQL schema for the given index. This schema file holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file [here](schema.md).
 
-The `graphql_schema` field contains the file path to a GraphQL schema. This schema holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file [here](schema.md).
+> Important: The objects defined in your GraphQL schema are called 'entities'. These entities are what will be eventually be stored in the database.
 
-## Module
+## `identifier`
 
-The `module` field contains a file path to custom code that will be executed as part of the indexer. There are two available options: `wasm` and `native`. If you choose to use WASM, the path must lead to a compiled WASM module. Alternatively, if you choose to use the native option, the path must lead to a module that contains native Rust code. In both cases, the functions included as part of the `handlers` field should be present in the module.
+- The `identifier` field is used to (quite literally) identify the given index. If `namespace` is the organization/domain name, then think of `identifier` as the name of an index within that organization/domain.
+- As an example, if a provided `namespace` is `"fuel"` and a provided `identifier` is `"index1"`, then the unique identifier for the given index will be `fuel.index1`.
 
-## Handlers
+## `module`
 
-The `handlers` field maps event types to the names of function that will handle each event. The event should map to an input type that is present in a contract's ABI specification.
+- The `module` field contains a file path that points to code that will be run as an _executor_ inside of the indexer.
+- There are two available options for modules/execution: `wasm` and `native`.
+  - When specifying a `wasm` module, the provided path must lead to a compiled WASM binary.
+
+> Important: At this time, `wasm` is the preferred method of execution.

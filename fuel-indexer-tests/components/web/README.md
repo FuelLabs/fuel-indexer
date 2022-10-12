@@ -2,7 +2,7 @@
 
 Web components used for testing
 
-### Usage
+## Usage
 
 ```bash
 # Start the processes

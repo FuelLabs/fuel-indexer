@@ -1,6 +1,6 @@
 [package]
 name = "fuel-indexer-lib"
-description = "A library used throughout various components of the Fuel Indexer serivce."
+description = "A library used throughout various components of the Fuel indexer serivce."
 version = "0.0.0"
 edition = "2021"
 
