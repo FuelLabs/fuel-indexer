@@ -1,5 +1,3 @@
-use crate::{IndexerError, SchemaManager};
-
 use anyhow::Result;
 use async_std::sync::{Arc, RwLock};
 use axum::{
@@ -18,7 +16,7 @@ use fuel_indexer_lib::utils::{
 };
 use fuel_indexer_schema::db::{
     graphql::{GraphqlError, GraphqlQueryBuilder},
-    tables::Schema,
+    tables::{Schema, SchemaManager},
 };
 use hyper::Client;
 use hyper_tls::HttpsConnector;
@@ -53,8 +51,6 @@ pub enum ApiError {
     Sqlx(#[from] sqlx::Error),
     #[error("Http error {0:?}")]
     Http(#[from] HttpError),
-    #[error("Indexer error {0:?}")]
-    Indexer(#[from] IndexerError),
 }
 
 impl From<StatusCode> for ApiError {
@@ -87,10 +83,6 @@ impl IntoResponse for ApiError {
             ApiError::Sqlx(err) => {
                 error!("ApiError::Sqlx: {}", err);
                 (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
-            }
-            ApiError::Indexer(err) => {
-                error!("ApiError::Indexer: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
             }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg),
         };

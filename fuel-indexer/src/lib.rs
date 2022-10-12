@@ -1,14 +1,12 @@
 use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
-pub mod api;
 mod database;
 pub mod executor;
 pub mod ffi;
 mod service;
 
-pub use api::GraphQlApi;
-pub use database::{Database, SchemaManager};
+pub use database::Database;
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
 pub use fuel_indexer_database::IndexerDatabaseError;
 pub use fuel_indexer_schema::{BlockData, FtColumn};

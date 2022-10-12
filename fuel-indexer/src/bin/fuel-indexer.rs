@@ -1,7 +1,8 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_core::service::{Config, FuelService};
-use fuel_indexer::{GraphQlApi, IndexerService};
+use fuel_indexer::IndexerService;
+use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::queries;
 use fuel_indexer_lib::config::{IndexerArgs, IndexerConfig, Parser};
 use fuel_indexer_lib::defaults::ASSET_REFRESH_CHANNEL_SIZE;

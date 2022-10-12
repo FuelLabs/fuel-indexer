@@ -1,5 +1,5 @@
 use anyhow::Result;
-use fuel_indexer::GraphQlApi;
+use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_lib::config::{IndexerArgs, IndexerConfig, Parser};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
