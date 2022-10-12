@@ -188,6 +188,7 @@ fn process_fn_items(
     let mut decoders = Vec::new();
     let mut type_vecs = Vec::new();
     let mut dispatchers = Vec::new();
+    let mut type_map = HashMap::new();
 
     let mut type_ids = FUEL_PRIMITIVES
         .iter()
@@ -203,8 +204,11 @@ fn process_fn_items(
 
     for typ in parsed.types {
         if typ.type_field == EMPTY_TUPLE_TYPE {
+            // TODO: Should we eventually handle () types?
             continue;
         }
+
+        type_map.insert(typ.type_id, typ.clone());
 
         let ty = rust_type(&typ);
         let name = rust_name(&typ);
@@ -223,14 +227,13 @@ fn process_fn_items(
     }
 
     for function in parsed.functions {
-        // let param_types: Vec<ParamType> = function
-        //     .inputs
-        //     .iter()
-        //     .map(|x| x.type_arguments.unwrap_or_else(|| vec![]))
-        //     .map(|x| primitive_to_param_type(&x.name))
-        //     .collect();
+        let result: Vec<ParamType> = function
+            .inputs
+            .iter()
+            .map(|x| ParamType::try_from_type_application(&x, &type_map).unwrap())
+            .collect();
 
-        let sig = resolve_fn_selector(&function.name, &[]);
+        let sig = resolve_fn_selector(&function.name, &result[..]);
 
         let sig = std::str::from_utf8(&sig)
             .expect("Could not parse signature from resolve_fn_selector.");
