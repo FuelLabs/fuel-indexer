@@ -1,5 +1,6 @@
-use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerResult, SchemaManager};
+use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerResult};
 use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_schema::db::tables::SchemaManager;
 use fuel_indexer_schema::schema_version;
 use fuel_types::Address;
 use wasmer::{imports, Instance, Module, Store, WasmerEnv};

@@ -1,8 +1,9 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult, Manifest};
+use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
+use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_schema::{deserialize, serialize, BlockData};
 use std::path::Path;
 use thiserror::Error;

@@ -1,16 +1,14 @@
-use crate::{
-    config::{FuelNodeConfig, IndexerConfig},
-    manifest::Module,
-    Executor, IndexerResult, Manifest, NativeIndexExecutor, SchemaManager,
-    WasmIndexExecutor,
-};
+use crate::{Executor, IndexerResult, NativeIndexExecutor, WasmIndexExecutor};
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
+use fuel_indexer_lib::config::{FuelNodeConfig, IndexerConfig};
+use fuel_indexer_lib::manifest::{Manifest, Module};
 use fuel_indexer_lib::utils::AssetReloadRequest;
+use fuel_indexer_schema::db::tables::SchemaManager;
 use fuel_indexer_schema::{Address, BlockData, Bytes32};
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::cell::RefCell;
