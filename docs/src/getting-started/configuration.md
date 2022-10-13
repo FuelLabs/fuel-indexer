@@ -1,15 +1,15 @@
 # Indexer Configuration
 
-Below you will find a list of CLI configuration options that can be used to configure either the Fuel Indexer service, the standalone Fuel Indexer GraphQL API service, or both. For those who prefer using a configuration file,
+Below you will find a list of CLI configuration options that can be used to configure either the Fuel indexer service, the standalone Fuel indexer GraphQL API service, or both. For those who prefer using a configuration file,
 you can [checkout the default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml), which also shows the default values used for these configuration options.
 
 ## Usage:
 
-Using the main Fuel Indexer service binary.
+Using the main Fuel indexer service binary via cargo.
 
 `cargo run --bin fuel-indexer -- [options]`
 
-Using the standalone GraphQL API server.
+Using the standalone GraphQL API server via cargo.
 
 `cargo run --bin fuel-indexer-api-server -- [options]`
 
@@ -74,6 +74,6 @@ the `fuel-indexer-api-server` binary, these options will apply to that service.
 
 > SQLite: An alternative database implementation using standard SQLite connection options
 
-- `--sqlite-database` <SQLITE-DATABASE>
+`--sqlite-database` <SQLITE-DATABASE>
 
 - Path to SQLite database

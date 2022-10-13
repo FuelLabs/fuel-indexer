@@ -85,7 +85,7 @@ pub struct IndexerArgs {
 }
 
 #[derive(Debug, Parser, Clone)]
-#[clap(name = "Indexer API Service", about = "Fuel Indexer GraphQL API")]
+#[clap(name = "Indexer API Service", about = "Fuel indexer GraphQL API")]
 pub struct ApiServerArgs {
     #[clap(short, long, help = "API Server config.")]
     pub config: Option<PathBuf>,

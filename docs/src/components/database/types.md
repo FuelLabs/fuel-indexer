@@ -1,6 +1,6 @@
 # Types
 
-Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing [Postgres 14](https://www.postgresql.org/docs/14/datatype.html) data types. 
+Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing [Postgres 14](https://www.postgresql.org/docs/14/datatype.html) data types.
 
 | Sway Type | GraphQL Schema Type | Postgres Type |
 |------|----------|----------|
@@ -29,30 +29,27 @@ struct Event {
 }
 ```
 
-Our GraphQL schema should resemble:
+The corresponding GraphQL schema to mirror this `Event` struct would resemble:
 
-```code
+```graphql
 type Event {
     id: ID!
     account: Address! @indexed
-    block_height: Int8! @indexed
+    block_height: UInt8! @indexed
 }
 ```
 
-This will generate the following Postgres schema:
+And finall, this GraphQL schema will generate the following Postgres schema:
 
-```code
+```text
                                            Table "schema.event"
-  Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
------------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
- id        |    bigint   |           | not null |         | plain    |             |              | 
- count     |    bigint   |           | not null |         | plain    |             |              | 
- address   | varchar(64) |           | not null |         | plain    |             |              | 
- object    |    bytea    |           | not null |         | extended |             |              | 
+    Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description
+--------------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id           |    bigint   |           | not null |         | plain        |             |              |
+ block_height |    bigint   |           | not null |         | plain    |             |              |
+ address      | varchar(64) |           | not null |         | plain    |             |              |
+ object       |    bytea    |           | not null |         | extended |             |              |
 Indexes:
-    "count_pkey" PRIMARY KEY, btree (id)
+    "event_pkey" PRIMARY KEY, btree (id)
 Access method: heap
 ```
-
-The source code for these types can be found [here](https://github.com/FuelLabs/fuel-indexer/blob/master/schema/src/db/models.rs#L146).
-

@@ -17,7 +17,7 @@ async fn test_can_trigger_and_index_ping_event() {
         .unwrap();
 
     // Events are not triggered immediately
-    sleep(Duration::from_secs(4)).await;
+    sleep(Duration::from_secs(5)).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.message where id = 1")
         .fetch_one(&mut conn)

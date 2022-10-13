@@ -1,19 +1,19 @@
 # A Fuel Indexer Project
 
-The Fuel Indexer service can currently be used in two different ways:
+The Fuel indexer service can currently be used in two different ways:
 
-1. The service can either be run as a standalone binary, outside the scope of a Sway project.
-2. The service can be included in a Sway project, as a tandem service.
+1. The service can be run as a standalone binary, outside the scope of a larger Fuel project.
+2. The service can be included in a larger Fuel project, as a tandem service.
 
 We'll describe these two different implementations below.
 
 ## As a standalone service
 
-When running a Fuel Indexer service as a standalone binary, you can just start the service (with or without Docker) after you've defined your manifest file. For an example of this, checkout the [Hello World example](./../examples/hello-indexer.md) section.
+When running a Fuel indexer service as a standalone binary, you can just simply start the service after migrations have been run.
 
-## With a Sway project
+## With a Fuel project
 
-The convetion for a Sway project layout including a Fuel Indexer is:
+The convetion for a Fuel project layout including a Fuel indexer is:
 
 ```text
 ➜  my-project tree . -I target/ -I out/
@@ -40,9 +40,7 @@ The convetion for a Sway project layout including a Fuel Indexer is:
     ├── my-indexer
     │   ├── Cargo.toml
     │   └── src
-    │       ├── my-index.rs
-    │       └── my-second-index.rs
-    ├── my-second-index.manifest.yaml
+    │       └── my-index.rs
     └── schema
         └── schema.graphql
 

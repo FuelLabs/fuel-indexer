@@ -1,15 +1,16 @@
-# GraphQL Server
+# GraphQL API Server
 
-The `fuel-indexer-api-server` crate of the Fuel Indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the data layer.
+- The `fuel-indexer-api-server` crate of the Fuel indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the database.
+- Note that the main `fuel-indexer` binary of the indexer project also contains a queryable GraphQL API endpoint.
 
-Note that the main binary of the `fuel-indexer` crate _also_ contains a queryable GraphQL API endpoint. However, the `fuel-indexer-api-server` crate offers a standalone GraphQL API endpoint, whereas the `fuel-indexer-api-server` bundles its GraphQL API endpoint with other Fuel Indexer functionality (e.g., execution, handling, data-layer contruction, etc).
+> The `fuel-indexer-api-server` crate offers a _standalone_ GraphQL API endpoint, whereas the GraphQL endpoint offered in `fuel-indexer` is bundled with other Fuel indexer functionality (e.g., execution, handling, data-layer contruction, etc).
 
-To run the standalone Fuel Indexer GraphQL API server using a configuration file:
+## Usage
+
+To run the standalone Fuel indexer GraphQL API server using a configuration file:
 
 ```bash
-cd fuel-indexer/
-
-RUST_LOG=debug cargo run --bin fuel-indexer-api-server -- --config config.yaml
+cargo run --bin fuel-indexer-api-server -- --config config.yaml
 ```
 
 Where `config.yaml` is based on [the default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml).
