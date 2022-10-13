@@ -1,5 +1,5 @@
 extern crate alloc;
-use fuel_indexer_macros::{block, indexer};
+use fuel_indexer_macros::indexer;
 
 #[indexer(
     abi = "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json",
@@ -19,7 +19,6 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    #[block]
     fn fuel_indexer_test_blocks(block: BlockData) {
         let blk = BlockEntity {
             id: block.height,

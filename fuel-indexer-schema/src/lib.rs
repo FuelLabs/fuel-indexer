@@ -23,44 +23,35 @@ pub mod db;
 
 pub mod types {
 
+    use crate::type_id;
     use fuel_tx::Receipt;
-    use serde::{Deserialize, Serialize};
-
     pub use fuel_types::{
         Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word,
     };
     pub use fuels_core::types::Bits256;
-    use fuels_types::param_types::ParamType;
+    use serde::{Deserialize, Serialize};
 
     pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
 
-    pub enum ReceiptType {
-        Log,
-        LogData,
-        Transfer,
-        TransferOut,
-        ScriptResult,
-    }
-
-    impl From<String> for ReceiptType {
-        fn from(s: String) -> Self {
-            match s.as_str() {
-                "Log" => ReceiptType::Log,
-                "LogData" => ReceiptType::LogData,
-                "Transfer" => ReceiptType::Transfer,
-                "TransferOut" => ReceiptType::TransferOut,
-                "ScriptResult" => ReceiptType::ScriptResult,
-                _ => panic!("Unrecognized ReceiptType"),
-            }
-        }
-    }
-
-    pub trait NativeFuelType {
+    pub trait NativeFuelTypeIdent {
         fn path_ident_str() -> &'static str;
-        fn to_param_type() -> ParamType;
+        fn type_id() -> usize;
     }
 
     // NOTE: We could also create ABI JSON files with these native Fuel indexer-macro types <( '.' )>
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct B256 {}
+
+    impl NativeFuelTypeIdent for B256 {
+        fn path_ident_str() -> &'static str {
+            "BlockData"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
     #[derive(Deserialize, Serialize, Debug, Clone)]
     pub struct BlockData {
         pub height: u64,
@@ -70,24 +61,13 @@ pub mod types {
         pub transactions: Vec<Vec<Receipt>>,
     }
 
-    impl NativeFuelType for BlockData {
+    impl NativeFuelTypeIdent for BlockData {
         fn path_ident_str() -> &'static str {
             "BlockData"
         }
 
-        fn to_param_type() -> ParamType {
-            ParamType::Struct {
-                fields: vec![
-                    ParamType::U64,
-                    ParamType::B256,
-                    ParamType::U64,
-                    ParamType::B256,
-                    ParamType::Vector(Box::new(ParamType::Vector(Box::new(
-                        ParamType::U8,
-                    )))),
-                ],
-                generics: vec![],
-            }
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
         }
     }
 
@@ -107,23 +87,13 @@ pub mod types {
         pub is: u64,
     }
 
-    impl NativeFuelType for Transfer {
+    impl NativeFuelTypeIdent for Transfer {
         fn path_ident_str() -> &'static str {
             "Transfer"
         }
 
-        fn to_param_type() -> ParamType {
-            ParamType::Struct {
-                fields: vec![
-                    ParamType::B256,
-                    ParamType::B256,
-                    ParamType::U64,
-                    ParamType::B256,
-                    ParamType::U64,
-                    ParamType::U64,
-                ],
-                generics: vec![],
-            }
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
         }
     }
 
@@ -134,20 +104,17 @@ pub mod types {
         pub rb: u64,
     }
 
-    impl NativeFuelType for Log {
+    impl NativeFuelTypeIdent for Log {
         fn path_ident_str() -> &'static str {
             "Log"
         }
 
-        fn to_param_type() -> ParamType {
-            ParamType::Struct {
-                fields: vec![ParamType::B256, ParamType::U64, ParamType::U64],
-                generics: vec![],
-            }
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
         }
     }
 
-    // Keeping for now, but I don't believe we need this
+    // NOTE: Keeping for now, but I don't believe we need this.
     #[derive(Deserialize, Serialize, Debug, Clone)]
     pub struct LogData {
         pub contract_id: ContractId,
@@ -157,22 +124,13 @@ pub mod types {
         pub ptr: u64,
     }
 
-    impl NativeFuelType for LogData {
+    impl NativeFuelTypeIdent for LogData {
         fn path_ident_str() -> &'static str {
             "LogData"
         }
 
-        fn to_param_type() -> ParamType {
-            ParamType::Struct {
-                fields: vec![
-                    ParamType::B256,
-                    ParamType::Vector(Box::new(ParamType::U8)),
-                    ParamType::U64,
-                    ParamType::U64,
-                    ParamType::U64,
-                ],
-                generics: vec![],
-            }
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
         }
     }
 
