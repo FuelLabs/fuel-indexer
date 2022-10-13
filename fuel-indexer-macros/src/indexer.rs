@@ -133,9 +133,22 @@ fn decode_snippet(
     if is_primitive(ty) {
         // TODO: do we want decoder for primitive? Might need something a little smarter to
         // identify what the primitive is for and to which handler it will go.
-        quote! {
-            #ty_id => {
-                Logger::warn("Skipping primitive decoder");
+        match ty.to_string().as_str() {
+            "Log" | "Transfer" | "BlockData" => {
+                quote! {
+                    #ty_id => {
+                        self.#name.push(data)
+                    }
+                }
+            }
+
+            _ => {
+                quote! {
+                    #ty_id => {
+                        Logger::warn("Skipping primitive decoder");
+
+                    }
+                }
             }
         }
     } else {
@@ -163,7 +176,7 @@ fn process_fn_items(
 
     let mut types = HashSet::new();
     let mut selectors = Vec::new();
-    let mut decoders = Vec::new();
+    let mut abi_struct_decoders = Vec::new();
     let mut type_vecs = Vec::new();
     let mut dispatchers = Vec::new();
     let mut type_map = HashMap::new();
@@ -198,7 +211,7 @@ fn process_fn_items(
                 #name: Vec<#ty>
             });
 
-            decoders.push(decode_snippet(ty_id, &ty, &name));
+            abi_struct_decoders.push(decode_snippet(ty_id, &ty, &name));
             types.insert(ty_id);
         }
     }
@@ -226,7 +239,7 @@ fn process_fn_items(
     let mut handler_fns = Vec::with_capacity(contents.len());
 
     // NOTE: Just keep this straightforward and isolated for now. If we decide later
-    // to combine the native Fuel type decoders with the ABI JSON decoders we could
+    // to combine the native Fuel type abi_struct_decoders with the ABI JSON abi_struct_decoders we could
     // always do that later
     let mut block_dispatchers = Vec::new();
     let mut transfer_dispatchers = Vec::new();
@@ -288,6 +301,9 @@ fn process_fn_items(
                                             #name: Vec<#ty>
                                         });
 
+                                        // NOTE: we can't use the generic struct_decoders here because each decoder takes a different
+                                        // data param. The generic struct_decoders all take Vec<u8> as their data param while native
+                                        // Fuel types take different data params (e.g., Transfer, BlockData, etc)
                                         match path_ident_str.as_str() {
                                             "BlockData" => {
                                                 blockdata_decoding = quote! { decoder.decode_blockdata(block.clone()); };
@@ -309,7 +325,7 @@ fn process_fn_items(
                                                 logdata_dispatchers.push(
                                                     quote! { self.#name.push(data); },
                                                 );
-                                                decoders.push(decode_snippet(
+                                                abi_struct_decoders.push(decode_snippet(
                                                     *ty_id, &ty, &name,
                                                 ));
                                             }
@@ -372,18 +388,18 @@ fn process_fn_items(
 
             pub fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
-                    #(#decoders),*
+                    #(#abi_struct_decoders),*
                     _ => panic!("Unkown type id {}", ty_id),
                 }
-            }
-
-            pub fn decode_blockdata(&mut self, data: BlockData) {
-                #(#block_dispatchers)*
             }
 
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
                 let ty_id = self.selector_to_type_id(sel);
                 self.decode_type(ty_id, data)
+            }
+
+            pub fn decode_blockdata(&mut self, data: BlockData) {
+                #(#block_dispatchers)*
             }
 
             pub fn decode_transfer(&mut self, data: Transfer) {

@@ -15,8 +15,9 @@ proc-macro = true
 [dependencies]
 fuel-indexer-schema = { path = "../fuel-indexer-schema", default-features = false }
 fuel-tx = "0.18"
-fuels-core = "0.25.1"
-fuels-types = "0.25.1"
+# FIXME: temporary
+fuels-core = { path = "/Users/rashad/Development/repos/fuels-rs/packages/fuels-core" }
+fuels-types = { path = "/Users/rashad/Development/repos/fuels-rs/packages/fuels-types" }
 graphql-parser = "0.3"
 lazy_static = "1.4"
 proc-macro-error = "1.0"

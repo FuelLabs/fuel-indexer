@@ -2665,8 +2665,8 @@ dependencies = [
  "fuel-indexer-sqlite",
  "fuel-tx",
  "fuel-types",
- "fuels-core 0.25.1",
- "fuels-types 0.25.1",
+ "fuels-core 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuels-types 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "graphql-parser",
  "insta",
  "itertools",
@@ -2694,8 +2694,8 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core 0.25.1",
- "fuels-types 0.25.1",
+ "fuels-core 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuels-types 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "getrandom 0.2.7",
  "serde",
 ]
@@ -2903,10 +2903,10 @@ dependencies = [
  "fuel-gql-client",
  "fuels-abigen-macro 0.25.1",
  "fuels-contract 0.25.1",
- "fuels-core 0.25.1",
+ "fuels-core 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fuels-signers 0.25.1",
  "fuels-test-helpers 0.25.1",
- "fuels-types 0.25.1",
+ "fuels-types 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2930,7 +2930,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7b79e3155e3f197de0b4ff909d7d59332fc58b9c3f82c1f5a9d5fa93ac658aba"
 dependencies = [
  "Inflector",
- "fuels-core 0.25.1",
+ "fuels-core 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "proc-macro2",
  "quote",
  "rand 0.8.5",
@@ -2977,9 +2977,9 @@ dependencies = [
  "bytes",
  "fuel-gql-client",
  "fuel-tx",
- "fuels-core 0.25.1",
+ "fuels-core 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fuels-signers 0.25.1",
- "fuels-types 0.25.1",
+ "fuels-types 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "futures",
  "hex",
  "itertools",
@@ -3027,6 +3027,31 @@ dependencies = [
 [[package]]
 name = "fuels-core"
 version = "0.25.1"
+dependencies = [
+ "Inflector",
+ "anyhow",
+ "fuel-tx",
+ "fuel-types",
+ "fuels-types 0.25.1",
+ "hex",
+ "itertools",
+ "lazy_static",
+ "proc-macro2",
+ "quote",
+ "rand 0.8.5",
+ "regex",
+ "serde",
+ "serde_json",
+ "sha2 0.9.9",
+ "strum 0.21.0",
+ "strum_macros 0.21.1",
+ "syn",
+ "thiserror",
+]
+
+[[package]]
+name = "fuels-core"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd433ae1f99b7db558d69b260e6445a7cd76e8eadf9a2b746e9db0edb2061194"
 dependencies = [
@@ -3034,7 +3059,7 @@ dependencies = [
  "anyhow",
  "fuel-tx",
  "fuel-types",
- "fuels-types 0.25.1",
+ "fuels-types 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "itertools",
  "lazy_static",
@@ -3087,8 +3112,8 @@ dependencies = [
  "fuel-crypto",
  "fuel-gql-client",
  "fuel-types",
- "fuels-core 0.25.1",
- "fuels-types 0.25.1",
+ "fuels-core 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuels-types 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "rand 0.8.5",
  "serde",
@@ -3135,9 +3160,9 @@ dependencies = [
  "fuel-gql-client",
  "fuel-types",
  "fuels-contract 0.25.1",
- "fuels-core 0.25.1",
+ "fuels-core 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "fuels-signers 0.25.1",
- "fuels-types 0.25.1",
+ "fuels-types 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hex",
  "portpicker",
  "rand 0.8.5",
@@ -3160,6 +3185,26 @@ dependencies = [
  "bech32 0.9.1",
  "fuel-tx",
  "hex",
+ "lazy_static",
+ "proc-macro2",
+ "regex",
+ "serde",
+ "serde_json",
+ "strum 0.21.0",
+ "strum_macros 0.21.1",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "fuels-types"
+version = "0.25.1"
+dependencies = [
+ "anyhow",
+ "bech32 0.9.1",
+ "fuel-tx",
+ "hex",
+ "itertools",
  "lazy_static",
  "proc-macro2",
  "regex",
@@ -5710,8 +5755,8 @@ dependencies = [
  "fuel-tx",
  "fuels 0.25.1",
  "fuels-abigen-macro 0.25.1",
- "fuels-core 0.25.1",
- "fuels-types 0.25.1",
+ "fuels-core 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuels-types 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log",
  "pretty_env_logger",
  "rand 0.8.5",
@@ -5737,8 +5782,8 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core 0.25.1",
- "fuels-types 0.25.1",
+ "fuels-core 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuels-types 0.25.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "getrandom 0.2.7",
  "serde",
 ]
