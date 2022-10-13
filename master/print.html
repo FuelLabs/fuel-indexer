@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="components/index.html"><strong aria-hidden="true">3.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/manifest.html"><strong aria-hidden="true">3.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="components/gql-server.html"><strong aria-hidden="true">3.2.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/schema.html"><strong aria-hidden="true">3.2.1.</strong> Schema</a></li></ol></li><li class="chapter-item expanded "><a href="components/database/index.html"><strong aria-hidden="true">3.3.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/database/types.html"><strong aria-hidden="true">3.3.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="components/database/conventions.html"><strong aria-hidden="true">3.3.2.</strong> Conventions</a></li><li class="chapter-item expanded "><a href="components/database/foreign-keys.html"><strong aria-hidden="true">3.3.3.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="components/database/directives.html"><strong aria-hidden="true">3.3.4.</strong> Directives</a></li></ol></li></ol></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">2.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-indexer.html"><strong aria-hidden="true">2.1.</strong> Hello World</a></li></ol></li><li class="chapter-item expanded "><a href="components/index.html"><strong aria-hidden="true">3.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/indices/index.html"><strong aria-hidden="true">3.1.</strong> Indices</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/indices/registration.html"><strong aria-hidden="true">3.1.1.</strong> Registering Indices</a></li></ol></li><li class="chapter-item expanded "><a href="components/assets/index.html"><strong aria-hidden="true">3.2.</strong> Assets</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/assets/manifest.html"><strong aria-hidden="true">3.2.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="components/assets/schema.html"><strong aria-hidden="true">3.2.2.</strong> Schema</a></li><li class="chapter-item expanded "><a href="components/assets/wasm.html"><strong aria-hidden="true">3.2.3.</strong> WASM Modules</a></li></ol></li><li class="chapter-item expanded "><a href="components/gql-server.html"><strong aria-hidden="true">3.3.</strong> GraphQL</a></li><li class="chapter-item expanded "><a href="components/database/index.html"><strong aria-hidden="true">3.4.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/database/types.html"><strong aria-hidden="true">3.4.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="components/database/conventions.html"><strong aria-hidden="true">3.4.2.</strong> Conventions</a></li><li class="chapter-item expanded "><a href="components/database/foreign-keys.html"><strong aria-hidden="true">3.4.3.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="components/database/directives.html"><strong aria-hidden="true">3.4.4.</strong> Directives</a></li></ol></li></ol></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -171,8 +171,8 @@
                     <main>
                         <h1 id="fuel-indexer"><a class="header" href="#fuel-indexer">Fuel Indexer</a></h1>
 <p><img src="./img/fuel.png" alt="Fuel Logo" /></p>
-<p>The Fuel Indexer is a standalone binary that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within a Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.</p>
-<p>Events can be indexed by the Fuel Indexer by using WASM modules, as described in <a href="./src/examples/hello-indexer.html">the Hello World example</a>.</p>
+<p>The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within a Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.</p>
+<p>Events are indexed by the Fuel indexer by using WASM modules, as described in <a href="./src/examples/hello-indexer.html">the Hello World example</a>.</p>
 <h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
 <p>This section provides an outline regarding how to get started using a Fuel Indexer, including dependency installation, basic usage, as well as examples.</p>
 <ul>
@@ -191,85 +191,113 @@
 </li>
 </ul>
 <h1 id="setup-instructions-for-the-fuel-sdk"><a class="header" href="#setup-instructions-for-the-fuel-sdk">Setup instructions for the Fuel SDK</a></h1>
-<p>The Fuel Indexer requires a few components to be installed prior to installing system and application dependencies.</p>
-<h2 id="what-you-will-need"><a class="header" href="#what-you-will-need">What you will need</a></h2>
+<p>The Fuel indexer requires a few components to be installed prior to installing system and application dependencies.</p>
+<h2 id="what-youll-need"><a class="header" href="#what-youll-need">What you'll need</a></h2>
+<h3 id="rust-2021"><a class="header" href="#rust-2021">Rust 2021</a></h3>
 <ul>
-<li><a href="https://doc.rust-lang.org/cargo/getting-started/installation.html">Rust 2021</a></li>
-<li>A local clone of the <a href="https://github.com/FuelLabs/fuel-indexer/"><code>fuel-indexer</code></a> repository</li>
+<li><a href="https://doc.rust-lang.org/cargo/getting-started/installation.html">More info on installing Rust</a></li>
+</ul>
+<h3 id="the-fuel-indexer-project"><a class="header" href="#the-fuel-indexer-project">The <code>fuel-indexer</code> project</a></h3>
+<ul>
+<li>A clone of the <a href="https://github.com/FuelLabs/fuel-indexer/"><code>fuel-indexer</code></a> repository</li>
 </ul>
 <pre><code class="language-bash">git clone https://github.com/FuelLabs/fuel-indexer
 </code></pre>
 <h1 id="system-requirements"><a class="header" href="#system-requirements">System Requirements</a></h1>
-<p>There are several system requirements including fuelup, llvm, clang and postgres.</p>
+<p>There are several system requirements including <code>fuelup</code>, <code>llvm</code>, <code>clang</code> and <code>postgres</code>.</p>
 <h2 id="fuel-system-dependencies"><a class="header" href="#fuel-system-dependencies">Fuel system dependencies</a></h2>
 <p>Getting started with a Fuel indexer requires a single primary dependency from the Fuel ecosystem -- <code>fuelup</code></p>
 <ul>
-<li><code>fuelup</code> installs the Fuel toolchain from Fuel's official release channels, enabling you to easily keep the toolchain updated. For more info, take a look at the <a href="https://github.com/fuellabs/fuelup"><code>fuelup</code> repo</a>.</li>
+<li><code>fuelup</code> installs the Fuel toolchain from Fuel's official release channels, enabling you to easily keep the toolchain updated.</li>
+<li>For more info, take a look at the <a href="https://github.com/fuellabs/fuelup"><code>fuelup</code> repository</a>.</li>
 </ul>
-<h3 id="installation"><a class="header" href="#installation">Installation</a></h3>
-<p>To install <code>fuelup</code></p>
+<h3 id="fuelup-installation"><a class="header" href="#fuelup-installation"><code>fuelup</code> Installation</a></h3>
 <pre><code class="language-bash">fuelup toolchain install latest
 </code></pre>
 <h2 id="other-system-dependencies"><a class="header" href="#other-system-dependencies">Other system dependencies</a></h2>
 <h3 id="ubuntudebian"><a class="header" href="#ubuntudebian">Ubuntu/Debian</a></h3>
-<pre><code class="language-bash">apt update
-apt install -y cmake pkg-config git \
-    gcc build-essential clang libclang-dev llvm libpq-dev
+<pre><code class="language-bash">apt update &amp;&amp; apt install -y \
+    cmake \
+    pkg-config \
+    git \
+    gcc \
+    build-essential \
+    clang \
+    libclang-dev \
+    llvm \
+    libpq-dev
 </code></pre>
 <table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
 <tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
 <tr><td>pkg-config</td><td>Language-agnostic helper tool used when compiling applications and libraries</td></tr>
 <tr><td>git</td><td>Version control system</td></tr>
-<tr><td>gcc</td><td>Compiler tools required to build various Fuel Indexer crates</td></tr>
-<tr><td>clang</td><td>Compiler tools required to build various Fuel Indexer crates on Unix-like OSes</td></tr>
-<tr><td>llvm</td><td>Required for building Fuel Indexer crate dependencies</td></tr>
+<tr><td>gcc</td><td>Compiler tools required to build various Fuel indexer crates</td></tr>
+<tr><td>clang/libclang-dev</td><td>Compiler tools required to build various Fuel indexer crates on Unix-like OSes</td></tr>
+<tr><td>llvm</td><td>Required for building Fuel indexer crate dependencies</td></tr>
 <tr><td>libpq-dev</td><td>Set of library function helping facilitate interaction with the PostgreSQL backend</td></tr>
 </tbody></table>
 <h3 id="macos"><a class="header" href="#macos">MacOS</a></h3>
-<pre><code class="language-bash">brew update
-brew install cmake llvm libpq postgresql
+<pre><code class="language-bash">brew update &amp;&amp; brew install \
+    cmake \
+    llvm \
+    libpq \
+    postgresql
 </code></pre>
 <table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
 <tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
-<tr><td>llvm</td><td>Compiler infrastructure for building Fuel Indexer crate dependencies</td></tr>
-<tr><td>libq</td><td>Postgres C API library</td></tr>
+<tr><td>llvm</td><td>Compiler infrastructure for building Fuel indexer crate dependencies</td></tr>
+<tr><td>libpq</td><td>Postgres C API library</td></tr>
 <tr><td>postgresql</td><td>Installs the command line console (psql) as well as a PostgreSQL server locally</td></tr>
 </tbody></table>
 <h3 id="arch"><a class="header" href="#arch">Arch</a></h3>
-<pre><code class="language-bash">pacman -Syu --needed --noconfirm cmake \
-    gcc pkgconf git clang llvm11 llvm11-libs postgresql-libs
+<pre><code class="language-bash">pacman -Syu --needed --noconfirm \
+    cmake \
+    gcc \
+    pkgconf \
+    git \
+    clang \
+    llvm11 \
+    llvm11-libs \
+    postgresql-libs
 </code></pre>
 <table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
 <tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
 <tr><td>git</td><td>Version control system</td></tr>
-<tr><td>gcc</td><td>Compiler tools required to build various Fuel Indexer crates</td></tr>
-<tr><td>llvm11</td><td>Compiler infrastructure for building Fuel Indexer crate dependencies</td></tr>
-<tr><td>llvm11-libs</td><td>Compiler infrastructure libs for building Fuel Indexer crate dependencies</td></tr>
+<tr><td>gcc</td><td>Compiler tools required to build various Fuel indexer crates</td></tr>
+<tr><td>llvm11</td><td>Compiler infrastructure for building Fuel indexer crate dependencies</td></tr>
+<tr><td>llvm11-libs</td><td>Compiler infrastructure libs for building Fuel indexer crate dependencies</td></tr>
 <tr><td>pkgconf</td><td>System for configuring build dependency information</td></tr>
 <tr><td>postgresql-libs</td><td>Provides the essential shared libraries for any PostgreSQL client program or interface</td></tr>
-<tr><td>clang</td><td>Compiler required to build various Fuel Indexer crates Unix-like OSes</td></tr>
+<tr><td>clang</td><td>Compiler required to build various Fuel indexer crates Unix-like OSes</td></tr>
 </tbody></table>
 <h1 id="application-dependencies"><a class="header" href="#application-dependencies">Application dependencies</a></h1>
-<p>We'll need to install the <a href="https://github.com/diesel-rs/diesel/tree/HEAD/diesel_cli"><code>diesel</code> CLI</a></p>
-<pre><code class="language-bash">cargo install diesel_cli --no-default-features --features &quot;postgres sqlite&quot;
+<p>We'll need a few application-level dependencies to get our indexer up and running</p>
+<h2 id="sqlx-cli"><a class="header" href="#sqlx-cli"><code>sqlx-cli</code></a></h2>
+<pre><code class="language-bash">cargo install sqlx-cli --features postgres,sqlite
 </code></pre>
-<p>And we'll run the migrations to create our graph registry, types, and columns. Note that this part assumes that you're familiar with basic steps involved in <a href="https://medium.com/coding-blocks/creating-user-database-and-adding-access-on-postgresql-8bfcd2f4a91e">getting a postgres user/role and database setup.</a></p>
-<pre><code class="language-bash">cd fuel-indexer/
-
-DATABASE_URL=postgres://postgres@localhost/your-database \
-    bash scripts/run_migrations.local.sh
+<ul>
+<li>More info on <a href="https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md#enable-building-in-offline-mode-with-query"><code>sqlx-cli</code></a></li>
+<li>We can then run migrations using</li>
+</ul>
+<pre><code class="language-bash">DATABASE_URL=postgres://john:doe@localhost bash scripts/run_migrations.bash
+</code></pre>
+<h2 id="wasm-snip"><a class="header" href="#wasm-snip"><code>wasm-snip</code></a></h2>
+<blockquote>
+<p>Important: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash">here</a>.</p>
+</blockquote>
+<pre><code class="language-bash">cargo install wasm-snip
 </code></pre>
 <h1 id="a-fuel-indexer-project"><a class="header" href="#a-fuel-indexer-project">A Fuel Indexer Project</a></h1>
-<p>The Fuel Indexer service can currently be used in two different ways:</p>
+<p>The Fuel indexer service can currently be used in two different ways:</p>
 <ol>
-<li>The service can either be run as a standalone binary, outside the scope of a Sway project.</li>
-<li>The service can be included in a Sway project, as a tandem service.</li>
+<li>The service can be run as a standalone binary, outside the scope of a larger Fuel project.</li>
+<li>The service can be included in a larger Fuel project, as a tandem service.</li>
 </ol>
 <p>We'll describe these two different implementations below.</p>
 <h2 id="as-a-standalone-service"><a class="header" href="#as-a-standalone-service">As a standalone service</a></h2>
-<p>When running a Fuel Indexer service as a standalone binary, you can just start the service (with or without Docker) after you've defined your manifest file. For an example of this, checkout the <a href="getting-started/./../examples/hello-indexer.html">Hello World example</a> section.</p>
-<h2 id="with-a-sway-project"><a class="header" href="#with-a-sway-project">With a Sway project</a></h2>
-<p>The convetion for a Sway project layout including a Fuel Indexer is:</p>
+<p>When running a Fuel indexer service as a standalone binary, you can just simply start the service after migrations have been run.</p>
+<h2 id="with-a-fuel-project"><a class="header" href="#with-a-fuel-project">With a Fuel project</a></h2>
+<p>The convetion for a Fuel project layout including a Fuel indexer is:</p>
 <pre><code class="language-text">➜  my-project tree . -I target/ -I out/
 .
 ├── contracts
@@ -294,21 +322,19 @@ DATABASE_URL=postgres://postgres@localhost/your-database \
     ├── my-indexer
     │   ├── Cargo.toml
     │   └── src
-    │       ├── my-index.rs
-    │       └── my-second-index.rs
-    ├── my-second-index.manifest.yaml
+    │       └── my-index.rs
     └── schema
         └── schema.graphql
 
 12 directories, 15 files
 </code></pre>
 <h1 id="indexer-configuration"><a class="header" href="#indexer-configuration">Indexer Configuration</a></h1>
-<p>Below you will find a list of CLI configuration options that can be used to configure either the Fuel Indexer service, the standalone Fuel Indexer GraphQL API service, or both. For those who prefer using a configuration file,
+<p>Below you will find a list of CLI configuration options that can be used to configure either the Fuel indexer service, the standalone Fuel indexer GraphQL API service, or both. For those who prefer using a configuration file,
 you can <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">checkout the default service configuration file</a>, which also shows the default values used for these configuration options.</p>
 <h2 id="usage"><a class="header" href="#usage">Usage:</a></h2>
-<p>Using the main Fuel Indexer service binary.</p>
+<p>Using the main Fuel indexer service binary via cargo.</p>
 <p><code>cargo run --bin fuel-indexer -- [options]</code></p>
-<p>Using the standalone GraphQL API server.</p>
+<p>Using the standalone GraphQL API server via cargo.</p>
 <p><code>cargo run --bin fuel-indexer-api-server -- [options]</code></p>
 <h3 id="options"><a class="header" href="#options">Options:</a></h3>
 <p><code>-c</code> <code>--config</code></p>
@@ -377,13 +403,9 @@ the <code>fuel-indexer-api-server</code> binary, these options will apply to tha
 <blockquote>
 <p>SQLite: An alternative database implementation using standard SQLite connection options</p>
 </blockquote>
-<ul>
-<li>
 <p><code>--sqlite-database</code> <SQLITE-DATABASE></p>
-</li>
-<li>
-<p>Path to SQLite database</p>
-</li>
+<ul>
+<li>Path to SQLite database</li>
 </ul>
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <ul>
@@ -593,41 +615,99 @@ curl -s localhost:29987/api/graph/hello_namespace -XPOST -H 'content-type: appli
 <ul>
 <li><a href="components/./gql-server.html">GraphQL API</a></li>
 <li><a href="components/./database/index.html">Database</a></li>
+<li><a href="components/./indices/index.html">Indices</a></li>
+<li><a href="components/./assets/index.html">Assets</a></li>
+</ul>
+<h1 id="indices"><a class="header" href="#indices">Indices</a></h1>
+<p>Indices are the one of the core building blocks of the Fuel indexer service. Indices allow index operators and dApp authors to index specific blockchain events into a database.</p>
+<p>A given index is constructed of a few assets: a manifest file, a GraphQL schema file, and a WASM module. Read more about this in the <a href="components/indices/./../assets/index.html">Assets</a> section.</p>
+<ul>
+<li><a href="components/indices/./registration.html">Registering Indices</a>
+<ul>
+<li>How to register a new index with a Fuel indexer service</li>
+</ul>
+</li>
+</ul>
+<h1 id="index-registration"><a class="header" href="#index-registration">Index Registration</a></h1>
+<ul>
+<li>The Fuel indexer service allows users to upload new indices at runtime, with absolutely no downtime required to start using your new index.</li>
+<li>Meaning, as soon as users upload new assets to the service, those assets are immediately registered, and a new executor is created using the new assets. 
+<ul>
+<li>This provides the benefit of no service downtime, and allows users to immediately get started using their new index.</li>
+</ul>
+</li>
+</ul>
+<h2 id="usage-1"><a class="header" href="#usage-1">Usage</a></h2>
+<ul>
+<li>An example of registering a new index via the command line:</li>
+</ul>
+<pre><code class="language-bash">curl -v http://127.0.0.1:29987/api/index/fuel_indexer_test/index1 \
+    -F &quot;manifest=@my_index_manifest.yaml&quot; \
+    -F &quot;wasm=@my_index_module.wasm&quot; \
+    -F &quot;schema=@my_index_schema.graphql&quot; \
+    -H 'Content-type: multipart/form-data' -H &quot;Authorization: foo&quot; | json_pp
+</code></pre>
+<h1 id="assets"><a class="header" href="#assets">Assets</a></h1>
+<p>A Fuel index is constructed of a few assets: a manifest file, a GraphQL schema file, and a WASM module.</p>
+<ul>
+<li><a href="components/assets/./manifest.html">Manifest</a>
+<ul>
+<li>Supplies metadata regarding how a given index should run.</li>
+</ul>
+</li>
+<li><a href="components/assets/./schema.html">Schema</a>
+<ul>
+<li>Details how data should be stored in the database.</li>
+</ul>
+</li>
+<li><a href="components/assets/./wasm.html">WASM modules</a>
+<ul>
+<li>A compiled binary that is registered into a Fuel indexer at runtime.</li>
+</ul>
+</li>
 </ul>
 <h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
-<p>A manifest serves as the configuration for your indexer and it is written in YAML format. A proper manifest has the following structure:</p>
-<pre><code class="language-yaml">---
-namespace: ...
-graphql_schema: ...
+<p>A manifest serves as the YAML configuration file for a given index. A proper manifest has the following structure:</p>
+<pre><code class="language-yaml">namespace: fuel_indexer_test
+graphql_schema: fuel-indexer-tests/assets/fuel_indexer_test.graphql
+identifier: index1
 module:
-  wasm:
-    ...
+  wasm: fuel-indexer-tests/assets/fuel_indexer_test.wasm
 handlers:
-  - event: ...
-    handler: ...
+  - event: LogData
+    handler: function_one
 </code></pre>
-<h2 id="namespace"><a class="header" href="#namespace">Namespace</a></h2>
-<p>Your graph will live within the namespace set as part of this field. As such, it's important that you remember it when querying the API endpoint for your data. For example, if the field is set to <code>my_special_space</code>, then your queries would look similar to this:</p>
-<pre><code class="language-sh">curl -s localhost:29987/api/graph/my_special_space -XPOST -H ...
-</code></pre>
-<h2 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h2>
-<p>The <code>graphql_schema</code> field contains the file path to a GraphQL schema. This schema holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file <a href="components/schema.html">here</a>.</p>
-<h2 id="module"><a class="header" href="#module">Module</a></h2>
-<p>The <code>module</code> field contains a file path to custom code that will be executed as part of the indexer. There are two available options: <code>wasm</code> and <code>native</code>. If you choose to use WASM, the path must lead to a compiled WASM module. Alternatively, if you choose to use the native option, the path must lead to a module that contains native Rust code. In both cases, the functions included as part of the <code>handlers</code> field should be present in the module.</p>
-<h2 id="handlers"><a class="header" href="#handlers">Handlers</a></h2>
-<p>The <code>handlers</code> field maps event types to the names of function that will handle each event. The event should map to an input type that is present in a contract's ABI specification.</p>
-<h1 id="graphql-server"><a class="header" href="#graphql-server">GraphQL Server</a></h1>
-<p>The <code>fuel-indexer-api-server</code> crate of the Fuel Indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the data layer.</p>
-<p>Note that the main binary of the <code>fuel-indexer</code> crate <em>also</em> contains a queryable GraphQL API endpoint. However, the <code>fuel-indexer-api-server</code> crate offers a standalone GraphQL API endpoint, whereas the <code>fuel-indexer-api-server</code> bundles its GraphQL API endpoint with other Fuel Indexer functionality (e.g., execution, handling, data-layer contruction, etc).</p>
-<p>To run the standalone Fuel Indexer GraphQL API server using a configuration file:</p>
-<pre><code class="language-bash">cd fuel-indexer/
-
-RUST_LOG=debug cargo run --bin fuel-indexer-api-server -- --config config.yaml
-</code></pre>
-<p>Where <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">the default service configuration file</a>.</p>
-<h1 id="graphql-schema-1"><a class="header" href="#graphql-schema-1">GraphQL Schema</a></h1>
-<p>The GraphQL schema is a required component of the Fuel Indexer. When data is indexed and placed into the database, it will be done through the use of data structures defined in the schema.</p>
-<p>In its most basic form, a schema should have a <code>schema</code> definition that contains a defined query type. The rest of the implementation is up to you. Here's an example of a well-formed schema:</p>
+<h2 id="namespace"><a class="header" href="#namespace"><code>namespace</code></a></h2>
+<ul>
+<li>Think of the <code>namespace</code> as an organization identifier. If you're familiar with say, <a href="https://stackoverflow.com/questions/6247849/java-package-naming">Java package naming</a>, then think of an index's <code>namespace</code> as being its <em>domain name</em>. The <code>namespace</code> is unique to a given index operator -- i.e., index operators will not be able to support more than one <code>namespace</code> of the same name.</li>
+</ul>
+<h2 id="graphql_schema"><a class="header" href="#graphql_schema"><code>graphql_schema</code></a></h2>
+<ul>
+<li>The <code>graphql_schema</code> field contains the file path that points to the GraphQL schema for the given index. This schema file holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file <a href="components/assets/schema.html">here</a>.</li>
+</ul>
+<blockquote>
+<p>Important: The objects defined in your GraphQL schema are called 'entities'. These entities are what will be eventually be stored in the database.</p>
+</blockquote>
+<h2 id="identifier"><a class="header" href="#identifier"><code>identifier</code></a></h2>
+<ul>
+<li>The <code>identifier</code> field is used to (quite literally) identify the given index. If <code>namespace</code> is the organization/domain name, then think of <code>identifier</code> as the name of an index within that organization/domain.</li>
+<li>As an example, if a provided <code>namespace</code> is <code>&quot;fuel&quot;</code> and a provided <code>identifier</code> is <code>&quot;index1&quot;</code>, then the unique identifier for the given index will be <code>fuel.index1</code>.</li>
+</ul>
+<h2 id="module"><a class="header" href="#module"><code>module</code></a></h2>
+<ul>
+<li>The <code>module</code> field contains a file path that points to code that will be run as an <em>executor</em> inside of the indexer.</li>
+<li>There are two available options for modules/execution: <code>wasm</code> and <code>native</code>.
+<ul>
+<li>When specifying a <code>wasm</code> module, the provided path must lead to a compiled WASM binary.</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>Important: At this time, <code>wasm</code> is the preferred method of execution.</p>
+</blockquote>
+<h1 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h1>
+<p>GraphQL schema is a required component of the Fuel Indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the schema.</p>
+<p>In its most basic form, Fuel indexer GraphQL schema should have a <code>schema</code> definition that contains a defined query root. The rest of the implementation is up to you. Here's an example of a well-formed schema:</p>
 <pre><code class="language-graphql">schema {
     query: QueryRoot
 }
@@ -648,9 +728,48 @@ type SecondThing {
     timestamp: Timestamp!
 }
 </code></pre>
-<p>You should also familiarize yourself with the information under the <a href="components/database/index.html">Database</a> section in order to ensure that data from your Sway contract is stored in the database as intended.</p>
+<p>The types you see above (e.g., <code>ID</code>, <code>UInt8</code>, etc) are Fuel abstractions that were created to more seamlessly integrate with the Fuel VM. A deeper explanation on these
+types can be found in <a href="components/assets/./database/types.html">the Types section</a></p>
+<blockquote>
+<p>Important: These GraphQL schema types are not native to GraphQL.</p>
+</blockquote>
+<h1 id="wasm-modules"><a class="header" href="#wasm-modules">WASM Modules</a></h1>
+<ul>
+<li>WASM modules are compiled binaries that are registered into a Fuel indexer at runtime. The WASM bytes are read in by the indexer and <em>executors</em> are created which will implement blocking calls the to the WASM runtime.</li>
+</ul>
+<h2 id="usage-2"><a class="header" href="#usage-2">Usage</a></h2>
+<p>In order to compile a WASM module that you've written, you would merely:</p>
+<pre><code class="language-bash">cd /my/wasm/directory &amp;&amp; cargo build --release
+</code></pre>
+<blockquote>
+<p>Important: </p>
+<ol>
+<li>
+<p>WASM modules are only used if the execution mode specified in your manifest file is <code>wasm</code></p>
+</li>
+<li>
+<p>As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash">here</a>.</p>
+</li>
+</ol>
+</blockquote>
+<h1 id="graphql-api-server"><a class="header" href="#graphql-api-server">GraphQL API Server</a></h1>
+<ul>
+<li>The <code>fuel-indexer-api-server</code> crate of the Fuel indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the database.</li>
+<li>Note that the main <code>fuel-indexer</code> binary of the indexer project also contains a queryable GraphQL API endpoint.</li>
+</ul>
+<blockquote>
+<p>The <code>fuel-indexer-api-server</code> crate offers a <em>standalone</em> GraphQL API endpoint, whereas the GraphQL endpoint offered in <code>fuel-indexer</code> is bundled with other Fuel indexer functionality (e.g., execution, handling, data-layer contruction, etc).</p>
+</blockquote>
+<h2 id="usage-3"><a class="header" href="#usage-3">Usage</a></h2>
+<p>To run the standalone Fuel indexer GraphQL API server using a configuration file:</p>
+<pre><code class="language-bash">cargo run --bin fuel-indexer-api-server -- --config config.yaml
+</code></pre>
+<p>Where <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">the default service configuration file</a>.</p>
 <h1 id="database"><a class="header" href="#database">Database</a></h1>
-<p>The Fuel Indexer uses <a href="https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile">Postgres</a> as the database on the data layer.</p>
+<p>The Fuel indexer uses <a href="https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile">Postgres</a> as the primary database.</p>
+<blockquote>
+<p>Note: The Fuel indexer also offers SQLite support. However, we recommend Postgres usage for any type of production service.</p>
+</blockquote>
 <ul>
 <li><a href="components/database/./types.html">Types</a>
 <ul>
@@ -674,7 +793,7 @@ type SecondThing {
 </li>
 </ul>
 <h1 id="types"><a class="header" href="#types">Types</a></h1>
-<p>Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing <a href="https://www.postgresql.org/docs/14/datatype.html">Postgres 14</a> data types. </p>
+<p>Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing <a href="https://www.postgresql.org/docs/14/datatype.html">Postgres 14</a> data types.</p>
 <table><thead><tr><th>Sway Type</th><th>GraphQL Schema Type</th><th>Postgres Type</th></tr></thead><tbody>
 <tr><td>u64</td><td>ID</td><td>bigint primary key</td></tr>
 <tr><td>b256</td><td>Address</td><td>varchar(64)</td></tr>
@@ -697,43 +816,57 @@ type SecondThing {
     block_height: u64,
 }
 </code></pre>
-<p>Our GraphQL schema should resemble:</p>
-<pre><code class="language-code">type Event {
+<p>The corresponding GraphQL schema to mirror this <code>Event</code> struct would resemble:</p>
+<pre><code class="language-graphql">type Event {
     id: ID!
     account: Address! @indexed
-    block_height: Int8! @indexed
+    block_height: UInt8! @indexed
 }
 </code></pre>
-<p>This will generate the following Postgres schema:</p>
-<pre><code class="language-code">                                           Table &quot;schema.event&quot;
-  Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description 
------------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
- id        |    bigint   |           | not null |         | plain    |             |              | 
- count     |    bigint   |           | not null |         | plain    |             |              | 
- address   | varchar(64) |           | not null |         | plain    |             |              | 
- object    |    bytea    |           | not null |         | extended |             |              | 
+<p>And finall, this GraphQL schema will generate the following Postgres schema:</p>
+<pre><code class="language-text">                                           Table &quot;schema.event&quot;
+    Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description
+--------------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id           |    bigint   |           | not null |         | plain        |             |              |
+ block_height |    bigint   |           | not null |         | plain    |             |              |
+ address      | varchar(64) |           | not null |         | plain    |             |              |
+ object       |    bytea    |           | not null |         | extended |             |              |
 Indexes:
-    &quot;count_pkey&quot; PRIMARY KEY, btree (id)
+    &quot;event_pkey&quot; PRIMARY KEY, btree (id)
 Access method: heap
 </code></pre>
-<p>The source code for these types can be found <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/schema/src/db/models.rs#L146">here</a>.</p>
 <h1 id="conventions"><a class="header" href="#conventions">Conventions</a></h1>
 <h2 id="ids"><a class="header" href="#ids">IDs</a></h2>
-<p>IDs are often included in Sway smart contracts as a means of identifying an entity or object. Giving an indexable entity an ID, allows you to easily find the entity after it's been indexed, using the GraphQL API included with the Fuel Indexer.</p>
-<p>With regard to the Fuel Indexer, the <code>ID</code> data type in GraphQL schema maps to a <code>bigint primary key</code> in Postgres. Given this, ID fields in GraphQL schema should be paired with <code>u64</code> types in a Sway contract.</p>
 <ul>
-<li>Note that a Sway contract developer can always use another data type (e.g., <code>str[32]</code>) as a type of identifier field. However, you should reference <a href="components/database/./types.html">the Fuel Indexer types table</a> when deciding which data types to use in certain scenarios. </li>
-</ul>
-<p>One important thing to note is that when it comes to indexing data, the developer of the Sway smart contract is responsible for creating IDs. The Fuel Indexer does not use any type of auto-incrementing ID mechanism.</p>
+<li>IDs are often included in Sway smart contracts as a means of identifying an entity or object.</li>
+<li>Giving an indexable entity an ID allows you to easily find the entity after it's been indexed, using the GraphQL API included with the Fuel indexer.</li>
+<li>With regard to Fuel indexing specifically, the <code>ID</code> data type in your GraphQL schema maps to a <code>bigint primary key</code> in Postgres.
 <ul>
-<li>This is important because if a Fuel Indexer operator is expecting IDs to be (for example) globally unique, then the indexer operator would have to ensure that the Sway contract generating the indexable events has some mechanism to generate those unique IDs.</li>
+<li>Given this, ID fields in GraphQL schema should be paired with <code>u64</code> types in a Sway contract.</li>
 </ul>
-<h1 id="foreign-keys"><a class="header" href="#foreign-keys">Foreign Keys</a></h1>
-<p>The Fuel Indexer service supports Foreign Key constraints and relationships using a combination of GraphQL schema and a data layer (whether Postgres or SQLite). Below you'll find a simple example of how to use Foreign Keys.</p>
+</li>
+<li>Note that a Sway contract developer can always use another data type (e.g., <code>str[32]</code>) as a type of identifier field. However, you should reference <a href="components/database/./types.html">the Fuel indexer types table</a> when deciding which data types to use in certain scenarios.</li>
+</ul>
 <blockquote>
-<p>IMPORTANT: At the moment, <a href="https://www.sqlite.org/omitted.html">due to some SQLite quirks</a>, Fuel Indexer SQLite only supports foreign key <em>relationships</em>, not foreign key <em>constraints</em>. We are very much open to changing this in the future.</p>
+<p>Important:</p>
+<ol>
+<li>
+<p>In the near future, we plan to support <code>ID</code>s of any type -- i.e., <code>Address</code>, <code>ContractId</code>, etc.</p>
+</li>
+<li>
+<p>One important thing to note is that when it comes to indexing data, the developer of the Sway smart contract is responsible for creating IDs. The Fuel indexer does not use any type of auto-incrementing ID mechanism. Though as of now, <code>ID</code> types in GraphQL <em>do</em> map to auto-incrementing <code>bigint</code>s in Postgres, we plan to phase this functionality out in the future.</p>
+<ul>
+<li>This is important because if a Fuel indexer operator is expecting IDs to be (for example) globally unique, then the indexer operator would have to ensure that the Sway contract generating the indexable events has some mechanism to generate those unique IDs.</li>
+</ul>
+</li>
+</ol>
 </blockquote>
-<p>To demonstrate how the Indexer uses GraphQL schema to resolve foreign key relationships, given the following schema:</p>
+<h1 id="foreign-keys"><a class="header" href="#foreign-keys">Foreign Keys</a></h1>
+<ul>
+<li>The Fuel indexer service supports forein key constraints and relationships using a combination of GraphQL schema and a database (whether Postgres or SQLite).</li>
+<li>To demonstrate how the indexer uses GraphQL schema to resolve foreign key relationships, let's look at the following schema:</li>
+</ul>
+<h2 id="usage-4"><a class="header" href="#usage-4">Usage</a></h2>
 <pre><code class="language-graphql">schema {
     query: QueryRoot
 }
@@ -753,14 +886,36 @@ type Library {
     book: Book!
 }
 </code></pre>
-<p>Two entities will be created: a <code>Book</code> entity, and a <code>Library</code> entity. As you can see, we add the <code>Book</code> entity as an attribute on the <code>Library</code> entity, thus conveying that we want a one-to-many or one-to-one relationship between <code>Library</code> and <code>Book</code>. This means that for a given <code>Library</code>, we may also fetch one or many <code>Book</code> entities.</p>
-<h1 id="directives"><a class="header" href="#directives">Directives</a></h1>
-<p>Per GraphQL:</p>
+<h3 id="breaking-it-down"><a class="header" href="#breaking-it-down">Breaking it down</a></h3>
+<ul>
+<li>Given the above schema, two entities will be created: a <code>Book</code> entity, and a <code>Library</code> entity.</li>
+<li>As you can see, we add the <code>Book</code> entity as an attribute on the <code>Library</code> entity, thus conveying that we want a one-to-many or one-to-one relationship between <code>Library</code> and <code>Book</code>.
+<ul>
+<li>This means that for a given <code>Library</code>, we may also fetch one or many <code>Book</code> entities.</li>
+</ul>
+</li>
+</ul>
 <blockquote>
-<p>A directive is an identifier preceded by a @ character, optionally followed by a list of named arguments, which can appear after almost any form of syntax in the GraphQL query or schema languages.</p>
+<p>Important:</p>
+<ol>
+<li>
+<p>At the moment, <a href="https://www.sqlite.org/omitted.html">due to some SQLite quirks</a>, the Fuel indexer SQLite support only offers foreign key <em>relationships</em>, not foreign key <em>constraints</em>. We are very much open to changing this in the future.</p>
+</li>
+<li>
+<p>As mentioned in the <a href="components/database/./conventions.html">Conventions</a> section, as of now, only <code>ID</code> types are supported for foreign key constraints. However, we do plan to support other types as well in the near future.</p>
+</li>
+</ol>
 </blockquote>
-<p>As of now the Fuel Indexer supports a single directive: <code>@indexed</code>.</p>
-<p>Using our <code>Library</code> and <code>Book</code> example again, given the following schema:</p>
+<h1 id="directives"><a class="header" href="#directives">Directives</a></h1>
+<blockquote>
+<p>Per GraphQL: A directive is an identifier preceded by a @ character, optionally followed by a list of named arguments, which can appear after almost any form of syntax in the GraphQL query or schema languages.</p>
+</blockquote>
+<h2 id="fuel-indexer-directives"><a class="header" href="#fuel-indexer-directives">Fuel Indexer Directives</a></h2>
+<ul>
+<li>As of now the Fuel indexer supports a single directive: <code>@indexed</code>.</li>
+</ul>
+<h3 id="usage-5"><a class="header" href="#usage-5">Usage</a></h3>
+<p>Using our <code>Library</code> and <code>Book</code> example from the previous <a href="components/database/./foreign-keys.html">Foreign Keys</a> section -- given the following schema:</p>
 <pre><code class="language-graphql">schema {
     query: QueryRoot
 }
@@ -782,7 +937,7 @@ type Library {
 </code></pre>
 <p>A single <code>BTREE INDEX</code> constraint will be created on the <code>book</code> table's <code>name</code> column.</p>
 <blockquote>
-<p>IMPORTANT: At the moment, index constraint support is limited to <code>BTREE</code> on Postgres with <code>ON DELETE</code>, and <code>ON UPDATE</code> actions not being supported. Note that <code>@indexed</code> directives are also available using SQLite. Finally, multi-column indices are <em>not</em> supported at the moment.</p>
+<p>Important: At the moment, index constraint support is limited to <code>BTREE</code> in Postgres with <code>ON DELETE</code>, and <code>ON UPDATE</code> actions not being supported. Note that <code>@indexed</code> directives are also available using SQLite. Finally, multi-column indices are <em>not</em> supported at this time.</p>
 </blockquote>
 
                     </main>
