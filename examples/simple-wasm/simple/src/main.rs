@@ -3,9 +3,11 @@ extern crate log;
 
 extern crate pretty_env_logger;
 
-use fuels::prelude::{Contract, Provider, TxParameters, WalletUnlocked};
+use fuels::prelude::{
+    Contract, Provider, StorageConfiguration, TxParameters, WalletUnlocked,
+};
 use fuels_abigen_macro::abigen;
-use fuels_core::parameters::StorageConfiguration;
+// use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
 
 pub fn tx_params() -> TxParameters {

@@ -186,10 +186,14 @@ fn process_fn_items(
         .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
-    let mut log_types = HashMap::new();
+    let mut log_types = Vec::new();
     if let Some(logged_types) = parsed.logged_types {
         for typ in logged_types {
-            log_types.insert(typ.log_id, typ.application.type_id);
+            let log_id = typ.log_id;
+            let type_id = typ.application.type_id;
+            log_types.push(quote! {
+                #log_id => #type_id,
+            })
         }
     }
 
@@ -201,6 +205,11 @@ fn process_fn_items(
         type_map.insert(typ.type_id, typ.clone());
 
         let ty = rust_type(&typ);
+
+        if is_fuel_primitive(&ty) {
+            proc_macro_error::abort_call_site!("'{:?} is a reserved Fuel type.")
+        }
+
         let name = rust_name(&typ);
         let ty_id = typ.type_id;
 
