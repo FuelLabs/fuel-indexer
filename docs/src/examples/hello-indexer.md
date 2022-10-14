@@ -53,7 +53,7 @@ getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 ```
 
-- Next up is the manifest. This will be configuration for your indexer. For example, what contract addresses do your indexers watch?
+- Next up is the manifest. This will be the configuration for your indexer. For example, what contract addresses do your indexers watch?
 
 ```yaml
 ---
