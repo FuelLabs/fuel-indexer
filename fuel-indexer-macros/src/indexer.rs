@@ -5,7 +5,7 @@ use crate::wasm::handler_block_wasm;
 use fuel_indexer_schema::{
     type_id,
     types::{
-        BlockData, Log, LogData, NativeFuelType, ReceiptType, Transfer,
+        BlockData, Log, LogData, NativeFuelType, ReceiptType, ScriptResult, Transfer,
         FUEL_TYPES_NAMESPACE,
     },
 };
@@ -30,7 +30,8 @@ lazy_static! {
         BlockData::path_ident_str(),
         "B256",
         Log::path_ident_str(),
-        LogData::path_ident_str()
+        LogData::path_ident_str(),
+        ScriptResult::path_ident_str(),
     ]);
 }
 
@@ -135,6 +136,7 @@ fn primitive_to_param_type(name: &str) -> ParamType {
         "Tranfer" => Transfer::to_param_type(),
         "Log" => Log::to_param_type(),
         "LogData" => LogData::to_param_type(),
+        "ScriptResult" => ScriptResult::to_param_type(),
         e => {
             proc_macro_error::abort_call_site!(
                 "Unrecognized rust primitive type: {:?}",
@@ -263,6 +265,7 @@ fn process_fn_items(
     let mut transfer_dispatchers = Vec::new();
     let mut log_dispatchers = Vec::new();
     let mut logdata_dispatchers = Vec::new();
+    let mut scriptresult_dispatchers = Vec::new();
 
     let mut blockdata_decoding = quote! {};
 
@@ -360,6 +363,10 @@ fn process_fn_items(
                                                 logdata_dispatchers.push(quote!{ self.#name.push(data); });
                                                 decoders.push(decode_snippet(*ty_id, &rust_type(&typ), &name));
                                             }
+
+                                            ReceiptType::ScriptResult => {
+                                                scriptresult_dispatchers.push(quote!{ self.#name.push(data); });
+                                            }
                                             _ => panic!("Unsupported ReceiptType in function signature"),
                                         }
                                     } else {
@@ -447,6 +454,10 @@ fn process_fn_items(
                 self.decode_type(type_id, data)
             }
 
+            pub fn decode_scriptresult(&mut self, data: ScriptResult) {
+                #(#scriptresult_dispatchers)*
+            }
+
             pub fn dispatch(&self) {
                 #(#dispatchers)*
             }
@@ -486,6 +497,11 @@ fn process_fn_items(
                                 // TODO: use rb to determine which struct from ABI JSON to decode into
                                 decoder.decode_logdata(rb, data);
 
+                            }
+
+                            Receipt::ScriptResult { result, gas_used } => {
+                                let data = ScriptResult { u64::from(result), gas_used };
+                                decorder.decode_scriptresult(data);
                             }
 
                             _ => {

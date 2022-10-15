@@ -176,6 +176,24 @@ pub mod types {
         }
     }
 
+    pub struct ScriptResult {
+        pub result: Word,
+        pub gas_used: u64,
+    }
+
+    impl NativeFuelType for ScriptResult {
+        fn path_ident_str() -> &'static str {
+            "ScriptResult"
+        }
+
+        fn to_param_type() -> ParamType {
+            ParamType::Struct {
+                fields: vec![ParamType::U64, ParamType::U64],
+                generics: vec![],
+            }
+        }
+    }
+
     #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
     pub struct Jsonb(pub String);
 
