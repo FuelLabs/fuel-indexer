@@ -25,6 +25,7 @@ abi FuelIndexer {
     fn trigger_transfer();
     fn trigger_log();
     fn trigger_logdata();
+    fn trigger_scriptresult();
 }
 
 impl FuelIndexer for Contract {
@@ -60,5 +61,9 @@ impl FuelIndexer for Contract {
             is_pung: true,
         };
         log(p);
+    }
+
+    fn trigger_scriptresult() {
+        // TODO: Call script and get result
     }
 }

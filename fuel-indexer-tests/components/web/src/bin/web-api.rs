@@ -94,6 +94,19 @@ async fn fuel_indexer_test_logdata(
     HttpResponse::Ok()
 }
 
+async fn fuel_indexer_test_scriptresult(
+    contract: web::Data<Arc<FuelIndexerTest>>,
+) -> impl Responder {
+    let _ = contract
+        .methods()
+        .trigger_scriptresult()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
+    HttpResponse::Ok()
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap_or_else(|_| {
@@ -179,6 +192,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .route("/transfer", web::post().to(fuel_indexer_test_transfer))
             .route("/log", web::post().to(fuel_indexer_test_log))
             .route("/logdata", web::post().to(fuel_indexer_test_logdata))
+            .route(
+                "/scriptresult",
+                web::post().to(fuel_indexer_test_scriptresult),
+            )
     })
     .bind(defaults::WEB_API_ADDR)
     .unwrap()

@@ -10,6 +10,7 @@ type QueryRoot {
     transfer: TransferEntity
     log: LogEntity
     logdata: LogDataEntity
+    scriptresult: ScriptResultEntity
 }
 
 type PingEntity {
@@ -69,4 +70,9 @@ type LogEntity {
 type LogDataEntity {
     id: ID!
     contract_id: ContractId! 
+}
+
+type ScriptResultEntity {
+    result: UInt8!
+    gas_used: UInt8!
 }

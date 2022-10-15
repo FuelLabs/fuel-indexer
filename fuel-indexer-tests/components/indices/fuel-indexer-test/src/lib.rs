@@ -1,5 +1,5 @@
 extern crate alloc;
-use fuel_indexer_macros::{block, indexer};
+use fuel_indexer_macros::indexer;
 
 #[indexer(
     abi = "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json",
@@ -7,7 +7,11 @@ use fuel_indexer_macros::{block, indexer};
     identifier = "index1",
     schema = "./../../../assets/fuel_indexer_test.graphql"
 )]
+
 mod fuel_indexer_test {
+
+    use fuel_indexer_macros::indexer;
+
     fn fuel_indexer_test_ping(ping: Ping) {
         Logger::info("fuel_indexer_test_ping handling a Ping event.");
 
@@ -79,6 +83,17 @@ mod fuel_indexer_test {
             id: 1,
             value: logdata_entity.value,
             is_pung: 1,
+        };
+
+        entity.save();
+    }
+
+    fn fuel_indexer_test_scriptresult(scriptresult_entity: ScriptResult) {
+        Logger::info("fuel_indexer_test_scriptresult handling Log event.");
+
+        let entity = ScriptResultEntity {
+            result: scriptresult_entity.result,
+            gas_used: scriptresult_entity.gas_used,
         };
 
         entity.save();

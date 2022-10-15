@@ -131,11 +131,20 @@
         "type": 0,
         "typeArguments": null
       }
+    },
+    {
+      "inputs": [],
+      "name": "trigger_scriptresult",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      }
     }
   ],
   "loggedTypes": [
     {
-      "logId": 1018197,
+      "logId": 165418,
       "loggedType": {
         "name": "",
         "type": 6,
@@ -143,11 +152,11 @@
       }
     },
     {
-      "logId": 1018225,
+      "logId": 165435,
       "loggedType": {
         "name": "",
         "type": 5,
-        "typeArguments": null
+        "typeArguments": []
       }
     }
   ]
