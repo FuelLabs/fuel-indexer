@@ -1,10 +1,10 @@
-use crate::{
-    defaults,
-    utils::{derive_socket_addr, is_opt_env_var, trim_opt_env_key},
-};
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 pub use clap::Parser;
+use fuel_indexer_lib::{
+    defaults,
+    utils::{derive_socket_addr, is_opt_env_var, trim_opt_env_key},
+};
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};

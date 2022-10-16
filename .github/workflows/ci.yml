@@ -262,7 +262,7 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           # `cargo-udeps` requires nightly to run
-          toolchain: nightly-2022-09-22
+          toolchain: nightly
           default: true
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
