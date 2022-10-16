@@ -103,6 +103,7 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+          target: wasm32-unknown-unknown
       - run: cargo install sqlx-cli
       - run: ./scripts/run_migrations.bash
       - uses: Swatinem/rust-cache@v1
