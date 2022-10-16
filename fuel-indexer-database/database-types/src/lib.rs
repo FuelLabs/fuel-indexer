@@ -183,7 +183,7 @@ impl From<i32> for ColumnType {
             13 => ColumnType::Blob,
             14 => ColumnType::ForeignKey,
             15 => ColumnType::Jsonb,
-            _ => panic!("Invalid column type!"),
+            _ => panic!("Invalid column type."),
         }
     }
 }

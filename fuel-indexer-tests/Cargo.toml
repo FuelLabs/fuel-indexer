@@ -23,7 +23,7 @@ path = "tests/lib.rs"
 harness = true
 
 [dependencies]
-async-std = "1.12"
+async-std = "1"
 chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { path = "./../fuel-indexer" }
 fuel-indexer-database = { path = "./../fuel-indexer-database" }

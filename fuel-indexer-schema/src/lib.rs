@@ -3,8 +3,7 @@ use alloc::vec::Vec;
 pub use fuel_indexer_database_types as sql_types;
 
 use crate::sql_types::ColumnType;
-use core::convert::{TryFrom, TryInto};
-use fuel_tx::Receipt;
+use core::convert::TryInto;
 use graphql_parser::schema::{Definition, Document, TypeDefinition};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -22,32 +21,128 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 #[cfg(feature = "db-models")]
 pub mod db;
 
-pub use fuel_types::{Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word};
-pub use fuels_core::types::Bits256;
+pub mod types {
 
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
-pub struct Jsonb(pub String);
+    use crate::type_id;
+    use fuel_tx::Receipt;
+    pub use fuel_types::{
+        Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word,
+    };
+    pub use fuels_core::types::Bits256;
+    use serde::{Deserialize, Serialize};
 
-pub type ID = u64;
-pub type Int4 = i32;
-pub type Int8 = i64;
-pub type UInt4 = u32;
-pub type UInt8 = u64;
-pub type Timestamp = u64;
+    pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct BlockData {
-    pub height: u64,
-    pub id: Bytes32,
-    pub time: i64,
-    pub producer: Address,
-    pub transactions: Vec<Vec<Receipt>>,
-}
-
-impl BlockData {
-    pub fn ident() -> String {
-        "BlockData".to_string()
+    pub trait NativeFuelTypeIdent {
+        fn path_ident_str() -> &'static str;
+        fn type_id() -> usize;
     }
+
+    // NOTE: We could also create ABI JSON files with these native Fuel indexer-macro types <( '.' )>
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct B256 {}
+
+    impl NativeFuelTypeIdent for B256 {
+        fn path_ident_str() -> &'static str {
+            "BlockData"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct BlockData {
+        pub height: u64,
+        pub id: Bytes32,
+        pub time: i64,
+        pub producer: Address,
+        pub transactions: Vec<Vec<Receipt>>,
+    }
+
+    impl NativeFuelTypeIdent for BlockData {
+        fn path_ident_str() -> &'static str {
+            "BlockData"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
+    impl BlockData {
+        pub fn macro_attribute_ident_str() -> &'static str {
+            "block"
+        }
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct Transfer {
+        pub contract_id: ContractId,
+        pub to: ContractId,
+        pub amount: u64,
+        pub asset_id: AssetId,
+        pub pc: u64,
+        pub is: u64,
+    }
+
+    impl NativeFuelTypeIdent for Transfer {
+        fn path_ident_str() -> &'static str {
+            "Transfer"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct Log {
+        pub contract_id: ContractId,
+        pub ra: u64,
+        pub rb: u64,
+    }
+
+    impl NativeFuelTypeIdent for Log {
+        fn path_ident_str() -> &'static str {
+            "Log"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
+    // NOTE: Keeping for now, but I don't believe we need this.
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct LogData {
+        pub contract_id: ContractId,
+        pub data: Vec<u8>,
+        pub rb: u64,
+        pub len: u64,
+        pub ptr: u64,
+    }
+
+    impl NativeFuelTypeIdent for LogData {
+        fn path_ident_str() -> &'static str {
+            "LogData"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
+    #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
+    pub struct Jsonb(pub String);
+
+    pub type ID = u64;
+    pub type Int4 = i32;
+    pub type Int8 = i64;
+    pub type UInt4 = u32;
+    pub type UInt8 = u64;
+    pub type Timestamp = u64;
 }
 
 // serde_scale for now, can look at other options if necessary.
@@ -117,19 +212,19 @@ pub fn get_schema_types(ast: &Document<String>) -> (HashSet<String>, HashSet<Str
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
     ID(u64),
-    Address(Address),
-    AssetId(AssetId),
-    Bytes4(Bytes4),
-    Bytes8(Bytes8),
-    Bytes32(Bytes32),
-    ContractId(ContractId),
+    Address(types::Address),
+    AssetId(types::AssetId),
+    Bytes4(types::Bytes4),
+    Bytes8(types::Bytes8),
+    Bytes32(types::Bytes32),
+    ContractId(types::ContractId),
     Int4(i32),
     Int8(i64),
     UInt4(u32),
     UInt8(u64),
     Timestamp(u64),
-    Salt(Salt),
-    Jsonb(Jsonb),
+    Salt(types::Salt),
+    Jsonb(types::Jsonb),
 }
 
 impl FtColumn {
@@ -142,37 +237,38 @@ impl FtColumn {
                 FtColumn::ID(ident)
             }
             ColumnType::Address => {
-                let address =
-                    Address::try_from(&bytes[..size]).expect("Invalid slice length");
+                let address = types::Address::try_from(&bytes[..size])
+                    .expect("Invalid slice length");
                 FtColumn::Address(address)
             }
             ColumnType::AssetId => {
-                let asset_id =
-                    AssetId::try_from(&bytes[..size]).expect("Invalid slice length");
+                let asset_id = types::AssetId::try_from(&bytes[..size])
+                    .expect("Invalid slice length");
                 FtColumn::AssetId(asset_id)
             }
             ColumnType::Bytes4 => {
-                let bytes =
-                    Bytes4::try_from(&bytes[..size]).expect("Invalid slice length");
+                let bytes = types::Bytes4::try_from(&bytes[..size])
+                    .expect("Invalid slice length");
                 FtColumn::Bytes4(bytes)
             }
             ColumnType::Bytes8 => {
-                let bytes =
-                    Bytes8::try_from(&bytes[..size]).expect("Invalid slice length");
+                let bytes = types::Bytes8::try_from(&bytes[..size])
+                    .expect("Invalid slice length");
                 FtColumn::Bytes8(bytes)
             }
             ColumnType::Bytes32 => {
-                let bytes =
-                    Bytes32::try_from(&bytes[..size]).expect("Invalid slice length");
+                let bytes = types::Bytes32::try_from(&bytes[..size])
+                    .expect("Invalid slice length");
                 FtColumn::Bytes32(bytes)
             }
             ColumnType::ContractId => {
-                let contract_id =
-                    ContractId::try_from(&bytes[..size]).expect("Invalid slice length");
+                let contract_id = types::ContractId::try_from(&bytes[..size])
+                    .expect("Invalid slice length");
                 FtColumn::ContractId(contract_id)
             }
             ColumnType::Salt => {
-                let salt = Salt::try_from(&bytes[..size]).expect("Invalid slice length");
+                let salt =
+                    types::Salt::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Salt(salt)
             }
             ColumnType::Int4 => {
@@ -206,12 +302,12 @@ impl FtColumn {
                 FtColumn::Timestamp(uint8)
             }
             ColumnType::Blob => {
-                panic!("Blob not supported for FtColumn!");
+                panic!("Blob not supported for FtColumn.");
             }
             ColumnType::ForeignKey => {
-                panic!("ForeignKey not supported for FtColumn!");
+                panic!("ForeignKey not supported for FtColumn.");
             }
-            ColumnType::Jsonb => FtColumn::Jsonb(Jsonb(
+            ColumnType::Jsonb => FtColumn::Jsonb(types::Jsonb(
                 String::from_utf8_lossy(&bytes[..size]).to_string(),
             )),
         }
@@ -268,7 +364,7 @@ impl FtColumn {
 mod tests {
     #[test]
     fn test_fragments() {
-        use super::*;
+        use super::{types::*, *};
 
         let id = FtColumn::ID(123456);
         let addr = FtColumn::Address(Address::try_from([0x12; 32]).expect("Bad bytes"));

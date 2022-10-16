@@ -88,7 +88,7 @@ where
                     delay *= 2;
                 } else {
                     panic!(
-                        "Retry attempts exceeded; could not connect to database backend!"
+                        "Retry attempts exceeded; could not connect to database backend."
                     )
                 }
             }

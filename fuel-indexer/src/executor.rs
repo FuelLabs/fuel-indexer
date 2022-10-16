@@ -4,7 +4,7 @@ use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_indexer_lib::manifest::Manifest;
-use fuel_indexer_schema::{deserialize, serialize, BlockData};
+use fuel_indexer_schema::{deserialize, serialize, types::BlockData};
 use std::path::Path;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
@@ -129,7 +129,7 @@ impl Executor for NativeIndexExecutor {
             }
 
             let object: IndexerRequest = deserialize(&buf[..size])
-                .expect("Could not deserialize message from indexer!");
+                .expect("Could not deserialize message from indexer.");
 
             match object {
                 IndexerRequest::GetObject(type_id, object_id) => {
