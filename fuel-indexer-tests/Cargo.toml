@@ -27,7 +27,6 @@ async-std = "1.12"
 chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { path = "./../fuel-indexer" }
 fuel-indexer-database = { path = "./../fuel-indexer-database" }
-fuel-indexer-lib = { path = "./../fuel-indexer-lib" }
 fuel-indexer-schema = { path = "./../fuel-indexer-schema" }
 fuel-tx = "0.18"
 fuel-types = "0.5"
