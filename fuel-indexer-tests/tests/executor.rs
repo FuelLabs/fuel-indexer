@@ -1,5 +1,5 @@
+use fuel_indexer::manifest::Manifest;
 use fuel_indexer::{executor::WasmIndexExecutor, Executor, IndexerError};
-use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_schema::db::tables::SchemaManager;
 use fuel_indexer_schema::types::BlockData;
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
