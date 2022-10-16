@@ -2,20 +2,22 @@ schema {
     query: QueryRoot
 }
 
+# NOTE: Suffixing these object names with 'Entity' to avoid name collisions
+# with native Fuel types
+
 type QueryRoot {
-    message: MessageEntity
-    pong: PingEntity
-    block: BlockEntity
-    transaction: TransactionEntity
-    transfer: TransferEntity
-    log: LogEntity
-    logdata: LogDataEntity
+    messageentity: MessageEntity
+    pingentity: PingEntity
+    blockentity: BlockEntity
+    transactionentity: TransactionEntity
+    transferentity: TransferEntity
+    logentity: LogEntity
+    logdataentity: LogDataEntity
 }
 
 type PingEntity {
     id: ID!
     value: UInt8!
-    # message: Bytes32!
 }
 
 type PongEntity {
@@ -50,7 +52,7 @@ type TransactionEntity {
 type TransferEntity {
     id: ID!
     contract_id: ContractId!
-    # 'to' is a reserved SQL word
+    # 'to' is a reserved SQL word, so using 'recipient'
     recipient: ContractId!
     amount: UInt8!
     asset_id: AssetId!
@@ -64,7 +66,7 @@ type LogEntity {
     rb: UInt8!
 }
 
-# TODO: LogData is a bit different in that we don't save the actual LogData but the 
+# NOTE: LogData is a bit different in that we don't save the actual LogData but the 
 # struct inside of the LogData payload
 type LogDataEntity {
     id: ID!

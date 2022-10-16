@@ -1,5 +1,8 @@
 #![cfg_attr(not(feature = "e2e"), allow(dead_code, unused_imports))]
-use fuel_indexer_tests::fixtures::{http_client, postgres_connection};
+use fuel_indexer_tests::{
+    defaults,
+    fixtures::{http_client, postgres_connection},
+};
 use more_asserts as ma;
 use sqlx::Row;
 use tokio::time::{sleep, Duration};
@@ -17,8 +20,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
         .await
         .unwrap();
 
-    // Events are not triggered immediately
-    sleep(Duration::from_secs(4)).await;
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test.blockentity ORDER BY id DESC LIMIT 1",
@@ -64,8 +66,7 @@ async fn test_can_trigger_and_index_ping_event() {
         .await
         .unwrap();
 
-    // Events are not triggered immediately
-    sleep(Duration::from_secs(4)).await;
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.pingentity where id = 1")
         .fetch_one(&mut conn)
@@ -79,25 +80,24 @@ async fn test_can_trigger_and_index_ping_event() {
     assert_eq!(value, 123);
 }
 
-// #[tokio::test]
-// #[cfg(feature = "e2e")]
-// async fn test_can_trigger_and_index_transfer_event() {
-//     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
-//     let mut conn = pool.acquire().await.unwrap();
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_can_trigger_and_index_transfer_event() {
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let _conn = pool.acquire().await.unwrap();
 
-//     let client = http_client();
-//     let _ = client
-//         .post("http://127.0.0.1:8000/transfer")
-//         .send()
-//         .await
-//         .unwrap();
+    let client = http_client();
+    let _ = client
+        .post("http://127.0.0.1:8000/transfer")
+        .send()
+        .await
+        .unwrap();
 
-//     // Events are not triggered immediately
-//     sleep(Duration::from_secs(4)).await;
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-//     // TODO: finish
-//     assert_eq!(1, 1);
-// }
+    // FIXME: Still need to trigger an actual receipt
+    assert_eq!(1, 1);
+}
 
 #[tokio::test]
 #[cfg(feature = "e2e")]
@@ -112,8 +112,7 @@ async fn test_can_trigger_and_index_log_event() {
         .await
         .unwrap();
 
-    // Events are not triggered immediately
-    sleep(Duration::from_secs(4)).await;
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.logentity where id = 1")
         .fetch_one(&mut conn)
@@ -141,8 +140,7 @@ async fn test_can_trigger_and_index_log_event() {
 //         .await
 //         .unwrap();
 
-//     // Events are not triggered immediately
-//     sleep(Duration::from_secs(4)).await;
+//     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
 //     // TODO: finish
 //     assert_eq!(1, 1);

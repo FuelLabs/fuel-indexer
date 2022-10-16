@@ -110,7 +110,7 @@ jobs:
         name: Cargo Build WASM Example
         with:
           command: build
-          args: -p simple-wasm --locked --all-features --all-targets
+          args: -p fuel-indexer-test --release --target wasm32-unknown-unknown
         env:
           RUSTFLAGS: '-D warnings'
 

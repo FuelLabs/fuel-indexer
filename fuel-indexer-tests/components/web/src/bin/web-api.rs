@@ -59,13 +59,12 @@ async fn fuel_indexer_test_transfer(state: web::Data<Arc<AppState>>) -> impl Res
     to_wallet.set_provider(provider);
 
     let asset_id = Default::default();
-    let receipts = state
+    let _ = state
         .wallet
         .transfer(to_wallet.address(), 1, asset_id, tx_params())
         .await
         .unwrap();
 
-    println!(">> RECEIPTS: {:?}", receipts);
     HttpResponse::Ok()
 }
 
