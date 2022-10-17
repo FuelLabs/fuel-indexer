@@ -36,6 +36,8 @@ lazy_static! {
         Log::path_ident_str(),
         LogData::path_ident_str()
     ]);
+    static ref RUST_PRIMITIVES: HashSet<&'static str> =
+        HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
 }
 
 fn get_json_abi(abi: String) -> ProgramABI {
@@ -107,18 +109,13 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
 }
 
 fn is_fuel_primitive(ty: &proc_macro2::TokenStream) -> bool {
-    // TODO: complete as needed
     let ident_str = ty.to_string();
     FUEL_PRIMITIVES.contains(ident_str.as_str())
 }
 
 fn is_rust_primitive(ty: &proc_macro2::TokenStream) -> bool {
     let ident_str = ty.to_string();
-    // TODO: complete the list
-    matches!(
-        ident_str.as_str(),
-        "u8" | "u16" | "u32" | "u64" | "bool" | "String"
-    )
+    RUST_PRIMITIVES.contains(ident_str.as_str())
 }
 
 fn is_primitive(ty: &proc_macro2::TokenStream) -> bool {
@@ -214,10 +211,9 @@ fn process_fn_items(
     let contents = input.content.unwrap().1;
     let mut handler_fns = Vec::with_capacity(contents.len());
 
-    let mut transfer_dispatchers = Vec::new();
-    let mut log_dispatchers = Vec::new();
-    let mut logdata_dispatchers = Vec::new();
-    let mut block_dispatchers = Vec::new();
+    let mut transfer_decoder = quote! {};
+    let mut log_decoder = quote! {};
+    let mut blockdata_decoder = quote! {};
 
     let mut blockdata_decoding = quote! {};
 
@@ -280,24 +276,18 @@ fn process_fn_items(
                                         match path_ident_str.as_str() {
                                             "BlockData" => {
                                                 blockdata_decoding = quote! { decoder.decode_blockdata(block.clone()); };
-                                                block_dispatchers.push(
-                                                    quote! { self.#name.push(data); },
-                                                );
+                                                blockdata_decoder =
+                                                    quote! { self.#name.push(data); };
                                             }
                                             "Transfer" => {
-                                                transfer_dispatchers.push(
-                                                    quote! { self.#name.push(data); },
-                                                );
+                                                transfer_decoder =
+                                                    quote! { self.#name.push(data); };
                                             }
                                             "Log" => {
-                                                log_dispatchers.push(
-                                                    quote! { self.#name.push(data); },
-                                                );
+                                                log_decoder =
+                                                    quote! { self.#name.push(data); };
                                             }
                                             "LogData" => {
-                                                logdata_dispatchers.push(
-                                                    quote! { self.#name.push(data); },
-                                                );
                                                 abi_decoders.push(decode_snippet(
                                                     *ty_id, &ty, &name,
                                                 ));
@@ -354,7 +344,7 @@ fn process_fn_items(
             fn selector_to_type_id(&self, sel: u64) -> usize {
                 match sel {
                     #(#abi_selectors)*
-                    //TODO: should handle this a little more gently
+                    // TODO: should handle this a little more gently
                     _ => panic!("Unknown type id."),
                 }
             }
@@ -373,21 +363,21 @@ fn process_fn_items(
             }
 
             pub fn decode_blockdata(&mut self, data: BlockData) {
-                #(#block_dispatchers)*
+                #blockdata_decoder
             }
 
             pub fn decode_transfer(&mut self, data: Transfer) {
-                #(#transfer_dispatchers)*
+                #transfer_decoder
             }
 
             pub fn decode_log(&mut self, data: Log) {
-                #(#log_dispatchers)*
+                #log_decoder
             }
 
             pub fn decode_logdata(&mut self, rb: u64, data: Vec<u8>) {
-                let log_types: HashMap<u64, usize> = HashMap::new();
-                let type_id = log_types.get(&rb).expect(&format!("LogData rb({}) does not exist logged types.", rb));
-                self.decode_type(*type_id, data)
+                // TODO: Use `rb` in `loggedTypes` map in order to find type_id for decoded `data`
+                let ty_id = 1;
+                self.decode_type(ty_id, data)
             }
 
             pub fn dispatch(&self) {
@@ -422,10 +412,10 @@ fn process_fn_items(
                                 let data = Log{ contract_id: id, ra, rb };
                                 decoder.decode_log(data);
                             }
-                            // Receipt::LogData { rb, data, ptr, len, id, .. } => {
-                            //     decoder.decode_logdata(rb, data);
+                            Receipt::LogData { rb, data, ptr, len, id, .. } => {
+                                decoder.decode_logdata(rb, data);
 
-                            // }
+                            }
                             _ => {
                                 Logger::info("This type is not handled yet. (>'.')>");
                             }
