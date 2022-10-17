@@ -17,7 +17,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0"
-async-std = "1.10.0"
+async-std = "1"
 axum = "0.4"
 fuel-indexer = { path = "../fuel-indexer" }
 fuel-indexer-lib = { path = "../fuel-indexer-lib" }

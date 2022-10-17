@@ -124,7 +124,7 @@ impl SchemaBuilder {
 
         let latest = queries::graph_root_latest(conn, &namespace).await?;
 
-        let field_defs = query_fields.get(&query).expect("No query root!");
+        let field_defs = query_fields.get(&query).expect("No query root.");
 
         let cols: Vec<_> = field_defs
             .iter()

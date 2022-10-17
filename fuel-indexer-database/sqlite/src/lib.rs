@@ -39,7 +39,7 @@ pub async fn run_migration(database_url: &str) {
     sqlx::migrate!()
         .run(&mut conn)
         .await
-        .expect("Failed sqlite migration!");
+        .expect("Failed sqlite migration.");
 }
 
 pub async fn run_query(

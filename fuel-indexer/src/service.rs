@@ -11,7 +11,7 @@ use fuel_gql_client::client::{
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
 use fuel_indexer_lib::utils::AssetReloadRequest;
-use fuel_indexer_schema::{Address, BlockData, Bytes32};
+use fuel_indexer_schema::types::{Address, BlockData, Bytes32};
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -185,7 +185,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                 if retry_count < RETRY_LIMIT {
                     continue;
                 } else {
-                    error!("Indexer failed after retries, giving up!");
+                    error!("Indexer failed after retries, giving up.");
                     break;
                 }
             }

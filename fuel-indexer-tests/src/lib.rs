@@ -16,6 +16,7 @@ pub mod defaults {
         "68518c3ba3768c863e0d945aa18249f9516d3aa1338083ba79467aa393de109c";
     pub const SLEEP: Duration = Duration::from_secs(60 * 60 * 10);
     pub const WALLET_PASSWORD: &str = "password";
+    pub const INDEXED_EVENT_WAIT: u64 = 5;
 }
 
 pub mod fixtures {
@@ -27,7 +28,7 @@ pub mod fixtures {
     pub async fn postgres_connection(db_url: &str) -> Pool<Postgres> {
         match IndexerConnectionPool::connect(db_url).await.unwrap() {
             IndexerConnectionPool::Postgres(p) => p,
-            _ => panic!("Should be postgres!"),
+            _ => panic!("Should be postgres."),
         }
     }
 

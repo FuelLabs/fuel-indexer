@@ -30,9 +30,69 @@ pub struct Args {
     pub bin_path: Option<PathBuf>,
 }
 
-async fn ping(contract: web::Data<Arc<FuelIndexerTest>>) -> impl Responder {
-    let _ = contract.ping().tx_params(tx_params()).call().await.unwrap();
+async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
+    let _ = state
+        .contract
+        .trigger_ping()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
     HttpResponse::Ok()
+}
+
+async fn fuel_indexer_test_ping(state: web::Data<Arc<AppState>>) -> impl Responder {
+    let _ = state
+        .contract
+        .trigger_ping()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
+    HttpResponse::Ok()
+}
+
+// FIXME: Make sure this works
+async fn fuel_indexer_test_transfer(state: web::Data<Arc<AppState>>) -> impl Responder {
+    let mut to_wallet = WalletUnlocked::new_random(None);
+    let provider = state.wallet.get_provider().unwrap().clone();
+    to_wallet.set_provider(provider);
+
+    let asset_id = Default::default();
+    let _ = state
+        .wallet
+        .transfer(to_wallet.address(), 1, asset_id, tx_params())
+        .await
+        .unwrap();
+
+    HttpResponse::Ok()
+}
+
+async fn fuel_indexer_test_log(state: web::Data<Arc<AppState>>) -> impl Responder {
+    let _ = state
+        .contract
+        .trigger_log()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
+    HttpResponse::Ok()
+}
+
+async fn fuel_indexer_test_logdata(state: web::Data<Arc<AppState>>) -> impl Responder {
+    let _ = state
+        .contract
+        .trigger_logdata()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
+    HttpResponse::Ok()
+}
+
+pub struct AppState {
+    pub contract: FuelIndexerTest,
+    pub wallet: WalletUnlocked,
 }
 
 #[tokio::main]
@@ -107,15 +167,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Using contract at {}", contract_id);
 
-    let contract = FuelIndexerTestBuilder::new(contract_id.to_string(), wallet).build();
-    let contract = web::Data::new(Arc::new(contract));
+    let contract =
+        FuelIndexerTestBuilder::new(contract_id.to_string(), wallet.clone()).build();
 
     info!("Starting server at {}", defaults::WEB_API_ADDR);
 
+    let state = web::Data::new(Arc::new(AppState { contract, wallet }));
+
     let _ = HttpServer::new(move || {
         App::new()
-            .app_data(contract.clone())
-            .route("/ping", web::post().to(ping))
+            .app_data(state.clone())
+            .route("/block", web::post().to(fuel_indexer_test_blocks))
+            .route("/ping", web::post().to(fuel_indexer_test_ping))
+            .route("/transfer", web::post().to(fuel_indexer_test_transfer))
+            .route("/log", web::post().to(fuel_indexer_test_log))
+            .route("/logdata", web::post().to(fuel_indexer_test_logdata))
     })
     .bind(defaults::WEB_API_ADDR)
     .unwrap()

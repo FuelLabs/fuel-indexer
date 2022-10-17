@@ -2,18 +2,73 @@ schema {
     query: QueryRoot
 }
 
+# NOTE: Suffixing these object names with 'Entity' to avoid name collisions
+# with native Fuel types
+
 type QueryRoot {
-    message: Message
+    messageentity: MessageEntity
+    pingentity: PingEntity
+    blockentity: BlockEntity
+    transactionentity: TransactionEntity
+    transferentity: TransferEntity
+    logentity: LogEntity
+    logdataentity: LogDataEntity
 }
 
-type Message {
+type PingEntity {
     id: ID!
-    ping: UInt8!
-    pong: UInt8!
-    message: Bytes32!
+    value: UInt8!
 }
 
 type PongEntity {
     id: ID!
     value: UInt8!
+}
+
+
+type PungEntity {
+    id: ID!
+    value: UInt8!
+    is_pung: Int4!
+}
+
+type BlockEntity {
+    id: ID!
+    height: UInt8!
+    producer: Address!
+    hash: Bytes32!
+    timestamp: Int8!
+}
+
+
+type TransactionEntity {
+    id: ID!
+    hash: Bytes32!
+    block: BlockEntity!
+    input_data: Jsonb!
+    timestamp: Int8!
+}
+
+type TransferEntity {
+    id: ID!
+    contract_id: ContractId!
+    # 'to' is a reserved SQL word, so using 'recipient'
+    recipient: ContractId!
+    amount: UInt8!
+    asset_id: AssetId!
+}
+
+
+type LogEntity {
+    id: ID!
+    contract_id: ContractId!
+    ra: UInt8!
+    rb: UInt8!
+}
+
+# NOTE: LogData is a bit different in that we don't save the actual LogData but the 
+# struct inside of the LogData payload
+type LogDataEntity {
+    id: ID!
+    contract_id: ContractId! 
 }
