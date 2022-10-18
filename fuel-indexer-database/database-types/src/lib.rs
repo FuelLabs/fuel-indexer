@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use strum::{AsRefStr, EnumString};
 
 #[derive(Debug)]
 pub struct RootColumns {
@@ -229,53 +230,14 @@ pub struct IndexAssetBundle {
     pub wasm: IndexAsset,
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Clone, EnumString, AsRefStr)]
 pub enum IndexAssetType {
+    #[strum(serialize = "wasm")]
     Wasm,
+    #[strum(serialize = "manifest")]
     Manifest,
+    #[strum(serialize = "schema")]
     Schema,
-}
-
-impl IndexAssetType {
-    pub fn as_str(&self) -> &str {
-        match self {
-            IndexAssetType::Wasm => "wasm",
-            IndexAssetType::Manifest => "manifest",
-            IndexAssetType::Schema => "schema",
-        }
-    }
-}
-
-impl ToString for IndexAssetType {
-    fn to_string(&self) -> String {
-        match self {
-            IndexAssetType::Wasm => "wasm".to_string(),
-            IndexAssetType::Manifest => "manifest".to_string(),
-            IndexAssetType::Schema => "schema".to_string(),
-        }
-    }
-}
-
-impl From<&str> for IndexAssetType {
-    fn from(a: &str) -> Self {
-        match a {
-            "wasm" => Self::Wasm,
-            "manifest" => Self::Manifest,
-            "schema" => Self::Schema,
-            _ => panic!("Unrecognized IndexAssetType."),
-        }
-    }
-}
-
-impl From<String> for IndexAssetType {
-    fn from(a: String) -> Self {
-        match a.as_str() {
-            "wasm" => Self::Wasm,
-            "manifest" => Self::Manifest,
-            "schema" => Self::Schema,
-            _ => panic!("Unrecognized IndexAssetType."),
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

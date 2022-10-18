@@ -22,7 +22,7 @@ module:
 
 ## `abi`
 
-- Lorem ipsum
+- The `abi` option is used to provide a link to the Sway JSON application binary interface (JSON ABI) that is generated when you build your Sway project. This generated ABI contains all types, type IDs, and logged types used in your Sway contract.
 
 ## `graphql_schema`
 

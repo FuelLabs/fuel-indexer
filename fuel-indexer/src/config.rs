@@ -8,34 +8,24 @@ use fuel_indexer_lib::{
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use strum::{AsRefStr, EnumString};
 
-#[derive(Debug)]
+#[derive(Debug, EnumString, AsRefStr)]
 pub enum EnvVar {
+    #[strum(serialize = "POSTGRES_HOST")]
     PostgresHost,
+    #[strum(serialize = "POSTGRES_PASSWORD")]
     PostgresPassword,
+    #[strum(serialize = "POSTGRES_DATABASE")]
     PostgresDatabase,
+    #[strum(serialize = "POSTGRES_PORT")]
     PostgresPort,
+    #[strum(serialize = "POSTGRES_USER")]
     PostgresUser,
 }
 
-impl std::string::ToString for EnvVar {
-    fn to_string(&self) -> String {
-        match self {
-            EnvVar::PostgresHost => "POSTGRES_HOST".to_string(),
-            EnvVar::PostgresPassword => "POSTGRES_PASSWORD".to_string(),
-            EnvVar::PostgresDatabase => "POSTGRES_DATABASE".to_string(),
-            EnvVar::PostgresUser => "POSTGRES_USER".to_string(),
-            EnvVar::PostgresPort => "POSTGRES_PORT".to_string(),
-        }
-    }
-}
-
 pub fn env_or_default(var: EnvVar, default: String) -> String {
-    let var_str = var.to_string();
-    match std::env::var(&var_str) {
-        Ok(v) => v,
-        Err(_e) => default,
-    }
+    std::env::var(var.as_ref()).unwrap_or(default)
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -356,6 +346,7 @@ impl From<GraphQLConfig> for SocketAddr {
     }
 }
 
+// TODO: Revisit this (replace/update config settings based on individual values, not on sections)
 impl MutableConfig for GraphQLConfig {
     fn inject_opt_env_vars(&mut self) -> Result<()> {
         if is_opt_env_var(&self.host) {

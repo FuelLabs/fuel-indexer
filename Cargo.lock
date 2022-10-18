@@ -2607,6 +2607,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sqlx",
+ "strum 0.24.1",
  "thiserror",
  "tokio",
  "tracing",
@@ -2655,6 +2656,7 @@ name = "fuel-indexer-database-types"
 version = "0.0.0"
 dependencies = [
  "serde",
+ "strum 0.24.1",
 ]
 
 [[package]]
@@ -2728,6 +2730,7 @@ dependencies = [
  "serde",
  "sha2 0.9.9",
  "sqlx",
+ "strum 0.24.1",
  "thiserror",
 ]
 

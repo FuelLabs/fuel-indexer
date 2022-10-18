@@ -25,6 +25,7 @@ use hyper::Client;
 use hyper_tls::HttpsConnector;
 use serde::Deserialize;
 use serde_json::{json, Value};
+use std::str::FromStr;
 use std::time::Instant;
 use thiserror::Error;
 use tokio::sync::mpsc::Sender;
@@ -224,15 +225,17 @@ pub async fn register_index_assets(
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
+            let asset_type =
+                IndexAssetType::from_str(&name).expect("Invalid asset type.");
 
-            let asset: IndexAsset = match name.clone().into() {
+            let asset: IndexAsset = match asset_type {
                 IndexAssetType::Wasm | IndexAssetType::Manifest => {
                     match queries::register_index_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
                         data.to_vec(),
-                        name.into(),
+                        asset_type,
                     )
                     .await
                     {
