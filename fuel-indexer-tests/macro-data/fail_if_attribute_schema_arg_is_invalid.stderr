@@ -1,15 +1,12 @@
-error: custom attribute panicked
+error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `namespace[Name]`\nExpected `schema`, `extend`, `scalar`, `type`, `interface`, `union`, `enum`, `input` or `directive`\n")
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
   |
   | / #[indexer(
-  | |     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
-  | |     namespace = "test_namespace",
-  | |     identifier = "foo",
-  | |     schema = "./../fuel-indexer-tests/assets/bad_simple_wasm.graphql"
+  | |     manifest = "fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml"
   | | )]
   | |__^
   |
-  = help: message: Schema definition not found.
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs

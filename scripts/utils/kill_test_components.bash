@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# Usage: bash scripts/utils/kill_test_components.bash
 
 for port in 4000 8000 29987; do
     proc=$(lsof -ti:$port)

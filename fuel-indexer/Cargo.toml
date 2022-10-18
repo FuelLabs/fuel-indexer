@@ -48,7 +48,6 @@ fuel-gql-client = { version = "0.10", features = ["test-helpers"] }
 fuel-types = "0.5"
 itertools = { version = "0.10" }
 rand = "0.8"
-serde_yaml = "0.8"
 
 [features]
 default = []

@@ -2,10 +2,7 @@ error: No module body, must specify at least one handler function.
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_indexer_module_is_empty.rs
   |
   | / #[indexer(
-  | |     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
-  | |     namespace = "test_namespace",
-  | |     identifier = "index1",
-  | |     schema = "./../examples/simple-wasm/schema/schema.graphql"
+  | |     manifest = "fuel-indexer-tests/assets/macros/simple_wasm.yaml"
   | | )]
   | |__^
   |

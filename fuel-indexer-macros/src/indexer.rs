@@ -2,6 +2,7 @@ use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
+use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
 use fuel_indexer_schema::{
     type_id,
     types::{
@@ -15,10 +16,10 @@ use fuels_core::{
     utils::first_four_bytes_of_sha256_hash,
 };
 use fuels_types::{ProgramABI, TypeDeclaration};
-use std::collections::{HashMap, HashSet};
-
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
 use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
 
 lazy_static! {
@@ -45,7 +46,7 @@ fn get_json_abi(abi: String) -> ProgramABI {
         Ok(src) => src,
         Err(e) => {
             proc_macro_error::abort_call_site!(
-                "`abi` must be a file path to valid json abi! {:?}",
+                "`abi` must be a file path to valid json abi: {:?}",
                 e
             )
         }
@@ -146,6 +147,7 @@ fn decode_snippet(
 }
 
 fn process_fn_items(
+    manifest: Manifest,
     abi: String,
     input: ItemMod,
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
@@ -217,6 +219,28 @@ fn process_fn_items(
 
     let mut blockdata_decoding = quote! {};
 
+    let start_block_conditional = match manifest.start_block {
+        Some(start_block) => {
+            quote! {
+                if block.height < #start_block {
+                    continue;
+                }
+            }
+        }
+        None => quote! {},
+    };
+
+    let contract_conditional = match manifest.contract_id {
+        Some(contract_id) => {
+            quote! {
+                if id != ContractId::from(#contract_id) {
+                    continue;
+                }
+            }
+        }
+        None => quote! {},
+    };
+
     for item in contents {
         match item {
             Item::Fn(fn_item) => {
@@ -249,7 +273,7 @@ fn process_fn_items(
                                     .contains(path_ident_str.as_str())
                                 {
                                     proc_macro_error::abort_call_site!(
-                                        "Type with ident '{:?}' is not currently supported",
+                                        "Type with ident '{:?}' is not currently supported.",
                                         path.ident
                                     )
                                 }
@@ -308,7 +332,7 @@ fn process_fn_items(
                                 arg_list.push(quote! { self.#name[0].clone() });
                             } else {
                                 proc_macro_error::abort_call_site!(
-                                    "Arguments must be types defined in the abi.json."
+                                    "Arguments must be types defined in the ABI."
                                 )
                             }
                         }
@@ -327,7 +351,7 @@ fn process_fn_items(
             }
             i => {
                 proc_macro_error::abort_call_site!(
-                    "Unsupported item in indexer module {:?}",
+                    "Unsupported item in indexer module '{:?}'.",
                     i
                 )
             }
@@ -352,7 +376,7 @@ fn process_fn_items(
             fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
                     #(#abi_decoders),*
-                    _ => panic!("Unkown type id {}", ty_id),
+                    _ => panic!("Unkown type id '{}'.", ty_id),
                 }
             }
 
@@ -388,6 +412,9 @@ fn process_fn_items(
     (
         quote! {
             for block in blocks {
+
+                #start_block_conditional
+
                 let mut decoder = Decoders::default();
 
                 #blockdata_decoding
@@ -397,22 +424,27 @@ fn process_fn_items(
 
                     for receipt in tx {
                         match receipt {
-                            Receipt::Call { param1, ..} => {
+                            Receipt::Call { param1, id, ..} => {
+                                #contract_conditional
                                 return_types.push(param1);
                             }
-                            Receipt::ReturnData { data, .. } => {
+                            Receipt::ReturnData { data, id, .. } => {
+                                #contract_conditional
                                 let selector = return_types.pop().expect("No return type available. <('-'<)");
                                 decoder.decode_return_type(selector, data);
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
+                                #contract_conditional
                                 let data = Transfer{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transfer(data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
+                                #contract_conditional
                                 let data = Log{ contract_id: id, ra, rb };
                                 decoder.decode_log(data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
+                                #contract_conditional
                                 decoder.decode_logdata(rb, data);
 
                             }
@@ -438,13 +470,20 @@ fn process_fn_items(
 pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let config = parse_macro_input!(attrs as IndexerConfig);
 
-    let IndexerConfig {
+    let IndexerConfig { manifest } = config;
+
+    let path = local_repository_root()
+        .map(|x| Path::new(&x).join(&manifest))
+        .unwrap_or_else(|| PathBuf::from(&manifest));
+
+    let manifest = Manifest::from_file(&path).unwrap();
+
+    let Manifest {
         abi,
         namespace,
-        schema,
-        native,
+        graphql_schema,
         ..
-    } = config;
+    } = manifest.clone();
 
     let indexer = parse_macro_input!(item as ItemMod);
 
@@ -452,11 +491,11 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         Ok(prefix) => {
             let prefixed = std::path::Path::new(&prefix).join(&abi);
             let abi_string = prefixed.into_os_string().to_str().unwrap().to_string();
-            let prefixed = std::path::Path::new(&prefix).join(&schema);
+            let prefixed = std::path::Path::new(&prefix).join(&graphql_schema);
             let schema_string = prefixed.into_os_string().to_str().unwrap().to_string();
             (abi_string, schema_string)
         }
-        Err(_) => (abi, schema),
+        Err(_) => (abi, graphql_schema),
     };
 
     let abi_tokens = match Abigen::new(&namespace, &abi_string) {
@@ -470,15 +509,16 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             }
         },
         Err(e) => {
-            proc_macro_error::abort_call_site!("Could not generate abi object! {:?}", e)
+            proc_macro_error::abort_call_site!("Could not generate abi object: {:?}", e)
         }
     };
 
     let graphql_tokens = process_graphql_schema(namespace, schema_string);
 
-    let (handler_block, fn_items) = process_fn_items(abi_string, indexer);
+    let (handler_block, fn_items) =
+        process_fn_items(manifest.clone(), abi_string, indexer);
 
-    let handler_block = if native {
+    let handler_block = if manifest.is_native() {
         handler_block_native(handler_block)
     } else {
         handler_block_wasm(handler_block)

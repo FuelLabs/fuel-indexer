@@ -1,11 +1,8 @@
-error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(354..361) }' not defined in the ABI.
+error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(219..226) }' not defined in the ABI.
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   | / #[indexer(
-  | |     abi = "./../examples/simple-wasm/contracts/out/debug/contracts-abi.json",
-  | |     namespace = "test_namespace",
-  | |     identifier = "index2",
-  | |     schema = "./../examples/simple-wasm/schema/schema.graphql"
+  | |     manifest = "fuel-indexer-tests/assets/macros/simple_wasm.yaml"
   | | )]
   | |__^
   |

@@ -1,13 +1,13 @@
-error: abi specification is required in indexer definition. <(-_-<)
+error: custom attribute panicked
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_args_not_included.rs
   |
   | #[indexer()]
   | ^^^^^^^^^^^^
   |
-  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = help: message: `manifest` specification is required in indexer definition.
 
 error[E0601]: `main` function not found in crate `$CRATE`
-  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_args_not_included.rs
-   |
-   | }
-   |  ^ consider adding a `main` function to `$WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_args_not_included.rs`
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_args_not_included.rs
+  |
+  | }
+  |  ^ consider adding a `main` function to `$WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_args_not_included.rs`

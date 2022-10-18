@@ -1,3 +1,4 @@
+use fuel_indexer_lib::utils::local_repository_root;
 use fuel_indexer_schema::{get_schema_types, schema_version, type_id, BASE_SCHEMA};
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{
@@ -7,6 +8,7 @@ use quote::{format_ident, quote};
 use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
+use std::path::{Path, PathBuf};
 
 fn process_type<'a>(
     types: &HashSet<String>,
@@ -245,19 +247,19 @@ fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
 
 pub(crate) fn process_graphql_schema(
     namespace: String,
-    schema_name: String,
+    schema_path: String,
 ) -> proc_macro2::TokenStream {
-    let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("Manifest dir unknown");
+    let path = match local_repository_root() {
+        Some(p) => Path::new(&p).join(schema_path),
+        None => PathBuf::from(&schema_path),
+    };
 
-    let mut current = std::path::PathBuf::from(manifest);
-    current.push(schema_name);
-
-    let mut file = match File::open(&current) {
+    let mut file = match File::open(&path) {
         Ok(f) => f,
         Err(e) => {
             proc_macro_error::abort_call_site!(
                 "Could not open schema file {:?} {:?}",
-                current,
+                path,
                 e
             )
         }

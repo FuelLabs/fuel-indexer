@@ -2663,6 +2663,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "serde",
+ "serde_yaml",
  "sha2 0.9.9",
  "tokio",
  "tracing",
@@ -2672,6 +2673,7 @@ dependencies = [
 name = "fuel-indexer-macros"
 version = "0.0.0"
 dependencies = [
+ "fuel-indexer-lib",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",

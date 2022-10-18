@@ -17,7 +17,7 @@ pub fn tx_params() -> TxParameters {
 
 abigen!(
     Simple,
-    "examples/simple-wasm/contracts/out/debug/contracts-abi.json"
+    "examples/simple-wasm/contracts/simple-wasm/out/debug/contracts-abi.json"
 );
 
 async fn get_contract_id(wallet: &WalletUnlocked) -> String {

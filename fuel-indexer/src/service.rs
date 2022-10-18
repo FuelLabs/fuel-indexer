@@ -1,7 +1,6 @@
 use crate::{
     config::{FuelNodeConfig, IndexerConfig},
-    manifest::Module,
-    Executor, IndexerResult, Manifest, NativeIndexExecutor, SchemaManager,
+    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, SchemaManager,
     WasmIndexExecutor,
 };
 use async_std::{fs::File, io::ReadExt, sync::Arc};
@@ -258,7 +257,7 @@ impl IndexerService {
 
                 let schema = manifest
                     .graphql_schema()
-                    .expect("Manifest should include GraphQL schema.");
+                    .expect("Failed to read GraphQL schema file in manifest.");
 
                 let schema_bytes = schema.as_bytes().to_vec();
 
