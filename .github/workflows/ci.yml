@@ -205,6 +205,8 @@ jobs:
         env:
           RUSTFLAGS: '-D warnings'
 
+      - name: Install wasm-snip
+        run: cargo install wasm-snip
       - name: Build updated WASM test module
         run: bash scripts/utils/build_test_wasm_module.bash
       - name: Start test web components
