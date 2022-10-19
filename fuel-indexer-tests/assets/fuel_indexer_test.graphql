@@ -11,6 +11,7 @@ type QueryRoot {
     blockentity: BlockEntity
     transactionentity: TransactionEntity
     transferentity: TransferEntity
+    transferoutentity: TransferOutEntity
     logentity: LogEntity
     logdataentity: LogDataEntity
     scriptresultentity: ScriptResultEntity
@@ -59,6 +60,13 @@ type TransferEntity {
     asset_id: AssetId!
 }
 
+type TransferOutEntity {
+    id: ID!
+    contract_id: ContractId!
+    recipient: Address!
+    amount: UInt8!
+    asset_id: AssetId!
+}
 
 type LogEntity {
     id: ID!

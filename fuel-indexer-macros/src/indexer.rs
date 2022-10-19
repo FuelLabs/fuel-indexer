@@ -7,7 +7,7 @@ use fuel_indexer_schema::{
     type_id,
     types::{
         BlockData, Log, LogData, NativeFuelTypeIdent, ScriptResult, Transfer,
-        B256, FUEL_TYPES_NAMESPACE,
+        TransferOut, B256, FUEL_TYPES_NAMESPACE,
     },
 };
 use fuels_core::{
@@ -30,6 +30,7 @@ lazy_static! {
         Log::path_ident_str(),
         LogData::path_ident_str(),
         ScriptResult::path_ident_str(),
+        TransferOut::path_ident_str(),
     ]);
     static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["Vec"]);
     static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["()"]);
@@ -38,6 +39,7 @@ lazy_static! {
         Log::path_ident_str(),
         LogData::path_ident_str(),
         ScriptResult::path_ident_str(),
+        TransferOut::path_ident_str(),
     ]);
     static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
@@ -218,6 +220,7 @@ fn process_fn_items(
     let mut transfer_decoder = quote! {};
     let mut log_decoder = quote! {};
     let mut blockdata_decoder = quote! {};
+    let mut transferout_decoder = quote! {};
     let mut scriptresult_decoder = quote! {};
 
     let mut blockdata_decoding = quote! {};
@@ -308,6 +311,10 @@ fn process_fn_items(
                                             }
                                             "Transfer" => {
                                                 transfer_decoder =
+                                                    quote! { self.#name.push(data); };
+                                            }
+                                            "TransferOut" => {
+                                                transferout_decoder =
                                                     quote! { self.#name.push(data); };
                                             }
                                             "Log" => {
@@ -401,6 +408,10 @@ fn process_fn_items(
                 #transfer_decoder
             }
 
+            pub fn decode_transferout(&mut self, data: TransferOut) {
+                #transferout_decoder
+            }
+
             pub fn decode_log(&mut self, data: Log) {
                 #log_decoder
             }
@@ -448,6 +459,10 @@ fn process_fn_items(
                                 #contract_conditional
                                 let data = Transfer{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transfer(data);
+                            }
+                            Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
+                                let data = TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
+                                decoder.decode_transferout(data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
                                 #contract_conditional

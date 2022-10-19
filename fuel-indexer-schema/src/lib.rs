@@ -150,6 +150,26 @@ pub mod types {
         }
     }
 
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct TransferOut {
+        pub contract_id: ContractId,
+        pub to: Address,
+        pub amount: u64,
+        pub asset_id: AssetId,
+        pub pc: u64,
+        pub is: u64,
+    }
+
+    impl NativeFuelTypeIdent for TransferOut {
+        fn path_ident_str() -> &'static str {
+            "TransferOut"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
     #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
     pub struct Jsonb(pub String);
 

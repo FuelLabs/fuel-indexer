@@ -112,6 +112,15 @@
         "type": 0,
         "typeArguments": null
       }
+    },
+    {
+      "inputs": [],
+      "name": "trigger_transferout",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      }
     }
   ],
   "loggedTypes": []
