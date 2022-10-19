@@ -134,7 +134,7 @@ pub async fn query_graph(
 }
 
 pub async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
-    let url = format!("{}/health", config.fuel_node.http_url())
+    let url = format!("{}/health", config.fuel_node.derive_http_url())
         .parse()
         .expect("Failed to parse fuel /health url.");
 
@@ -311,10 +311,7 @@ impl GraphQlApi {
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();
         let start_time = Arc::new(Instant::now());
-        let listen_on = config
-            .graphql_api
-            .derive_socket_addr()
-            .expect("Failed to derive socket address");
+        let listen_on = config.graphql_api.derive_socket_addr();
 
         let pool = IndexerConnectionPool::connect(&config.database.to_string())
             .await

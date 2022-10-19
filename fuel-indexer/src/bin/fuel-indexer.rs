@@ -1,6 +1,5 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
-use fuel_core::service::{Config, FuelService};
 use fuel_indexer::{
     config::{IndexerArgs, Parser},
     GraphQlApi, IndexerConfig, IndexerService, Manifest,
@@ -28,7 +27,7 @@ pub async fn main() -> Result<()> {
 
     let opt = IndexerArgs::from_args();
 
-    let mut config = match &opt.config {
+    let config = match &opt.config {
         Some(path) => IndexerConfig::from_file(path).await?,
         None => IndexerConfig::from_opts(opt.clone()),
     };
@@ -36,16 +35,6 @@ pub async fn main() -> Result<()> {
     info!("Configuration: {:?}", config);
 
     queries::run_migration(&config.database.to_string()).await;
-
-    let _local_node = if opt.local {
-        let s = FuelService::new_node(Config::local_node())
-            .await
-            .expect("Failed to start node using local config");
-        config.fuel_node = s.bound_address.into();
-        Some(s)
-    } else {
-        None
-    };
 
     info!(
         "Subscribing to Fuel node at {}",
