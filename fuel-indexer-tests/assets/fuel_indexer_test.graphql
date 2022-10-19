@@ -96,4 +96,7 @@ type MessageOutEntity {
     sender: Address!
     recipient: Address!
     amount: UInt8!
+    nonce: Bytes32!
+    len: UInt8!
+    digest: Bytes32!
 }

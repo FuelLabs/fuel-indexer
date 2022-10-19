@@ -107,8 +107,8 @@ async fn fuel_indexer_test_transferout(
         .trigger_transferout()
         .tx_params(tx_params())
         .call()
-        .await
-        .unwrap();
+        .await;
+
     HttpResponse::Ok()
 }
 
