@@ -6,8 +6,8 @@ use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
 use fuel_indexer_schema::{
     type_id,
     types::{
-        BlockData, Log, LogData, NativeFuelTypeIdent, Transfer, B256,
-        FUEL_TYPES_NAMESPACE,
+        BlockData, Log, LogData, NativeFuelTypeIdent, ScriptResult, Transfer,
+        B256, FUEL_TYPES_NAMESPACE,
     },
 };
 use fuels_core::{
@@ -28,14 +28,16 @@ lazy_static! {
         BlockData::path_ident_str(),
         B256::path_ident_str(),
         Log::path_ident_str(),
-        LogData::path_ident_str()
+        LogData::path_ident_str(),
+        ScriptResult::path_ident_str(),
     ]);
     static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["Vec"]);
     static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["()"]);
     static ref FUEL_PRIMITIVE_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
         Transfer::path_ident_str(),
         Log::path_ident_str(),
-        LogData::path_ident_str()
+        LogData::path_ident_str(),
+        ScriptResult::path_ident_str(),
     ]);
     static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
@@ -216,6 +218,7 @@ fn process_fn_items(
     let mut transfer_decoder = quote! {};
     let mut log_decoder = quote! {};
     let mut blockdata_decoder = quote! {};
+    let mut scriptresult_decoder = quote! {};
 
     let mut blockdata_decoding = quote! {};
 
@@ -316,6 +319,10 @@ fn process_fn_items(
                                                     *ty_id, &ty, &name,
                                                 ));
                                             }
+                                            "ScriptResult" => {
+                                                scriptresult_decoder =
+                                                    quote! { self.#name.push(data); };
+                                            }
                                             _ => todo!(),
                                         }
                                     } else {
@@ -404,6 +411,10 @@ fn process_fn_items(
                 self.decode_type(ty_id, data)
             }
 
+            pub fn decode_scriptresult(&mut self, data: ScriptResult) {
+                #scriptresult_decoder
+            }
+
             pub fn dispatch(&self) {
                 #(#abi_dispatchers)*
             }
@@ -447,6 +458,10 @@ fn process_fn_items(
                                 #contract_conditional
                                 decoder.decode_logdata(rb, data);
 
+                            }
+                            Receipt::ScriptResult { result, gas_used } => {
+                                let data = ScriptResult{ result: u64::from(result), gas_used };
+                                decoder.decode_scriptresult(data);
                             }
                             _ => {
                                 Logger::info("This type is not handled yet. (>'.')>");

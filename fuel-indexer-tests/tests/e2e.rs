@@ -145,3 +145,32 @@ async fn test_can_trigger_and_index_log_event() {
 //     // TODO: finish
 //     assert_eq!(1, 1);
 // }
+
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_can_trigger_and_index_scriptresult_event() {
+    use ma::assert_gt;
+
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let mut conn = pool.acquire().await.unwrap();
+
+    let client = http_client();
+    let _ = client
+        .post("http://127.0.0.1:8000/scriptresult")
+        .send()
+        .await
+        .unwrap();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.scriptresultentity where id = 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let _id: i64 = row.get(0);
+    let result: i64 = row.get(1);
+    let gas_used: i64 = row.get(2);
+    assert_eq!(result, 1);      // trigger_scriptresult in contract uses a revert operation
+    assert_gt!(gas_used, 0);
+}

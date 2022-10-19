@@ -4,6 +4,7 @@ use std::{
     logging::log,
     address::Address,
     constants::BASE_ASSET_ID,
+    revert::revert,
     token::transfer,
     identity::Identity,
 };
@@ -31,6 +32,7 @@ abi FuelIndexer {
     fn trigger_transfer();
     fn trigger_log();
     fn trigger_logdata();
+    fn trigger_scriptresult();
 }
 
 impl FuelIndexer for Contract {
@@ -67,5 +69,9 @@ impl FuelIndexer for Contract {
             is_pung: true,
         };
         log(p);
+    }
+
+    fn trigger_scriptresult() {
+        revert(0);
     }
 }

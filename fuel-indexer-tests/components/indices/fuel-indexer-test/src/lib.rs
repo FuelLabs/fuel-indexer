@@ -77,4 +77,16 @@ mod fuel_indexer_test {
 
     //     entity.save();
     // }
+
+    fn fuel_indexer_test_scriptresult(scriptresult: ScriptResult) {
+        Logger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
+
+        let entity = ScriptResultEntity {
+            id: 1,
+            result: scriptresult.result,
+            gas_used: scriptresult.gas_used,
+        };
+
+        entity.save();
+    }
 }

@@ -134,6 +134,22 @@ pub mod types {
         }
     }
 
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct ScriptResult {
+        pub result: u64,
+        pub gas_used: u64,
+    }
+
+    impl NativeFuelTypeIdent for ScriptResult {
+        fn path_ident_str() -> &'static str {
+            "ScriptResult"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
     #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
     pub struct Jsonb(pub String);
 
