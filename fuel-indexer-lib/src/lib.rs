@@ -4,6 +4,7 @@ pub mod utils {
     use anyhow::Result;
     use serde::{Deserialize, Serialize};
     use sha2::{Digest, Sha256};
+    use std::str::FromStr;
     use std::{
         fs::canonicalize,
         future::Future,
@@ -71,30 +72,25 @@ pub mod utils {
         key.starts_with('$') || (key.starts_with("${") && key.ends_with('}'))
     }
 
-    pub fn derive_socket_addr(host: &String, port: &String) -> Result<SocketAddr> {
+    pub fn derive_socket_addr(host: &String, port: &String) -> SocketAddr {
         let host = format!("{}:{}", host, port);
-        match &host.parse() {
-            Ok(sock) => Ok(*sock),
-            Err(e) => {
-                warn!(
-                    "Failed to parse '{}' as a SocketAddr due to '{}'. Retrying using ToSocketAddrs.",
-                    host, e
-                );
+        SocketAddr::from_str(&host).unwrap_or_else(|e| {
+            warn!(
+                "Failed to parse '{}' as a SocketAddr due to '{}'. Retrying using ToSocketAddrs.",
+                host, e
+            );
 
-                let mut addrs: Vec<_> = host
-                    .to_socket_addrs()
-                    .unwrap_or_else(|_| panic!("Unable to resolve domain for '{}'", host))
-                    .collect();
+            let mut addrs: Vec<_> = host
+                .to_socket_addrs()
+                .expect("Unable to resolve domain.")
+                .collect();
 
-                let addr = addrs.pop().unwrap_or_else(|| {
-                    panic!("Could not derive SocketAddr from '{}'", host)
-                });
+            let addr = addrs.pop().expect("Could not derive SocketAddr from '{}'");
 
-                info!("Parsed SocketAddr '{}' from '{}'", addr.to_string(), host);
+            info!("Parsed SocketAddr '{:?}' from '{}'", addr, host);
 
-                Ok(addr)
-            }
-        }
+            addr
+        })
     }
 
     /// Attempt to connect to a database, retrying a number of times if a connection

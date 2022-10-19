@@ -429,7 +429,7 @@ pub async fn index_asset_version(
 ) -> sqlx::Result<i64> {
     match sqlx::query(&format!(
         "SELECT COUNT(*) FROM index_asset_registry_{} WHERE index_id = {}",
-        asset_type.as_str(),
+        asset_type.as_ref(),
         index_id,
     ))
     .fetch_one(conn)
@@ -471,7 +471,7 @@ pub async fn register_index_asset(
 
     let query = format!(
         "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{}') RETURNING *",
-        asset_type.to_string(),
+        asset_type.as_ref(),
         index.id,
         current_version + 1,
         digest,
@@ -511,7 +511,7 @@ pub async fn latest_asset_for_index(
 ) -> sqlx::Result<IndexAsset> {
     let query = format!(
         "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1",
-        asset_type.to_string(),
+        asset_type.as_ref(),
         index_id,
     );
 
@@ -563,7 +563,7 @@ pub async fn asset_already_exists(
 
     let query = format!(
         "SELECT * FROM index_asset_registry_{} WHERE index_id = {} AND digest = '{}'",
-        asset_type.to_string(),
+        asset_type.as_ref(),
         index_id,
         digest
     );

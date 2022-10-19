@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 serde = { version = "1.0", default-features = false, features = ["derive"] }
+strum = { version = "0.24", default-features = false, features = ["derive"] }

@@ -1,6 +1,7 @@
 use fuel_indexer_database::DbType;
 use fuel_indexer_database_types::*;
 use std::fmt::Write;
+use strum::{AsRefStr, EnumString};
 
 pub struct IdCol {}
 
@@ -10,19 +11,12 @@ impl IdCol {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, EnumString, AsRefStr)]
 pub enum IndexMethod {
+    #[strum(serialize = "btree")]
     Btree,
+    #[strum(serialize = "hash")]
     Hash,
-}
-
-impl std::string::ToString for IndexMethod {
-    fn to_string(&self) -> String {
-        match self {
-            IndexMethod::Btree => "btree".to_string(),
-            IndexMethod::Hash => "hash".to_string(),
-        }
-    }
 }
 
 pub trait CreateStatement {
@@ -60,7 +54,7 @@ impl CreateStatement for ColumnIndex {
                     self.name(),
                     self.namespace,
                     self.table_name,
-                    self.method.to_string(),
+                    self.method.as_ref(),
                     self.column.column_name
                 );
             }
@@ -79,36 +73,22 @@ impl CreateStatement for ColumnIndex {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
 pub enum OnDelete {
     #[default]
+    #[strum(serialize = "NO ACTION")]
     NoAction,
+    #[strum(serialize = "CASCADE")]
     Cascade,
+    #[strum(serialize = "SET NULL")]
     SetNull,
 }
 
-impl std::string::ToString for OnDelete {
-    fn to_string(&self) -> String {
-        match self {
-            OnDelete::NoAction => "NO ACTION".to_string(),
-            OnDelete::Cascade => "CASCADE".to_string(),
-            OnDelete::SetNull => "SET NULL".to_string(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Default)]
+#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
 pub enum OnUpdate {
     #[default]
+    #[strum(serialize = "NO ACTION")]
     NoAction,
-}
-
-impl std::string::ToString for OnUpdate {
-    fn to_string(&self) -> String {
-        match self {
-            OnUpdate::NoAction => "NO ACTION".to_string(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Default)]
@@ -164,8 +144,8 @@ impl CreateStatement for ForeignKey {
                     self.namespace,
                     self.reference_table_name,
                     self.reference_column_name,
-                    self.on_delete.to_string(),
-                    self.on_update.to_string()
+                    self.on_delete.as_ref(),
+                    self.on_update.as_ref()
                 )
             }
             DbType::Sqlite => {

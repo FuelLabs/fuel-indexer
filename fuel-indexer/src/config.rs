@@ -8,34 +8,24 @@ use fuel_indexer_lib::{
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use strum::{AsRefStr, EnumString};
 
-#[derive(Debug)]
+#[derive(Debug, EnumString, AsRefStr)]
 pub enum EnvVar {
+    #[strum(serialize = "POSTGRES_HOST")]
     PostgresHost,
+    #[strum(serialize = "POSTGRES_PASSWORD")]
     PostgresPassword,
+    #[strum(serialize = "POSTGRES_DATABASE")]
     PostgresDatabase,
+    #[strum(serialize = "POSTGRES_PORT")]
     PostgresPort,
+    #[strum(serialize = "POSTGRES_USER")]
     PostgresUser,
 }
 
-impl std::string::ToString for EnvVar {
-    fn to_string(&self) -> String {
-        match self {
-            EnvVar::PostgresHost => "POSTGRES_HOST".to_string(),
-            EnvVar::PostgresPassword => "POSTGRES_PASSWORD".to_string(),
-            EnvVar::PostgresDatabase => "POSTGRES_DATABASE".to_string(),
-            EnvVar::PostgresUser => "POSTGRES_USER".to_string(),
-            EnvVar::PostgresPort => "POSTGRES_PORT".to_string(),
-        }
-    }
-}
-
 pub fn env_or_default(var: EnvVar, default: String) -> String {
-    let var_str = var.to_string();
-    match std::env::var(&var_str) {
-        Ok(v) => v,
-        Err(_e) => default,
-    }
+    std::env::var(var.as_ref()).unwrap_or(default)
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -44,8 +34,6 @@ pub fn env_or_default(var: EnvVar, default: String) -> String {
     about = "Standalone binary for the fuel indexer service"
 )]
 pub struct IndexerArgs {
-    #[clap(short, long, help = "Run local test node")]
-    pub local: bool,
     #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
     pub config: Option<PathBuf>,
     #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
@@ -105,7 +93,7 @@ pub struct ApiServerArgs {
     pub postgres_port: Option<String>,
 }
 
-fn http_url(host: &String, port: &String) -> String {
+fn derive_http_url(host: &String, port: &String) -> String {
     let protocol = match port.as_str() {
         "443" | "4443" => "https",
         _ => "http",
@@ -116,8 +104,8 @@ fn http_url(host: &String, port: &String) -> String {
 
 pub trait MutableConfig {
     fn inject_opt_env_vars(&mut self) -> Result<()>;
-    fn derive_socket_addr(&self) -> Result<SocketAddr>;
-    fn http_url(&self) -> String;
+    fn derive_socket_addr(&self) -> SocketAddr;
+    fn derive_http_url(&self) -> String;
 }
 
 #[derive(Clone, Deserialize, Debug)]
@@ -141,12 +129,12 @@ impl MutableConfig for FuelNodeConfig {
         Ok(())
     }
 
-    fn derive_socket_addr(&self) -> Result<SocketAddr> {
+    fn derive_socket_addr(&self) -> SocketAddr {
         derive_socket_addr(&self.host, &self.port)
     }
 
-    fn http_url(&self) -> String {
-        http_url(&self.host, &self.port)
+    fn derive_http_url(&self) -> String {
+        derive_http_url(&self.host, &self.port)
     }
 }
 
@@ -247,7 +235,7 @@ impl MutableConfig for DatabaseConfig {
         Ok(())
     }
 
-    fn derive_socket_addr(&self) -> Result<SocketAddr> {
+    fn derive_socket_addr(&self) -> SocketAddr {
         match self {
             DatabaseConfig::Postgres { host, port, .. } => derive_socket_addr(host, port),
             _ => {
@@ -258,7 +246,7 @@ impl MutableConfig for DatabaseConfig {
         }
     }
 
-    fn http_url(&self) -> String {
+    fn derive_http_url(&self) -> String {
         todo!()
     }
 }
@@ -356,6 +344,7 @@ impl From<GraphQLConfig> for SocketAddr {
     }
 }
 
+// TODO: Revisit this (replace/update config settings based on individual values, not on sections)
 impl MutableConfig for GraphQLConfig {
     fn inject_opt_env_vars(&mut self) -> Result<()> {
         if is_opt_env_var(&self.host) {
@@ -371,12 +360,12 @@ impl MutableConfig for GraphQLConfig {
         Ok(())
     }
 
-    fn derive_socket_addr(&self) -> Result<SocketAddr> {
+    fn derive_socket_addr(&self) -> SocketAddr {
         derive_socket_addr(&self.host, &self.port)
     }
 
-    fn http_url(&self) -> String {
-        http_url(&self.host, &self.port)
+    fn derive_http_url(&self) -> String {
+        derive_http_url(&self.host, &self.port)
     }
 }
 
