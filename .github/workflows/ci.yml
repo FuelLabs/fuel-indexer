@@ -192,6 +192,7 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+          target: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
       - run: bash scripts/run_migrations.bash
@@ -204,6 +205,10 @@ jobs:
         env:
           RUSTFLAGS: '-D warnings'
 
+      - name: Install wasm-snip
+        run: cargo install wasm-snip
+      - name: Build updated WASM test module
+        run: bash scripts/utils/build_test_wasm_module.bash
       - name: Start test web components
         run: bash scripts/utils/start_test_components.bash
 

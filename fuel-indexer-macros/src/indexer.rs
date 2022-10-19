@@ -6,8 +6,8 @@ use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
 use fuel_indexer_schema::{
     type_id,
     types::{
-        BlockData, Log, LogData, NativeFuelTypeIdent, Transfer, B256,
-        FUEL_TYPES_NAMESPACE,
+        BlockData, Log, LogData, MessageOut, NativeFuelTypeIdent, ScriptResult, Transfer,
+        TransferOut, B256, FUEL_TYPES_NAMESPACE,
     },
 };
 use fuels_core::{
@@ -28,14 +28,20 @@ lazy_static! {
         BlockData::path_ident_str(),
         B256::path_ident_str(),
         Log::path_ident_str(),
-        LogData::path_ident_str()
+        LogData::path_ident_str(),
+        ScriptResult::path_ident_str(),
+        TransferOut::path_ident_str(),
+        MessageOut::path_ident_str(),
     ]);
     static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["Vec"]);
     static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["()"]);
     static ref FUEL_PRIMITIVE_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
         Transfer::path_ident_str(),
         Log::path_ident_str(),
-        LogData::path_ident_str()
+        LogData::path_ident_str(),
+        ScriptResult::path_ident_str(),
+        TransferOut::path_ident_str(),
+        MessageOut::path_ident_str(),
     ]);
     static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
@@ -101,6 +107,7 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "Transfer" => quote! { Transfer },
             "TransferOut" => quote! { TransferOut },
             "ScriptResult" => quote! { ScriptResult },
+            "MessageOut" => quote! { MessageOut },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!("Unrecognized primitive type: {:?}", o)
@@ -216,6 +223,9 @@ fn process_fn_items(
     let mut transfer_decoder = quote! {};
     let mut log_decoder = quote! {};
     let mut blockdata_decoder = quote! {};
+    let mut transferout_decoder = quote! {};
+    let mut scriptresult_decoder = quote! {};
+    let mut messageout_decoder = quote! {};
 
     let mut blockdata_decoding = quote! {};
 
@@ -307,6 +317,10 @@ fn process_fn_items(
                                                 transfer_decoder =
                                                     quote! { self.#name.push(data); };
                                             }
+                                            "TransferOut" => {
+                                                transferout_decoder =
+                                                    quote! { self.#name.push(data); };
+                                            }
                                             "Log" => {
                                                 log_decoder =
                                                     quote! { self.#name.push(data); };
@@ -315,6 +329,14 @@ fn process_fn_items(
                                                 abi_decoders.push(decode_snippet(
                                                     *ty_id, &ty, &name,
                                                 ));
+                                            }
+                                            "ScriptResult" => {
+                                                scriptresult_decoder =
+                                                    quote! { self.#name.push(data); };
+                                            }
+                                            "MessageOut" => {
+                                                messageout_decoder =
+                                                    quote! { self.#name.push(data); };
                                             }
                                             _ => todo!(),
                                         }
@@ -394,6 +416,10 @@ fn process_fn_items(
                 #transfer_decoder
             }
 
+            pub fn decode_transferout(&mut self, data: TransferOut) {
+                #transferout_decoder
+            }
+
             pub fn decode_log(&mut self, data: Log) {
                 #log_decoder
             }
@@ -402,6 +428,14 @@ fn process_fn_items(
                 // TODO: Use `rb` in `loggedTypes` map in order to find type_id for decoded `data`
                 let ty_id = 1;
                 self.decode_type(ty_id, data)
+            }
+
+            pub fn decode_scriptresult(&mut self, data: ScriptResult) {
+                #scriptresult_decoder
+            }
+
+            pub fn decode_messageout(&mut self, data: MessageOut) {
+                #messageout_decoder
             }
 
             pub fn dispatch(&self) {
@@ -438,6 +472,11 @@ fn process_fn_items(
                                 let data = Transfer{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transfer(data);
                             }
+                            Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
+                                #contract_conditional
+                                let data = TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
+                                decoder.decode_transferout(data);
+                            }
                             Receipt::Log { id, ra, rb, .. } => {
                                 #contract_conditional
                                 let data = Log{ contract_id: id, ra, rb };
@@ -447,6 +486,16 @@ fn process_fn_items(
                                 #contract_conditional
                                 decoder.decode_logdata(rb, data);
 
+                            }
+                            Receipt::ScriptResult { result, gas_used } => {
+                                #contract_conditional
+                                let data = ScriptResult{ result: u64::from(result), gas_used };
+                                decoder.decode_scriptresult(data);
+                            }
+                            Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
+                                #contract_conditional
+                                let payload = MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
+                                decoder.decode_messageout(payload);
                             }
                             _ => {
                                 Logger::info("This type is not handled yet. (>'.')>");

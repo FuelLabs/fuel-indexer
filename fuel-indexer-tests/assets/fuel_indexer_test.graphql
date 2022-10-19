@@ -11,8 +11,11 @@ type QueryRoot {
     blockentity: BlockEntity
     transactionentity: TransactionEntity
     transferentity: TransferEntity
+    transferoutentity: TransferOutEntity
     logentity: LogEntity
     logdataentity: LogDataEntity
+    scriptresultentity: ScriptResultEntity
+    messageoutentity: MessageOutEntity
 }
 
 type PingEntity {
@@ -58,6 +61,13 @@ type TransferEntity {
     asset_id: AssetId!
 }
 
+type TransferOutEntity {
+    id: ID!
+    contract_id: ContractId!
+    recipient: Address!
+    amount: UInt8!
+    asset_id: AssetId!
+}
 
 type LogEntity {
     id: ID!
@@ -71,4 +81,22 @@ type LogEntity {
 type LogDataEntity {
     id: ID!
     contract_id: ContractId! 
+}
+
+type ScriptResultEntity {
+    id: ID!
+    result: UInt8!
+    gas_used: UInt8!
+}
+
+# TODO: We still need to decide what exactly we want to save as
+# MessageOut does include a data field similar to LogData
+type MessageOutEntity {
+    id: ID!
+    sender: Address!
+    recipient: Address!
+    amount: UInt8!
+    nonce: Bytes32!
+    len: UInt8!
+    digest: Bytes32!
 }

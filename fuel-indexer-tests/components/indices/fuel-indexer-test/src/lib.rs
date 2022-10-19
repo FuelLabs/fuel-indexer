@@ -53,6 +53,20 @@ mod fuel_indexer_test {
         entity.save();
     }
 
+    fn fuel_indexer_test_transferout(transferout: TransferOut) {
+        Logger::info("fuel_indexer_test_transferout handling TransferOut event.");
+
+        let entity = TransferOutEntity {
+            id: 1,
+            contract_id: transferout.contract_id,
+            recipient: transferout.to,
+            amount: 1,
+            asset_id: transferout.asset_id,
+        };
+
+        entity.save();
+    }
+
     fn fuel_indexer_test_log(log: Log) {
         Logger::info("fuel_indexer_test_log handling Log event.");
 
@@ -77,4 +91,16 @@ mod fuel_indexer_test {
 
     //     entity.save();
     // }
+
+    fn fuel_indexer_test_scriptresult(scriptresult: ScriptResult) {
+        Logger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
+
+        let entity = ScriptResultEntity {
+            id: 1,
+            result: scriptresult.result,
+            gas_used: scriptresult.gas_used,
+        };
+
+        entity.save();
+    }
 }

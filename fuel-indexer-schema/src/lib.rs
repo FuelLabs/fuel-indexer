@@ -26,7 +26,7 @@ pub mod types {
     use crate::type_id;
     use fuel_tx::Receipt;
     pub use fuel_types::{
-        Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Salt, Word,
+        Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
     };
     pub use fuels_core::types::Bits256;
     use serde::{Deserialize, Serialize};
@@ -127,6 +127,64 @@ pub mod types {
     impl NativeFuelTypeIdent for LogData {
         fn path_ident_str() -> &'static str {
             "LogData"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct ScriptResult {
+        pub result: u64,
+        pub gas_used: u64,
+    }
+
+    impl NativeFuelTypeIdent for ScriptResult {
+        fn path_ident_str() -> &'static str {
+            "ScriptResult"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct TransferOut {
+        pub contract_id: ContractId,
+        pub to: Address,
+        pub amount: u64,
+        pub asset_id: AssetId,
+        pub pc: u64,
+        pub is: u64,
+    }
+
+    impl NativeFuelTypeIdent for TransferOut {
+        fn path_ident_str() -> &'static str {
+            "TransferOut"
+        }
+
+        fn type_id() -> usize {
+            type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        }
+    }
+
+    #[derive(Deserialize, Serialize, Debug, Clone)]
+    pub struct MessageOut {
+        pub message_id: MessageId,
+        pub sender: Address,
+        pub recipient: Address,
+        pub amount: u64,
+        pub nonce: Bytes32,
+        pub len: u64,
+        pub digest: Bytes32,
+        pub data: Vec<u8>,
+    }
+
+    impl NativeFuelTypeIdent for MessageOut {
+        fn path_ident_str() -> &'static str {
+            "MessageOut"
         }
 
         fn type_id() -> usize {

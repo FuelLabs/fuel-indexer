@@ -145,3 +145,79 @@ async fn test_can_trigger_and_index_log_event() {
 //     // TODO: finish
 //     assert_eq!(1, 1);
 // }
+
+// TODO: Need to find a better way to test ScriptResult receipt indexing as
+// the expected values for this test will be overwritten by any test
+// with an event that involves a ScriptResult receipt, which may
+// make the assertions fail as tests are not called in a particular order;
+// one can verify that indexing works by running this test by itself
+
+// #[tokio::test]
+// #[cfg(feature = "e2e")]
+// async fn test_can_trigger_and_index_scriptresult_event() {
+//     use ma::assert_gt;
+
+//     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+//     let mut conn = pool.acquire().await.unwrap();
+
+//     let client = http_client();
+//     let _ = client
+//         .post("http://127.0.0.1:8000/scriptresult")
+//         .send()
+//         .await
+//         .unwrap();
+
+//     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+//     let row =
+//         sqlx::query("SELECT * FROM fuel_indexer_test.scriptresultentity where id = 1")
+//             .fetch_one(&mut conn)
+//             .await
+//             .unwrap();
+
+//     let _id: i64 = row.get(0);
+//     let result: i64 = row.get(1);
+//     let gas_used: i64 = row.get(2);
+//     assert_eq!(result, 0);
+//     assert_gt!(gas_used, 0);
+// }
+
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_can_trigger_and_index_transferout_event() {
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let _conn = pool.acquire().await.unwrap();
+
+    let client = http_client();
+    let _ = client
+        .post("http://127.0.0.1:8000/transferout")
+        .send()
+        .await
+        .unwrap();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    // FIXME: Still need to trigger an actual receipt
+    assert_eq!(1, 1);
+}
+
+// TODO: Revisit after https://github.com/FuelLabs/sway/issues/2899
+// merges as it adds support for send_message_with_output()
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_can_trigger_and_index_messageout_event() {
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let _conn = pool.acquire().await.unwrap();
+
+    let client = http_client();
+    let _ = client
+        .post("http://127.0.0.1:8000/messageout")
+        .send()
+        .await
+        .unwrap();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    // FIXME: Still need to trigger an actual receipt
+    assert_eq!(1, 1);
+}

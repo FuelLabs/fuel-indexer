@@ -4,6 +4,7 @@ use std::{
     logging::log,
     address::Address,
     constants::BASE_ASSET_ID,
+    revert::revert,
     token::transfer,
     identity::Identity,
 };
@@ -31,6 +32,9 @@ abi FuelIndexer {
     fn trigger_transfer();
     fn trigger_log();
     fn trigger_logdata();
+    fn trigger_scriptresult();
+    fn trigger_transferout();
+    fn trigger_messageout();
 }
 
 impl FuelIndexer for Contract {
@@ -67,5 +71,20 @@ impl FuelIndexer for Contract {
             is_pung: true,
         };
         log(p);
+    }
+
+    fn trigger_scriptresult() {
+        log(0);
+    }
+
+    // This should trigger both a TR and TRO instruction
+    fn trigger_transferout() {
+        const RECEIVER = ~Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
+        transfer(1, BASE_ASSET_ID, Identity::Address(RECEIVER));
+    }
+
+    fn trigger_messageout() {
+        // TODO: Revisit after https://github.com/FuelLabs/sway/issues/2899
+        // merges as it adds support for send_message_with_output()
     }
 }
