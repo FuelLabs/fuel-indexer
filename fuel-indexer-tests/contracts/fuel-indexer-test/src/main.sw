@@ -34,6 +34,7 @@ abi FuelIndexer {
     fn trigger_logdata();
     fn trigger_scriptresult();
     fn trigger_transferout();
+    fn trigger_messageout();
 }
 
 impl FuelIndexer for Contract {
@@ -80,5 +81,10 @@ impl FuelIndexer for Contract {
     fn trigger_transferout() {
         const RECEIVER = ~Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
         transfer(1, BASE_ASSET_ID, Identity::Address(RECEIVER));
+    }
+
+    fn trigger_messageout() {
+        // TODO: Revisit after https://github.com/FuelLabs/sway/issues/2899
+        // merges as it adds support for send_message_with_output()
     }
 }

@@ -15,6 +15,7 @@ type QueryRoot {
     logentity: LogEntity
     logdataentity: LogDataEntity
     scriptresultentity: ScriptResultEntity
+    messageoutentity: MessageOutEntity
 }
 
 type PingEntity {
@@ -86,4 +87,13 @@ type ScriptResultEntity {
     id: ID!
     result: UInt8!
     gas_used: UInt8!
+}
+
+# TODO: We still need to decide what exactly we want to save as
+# MessageOut does include a data field similar to LogData
+type MessageOutEntity {
+    id: ID!
+    sender: Address!
+    recipient: Address!
+    amount: UInt8!
 }

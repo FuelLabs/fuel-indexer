@@ -121,6 +121,15 @@
         "type": 0,
         "typeArguments": null
       }
+    },
+    {
+      "inputs": [],
+      "name": "trigger_messageout",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      }
     }
   ],
   "loggedTypes": []

@@ -194,3 +194,24 @@ async fn test_can_trigger_and_index_transferout_event() {
     // FIXME: Still need to trigger an actual receipt
     assert_eq!(1, 1);
 }
+
+// TODO: Revisit after https://github.com/FuelLabs/sway/issues/2899
+// merges as it adds support for send_message_with_output()
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_can_trigger_and_index_messageout_event() {
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let _conn = pool.acquire().await.unwrap();
+
+    let client = http_client();
+    let _ = client
+        .post("http://127.0.0.1:8000/messageout")
+        .send()
+        .await
+        .unwrap();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    // FIXME: Still need to trigger an actual receipt
+    assert_eq!(1, 1);
+}

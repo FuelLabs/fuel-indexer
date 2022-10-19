@@ -6,7 +6,7 @@ use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
 use fuel_indexer_schema::{
     type_id,
     types::{
-        BlockData, Log, LogData, NativeFuelTypeIdent, ScriptResult, Transfer,
+        BlockData, Log, LogData, MessageOut, NativeFuelTypeIdent, ScriptResult, Transfer,
         TransferOut, B256, FUEL_TYPES_NAMESPACE,
     },
 };
@@ -31,6 +31,7 @@ lazy_static! {
         LogData::path_ident_str(),
         ScriptResult::path_ident_str(),
         TransferOut::path_ident_str(),
+        MessageOut::path_ident_str(),
     ]);
     static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["Vec"]);
     static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["()"]);
@@ -40,6 +41,7 @@ lazy_static! {
         LogData::path_ident_str(),
         ScriptResult::path_ident_str(),
         TransferOut::path_ident_str(),
+        MessageOut::path_ident_str(),
     ]);
     static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
@@ -105,6 +107,7 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "Transfer" => quote! { Transfer },
             "TransferOut" => quote! { TransferOut },
             "ScriptResult" => quote! { ScriptResult },
+            "MessageOut" => quote! { MessageOut },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!("Unrecognized primitive type: {:?}", o)
@@ -222,6 +225,7 @@ fn process_fn_items(
     let mut blockdata_decoder = quote! {};
     let mut transferout_decoder = quote! {};
     let mut scriptresult_decoder = quote! {};
+    let mut messageout_decoder = quote! {};
 
     let mut blockdata_decoding = quote! {};
 
@@ -330,6 +334,10 @@ fn process_fn_items(
                                                 scriptresult_decoder =
                                                     quote! { self.#name.push(data); };
                                             }
+                                            "MessageOut" => {
+                                                messageout_decoder =
+                                                    quote! { self.#name.push(data); };
+                                            }
                                             _ => todo!(),
                                         }
                                     } else {
@@ -426,6 +434,10 @@ fn process_fn_items(
                 #scriptresult_decoder
             }
 
+            pub fn decode_messageout(&mut self, data: MessageOut) {
+                #messageout_decoder
+            }
+
             pub fn dispatch(&self) {
                 #(#abi_dispatchers)*
             }
@@ -479,6 +491,11 @@ fn process_fn_items(
                                 #contract_conditional
                                 let data = ScriptResult{ result: u64::from(result), gas_used };
                                 decoder.decode_scriptresult(data);
+                            }
+                            Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
+                                #contract_conditional
+                                let payload = MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
+                                decoder.decode_messageout(payload);
                             }
                             _ => {
                                 Logger::info("This type is not handled yet. (>'.')>");
