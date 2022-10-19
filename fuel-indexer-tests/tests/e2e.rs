@@ -172,7 +172,7 @@ async fn test_can_trigger_and_index_scriptresult_event() {
     let _id: i64 = row.get(0);
     let result: i64 = row.get(1);
     let gas_used: i64 = row.get(2);
-    assert_eq!(result, 1); // trigger_scriptresult in contract uses a revert operation
+    assert_eq!(result, 0); // trigger_scriptresult in contract uses a LOG operation
     assert_gt!(gas_used, 0);
 }
 

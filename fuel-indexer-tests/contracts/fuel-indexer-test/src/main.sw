@@ -73,7 +73,7 @@ impl FuelIndexer for Contract {
     }
 
     fn trigger_scriptresult() {
-        revert(0);
+        log(0);
     }
 
     // This should trigger both a TR and TRO instruction
