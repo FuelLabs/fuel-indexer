@@ -461,6 +461,7 @@ fn process_fn_items(
                                 decoder.decode_transfer(data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
+                                #contract_conditional
                                 let data = TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transferout(data);
                             }
@@ -475,6 +476,7 @@ fn process_fn_items(
 
                             }
                             Receipt::ScriptResult { result, gas_used } => {
+                                #contract_conditional
                                 let data = ScriptResult{ result: u64::from(result), gas_used };
                                 decoder.decode_scriptresult(data);
                             }
