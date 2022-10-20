@@ -33,6 +33,7 @@ pub struct Args {
 async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
     let _ = state
         .contract
+        .methods()
         .trigger_ping()
         .tx_params(tx_params())
         .call()
@@ -44,6 +45,7 @@ async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Respo
 async fn fuel_indexer_test_ping(state: web::Data<Arc<AppState>>) -> impl Responder {
     let _ = state
         .contract
+        .methods()
         .trigger_ping()
         .tx_params(tx_params())
         .call()
@@ -56,6 +58,7 @@ async fn fuel_indexer_test_ping(state: web::Data<Arc<AppState>>) -> impl Respond
 async fn fuel_indexer_test_transfer(state: web::Data<Arc<AppState>>) -> impl Responder {
     let _ = state
         .contract
+        .methods()
         .trigger_transfer()
         .tx_params(tx_params())
         .call()
@@ -67,6 +70,7 @@ async fn fuel_indexer_test_transfer(state: web::Data<Arc<AppState>>) -> impl Res
 async fn fuel_indexer_test_log(state: web::Data<Arc<AppState>>) -> impl Responder {
     let _ = state
         .contract
+        .methods()
         .trigger_log()
         .tx_params(tx_params())
         .call()
@@ -78,6 +82,7 @@ async fn fuel_indexer_test_log(state: web::Data<Arc<AppState>>) -> impl Responde
 async fn fuel_indexer_test_logdata(state: web::Data<Arc<AppState>>) -> impl Responder {
     let _ = state
         .contract
+        .methods()
         .trigger_logdata()
         .tx_params(tx_params())
         .call()
@@ -91,6 +96,7 @@ async fn fuel_indexer_test_scriptresult(
 ) -> impl Responder {
     let _ = state
         .contract
+        .methods()
         .trigger_scriptresult()
         .tx_params(tx_params())
         .call()
@@ -104,6 +110,7 @@ async fn fuel_indexer_test_transferout(
 ) -> impl Responder {
     let _ = state
         .contract
+        .methods()
         .trigger_transferout()
         .tx_params(tx_params())
         .call()
@@ -115,6 +122,7 @@ async fn fuel_indexer_test_transferout(
 async fn fuel_indexer_test_messageout(state: web::Data<Arc<AppState>>) -> impl Responder {
     let _ = state
         .contract
+        .methods()
         .trigger_messageout()
         .tx_params(tx_params())
         .call()
@@ -184,7 +192,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
 
     let bin_path_str = bin_path.as_os_str().to_str().unwrap();
-    let _compiled = Contract::load_sway_contract(bin_path_str, &None).unwrap();
+    let _compiled = Contract::load_contract(bin_path_str, &None).unwrap();
 
     let contract_id = Contract::deploy(
         bin_path_str,
@@ -199,8 +207,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Using contract at {}", contract_id);
 
-    let contract =
-        FuelIndexerTestBuilder::new(contract_id.to_string(), wallet.clone()).build();
+    let contract = FuelIndexerTest::new(contract_id.to_string(), wallet.clone());
 
     info!("Starting server at {}", defaults::WEB_API_ADDR);
 

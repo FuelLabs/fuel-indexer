@@ -15,7 +15,7 @@ use fuels_core::{
     source::Source,
     utils::first_four_bytes_of_sha256_hash,
 };
-use fuels_types::{ProgramABI, TypeDeclaration};
+use fuels_types::{param_types::ParamType, ProgramABI, TypeDeclaration};
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
@@ -206,9 +206,17 @@ fn process_fn_items(
     }
 
     for function in parsed.functions {
-        let sig = resolve_fn_selector(&function, &type_map);
+        let params: Vec<ParamType> = function
+            .inputs
+            .iter()
+            .map(|x| ParamType::try_from_type_application(x, &type_map).unwrap())
+            .collect();
+        let sig = resolve_fn_selector(&function.name, &params[..]);
 
-        let selector = first_four_bytes_of_sha256_hash(&sig);
+        // TOOD: Why does this need lossy?
+        let sig = String::from_utf8_lossy(&sig);
+
+        let selector = first_four_bytes_of_sha256_hash(sig.as_ref());
         let selector = u64::from_be_bytes(selector);
         let ty_id = function.output.type_id;
 
