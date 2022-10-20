@@ -177,6 +177,20 @@ fn process_fn_items(
         .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
+    let mut logged_types = Vec::new();
+    if let Some(parsed_logged_types) = parsed.logged_types {
+        for typ in parsed_logged_types {
+            let log_id = typ.log_id;
+            let ty_id = typ.application.type_id;
+
+            logged_types.push(quote! {
+                #log_id => {
+                    self.decode_type(#ty_id, data);
+                }
+            });
+        }
+    }
+
     for typ in parsed.types {
         if IGNORED_ABI_JSON_TYPES.contains(typ.type_field.as_str()) {
             continue;
@@ -406,7 +420,6 @@ fn process_fn_items(
 
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
                 let ty_id = self.selector_to_type_id(sel);
-
                 self.decode_type(ty_id, data);
             }
 
@@ -427,9 +440,10 @@ fn process_fn_items(
             }
 
             pub fn decode_logdata(&mut self, rb: u64, data: Vec<u8>) {
-                // TODO: Use `rb` in `loggedTypes` map in order to find type_id for decoded `data`
-                let ty_id = 1;
-                self.decode_type(ty_id, data)
+                match rb {
+                    #(#logged_types),*
+                    _ => panic!("Unknown logged type id '{}'.", rb),
+                }
             }
 
             pub fn decode_scriptresult(&mut self, data: ScriptResult) {

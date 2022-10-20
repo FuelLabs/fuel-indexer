@@ -80,17 +80,17 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    // fn fuel_indexer_test_logdata(logdata_entity: Pung) {
-    //     Logger::info("fuel_indexer_test_logdata handling Log event.");
+    fn fuel_indexer_test_logdata(logdata_entity: Pung) {
+        Logger::info("fuel_indexer_test_logdata handling LogData event.");
 
-    //     let entity = PungEntity {
-    //         id: 1,
-    //         value: logdata_entity.value,
-    //         is_pung: 1,
-    //     };
+        let entity = PungEntity {
+            id: 1,
+            value: logdata_entity.value,
+            is_pung: 1,
+        };
 
-    //     entity.save();
-    // }
+        entity.save();
+    }
 
     fn fuel_indexer_test_scriptresult(scriptresult: ScriptResult) {
         Logger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
