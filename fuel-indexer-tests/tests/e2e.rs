@@ -3,7 +3,6 @@ use fuel_indexer_tests::{
     defaults,
     fixtures::{http_client, postgres_connection},
 };
-use more_asserts as ma;
 use sqlx::Row;
 use tokio::time::{sleep, Duration};
 
@@ -40,7 +39,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
         producer,
         "0000000000000000000000000000000000000000000000000000000000000000".to_string()
     );
-    ma::assert_gt!(timestamp, 0);
+    assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
         "SELECT * FROM fuel_indexer_test.transactionentity where block = {}",
@@ -149,8 +148,6 @@ async fn test_can_trigger_and_index_log_event() {
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_scriptresult_event() {
-    use ma::assert_gt;
-
     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
@@ -175,11 +172,11 @@ async fn test_can_trigger_and_index_scriptresult_event() {
             .await
             .unwrap();
 
-    let _id: i64 = row.get(0);
     let result: i64 = row.get(1);
     let gas_used: i64 = row.get(2);
-    assert_eq!(result, 0);
-    assert_gt!(gas_used, 0);
+
+    assert!((0..=1).contains(&result));
+    assert!(gas_used > 0);
 }
 
 #[tokio::test]
