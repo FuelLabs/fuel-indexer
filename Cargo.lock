@@ -2736,7 +2736,6 @@ dependencies = [
  "fuels-core",
  "futures",
  "itertools",
- "more-asserts 0.3.1",
  "rand 0.8.5",
  "reqwest",
  "serde_json",
@@ -4011,12 +4010,6 @@ name = "more-asserts"
 version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7843ec2de400bcbc6a6328c958dc38e5359da6e93e72e37bc5246bf1ae776389"
-
-[[package]]
-name = "more-asserts"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1fafa6961cabd9c63bcd77a45d7e3b7f3b552b70417831fb0f56db717e72407e"
 
 [[package]]
 name = "multer"
@@ -6674,7 +6667,7 @@ dependencies = [
  "indexmap",
  "js-sys",
  "loupe",
- "more-asserts 0.2.2",
+ "more-asserts",
  "target-lexicon",
  "thiserror",
  "wasm-bindgen",
@@ -6733,7 +6726,7 @@ dependencies = [
  "cranelift-frontend",
  "gimli",
  "loupe",
- "more-asserts 0.2.2",
+ "more-asserts",
  "rayon",
  "smallvec",
  "target-lexicon",
@@ -6765,7 +6758,7 @@ dependencies = [
  "lazy_static",
  "loupe",
  "memmap2",
- "more-asserts 0.2.2",
+ "more-asserts",
  "rustc-demangle",
  "serde",
  "serde_bytes",
@@ -6861,7 +6854,7 @@ dependencies = [
  "enum-iterator",
  "indexmap",
  "loupe",
- "more-asserts 0.2.2",
+ "more-asserts",
  "rkyv",
  "serde",
  "thiserror",
@@ -6884,7 +6877,7 @@ dependencies = [
  "loupe",
  "mach",
  "memoffset",
- "more-asserts 0.2.2",
+ "more-asserts",
  "region",
  "rkyv",
  "scopeguard",

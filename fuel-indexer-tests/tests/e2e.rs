@@ -3,7 +3,6 @@ use fuel_indexer_tests::{
     defaults,
     fixtures::{http_client, postgres_connection},
 };
-use more_asserts as ma;
 use sqlx::Row;
 use tokio::time::{sleep, Duration};
 
@@ -40,7 +39,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
         producer,
         "0000000000000000000000000000000000000000000000000000000000000000".to_string()
     );
-    ma::assert_gt!(timestamp, 0);
+    assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
         "SELECT * FROM fuel_indexer_test.transactionentity where block = {}",
@@ -146,41 +145,39 @@ async fn test_can_trigger_and_index_log_event() {
 //     assert_eq!(1, 1);
 // }
 
-// TODO: Need to find a better way to test ScriptResult receipt indexing as
-// the expected values for this test will be overwritten by any test
-// with an event that involves a ScriptResult receipt, which may
-// make the assertions fail as tests are not called in a particular order;
-// one can verify that indexing works by running this test by itself
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_can_trigger_and_index_scriptresult_event() {
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let mut conn = pool.acquire().await.unwrap();
 
-// #[tokio::test]
-// #[cfg(feature = "e2e")]
-// async fn test_can_trigger_and_index_scriptresult_event() {
-//     use ma::assert_gt;
+    // Remove any lingering ScriptResult items
+    sqlx::query("DELETE FROM fuel_indexer_test.scriptresultentity WHERE id IS NOT NULL")
+        .execute(&mut conn)
+        .await
+        .unwrap();
 
-//     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
-//     let mut conn = pool.acquire().await.unwrap();
+    let client = http_client();
+    let _ = client
+        .post("http://127.0.0.1:8000/scriptresult")
+        .send()
+        .await
+        .unwrap();
 
-//     let client = http_client();
-//     let _ = client
-//         .post("http://127.0.0.1:8000/scriptresult")
-//         .send()
-//         .await
-//         .unwrap();
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-//     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test.scriptresultentity where id = 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
-//     let row =
-//         sqlx::query("SELECT * FROM fuel_indexer_test.scriptresultentity where id = 1")
-//             .fetch_one(&mut conn)
-//             .await
-//             .unwrap();
+    let result: i64 = row.get(1);
+    let gas_used: i64 = row.get(2);
 
-//     let _id: i64 = row.get(0);
-//     let result: i64 = row.get(1);
-//     let gas_used: i64 = row.get(2);
-//     assert_eq!(result, 0);
-//     assert_gt!(gas_used, 0);
-// }
+    assert!((0..=1).contains(&result));
+    assert!(gas_used > 0);
+}
 
 #[tokio::test]
 #[cfg(feature = "e2e")]
