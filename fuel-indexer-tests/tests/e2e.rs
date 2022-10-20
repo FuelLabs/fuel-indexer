@@ -83,7 +83,7 @@ async fn test_can_trigger_and_index_ping_event() {
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_transfer_event() {
     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
-    let _conn = pool.acquire().await.unwrap();
+    let mut conn = pool.acquire().await.unwrap();
 
     let client = http_client();
     let _ = client
@@ -94,8 +94,19 @@ async fn test_can_trigger_and_index_transfer_event() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    // FIXME: Still need to trigger an actual receipt
-    assert_eq!(1, 1);
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.transferentity where id = 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let _id: i64 = row.get(0);
+    let _contract_id: String = row.get(1);
+    let _recipient: String = row.get(2);
+    let amount: i64 = row.get(3);
+    let asset_id: &str = row.get(4);
+
+    assert_eq!(amount, 1); // value is defined in test contract
+    assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
 }
 
 #[tokio::test]
