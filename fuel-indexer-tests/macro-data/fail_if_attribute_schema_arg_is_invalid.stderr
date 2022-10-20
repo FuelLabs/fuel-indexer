@@ -71,6 +71,12 @@ error[E0425]: cannot find function `handle_events` in this scope
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope
 
+error[E0599]: no method named `len` found for struct `UnresolvedBytes` in the current scope
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |                 len: bytes.len() as u64,
+  |                            ^^^ method not found in `UnresolvedBytes`
+
 error: unused import: `Tokenizable`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
   |

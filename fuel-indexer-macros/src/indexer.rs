@@ -13,7 +13,6 @@ use fuel_indexer_schema::{
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
-    utils::first_four_bytes_of_sha256_hash,
 };
 use fuels_types::{param_types::ParamType, ProgramABI, TypeDeclaration};
 use proc_macro::TokenStream;
@@ -212,12 +211,7 @@ fn process_fn_items(
             .map(|x| ParamType::try_from_type_application(x, &type_map).unwrap())
             .collect();
         let sig = resolve_fn_selector(&function.name, &params[..]);
-
-        // TOOD: Why does this need lossy?
-        let sig = String::from_utf8_lossy(&sig);
-
-        let selector = first_four_bytes_of_sha256_hash(sig.as_ref());
-        let selector = u64::from_be_bytes(selector);
+        let selector = u64::from_be_bytes(sig);
         let ty_id = function.output.type_id;
 
         abi_selectors.push(quote! {
