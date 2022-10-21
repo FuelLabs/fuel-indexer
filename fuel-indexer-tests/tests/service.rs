@@ -35,7 +35,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     let bin_path = workdir.join("contracts/simple-wasm/out/debug/contracts.bin");
     let bin_path_str = bin_path.as_os_str().to_str().unwrap();
-    let _compiled = Contract::load_sway_contract(bin_path_str, &None).unwrap();
+    let _compiled = Contract::load_contract(bin_path_str, &None).unwrap();
 
     let number_of_coins = 11;
     let asset_id = AssetId::zeroed();
@@ -61,10 +61,10 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
     .await
     .unwrap();
 
-    let contract = SimpleBuilder::new(contract_id.to_string(), wallet).build();
+    let contract = Simple::new(contract_id.to_string(), wallet);
 
-    let _ = contract.gimme_someevent(78).call().await;
-    let _ = contract.gimme_anotherevent(899).call().await;
+    let _ = contract.methods().gimme_someevent(78).call().await;
+    let _ = contract.methods().gimme_anotherevent(899).call().await;
 
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::from(

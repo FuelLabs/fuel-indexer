@@ -7,7 +7,9 @@
 
 set -x
 
-bash ./scripts/kill_test_components.bash
+bash ./scripts/utils/kill_test_components.bash
+
+sleep 2
 
 ./target/release/fuel-node \
     --wallet-path ./fuel-indexer-tests/components/web/wallet.json \

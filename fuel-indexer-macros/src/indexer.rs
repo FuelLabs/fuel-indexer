@@ -13,9 +13,8 @@ use fuel_indexer_schema::{
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
-    utils::first_four_bytes_of_sha256_hash,
 };
-use fuels_types::{ProgramABI, TypeDeclaration};
+use fuels_types::{param_types::ParamType, ProgramABI, TypeDeclaration};
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
@@ -178,6 +177,20 @@ fn process_fn_items(
         .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
+    let mut logged_types = Vec::new();
+    if let Some(parsed_logged_types) = parsed.logged_types {
+        for typ in parsed_logged_types {
+            let log_id = typ.log_id;
+            let ty_id = typ.application.type_id;
+
+            logged_types.push(quote! {
+                #log_id => {
+                    self.decode_type(#ty_id, data);
+                }
+            });
+        }
+    }
+
     for typ in parsed.types {
         if IGNORED_ABI_JSON_TYPES.contains(typ.type_field.as_str()) {
             continue;
@@ -206,10 +219,13 @@ fn process_fn_items(
     }
 
     for function in parsed.functions {
-        let sig = resolve_fn_selector(&function, &type_map);
-
-        let selector = first_four_bytes_of_sha256_hash(&sig);
-        let selector = u64::from_be_bytes(selector);
+        let params: Vec<ParamType> = function
+            .inputs
+            .iter()
+            .map(|x| ParamType::try_from_type_application(x, &type_map).unwrap())
+            .collect();
+        let sig = resolve_fn_selector(&function.name, &params[..]);
+        let selector = u64::from_be_bytes(sig);
         let ty_id = function.output.type_id;
 
         abi_selectors.push(quote! {
@@ -404,7 +420,6 @@ fn process_fn_items(
 
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
                 let ty_id = self.selector_to_type_id(sel);
-
                 self.decode_type(ty_id, data);
             }
 
@@ -425,9 +440,10 @@ fn process_fn_items(
             }
 
             pub fn decode_logdata(&mut self, rb: u64, data: Vec<u8>) {
-                // TODO: Use `rb` in `loggedTypes` map in order to find type_id for decoded `data`
-                let ty_id = 1;
-                self.decode_type(ty_id, data)
+                match rb {
+                    #(#logged_types),*
+                    _ => panic!("Unknown logged type id '{}'.", rb),
+                }
             }
 
             pub fn decode_scriptresult(&mut self, data: ScriptResult) {

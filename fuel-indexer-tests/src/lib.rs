@@ -17,9 +17,6 @@ pub mod defaults {
     pub const SLEEP: Duration = Duration::from_secs(60 * 60 * 10);
     pub const WALLET_PASSWORD: &str = "password";
     pub const INDEXED_EVENT_WAIT: u64 = 5;
-
-    // Value comes from fuel-indexer-tests/contracts/fuel-indexer-test/src/main.sw
-    pub const PONG_EVENT_VALUE: i64 = 8675309;
 }
 
 pub mod fixtures {

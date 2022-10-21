@@ -118,32 +118,37 @@ async fn test_can_trigger_and_index_log_event() {
         .await
         .unwrap();
 
-    let _id: i64 = row.get(0);
-    let _contract_id: String = row.get(1);
     let ra: i64 = row.get(2);
-    let _rb: i64 = row.get(3);
 
-    assert_eq!(ra, defaults::PONG_EVENT_VALUE); // value is defined in test contract
+    assert_eq!(ra, 8675309);
 }
 
-// #[tokio::test]
-// #[cfg(feature = "e2e")]
-// async fn test_can_trigger_and_index_logdata_event() {
-//     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
-//     let mut conn = pool.acquire().await.unwrap();
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_can_trigger_and_index_logdata_event() {
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let mut conn = pool.acquire().await.unwrap();
 
-//     let client = http_client();
-//     let _ = client
-//         .post("http://127.0.0.1:8000/logdata")
-//         .send()
-//         .await
-//         .unwrap();
+    let client = http_client();
+    let _ = client
+        .post("http://127.0.0.1:8000/logdata")
+        .send()
+        .await
+        .unwrap();
 
-//     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-//     // TODO: finish
-//     assert_eq!(1, 1);
-// }
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.pungentity where id = 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let value: i64 = row.get(1);
+    let is_pung: i32 = row.get(2);
+
+    assert_eq!(value, 456);
+    assert_eq!(is_pung, 1);
+}
 
 #[tokio::test]
 #[cfg(feature = "e2e")]

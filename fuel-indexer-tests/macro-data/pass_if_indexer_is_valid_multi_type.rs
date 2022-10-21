@@ -38,8 +38,10 @@ fn main() {
         hash: Bits256([56u8; 32]),
     };
 
-    let bytes1 = ABIEncoder::encode(&[s1.into_token()]).expect("Failed compile test");
-    let bytes2 = ABIEncoder::encode(&[s2.into_token()]).expect("Failed compile test");
+    let encoded1 = ABIEncoder::encode(&[s1.into_token()]).expect("Failed compile test");
+    let bytes1 = encoded1.resolve(0);
+    let encoded2 = ABIEncoder::encode(&[s2.into_token()]).expect("Failed compile test");
+    let bytes2 = encoded2.resolve(0);
 
     let data: Vec<BlockData> = vec![BlockData {
         height: 0,

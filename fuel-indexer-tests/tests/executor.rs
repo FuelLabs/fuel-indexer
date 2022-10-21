@@ -171,9 +171,9 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
                     Receipt::ReturnData {
                         id: [0u8; 32].into(),
                         ptr: 2342143,
-                        len: some_event.len() as u64,
+                        len: some_event.resolve(0).len() as u64,
                         digest: [0u8; 32].into(),
-                        data: some_event,
+                        data: some_event.resolve(0),
                         pc: 0,
                         is: 0,
                     },
@@ -193,9 +193,9 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
                     Receipt::ReturnData {
                         id: [0u8; 32].into(),
                         ptr: 2342143,
-                        len: another_event.len() as u64,
+                        len: another_event.resolve(0).len() as u64,
                         digest: [0u8; 32].into(),
-                        data: another_event,
+                        data: another_event.resolve(0),
                         pc: 0,
                         is: 0,
                     },

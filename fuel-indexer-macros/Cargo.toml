@@ -7,7 +7,7 @@ publish = false
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [package.metadata.cargo-udeps.ignore]
-development = ["fuels", "fuel-indexer-plugin", "fuels-core"]
+development = ["fuels", "fuel-indexer-plugin"]
 
 [lib]
 proc-macro = true
@@ -16,8 +16,8 @@ proc-macro = true
 fuel-indexer-lib = { path = "../fuel-indexer-lib", default-features = false }
 fuel-indexer-schema = { path = "../fuel-indexer-schema", default-features = false }
 fuel-tx = "0.18"
-fuels-core = { version = "0.24" }
-fuels-types = { version = "0.24" }
+fuels-core = { version = "0.26" }
+fuels-types = { version = "0.26" }
 graphql-parser = "0.3"
 lazy_static = "1.4"
 proc-macro-error = "1.0"
@@ -30,7 +30,7 @@ syn = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
 fuel-indexer-plugin = { path = "../fuel-indexer-plugin" }
-fuels = { version = "0.24" }
+fuels = { version = "0.26" }
 trybuild = "1.0"
 
 [features]
