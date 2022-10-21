@@ -63,13 +63,15 @@ fn update_manifest_with_proper_paths(manifest: &mut Manifest) {
         .to_str()
         .unwrap()
         .to_string();
-    manifest.abi = manifest_dir
-        .join("..")
-        .join(&manifest.abi)
-        .into_os_string()
-        .to_str()
-        .unwrap()
-        .to_string();
+    manifest.abi = Some(
+        manifest_dir
+            .join("..")
+            .join(&manifest.abi.clone().unwrap())
+            .into_os_string()
+            .to_str()
+            .unwrap()
+            .to_string(),
+    );
     manifest.module = Module::Wasm(
         manifest_dir
             .join("..")

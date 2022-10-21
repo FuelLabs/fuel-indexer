@@ -1,0 +1,6 @@
+namespace: fuel_examples
+identifier: explorer_index
+# abi: No abi for this example
+graphql_schema: examples/block-explorer/schema/explorer.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/release/block_index.wasm

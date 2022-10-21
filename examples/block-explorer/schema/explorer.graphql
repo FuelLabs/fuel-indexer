@@ -1,0 +1,32 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    block: Block
+    transaction: Transaction
+    count: Count
+}
+
+# https://ethereum.org/en/developers/docs/data-and-analytics/block-explorers/
+
+type Block {
+    id: ID!
+    height: UInt8!
+    timestamp: Int8!
+    miner: Address!
+}
+
+type Transaction {
+    id: ID!
+    block: Block!
+    timestamp: Int8!
+}
+
+type Account {
+    address: Address!
+}
+
+type Contract {
+    creator: ContractId!
+}

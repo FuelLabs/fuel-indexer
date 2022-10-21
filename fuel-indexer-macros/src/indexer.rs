@@ -46,8 +46,12 @@ lazy_static! {
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
 }
 
-fn get_json_abi(abi: String) -> ProgramABI {
-    let src = match Source::parse(abi) {
+fn get_json_abi(abi: Option<String>) -> ProgramABI {
+    if abi.is_none() {
+        return ProgramABI::default();
+    }
+
+    let src = match Source::parse(abi.unwrap()) {
         Ok(src) => src,
         Err(e) => {
             proc_macro_error::abort_call_site!(
@@ -154,7 +158,7 @@ fn decode_snippet(
 
 fn process_fn_items(
     manifest: Manifest,
-    abi: String,
+    abi: Option<String>,
     input: ItemMod,
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
     if input.content.is_none() || input.content.as_ref().unwrap().1.is_empty() {
@@ -552,31 +556,41 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let indexer = parse_macro_input!(item as ItemMod);
 
-    let (abi_string, schema_string) = match std::env::var("COMPILE_TEST_PREFIX") {
-        Ok(prefix) => {
-            let prefixed = std::path::Path::new(&prefix).join(&abi);
-            let abi_string = prefixed.into_os_string().to_str().unwrap().to_string();
-            let prefixed = std::path::Path::new(&prefix).join(&graphql_schema);
-            let schema_string = prefixed.into_os_string().to_str().unwrap().to_string();
-            (abi_string, schema_string)
-        }
-        Err(_) => (abi, graphql_schema),
-    };
+    let mut abi_string = manifest.abi.clone();
+    let mut schema_string = manifest.graphql_schema.clone();
+    let mut abi_tokens = quote! {};
 
-    let abi_tokens = match Abigen::new(&namespace, &abi_string) {
-        Ok(abi) => match abi.no_std().expand() {
-            Ok(tokens) => tokens,
+    if let Some(abi) = abi {
+        (abi_string, schema_string) = match std::env::var("COMPILE_TEST_PREFIX") {
+            Ok(prefix) => {
+                let prefixed = std::path::Path::new(&prefix).join(&abi);
+                let abi_string = prefixed.into_os_string().to_str().unwrap().to_string();
+                let prefixed = std::path::Path::new(&prefix).join(&graphql_schema);
+                let schema_string =
+                    prefixed.into_os_string().to_str().unwrap().to_string();
+                (Some(abi_string), schema_string)
+            }
+            Err(_) => (Some(abi), graphql_schema),
+        };
+
+        abi_tokens = match Abigen::new(&namespace, &abi_string.clone().unwrap()) {
+            Ok(abi) => match abi.no_std().expand() {
+                Ok(tokens) => tokens,
+                Err(e) => {
+                    proc_macro_error::abort_call_site!(
+                        "Could not generate tokens for abi! {:?}",
+                        e
+                    )
+                }
+            },
             Err(e) => {
                 proc_macro_error::abort_call_site!(
-                    "Could not generate tokens for abi! {:?}",
+                    "Could not generate abi object: {:?}",
                     e
                 )
             }
-        },
-        Err(e) => {
-            proc_macro_error::abort_call_site!("Could not generate abi object: {:?}", e)
-        }
-    };
+        };
+    }
 
     let graphql_tokens = process_graphql_schema(namespace, schema_string);
 

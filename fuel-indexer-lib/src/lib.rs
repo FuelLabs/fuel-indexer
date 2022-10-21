@@ -180,7 +180,7 @@ pub mod manifest {
     #[derive(Debug, Deserialize, Serialize, Clone)]
     pub struct Manifest {
         pub namespace: String,
-        pub abi: String,
+        pub abi: Option<String>,
         pub identifier: String,
         pub graphql_schema: String,
         pub module: Module,
