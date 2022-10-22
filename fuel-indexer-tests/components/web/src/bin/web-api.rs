@@ -3,7 +3,7 @@ use async_std::sync::Arc;
 use clap::Parser;
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::{
-    prelude::{Contract, Provider, WalletUnlocked},
+    prelude::{CallParameters, Contract, Provider, WalletUnlocked},
     signers::Signer,
 };
 use fuels_abigen_macro::abigen;
@@ -54,15 +54,19 @@ async fn fuel_indexer_test_ping(state: web::Data<Arc<AppState>>) -> impl Respond
     HttpResponse::Ok()
 }
 
-// FIXME: This errors and reverts -- how to do a simple transfer without reversion?
 async fn fuel_indexer_test_transfer(state: web::Data<Arc<AppState>>) -> impl Responder {
+    let call_params = CallParameters::new(Some(1_000_000), None, None);
+
     let _ = state
         .contract
         .methods()
         .trigger_transfer()
+        .append_variable_outputs(1)
         .tx_params(tx_params())
+        .call_params(call_params)
         .call()
-        .await;
+        .await
+        .unwrap();
 
     HttpResponse::Ok()
 }

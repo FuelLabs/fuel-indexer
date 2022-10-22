@@ -1,6 +1,7 @@
 contract;
 
 use std::{
+    context::call_frames::contract_id,
     logging::log,
     address::Address,
     constants::BASE_ASSET_ID,
@@ -56,8 +57,8 @@ impl FuelIndexer for Contract {
     }
 
     fn trigger_transfer() {
-        const RECEIVER = ~Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
-        transfer(1, BASE_ASSET_ID, Identity::Address(RECEIVER));
+        // Transfer the asset back to the originating contract
+        transfer(1, BASE_ASSET_ID, Identity::ContractId(contract_id()));
     }
 
     fn trigger_log() {
