@@ -124,14 +124,19 @@ async fn fuel_indexer_test_transferout(
 }
 
 async fn fuel_indexer_test_messageout(state: web::Data<Arc<AppState>>) -> impl Responder {
+    let call_params = CallParameters::new(Some(1_000_000), None, None);
+
     let _ = state
         .contract
         .methods()
         .trigger_messageout()
+        .append_message_outputs(1)
         .tx_params(tx_params())
+        .call_params(call_params)
         .call()
         .await
         .unwrap();
+
     HttpResponse::Ok()
 }
 

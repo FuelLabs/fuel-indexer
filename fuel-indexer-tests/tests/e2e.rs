@@ -214,13 +214,11 @@ async fn test_can_trigger_and_index_transferout_event() {
     assert_eq!(1, 1);
 }
 
-// TODO: Revisit after https://github.com/FuelLabs/sway/issues/2899
-// merges as it adds support for send_message_with_output()
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_messageout_event() {
     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
-    let _conn = pool.acquire().await.unwrap();
+    let mut conn = pool.acquire().await.unwrap();
 
     let client = http_client();
     let _ = client
@@ -231,6 +229,20 @@ async fn test_can_trigger_and_index_messageout_event() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    // FIXME: Still need to trigger an actual receipt
-    assert_eq!(1, 1);
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test.messageoutentity where id = 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let recipient: &str = row.get(2);
+    let amount: i64 = row.get(3);
+    let len: i64 = row.get(5);
+
+    assert_eq!(
+        recipient,
+        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
+    );
+    assert_eq!(amount, 100);
+    assert_eq!(len, 24);
 }
