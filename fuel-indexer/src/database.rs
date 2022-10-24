@@ -24,8 +24,7 @@ impl SchemaManager {
     pub async fn new_schema(&self, name: &str, schema: &str) -> IndexerResult<()> {
         let mut connection = self.pool.acquire().await?;
 
-        // TODO: Not doing much with version, but might be useful if we
-        //       do graph schema upgrades
+        // TODO: Not doing much with version, but might be useful if we do graph schema upgrades
         let version = schema_version(schema);
 
         if !queries::schema_exists(&mut connection, name, &version).await? {

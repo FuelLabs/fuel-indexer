@@ -11,14 +11,14 @@ error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(219..226) }' no
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |             Receipt::Call {
-  |             ^^^^^^^ use of undeclared type `Receipt`
+  |                 Receipt::Call {
+  |                 ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |             Receipt::ReturnData {
-  |             ^^^^^^^ use of undeclared type `Receipt`
+  |                 Receipt::ReturnData {
+  |                 ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -51,6 +51,33 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_schema::types::BlockData;
    |
+
+error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  |
+  |                 status: TransactionStatus::default(),
+  |                         ^^^^^^^^^^^^^^^^^
+  |
+ ::: $WORKSPACE/fuel-indexer-schema/src/types/fuel.rs
+  |
+  | pub struct TransactionData {
+  | -------------------------- similarly named struct `TransactionData` defined here
+  |
+help: a struct with a similar name exists
+   |
+38 |                 status: TransactionData::default(),
+   |                         ~~~~~~~~~~~~~~~
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::TransactionStatus;
+   |
+2  | use fuel_indexer_schema::types::TransactionStatus;
+   |
+2  | use fuels::client::schema::schema::TransactionStatus;
+   |
+2  | use fuels::client::schema::tx::TransactionStatus;
+   |
+     and 1 other candidate
 
 error[E0425]: cannot find function `serialize` in this scope
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs

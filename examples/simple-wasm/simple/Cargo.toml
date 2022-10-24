@@ -1,0 +1,21 @@
+[package]
+name = "simple"
+version = "0.0.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+fuel-crypto = "0.6"
+fuel-gql-client = "0.10"
+fuel-tx = "0.18"
+fuels = "0.26"
+fuels-abigen-macro = "0.26"
+fuels-core = "0.26"
+fuels-types = "0.26"
+log = "0.4"
+pretty_env_logger = "0.4"
+rand = "0.8"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1", features = ["full"] }

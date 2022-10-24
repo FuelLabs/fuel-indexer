@@ -13,59 +13,60 @@ mod explorer_index {
 
         block_entity.save();
 
-        let mut contracts = Vec::new();
+        // let mut contracts = Vec::new();
 
-        for (i, tx) in block.transactions.iter().enumerate() {
-            let tx_entity = Transaction {
-                id: i as u64 + block_entity.height,
-                block: block_entity.id,
-                timestamp: block_entity.timestamp,
-            };
+        for _tx in block.transactions {
+            continue;
+            // let tx_entity = Transaction {
+            //     id: i as u64 + block_entity.height,
+            //     block: block_entity.id,
+            //     timestamp: block_entity.timestamp,
+            // };
 
-            for receipt in tx {
-                match receipt {
-                    Receipt::Call { id, .. } => {
-                        contracts.push(Contract { creator: *id });
-                    }
-                    Receipt::ReturnData { id, .. } => {
-                        contracts.push(Contract { creator: *id });
-                    }
-                    #[allow(unused)]
-                    Receipt::Transfer { id, to, .. } => {
-                        contracts.push(Contract { creator: *id });
-                    }
-                    #[allow(unused)]
-                    Receipt::TransferOut {
-                        id,
-                        to,
-                        amount,
-                        asset_id,
-                        ..
-                    } => {
-                        contracts.push(Contract { creator: *id });
-                    }
-                    Receipt::Log { id, .. } => {
-                        contracts.push(Contract { creator: *id });
-                    }
-                    Receipt::LogData { id, .. } => {
-                        contracts.push(Contract { creator: *id });
-                    }
-                    #[allow(unused)]
-                    Receipt::ScriptResult { result, gas_used } => {}
-                    #[allow(unused)]
-                    Receipt::MessageOut {
-                        sender,
-                        recipient,
-                        amount,
-                        ..
-                    } => {}
-                    _ => {
-                        Logger::info("This type is not handled yet. (>'.')>");
-                    }
-                }
-            }
+            // for receipt in tx {
+            // match receipt {
+            //     Receipt::Call { id, .. } => {
+            //         contracts.push(Contract { creator: *id });
+            //     }
+            //     Receipt::ReturnData { id, .. } => {
+            //         contracts.push(Contract { creator: *id });
+            //     }
+            //     #[allow(unused)]
+            //     Receipt::Transfer { id, to, .. } => {
+            //         contracts.push(Contract { creator: *id });
+            //     }
+            //     #[allow(unused)]
+            //     Receipt::TransferOut {
+            //         id,
+            //         to,
+            //         amount,
+            //         asset_id,
+            //         ..
+            //     } => {
+            //         contracts.push(Contract { creator: *id });
+            //     }
+            //     Receipt::Log { id, .. } => {
+            //         contracts.push(Contract { creator: *id });
+            //     }
+            //     Receipt::LogData { id, .. } => {
+            //         contracts.push(Contract { creator: *id });
+            //     }
+            //     #[allow(unused)]
+            //     Receipt::ScriptResult { result, gas_used } => {}
+            //     #[allow(unused)]
+            //     Receipt::MessageOut {
+            //         sender,
+            //         recipient,
+            //         amount,
+            //         ..
+            //     } => {}
+            //     _ => {
+            //         Logger::info("This type is not handled yet. (>'.')>");
+            //     }
+            //     // }
+            // }
 
-            tx_entity.save();
+            // tx_entity.save();
         }
     }
 }

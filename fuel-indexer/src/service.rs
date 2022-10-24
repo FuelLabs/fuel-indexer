@@ -5,12 +5,15 @@ use crate::{
 };
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{
+    types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
 use fuel_indexer_lib::utils::AssetReloadRequest;
-use fuel_indexer_schema::types::{Address, BlockData, Bytes32};
+use fuel_indexer_schema::types::{
+    Address, BlockData, Bytes32, TransactionData, TransactionStatus,
+};
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -153,15 +156,65 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                 // we'll need to watch contract creation events here in
                 // case an indexer would be interested in processing it.
                 let mut transactions = Vec::new();
+
                 for trans in block.transactions {
-                    match client.receipts(&trans.id.to_string()).await {
-                        Ok(r) => {
-                            transactions.push(r);
+                    match client.transaction(&trans.id.to_string()).await {
+                        Ok(result) => {
+                            if let Some(TransactionResponse {
+                                transaction,
+                                status,
+                            }) = result
+                            {
+                                let receipts = match client
+                                    .receipts(&trans.id.to_string())
+                                    .await
+                                {
+                                    Ok(r) => r,
+                                    Err(e) => {
+                                        error!(
+                                            "Client communication error fetching receipts: {:?}",
+                                            e
+                                        );
+                                        vec![]
+                                    }
+                                };
+
+                                let status = match status {
+                                    GqlTransactionStatus::Success {
+                                        block_id,
+                                        time,
+                                        ..
+                                    } => TransactionStatus::Success { block_id, time },
+                                    GqlTransactionStatus::Failure {
+                                        block_id,
+                                        time,
+                                        reason,
+                                        ..
+                                    } => TransactionStatus::Failure {
+                                        block_id,
+                                        time,
+                                        reason,
+                                    },
+                                    GqlTransactionStatus::Submitted { submitted_at } => {
+                                        TransactionStatus::Submitted { submitted_at }
+                                    }
+                                };
+
+                                let tx_data = TransactionData {
+                                    receipts,
+                                    status,
+                                    transaction,
+                                };
+                                transactions.push(tx_data);
+                            }
                         }
                         Err(e) => {
-                            error!("Client communication error {:?}", e);
+                            error!(
+                                "Client communication error fetching transactions: {:?}",
+                                e
+                            )
                         }
-                    }
+                    };
                 }
 
                 let block = BlockData {

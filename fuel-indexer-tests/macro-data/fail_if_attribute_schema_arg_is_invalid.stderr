@@ -11,14 +11,14 @@ error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |             Receipt::Call {
-  |             ^^^^^^^ use of undeclared type `Receipt`
+  |                 Receipt::Call {
+  |                 ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |             Receipt::ReturnData {
-  |             ^^^^^^^ use of undeclared type `Receipt`
+  |                 Receipt::ReturnData {
+  |                 ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
@@ -51,6 +51,55 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_schema::types::BlockData;
    |
+
+error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |             TransactionData {
+  |             ^^^^^^^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::TransactionData;
+   |
+2  | use fuel_indexer_schema::types::TransactionData;
+   |
+
+error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |                 status: TransactionStatus::default(),
+  |                         ^^^^^^^^^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::TransactionStatus;
+   |
+2  | use fuel_indexer_schema::types::TransactionStatus;
+   |
+2  | use fuels::client::schema::schema::TransactionStatus;
+   |
+2  | use fuels::client::schema::tx::TransactionStatus;
+   |
+     and 1 other candidate
+
+error[E0433]: failed to resolve: use of undeclared type `Transaction`
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |                 transaction: Transaction::default(),
+  |                              ^^^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::Transaction;
+   |
+2  | use fuel_indexer_schema::types::Transaction;
+   |
+2  | use fuel_tx::Transaction;
+   |
+2  | use fuels::client::schema::schema::Transaction;
+   |
+     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs

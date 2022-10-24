@@ -476,7 +476,7 @@ fn process_fn_items(
                 for tx in block.transactions {
                     let mut return_types = Vec::new();
 
-                    for receipt in tx {
+                    for receipt in tx.receipts {
                         match receipt {
                             Receipt::Call { param1, id, ..} => {
                                 #contract_conditional
