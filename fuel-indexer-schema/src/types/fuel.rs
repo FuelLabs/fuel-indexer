@@ -1,6 +1,6 @@
-use crate::{type_id, types::TransactionStatus};
+use crate::{types::TransactionStatus, utils::type_id};
 pub use fuel_tx::Receipt;
-use fuel_tx::Transaction;
+use fuel_tx::{Transaction, TxId};
 pub use fuel_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
 };
@@ -14,7 +14,9 @@ pub trait NativeFuelTypeIdent {
     fn type_id() -> usize;
 }
 
-// NOTE: We could also create ABI JSON files with these native Fuel indexer-macro types <( '.' )>
+// TODO: We could also create ABI JSON files with these native Fuel indexer-macro types <( '.' )>
+// These aren't actually schema-related types so they should be moved.
+// https://github.com/FuelLabs/fuel-indexer/issues/285
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct B256 {}
 
@@ -33,6 +35,7 @@ pub struct TransactionData {
     pub transaction: Transaction,
     pub status: TransactionStatus,
     pub receipts: Vec<Receipt>,
+    pub id: TxId,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]

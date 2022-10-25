@@ -2,9 +2,7 @@ use crate::types::Jsonb;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-// NOTE: Temporarily wrapping fuel_gql_client::client::types::TransactionStatus because
-// using just fuel_gql_client::client::types::TransactionStatus requires importing the
-// entire fuel_gql_client crate, which won't easily compile to WASM
+// NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TransactionStatus {
     Failure {
@@ -38,15 +36,14 @@ impl From<TransactionStatus> for Jsonb {
                 time,
                 reason,
             } => Jsonb(format!(
-                "FAILED | Block({}) | {} | {}",
-                block_id, time, reason
+                r#"{{"status":"failed","block":"{block_id}","time":"{time}","reason":"{reason}"}}"#
             )),
-            TransactionStatus::Submitted { submitted_at } => {
-                Jsonb(format!("SUBMITTED | {}", submitted_at))
-            }
-            TransactionStatus::Success { block_id, time } => {
-                Jsonb(format!("SUCCESS | Block({}) | {}", block_id, time))
-            }
+            TransactionStatus::Submitted { submitted_at } => Jsonb(format!(
+                r#"{{"status":"submitted","time":"{submitted_at}"}}"#
+            )),
+            TransactionStatus::Success { block_id, time } => Jsonb(format!(
+                r#"{{"status":"success","block":"{block_id}","time":"{time}"}}"#
+            )),
         }
     }
 }

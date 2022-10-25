@@ -8,6 +8,15 @@ error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(219..226) }' no
   |
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
+error[E0432]: unresolved import `fuel_indexer_schema::types::Transaction`
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  |
+  |     use fuel_indexer_schema::types::{TransactionData, Transaction};
+  |                                                       ^^^^^^^^^^^
+  |                                                       |
+  |                                                       no `Transaction` in `types`
+  |                                                       help: a similar name exists in the module: `transaction`
+
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
@@ -87,7 +96,7 @@ error[E0425]: cannot find function `serialize` in this scope
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_schema::serialize;
+2  | use fuel_indexer_schema::utils::serialize;
    |
 2  | use fuels::prelude::serde_hex::serialize;
    |

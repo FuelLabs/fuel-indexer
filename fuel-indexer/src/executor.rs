@@ -3,7 +3,10 @@ use crate::ffi;
 use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult, Manifest};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
-use fuel_indexer_schema::{deserialize, serialize, types::BlockData};
+use fuel_indexer_schema::{
+    types::BlockData,
+    utils::{deserialize, serialize},
+};
 use std::path::Path;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};

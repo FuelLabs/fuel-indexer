@@ -14,6 +14,7 @@ use fuel_indexer_lib::utils::AssetReloadRequest;
 use fuel_indexer_schema::types::{
     Address, BlockData, Bytes32, TransactionData, TransactionStatus,
 };
+use fuel_tx::TxId;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -183,9 +184,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                     }
                                 };
 
-                                // NOTE: Temporarily wrapping fuel_gql_client::client::types::TransactionStatus because
-                                // using just fuel_gql_client::client::types::TransactionStatus requires importing the
-                                // entire fuel_gql_client crate, which won't easily compile to WASM
+                                // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
                                 let status = match status {
                                     GqlTransactionStatus::Success {
                                         block_id,
@@ -211,6 +210,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                     receipts,
                                     status,
                                     transaction,
+                                    id: TxId::from(trans.id),
                                 };
                                 transactions.push(tx_data);
                             }

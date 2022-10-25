@@ -1,4 +1,3 @@
-use fuel_indexer_schema::db::models::IdCol;
 use std::collections::HashMap;
 use wasmer::Instance;
 
@@ -6,7 +5,8 @@ use crate::{ffi, IndexerError, IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_schema::{
     db::tables::{Schema, SchemaBuilder},
-    schema_version, FtColumn,
+    utils::{schema_version, IdCol},
+    FtColumn,
 };
 
 /// Responsible for laying down graph schemas, processes schema upgrades.
@@ -106,6 +106,7 @@ impl Database {
     ) -> String {
         let sql_table = self.pool.database_type().table_name(&self.namespace, table);
 
+        // FIXME: We have hard-coded the concept of an 'id' field here <(-_-<)
         format!(
             "INSERT INTO {}
                 ({})
@@ -121,6 +122,7 @@ impl Database {
     }
 
     fn get_query(&self, table: &str, object_id: u64) -> String {
+        // FIXME: We have hard-coded the concept of an 'id' field here <(-_-<)
         let sql_table = self.pool.database_type().table_name(&self.namespace, table);
         format!("SELECT object from {} where id = {}", sql_table, object_id)
     }
@@ -137,7 +139,7 @@ impl Database {
             .iter()
             .zip(columns.iter())
             .filter_map(|(colname, value)| {
-                if colname == &IdCol::to_string() {
+                if colname == &IdCol::to_lowercase_string() {
                     None
                 } else {
                     Some(format!("{} = {}", colname, value.query_fragment()))
@@ -155,7 +157,7 @@ impl Database {
             .expect("No transaction has been opened.");
         let query = queries::put_object(conn, query_text, bytes).await;
 
-        query.expect("Query failed");
+        query.expect("Query failed.");
     }
 
     pub async fn get_object(&mut self, type_id: u64, object_id: u64) -> Option<Vec<u8>> {
@@ -170,7 +172,7 @@ impl Database {
             Ok(object) => Some(object),
             Err(sqlx::Error::RowNotFound) => None,
             e => {
-                panic!("Error getting object! {:?}", e);
+                panic!("Error getting object: {:?}.", e);
             }
         }
     }

@@ -11,17 +11,17 @@ type QueryRoot {
 # https://ethereum.org/en/developers/docs/data-and-analytics/block-explorers/
 
 type Block {
-    id: ID!
+    id: Bytes32! @unique
     height: UInt8!
     timestamp: Int8!
     miner: Address!
+    gas_limit: UInt8!
 }
 
 type Tx {
-    id: ID!
+    id: Bytes32! @unique
     block: Block!
     timestamp: Int8!
-    hash: Bytes32!
     status: Jsonb!
     value: UInt8!
     tokens_transferred: Jsonb!

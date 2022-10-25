@@ -3,14 +3,6 @@ use fuel_indexer_database_types::*;
 use std::fmt::Write;
 use strum::{AsRefStr, EnumString};
 
-pub struct IdCol {}
-
-impl IdCol {
-    pub fn to_string() -> String {
-        "id".to_string()
-    }
-}
-
 #[derive(Debug, EnumString, AsRefStr)]
 pub enum IndexMethod {
     #[strum(serialize = "btree")]
@@ -99,6 +91,7 @@ pub struct ForeignKey {
     pub column_name: String,
     pub reference_table_name: String,
     pub reference_column_name: String,
+    pub reference_column_type: String,
     pub on_delete: OnDelete,
     pub on_update: OnUpdate,
 }
@@ -110,15 +103,17 @@ impl ForeignKey {
         table_name: String,
         column_name: String,
         reference_table_name: String,
-        reference_column_name: String,
+        ref_column_name: String,
+        reference_column_type: String,
     ) -> Self {
         Self {
             db_type,
             namespace,
             table_name,
             column_name,
-            reference_column_name,
+            reference_column_name: ref_column_name,
             reference_table_name,
+            reference_column_type,
             ..Default::default()
         }
     }
@@ -149,12 +144,21 @@ impl CreateStatement for ForeignKey {
                 )
             }
             DbType::Sqlite => {
+                fn derive_sqlite_type(t: &str) -> String {
+                    match t {
+                        "ID" => "BIGINT".to_string(),
+                        "UInt8" | "Int8" | "Int4" | "UInt4" => "INTEGER".to_string(),
+                        _ => "TEXT".to_string(),
+                    }
+                }
+
                 format!(
-                    "ALTER TABLE {} DROP COLUMN {}; ALTER TABLE {} ADD COLUMN {} BIGINT REFERENCES {}({});",
+                    "ALTER TABLE {} DROP COLUMN {}; ALTER TABLE {} ADD COLUMN {} {} REFERENCES {}({});",
                     self.table_name,
                     self.column_name,
                     self.table_name,
                     self.column_name,
+                    derive_sqlite_type(&self.reference_column_type),
                     self.reference_table_name,
                     self.reference_column_name,
                 )

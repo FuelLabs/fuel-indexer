@@ -35,6 +35,7 @@ fn main() {
         transactions: vec![
             TransactionData {
                 status: TransactionStatus::default(),
+                id: [0u8; 32].into(),
                 receipts: vec![
                 Receipt::Call {
                     id: [0u8; 32].into(),

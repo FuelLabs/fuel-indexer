@@ -1,12 +1,8 @@
 extern crate alloc;
-use alloc::vec::Vec;
-pub use fuel_indexer_database_types as sql_types;
-
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
-use graphql_parser::schema::{Definition, Document, TypeDefinition};
+pub use fuel_indexer_database_types as sql_types;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 pub const LOG_LEVEL_ERROR: u32 = 0;
 pub const LOG_LEVEL_WARN: u32 = 1;
@@ -14,78 +10,16 @@ pub const LOG_LEVEL_INFO: u32 = 2;
 pub const LOG_LEVEL_DEBUG: u32 = 3;
 pub const LOG_LEVEL_TRACE: u32 = 4;
 
-use sha2::{Digest, Sha256};
-
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
+pub const FOREIGN_KEY_DIRECTIVE_NAME: &str = "foreign_key";
+pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
+
+pub mod types;
 
 #[cfg(feature = "db-models")]
 pub mod db;
 
-pub mod types;
-
-// serde_scale for now, can look at other options if necessary.
-pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
-    bincode::serialize(obj).expect("Serialize failed")
-}
-
-pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
-    match bincode::deserialize(bytes) {
-        Ok(obj) => Ok(obj),
-        Err(e) => Err(format!("Bincode serde error {:?}", e)),
-    }
-}
-
-pub fn type_id(namespace: &str, type_name: &str) -> u64 {
-    let mut bytes = [0u8; 8];
-    bytes.copy_from_slice(
-        &Sha256::digest(format!("{}:{}", namespace, type_name).as_bytes())[..8],
-    );
-    u64::from_le_bytes(bytes)
-}
-
-pub fn schema_version(schema: &str) -> String {
-    format!("{:x}", Sha256::digest(schema.as_bytes()))
-}
-
-pub fn type_name(typ: &TypeDefinition<String>) -> String {
-    match typ {
-        TypeDefinition::Scalar(obj) => obj.name.clone(),
-        TypeDefinition::Object(obj) => obj.name.clone(),
-        TypeDefinition::Interface(obj) => obj.name.clone(),
-        TypeDefinition::Union(obj) => obj.name.clone(),
-        TypeDefinition::Enum(obj) => obj.name.clone(),
-        TypeDefinition::InputObject(obj) => obj.name.clone(),
-    }
-}
-
-pub fn get_schema_types(ast: &Document<String>) -> (HashSet<String>, HashSet<String>) {
-    let types: HashSet<String> = ast
-        .definitions
-        .iter()
-        .filter_map(|def| {
-            if let Definition::TypeDefinition(typ) = def {
-                Some(typ)
-            } else {
-                None
-            }
-        })
-        .map(type_name)
-        .collect();
-
-    let directives = ast
-        .definitions
-        .iter()
-        .filter_map(|def| {
-            if let Definition::DirectiveDefinition(dir) = def {
-                Some(dir.name.clone())
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    (types, directives)
-}
+pub mod utils;
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {

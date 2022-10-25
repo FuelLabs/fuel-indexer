@@ -6,7 +6,7 @@ pub fn handler_block_wasm(
     quote! {
         #[no_mangle]
         fn handle_events(blob: *mut u8, len: usize) {
-            use fuel_indexer_schema::deserialize;
+            use fuel_indexer_schema::utils::deserialize;
             let bytes = unsafe { Vec::from_raw_parts(blob, len, len) };
             let blocks: Vec<BlockData> = match deserialize(&bytes) {
                 Ok(blocks) => blocks,

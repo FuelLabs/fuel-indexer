@@ -23,6 +23,7 @@
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
+#[allow(unused)]
 use std::collections::HashSet;
 
 // We'll pass our manifest to our #[indexer] attribute. This manifest contains
@@ -38,16 +39,18 @@ mod explorer_index {
     // include various `Receipt`s, as well as more comprehensive data, in the form of
     // `BlockData`. A list of native Fuel types can be found at [TODO INSERT LINK]
     fn index_explorer_data(block: BlockData) {
-        
         // Here we convert the `BlockData` struct that we get from our Fuel node, into
         // a block entity that we can persist to the database. The `Block` type below is
         // defined in our schema/explorer.graphql and represents the type that we will
         // save to our database.
+        let mut block_gas_limit = 0;
+
         let block_entity = Block {
-            id: block.height,
+            id: block.id,
             height: block.height,
             timestamp: block.time,
             miner: block.producer,
+            gas_limit: block_gas_limit,
         };
 
         // Now that we've created the object for the database, let's save it.
@@ -59,10 +62,12 @@ mod explorer_index {
 
         // Now we'll iterate over all of the transactions in this block, and persist
         // those to the database as well
-        for (i, tx) in block.transactions.iter().enumerate() {
+        for (_i, tx) in block.transactions.iter().enumerate() {
             let mut tx_amount = 0;
             let mut tokens_transferred = Vec::new();
 
+            // Here we demonstrate that we can inspect the innards of the Transaction enum
+            // for properties like gas, inputs, outputs, script_data, and other pieces of metadata
             match &tx.transaction {
                 #[allow(unused)]
                 Transaction::Script {
@@ -77,7 +82,8 @@ mod explorer_index {
                     witnesses,
                     metadata,
                 } => {
-                    Logger::info("Inside a script transaction.");
+                    Logger::info("Inside a script transaction. (>^‿^)>");
+                    block_gas_limit += gas_limit;
                 }
                 #[allow(unused)]
                 Transaction::Create {
@@ -93,7 +99,8 @@ mod explorer_index {
                     witnesses,
                     metadata,
                 } => {
-                    Logger::info("Inside a create transaction.");
+                    Logger::info("Inside a create transaction. <(^.^)>");
+                    block_gas_limit += gas_limit;
                 }
             }
 
@@ -152,14 +159,17 @@ mod explorer_index {
                 }
             }
 
+            let tokens_transferred = serde_json::to_value(tokens_transferred)
+                .unwrap()
+                .to_string();
+
             let tx_entity = Tx {
-                id: i as u64 + block_entity.height,
                 block: block_entity.id,
                 timestamp: block_entity.timestamp,
-                hash: Bytes32::from([0u8; 32]),
-                value: 0,
+                id: tx.id,
+                value: tx_amount,
                 status: tx.status.clone().into(),
-                tokens_transferred: Jsonb(tokens_transferred.join(", ")),
+                tokens_transferred: Jsonb(tokens_transferred),
             };
 
             tx_entity.save();

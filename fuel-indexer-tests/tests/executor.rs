@@ -161,6 +161,7 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
             height: 0,
             transactions: vec![
                 TransactionData {
+                    id: [0u8; 32].into(),
                     status: TransactionStatus::default(),
                     receipts: vec![
                         Receipt::Call {
@@ -187,6 +188,7 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
                     transaction: Transaction::default(),
                 },
                 TransactionData {
+                    id: [0u8; 32].into(),
                     status: TransactionStatus::default(),
                     receipts: vec![
                         Receipt::Call {
