@@ -1,6 +1,6 @@
 use crate::{type_id, types::TransactionStatus};
-use fuel_tx::Receipt;
-pub use fuel_tx::Transaction;
+pub use fuel_tx::Receipt;
+use fuel_tx::Transaction;
 pub use fuel_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
 };

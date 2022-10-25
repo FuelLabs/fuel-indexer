@@ -155,7 +155,7 @@ fn process_type_def<'a>(
             processed.insert(strct.to_string());
 
             Some(quote! {
-                #[derive(Debug, PartialEq, Eq)]
+                #[derive(Debug, PartialEq, Eq, Hash)]
                 pub struct #strct {
                     #block
                 }

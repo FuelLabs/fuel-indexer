@@ -158,6 +158,10 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                 let mut transactions = Vec::new();
 
                 for trans in block.transactions {
+                    // TODO: We should optimize this a bit by using client.transactions(), but need
+                    // to make sure that the paginated response contains only the transactions
+                    // in block.transactions (should be the exact same, just full transactions as opposed
+                    // to TransactionIdFragments)
                     match client.transaction(&trans.id.to_string()).await {
                         Ok(result) => {
                             if let Some(TransactionResponse {
@@ -179,6 +183,9 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                     }
                                 };
 
+                                // NOTE: Temporarily wrapping fuel_gql_client::client::types::TransactionStatus because
+                                // using just fuel_gql_client::client::types::TransactionStatus requires importing the
+                                // entire fuel_gql_client crate, which won't easily compile to WASM
                                 let status = match status {
                                     GqlTransactionStatus::Success {
                                         block_id,

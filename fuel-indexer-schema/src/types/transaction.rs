@@ -1,3 +1,4 @@
+use crate::types::Jsonb;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +26,27 @@ impl Default for TransactionStatus {
         Self::Success {
             block_id: "0".into(),
             time: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+        }
+    }
+}
+
+impl From<TransactionStatus> for Jsonb {
+    fn from(t: TransactionStatus) -> Jsonb {
+        match t {
+            TransactionStatus::Failure {
+                block_id,
+                time,
+                reason,
+            } => Jsonb(format!(
+                "FAILED | Block({}) | {} | {}",
+                block_id, time, reason
+            )),
+            TransactionStatus::Submitted { submitted_at } => {
+                Jsonb(format!("SUBMITTED | {}", submitted_at))
+            }
+            TransactionStatus::Success { block_id, time } => {
+                Jsonb(format!("SUCCESS | Block({}) | {}", block_id, time))
+            }
         }
     }
 }

@@ -608,7 +608,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use fuel_indexer_plugin::{types::*, Entity, Logger};
         use fuel_indexer_schema::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
-        use fuel_tx::Receipt;
+        use fuel_tx::{Receipt, Transaction};
         use std::collections::HashMap;
 
         type B256 = [u8; 32];

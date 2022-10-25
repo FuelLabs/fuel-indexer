@@ -4,7 +4,7 @@ schema {
 
 type QueryRoot {
     block: Block
-    transaction: Transaction
+    tx: Tx
     count: Count
 }
 
@@ -17,10 +17,14 @@ type Block {
     miner: Address!
 }
 
-type Transaction {
+type Tx {
     id: ID!
     block: Block!
     timestamp: Int8!
+    hash: Bytes32!
+    status: Jsonb!
+    value: UInt8!
+    tokens_transferred: Jsonb!
 }
 
 type Account {
