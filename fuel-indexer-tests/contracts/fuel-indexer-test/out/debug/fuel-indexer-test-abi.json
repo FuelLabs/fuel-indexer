@@ -162,7 +162,7 @@
   ],
   "loggedTypes": [
     {
-      "logId": 1018833,
+      "logId": 0,
       "loggedType": {
         "name": "",
         "type": 6,
@@ -170,15 +170,15 @@
       }
     },
     {
-      "logId": 1018861,
+      "logId": 1,
       "loggedType": {
         "name": "",
         "type": 5,
-        "typeArguments": null
+        "typeArguments": []
       }
     },
     {
-      "logId": 1018876,
+      "logId": 2,
       "loggedType": {
         "name": "",
         "type": 6,
