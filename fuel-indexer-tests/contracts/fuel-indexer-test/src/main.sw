@@ -1,13 +1,14 @@
 contract;
 
 use std::{
-    context::call_frames::contract_id,
-    logging::log,
     address::Address,
     constants::BASE_ASSET_ID,
+    context::call_frames::contract_id,
+    identity::Identity,
+    logging::log,
+    message::send_message,
     revert::revert,
     token::transfer,
-    identity::Identity,
 };
 
 pub struct Pong {
@@ -85,7 +86,11 @@ impl FuelIndexer for Contract {
     }
 
     fn trigger_messageout() {
-        // TODO: Revisit after https://github.com/FuelLabs/sway/issues/2899
-        // merges as it adds support for send_message_with_output()
+        let mut v: Vec<u64> = ~Vec::new();
+        v.push(1);
+        v.push(2);
+        v.push(3);
+        const RECEIVER = 0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96;
+        send_message(RECEIVER, v, 100);
     }
 }

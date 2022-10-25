@@ -103,4 +103,20 @@ mod fuel_indexer_test {
 
         entity.save();
     }
+
+    fn fuel_indexer_test_messageout(messageout: MessageOut) {
+        Logger::info("fuel_indexer_test_messageout handling MessageOut event");
+
+        let entity = MessageOutEntity {
+            id: 1,
+            sender: messageout.sender,
+            recipient: messageout.recipient,
+            amount: messageout.amount,
+            nonce: messageout.nonce,
+            len: messageout.len,
+            digest: messageout.digest,
+        };
+
+        entity.save();
+    }
 }
