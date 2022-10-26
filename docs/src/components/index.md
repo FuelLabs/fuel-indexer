@@ -6,3 +6,4 @@ A list of components used by the Fuel Indexer.
 - [Database](./database/index.md)
 - [Indices](./indices/index.md)
 - [Assets](./assets/index.md)
+- [Receipts](./receipts.md)
