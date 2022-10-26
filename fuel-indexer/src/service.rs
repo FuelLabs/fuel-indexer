@@ -239,6 +239,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
 
             if let Err(e) = result {
                 error!("Indexer executor failed {e:?}, retrying.");
+                // FIX ME: Magic number
                 sleep(Duration::from_secs(5)).await;
                 retry_count += 1;
                 if retry_count < RETRY_LIMIT {
@@ -251,7 +252,8 @@ fn make_task<T: 'static + Executor + Send + Sync>(
 
             next_cursor = cursor;
             if next_cursor.is_none() {
-                info!("No next page, sleeping");
+                info!("No next page, sleeping.");
+                // FIX ME: Magic number
                 sleep(Duration::from_secs(5)).await;
             };
             retry_count = 0;

@@ -22,6 +22,6 @@ enum IndexType {
 
 directive @indexed(type: IndexType = Btree) on FIELD_DEFINITION | ENUM_VALUE
 
-directive @foreign_key(on: String) on OBJECT
+directive @join(on: String) on OBJECT
 
 directive @unique on FIELD_DEFINITION | ENUM_VALUE

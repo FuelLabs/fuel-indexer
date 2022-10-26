@@ -475,6 +475,7 @@ fn process_fn_items(
                 #blockdata_decoding
 
                 for tx in block.transactions {
+
                     let mut return_types = Vec::new();
 
                     for receipt in tx.receipts {

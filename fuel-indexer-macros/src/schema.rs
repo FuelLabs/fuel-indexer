@@ -1,8 +1,7 @@
 use fuel_indexer_lib::utils::local_repository_root;
 use fuel_indexer_schema::utils::{
-    build_schema_fields_and_types_map, build_schema_objects_set,
-    get_foreign_key_directive_info, normalize_field_type_name, schema_version, type_id,
-    IdCol, BASE_SCHEMA,
+    build_schema_fields_and_types_map, build_schema_objects_set, get_join_directive_info,
+    schema_version, type_id, DirectiveType, BASE_SCHEMA,
 };
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{
@@ -74,42 +73,21 @@ fn process_fk_field<'a>(
     proc_macro2::Ident,
     proc_macro2::TokenStream,
 ) {
-    let Field { name, .. } = field.clone();
+    let DirectiveType::Join {
+        field_name,
+        reference_field_type_name,
+        ..
+    } = get_join_directive_info(field, obj, types_map);
 
-    if let Some(fk_info) = get_foreign_key_directive_info(field, obj, types_map) {
-        let field_type: Type<'a, String> = Type::NamedType(fk_info.field_type_name);
-        let typ = process_type(types, &field_type, false);
-        let ident = format_ident! {"{}", fk_info.field_name.to_lowercase()};
-
-        let extractor = quote! {
-            let item = vec.pop().expect("Missing item in row.");
-            let #ident = match item {
-                FtColumn::#typ(t) => t,
-                _ => panic!("Invalid column type {:?}.", item),
-            };
-
-        };
-
-        return (typ, ident, extractor);
-    }
-
-    let field_type_name = normalize_field_type_name(&field.field_type.to_string());
-
-    let field_id = format!("{}.{}", field_type_name, IdCol::to_lowercase_string());
-
-    let ref_field_type_name = types_map.get(&field_id).unwrap_or_else(|| {
-        panic!("Object '{}' has no associated 'id' field.", field_type_name,)
-    });
-
-    let field_type = Type::NamedType(ref_field_type_name.to_owned());
+    let field_type: Type<'a, String> = Type::NamedType(reference_field_type_name);
     let typ = process_type(types, &field_type, false);
-    let ident = format_ident! {"{}", name.to_lowercase()};
+    let ident = format_ident! {"{}", field_name.to_lowercase()};
 
     let extractor = quote! {
         let item = vec.pop().expect("Missing item in row.");
         let #ident = match item {
             FtColumn::#typ(t) => t,
-            _ => panic!("Invalid column type {:?}", item),
+            _ => panic!("Invalid column type {:?}.", item),
         };
 
     };

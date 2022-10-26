@@ -227,7 +227,7 @@ impl Executor for WasmIndexExecutor {
         let res = spawn_blocking(move || fun.call(ptr, len)).await?;
 
         if let Err(e) = res {
-            error!("Indexer failed {e:?}");
+            error!("WasmIndexExecutor handle_events failed: {e:?}.");
             self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::RuntimeError(e));
         } else {

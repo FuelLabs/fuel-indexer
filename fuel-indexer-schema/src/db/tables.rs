@@ -2,8 +2,8 @@ use crate::{
     db::models::{ColumnIndex, CreateStatement, ForeignKey, IndexMethod},
     utils::{
         build_schema_fields_and_types_map, build_schema_objects_set,
-        extract_table_name_from_field_type, get_foreign_key_directive_info,
-        has_unique_directive, normalize_field_type_name, type_id, IdCol, BASE_SCHEMA,
+        field_type_table_name, get_join_directive_info, has_unique_directive,
+        normalize_field_type_name, type_id, DirectiveType, BASE_SCHEMA,
     },
 };
 use fuel_indexer_database::{queries, DbType, IndexerConnection, IndexerConnectionPool};
@@ -211,64 +211,29 @@ impl SchemaBuilder {
             let (typ, nullable) = self.process_type(&field.field_type);
 
             if typ == ColumnType::ForeignKey {
-                let (_field_type_name, ref_field_name, ref_field_type_name) =
-                    if let Some(fk_info) =
-                        get_foreign_key_directive_info(field, obj, types_map)
-                    {
-                        (
-                            fk_info.field_type_name,
-                            fk_info.reference_field_name,
-                            fk_info.reference_field_type_name,
-                        )
-                    } else {
-                        let field_type_name =
-                            normalize_field_type_name(&field.field_type.to_string());
-                        let field_id = format!(
-                            "{}.{}",
-                            field_type_name,
-                            IdCol::to_lowercase_string()
-                        );
-                        let mut ref_field_type_name =
-                            types_map.get(&field_id).unwrap_or_else(|| {
-                                panic!(
-                                    "Foreign key reference not found for field '{}'",
-                                    field_id
-                                )
-                            });
-
-                        // In the case where we have an Object! foreign key reference on a  field,
-                        // if that object's default 'id' field is 'ID' then 'ID' is going to create
-                        // another primary key (can't do that in SQL) -- so we manually change that to
-                        // an integer type here. Might have to do this for foreign key directives (above)
-                        // as well
-                        let non_primary_key_int = ColumnType::UInt8.to_string();
-                        if ref_field_type_name == &IdCol::to_uppercase_string() {
-                            ref_field_type_name = &non_primary_key_int;
-                        }
-
-                        (
-                            field.field_type.to_string(),
-                            IdCol::to_lowercase_string(),
-                            ref_field_type_name.to_owned(),
-                        )
-                    };
+                let DirectiveType::Join {
+                    reference_field_name,
+                    field_type_name,
+                    reference_field_type_name,
+                    ..
+                } = get_join_directive_info(field, obj, types_map);
 
                 let fk = ForeignKey::new(
                     self.db_type.clone(),
                     self.namespace.clone(),
                     table_name.clone(),
                     field.name.clone(),
-                    extract_table_name_from_field_type(field),
-                    ref_field_name,
-                    ref_field_type_name.to_owned(),
+                    field_type_table_name(field),
+                    reference_field_name.clone(),
+                    reference_field_type_name.to_owned(),
                 );
 
                 let column = NewColumn {
                     type_id,
                     column_position: pos as i32,
                     column_name: field.name.to_string(),
-                    column_type: ref_field_type_name.to_owned(),
-                    graphql_type: field.field_type.to_string(),
+                    column_type: reference_field_type_name.to_owned(),
+                    graphql_type: field_type_name,
                     nullable,
                     unique: has_unique_directive(field),
                 };
@@ -385,7 +350,6 @@ impl SchemaBuilder {
         }
     }
 }
-
 #[derive(Debug)]
 pub struct Schema {
     pub version: String,
@@ -699,14 +663,14 @@ mod tests {
 
         type Lender {
             id: ID!
-            borrower: Borrower! @foreign_key(on:account)
+            borrower: Borrower! @join(on:account)
         }
 
         type Auditor {
             id: ID!
             account: Address!
             hash: Bytes32! @indexed
-            borrower: Borrower! @foreign_key(on:account)
+            borrower: Borrower! @join(on:account)
         }
     "#;
 
@@ -739,14 +703,14 @@ mod tests {
 
         type Lender {
             id: ID!
-            borrower: Borrower! @foreign_key(on:account)
+            borrower: Borrower! @join(on:account)
         }
 
         type Auditor {
             id: ID!
             account: Address!
             hash: Bytes32! @indexed
-            borrower: Borrower! @foreign_key(on:account)
+            borrower: Borrower! @join(on:account)
         }
     "#;
 

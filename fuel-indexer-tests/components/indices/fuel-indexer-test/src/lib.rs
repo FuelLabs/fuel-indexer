@@ -27,7 +27,7 @@ mod fuel_indexer_test {
 
         let input_data = r#"{"foo":"bar"}"#.to_string();
 
-        for (i, _receipts) in block.transactions.iter().enumerate() {
+        for (i, _tx) in block.transactions.iter().enumerate() {
             let tx = TransactionEntity {
                 id: i as u64,
                 hash: [0u8; 32].into(),

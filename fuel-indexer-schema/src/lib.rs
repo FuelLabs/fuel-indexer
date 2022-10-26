@@ -11,7 +11,7 @@ pub const LOG_LEVEL_DEBUG: u32 = 3;
 pub const LOG_LEVEL_TRACE: u32 = 4;
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
-pub const FOREIGN_KEY_DIRECTIVE_NAME: &str = "foreign_key";
+pub const JOIN_DIRECTIVE_NAME: &str = "foreign_key";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 
 pub mod types;

@@ -9,14 +9,14 @@ use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
-pub const FOREIGN_KEY_DIRECTIVE_NAME: &str = "foreign_key";
+pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 
 pub fn normalize_field_type_name(name: &str) -> String {
     name.replace('!', "")
 }
 
-pub fn extract_table_name_from_field_type(f: &Field<String>) -> String {
+pub fn field_type_table_name(f: &Field<String>) -> String {
     normalize_field_type_name(&f.field_type.to_string()).to_lowercase()
 }
 
@@ -79,7 +79,17 @@ pub fn has_unique_directive(field: &Field<String>) -> bool {
     false
 }
 
-pub struct FkDirectiveInfo {
+pub enum DirectiveType {
+    Join {
+        reference_field_name: String,
+        field_name: String,
+        field_type_name: String,
+        object_name: String,
+        reference_field_type_name: String,
+    },
+}
+
+pub struct Join {
     pub reference_field_name: String,
     pub field_name: String,
     pub field_type_name: String,
@@ -87,17 +97,17 @@ pub struct FkDirectiveInfo {
     pub reference_field_type_name: String,
 }
 
-impl FkDirectiveInfo {
+impl Join {
     pub fn field_id(&self) -> String {
         format!("{}.{}", self.object_name, self.field_name)
     }
 }
 
-pub fn get_foreign_key_directive_info<'a>(
+pub fn get_join_directive_info<'a>(
     field: &Field<'a, String>,
     obj: &ObjectType<'a, String>,
     types_map: &HashMap<String, String>,
-) -> Option<FkDirectiveInfo> {
+) -> DirectiveType {
     let Field {
         name: field_name,
         mut directives,
@@ -106,35 +116,65 @@ pub fn get_foreign_key_directive_info<'a>(
 
     let field_type_name = normalize_field_type_name(&field.field_type.to_string());
 
-    if directives.len() == 1 {
+    let (reference_field_name, ref_field_type_name) = if directives.len() == 1 {
         let Directive {
             mut arguments,
             name: directive_name,
             ..
         } = directives.pop().unwrap();
-        if directive_name == FOREIGN_KEY_DIRECTIVE_NAME {
-            let (_, ref_field_name) = arguments.pop().unwrap();
 
-            let field_id = format!("{}.{}", field_type_name, ref_field_name);
+        assert_eq!(
+            directive_name, JOIN_DIRECTIVE_NAME,
+            "Cannot call get_join_directive_info on a non-foreign key item."
+        );
+        let (_, ref_field_name) = arguments.pop().unwrap();
 
-            let ref_field_type_name = types_map.get(&field_id).unwrap_or_else(|| {
+        let field_id = format!("{}.{}", field_type_name, ref_field_name);
+
+        let ref_field_type_name = types_map
+            .get(&field_id)
+            .unwrap_or_else(|| {
                 panic!(
-                    "Referenced foreign key field '{}' is not defined in the schema.",
+                    "Foreign key field '{}' is not defined in the schema.",
                     field_id
                 )
-            });
+            })
+            .to_owned();
 
-            return Some(FkDirectiveInfo {
-                field_type_name,
-                field_name: field_name.to_lowercase(),
-                reference_field_name: ref_field_name.to_string(),
-                object_name: obj.name.clone(),
-                reference_field_type_name: ref_field_type_name.to_owned(),
-            });
+        (ref_field_name.to_string(), ref_field_type_name)
+    } else {
+        let ref_field_name = IdCol::to_lowercase_string();
+        let field_id = format!("{}.{}", field_type_name, ref_field_name);
+        let mut ref_field_type_name = types_map
+            .get(&field_id)
+            .unwrap_or_else(|| {
+                panic!(
+                    "Foreign key field '{}' is not defined in the schema.",
+                    field_id
+                )
+            })
+            .to_owned();
+
+        // In the case where we have an Object! foreign key reference on a  field,
+        // if that object's default 'id' field is 'ID' then 'ID' is going to create
+        // another primary key (can't do that in SQL) -- so we manually change that to
+        // an integer type here. Might have to do this for foreign key directives (above)
+        // as well
+        let non_primary_key_int = sql_types::ColumnType::UInt8.to_string();
+        if ref_field_type_name == IdCol::to_uppercase_string() {
+            ref_field_type_name = non_primary_key_int;
         }
-    }
 
-    None
+        (ref_field_name, ref_field_type_name)
+    };
+
+    DirectiveType::Join {
+        field_type_name,
+        field_name,
+        reference_field_name,
+        object_name: obj.name.clone(),
+        reference_field_type_name: ref_field_type_name,
+    }
 }
 
 pub fn build_schema_fields_and_types_map(
@@ -278,14 +318,14 @@ type Borrower {
 
 type Lender {
     id: ID!
-    borrower: Borrower! @foreign_key(on:account)
+    borrower: Borrower! @join(on:account)
 }
 
 type Auditor {
     id: ID!
     account: Address!
     hash: Bytes32! @indexed
-    borrower: Borrower! @foreign_key(on:account)
+    borrower: Borrower! @join(on:account)
 }
 "#;
 
@@ -296,17 +336,11 @@ type Auditor {
             }
         };
 
-        let (obj_set, directives_set) = build_schema_objects_set(&ast);
-
-        println!(">> TYPES: {:?}", obj_set);
+        let (obj_set, _directives_set) = build_schema_objects_set(&ast);
 
         assert!(obj_set.contains("QueryRoot"));
         assert!(!obj_set.contains("NotARealThing"));
         assert!(obj_set.contains("Borrower"));
         assert!(obj_set.contains("Auditor"));
-
-        assert!(!directives_set.contains("unique"));
-        assert!(directives_set.contains("foreign_key"));
-        assert!(directives_set.contains("indexed"));
     }
 }

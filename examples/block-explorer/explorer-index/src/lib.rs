@@ -8,17 +8,17 @@
 //! cargo build -p explorer-index --release
 //! ```
 //!
-//! Start a local instance of your Fuel Client
+//! Use the fuel-indexer testing components to start your Fuel node and web API
 //!
 //! ```bash
-//! fuel-core --db-type in-memory --port 4000 --ip 127.0.0.1
+//! bash scripts/utils/start_test_components.bash
 //! ```
 //!
 //! With your database backend set up, now start your fuel-indexer binary using the
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/block-explorer/explorer_index.manifest.yaml
+//! cargo run --bin fuel-indexer -- --manifest examples/block-explorer/manifest.yaml
 //! ```
 
 extern crate alloc;
@@ -31,9 +31,8 @@ use std::collections::HashSet;
 // work. In the fuel-indexer repository, we use relative paths (starting from the
 // fuel-indexer root) but if you're building an index outside of the fuel-indexer
 // project you'll want to use full/absolute paths.
-#[indexer(manifest = "examples/block-explorer/explorer_index.manifest.yaml")]
+#[indexer(manifest = "examples/block-explorer/manifest.yaml")]
 mod explorer_index {
-
     // When specifying args to your handler functions, you can either use types defined
     // in your ABI JSON file, or you can use native Fuel types. These native Fuel types
     // include various `Receipt`s, as well as more comprehensive data, in the form of
@@ -62,7 +61,7 @@ mod explorer_index {
 
         // Now we'll iterate over all of the transactions in this block, and persist
         // those to the database as well
-        for (_i, tx) in block.transactions.iter().enumerate() {
+        for tx in block.transactions.iter() {
             let mut tx_amount = 0;
             let mut tokens_transferred = Vec::new();
 
