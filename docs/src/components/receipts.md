@@ -1,8 +1,8 @@
 # Receipts
 
-Upon execution of ABI calls in the Fuel VM, a list of receipts is returned to the caller. Receipts are objects that contain information about executed instructions in a dApp, and by building handlers to index these receipts, we can answer different types of queries. [rewrite this]
+When a Sway contract is deployed and called on a Fuel node, receipts may be generated during its execution. You can think of these receipts as informative objects that are emitted when certain things happen, e.g. transfers, messages, etc. By building [indices](indices/index.md) for receipts, you can create mappings to store this data, allowing your application to answer queries about the contract.
 
-The Fuel indexer supports the following types of receipts:
+The Fuel indexer currently supports the following receipt types:
 
 - Log
 - LogData
