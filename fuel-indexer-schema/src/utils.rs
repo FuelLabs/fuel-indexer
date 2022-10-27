@@ -1,4 +1,5 @@
 extern crate alloc;
+use crate::directives;
 use alloc::vec::Vec;
 pub use fuel_indexer_database_types as sql_types;
 use graphql_parser::schema::{
@@ -7,10 +8,21 @@ use graphql_parser::schema::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
+use strum::{AsRefStr, EnumString};
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
+pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
+
+#[derive(Debug, EnumString, AsRefStr, Default)]
+pub enum IndexMethod {
+    #[default]
+    #[strum(serialize = "btree")]
+    Btree,
+    #[strum(serialize = "hash")]
+    Hash,
+}
 
 pub fn normalize_field_type_name(name: &str) -> String {
     name.replace('!', "")
@@ -66,48 +78,41 @@ pub fn type_name(typ: &TypeDefinition<String>) -> String {
     }
 }
 
-pub fn has_unique_directive(field: &Field<String>) -> bool {
+pub fn get_index_directive(field: &Field<String>) -> Option<directives::Index> {
+    let Field {
+        mut directives,
+        name: field_name,
+        ..
+    } = field.clone();
+
+    if directives.len() == 1 {
+        let Directive { name, .. } = directives.pop().unwrap();
+        if name == INDEX_DIRECTIVE_NAME {
+            return Some(directives::Index::new(field_name));
+        }
+    }
+
+    None
+}
+
+pub fn get_unique_directive(field: &Field<String>) -> directives::Unique {
     let Field { mut directives, .. } = field.clone();
 
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
         if name == UNIQUE_DIRECTIVE_NAME {
-            return true;
+            return directives::Unique(true);
         }
     }
 
-    false
-}
-
-pub enum DirectiveType {
-    Join {
-        reference_field_name: String,
-        field_name: String,
-        field_type_name: String,
-        object_name: String,
-        reference_field_type_name: String,
-    },
-}
-
-pub struct Join {
-    pub reference_field_name: String,
-    pub field_name: String,
-    pub field_type_name: String,
-    pub object_name: String,
-    pub reference_field_type_name: String,
-}
-
-impl Join {
-    pub fn field_id(&self) -> String {
-        format!("{}.{}", self.object_name, self.field_name)
-    }
+    directives::Unique(false)
 }
 
 pub fn get_join_directive_info<'a>(
     field: &Field<'a, String>,
     obj: &ObjectType<'a, String>,
     types_map: &HashMap<String, String>,
-) -> DirectiveType {
+) -> directives::Join {
     let Field {
         name: field_name,
         mut directives,
@@ -168,7 +173,7 @@ pub fn get_join_directive_info<'a>(
         (ref_field_name, ref_field_type_name)
     };
 
-    DirectiveType::Join {
+    directives::Join {
         field_type_name,
         field_name,
         reference_field_name,

@@ -1,15 +1,7 @@
+use crate::utils::IndexMethod;
 use fuel_indexer_database::DbType;
-use fuel_indexer_database_types::*;
 use std::fmt::Write;
 use strum::{AsRefStr, EnumString};
-
-#[derive(Debug, EnumString, AsRefStr)]
-pub enum IndexMethod {
-    #[strum(serialize = "btree")]
-    Btree,
-    #[strum(serialize = "hash")]
-    Hash,
-}
 
 pub trait CreateStatement {
     fn create_statement(&self) -> String;
@@ -22,12 +14,12 @@ pub struct ColumnIndex {
     pub namespace: String,
     pub method: IndexMethod,
     pub unique: bool,
-    pub column: NewColumn,
+    pub column_name: String,
 }
 
 impl ColumnIndex {
     pub fn name(&self) -> String {
-        format!("{}_{}_idx", &self.table_name, &self.column.column_name)
+        format!("{}_{}_idx", &self.table_name, &self.column_name)
     }
 }
 
@@ -47,7 +39,7 @@ impl CreateStatement for ColumnIndex {
                     self.namespace,
                     self.table_name,
                     self.method.as_ref(),
-                    self.column.column_name
+                    self.column_name
                 );
             }
             DbType::Sqlite => {
@@ -56,7 +48,7 @@ impl CreateStatement for ColumnIndex {
                     "INDEX {} ON {}({});",
                     self.name(),
                     self.table_name,
-                    self.column.column_name
+                    self.column_name
                 );
             }
         }

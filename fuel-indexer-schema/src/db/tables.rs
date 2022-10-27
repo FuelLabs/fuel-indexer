@@ -1,9 +1,10 @@
 use crate::{
-    db::models::{ColumnIndex, CreateStatement, ForeignKey, IndexMethod},
+    db::models::{ColumnIndex, CreateStatement, ForeignKey},
+    directives,
     utils::{
         build_schema_fields_and_types_map, build_schema_objects_set,
-        field_type_table_name, get_join_directive_info, has_unique_directive,
-        normalize_field_type_name, type_id, DirectiveType, BASE_SCHEMA,
+        field_type_table_name, get_index_directive, get_join_directive_info,
+        get_unique_directive, normalize_field_type_name, type_id, BASE_SCHEMA,
     },
 };
 use fuel_indexer_database::{queries, DbType, IndexerConnection, IndexerConnectionPool};
@@ -177,32 +178,12 @@ impl SchemaBuilder {
         }
     }
 
-    fn process_field_index_directive(
-        &self,
-        field: &Field<String>,
-        column: NewColumn,
-        table_name: &String,
-    ) -> Option<ColumnIndex> {
-        if !field.directives.is_empty() {
-            return Some(ColumnIndex {
-                db_type: self.db_type.clone(),
-                table_name: table_name.to_string(),
-                namespace: self.namespace.clone(),
-                method: IndexMethod::Btree,
-                unique: false,
-                column,
-            });
-        }
-
-        None
-    }
-
     fn generate_columns<'a>(
         &mut self,
         obj: &ObjectType<'a, String>,
         type_id: i64,
         fields: &[Field<'a, String>],
-        table_name: &String,
+        table_name: &str,
         types_map: &HashMap<String, String>,
     ) -> String {
         let mut fragments = Vec::new();
@@ -210,8 +191,10 @@ impl SchemaBuilder {
         for (pos, field) in fields.iter().enumerate() {
             let (typ, nullable) = self.process_type(&field.field_type);
 
+            let directives::Unique(unique) = get_unique_directive(field);
+
             if typ == ColumnType::ForeignKey {
-                let DirectiveType::Join {
+                let directives::Join {
                     reference_field_name,
                     field_type_name,
                     reference_field_type_name,
@@ -221,7 +204,7 @@ impl SchemaBuilder {
                 let fk = ForeignKey::new(
                     self.db_type.clone(),
                     self.namespace.clone(),
-                    table_name.clone(),
+                    table_name.to_string(),
                     field.name.clone(),
                     field_type_table_name(field),
                     reference_field_name.clone(),
@@ -235,7 +218,7 @@ impl SchemaBuilder {
                     column_type: reference_field_type_name.to_owned(),
                     graphql_type: field_type_name,
                     nullable,
-                    unique: has_unique_directive(field),
+                    unique,
                 };
 
                 fragments.push(column.sql_fragment());
@@ -252,25 +235,21 @@ impl SchemaBuilder {
                 column_type: typ.to_string(),
                 graphql_type: field.field_type.to_string(),
                 nullable,
-                unique: has_unique_directive(field),
+                unique,
             };
 
-            if let Some(ColumnIndex {
-                db_type,
-                table_name,
-                namespace,
+            if let Some(directives::Index {
+                column_name,
                 method,
-                unique,
-                column,
-            }) = self.process_field_index_directive(field, column.clone(), table_name)
+            }) = get_index_directive(field)
             {
                 self.indices.push(ColumnIndex {
-                    db_type,
-                    table_name,
-                    namespace,
+                    db_type: self.db_type.clone(),
+                    table_name: table_name.to_string(),
+                    namespace: self.namespace.to_string(),
                     method,
                     unique,
-                    column,
+                    column_name,
                 });
             }
 

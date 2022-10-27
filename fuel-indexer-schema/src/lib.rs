@@ -14,11 +14,10 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "foreign_key";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 
-pub mod types;
-
 #[cfg(feature = "db-models")]
 pub mod db;
-
+pub mod directives;
+pub mod types;
 pub mod utils;
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]

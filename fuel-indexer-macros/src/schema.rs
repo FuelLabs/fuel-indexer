@@ -1,17 +1,25 @@
 use fuel_indexer_lib::utils::local_repository_root;
-use fuel_indexer_schema::utils::{
-    build_schema_fields_and_types_map, build_schema_objects_set, get_join_directive_info,
-    schema_version, type_id, DirectiveType, BASE_SCHEMA,
+use fuel_indexer_schema::{
+    directives,
+    utils::{
+        build_schema_fields_and_types_map, build_schema_objects_set,
+        get_join_directive_info, schema_version, type_id, BASE_SCHEMA,
+    },
 };
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{
     Definition, Document, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
 };
+use lazy_static::lazy_static;
 use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+
+lazy_static! {
+    static ref COPY_TYPES: HashSet<&'static str> = HashSet::from(["Jsonb"]);
+}
 
 fn process_type<'a>(
     types: &HashSet<String>,
@@ -73,7 +81,7 @@ fn process_fk_field<'a>(
     proc_macro2::Ident,
     proc_macro2::TokenStream,
 ) {
-    let DirectiveType::Join {
+    let directives::Join {
         field_name,
         reference_field_type_name,
         ..
@@ -87,7 +95,7 @@ fn process_fk_field<'a>(
         let item = vec.pop().expect("Missing item in row.");
         let #ident = match item {
             FtColumn::#typ(t) => t,
-            _ => panic!("Invalid column type {:?}.", item),
+            _ => panic!("Invalid column type: {:?}.", item),
         };
 
     };
@@ -104,9 +112,6 @@ fn process_type_def<'a>(
     primitives: &HashSet<String>,
     types_map: &HashMap<String, String>,
 ) -> Option<proc_macro2::TokenStream> {
-    let copy_traits: HashSet<String> =
-        HashSet::from_iter(["Jsonb"].iter().map(|x| x.to_string()));
-
     match typ {
         TypeDefinition::Object(obj) => {
             if obj.name == *query_root {
@@ -135,7 +140,7 @@ fn process_type_def<'a>(
 
                 processed.insert(type_name_str.clone());
 
-                let decoder = if copy_traits.contains(&type_name_str) {
+                let decoder = if COPY_TYPES.contains(type_name_str.as_str()) {
                     quote! { FtColumn::#type_name(self.#field_name.clone()), }
                 } else {
                     quote! { FtColumn::#type_name(self.#field_name), }
