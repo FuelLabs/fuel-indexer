@@ -29,6 +29,8 @@ struct Event {
 }
 ```
 
+<< TODO FIX >>
+
 The corresponding GraphQL schema to mirror this `Event` struct would resemble:
 
 ```graphql

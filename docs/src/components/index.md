@@ -1,9 +1,10 @@
 # Components
 
-A list of components used by the Fuel Indexer.
+Below is a list of components used by the Fuel indexer. Read through each section to understand how each of these individual components contributes to creating a multi-faceting indexing service.
 
-- [GraphQL API](./gql-server.md)
-- [Database](./database/index.md)
-- [Indices](./indices/index.md)
+Understanding how these components interact is critical to understanding how to get the most out of your Fuel indexer service.
+
 - [Assets](./assets/index.md)
-- [Receipts](./receipts.md)
+- [Database](./database/index.md)
+- [GraphQL API](./graphql/index.md)
+- [Indices](./indices/index.md)

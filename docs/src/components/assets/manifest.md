@@ -3,12 +3,14 @@
 A manifest serves as the YAML configuration file for a given index. A proper manifest has the following structure:
 
 ```yaml
-namespace: fuel_indexer_test
+namespace: fuel
 identifier: index1
-abi: fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json
-graphql_schema: fuel-indexer-tests/assets/fuel_indexer_test.graphql
+abi: path/to/my/contract-abi.json
+contract_id: "0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051"
+graphql_schema: path/to/my/schema.graphql
+start_block: 1564
 module:
-  wasm: fuel-indexer-tests/assets/fuel_indexer_test.wasm
+  wasm: path/to/my/wasm_module.wasm
 ```
 
 ## `namespace`
@@ -24,11 +26,19 @@ module:
 
 - The `abi` option is used to provide a link to the Sway JSON application binary interface (JSON ABI) that is generated when you build your Sway project. This generated ABI contains all types, type IDs, and logged types used in your Sway contract.
 
+## `contract_id`
+
+- The `contract_id` specifies which particular contract you would like your index to subscribe to.
+
 ## `graphql_schema`
 
 - The `graphql_schema` field contains the file path that points to the GraphQL schema for the given index. This schema file holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file [here](schema.md).
 
 > Important: The objects defined in your GraphQL schema are called 'entities'. These entities are what will be eventually be stored in the database.
+
+## `start_block`
+
+- The particular start block after which you'd like your indexer to start indexing events.
 
 ## `module`
 

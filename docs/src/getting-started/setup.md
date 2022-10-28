@@ -1,14 +1,13 @@
-# Setup instructions for the Fuel SDK
+# Setup
 
 The Fuel indexer requires a few components to be installed prior to installing system and application dependencies.
 
-## What you'll need
+## Rust 2021
 
-### Rust 2021
+- [More info on installing](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 
-- [More info on installing Rust](https://doc.rust-lang.org/cargo/getting-started/installation.html)
+## The `fuel-indexer` repository
 
-### The `fuel-indexer` project
 - A clone of the [`fuel-indexer`](https://github.com/FuelLabs/fuel-indexer/) repository
 
 ```bash

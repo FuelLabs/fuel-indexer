@@ -1,4 +1,10 @@
-# GraphQL API Server
+# GraphQL
+
+## Schema
+
+[ TODO ]
+
+## API Server
 
 - The `fuel-indexer-api-server` crate of the Fuel indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the database.
 - Note that the main `fuel-indexer` binary of the indexer project also contains a queryable GraphQL API endpoint.

@@ -7,7 +7,7 @@
 In order to compile a WASM module that you've written, you would merely:
 
 ```bash
-cd /my/wasm/directory && cargo build --release
+cd /my/index-lib && cargo build --release
 ```
 
 > Important: 
