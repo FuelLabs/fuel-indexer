@@ -159,6 +159,8 @@ mod explorer_index {
                 }
             }
 
+            Logger::info(">> WOMB");
+
             let tokens_transferred = serde_json::to_value(tokens_transferred)
                 .unwrap()
                 .to_string();

@@ -19,6 +19,7 @@ use lazy_static::lazy_static;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
+use std::fs::canonicalize;
 use std::path::{Path, PathBuf};
 use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
 
@@ -47,12 +48,8 @@ lazy_static! {
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
 }
 
-fn get_json_abi(abi: Option<String>) -> ProgramABI {
-    if abi.is_none() {
-        return ProgramABI::default();
-    }
-
-    let src = match Source::parse(abi.unwrap()) {
+fn get_json_abi(abi: &str) -> ProgramABI {
+    let src = match Source::parse(abi) {
         Ok(src) => src,
         Err(e) => {
             proc_macro_error::abort_call_site!(
@@ -83,7 +80,12 @@ fn rust_name_str(ty: &str) -> Ident {
 
 fn rust_name(ty: &TypeDeclaration) -> Ident {
     if ty.components.is_some() {
-        let ty = ty.type_field.split(' ').last().unwrap().to_string();
+        let ty = ty
+            .type_field
+            .split(' ')
+            .last()
+            .expect("Could not parse TypeDeclaration for Rust name.")
+            .to_string();
         rust_name_str(&ty)
     } else {
         let ty = ty.type_field.replace(['[', ']'], "_");
@@ -93,7 +95,12 @@ fn rust_name(ty: &TypeDeclaration) -> Ident {
 
 fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
     if ty.components.is_some() {
-        let ty = ty.type_field.split(' ').last().unwrap().to_string();
+        let ty = ty
+            .type_field
+            .split(' ')
+            .last()
+            .expect("Could not parse TypeDeclaration for Rust type.")
+            .to_string();
         let ident = format_ident! { "{}", ty };
         quote! { #ident }
     } else {
@@ -140,17 +147,18 @@ fn decode_snippet(
     name: &Ident,
 ) -> proc_macro2::TokenStream {
     if is_primitive(ty) {
-        // TODO: do we want decoder for primitive? Might need something a little smarte to identify what the primitive is for... and to which handler it will go.
+        // TODO: do we want decoder for primitive? Might need something a little smarte to identify
+        // what the primitive is for... and to which handler it will go.
         quote! {
             #ty_id => {
-                Logger::warn("Skipping primitive decoder");
+                Logger::warn("Skipping primitive decoder.");
             }
         }
     } else {
         quote! {
             #ty_id => {
-                let decoded = ABIDecoder::decode_single(&#ty::param_type(), &data).expect("Failed decoding");
-                let obj = #ty::from_token(decoded).expect("Failed detokenizing");
+                let decoded = ABIDecoder::decode_single(&#ty::param_type(), &data).expect("Failed decoding.");
+                let obj = #ty::from_token(decoded).expect("Failed detokenizing.");
                 self.#name.push(obj);
             }
         }
@@ -158,11 +166,18 @@ fn decode_snippet(
 }
 
 fn process_fn_items(
-    manifest: Manifest,
-    abi: Option<String>,
-    input: ItemMod,
+    manifest: &Manifest,
+    abi: &str,
+    indexer_module: ItemMod,
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
-    if input.content.is_none() || input.content.as_ref().unwrap().1.is_empty() {
+    if indexer_module.content.is_none()
+        || indexer_module
+            .content
+            .as_ref()
+            .expect("Could not parse function input contents.")
+            .1
+            .is_empty()
+    {
         proc_macro_error::abort_call_site!(
             "No module body, must specify at least one handler function."
         )
@@ -208,7 +223,7 @@ fn process_fn_items(
         let ty_id = typ.type_id;
 
         if is_fuel_primitive(&ty) {
-            proc_macro_error::abort_call_site!("'{:?} is a reserved Fuel type.")
+            proc_macro_error::abort_call_site!("'{:?}' is a reserved Fuel type.")
         }
 
         type_ids.insert(ty.to_string(), ty_id);
@@ -227,7 +242,10 @@ fn process_fn_items(
         let params: Vec<ParamType> = function
             .inputs
             .iter()
-            .map(|x| ParamType::try_from_type_application(x, &type_map).unwrap())
+            .map(|x| {
+                ParamType::try_from_type_application(x, &type_map)
+                    .expect("Could not derive TypeApplication param types.")
+            })
             .collect();
         let sig = resolve_fn_selector(&function.name, &params[..]);
         let selector = u64::from_be_bytes(sig);
@@ -238,7 +256,10 @@ fn process_fn_items(
         });
     }
 
-    let contents = input.content.unwrap().1;
+    let contents = indexer_module
+        .content
+        .expect("Could not parse input content.")
+        .1;
     let mut handler_fns = Vec::with_capacity(contents.len());
 
     let mut transfer_decoder = quote! {};
@@ -261,7 +282,7 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let contract_conditional = match manifest.contract_id {
+    let contract_conditional = match &manifest.contract_id {
         Some(contract_id) => {
             quote! {
                 if id != ContractId::from(#contract_id) {
@@ -287,7 +308,11 @@ fn process_fn_items(
                         }
                         FnArg::Typed(PatType { ty, .. }) => {
                             if let Type::Path(path) = &**ty {
-                                let path = path.path.segments.last().unwrap();
+                                let path = path
+                                    .path
+                                    .segments
+                                    .last()
+                                    .expect("Could not get last path segment.");
                                 let path_ident_str = path.ident.to_string();
                                 // NOTE: may need to get something else for primitives...
                                 let ty_id = match type_ids.get(&path_ident_str) {
@@ -538,6 +563,54 @@ fn process_fn_items(
     )
 }
 
+pub fn prefix_abi_and_schema_paths(
+    abi: Option<&String>,
+    schema_string: String,
+) -> (Option<String>, String) {
+    if let Some(abi) = abi {
+        match std::env::var("COMPILE_TEST_PREFIX") {
+            Ok(prefix) => {
+                let prefixed = std::path::Path::new(&prefix).join(&abi);
+                let abi_string = prefixed
+                    .into_os_string()
+                    .to_str()
+                    .expect("Could not parse prefixed ABI path.")
+                    .to_string();
+                let prefixed = std::path::Path::new(&prefix).join(&schema_string);
+                let schema_string = prefixed
+                    .into_os_string()
+                    .to_str()
+                    .expect("Could not parse prefixed GraphQL schema path.")
+                    .to_string();
+
+                return (Some(abi_string), schema_string);
+            }
+            Err(_) => {
+                return (Some(abi.into()), schema_string);
+            }
+        };
+    }
+
+    (None, schema_string)
+}
+
+pub fn get_abi_tokens(namespace: &str, abi: &String) -> proc_macro2::TokenStream {
+    match Abigen::new(namespace, abi) {
+        Ok(abi) => match abi.no_std().expand() {
+            Ok(tokens) => tokens,
+            Err(e) => {
+                proc_macro_error::abort_call_site!(
+                    "Could not generate tokens for abi: {:?}.",
+                    e
+                )
+            }
+        },
+        Err(e) => {
+            proc_macro_error::abort_call_site!("Could not generate abi object: {:?}.", e)
+        }
+    }
+}
+
 pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStream {
     let config = parse_macro_input!(attrs as IndexerConfig);
 
@@ -547,7 +620,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         .map(|x| Path::new(&x).join(&manifest))
         .unwrap_or_else(|| PathBuf::from(&manifest));
 
-    let manifest = Manifest::from_file(&path).unwrap();
+    let manifest = Manifest::from_file(&path).expect("Could not parse manifest.");
 
     let Manifest {
         abi,
@@ -556,48 +629,30 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         ..
     } = manifest.clone();
 
-    let indexer = parse_macro_input!(item as ItemMod);
+    let indexer_module = parse_macro_input!(item as ItemMod);
 
-    let mut abi_string = manifest.abi.clone();
-    let mut schema_string = manifest.graphql_schema.clone();
-    let mut abi_tokens = quote! {};
+    let (abi, schema_string) = prefix_abi_and_schema_paths(abi.as_ref(), graphql_schema);
 
-    if let Some(abi) = abi {
-        (abi_string, schema_string) = match std::env::var("COMPILE_TEST_PREFIX") {
-            Ok(prefix) => {
-                let prefixed = std::path::Path::new(&prefix).join(&abi);
-                let abi_string = prefixed.into_os_string().to_str().unwrap().to_string();
-                let prefixed = std::path::Path::new(&prefix).join(&graphql_schema);
-                let schema_string =
-                    prefixed.into_os_string().to_str().unwrap().to_string();
-                (Some(abi_string), schema_string)
-            }
-            Err(_) => (Some(abi), graphql_schema),
-        };
+    // TOOD: https://github.com/FuelLabs/fuel-indexer/issues/289
+    let abi_path = abi.unwrap_or_else(|| {
+        canonicalize(
+            Path::new(file!())
+                .parent()
+                .unwrap()
+                .join("default-abi.json"),
+        )
+        .unwrap()
+        .into_os_string()
+        .to_str()
+        .expect("Failed to resolve default-abi.json")
+        .to_string()
+    });
 
-        abi_tokens = match Abigen::new(&namespace, &abi_string.clone().unwrap()) {
-            Ok(abi) => match abi.no_std().expand() {
-                Ok(tokens) => tokens,
-                Err(e) => {
-                    proc_macro_error::abort_call_site!(
-                        "Could not generate tokens for abi! {:?}",
-                        e
-                    )
-                }
-            },
-            Err(e) => {
-                proc_macro_error::abort_call_site!(
-                    "Could not generate abi object: {:?}",
-                    e
-                )
-            }
-        };
-    }
-
+    let abi_tokens = get_abi_tokens(&namespace, &abi_path);
     let graphql_tokens = process_graphql_schema(namespace, schema_string);
 
     let (handler_block, fn_items) =
-        process_fn_items(manifest.clone(), abi_string, indexer);
+        process_fn_items(&manifest, &abi_path, indexer_module);
 
     let handler_block = if manifest.is_native() {
         handler_block_native(handler_block)

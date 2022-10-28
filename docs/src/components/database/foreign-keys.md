@@ -1,7 +1,7 @@
 # Foreign Keys
 
 - The Fuel indexer service supports foreign key constraints and relationships using a combination of GraphQL schema and a database (whether Postgres or SQLite).
-- There are two types of uses for foreign keys - _implicit_ and _explicity_
+- There are two types of uses for foreign keys - _implicit_ and _explicit_
 
 > IMPORTANT:
 >

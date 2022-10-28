@@ -2,7 +2,7 @@
 
 > Per GraphQL: A directive is an identifier preceded by a @ character, optionally followed by a list of named arguments, which can appear after almost any form of syntax in the GraphQL query or schema languages.
 
-- As of this writing list of supported Fuel GraphQL schema directives includes:
+- As of this writing the list of supported Fuel GraphQL schema directives includes:
 
   - `@indexed`
   - `@unique`

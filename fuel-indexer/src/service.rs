@@ -159,10 +159,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                 let mut transactions = Vec::new();
 
                 for trans in block.transactions {
-                    // TODO: We should optimize this a bit by using client.transactions(), but need
-                    // to make sure that the paginated response contains only the transactions
-                    // in block.transactions (should be the exact same, just full transactions as opposed
-                    // to TransactionIdFragments)
+                    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/288
                     match client.transaction(&trans.id.to_string()).await {
                         Ok(result) => {
                             if let Some(TransactionResponse {
