@@ -51,9 +51,9 @@ pub struct AssetReloadRequest {
     pub identifier: String,
 }
 
-pub fn sha256_digest(blob: &Vec<u8>) -> String {
+pub fn sha256_digest<T: AsRef<[u8]>>(blob: &T) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(blob.as_slice());
+    hasher.update(blob);
     format!("{:x}", hasher.finalize())
 }
 

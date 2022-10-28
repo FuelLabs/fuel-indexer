@@ -4,7 +4,7 @@ use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult, Manife
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_indexer_schema::{
-    types::BlockData,
+    types::fuel::BlockData,
     utils::{deserialize, serialize},
 };
 use std::path::Path;

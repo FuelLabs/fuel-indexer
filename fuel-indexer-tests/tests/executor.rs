@@ -2,7 +2,8 @@ use fuel_indexer::{
     executor::WasmIndexExecutor, Executor, IndexerError, Manifest, Module, SchemaManager,
 };
 use fuel_indexer_schema::types::{
-    transaction::TransactionStatus, BlockData, TransactionData,
+    fuel::{BlockData, TransactionData},
+    transaction::TransactionStatus,
 };
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
 use fuel_tx::{Receipt, Transaction};

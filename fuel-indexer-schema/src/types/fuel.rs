@@ -1,34 +1,20 @@
-use crate::{types::TransactionStatus, utils::type_id};
+use crate::{
+    types::{
+        transaction::TransactionStatus, Address, AssetId, Bytes32, ContractId, MessageId,
+    },
+    utils::type_id,
+};
 pub use fuel_tx::Receipt;
 use fuel_tx::{Transaction, TxId};
-pub use fuel_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
-};
-pub use fuels_core::types::Bits256;
 use serde::{Deserialize, Serialize};
 
 pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
 
-pub trait NativeFuelTypeIdent {
-    fn path_ident_str() -> &'static str;
+pub trait NativeFuelType {
     fn type_id() -> usize;
 }
 
-// TODO: We could also create ABI JSON files with these native Fuel indexer-macro types <( '.' )>
-// These aren't actually schema-related types so they should be moved.
-// https://github.com/FuelLabs/fuel-indexer/issues/285
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct B256 {}
-
-impl NativeFuelTypeIdent for B256 {
-    fn path_ident_str() -> &'static str {
-        "BlockData"
-    }
-
-    fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
-    }
-}
+// TODO: https://github.com/FuelLabs/fuel-indexer/issues/285
 
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TransactionData {
@@ -47,19 +33,9 @@ pub struct BlockData {
     pub transactions: Vec<TransactionData>,
 }
 
-impl NativeFuelTypeIdent for BlockData {
-    fn path_ident_str() -> &'static str {
-        "BlockData"
-    }
-
+impl NativeFuelType for BlockData {
     fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
-    }
-}
-
-impl BlockData {
-    pub fn macro_attribute_ident_str() -> &'static str {
-        "block"
+        type_id(FUEL_TYPES_NAMESPACE, "BlockData") as usize
     }
 }
 
@@ -73,13 +49,9 @@ pub struct Transfer {
     pub is: u64,
 }
 
-impl NativeFuelTypeIdent for Transfer {
-    fn path_ident_str() -> &'static str {
-        "Transfer"
-    }
-
+impl NativeFuelType for Transfer {
     fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        type_id(FUEL_TYPES_NAMESPACE, "Transfer") as usize
     }
 }
 
@@ -90,13 +62,9 @@ pub struct Log {
     pub rb: u64,
 }
 
-impl NativeFuelTypeIdent for Log {
-    fn path_ident_str() -> &'static str {
-        "Log"
-    }
-
+impl NativeFuelType for Log {
     fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        type_id(FUEL_TYPES_NAMESPACE, "Log") as usize
     }
 }
 
@@ -110,13 +78,9 @@ pub struct LogData {
     pub ptr: u64,
 }
 
-impl NativeFuelTypeIdent for LogData {
-    fn path_ident_str() -> &'static str {
-        "LogData"
-    }
-
+impl NativeFuelType for LogData {
     fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        type_id(FUEL_TYPES_NAMESPACE, "LogData") as usize
     }
 }
 
@@ -126,13 +90,9 @@ pub struct ScriptResult {
     pub gas_used: u64,
 }
 
-impl NativeFuelTypeIdent for ScriptResult {
-    fn path_ident_str() -> &'static str {
-        "ScriptResult"
-    }
-
+impl NativeFuelType for ScriptResult {
     fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        type_id(FUEL_TYPES_NAMESPACE, "ScriptResult") as usize
     }
 }
 
@@ -146,13 +106,9 @@ pub struct TransferOut {
     pub is: u64,
 }
 
-impl NativeFuelTypeIdent for TransferOut {
-    fn path_ident_str() -> &'static str {
-        "TransferOut"
-    }
-
+impl NativeFuelType for TransferOut {
     fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        type_id(FUEL_TYPES_NAMESPACE, "TransferOut") as usize
     }
 }
 
@@ -168,22 +124,8 @@ pub struct MessageOut {
     pub data: Vec<u8>,
 }
 
-impl NativeFuelTypeIdent for MessageOut {
-    fn path_ident_str() -> &'static str {
-        "MessageOut"
-    }
-
+impl NativeFuelType for MessageOut {
     fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, Self::path_ident_str()) as usize
+        type_id(FUEL_TYPES_NAMESPACE, "MessageOut") as usize
     }
 }
-
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
-pub struct Jsonb(pub String);
-
-pub type ID = u64;
-pub type Int4 = i32;
-pub type Int8 = i64;
-pub type UInt4 = u32;
-pub type UInt8 = u64;
-pub type Timestamp = u64;

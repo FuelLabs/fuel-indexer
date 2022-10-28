@@ -26,6 +26,7 @@ mod indexer {
 
 fn main() {
     use fuels_core::{abi_encoder::ABIEncoder};
+    use fuel_indexer_schema::types::{TransactionStatus, fuel::{BlockData, TransactionData, Transaction}};
 
     let s1 = SomeEvent {
         id: 9,

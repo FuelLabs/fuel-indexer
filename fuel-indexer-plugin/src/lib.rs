@@ -7,8 +7,12 @@ use fuel_indexer_schema::{
 };
 
 pub mod types {
-    pub use fuel_indexer_schema::types::*;
+    pub use fuel_indexer_schema::types::{fuel, *};
     pub use fuel_indexer_schema::FtColumn;
+}
+
+pub mod utils {
+    pub use fuel_indexer_lib::utils::sha256_digest;
 }
 
 extern "C" {

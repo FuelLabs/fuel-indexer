@@ -97,6 +97,7 @@ impl Database {
         Ok(queries::execute_query(&mut conn, "ROLLBACK".into()).await?)
     }
 
+    // FIXME: Upsert requires entities that have 1+ fields
     fn upsert_query(
         &self,
         table: &str,
@@ -133,7 +134,12 @@ impl Database {
         columns: Vec<FtColumn>,
         bytes: Vec<u8>,
     ) {
-        let table = &self.tables[&type_id];
+        let table = self.tables.get(&type_id).unwrap_or_else(|| {
+            panic!(
+                "TypeId({}) not found in tables: {:?}. Is your WASM module up-to-date?",
+                type_id, self.tables
+            )
+        });
         let inserts: Vec<_> = columns.iter().map(|col| col.query_fragment()).collect();
         let updates: Vec<_> = self.schema[table]
             .iter()

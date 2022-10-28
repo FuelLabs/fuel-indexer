@@ -23,8 +23,16 @@
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-#[allow(unused)]
+use nom::AsBytes;
 use std::collections::HashSet;
+
+pub fn derive_unique_id(id: ContractId, entropy: &[u8]) -> Bytes32 {
+    let contract_id_bytes = id.as_bytes();
+    let mut id: [u8; 32] = [0u8; 32];
+    let digest = sha256_digest(&[contract_id_bytes, entropy].concat());
+    id.copy_from_slice(digest.as_bytes());
+    Bytes32::from(id)
+}
 
 // We'll pass our manifest to our #[indexer] attribute. This manifest contains
 // all of the relevant configuration parameters in regard to how our index will
@@ -38,14 +46,14 @@ mod explorer_index {
     // include various `Receipt`s, as well as more comprehensive data, in the form of
     // `BlockData`. A list of native Fuel types can be found at [TODO INSERT LINK]
     #[no_mangle]
-    fn index_explorer_data(block: BlockData) {
+    fn index_explorer_data(block: fuel::BlockData) {
         // Here we convert the `BlockData` struct that we get from our Fuel node, into
         // a block entity that we can persist to the database. The `Block` type below is
         // defined in our schema/explorer.graphql and represents the type that we will
         // save to our database.
         let mut block_gas_limit = 0;
 
-        let block_entity = Block {
+        let blck = Block {
             id: block.id,
             height: block.height,
             timestamp: block.time,
@@ -54,11 +62,12 @@ mod explorer_index {
         };
 
         // Now that we've created the object for the database, let's save it.
-        block_entity.save();
+        blck.save();
 
-        // Keep track of all accounts involved in this transaction
+        // Keep track of some Receipt data involved in this transaction
         let mut accounts = HashSet::new();
         let mut contracts = HashSet::new();
+        let mut logs = HashSet::new();
 
         // Now we'll iterate over all of the transactions in this block, and persist
         // those to the database as well
@@ -108,18 +117,30 @@ mod explorer_index {
                 match receipt {
                     #[allow(unused)]
                     Receipt::Call { id, .. } => {
-                        contracts.insert(Contract { creator: *id });
+                        contracts.insert(Contract {
+                            id: *id,
+                            balance: 0,
+                        });
                     }
                     #[allow(unused)]
                     Receipt::ReturnData { id, .. } => {
-                        contracts.insert(Contract { creator: *id });
+                        contracts.insert(Contract {
+                            id: *id,
+                            balance: 0,
+                        });
                     }
                     #[allow(unused)]
                     Receipt::Transfer {
                         id, to, asset_id, ..
                     } => {
-                        contracts.insert(Contract { creator: *id });
-                        contracts.insert(Contract { creator: *to });
+                        contracts.insert(Contract {
+                            id: *id,
+                            balance: 0,
+                        });
+                        contracts.insert(Contract {
+                            id: *to,
+                            balance: 0,
+                        });
                         tokens_transferred.push(asset_id.to_string());
                     }
                     #[allow(unused)]
@@ -131,16 +152,33 @@ mod explorer_index {
                         ..
                     } => {
                         tx_amount += amount;
-                        accounts.insert(Account { address: *to });
+                        accounts.insert(Account {
+                            id: *to,
+                            balance: 0,
+                        });
                         tokens_transferred.push(asset_id.to_string());
                     }
                     #[allow(unused)]
-                    Receipt::Log { id, .. } => {
-                        contracts.insert(Contract { creator: *id });
+                    Receipt::Log { id, rb, .. } => {
+                        contracts.insert(Contract {
+                            id: *id,
+                            balance: 0,
+                        });
+
+                        let log_value_bytes = u64::to_le_bytes(*rb);
+                        let id = derive_unique_id(*id, &log_value_bytes);
+                        logs.insert(Log {
+                            id,
+                            contract_id: ContractId::from(*id),
+                            message: Jsonb(format!(r#"{{"value":"{rb}"}}"#)),
+                        });
                     }
                     #[allow(unused)]
                     Receipt::LogData { id, .. } => {
-                        contracts.insert(Contract { creator: *id });
+                        contracts.insert(Contract {
+                            id: *id,
+                            balance: 0,
+                        });
                     }
                     #[allow(unused)]
                     Receipt::ScriptResult { result, gas_used } => {}
@@ -152,6 +190,14 @@ mod explorer_index {
                         ..
                     } => {
                         tx_amount += amount;
+                        accounts.insert(Account {
+                            id: *sender,
+                            balance: 0,
+                        });
+                        accounts.insert(Account {
+                            id: *recipient,
+                            balance: 0,
+                        });
                     }
                     _ => {
                         Logger::info("This type is not handled yet. (>'.')>");
@@ -159,15 +205,13 @@ mod explorer_index {
                 }
             }
 
-            Logger::info(">> WOMB");
-
             let tokens_transferred = serde_json::to_value(tokens_transferred)
                 .unwrap()
                 .to_string();
 
             let tx_entity = Tx {
-                block: block_entity.id,
-                timestamp: block_entity.timestamp,
+                block: blck.id,
+                timestamp: blck.timestamp,
                 id: tx.id,
                 value: tx_amount,
                 status: tx.status.clone().into(),
@@ -175,6 +219,14 @@ mod explorer_index {
             };
 
             tx_entity.save();
+        }
+
+        for account in accounts.iter() {
+            account.save();
+        }
+
+        for contract in contracts.iter() {
+            contract.save();
         }
     }
 }

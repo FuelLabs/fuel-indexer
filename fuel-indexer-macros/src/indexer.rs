@@ -3,13 +3,7 @@ use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
 use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
-use fuel_indexer_schema::{
-    types::{
-        BlockData, Log, LogData, MessageOut, NativeFuelTypeIdent, ScriptResult, Transfer,
-        TransferOut, B256, FUEL_TYPES_NAMESPACE,
-    },
-    utils::type_id,
-};
+use fuel_indexer_schema::{types::fuel, utils::type_id};
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
@@ -25,24 +19,23 @@ use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
 
 lazy_static! {
     static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
-        Transfer::path_ident_str(),
-        BlockData::path_ident_str(),
-        B256::path_ident_str(),
-        Log::path_ident_str(),
-        LogData::path_ident_str(),
-        ScriptResult::path_ident_str(),
-        TransferOut::path_ident_str(),
-        MessageOut::path_ident_str(),
+        "BlockData",
+        "Log",
+        "LogData",
+        "MessageOut",
+        "ScriptResult",
+        "Transfer",
+        "TransferOut",
     ]);
     static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["Vec"]);
     static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["()"]);
     static ref FUEL_PRIMITIVE_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
-        Transfer::path_ident_str(),
-        Log::path_ident_str(),
-        LogData::path_ident_str(),
-        ScriptResult::path_ident_str(),
-        TransferOut::path_ident_str(),
-        MessageOut::path_ident_str(),
+        "Transfer",
+        "Log",
+        "LogData",
+        "ScriptResult",
+        "TransferOut",
+        "MessageOut",
     ]);
     static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
@@ -112,13 +105,13 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u32" => quote! { u32 },
             "u64" => quote! { u64 },
             "b256" => quote! { B256 },
-            "Log" => quote! { Log },
-            "BlockData" => quote! { BlockData },
-            "LogData" => quote! { LogData },
-            "Transfer" => quote! { Transfer },
-            "TransferOut" => quote! { TransferOut },
-            "ScriptResult" => quote! { ScriptResult },
-            "MessageOut" => quote! { MessageOut },
+            "Log" => quote! { fuel::Log },
+            "BlockData" => quote! { fuel::BlockData },
+            "LogData" => quote! { fuel::LogData },
+            "Transfer" => quote! { fuel::Transfer },
+            "TransferOut" => quote! { fuel::TransferOut },
+            "ScriptResult" => quote! { fuel::ScriptResult },
+            "MessageOut" => quote! { fuel::MessageOut },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!("Unrecognized primitive type: {:?}", o)
@@ -194,7 +187,12 @@ fn process_fn_items(
     let mut type_map = HashMap::new();
     let mut type_ids = FUEL_PRIMITIVES
         .iter()
-        .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
+        .map(|x| {
+            (
+                x.to_string(),
+                type_id(fuel::FUEL_TYPES_NAMESPACE, x) as usize,
+            )
+        })
         .collect::<HashMap<String, usize>>();
 
     let mut logged_types = Vec::new();
@@ -453,19 +451,19 @@ fn process_fn_items(
                 self.decode_type(ty_id, data);
             }
 
-            pub fn decode_blockdata(&mut self, data: BlockData) {
+            pub fn decode_blockdata(&mut self, data: fuel::BlockData) {
                 #blockdata_decoder
             }
 
-            pub fn decode_transfer(&mut self, data: Transfer) {
+            pub fn decode_transfer(&mut self, data: fuel::Transfer) {
                 #transfer_decoder
             }
 
-            pub fn decode_transferout(&mut self, data: TransferOut) {
+            pub fn decode_transferout(&mut self, data: fuel::TransferOut) {
                 #transferout_decoder
             }
 
-            pub fn decode_log(&mut self, data: Log) {
+            pub fn decode_log(&mut self, data: fuel::Log) {
                 #log_decoder
             }
 
@@ -476,11 +474,11 @@ fn process_fn_items(
                 }
             }
 
-            pub fn decode_scriptresult(&mut self, data: ScriptResult) {
+            pub fn decode_scriptresult(&mut self, data: fuel::ScriptResult) {
                 #scriptresult_decoder
             }
 
-            pub fn decode_messageout(&mut self, data: MessageOut) {
+            pub fn decode_messageout(&mut self, data: fuel::MessageOut) {
                 #messageout_decoder
             }
 
@@ -516,17 +514,17 @@ fn process_fn_items(
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 #contract_conditional
-                                let data = Transfer{ contract_id: id, to, asset_id, amount, pc, is };
+                                let data = fuel::Transfer{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transfer(data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
                                 #contract_conditional
-                                let data = TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
+                                let data = fuel::TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transferout(data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
                                 #contract_conditional
-                                let data = Log{ contract_id: id, ra, rb };
+                                let data = fuel::Log{ contract_id: id, ra, rb };
                                 decoder.decode_log(data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
@@ -536,12 +534,12 @@ fn process_fn_items(
                             }
                             Receipt::ScriptResult { result, gas_used } => {
                                 #contract_conditional
-                                let data = ScriptResult{ result: u64::from(result), gas_used };
+                                let data = fuel::ScriptResult{ result: u64::from(result), gas_used };
                                 decoder.decode_scriptresult(data);
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
                                 #contract_conditional
-                                let payload = MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
+                                let payload = fuel::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
                                 decoder.decode_messageout(payload);
                             }
                             _ => {
@@ -662,7 +660,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let output = quote! {
         use alloc::{format, vec, vec::Vec};
-        use fuel_indexer_plugin::{types::*, Entity, Logger};
+        use fuel_indexer_plugin::{types::{fuel, *}, utils::{sha256_digest}, Entity, Logger};
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use fuel_tx::{Receipt, Transaction};

@@ -5,7 +5,8 @@ schema {
 type QueryRoot {
     block: Block
     tx: Tx
-    count: Count
+    account: Account
+    conract: Contract
 }
 
 # https://ethereum.org/en/developers/docs/data-and-analytics/block-explorers/
@@ -28,9 +29,18 @@ type Tx {
 }
 
 type Account {
-    address: Address!
+    id: Address! @unique
+    balance: UInt8!
 }
 
+type Log {
+    id: Bytes32! @unique
+    contract_id: ContractId!
+    message: Jsonb!
+}
+
+
 type Contract {
-    creator: ContractId!
+    id: ContractId! @unique
+    balance: UInt8!
 }
