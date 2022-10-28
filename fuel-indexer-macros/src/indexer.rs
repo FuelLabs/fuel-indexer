@@ -660,10 +660,13 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let output = quote! {
         use alloc::{format, vec, vec::Vec};
-        use fuel_indexer_plugin::{types::{fuel, *}, utils::{sha256_digest}, Entity, Logger};
+        use fuel_indexer_plugin::{
+            types::{fuel, *, transaction::{Transaction, Receipt, TransactionStatus, TxId}},
+            utils::{sha256_digest},
+            Entity, Logger
+        };
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
-        use fuel_tx::{Receipt, Transaction};
         use std::collections::HashMap;
 
         type B256 = [u8; 32];

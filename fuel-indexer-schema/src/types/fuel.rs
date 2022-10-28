@@ -1,11 +1,11 @@
 use crate::{
     types::{
-        transaction::TransactionStatus, Address, AssetId, Bytes32, ContractId, MessageId,
+        transaction::{Transaction, TransactionStatus, TxId},
+        Address, AssetId, Bytes32, ContractId, MessageId,
     },
     utils::type_id,
 };
 pub use fuel_tx::Receipt;
-use fuel_tx::{Transaction, TxId};
 use serde::{Deserialize, Serialize};
 
 pub const FUEL_TYPES_NAMESPACE: &str = "fuel";

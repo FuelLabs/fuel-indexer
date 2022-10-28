@@ -7,7 +7,7 @@ use fuel_indexer_schema::{
 };
 
 pub mod types {
-    pub use fuel_indexer_schema::types::{fuel, *};
+    pub use fuel_indexer_schema::types::{fuel, transaction, *};
     pub use fuel_indexer_schema::FtColumn;
 }
 

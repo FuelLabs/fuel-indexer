@@ -26,56 +26,26 @@ error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scop
   |     let s = SomeEvent {
   |             ^^^^^^^^^ not found in this scope
 
-error[E0412]: cannot find type `BlockData` in this scope
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |     let data: Vec<BlockData> = vec![BlockData {
-  |                   ^^^^^^^^^ not found in this scope
-  |
-help: consider importing one of these items
-   |
-2  | use fuel_indexer_plugin::types::BlockData;
-   |
-2  | use fuel_indexer_schema::types::BlockData;
-   |
-
-error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |     let data: Vec<BlockData> = vec![BlockData {
-  |                                     ^^^^^^^^^ not found in this scope
-  |
-help: consider importing one of these items
-   |
-2  | use fuel_indexer_plugin::types::BlockData;
-   |
-2  | use fuel_indexer_schema::types::BlockData;
-   |
-
-error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |             TransactionData {
-  |             ^^^^^^^^^^^^^^^ not found in this scope
-  |
-help: consider importing one of these items
-   |
-2  | use fuel_indexer_plugin::types::TransactionData;
-   |
-2  | use fuel_indexer_schema::types::TransactionData;
-   |
-
 error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |                 status: TransactionStatus::default(),
-  |                         ^^^^^^^^^^^^^^^^^ not found in this scope
+  |                         ^^^^^^^^^^^^^^^^^
   |
+ ::: $WORKSPACE/fuel-indexer-schema/src/types/fuel.rs
+  |
+  | pub struct TransactionData {
+  | -------------------------- similarly named struct `TransactionData` defined here
+  |
+help: a struct with a similar name exists
+   |
+39 |                 status: TransactionData::default(),
+   |                         ~~~~~~~~~~~~~~~
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::types::TransactionStatus;
+2  | use fuel_indexer_plugin::types::transaction::TransactionStatus;
    |
-2  | use fuel_indexer_schema::types::TransactionStatus;
+2  | use fuel_indexer_schema::types::transaction::TransactionStatus;
    |
 2  | use fuels::client::schema::schema::TransactionStatus;
    |
@@ -91,14 +61,15 @@ error[E0433]: failed to resolve: use of undeclared type `Transaction`
   |
 help: consider importing one of these items
    |
+2  | use fuel_indexer_plugin::types::transaction::Transaction;
+   |
+2  | use fuel_indexer_schema::types::transaction::Transaction;
+   |
 2  | use fuel_tx::Transaction;
    |
 2  | use fuels::client::schema::schema::Transaction;
    |
-2  | use fuels::tx::Transaction;
-   |
-2  | use fuels_core::tx::Transaction;
-   |
+     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs

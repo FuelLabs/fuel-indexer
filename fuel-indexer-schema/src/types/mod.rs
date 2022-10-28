@@ -6,7 +6,6 @@ pub use fuel_types::{
 };
 pub use fuels_core::types::Bits256;
 use serde::{Deserialize, Serialize};
-pub use transaction::*;
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Jsonb(pub String);
