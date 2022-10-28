@@ -26,6 +26,7 @@ mod indexer {
 
 fn main() {
     use fuels_core::{abi_encoder::ABIEncoder};
+    use fuel_indexer_schema::types::fuel::{BlockData, TransactionData};
 
     let s1 = SomeEvent {
         id: 9,
@@ -43,53 +44,61 @@ fn main() {
     let encoded2 = ABIEncoder::encode(&[s2.into_token()]).expect("Failed compile test");
     let bytes2 = encoded2.resolve(0);
 
+
     let data: Vec<BlockData> = vec![BlockData {
-        height: 0,
         id: [0u8; 32].into(),
         producer: [0u8; 32].into(),
         time: 1,
-        transactions: vec![vec![
-            Receipt::Call {
+        height: 0,
+        transactions: vec![
+            TransactionData {
                 id: [0u8; 32].into(),
-                to: [0u8; 32].into(),
-                amount: 400,
-                asset_id: [0u8; 32].into(),
-                gas: 4,
-                param1: 2048508220,
-                param2: 0,
-                pc: 0,
-                is: 0,
-            },
-            Receipt::ReturnData {
-                id: [0u8; 32].into(),
-                ptr: 2342143,
-                len: bytes1.len() as u64,
-                digest: [0u8; 32].into(),
-                data: bytes1,
-                pc: 0,
-                is: 0,
-            },
-            Receipt::Call {
-                id: [0u8; 32].into(),
-                to: [0u8; 32].into(),
-                amount: 400,
-                asset_id: [0u8; 32].into(),
-                gas: 4,
-                param1: 2379805026,
-                param2: 0,
-                pc: 0,
-                is: 0,
-            },
-            Receipt::ReturnData {
-                id: [0u8; 32].into(),
-                ptr: 2342143,
-                len: bytes2.len() as u64,
-                digest: [0u8; 32].into(),
-                data: bytes2,
-                pc: 0,
-                is: 0,
-            },
-        ]],
+                status: TransactionStatus::default(),
+                receipts: vec![
+                Receipt::Call {
+                    id: [0u8; 32].into(),
+                    to: [0u8; 32].into(),
+                    amount: 400,
+                    asset_id: [0u8; 32].into(),
+                    gas: 4,
+                    param1: 2048508220,
+                    param2: 0,
+                    pc: 0,
+                    is: 0,
+                },
+                Receipt::ReturnData {
+                    id: [0u8; 32].into(),
+                    ptr: 2342143,
+                    len: bytes1.len() as u64,
+                    digest: [0u8; 32].into(),
+                    data: bytes1,
+                    pc: 0,
+                    is: 0,
+                },
+                Receipt::Call {
+                    id: [0u8; 32].into(),
+                    to: [0u8; 32].into(),
+                    amount: 400,
+                    asset_id: [0u8; 32].into(),
+                    gas: 4,
+                    param1: 2379805026,
+                    param2: 0,
+                    pc: 0,
+                    is: 0,
+                },
+                Receipt::ReturnData {
+                    id: [0u8; 32].into(),
+                    ptr: 2342143,
+                    len: bytes2.len() as u64,
+                    digest: [0u8; 32].into(),
+                    data: bytes2,
+                    pc: 0,
+                    is: 0,
+                },
+            ],
+                transaction: Transaction::default(),
+            }
+        ],
     }];
 
     let mut bytes = serialize(&data);

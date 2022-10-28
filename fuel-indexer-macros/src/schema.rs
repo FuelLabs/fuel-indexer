@@ -1,14 +1,25 @@
 use fuel_indexer_lib::utils::local_repository_root;
-use fuel_indexer_schema::{get_schema_types, schema_version, type_id, BASE_SCHEMA};
+use fuel_indexer_schema::{
+    directives,
+    utils::{
+        build_schema_fields_and_types_map, build_schema_objects_set,
+        get_join_directive_info, schema_version, type_id, BASE_SCHEMA,
+    },
+};
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{
-    Definition, Document, Field, SchemaDefinition, Type, TypeDefinition,
+    Definition, Document, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
 };
+use lazy_static::lazy_static;
 use quote::{format_ident, quote};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+
+lazy_static! {
+    static ref COPY_TYPES: HashSet<&'static str> = HashSet::from(["Jsonb"]);
+}
 
 fn process_type<'a>(
     types: &HashSet<String>,
@@ -18,7 +29,7 @@ fn process_type<'a>(
     match typ {
         Type::NamedType(t) => {
             if !types.contains(t) {
-                panic!("Type {} is undefined.", t);
+                panic!("Type '{}' is undefined.", t);
             }
 
             let id = format_ident! {"{}", t };
@@ -62,23 +73,29 @@ fn process_field<'a>(
 
 fn process_fk_field<'a>(
     types: &HashSet<String>,
+    obj: &ObjectType<'a, String>,
     field: &Field<'a, String>,
+    types_map: &HashMap<String, String>,
 ) -> (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
     proc_macro2::TokenStream,
 ) {
-    let Field { name, .. } = field;
+    let directives::Join {
+        field_name,
+        reference_field_type_name,
+        ..
+    } = get_join_directive_info(field, obj, types_map);
 
-    let field_type = Type::NamedType("ID".to_string());
+    let field_type: Type<'a, String> = Type::NamedType(reference_field_type_name);
     let typ = process_type(types, &field_type, false);
-    let ident = format_ident! {"{}", name.to_lowercase()};
+    let ident = format_ident! {"{}", field_name.to_lowercase()};
 
     let extractor = quote! {
-        let item = vec.pop().expect("Missing item in row");
+        let item = vec.pop().expect("Missing item in row.");
         let #ident = match item {
             FtColumn::#typ(t) => t,
-            _ => panic!("Invalid column type {:?}", item),
+            _ => panic!("Invalid column type: {:?}.", item),
         };
 
     };
@@ -93,9 +110,8 @@ fn process_type_def<'a>(
     typ: &TypeDefinition<'a, String>,
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
+    types_map: &HashMap<String, String>,
 ) -> Option<proc_macro2::TokenStream> {
-    let copy_traits: HashSet<String> =
-        HashSet::from_iter(["Jsonb"].iter().map(|x| x.to_string()));
     match typ {
         TypeDefinition::Object(obj) => {
             if obj.name == *query_root {
@@ -118,12 +134,13 @@ fn process_type_def<'a>(
                 if processed.contains(&type_name_str)
                     && !primitives.contains(&type_name_str)
                 {
-                    (type_name, field_name, ext) = process_fk_field(types, field);
+                    (type_name, field_name, ext) =
+                        process_fk_field(types, obj, field, types_map);
                 }
 
                 processed.insert(type_name_str.clone());
 
-                let decoder = if copy_traits.contains(&type_name_str) {
+                let decoder = if COPY_TYPES.contains(type_name_str.as_str()) {
                     quote! { FtColumn::#type_name(self.#field_name.clone()), }
                 } else {
                     quote! { FtColumn::#type_name(self.#field_name), }
@@ -155,7 +172,7 @@ fn process_type_def<'a>(
             processed.insert(strct.to_string());
 
             Some(quote! {
-                #[derive(Debug, PartialEq, Eq)]
+                #[derive(Debug, PartialEq, Eq, Hash)]
                 pub struct #strct {
                     #block
                 }
@@ -189,11 +206,12 @@ fn process_definition<'a>(
     definition: &Definition<'a, String>,
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
+    types_map: &HashMap<String, String>,
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
-        Definition::TypeDefinition(def) => {
-            process_type_def(query_root, namespace, types, def, processed, primitives)
-        }
+        Definition::TypeDefinition(def) => process_type_def(
+            query_root, namespace, types, def, processed, primitives, types_map,
+        ),
         Definition::SchemaDefinition(_def) => None,
         def => {
             panic!("Unhandled definition type: {:?}", def);
@@ -274,7 +292,7 @@ pub(crate) fn process_graphql_schema(
             proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
         }
     };
-    let (primitives, _) = get_schema_types(&base_ast);
+    let (primitives, _) = build_schema_objects_set(&base_ast);
 
     let ast = match parse_schema::<String>(&text) {
         Ok(ast) => ast,
@@ -282,7 +300,7 @@ pub(crate) fn process_graphql_schema(
             proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
         }
     };
-    let (mut types, _) = get_schema_types(&ast);
+    let (mut types, _) = build_schema_objects_set(&ast);
     types.extend(primitives.clone());
 
     let namespace_tokens = const_item("NAMESPACE", &namespace);
@@ -296,6 +314,7 @@ pub(crate) fn process_graphql_schema(
     let query_root = get_query_root(&types, &ast);
 
     let mut processed: HashSet<String> = HashSet::new();
+    let types_map: HashMap<String, String> = build_schema_fields_and_types_map(&ast);
 
     for definition in ast.definitions.iter() {
         if let Some(def) = process_definition(
@@ -305,6 +324,7 @@ pub(crate) fn process_graphql_schema(
             definition,
             &mut processed,
             &primitives,
+            &types_map,
         ) {
             output = quote! {
                 #output

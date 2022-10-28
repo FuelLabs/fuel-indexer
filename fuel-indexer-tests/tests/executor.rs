@@ -1,9 +1,12 @@
 use fuel_indexer::{
     executor::WasmIndexExecutor, Executor, IndexerError, Manifest, Module, SchemaManager,
 };
-use fuel_indexer_schema::types::BlockData;
+use fuel_indexer_schema::types::{
+    fuel::{BlockData, TransactionData},
+    transaction::TransactionStatus,
+};
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
-use fuel_tx::Receipt;
+use fuel_tx::{Receipt, Transaction};
 use fuels_abigen_macro::abigen;
 use fuels_core::{abi_encoder::ABIEncoder, types::Bits256, Tokenizable};
 use sqlx::{Connection, Row};
@@ -63,13 +66,15 @@ fn update_manifest_with_proper_paths(manifest: &mut Manifest) {
         .to_str()
         .unwrap()
         .to_string();
-    manifest.abi = manifest_dir
-        .join("..")
-        .join(&manifest.abi)
-        .into_os_string()
-        .to_str()
-        .unwrap()
-        .to_string();
+    manifest.abi = Some(
+        manifest_dir
+            .join("..")
+            .join(&manifest.abi.clone().unwrap())
+            .into_os_string()
+            .to_str()
+            .unwrap()
+            .to_string(),
+    );
     manifest.module = Module::Wasm(
         manifest_dir
             .join("..")
@@ -156,50 +161,60 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
             time: 1,
             height: 0,
             transactions: vec![
-                vec![
-                    Receipt::Call {
-                        id: [0u8; 32].into(),
-                        to: [0u8; 32].into(),
-                        amount: 400,
-                        asset_id: [0u8; 32].into(),
-                        gas: 4,
-                        param1: 2048508220,
-                        param2: 0,
-                        pc: 0,
-                        is: 0,
-                    },
-                    Receipt::ReturnData {
-                        id: [0u8; 32].into(),
-                        ptr: 2342143,
-                        len: some_event.resolve(0).len() as u64,
-                        digest: [0u8; 32].into(),
-                        data: some_event.resolve(0),
-                        pc: 0,
-                        is: 0,
-                    },
-                ],
-                vec![
-                    Receipt::Call {
-                        id: [0u8; 32].into(),
-                        to: [0u8; 32].into(),
-                        amount: 400,
-                        asset_id: [0u8; 32].into(),
-                        gas: 4,
-                        param1: 2379805026,
-                        param2: 0,
-                        pc: 0,
-                        is: 0,
-                    },
-                    Receipt::ReturnData {
-                        id: [0u8; 32].into(),
-                        ptr: 2342143,
-                        len: another_event.resolve(0).len() as u64,
-                        digest: [0u8; 32].into(),
-                        data: another_event.resolve(0),
-                        pc: 0,
-                        is: 0,
-                    },
-                ],
+                TransactionData {
+                    id: [0u8; 32].into(),
+                    status: TransactionStatus::default(),
+                    receipts: vec![
+                        Receipt::Call {
+                            id: [0u8; 32].into(),
+                            to: [0u8; 32].into(),
+                            amount: 400,
+                            asset_id: [0u8; 32].into(),
+                            gas: 4,
+                            param1: 2048508220,
+                            param2: 0,
+                            pc: 0,
+                            is: 0,
+                        },
+                        Receipt::ReturnData {
+                            id: [0u8; 32].into(),
+                            ptr: 2342143,
+                            len: some_event.resolve(0).len() as u64,
+                            digest: [0u8; 32].into(),
+                            data: some_event.resolve(0),
+                            pc: 0,
+                            is: 0,
+                        },
+                    ],
+                    transaction: Transaction::default(),
+                },
+                TransactionData {
+                    id: [0u8; 32].into(),
+                    status: TransactionStatus::default(),
+                    receipts: vec![
+                        Receipt::Call {
+                            id: [0u8; 32].into(),
+                            to: [0u8; 32].into(),
+                            amount: 400,
+                            asset_id: [0u8; 32].into(),
+                            gas: 4,
+                            param1: 2379805026,
+                            param2: 0,
+                            pc: 0,
+                            is: 0,
+                        },
+                        Receipt::ReturnData {
+                            id: [0u8; 32].into(),
+                            ptr: 2342143,
+                            len: another_event.resolve(0).len() as u64,
+                            digest: [0u8; 32].into(),
+                            data: another_event.resolve(0),
+                            pc: 0,
+                            is: 0,
+                        },
+                    ],
+                    transaction: Transaction::default(),
+                },
             ],
         }])
         .await;

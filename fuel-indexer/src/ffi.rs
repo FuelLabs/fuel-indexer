@@ -77,13 +77,13 @@ fn get_string(mem: &Memory, ptr: u32, len: u32) -> Result<String, FFIError> {
 fn get_object_id(mem: &Memory, ptr: u32) -> u64 {
     WasmPtr::<u64>::new(ptr)
         .deref(mem)
-        .expect("Failed to deref WasmPtr")
+        .expect("Failed to deref WasmPtrs.")
         .get()
 }
 
 fn log_data(env: &IndexEnv, ptr: u32, len: u32, log_level: u32) {
-    let mem = env.memory_ref().expect("Memory uninitialized");
-    let log_string = get_string(mem, ptr, len).expect("Log string could not be fetched");
+    let mem = env.memory_ref().expect("Memory uninitialized.");
+    let log_string = get_string(mem, ptr, len).expect("Log string could not be fetched.");
 
     match log_level {
         LOG_LEVEL_ERROR => error!("{}", log_string),
@@ -91,12 +91,12 @@ fn log_data(env: &IndexEnv, ptr: u32, len: u32, log_level: u32) {
         LOG_LEVEL_INFO => info!("{}", log_string),
         LOG_LEVEL_DEBUG => debug!("{}", log_string),
         LOG_LEVEL_TRACE => trace!("{}", log_string),
-        l => panic!("Invalid log level!! {}", l),
+        l => panic!("Invalid log level: {}", l),
     }
 }
 
 fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
-    let mem = env.memory_ref().expect("Memory uninitialized");
+    let mem = env.memory_ref().expect("Memory uninitialized.");
 
     let id = get_object_id(mem, ptr);
 
@@ -105,15 +105,15 @@ fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
     let bytes = rt.block_on(async { env.db.lock().await.get_object(type_id, id).await });
 
     if let Some(bytes) = bytes {
-        let alloc_fn = env.alloc_ref().expect("Alloc export is missing");
+        let alloc_fn = env.alloc_ref().expect("Alloc export is missing.");
 
         let size = bytes.len() as u32;
-        let result = alloc_fn.call(size).expect("Alloc failed");
+        let result = alloc_fn.call(size).expect("Alloc failed.");
         let range = result as usize..result as usize + size as usize;
 
         WasmPtr::<u32>::new(len_ptr)
             .deref(mem)
-            .expect("Failed to deref WasmPtr")
+            .expect("Failed to deref WasmPtr.")
             .set(size);
 
         unsafe {
@@ -127,7 +127,7 @@ fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
 }
 
 fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
-    let mem = env.memory_ref().expect("Memory uninitialized");
+    let mem = env.memory_ref().expect("Memory uninitialized.");
 
     let mut bytes = Vec::with_capacity(len as usize);
     let range = ptr as usize..ptr as usize + len as usize;
@@ -136,7 +136,7 @@ fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
         bytes.extend_from_slice(&mem.data_unchecked()[range]);
     }
 
-    let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error");
+    let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
 
     // TODO: stash this??
     let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");

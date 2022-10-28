@@ -2206,6 +2206,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
 
 [[package]]
+name = "explorer-index"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels-core",
+ "fuels-types",
+ "getrandom 0.2.7",
+ "nom 6.1.2",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "eyre"
 version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2636,6 +2652,7 @@ dependencies = [
 name = "fuel-indexer-plugin"
 version = "0.0.0"
 dependencies = [
+ "fuel-indexer-lib",
  "fuel-indexer-schema",
 ]
 
@@ -2654,6 +2671,7 @@ name = "fuel-indexer-schema"
 version = "0.0.0"
 dependencies = [
  "bincode",
+ "chrono",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -4055,6 +4073,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffb4262d26ed83a1c0a33a38fe2bb15797329c85770da05e6b828ddb782627af"
 dependencies = [
  "lexical-core",
+ "memchr",
+ "version_check",
+]
+
+[[package]]
+name = "nom"
+version = "6.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7413f999671bd4745a7b624bd370a569fb6bc574b23c83a3c5ed2e453f3d5e2"
+dependencies = [
  "memchr",
  "version_check",
 ]

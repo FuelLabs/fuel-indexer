@@ -61,6 +61,7 @@ pub struct NewColumn {
     pub column_type: String,
     pub nullable: bool,
     pub graphql_type: String,
+    pub unique: bool,
 }
 
 #[derive(Debug)]
@@ -76,11 +77,17 @@ pub struct Columns {
 
 impl NewColumn {
     pub fn sql_fragment(&self) -> String {
-        if self.nullable {
-            format!("{} {}", self.column_name, self.sql_type())
-        } else {
-            format!("{} {} not null", self.column_name, self.sql_type())
-        }
+        let null_frag = if self.nullable { "" } else { "not null" };
+        let unique_frag = if self.unique { "unique" } else { "" };
+        format!(
+            "{} {} {} {}",
+            self.column_name,
+            self.sql_type(),
+            null_frag,
+            unique_frag
+        )
+        .trim()
+        .to_string()
     }
 
     fn sql_type(&self) -> &str {
@@ -208,7 +215,7 @@ impl From<&str> for ColumnType {
             "Blob" => ColumnType::Blob,
             "ForeignKey" => ColumnType::ForeignKey,
             "Jsonb" => ColumnType::Jsonb,
-            _ => panic!("Invalid column type! {}", name),
+            _ => panic!("Invalid column type: '{}'", name),
         }
     }
 }

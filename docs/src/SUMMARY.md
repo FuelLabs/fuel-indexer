@@ -9,7 +9,7 @@
   - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
     - [Configuration](./getting-started/configuration.md)
 - [Examples](./examples/index.md)
-  - [Hello World](./examples/hello-indexer.md)
+  - [Block Explorer](./examples/block-explorer.md)
 - [Components](./components/index.md)
   - [Indices](./components/indices/index.md)
     - [Registering Indices](./components/indices/registration.md)

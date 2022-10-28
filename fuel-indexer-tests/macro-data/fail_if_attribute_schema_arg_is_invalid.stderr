@@ -11,14 +11,14 @@ error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |             Receipt::Call {
-  |             ^^^^^^^ use of undeclared type `Receipt`
+  |                 Receipt::Call {
+  |                 ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |             Receipt::ReturnData {
-  |             ^^^^^^^ use of undeclared type `Receipt`
+  |                 Receipt::ReturnData {
+  |                 ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
@@ -26,31 +26,50 @@ error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scop
   |     let s = SomeEvent {
   |             ^^^^^^^^^ not found in this scope
 
-error[E0412]: cannot find type `BlockData` in this scope
+error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |     let data: Vec<BlockData> = vec![BlockData {
-  |                   ^^^^^^^^^ not found in this scope
+  |                 status: TransactionStatus::default(),
+  |                         ^^^^^^^^^^^^^^^^^
   |
+ ::: $WORKSPACE/fuel-indexer-schema/src/types/fuel.rs
+  |
+  | pub struct TransactionData {
+  | -------------------------- similarly named struct `TransactionData` defined here
+  |
+help: a struct with a similar name exists
+   |
+39 |                 status: TransactionData::default(),
+   |                         ~~~~~~~~~~~~~~~
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::types::BlockData;
+2  | use fuel_indexer_plugin::types::transaction::TransactionStatus;
    |
-2  | use fuel_indexer_schema::types::BlockData;
+2  | use fuel_indexer_schema::types::transaction::TransactionStatus;
    |
+2  | use fuels::client::schema::schema::TransactionStatus;
+   |
+2  | use fuels::client::schema::tx::TransactionStatus;
+   |
+     and 1 other candidate
 
-error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
+error[E0433]: failed to resolve: use of undeclared type `Transaction`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |     let data: Vec<BlockData> = vec![BlockData {
-  |                                     ^^^^^^^^^ not found in this scope
+  |                 transaction: Transaction::default(),
+  |                              ^^^^^^^^^^^ not found in this scope
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::types::BlockData;
+2  | use fuel_indexer_plugin::types::transaction::Transaction;
    |
-2  | use fuel_indexer_schema::types::BlockData;
+2  | use fuel_indexer_schema::types::transaction::Transaction;
    |
+2  | use fuel_tx::Transaction;
+   |
+2  | use fuels::client::schema::schema::Transaction;
+   |
+     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
@@ -60,7 +79,7 @@ error[E0425]: cannot find function `serialize` in this scope
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_schema::serialize;
+2  | use fuel_indexer_schema::utils::serialize;
    |
 2  | use fuels::prelude::serde_hex::serialize;
    |
