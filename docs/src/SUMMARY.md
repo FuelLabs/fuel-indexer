@@ -8,6 +8,8 @@
     - [Application dependencies](./getting-started/application-dependencies.md)
   - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
     - [Configuration](./getting-started/configuration.md)
+- [Examples](./examples/index.md)
+  - [Block Explorer](./examples/block-explorer.md)
 - [Components](./components/index.md)
   - [Assets](./components/assets/index.md)
     - [Manifest](./components/assets/manifest.md)

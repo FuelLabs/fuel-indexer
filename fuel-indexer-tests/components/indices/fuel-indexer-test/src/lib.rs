@@ -14,7 +14,7 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_blocks(block: BlockData) {
+    fn fuel_indexer_test_blocks(block: fuel::BlockData) {
         let blk = BlockEntity {
             id: block.height,
             hash: block.id,
@@ -27,7 +27,7 @@ mod fuel_indexer_test {
 
         let input_data = r#"{"foo":"bar"}"#.to_string();
 
-        for (i, _receipts) in block.transactions.iter().enumerate() {
+        for (i, _tx) in block.transactions.iter().enumerate() {
             let tx = TransactionEntity {
                 id: i as u64,
                 hash: [0u8; 32].into(),
@@ -39,7 +39,7 @@ mod fuel_indexer_test {
         }
     }
 
-    fn fuel_indexer_test_transfer(transfer: Transfer) {
+    fn fuel_indexer_test_transfer(transfer: fuel::Transfer) {
         Logger::info("fuel_indexer_test_transfer handling Transfer event.");
 
         let entity = TransferEntity {
@@ -53,7 +53,7 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_transferout(transferout: TransferOut) {
+    fn fuel_indexer_test_transferout(transferout: fuel::TransferOut) {
         Logger::info("fuel_indexer_test_transferout handling TransferOut event.");
 
         let entity = TransferOutEntity {
@@ -67,7 +67,7 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_log(log: Log) {
+    fn fuel_indexer_test_log(log: fuel::Log) {
         Logger::info("fuel_indexer_test_log handling Log event.");
 
         let entity = LogEntity {
@@ -92,7 +92,7 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_scriptresult(scriptresult: ScriptResult) {
+    fn fuel_indexer_test_scriptresult(scriptresult: fuel::ScriptResult) {
         Logger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
 
         let entity = ScriptResultEntity {
@@ -104,7 +104,7 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_messageout(messageout: MessageOut) {
+    fn fuel_indexer_test_messageout(messageout: fuel::MessageOut) {
         Logger::info("fuel_indexer_test_messageout handling MessageOut event");
 
         let entity = MessageOutEntity {

@@ -152,8 +152,12 @@ jobs:
         include:
           - command: fmt
             args: --all --verbose -- --check
+            env:
+              RUSTFLAGS: '-D warnings'
           - command: clippy
-            args: --all-features --all-targets -- -D warnings
+            args: --all-features --all-targets
+            env:
+              RUSTFLAGS: '-D warnings'
           - command: check
             args: --locked --workspace --all-features --all-targets
             env:
@@ -162,10 +166,10 @@ jobs:
             args: --locked --workspace --all-features --all-targets
             env:
               RUSTFLAGS: '-D warnings'
-          # Default features
           - command: test
             args: --locked --workspace
-          # No default features
+            env:
+              RUSTFLAGS: '-D warnings'
           - command: test
             args: --locked --all-targets --no-default-features --workspace
             env:

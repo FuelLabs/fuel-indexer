@@ -1,4 +1,3 @@
-use fuel_indexer_schema::db::models::IdCol;
 use std::collections::HashMap;
 use wasmer::Instance;
 
@@ -6,7 +5,8 @@ use crate::{ffi, IndexerError, IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_schema::{
     db::tables::{Schema, SchemaBuilder},
-    schema_version, FtColumn,
+    utils::{schema_version, IdCol},
+    FtColumn,
 };
 
 /// Responsible for laying down graph schemas, processes schema upgrades.
@@ -24,8 +24,7 @@ impl SchemaManager {
     pub async fn new_schema(&self, name: &str, schema: &str) -> IndexerResult<()> {
         let mut connection = self.pool.acquire().await?;
 
-        // TODO: Not doing much with version, but might be useful if we
-        //       do graph schema upgrades
+        // TODO: Not doing much with version, but might be useful if we do graph schema upgrades
         let version = schema_version(schema);
 
         if !queries::schema_exists(&mut connection, name, &version).await? {
@@ -98,6 +97,7 @@ impl Database {
         Ok(queries::execute_query(&mut conn, "ROLLBACK".into()).await?)
     }
 
+    // FIXME: Upsert requires entities that have 1+ fields
     fn upsert_query(
         &self,
         table: &str,
@@ -107,6 +107,7 @@ impl Database {
     ) -> String {
         let sql_table = self.pool.database_type().table_name(&self.namespace, table);
 
+        // FIXME: We have hard-coded the concept of an 'id' field here <(-_-<)
         format!(
             "INSERT INTO {}
                 ({})
@@ -122,6 +123,7 @@ impl Database {
     }
 
     fn get_query(&self, table: &str, object_id: u64) -> String {
+        // FIXME: We have hard-coded the concept of an 'id' field here <(-_-<)
         let sql_table = self.pool.database_type().table_name(&self.namespace, table);
         format!("SELECT object from {} where id = {}", sql_table, object_id)
     }
@@ -132,13 +134,18 @@ impl Database {
         columns: Vec<FtColumn>,
         bytes: Vec<u8>,
     ) {
-        let table = &self.tables[&type_id];
+        let table = self.tables.get(&type_id).unwrap_or_else(|| {
+            panic!(
+                "TypeId({}) not found in tables: {:?}. Is your WASM module up-to-date?",
+                type_id, self.tables
+            )
+        });
         let inserts: Vec<_> = columns.iter().map(|col| col.query_fragment()).collect();
         let updates: Vec<_> = self.schema[table]
             .iter()
             .zip(columns.iter())
             .filter_map(|(colname, value)| {
-                if colname == &IdCol::to_string() {
+                if colname == &IdCol::to_lowercase_string() {
                     None
                 } else {
                     Some(format!("{} = {}", colname, value.query_fragment()))
@@ -156,7 +163,7 @@ impl Database {
             .expect("No transaction has been opened.");
         let query = queries::put_object(conn, query_text, bytes).await;
 
-        query.expect("Query failed");
+        query.expect("Query failed.");
     }
 
     pub async fn get_object(&mut self, type_id: u64, object_id: u64) -> Option<Vec<u8>> {
@@ -171,7 +178,7 @@ impl Database {
             Ok(object) => Some(object),
             Err(sqlx::Error::RowNotFound) => None,
             e => {
-                panic!("Error getting object! {:?}", e);
+                panic!("Error getting object: {:?}.", e);
             }
         }
     }

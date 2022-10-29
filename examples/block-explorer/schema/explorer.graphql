@@ -1,0 +1,46 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    block: Block
+    tx: Tx
+    account: Account
+    conract: Contract
+}
+
+# https://ethereum.org/en/developers/docs/data-and-analytics/block-explorers/
+
+type Block {
+    id: Bytes32! @unique
+    height: UInt8!
+    timestamp: Int8!
+    miner: Address!
+    gas_limit: UInt8!
+}
+
+type Tx {
+    id: Bytes32! @unique
+    block: Block!
+    timestamp: Int8!
+    status: Jsonb!
+    value: UInt8!
+    tokens_transferred: Jsonb!
+}
+
+type Account {
+    id: Address! @unique
+    balance: UInt8!
+}
+
+type Log {
+    id: Bytes32! @unique
+    contract_id: ContractId!
+    message: Jsonb!
+}
+
+
+type Contract {
+    id: ContractId! @unique
+    balance: UInt8!
+}

@@ -10,4 +10,5 @@ publish = false
 crate-type = ['rlib']
 
 [dependencies]
+fuel-indexer-lib = { path = "../fuel-indexer-lib", default-features = false }
 fuel-indexer-schema = { path = "../fuel-indexer-schema", default-features = false }

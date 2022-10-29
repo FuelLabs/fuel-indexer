@@ -1,5 +1,4 @@
 # Examples
 
-- [Hello World](./hello-indexer.md)
-  - A simple application representing the "Hello world" version of a Fuel indexer
-  - This example includes WASM execution
+- [Block Explorer](./block-explorer.md)
+  - An extremely basic block explorer implementation that shows how blocks, transactions, contracts, and accounts can be persisted into the database.

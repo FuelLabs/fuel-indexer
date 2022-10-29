@@ -3,7 +3,10 @@ use crate::ffi;
 use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult, Manifest};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
-use fuel_indexer_schema::{deserialize, serialize, types::BlockData};
+use fuel_indexer_schema::{
+    types::fuel::BlockData,
+    utils::{deserialize, serialize},
+};
 use std::path::Path;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
@@ -224,7 +227,7 @@ impl Executor for WasmIndexExecutor {
         let res = spawn_blocking(move || fun.call(ptr, len)).await?;
 
         if let Err(e) = res {
-            error!("Indexer failed {e:?}");
+            error!("WasmIndexExecutor handle_events failed: {e:?}.");
             self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::RuntimeError(e));
         } else {

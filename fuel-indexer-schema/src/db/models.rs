@@ -1,23 +1,7 @@
+use crate::utils::IndexMethod;
 use fuel_indexer_database::DbType;
-use fuel_indexer_database_types::*;
 use std::fmt::Write;
 use strum::{AsRefStr, EnumString};
-
-pub struct IdCol {}
-
-impl IdCol {
-    pub fn to_string() -> String {
-        "id".to_string()
-    }
-}
-
-#[derive(Debug, EnumString, AsRefStr)]
-pub enum IndexMethod {
-    #[strum(serialize = "btree")]
-    Btree,
-    #[strum(serialize = "hash")]
-    Hash,
-}
 
 pub trait CreateStatement {
     fn create_statement(&self) -> String;
@@ -30,12 +14,12 @@ pub struct ColumnIndex {
     pub namespace: String,
     pub method: IndexMethod,
     pub unique: bool,
-    pub column: NewColumn,
+    pub column_name: String,
 }
 
 impl ColumnIndex {
     pub fn name(&self) -> String {
-        format!("{}_{}_idx", &self.table_name, &self.column.column_name)
+        format!("{}_{}_idx", &self.table_name, &self.column_name)
     }
 }
 
@@ -55,7 +39,7 @@ impl CreateStatement for ColumnIndex {
                     self.namespace,
                     self.table_name,
                     self.method.as_ref(),
-                    self.column.column_name
+                    self.column_name
                 );
             }
             DbType::Sqlite => {
@@ -64,7 +48,7 @@ impl CreateStatement for ColumnIndex {
                     "INDEX {} ON {}({});",
                     self.name(),
                     self.table_name,
-                    self.column.column_name
+                    self.column_name
                 );
             }
         }
@@ -99,6 +83,7 @@ pub struct ForeignKey {
     pub column_name: String,
     pub reference_table_name: String,
     pub reference_column_name: String,
+    pub reference_column_type: String,
     pub on_delete: OnDelete,
     pub on_update: OnUpdate,
 }
@@ -110,15 +95,17 @@ impl ForeignKey {
         table_name: String,
         column_name: String,
         reference_table_name: String,
-        reference_column_name: String,
+        ref_column_name: String,
+        reference_column_type: String,
     ) -> Self {
         Self {
             db_type,
             namespace,
             table_name,
             column_name,
-            reference_column_name,
+            reference_column_name: ref_column_name,
             reference_table_name,
+            reference_column_type,
             ..Default::default()
         }
     }
@@ -149,12 +136,21 @@ impl CreateStatement for ForeignKey {
                 )
             }
             DbType::Sqlite => {
+                fn derive_sqlite_type(t: &str) -> String {
+                    match t {
+                        "ID" => "BIGINT".to_string(),
+                        "UInt8" | "Int8" | "Int4" | "UInt4" => "INTEGER".to_string(),
+                        _ => "TEXT".to_string(),
+                    }
+                }
+
                 format!(
-                    "ALTER TABLE {} DROP COLUMN {}; ALTER TABLE {} ADD COLUMN {} BIGINT REFERENCES {}({});",
+                    "ALTER TABLE {} DROP COLUMN {}; ALTER TABLE {} ADD COLUMN {} {} REFERENCES {}({});",
                     self.table_name,
                     self.column_name,
                     self.table_name,
                     self.column_name,
+                    derive_sqlite_type(&self.reference_column_type),
                     self.reference_table_name,
                     self.reference_column_name,
                 )
