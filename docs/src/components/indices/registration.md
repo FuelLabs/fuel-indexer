@@ -15,3 +15,8 @@ curl -v http://127.0.0.1:29987/api/index/fuel_indexer_test/index1 \
     -F "schema=@my_index_schema.graphql" \
     -H 'Content-type: multipart/form-data' -H "Authorization: foo" | json_pp
 ```
+
+> In the example upload request above:
+>
+> - `fuel_indexer_test` is the name of our `namespace`
+> - `index1` is the `identifier` of our index

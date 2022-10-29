@@ -8,4 +8,4 @@ This section provides an outline regarding how to get started using the Fuel ind
   - [Indexer Configuration](./configuration.md)
 - [Project Structure](./fuel-indexer-project.md)
 - [Examples](./../examples/index.md)
-  - [Hello World](./../examples/hello-indexer.md)
+  - [Block Explorer](./../examples/block-explorer.md)

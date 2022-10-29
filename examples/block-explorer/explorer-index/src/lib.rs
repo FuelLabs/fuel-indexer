@@ -76,7 +76,7 @@ mod explorer_index {
             let mut tokens_transferred = Vec::new();
 
             // Here we demonstrate that we can inspect the innards of the Transaction enum
-            // for properties like gas, inputs, outputs, script_data, and other pieces of metadata
+            // for properties like gas, inputs, outputs, script_data, and other pieces of metadata.
             match &tx.transaction {
                 #[allow(unused)]
                 Transaction::Script {
@@ -114,6 +114,10 @@ mod explorer_index {
             }
 
             for receipt in &tx.receipts {
+
+                // Here we can handle each receipt in a transaction as we like, the
+                // code below demonstrates how you can use parts of a receipt in order
+                // to persist entities to the database.
                 match receipt {
                     #[allow(unused)]
                     Receipt::Call { id, .. } => {
@@ -209,6 +213,7 @@ mod explorer_index {
                 .unwrap()
                 .to_string();
 
+            // Persist a transaction to the database via our `Tx` entity
             let tx_entity = Tx {
                 block: blck.id,
                 timestamp: blck.timestamp,
@@ -221,10 +226,12 @@ mod explorer_index {
             tx_entity.save();
         }
 
+        // We'll save all of our accounts
         for account in accounts.iter() {
             account.save();
         }
 
+        // And we'll save all of our contracts
         for contract in contracts.iter() {
             contract.save();
         }

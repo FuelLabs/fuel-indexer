@@ -25,4 +25,4 @@
 - [Indexing](./indexing/index.md)
   - [Receipts](./indexing/receipts.md)
 - [Examples](./examples/index.md)
-  - [Hello World](./examples/hello-indexer.md)
+  - [Block Explorer](./examples/block-explorer.md)
