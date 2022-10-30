@@ -32,7 +32,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
     let producer: String = row.get(2);
     let timestamp: i64 = row.get(3);
 
-    assert!(id.is_empty(), false);
+    assert!(id.is_empty(), "{}", false);
     assert_eq!(height, 1);
     assert_eq!(
         producer,
