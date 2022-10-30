@@ -49,7 +49,7 @@ mod explorer_index {
     // When specifying args to your handler functions, you can either use types defined
     // in your ABI JSON file, or you can use native Fuel types. These native Fuel types
     // include various `Receipt`s, as well as more comprehensive data, in the form of
-    // `BlockData`. A list of native Fuel types can be found at [TODO INSERT LINK]
+    // `BlockData`.
     #[no_mangle]
     fn index_explorer_data(block: fuel::BlockData) {
         // Here we convert the `BlockData` struct that we get from our Fuel node, into

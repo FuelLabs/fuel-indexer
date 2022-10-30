@@ -93,16 +93,14 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = { path = "../../../fuel-indexer-macros", default-features = false }
-fuel-indexer-plugin = { path = "../../../fuel-indexer-plugin" }
-fuel-indexer-schema = { path = "../../../fuel-indexer-schema", default-features = false }
+fuel-indexer-macros = { version = "0.1", default-features = false }
+fuel-indexer-plugin = { version = "0.1" }
+fuel-indexer-schema = { version = "0.1", default-features = false }
 fuel-tx = "0.18"
 fuels-core = "0.26"
 fuels-types = "0.26"
 getrandom = { version = "0.2", features = ["js"] }
-nom = { version = "6.0", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
 
 ```
 
@@ -122,6 +120,8 @@ pub mod my_counter_index_module {
             Some(o) => o,
             None => CountEntity { id, count },
         };
+
+        count_entity.save();
 
         let CountEntity { id, count } = count_entity;
 

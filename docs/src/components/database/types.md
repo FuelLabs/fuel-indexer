@@ -29,15 +29,13 @@ struct Event {
 }
 ```
 
-<< TODO FIX >>
-
 The corresponding GraphQL schema to mirror this `Event` struct would resemble:
 
 ```graphql
 type Event {
     id: ID!
-    account: Address! @indexed
-    block_height: UInt8! @indexed
+    account: Address!
+    block_height: UInt8!
 }
 ```
 
