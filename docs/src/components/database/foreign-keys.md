@@ -46,7 +46,6 @@ type Library {
   - This means that for a given `Library`, we may also fetch one or many `Book` entities.
   - This also means that the column `library.book` will be an integer type that references `book.id`
 
-
 ### Explicit foreign keys
 
 ```graphql

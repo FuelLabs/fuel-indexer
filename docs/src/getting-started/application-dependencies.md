@@ -1,18 +1,19 @@
 # Application dependencies
 
-We'll need a few application-level dependencies to get our indexer up and running
+A few application-level dependencies are required to get a Fuel indexer up and running.
 
 ## `sqlx-cli`
+
+- More info on [`sqlx-cli`](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md#enable-building-in-offline-mode-with-query)
 
 ```bash
 cargo install sqlx-cli --features postgres,sqlite
 ```
 
-- More info on [`sqlx-cli`](https://github.com/launchbadge/sqlx/blob/main/sqlx-cli/README.md#enable-building-in-offline-mode-with-query)
-- We can then run migrations using
+- Once `sqlx-cli` is installed, migrations can be run via:
 
 ```bash
-DATABASE_URL=postgres://john:doe@localhost bash scripts/run_migrations.bash
+DATABASE_URL=postgres://postgres@127.0.0.1 bash scripts/run_migrations.bash
 ```
 
 

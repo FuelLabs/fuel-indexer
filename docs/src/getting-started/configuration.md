@@ -1,20 +1,19 @@
 # Indexer Configuration
 
-Below you will find a list of CLI configuration options that can be used to configure either the Fuel indexer service, the standalone Fuel indexer GraphQL API service, or both. For those who prefer using a configuration file,
-you can [checkout the default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml), which also shows the default values used for these configuration options.
+- Below you will find a list of CLI configuration options that can be used to configure either the Fuel indexer service, the standalone Fuel indexer GraphQL API service, or both. 
+- For those who prefer using a configuration file, you can checkout the [default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml), which also shows the default values used for these configuration options.
 
-## Usage:
+## Usage
 
-Using the main Fuel indexer service binary via cargo.
+### Using the `fuel-indexer` binary
 
-`cargo run --bin fuel-indexer -- [options]`
+`./fuel-indexer [options]`
 
-Using the standalone GraphQL API server via cargo.
+### Using the `fuel-indexer-api-server` binary
 
-`cargo run --bin fuel-indexer-api-server -- [options]`
+`./fuel-indexer-api-server [options]`
 
-
-### Options:
+### Options
 
 `-c` `--config`
 

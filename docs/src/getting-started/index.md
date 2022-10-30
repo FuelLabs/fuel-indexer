@@ -1,6 +1,6 @@
 # Getting Started
 
-This section provides an outline regarding how to get started using a Fuel Indexer, including dependency installation, basic usage, as well as examples.
+This section provides an outline regarding how to get started using the Fuel indexer service, including dependency installation, basic usage, and examples.
 
 - [Setting up](./setup.md)
   - [System dependencies](./system-dependencies.md)
@@ -8,4 +8,4 @@ This section provides an outline regarding how to get started using a Fuel Index
   - [Indexer Configuration](./configuration.md)
 - [Project Structure](./fuel-indexer-project.md)
 - [Examples](./../examples/index.md)
-  - [Hello World](./../examples/hello-indexer.md)
+  - [Block Explorer](./../examples/block-explorer.md)

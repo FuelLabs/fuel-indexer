@@ -34,15 +34,13 @@ The convetion for a Fuel project layout including a Fuel indexer is:
 ├── frontend
 │   └── index.html
 └── indexer
-    ├── contracts
-    │   └── my-contract-abi.json
     ├── my-index.manifest.yaml
-    ├── my-indexer
+    ├── my-index
     │   ├── Cargo.toml
     │   └── src
-    │       └── my-index.rs
+    │       └── lib.rs
     └── schema
         └── schema.graphql
 
-12 directories, 15 files
+11 directories, 14 files
 ```
