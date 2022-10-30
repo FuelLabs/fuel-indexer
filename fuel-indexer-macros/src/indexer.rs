@@ -663,7 +663,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use fuel_indexer_plugin::{
             types::{
                 fuel,
-                fuel::{BlockData}, *,
+                fuel::{BlockData, TransactionData}, *,
                 transaction::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
             },
             utils,
