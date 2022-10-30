@@ -1,10 +1,10 @@
 # Block Explorer
 
-An extremely basic block explorer backend implementation that shows how to leverage basic Fuel indexer abstractions in order to build a cool dApp backend.
+An rudimentary block explorer backend implementation demonstrating how to leverage basic Fuel indexer abstractions in order to build a cool dApp backend.
 
 ```rust
-//! An extremely basic block explorer implementation that shows how blocks, transactions,
-//! contracts, and accounts can be persisted into the database.
+//! A rudimentary block explorer implementation demonstrating how blocks, transactions, recepits
+//! and other data including Contracts and Addresses are indexed into a SQL backend.
 //!
 //! Build this example's WASM module using the following command. Note that a
 //! wasm32-unknown-unknown target will be required.
@@ -28,17 +28,13 @@ An extremely basic block explorer backend implementation that shows how to lever
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{
-    types::{Bytes32, ContractId},
-    utils::sha256_digest,
-};
+use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
 use std::collections::HashSet;
 
-// Using an ID for some abstraction (Contract, Account, etc), naively derive
-// a unique ID for some database entity
-pub fn derive_id(id: Vec<u8>, data: Vec<u8>) -> Bytes32 {
+// Entitiees require IDs - naively create unique IDs using some caller and the data used
+pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
     let mut buff: [u8; 32] = [0u8; 32];
-    let result = [id, data].concat();
+    let result = [id.to_vec(), data].concat();
     buff.copy_from_slice(&sha256_digest(&result).as_bytes()[..32]);
     Bytes32::from(buff)
 }
@@ -54,37 +50,37 @@ mod explorer_index {
     // When specifying args to your handler functions, you can either use types defined
     // in your ABI JSON file, or you can use native Fuel types. These native Fuel types
     // include various `Receipt`s, as well as more comprehensive data, in the form of
-    // `BlockData`. A list of native Fuel types can be found at [TODO INSERT LINK]
-    fn index_explorer_data(block: BlockData) {
-        // Convert the `BlockData` struct that we get from our Fuel node, into
-        // a block entity that we can persist to the database. The `Block` type below is
-        // defined in our schema/explorer.graphql and represents the type that we will
-        // save to our database.
+    // blocks `BlockData` and transactions `TransactionData`. A list of native Fuel
+    // types can be found at:
+    //
+    //  https://github.com/FuelLabs/fuel-indexer/blob/master/fuel-indexer-schema/src/types/fuel.rs#L28
+    fn index_explorer_data(block_data: BlockData) {
         let mut block_gas_limit = 0;
 
-        let blck = Block {
-            id: block.id,
-            height: block.height,
-            timestamp: block.time,
-            miner: block.producer,
+        // Convert the deserialized block `BlockData` struct that we get from our Fuel node, into
+        // a block entity `Block` that we can persist to the database. The `Block` type below is
+        // defined in our schema/explorer.graphql and represents the type that we will
+        // save to our database.
+        let block = Block {
+            id: block_data.id,
+            height: block_data.height,
+            timestamp: block_data.time,
+            miner: block_data.producer,
             gas_limit: block_gas_limit,
         };
 
         // Now that we've created the object for the database, let's save it.
-        blck.save();
+        block.save();
 
         // Keep track of some Receipt data involved in this transaction.
         let mut accounts = HashSet::new();
         let mut contracts = HashSet::new();
 
-        // Now we'll iterate over all of the transactions in this block, and persist
-        // those to the database as well
-        for tx in block.transactions.iter() {
+        for tx in block_data.transactions.iter() {
             let mut tx_amount = 0;
             let mut tokens_transferred = Vec::new();
 
-            // Here we demonstrate that we can inspect the innards of the Transaction enum
-            // for properties like gas, inputs, outputs, script_data, and other pieces of metadata.
+            // `Transaction::Script` and `Transaction::Create` are unused but demonstrate properties like gas, inputs, outputs, script_data, and other pieces of metadata.
             match &tx.transaction {
                 #[allow(unused)]
                 Transaction::Script {
@@ -122,9 +118,10 @@ mod explorer_index {
             }
 
             for receipt in &tx.receipts {
-                // Here we can handle each receipt in a transaction as we like, the
-                // code below demonstrates how you can use parts of a receipt in order
-                // to persist entities to the database.
+                // You can handle each receipt in a transaction as you like.
+                //
+                // Below demonstrates how you can use parts of a receipt in order
+                // to persist entities defined in your GraphQL schema, to the database.
                 match receipt {
                     #[allow(unused)]
                     Receipt::Call { id, .. } => {
@@ -154,6 +151,10 @@ mod explorer_index {
                         });
 
                         let transfer = Transfer {
+                            id: derive_id(
+                                **id,
+                                [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
+                            ),
                             contract_id: *id,
                             receiver: *to,
                             amount: *amount,
@@ -183,6 +184,10 @@ mod explorer_index {
 
                         tx_amount += amount;
                         let transfer_out = TransferOut {
+                            id: derive_id(
+                                **id,
+                                [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
+                            ),
                             contract_id: *id,
                             receiver: *to,
                             amount: *amount,
@@ -197,11 +202,9 @@ mod explorer_index {
                             id: *id,
                             last_seen: 0,
                         });
-
-                        let id = derive_id(id.to_vec(), u64::to_le_bytes(*rb).to_vec());
                         let log = Log {
-                            id,
-                            contract_id: ContractId::from(*id),
+                            id: derive_id(**id, u64::to_le_bytes(*rb).to_vec()),
+                            contract_id: *id,
                             rb: *rb,
                         };
 
@@ -225,10 +228,7 @@ mod explorer_index {
                             ScriptExecutionResult::GenericFailure(_) => 4,
                         };
                         let r = ScriptResult {
-                            id: derive_id(
-                                [0u8; 32].to_vec(),
-                                u64::to_be_bytes(result).to_vec(),
-                            ),
+                            id: derive_id([0u8; 32], u64::to_be_bytes(result).to_vec()),
                             result,
                             gas_used: *gas_used,
                         };
@@ -259,10 +259,10 @@ mod explorer_index {
                 }
             }
 
-            // Persist the transaction to the database.
+            // Persist the transaction to the database via the `Tx` object defined in the GraphQL schema.
             let tx_entity = Tx {
-                block: blck.id,
-                timestamp: blck.timestamp,
+                block: block.id,
+                timestamp: block.timestamp,
                 id: tx.id,
                 value: tx_amount,
                 status: tx.status.clone().into(),

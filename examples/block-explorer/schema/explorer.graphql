@@ -39,6 +39,7 @@ type Contract {
 }
 
 type Transfer {
+    id: Bytes32! @unique
     contract_id: Contract!
     # `to` is a reserved SQL keyword
     receiver: ContractId! @indexed
@@ -47,6 +48,7 @@ type Transfer {
 }
 
 type TransferOut {
+    id: Bytes32! @unique
     contract_id: Contract!
     # `to` is a reserved SQL keyword
     receiver: Account!

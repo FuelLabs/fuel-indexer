@@ -2,20 +2,19 @@ schema {
     query: QueryRoot
 }
 
-# NOTE: Suffixing these object names with 'Entity' to avoid name collisions
-# with native Fuel types
+# IMPORTANT: Appending 'Entity' to some object name's in order to avoid
+# naming collisions with the ABI JSON
 
 type QueryRoot {
-    messageentity: MessageEntity
     pingentity: PingEntity
-    blockentity: BlockEntity
-    transactionentity: TransactionEntity
-    transferentity: TransferEntity
-    transferoutentity: TransferOutEntity
-    logentity: LogEntity
-    logdataentity: LogDataEntity
-    scriptresultentity: ScriptResultEntity
-    messageoutentity: MessageOutEntity
+    pungentity: PungEntity
+    block: Block
+    tx: Tx
+    transfer: Transfer
+    transferout: TransferOut
+    log: Log
+    scriptresult: ScriptResult
+    messageout: MessageOut
 }
 
 type PingEntity {
@@ -23,37 +22,29 @@ type PingEntity {
     value: UInt8!
 }
 
-type PongEntity {
-    id: ID!
-    value: UInt8!
-}
-
-
 type PungEntity {
     id: ID!
     value: UInt8!
     is_pung: Int4!
 }
 
-type BlockEntity {
-    id: ID!
+type Block {
+    id: Bytes32! @unique
     height: UInt8!
     producer: Address!
-    hash: Bytes32!
     timestamp: Int8!
 }
 
 
-type TransactionEntity {
-    id: ID!
-    hash: Bytes32!
-    block: BlockEntity!
+type Tx {
+    id: Bytes32! @unique
+    block: Block!
     input_data: Jsonb!
     timestamp: Int8!
 }
 
-type TransferEntity {
-    id: ID!
+type Transfer {
+    id: Bytes32! @unique
     contract_id: ContractId!
     # 'to' is a reserved SQL word, so using 'recipient'
     recipient: ContractId!
@@ -61,38 +52,30 @@ type TransferEntity {
     asset_id: AssetId!
 }
 
-type TransferOutEntity {
-    id: ID!
+type TransferOut {
+    id: Bytes32! @unique
     contract_id: ContractId!
     recipient: Address!
     amount: UInt8!
     asset_id: AssetId!
 }
 
-type LogEntity {
-    id: ID!
+type Log {
+    id: Bytes32! @unique
     contract_id: ContractId!
     ra: UInt8!
     rb: UInt8!
 }
 
-# NOTE: LogData is a bit different in that we don't save the actual LogData but the 
-# struct inside of the LogData payload
-type LogDataEntity {
-    id: ID!
-    contract_id: ContractId! 
-}
-
-type ScriptResultEntity {
-    id: ID!
+type ScriptResult {
+    id: Bytes32! @unique
     result: UInt8!
     gas_used: UInt8!
 }
 
-# TODO: We still need to decide what exactly we want to save as
-# MessageOut does include a data field similar to LogData
-type MessageOutEntity {
-    id: ID!
+type MessageOut {
+    # TODO: https://github.com/FuelLabs/fuel-indexer/issues/298
+    id: Bytes32! @unique
     sender: Address!
     recipient: Address!
     amount: UInt8!
