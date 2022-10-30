@@ -26,8 +26,7 @@ mod indexer {
 
 fn main() {
     use fuels_core::{abi_encoder::ABIEncoder};
-    use fuel_indexer_schema::types::fuel::{BlockData, TransactionData};
-
+    
     let s1 = SomeEvent {
         id: 9,
         account: Bits256([48u8; 32]),

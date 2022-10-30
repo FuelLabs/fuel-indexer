@@ -14,7 +14,7 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_blocks(block: fuel::BlockData) {
+    fn fuel_indexer_test_blocks(block: BlockData) {
         let blk = BlockEntity {
             id: block.height,
             hash: block.id,

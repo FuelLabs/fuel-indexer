@@ -106,7 +106,7 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u64" => quote! { u64 },
             "b256" => quote! { B256 },
             "Log" => quote! { fuel::Log },
-            "BlockData" => quote! { fuel::BlockData },
+            "BlockData" => quote! { BlockData },
             "LogData" => quote! { fuel::LogData },
             "Transfer" => quote! { fuel::Transfer },
             "TransferOut" => quote! { fuel::TransferOut },
@@ -451,7 +451,7 @@ fn process_fn_items(
                 self.decode_type(ty_id, data);
             }
 
-            pub fn decode_blockdata(&mut self, data: fuel::BlockData) {
+            pub fn decode_blockdata(&mut self, data: BlockData) {
                 #blockdata_decoder
             }
 
@@ -661,8 +661,12 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     let output = quote! {
         use alloc::{format, vec, vec::Vec};
         use fuel_indexer_plugin::{
-            types::{fuel, *, transaction::{Transaction, Receipt, TransactionStatus, TxId}},
-            utils::{sha256_digest},
+            types::{
+                fuel,
+                fuel::{BlockData, TransactionData}, *,
+                transaction::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
+            },
+            utils,
             Entity, Logger
         };
         use fuel_indexer_schema::utils::{serialize, deserialize};

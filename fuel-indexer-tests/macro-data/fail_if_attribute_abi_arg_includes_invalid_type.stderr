@@ -26,21 +26,51 @@ error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scop
   |     let s = SomeEvent {
   |             ^^^^^^^^^ not found in this scope
 
+error[E0412]: cannot find type `BlockData` in this scope
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  |
+  |     let data: Vec<BlockData> = vec![BlockData {
+  |                   ^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::fuel::BlockData;
+   |
+2  | use fuel_indexer_schema::types::fuel::BlockData;
+   |
+
+error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  |
+  |     let data: Vec<BlockData> = vec![BlockData {
+  |                                     ^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::fuel::BlockData;
+   |
+2  | use fuel_indexer_schema::types::fuel::BlockData;
+   |
+
+error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
+ --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  |
+  |             TransactionData {
+  |             ^^^^^^^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::types::fuel::TransactionData;
+   |
+2  | use fuel_indexer_schema::types::fuel::TransactionData;
+   |
+
 error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   |                 status: TransactionStatus::default(),
-  |                         ^^^^^^^^^^^^^^^^^
+  |                         ^^^^^^^^^^^^^^^^^ not found in this scope
   |
- ::: $WORKSPACE/fuel-indexer-schema/src/types/fuel.rs
-  |
-  | pub struct TransactionData {
-  | -------------------------- similarly named struct `TransactionData` defined here
-  |
-help: a struct with a similar name exists
-   |
-38 |                 status: TransactionData::default(),
-   |                         ~~~~~~~~~~~~~~~
 help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::types::transaction::TransactionStatus;
