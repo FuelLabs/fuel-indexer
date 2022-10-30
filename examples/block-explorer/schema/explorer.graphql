@@ -40,7 +40,7 @@ type Contract {
 
 type Transfer {
     contract_id: Contract!
-    # `tq` is a reserved SQL keyword
+    # `to` is a reserved SQL keyword
     receiver: ContractId! @indexed
     amount: UInt8!
     asset_id: AssetId! @indexed
@@ -48,7 +48,7 @@ type Transfer {
 
 type TransferOut {
     contract_id: Contract!
-    # `tq` is a reserved SQL keyword
+    # `to` is a reserved SQL keyword
     receiver: Account!
     amount: UInt8!
     asset_id: AssetId! @indexed
@@ -68,7 +68,7 @@ type Log {
 
 
 type MessageOut {
-    # TODO: use new `MessageId` type here?
+    # TODO: https://github.com/FuelLabs/fuel-indexer/issues/298
     id: Bytes32! @unique
     sender: Address!
     recipient: Address!
