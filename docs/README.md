@@ -1,30 +1,29 @@
-# Fuel Indexer
-
-![Fuel Logo](./src/img/fuel.png "Fuel Logo")
-
-[![build](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/fuel-indexer?label=latest)](https://crates.io/crates/fuel-indexer)
-[![docs](https://docs.rs/fuel-indexer/badge.svg)](https://docs.rs/fuel-indexer/)
-[![discord](https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xfpK4Pe)
+![Fuel Logo](./img/fuel.png)
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within a Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
-## Usage
+Events can be indexed using the Fuel indexer by creating WASM modules, as described in [the Hello World example](./src/examples/hello-indexer.md).
 
-### Clone repository
+For more info on how to get started with Fuel Indexer, [read the book](https://fuellabs.github.io/fuel-indexer/latest/index.html).
 
-```bash
-git clone git@github.com:FuelLabs/fuel-indexer.git
+## Documentation
+
+### Building From Source
+
+Install `mdbook` and then open a new terminal session in order to run the subsequent commands
+
+```sh
+cargo install mdbook
 ```
 
-### Run migrations
+To build book:
 
-```bash
-DATABASE_URL=postgres://postgres@localhost bash scripts/run_migrations.bash
+```sh
+mdbook build
 ```
 
-### Start the service
+To serve locally:
 
-```bash
-cargo run --bin fuel-indexer -- --manifest fuel-indexer-tests/assets/fuel_indexer_test.yaml
+```sh
+mdbook serve
 ```

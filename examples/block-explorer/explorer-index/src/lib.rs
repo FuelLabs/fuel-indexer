@@ -114,7 +114,6 @@ mod explorer_index {
             }
 
             for receipt in &tx.receipts {
-
                 // Here we can handle each receipt in a transaction as we like, the
                 // code below demonstrates how you can use parts of a receipt in order
                 // to persist entities to the database.
