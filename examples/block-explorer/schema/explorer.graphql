@@ -30,17 +30,50 @@ type Tx {
 
 type Account {
     id: Address! @unique
-    balance: UInt8!
+    last_seen: UInt8!
+}
+
+type Contract {
+    id: ContractId! @unique
+    last_seen: UInt8!
+}
+
+type Transfer {
+    contract_id: Contract!
+    # `tq` is a reserved SQL keyword
+    receiver: ContractId! @indexed
+    amount: UInt8!
+    asset_id: AssetId! @indexed
+}
+
+type TransferOut {
+    contract_id: Contract!
+    # `tq` is a reserved SQL keyword
+    receiver: Account!
+    amount: UInt8!
+    asset_id: AssetId! @indexed
+}
+
+type ScriptResult {
+    id: Bytes32! @unique
+    result: UInt8!
+    gas_used: UInt8!
 }
 
 type Log {
     id: Bytes32! @unique
     contract_id: ContractId!
-    message: Jsonb!
+    rb: UInt8!
 }
 
 
-type Contract {
-    id: ContractId! @unique
-    balance: UInt8!
+type MessageOut {
+    # TODO: use new `MessageId` type here?
+    id: Bytes32! @unique
+    sender: Address!
+    recipient: Address!
+    amount: UInt8!
+    nonce: Bytes32!
+    len: UInt8!
+    digest: Bytes32!
 }
