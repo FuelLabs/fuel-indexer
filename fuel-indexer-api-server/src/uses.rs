@@ -1,25 +1,20 @@
-use crate::{
-    config::{IndexerConfig, MutableConfig},
-    IndexerError, SchemaManager,
-};
+use crate::api::{ApiError, HttpError};
 use anyhow::Result;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     extract::{multipart::Multipart, Extension, Json, Path},
     http::{Request, StatusCode},
-    middleware::{self, Next},
-    response::{IntoResponse, Response},
-    routing::{get, post},
-    Router,
+    middleware::Next,
+    response::IntoResponse,
 };
-use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
+use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::{IndexAsset, IndexAssetType};
-use fuel_indexer_lib::utils::{
-    AssetReloadRequest, FuelNodeHealthResponse, ServiceStatus,
+use fuel_indexer_lib::{
+    config::{IndexerConfig, MutableConfig},
+    utils::{AssetReloadRequest, FuelNodeHealthResponse, ServiceStatus},
 };
 use fuel_indexer_schema::db::{
-    graphql::{GraphqlError, GraphqlQueryBuilder},
-    tables::Schema,
+    graphql::GraphqlQueryBuilder, manager::SchemaManager, tables::Schema,
 };
 use hyper::Client;
 use hyper_tls::HttpsConnector;
@@ -27,95 +22,17 @@ use serde::Deserialize;
 use serde_json::{json, Value};
 use std::str::FromStr;
 use std::time::Instant;
-use thiserror::Error;
 use tokio::sync::mpsc::Sender;
 use tracing::error;
 
-#[derive(Debug, Error)]
-pub enum HttpError {
-    #[error("Bad request.")]
-    BadRequest,
-    #[error("Unauthorized request.")]
-    Unauthorized,
-    #[error("Not not found. {0:#?}")]
-    NotFound(String),
-    #[error("Error.")]
-    InternalServer,
-}
-
-#[derive(Debug, Error)]
-pub enum ApiError {
-    #[error("Query builder error {0:?}")]
-    Graphql(#[from] GraphqlError),
-    #[error("Serialization error {0:?}")]
-    Serde(#[from] serde_json::Error),
-    #[error("Database error {0:?}")]
-    Database(#[from] IndexerDatabaseError),
-    #[error("Sqlx error {0:?}")]
-    Sqlx(#[from] sqlx::Error),
-    #[error("Http error {0:?}")]
-    Http(#[from] HttpError),
-    #[error("Indexer error {0:?}")]
-    Indexer(#[from] IndexerError),
-}
-
-impl From<StatusCode> for ApiError {
-    fn from(status: StatusCode) -> Self {
-        match status {
-            // TODO: Finish as needed`
-            StatusCode::BAD_REQUEST => ApiError::Http(HttpError::BadRequest),
-            StatusCode::UNAUTHORIZED => ApiError::Http(HttpError::Unauthorized),
-            _ => ApiError::Http(HttpError::InternalServer),
-        }
-    }
-}
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let generic_err_msg = "Inernal server error.".to_string();
-        let (status, err_msg) = match self {
-            ApiError::Graphql(err) => {
-                error!("ApiError::Graphql: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
-            }
-            ApiError::Serde(err) => {
-                error!("ApiError::Serde: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
-            }
-            ApiError::Database(err) => {
-                error!("ApiError::Database: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
-            }
-            ApiError::Sqlx(err) => {
-                error!("ApiError::Sqlx: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
-            }
-            ApiError::Indexer(err) => {
-                error!("ApiError::Indexer: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
-            }
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg),
-        };
-
-        (
-            status,
-            Json(json!({
-                "success": "false",
-                "details": err_msg,
-            })),
-        )
-            .into_response()
-    }
-}
-
 #[derive(Clone, Debug, Deserialize)]
 pub struct Query {
-    query: String,
+    pub query: String,
     #[allow(unused)] // TODO
-    params: String,
+    pub params: String,
 }
 
-pub async fn query_graph(
+pub(crate) async fn query_graph(
     Path(name): Path<String>,
     Json(query): Json<Query>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -133,7 +50,7 @@ pub async fn query_graph(
     }
 }
 
-pub async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
+pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
     let url = format!("{}/health", config.fuel_node.derive_http_url())
         .parse()
         .expect("Failed to parse fuel /health url.");
@@ -158,7 +75,7 @@ pub async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
     }
 }
 
-pub async fn health_check(
+pub(crate) async fn health_check(
     Extension(config): Extension<IndexerConfig>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(start_time): Extension<Arc<Instant>>,
@@ -179,7 +96,7 @@ async fn authenticate_user(_signature: &str) -> Option<Result<bool, ApiError>> {
     Some(Ok(true))
 }
 
-async fn authorize_middleware<B>(
+pub(crate) async fn authorize_middleware<B>(
     mut req: Request<B>,
     next: Next<B>,
 ) -> impl IntoResponse {
@@ -201,7 +118,7 @@ async fn authorize_middleware<B>(
     }
 }
 
-pub async fn register_index_assets(
+pub(crate) async fn register_index_assets(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<AssetReloadRequest>>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
@@ -299,58 +216,6 @@ pub async fn register_index_assets(
     }
 
     Err(StatusCode::BAD_REQUEST.into())
-}
-
-pub struct GraphQlApi;
-
-impl GraphQlApi {
-    pub async fn run(config: IndexerConfig, tx: Option<Sender<AssetReloadRequest>>) {
-        let sm = SchemaManager::new(&config.database.to_string())
-            .await
-            .expect("SchemaManager create failed");
-        let schema_manager = Arc::new(RwLock::new(sm));
-        let config = config.clone();
-        let start_time = Arc::new(Instant::now());
-        let listen_on = config.graphql_api.derive_socket_addr();
-
-        let pool = IndexerConnectionPool::connect(&config.database.to_string())
-            .await
-            .expect("Failed to establish connection pool");
-
-        if config.graphql_api.run_migrations.is_some() {
-            queries::run_migration(&config.database.to_string()).await;
-        }
-
-        let graph_route = Router::new()
-            .route("/:namespace", post(query_graph))
-            .layer(Extension(schema_manager.clone()))
-            .layer(Extension(pool.clone()));
-
-        let asset_route = Router::new()
-            .route("/:namespace/:identifier", post(register_index_assets))
-            .route_layer(middleware::from_fn(authorize_middleware))
-            .layer(Extension(tx))
-            .layer(Extension(schema_manager))
-            .layer(Extension(pool.clone()));
-
-        let health_route = Router::new()
-            .route("/health", get(health_check))
-            .layer(Extension(config))
-            .layer(Extension(pool))
-            .layer(Extension(start_time));
-
-        let api_routes = Router::new()
-            .nest("/", health_route)
-            .nest("/index", asset_route)
-            .nest("/graph", graph_route);
-
-        let app = Router::new().nest("/api", api_routes);
-
-        axum::Server::bind(&listen_on)
-            .serve(app.into_make_service())
-            .await
-            .expect("Service failed to start");
-    }
 }
 
 pub async fn run_query(

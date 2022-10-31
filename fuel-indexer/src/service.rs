@@ -1,5 +1,4 @@
 use crate::{
-    config::{FuelNodeConfig, IndexerConfig},
     Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, SchemaManager,
     WasmIndexExecutor,
 };
@@ -11,6 +10,7 @@ use fuel_gql_client::client::{
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
 use fuel_indexer_lib::{
+    config::{FuelNodeConfig, IndexerConfig},
     defaults::{
         DATABASE_CONNECTION_RETRY_ATTEMPTS, DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR,
     },

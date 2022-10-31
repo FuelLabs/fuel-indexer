@@ -1,12 +1,16 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
-use fuel_indexer::{
-    config::{IndexerArgs, Parser},
-    GraphQlApi, IndexerConfig, IndexerService, Manifest,
-};
+use fuel_indexer::IndexerService;
+#[cfg(feature = "api-server")]
+use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::queries;
-use fuel_indexer_lib::defaults::ASSET_REFRESH_CHANNEL_SIZE;
-use fuel_indexer_lib::utils::AssetReloadRequest;
+use fuel_indexer_lib::{
+    config::{IndexerArgs, IndexerConfig, Parser},
+    defaults::ASSET_REFRESH_CHANNEL_SIZE,
+    manifest::Manifest,
+    utils::AssetReloadRequest,
+};
+
 use tokio::sync::mpsc;
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
@@ -28,7 +32,7 @@ pub async fn main() -> Result<()> {
     let opt = IndexerArgs::from_args();
 
     let config = match &opt.config {
-        Some(path) => IndexerConfig::from_file(path).await?,
+        Some(path) => IndexerConfig::from_file(path)?,
         None => IndexerConfig::from_opts(opt.clone()),
     };
 
