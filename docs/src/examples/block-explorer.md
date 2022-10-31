@@ -3,7 +3,7 @@
 An rudimentary block explorer backend implementation demonstrating how to leverage basic Fuel indexer abstractions in order to build a cool dApp backend.
 
 ```rust
-//! A rudimentary block explorer implementation demonstrating how blocks, transactions, recepits
+//! A rudimentary block explorer implementation demonstrating how blocks, transactions, receipts
 //! and other data including Contracts and Addresses are indexed into a SQL backend.
 //!
 //! Build this example's WASM module using the following command. Note that a
@@ -31,7 +31,7 @@ use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
 use std::collections::HashSet;
 
-// Entitiees require IDs - naively create unique IDs using some caller and the data used
+// Entities require IDs - naively create unique IDs using some caller and the data used
 pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
     let mut buff: [u8; 32] = [0u8; 32];
     let result = [id.to_vec(), data].concat();
