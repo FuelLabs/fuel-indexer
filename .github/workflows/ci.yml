@@ -254,8 +254,7 @@ jobs:
     runs-on: ${{ matrix.job.os }}
     needs:
       - cancel-previous-runs
-      - cargo-unused-deps-check
-      - cargo-toml-fmt-check
+      - cargo-test-workspace-all-features
     if: github.event_name == 'release' && github.event.action == 'published'
      # Only do this job if publishing a release
     strategy:
@@ -494,7 +493,9 @@ jobs:
 
   notify-slack-on-failure:
     if: ${{ always() }} && github.ref == 'refs/heads/master'
-    needs: validation-complete
+    needs: 
+      - validation-complete
+      - publish-fuel-indexer-binaries
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack On Failure
@@ -556,6 +557,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     needs:
       - publish-docker-image
+      - publish-fuel-indexer-binaries
     runs-on: ubuntu-latest
     steps:
       - name: Set Environment Variables

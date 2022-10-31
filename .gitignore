@@ -7,3 +7,6 @@ docs/book/
 *.swp
 *.db
 *.db*
+
+# Add this to your global .gitignore but whatever
+.DS_Store
