@@ -248,14 +248,14 @@ crate-type = ['cdylib']
 
 [dependencies]
 fuel-indexer-macros = { version = &quot;0.1&quot;, default-features = false }
-fuel-indexer-plugin = { version = &quot;0.1&quot; }
+fuel-indexer-plugin = &quot;0.1&quot;
 fuel-indexer-schema = { version = &quot;0.1&quot;, default-features = false }
 fuel-tx = &quot;0.18&quot;
 fuels-core = &quot;0.26&quot;
 fuels-types = &quot;0.26&quot;
 getrandom = { version = &quot;0.2&quot;, features = [&quot;js&quot;] }
 serde = { version = &quot;1.0&quot;, default-features = false, features = [&quot;derive&quot;] }
-
+serde_json = { version = &quot;1.0&quot;, default-features = false, features = [&quot;alloc&quot;] }
 </code></pre>
 <p>Then write your literal indexing code.</p>
 <pre><pre class="playground"><code class="language-rust">
