@@ -10,7 +10,12 @@ use fuel_gql_client::client::{
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
-use fuel_indexer_lib::utils::AssetReloadRequest;
+use fuel_indexer_lib::{
+    defaults::{
+        DATABASE_CONNECTION_RETRY_ATTEMPTS, DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR,
+    },
+    utils::AssetReloadRequest,
+};
 use fuel_indexer_schema::types::{
     fuel::{BlockData, TransactionData},
     transaction::TransactionStatus,
@@ -31,8 +36,6 @@ use tokio::{
 };
 
 use tracing::{debug, error, info, warn};
-
-const RETRY_LIMIT: usize = 5;
 
 async fn spawn_executor_from_manifest(
     fuel_node: FuelNodeConfig,
@@ -238,10 +241,9 @@ fn make_task<T: 'static + Executor + Send + Sync>(
 
             if let Err(e) = result {
                 error!("Indexer executor failed {e:?}, retrying.");
-                // FIX ME: Magic number
-                sleep(Duration::from_secs(5)).await;
+                sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERR)).await;
                 retry_count += 1;
-                if retry_count < RETRY_LIMIT {
+                if retry_count < DATABASE_CONNECTION_RETRY_ATTEMPTS {
                     continue;
                 } else {
                     error!("Indexer failed after retries, giving up.");
@@ -252,8 +254,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
             next_cursor = cursor;
             if next_cursor.is_none() {
                 info!("No next page, sleeping.");
-                // FIX ME: Magic number
-                sleep(Duration::from_secs(5)).await;
+                sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
             };
             retry_count = 0;
 
