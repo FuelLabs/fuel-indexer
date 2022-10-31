@@ -276,6 +276,13 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
+      - name: Log in to the ghcr.io registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Setup custom cross env ${{ matrix.job.cross_image }}
         if: matrix.job.cross_image
         uses: docker/build-push-action@v2
@@ -291,6 +298,7 @@ jobs:
         if: matrix.job.os == 'macos-latest'
         run: |
           ci/macos-install-packages.sh
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -307,7 +315,7 @@ jobs:
 
       - name: Build fuel-indexer
         run: |
-          cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer
+          cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer -p fuel-indexer-api-server
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
         run: strip "target/${{ matrix.job.target }}/release/fuel-indexer"
@@ -320,6 +328,13 @@ jobs:
           aarch64-linux-gnu:latest \
           aarch64-linux-gnu-strip \
           /target/aarch64-unknown-linux-gnu/release/fuel-indexer
+
+          docker run --rm -v \
+          "$PWD/target:/target:Z" \
+          aarch64-linux-gnu:latest \
+          aarch64-linux-gnu-strip \
+          /target/aarch64-unknown-linux-gnu/release/fuel-indexer-api-server
+
       - name: Strip release binary aarch64-linux-musl
         if: matrix.job.target == 'aarch64-unknown-linux-musl'
         run: |
@@ -328,6 +343,13 @@ jobs:
           aarch64-linux-musl:latest \
           aarch64-linux-musl-strip \
           /target/aarch64-unknown-linux-musl/release/fuel-indexer
+
+          docker run --rm -v \
+          "$PWD/target:/target:Z" \
+          aarch64-linux-musl:latest \
+          aarch64-linux-musl-strip \
+          /target/aarch64-unknown-linux-musl/release/fuel-indexer-api-server
+
       - name: Strip release binary mac
         if: matrix.job.os == 'macos-latest'
         run: strip -x "target/${{ matrix.job.target }}/release/fuel-indexer"
@@ -338,26 +360,46 @@ jobs:
           TARGET: ${{ matrix.job.target }}
         run: |
           # trim refs/tags/ prefix
-          FUEL_CORE_VERSION="${GITHUB_REF#refs/tags/}"
+          FUEL_INDEXER_VERSION="${GITHUB_REF#refs/tags/}"
+
           # optionally trim v from tag prefix
-          FUEL_CORE_VERSION="${FUEL_CORE_VERSION#v}"
-          echo "version is: $FUEL_CORE_VERSION"
+          FUEL_INDEXER_VERSION="${FUEL_INDEXER_VERSION#v}"
+          echo "version is: $FUEL_INDEXER_VERSION"
+
           # setup artifact filename
-          ARTIFACT="fuel-indexer-$FUEL_CORE_VERSION-${{ env.TARGET }}"
-          ZIP_FILE_NAME="$ARTIFACT.tar.gz"
-          echo "ZIP_FILE_NAME=$ZIP_FILE_NAME" >> $GITHUB_ENV
+          INDEXER_ARTIFACT="fuel-indexer-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
+          API_SERVER_ARTIFACT="fuel-indexer-api-server-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
+          INDEXER_ZIP_FILE_NAME="$INDEXER_ARTIFACT.tar.gz"
+          API_SERVER_ZIP_FILE_NAME="$API_SERVER_ARTIFACT.tar.gz"
+          echo "INDEXER_ZIP_FILE_NAME=$INDEXER_ZIP_FILE_NAME" >> $GITHUB_ENV
+          echo "API_SERVER_ZIP_FILE_NAME=$API_SERVER_ZIP_FILE_NAME" >> $GITHUB_ENV
+
           # create zip file
-          mkdir -pv "$ARTIFACT"
-          cp "target/${{ matrix.job.target }}/release/fuel-indexer" "$ARTIFACT"
-          tar -czvf "$ZIP_FILE_NAME" "$ARTIFACT"
-      - name: Upload Binary Artifact
+          mkdir -pv "$INDEXER_ARTIFACT"
+          mkdir -pv "$API_SERVER_ARTIFACT"
+          cp "target/${{ matrix.job.target }}/release/fuel-indexer" "$INDEXER_ARTIFACT"
+          cp "target/${{ matrix.job.target }}/release/fuel-indexer-api-server" "$API_SERVER_ARTIFACT"
+          tar -czvf "$INDEXER_ZIP_FILE_NAME" "$INDEXER_ARTIFACT"
+          tar -czvf "$API_SERVER_ZIP_FILE_NAME" "$API_SERVER_ARTIFACT"
+
+      - name: Upload Indexer Binary Artifact
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ env.ZIP_FILE_NAME }}
-          asset_name: ${{ env.ZIP_FILE_NAME }}
+          asset_path: ./${{ env.INDEXER_ZIP_FILE_NAME }}
+          asset_name: ${{ env.INDEXER_ZIP_FILE_NAME }}
+          asset_content_type: application/gzip
+
+      - name: Upload Api Server Binary Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ env.API_SERVER_ZIP_FILE_NAME }}
+          asset_name: ${{ env.API_SERVER_ZIP_FILE_NAME }}
           asset_content_type: application/gzip
 
       - name: Notify if Job Fails
