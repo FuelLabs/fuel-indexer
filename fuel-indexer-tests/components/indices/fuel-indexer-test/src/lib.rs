@@ -1,8 +1,18 @@
 extern crate alloc;
 use fuel_indexer_macros::indexer;
+use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
+
+// Copied over from the block-explorer example
+pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
+    let mut buff: [u8; 32] = [0u8; 32];
+    let result = [id.to_vec(), data].concat();
+    buff.copy_from_slice(&sha256_digest(&result).as_bytes()[..32]);
+    Bytes32::from(buff)
+}
 
 #[indexer(manifest = "fuel-indexer-tests/assets/fuel_indexer_test.yaml")]
 mod fuel_indexer_test {
+
     fn fuel_indexer_test_ping(ping: Ping) {
         Logger::info("fuel_indexer_test_ping handling a Ping event.");
 
@@ -14,25 +24,23 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_blocks(block: BlockData) {
-        let blk = BlockEntity {
-            id: block.height,
-            hash: block.id,
-            height: block.height,
-            producer: block.producer,
-            timestamp: block.time,
+    fn fuel_indexer_test_blocks(block_data: BlockData) {
+        let block = Block {
+            id: block_data.id,
+            height: block_data.height,
+            producer: block_data.producer,
+            timestamp: block_data.time,
         };
 
-        blk.save();
+        block.save();
 
         let input_data = r#"{"foo":"bar"}"#.to_string();
 
-        for (i, _tx) in block.transactions.iter().enumerate() {
-            let tx = TransactionEntity {
-                id: i as u64,
-                hash: [0u8; 32].into(),
-                block: blk.id,
-                timestamp: block.time,
+        for tx in block_data.transactions.iter() {
+            let tx = Tx {
+                id: tx.id,
+                block: block.id,
+                timestamp: block_data.time,
                 input_data: Jsonb(input_data.clone()),
             };
             tx.save();
@@ -42,12 +50,23 @@ mod fuel_indexer_test {
     fn fuel_indexer_test_transfer(transfer: fuel::Transfer) {
         Logger::info("fuel_indexer_test_transfer handling Transfer event.");
 
-        let entity = TransferEntity {
-            id: 1,
-            contract_id: transfer.contract_id,
-            recipient: transfer.to,
-            amount: 1,
-            asset_id: transfer.asset_id,
+        let fuel::Transfer {
+            contract_id,
+            to,
+            asset_id,
+            amount,
+            ..
+        } = transfer;
+
+        let entity = Transfer {
+            id: derive_id(
+                *contract_id,
+                [contract_id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
+            ),
+            contract_id,
+            recipient: to,
+            amount,
+            asset_id,
         };
 
         entity.save();
@@ -56,12 +75,23 @@ mod fuel_indexer_test {
     fn fuel_indexer_test_transferout(transferout: fuel::TransferOut) {
         Logger::info("fuel_indexer_test_transferout handling TransferOut event.");
 
-        let entity = TransferOutEntity {
-            id: 1,
-            contract_id: transferout.contract_id,
-            recipient: transferout.to,
-            amount: 1,
-            asset_id: transferout.asset_id,
+        let fuel::TransferOut {
+            contract_id,
+            to,
+            asset_id,
+            amount,
+            ..
+        } = transferout;
+
+        let entity = TransferOut {
+            id: derive_id(
+                *contract_id,
+                [contract_id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
+            ),
+            contract_id,
+            recipient: to,
+            amount,
+            asset_id,
         };
 
         entity.save();
@@ -70,8 +100,12 @@ mod fuel_indexer_test {
     fn fuel_indexer_test_log(log: fuel::Log) {
         Logger::info("fuel_indexer_test_log handling Log event.");
 
-        let entity = LogEntity {
-            id: 1,
+        let fuel::Log {
+            contract_id, rb, ..
+        } = log;
+
+        let entity = Log {
+            id: derive_id(*contract_id, u64::to_le_bytes(rb).to_vec()),
             contract_id: log.contract_id,
             ra: log.ra,
             rb: log.rb,
@@ -95,10 +129,12 @@ mod fuel_indexer_test {
     fn fuel_indexer_test_scriptresult(scriptresult: fuel::ScriptResult) {
         Logger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
 
-        let entity = ScriptResultEntity {
-            id: 1,
-            result: scriptresult.result,
-            gas_used: scriptresult.gas_used,
+        let fuel::ScriptResult { result, gas_used } = scriptresult;
+
+        let entity = ScriptResult {
+            id: derive_id([0u8; 32], u64::to_be_bytes(result).to_vec()),
+            result,
+            gas_used,
         };
 
         entity.save();
@@ -107,14 +143,25 @@ mod fuel_indexer_test {
     fn fuel_indexer_test_messageout(messageout: fuel::MessageOut) {
         Logger::info("fuel_indexer_test_messageout handling MessageOut event");
 
-        let entity = MessageOutEntity {
-            id: 1,
-            sender: messageout.sender,
-            recipient: messageout.recipient,
-            amount: messageout.amount,
-            nonce: messageout.nonce,
-            len: messageout.len,
-            digest: messageout.digest,
+        let fuel::MessageOut {
+            sender,
+            message_id,
+            recipient,
+            amount,
+            nonce,
+            len,
+            digest,
+            ..
+        } = messageout;
+
+        let entity = MessageOut {
+            id: derive_id(*message_id, digest.to_vec()),
+            sender,
+            recipient,
+            amount,
+            nonce,
+            len,
+            digest,
         };
 
         entity.save();
