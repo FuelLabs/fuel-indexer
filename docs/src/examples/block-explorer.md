@@ -1,6 +1,6 @@
 # Block Explorer
 
-An rudimentary block explorer backend implementation demonstrating how to leverage basic Fuel indexer abstractions in order to build a cool dApp backend.
+A rudimentary block explorer backend implementation demonstrating how to leverage basic Fuel indexer abstractions in order to build a cool dApp backend.
 
 ```rust
 //! A rudimentary block explorer implementation demonstrating how blocks, transactions, receipts
