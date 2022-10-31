@@ -21,18 +21,16 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test.block ORDER BY height DESC LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.block WHERE height = 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
 
     let id: String = row.get(0);
     let height: i64 = row.get(1);
     let producer: String = row.get(2);
     let timestamp: i64 = row.get(3);
 
-    assert!(id.is_empty(), "{}", false);
     assert_eq!(height, 1);
     assert_eq!(
         producer,
@@ -41,7 +39,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
     assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test.tx WHERE block = {}",
+        "SELECT * FROM fuel_indexer_test.tx WHERE block = '{}'",
         id
     ))
     .fetch_all(&mut conn)
@@ -84,6 +82,11 @@ async fn test_can_trigger_and_index_transfer_event() {
     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
+    sqlx::query("DELETE FROM fuel_indexer_test.transfer WHERE id IS NOT NULL")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
     let client = http_client();
     let _ = client
         .post("http://127.0.0.1:8000/transfer")
@@ -93,14 +96,11 @@ async fn test_can_trigger_and_index_transfer_event() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.transfer WHERE id = 1")
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.transfer LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();
 
-    let _id: i64 = row.get(0);
-    let _contract_id: String = row.get(1);
-    let _recipient: String = row.get(2);
     let amount: i64 = row.get(3);
     let asset_id: &str = row.get(4);
 
@@ -113,6 +113,11 @@ async fn test_can_trigger_and_index_transfer_event() {
 async fn test_can_trigger_and_index_log_event() {
     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
+
+    sqlx::query("DELETE FROM fuel_indexer_test.log WHERE id IS NOT NULL")
+        .execute(&mut conn)
+        .await
+        .unwrap();
 
     let client = http_client();
     let _ = client
@@ -166,7 +171,6 @@ async fn test_can_trigger_and_index_scriptresult_event() {
     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
-    // Remove any lingering ScriptResult items
     sqlx::query("DELETE FROM fuel_indexer_test.scriptresult WHERE id IS NOT NULL")
         .execute(&mut conn)
         .await
