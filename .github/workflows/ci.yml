@@ -370,7 +370,7 @@ jobs:
           INDEXER_ARTIFACT="fuel-indexer-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
           API_SERVER_ARTIFACT="fuel-indexer-api-server-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
           INDEXER_ZIP_FILE_NAME="$INDEXER_ARTIFACT.tar.gz"
-          API_SERVER_ZIP_FILE_NAME="$INDEXER_ARTIFACT.tar.gz"
+          API_SERVER_ZIP_FILE_NAME="$API_SERVER_ARTIFACT.tar.gz"
           echo "INDEXER_ZIP_FILE_NAME=$INDEXER_ZIP_FILE_NAME" >> $GITHUB_ENV
           echo "API_SERVER_ZIP_FILE_NAME=$API_SERVER_ZIP_FILE_NAME" >> $GITHUB_ENV
 
@@ -378,7 +378,7 @@ jobs:
           mkdir -pv "$INDEXER_ARTIFACT"
           mkdir -pv "$API_SERVER_ARTIFACT"
           cp "target/${{ matrix.job.target }}/release/fuel-indexer" "$INDEXER_ARTIFACT"
-          cp "target/${{ matrix.job.target }}/release/fuel-indexer" "$API_SERVER_ARTIFACT"
+          cp "target/${{ matrix.job.target }}/release/fuel-indexer-api-server" "$API_SERVER_ARTIFACT"
           tar -czvf "$INDEXER_ZIP_FILE_NAME" "$INDEXER_ARTIFACT"
           tar -czvf "$API_SERVER_ZIP_FILE_NAME" "$API_SERVER_ARTIFACT"
 
