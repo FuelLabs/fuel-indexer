@@ -254,8 +254,7 @@ jobs:
     runs-on: ${{ matrix.job.os }}
     needs:
       - cancel-previous-runs
-      - cargo-unused-deps-check
-      - cargo-toml-fmt-check
+      - cargo-test-workspace-all-features
     if: github.event_name == 'release' && github.event.action == 'published'
      # Only do this job if publishing a release
     strategy:
@@ -266,9 +265,9 @@ jobs:
             platform: linux
             target: x86_64-unknown-linux-gnu
             cross_image: x86_64-linux-gnu
-          - os: macos-latest
-            platform: darwin
-            target: x86_64-apple-darwin
+          # - os: macos-latest
+          #   platform: darwin
+          #   target: x86_64-apple-darwin
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -316,6 +315,7 @@ jobs:
       - name: Build fuel-indexer
         run: |
           cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer -p fuel-indexer-api-server
+  
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
         run: strip "target/${{ matrix.job.target }}/release/fuel-indexer"
@@ -494,7 +494,8 @@ jobs:
 
   notify-slack-on-failure:
     if: ${{ always() }} && github.ref == 'refs/heads/master'
-    needs: validation-complete
+    needs: 
+      - validation-complete
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack On Failure
@@ -511,7 +512,9 @@ jobs:
 
   publish:
     # Only do this job if publishing a release and validations pass.
-    needs: validation-complete
+    needs: 
+      - validation-complete
+      - publish-fuel-indexer-binaries
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     steps:
@@ -520,7 +523,7 @@ jobs:
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: latest
+          toolchain: stable
           override: true
       - name: Verify tag version
         run: |
@@ -556,6 +559,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     needs:
       - publish-docker-image
+      - publish-fuel-indexer-binaries
     runs-on: ubuntu-latest
     steps:
       - name: Set Environment Variables
