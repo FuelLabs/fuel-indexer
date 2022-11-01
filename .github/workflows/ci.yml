@@ -315,6 +315,7 @@ jobs:
       - name: Build fuel-indexer
         run: |
           cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer -p fuel-indexer-api-server
+  
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
         run: strip "target/${{ matrix.job.target }}/release/fuel-indexer"
