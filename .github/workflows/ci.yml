@@ -523,7 +523,7 @@ jobs:
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: latest
+          toolchain: stable
           override: true
       - name: Verify tag version
         run: |
