@@ -1,19 +1,24 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_indexer::IndexerService;
-#[cfg(feature = "api-server")]
-use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::queries;
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig, Parser},
-    defaults::ASSET_REFRESH_CHANNEL_SIZE,
     manifest::Manifest,
     utils::AssetReloadRequest,
 };
-
-use tokio::sync::mpsc;
+use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
+
+#[cfg(feature = "api-server")]
+use fuel_indexer_api_server::api::GraphQlApi;
+
+#[cfg(feature = "api-server")]
+use fuel_indexer_lib::defaults::ASSET_REFRESH_CHANNEL_SIZE;
+
+#[cfg(feature = "api-server")]
+use tokio::sync::mpsc::channel;
 
 #[tokio::main]
 pub async fn main() -> Result<()> {
@@ -45,8 +50,20 @@ pub async fn main() -> Result<()> {
         &config.fuel_node.to_string()
     );
 
-    let (tx, rx) = mpsc::channel::<AssetReloadRequest>(ASSET_REFRESH_CHANNEL_SIZE);
-    let mut service = IndexerService::new(config.clone(), Some(rx)).await?;
+    #[allow(unused)]
+    let (tx, rx): (
+        Option<Sender<AssetReloadRequest>>,
+        Option<Receiver<AssetReloadRequest>>,
+    ) = match () {
+        #[cfg(feature = "api-server")]
+        () => {
+            let (tx, rx) = channel::<AssetReloadRequest>(ASSET_REFRESH_CHANNEL_SIZE);
+            (Some(tx), Some(rx))
+        }
+        () => (None, None),
+    };
+
+    let mut service = IndexerService::new(config.clone(), rx).await?;
 
     let mut manifest: Option<Manifest> = None;
 
@@ -68,7 +85,9 @@ pub async fn main() -> Result<()> {
     service.register_indices(manifest, false).await?;
 
     let service_handle = tokio::spawn(service.run());
-    GraphQlApi::run(config, Some(tx)).await;
+
+    #[cfg(feature = "api-server")]
+    GraphQlApi::run(config, tx).await;
 
     service_handle.await?;
 
