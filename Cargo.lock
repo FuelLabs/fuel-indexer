@@ -2606,7 +2606,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "serde",
  "strum 0.24.1",
@@ -2657,7 +2657,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2691,7 +2691,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-sqlite"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
