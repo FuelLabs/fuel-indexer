@@ -25,10 +25,10 @@ harness = true
 [dependencies]
 async-std = "1"
 chrono = { version = "0.4", features = ["serde"] }
-fuel-indexer = { path = "./../fuel-indexer" }
-fuel-indexer-lib = { path = "./../fuel-indexer-lib" }
-fuel-indexer-database = { path = "./../fuel-indexer-database" }
-fuel-indexer-schema = { path = "./../fuel-indexer-schema" }
+fuel-indexer = { version = "0.1.0", path = "./../fuel-indexer" }
+fuel-indexer-database = { version = "0.1.0", path = "./../fuel-indexer-database" }
+fuel-indexer-lib = { version = "0.1.0", path = "./../fuel-indexer-lib" }
+fuel-indexer-schema = { version = "0.1.0", path = "./../fuel-indexer-schema" }
 fuel-tx = "0.18"
 fuel-types = "0.5"
 fuels = { version = "0.26", features = ["fuel-core-lib"] }

@@ -254,8 +254,7 @@ jobs:
     runs-on: ${{ matrix.job.os }}
     needs:
       - cancel-previous-runs
-      - cargo-unused-deps-check
-      - cargo-toml-fmt-check
+      - cargo-test-workspace-all-features
     if: github.event_name == 'release' && github.event.action == 'published'
      # Only do this job if publishing a release
     strategy:
@@ -266,15 +265,22 @@ jobs:
             platform: linux
             target: x86_64-unknown-linux-gnu
             cross_image: x86_64-linux-gnu
-          - os: macos-latest
-            platform: darwin
-            target: x86_64-apple-darwin
+          # - os: macos-latest
+          #   platform: darwin
+          #   target: x86_64-apple-darwin
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
+
+      - name: Log in to the ghcr.io registry
+        uses: docker/login-action@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup custom cross env ${{ matrix.job.cross_image }}
         if: matrix.job.cross_image
@@ -291,6 +297,7 @@ jobs:
         if: matrix.job.os == 'macos-latest'
         run: |
           ci/macos-install-packages.sh
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -307,7 +314,8 @@ jobs:
 
       - name: Build fuel-indexer
         run: |
-          cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer
+          cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer -p fuel-indexer-api-server
+  
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
         run: strip "target/${{ matrix.job.target }}/release/fuel-indexer"
@@ -320,6 +328,13 @@ jobs:
           aarch64-linux-gnu:latest \
           aarch64-linux-gnu-strip \
           /target/aarch64-unknown-linux-gnu/release/fuel-indexer
+
+          docker run --rm -v \
+          "$PWD/target:/target:Z" \
+          aarch64-linux-gnu:latest \
+          aarch64-linux-gnu-strip \
+          /target/aarch64-unknown-linux-gnu/release/fuel-indexer-api-server
+
       - name: Strip release binary aarch64-linux-musl
         if: matrix.job.target == 'aarch64-unknown-linux-musl'
         run: |
@@ -328,6 +343,13 @@ jobs:
           aarch64-linux-musl:latest \
           aarch64-linux-musl-strip \
           /target/aarch64-unknown-linux-musl/release/fuel-indexer
+
+          docker run --rm -v \
+          "$PWD/target:/target:Z" \
+          aarch64-linux-musl:latest \
+          aarch64-linux-musl-strip \
+          /target/aarch64-unknown-linux-musl/release/fuel-indexer-api-server
+
       - name: Strip release binary mac
         if: matrix.job.os == 'macos-latest'
         run: strip -x "target/${{ matrix.job.target }}/release/fuel-indexer"
@@ -338,26 +360,46 @@ jobs:
           TARGET: ${{ matrix.job.target }}
         run: |
           # trim refs/tags/ prefix
-          FUEL_CORE_VERSION="${GITHUB_REF#refs/tags/}"
+          FUEL_INDEXER_VERSION="${GITHUB_REF#refs/tags/}"
+
           # optionally trim v from tag prefix
-          FUEL_CORE_VERSION="${FUEL_CORE_VERSION#v}"
-          echo "version is: $FUEL_CORE_VERSION"
+          FUEL_INDEXER_VERSION="${FUEL_INDEXER_VERSION#v}"
+          echo "version is: $FUEL_INDEXER_VERSION"
+
           # setup artifact filename
-          ARTIFACT="fuel-indexer-$FUEL_CORE_VERSION-${{ env.TARGET }}"
-          ZIP_FILE_NAME="$ARTIFACT.tar.gz"
-          echo "ZIP_FILE_NAME=$ZIP_FILE_NAME" >> $GITHUB_ENV
+          INDEXER_ARTIFACT="fuel-indexer-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
+          API_SERVER_ARTIFACT="fuel-indexer-api-server-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
+          INDEXER_ZIP_FILE_NAME="$INDEXER_ARTIFACT.tar.gz"
+          API_SERVER_ZIP_FILE_NAME="$API_SERVER_ARTIFACT.tar.gz"
+          echo "INDEXER_ZIP_FILE_NAME=$INDEXER_ZIP_FILE_NAME" >> $GITHUB_ENV
+          echo "API_SERVER_ZIP_FILE_NAME=$API_SERVER_ZIP_FILE_NAME" >> $GITHUB_ENV
+
           # create zip file
-          mkdir -pv "$ARTIFACT"
-          cp "target/${{ matrix.job.target }}/release/fuel-indexer" "$ARTIFACT"
-          tar -czvf "$ZIP_FILE_NAME" "$ARTIFACT"
-      - name: Upload Binary Artifact
+          mkdir -pv "$INDEXER_ARTIFACT"
+          mkdir -pv "$API_SERVER_ARTIFACT"
+          cp "target/${{ matrix.job.target }}/release/fuel-indexer" "$INDEXER_ARTIFACT"
+          cp "target/${{ matrix.job.target }}/release/fuel-indexer-api-server" "$API_SERVER_ARTIFACT"
+          tar -czvf "$INDEXER_ZIP_FILE_NAME" "$INDEXER_ARTIFACT"
+          tar -czvf "$API_SERVER_ZIP_FILE_NAME" "$API_SERVER_ARTIFACT"
+
+      - name: Upload Indexer Binary Artifact
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ env.ZIP_FILE_NAME }}
-          asset_name: ${{ env.ZIP_FILE_NAME }}
+          asset_path: ./${{ env.INDEXER_ZIP_FILE_NAME }}
+          asset_name: ${{ env.INDEXER_ZIP_FILE_NAME }}
+          asset_content_type: application/gzip
+
+      - name: Upload Api Server Binary Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ env.API_SERVER_ZIP_FILE_NAME }}
+          asset_name: ${{ env.API_SERVER_ZIP_FILE_NAME }}
           asset_content_type: application/gzip
 
       - name: Notify if Job Fails
@@ -452,7 +494,8 @@ jobs:
 
   notify-slack-on-failure:
     if: ${{ always() }} && github.ref == 'refs/heads/master'
-    needs: validation-complete
+    needs: 
+      - validation-complete
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack On Failure
@@ -469,7 +512,9 @@ jobs:
 
   publish:
     # Only do this job if publishing a release and validations pass.
-    needs: validation-complete
+    needs: 
+      - validation-complete
+      - publish-fuel-indexer-binaries
     if: github.event_name == 'release' && github.event.action == 'published'
     runs-on: ubuntu-latest
     steps:
@@ -478,7 +523,7 @@ jobs:
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: latest
+          toolchain: stable
           override: true
       - name: Verify tag version
         run: |
@@ -486,16 +531,21 @@ jobs:
           mv ./dasel /usr/local/bin/dasel
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-api-server/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-database/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-database/database-types/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-database/postgres/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-database/sqlite/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-lib/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-macros/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-plugin/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-schema/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
+
       - name: Publish crate
         uses: katyo/publish-crates@v1
         with:
           publish-delay: 30000
           registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+          
       - name: Notify Slack On Failure
         uses: ravsamhq/notify-slack-action@v1
         if: always()
@@ -514,6 +564,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     needs:
       - publish-docker-image
+      - publish-fuel-indexer-binaries
     runs-on: ubuntu-latest
     steps:
       - name: Set Environment Variables

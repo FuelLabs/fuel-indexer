@@ -9,11 +9,11 @@ publish = false
 [dependencies]
 bincode = "1.3.3"
 chrono = { version = "0.4", default-features = false, features = ["serde"] }
-fuel-indexer-database = { path = "../fuel-indexer-database", optional = true }
-fuel-indexer-database-types = { path = "../fuel-indexer-database/database-types" }
-fuel-indexer-lib = { path = "../fuel-indexer-lib" }
-fuel-indexer-postgres = { path = "../fuel-indexer-database/postgres", optional = true }
-fuel-indexer-sqlite = { path = "../fuel-indexer-database/sqlite", optional = true }
+fuel-indexer-database = { version = "0.1.0", path = "../fuel-indexer-database", optional = true }
+fuel-indexer-database-types = { version = "0.1.0", path = "../fuel-indexer-database/database-types" }
+fuel-indexer-lib = { version = "0.1.0", path = "../fuel-indexer-lib" }
+fuel-indexer-postgres = { version = "0.1.0", path = "../fuel-indexer-database/postgres", optional = true }
+fuel-indexer-sqlite = { version = "0.1.0", path = "../fuel-indexer-database/sqlite", optional = true }
 fuel-tx = { version = "0.18", features = ["serde", "alloc"] }
 fuel-types = { version = "0.5", features = ["serde", "alloc"] }
 fuels-core = "0.26"

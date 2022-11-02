@@ -6,10 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-fuel-indexer-database-types = { path = "./database-types" }
-fuel-indexer-lib = { path = "../fuel-indexer-lib" }
-fuel-indexer-postgres = { path = "./postgres" }
-fuel-indexer-sqlite = { path = "./sqlite" }
+fuel-indexer-database-types = { version = "0.1.0", path = "./database-types" }
+fuel-indexer-lib = { version = "0.1.0", path = "../fuel-indexer-lib" }
+fuel-indexer-postgres = { version = "0.1.0", path = "./postgres" }
+fuel-indexer-sqlite = { version = "0.1.0", path = "./sqlite" }
 sqlx = { version = "0.6" }
 thiserror = { version = "1.0" }
 tracing = "0.1"
