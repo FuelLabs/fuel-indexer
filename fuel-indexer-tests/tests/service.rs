@@ -1,7 +1,8 @@
 extern crate alloc;
-use fuel_indexer::{
+use fuel_indexer::IndexerService;
+use fuel_indexer_lib::{
     config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
-    IndexerService, Manifest,
+    manifest::Manifest,
 };
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::prelude::{

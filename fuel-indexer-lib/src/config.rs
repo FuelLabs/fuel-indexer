@@ -1,11 +1,12 @@
-use anyhow::Result;
-use async_std::{fs::File, io::ReadExt};
-pub use clap::Parser;
-use fuel_indexer_lib::{
+use crate::{
     defaults,
     utils::{derive_socket_addr, is_opt_env_var, trim_opt_env_key},
 };
+use anyhow::Result;
+pub use clap::Parser;
 use serde::Deserialize;
+use std::fs::File;
+use std::io::Read;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use strum::{AsRefStr, EnumString};
@@ -437,10 +438,10 @@ impl IndexerConfig {
         config
     }
 
-    pub async fn from_file(path: &Path) -> Result<Self> {
-        let mut file = File::open(path).await?;
+    pub fn from_file(path: &Path) -> Result<Self> {
+        let mut file = File::open(path)?;
         let mut contents = String::new();
-        file.read_to_string(&mut contents).await?;
+        file.read_to_string(&mut contents)?;
 
         let mut config = IndexerConfig::default();
 
