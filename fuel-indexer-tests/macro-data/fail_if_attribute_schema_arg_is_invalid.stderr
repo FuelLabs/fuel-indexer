@@ -36,7 +36,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::types::fuel::BlockData;
    |
-2  | use fuel_indexer_schema::types::fuel::BlockData;
+2  | use fuel_indexer_types::native::BlockData;
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
@@ -49,7 +49,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::types::fuel::BlockData;
    |
-2  | use fuel_indexer_schema::types::fuel::BlockData;
+2  | use fuel_indexer_types::native::BlockData;
    |
 
 error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
@@ -62,7 +62,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::types::fuel::TransactionData;
    |
-2  | use fuel_indexer_schema::types::fuel::TransactionData;
+2  | use fuel_indexer_types::native::TransactionData;
    |
 
 error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
@@ -73,9 +73,9 @@ error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::types::transaction::TransactionStatus;
+2  | use fuel_indexer_plugin::types::tx::TransactionStatus;
    |
-2  | use fuel_indexer_schema::types::transaction::TransactionStatus;
+2  | use fuel_indexer_types::tx::TransactionStatus;
    |
 2  | use fuels::client::schema::schema::TransactionStatus;
    |
@@ -91,9 +91,9 @@ error[E0433]: failed to resolve: use of undeclared type `Transaction`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::types::transaction::Transaction;
+2  | use fuel_indexer_plugin::types::tx::Transaction;
    |
-2  | use fuel_indexer_schema::types::transaction::Transaction;
+2  | use fuel_indexer_types::tx::Transaction;
    |
 2  | use fuel_tx::Transaction;
    |

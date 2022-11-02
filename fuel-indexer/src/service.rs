@@ -16,12 +16,11 @@ use fuel_indexer_lib::{
     },
     utils::AssetReloadRequest,
 };
-use fuel_indexer_schema::types::{
-    fuel::{BlockData, TransactionData},
-    transaction::TransactionStatus,
+use fuel_indexer_types::{
+    native::{BlockData, TransactionData},
+    tx::{TransactionStatus, TxId},
     Address, Bytes32,
 };
-use fuel_tx::TxId;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::cell::RefCell;
 use std::collections::HashMap;

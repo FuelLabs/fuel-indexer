@@ -2548,6 +2548,7 @@ dependencies = [
  "fuel-indexer-postgres",
  "fuel-indexer-schema",
  "fuel-indexer-sqlite",
+ "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
  "futures",
@@ -2631,6 +2632,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
+ "fuel-indexer-types",
  "fuel-tx",
  "fuels",
  "fuels-core",
@@ -2653,6 +2655,7 @@ version = "0.1.0"
 dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-schema",
+ "fuel-indexer-types",
 ]
 
 [[package]]
@@ -2676,6 +2679,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-postgres",
  "fuel-indexer-sqlite",
+ "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
  "fuels-core",
@@ -2746,6 +2750,7 @@ dependencies = [
  "fuel-indexer",
  "fuel-indexer-database",
  "fuel-indexer-schema",
+ "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
  "fuels",
@@ -2762,6 +2767,18 @@ dependencies = [
  "wasmer",
  "wasmer-compiler-cranelift",
  "wasmer-engine-universal",
+]
+
+[[package]]
+name = "fuel-indexer-types"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "fuel-indexer-lib",
+ "fuel-tx",
+ "fuel-types",
+ "fuels-core",
+ "serde",
 ]
 
 [[package]]

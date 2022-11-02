@@ -2,8 +2,11 @@ use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
-use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
-use fuel_indexer_schema::{types::fuel, utils::type_id};
+use fuel_indexer_lib::{
+    manifest::Manifest,
+    utils::{local_repository_root, type_id},
+};
+use fuel_indexer_types::native as fuel;
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
@@ -664,7 +667,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             types::{
                 fuel,
                 fuel::{BlockData, TransactionData}, *,
-                transaction::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
+                tx::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
             },
             utils,
             Entity, Logger

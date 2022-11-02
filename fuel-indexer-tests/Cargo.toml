@@ -28,6 +28,7 @@ chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { version = "0.1.0", path = "./../fuel-indexer" }
 fuel-indexer-database = { version = "0.1.0", path = "./../fuel-indexer-database" }
 fuel-indexer-schema = { version = "0.1.0", path = "./../fuel-indexer-schema" }
+fuel-indexer-types = { version = "0.1.0", path = "./../fuel-indexer-types" }
 fuel-tx = "0.18"
 fuel-types = "0.5"
 fuels = { version = "0.26", features = ["fuel-core-lib"] }

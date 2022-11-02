@@ -1,9 +1,9 @@
-use fuel_indexer_lib::utils::local_repository_root;
+use fuel_indexer_lib::utils::{local_repository_root, type_id};
 use fuel_indexer_schema::{
     directives,
     utils::{
         build_schema_fields_and_types_map, build_schema_objects_set,
-        get_join_directive_info, schema_version, type_id, BASE_SCHEMA,
+        get_join_directive_info, schema_version, BASE_SCHEMA,
     },
 };
 use graphql_parser::parse_schema;

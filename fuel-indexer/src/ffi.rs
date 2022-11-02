@@ -1,6 +1,6 @@
-use fuel_indexer_schema::{
-    FtColumn, LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE,
-    LOG_LEVEL_WARN,
+use fuel_indexer_schema::FtColumn;
+use fuel_indexer_types::log::{
+    LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};

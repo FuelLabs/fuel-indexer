@@ -1,10 +1,8 @@
 use crate::{
-    types::{
-        transaction::{Transaction, TransactionStatus, TxId},
-        Address, AssetId, Bytes32, ContractId, MessageId,
-    },
-    utils::type_id,
+    tx::{Transaction, TransactionStatus, TxId},
+    Address, AssetId, Bytes32, ContractId, MessageId,
 };
+use fuel_indexer_lib::utils::type_id;
 pub use fuel_tx::Receipt;
 use serde::{Deserialize, Serialize};
 

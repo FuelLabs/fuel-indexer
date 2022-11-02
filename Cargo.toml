@@ -17,6 +17,7 @@ members = [
    "fuel-indexer-tests",
    "fuel-indexer-tests/components/indices/fuel-indexer-test",
    "fuel-indexer-tests/components/web",
+   "fuel-indexer-types",
    "fuel-indexer",
 ]
 
