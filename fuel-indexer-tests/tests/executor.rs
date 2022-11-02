@@ -7,8 +7,8 @@ use fuel_indexer_schema::types::{
 };
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
 use fuel_tx::{Receipt, Transaction};
+use fuels::core::{abi_encoder::ABIEncoder, types::Bits256, Tokenizable};
 use fuels_abigen_macro::abigen;
-use fuels_core::{abi_encoder::ABIEncoder, types::Bits256, Tokenizable};
 use sqlx::{Connection, Row};
 use std::path::Path;
 

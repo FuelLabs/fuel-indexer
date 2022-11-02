@@ -6,9 +6,9 @@ use fuels::{
         WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
+    core::parameters::StorageConfiguration,
 };
 use fuels_abigen_macro::abigen;
-use fuels_core::parameters::StorageConfiguration;
 use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;

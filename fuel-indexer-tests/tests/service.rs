@@ -5,13 +5,15 @@ use fuel_indexer_lib::{
     manifest::Manifest,
 };
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
-use fuels::prelude::{
-    setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
-    WalletUnlocked, DEFAULT_COIN_AMOUNT,
+use fuels::{
+    core::parameters::StorageConfiguration,
+    prelude::{
+        setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
+        WalletUnlocked, DEFAULT_COIN_AMOUNT,
+    },
+    signers::Signer,
 };
-use fuels::signers::Signer;
 use fuels_abigen_macro::abigen;
-use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
 
 const MANIFEST: &str = include_str!("./../assets/macros/simple_wasm.yaml");

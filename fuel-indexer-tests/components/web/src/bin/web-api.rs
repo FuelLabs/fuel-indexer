@@ -3,11 +3,11 @@ use async_std::sync::Arc;
 use clap::Parser;
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::{
+    core::parameters::StorageConfiguration,
     prelude::{CallParameters, Contract, Provider, WalletUnlocked},
     signers::Signer,
 };
 use fuels_abigen_macro::abigen;
-use fuels_core::parameters::StorageConfiguration;
 use std::path::{Path, PathBuf};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;

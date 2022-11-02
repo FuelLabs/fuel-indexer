@@ -4,11 +4,13 @@ use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
 use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
 use fuel_indexer_schema::{types::fuel, utils::type_id};
-use fuels_core::{
-    code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
-    source::Source,
+use fuels::{
+    core::{
+        code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
+        source::Source,
+    },
+    types::{param_types::ParamType, ProgramABI, TypeDeclaration},
 };
-use fuels_types::{param_types::ParamType, ProgramABI, TypeDeclaration};
 use lazy_static::lazy_static;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
@@ -670,7 +672,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             Entity, Logger
         };
         use fuel_indexer_schema::utils::{serialize, deserialize};
-        use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
+        use fuels::core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use std::collections::HashMap;
 
         type B256 = [u8; 32];

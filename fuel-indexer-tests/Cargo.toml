@@ -33,7 +33,6 @@ fuel-tx = "0.18"
 fuel-types = "0.5"
 fuels = { version = "0.26", features = ["fuel-core-lib"] }
 fuels-abigen-macro = "0.26"
-fuels-core = "0.26"
 futures = "0.3"
 itertools = "0.10"
 rand = "0.8"

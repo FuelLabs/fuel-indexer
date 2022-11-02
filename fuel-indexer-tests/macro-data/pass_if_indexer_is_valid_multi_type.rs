@@ -25,7 +25,7 @@ mod indexer {
 }
 
 fn main() {
-    use fuels_core::{abi_encoder::ABIEncoder};
+    use fuels::core::abi_encoder::ABIEncoder;
     
     let s1 = SomeEvent {
         id: 9,
