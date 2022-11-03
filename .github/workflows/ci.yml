@@ -10,6 +10,7 @@ on:
 
 env:
   DATABASE_URL: postgres://postgres:my-secret@localhost:5432
+  DASEL_VERSION: https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
   REGISTRY: ghcr.io
