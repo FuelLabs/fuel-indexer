@@ -175,9 +175,9 @@ jobs:
           - command: build
             args: --locked --workspace --all-features --all-targets
           - command: test
-            args: --locked --workspace --all-features
+            args: --locked --workspace
           - command: test
-            args: --locked --all-targets --no-default-features --workspace --all-features
+            args: --locked --all-targets --no-default-features --workspace
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
