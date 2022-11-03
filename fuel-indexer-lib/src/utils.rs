@@ -14,6 +14,14 @@ use tracing::{info, warn};
 
 const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
 
+pub fn type_id(namespace: &str, type_name: &str) -> u64 {
+    let mut bytes = [0u8; 8];
+    bytes.copy_from_slice(
+        &Sha256::digest(format!("{}:{}", namespace, type_name).as_bytes())[..8],
+    );
+    u64::from_le_bytes(bytes)
+}
+
 // Testing assets use relative paths, while production assets will use absolute paths
 //
 // If we can successfully find the local project root, then we're in the repository,

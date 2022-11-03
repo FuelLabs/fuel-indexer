@@ -1,6 +1,5 @@
 use crate::{
-    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, SchemaManager,
-    WasmIndexExecutor,
+    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, WasmIndexExecutor,
 };
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{
@@ -16,12 +15,12 @@ use fuel_indexer_lib::{
     },
     utils::AssetReloadRequest,
 };
-use fuel_indexer_schema::types::{
-    fuel::{BlockData, TransactionData},
-    transaction::TransactionStatus,
+use fuel_indexer_schema::db::manager::SchemaManager;
+use fuel_indexer_types::{
+    native::{BlockData, TransactionData},
+    tx::{TransactionStatus, TxId},
     Address, Bytes32,
 };
-use fuel_tx::TxId;
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::cell::RefCell;
 use std::collections::HashMap;

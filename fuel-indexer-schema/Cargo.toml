@@ -14,6 +14,7 @@ fuel-indexer-database-types = { version = "0.1.0", path = "../fuel-indexer-datab
 fuel-indexer-lib = { version = "0.1.0", path = "../fuel-indexer-lib" }
 fuel-indexer-postgres = { version = "0.1.0", path = "../fuel-indexer-database/postgres", optional = true }
 fuel-indexer-sqlite = { version = "0.1.0", path = "../fuel-indexer-database/sqlite", optional = true }
+fuel-indexer-types = { version = "0.1.0", path = "../fuel-indexer-types" }
 fuel-tx = { version = "0.18", features = ["serde", "alloc"] }
 fuel-types = { version = "0.5", features = ["serde", "alloc"] }
 fuels-core = "0.26"

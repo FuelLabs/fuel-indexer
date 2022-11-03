@@ -1,11 +1,12 @@
 use fuel_indexer::{
-    executor::WasmIndexExecutor, Executor, IndexerError, Manifest, Module, SchemaManager,
+    executor::WasmIndexExecutor, Executor, IndexerError, Manifest, Module,
 };
-use fuel_indexer_schema::types::{
-    fuel::{BlockData, TransactionData},
-    transaction::TransactionStatus,
-};
+use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
+use fuel_indexer_types::{
+    native::{BlockData, TransactionData},
+    tx::TransactionStatus,
+};
 use fuel_tx::{Receipt, Transaction};
 use fuels_abigen_macro::abigen;
 use fuels_core::{abi_encoder::ABIEncoder, types::Bits256, Tokenizable};

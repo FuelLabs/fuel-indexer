@@ -10,11 +10,8 @@ pub use fuel_indexer_lib::{
     config::IndexerConfig,
     manifest::{Manifest, Module},
 };
-pub use fuel_indexer_schema::{
-    db::{manager::SchemaManager, IndexerSchemaError},
-    types::fuel::BlockData,
-    FtColumn,
-};
+pub use fuel_indexer_schema::{db::IndexerSchemaError, FtColumn};
+use fuel_indexer_types::native::BlockData;
 pub use fuel_types::{Address, ContractId};
 pub use service::IndexerService;
 
