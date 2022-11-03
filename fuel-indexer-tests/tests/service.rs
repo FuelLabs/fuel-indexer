@@ -31,7 +31,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
     let mut wallet =
-        WalletUnlocked::load_keystore(&wallet_path_str, defaults::WALLET_PASSWORD, None)
+        WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
             .unwrap();
 
     let bin_path = workdir.join("contracts/simple-wasm/out/debug/contracts.bin");

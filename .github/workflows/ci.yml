@@ -204,7 +204,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
           RUSTFLAGS: -D warnings
 
-  # NOTE: This can possibly figure out how to put this in cargo-verifications later
+  # TODO: https://github.com/FuelLabs/fuel-indexer/issues/269
   cargo-test-workspace-all-features:
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
@@ -254,6 +254,7 @@ jobs:
     runs-on: ${{ matrix.job.os }}
     needs:
       - cancel-previous-runs
+      - cargo-verifications
       - cargo-test-workspace-all-features
     if: github.event_name == 'release' && github.event.action == 'published'
      # Only do this job if publishing a release
@@ -538,8 +539,8 @@ jobs:
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-macros/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-plugin/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-schema/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-types/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
 
       - name: Publish crate
         uses: katyo/publish-crates@v1
