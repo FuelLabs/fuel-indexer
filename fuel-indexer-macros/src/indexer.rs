@@ -571,7 +571,7 @@ pub fn prefix_abi_and_schema_paths(
     if let Some(abi) = abi {
         match std::env::var("COMPILE_TEST_PREFIX") {
             Ok(prefix) => {
-                let prefixed = std::path::Path::new(&prefix).join(&abi);
+                let prefixed = std::path::Path::new(&prefix).join(abi);
                 let abi_string = prefixed
                     .into_os_string()
                     .to_str()

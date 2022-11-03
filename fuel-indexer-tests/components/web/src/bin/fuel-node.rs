@@ -63,7 +63,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
     let mut wallet =
-        WalletUnlocked::load_keystore(&wallet_path_str, defaults::WALLET_PASSWORD, None)
+        WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
             .unwrap();
 
     info!(
