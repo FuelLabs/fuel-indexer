@@ -6,6 +6,7 @@ use fuel_indexer_schema::{
         get_join_directive_info, schema_version, BASE_SCHEMA,
     },
 };
+use fuel_indexer_types::IndexMetadata;
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{
     Definition, Document, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
@@ -263,6 +264,89 @@ fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
     }
 }
 
+pub(crate) fn process_graphql_schema_with_native_entities(
+    namespace: String,
+    schema_path: String,
+) -> proc_macro2::TokenStream {
+    let path = match local_repository_root() {
+        Some(p) => Path::new(&p).join(schema_path),
+        None => PathBuf::from(&schema_path),
+    };
+
+    let mut file = match File::open(&path) {
+        Ok(f) => f,
+        Err(e) => {
+            proc_macro_error::abort_call_site!(
+                "Could not open schema file {:?} {:?}",
+                path,
+                e
+            )
+        }
+    };
+
+    let mut text = String::new();
+    file.read_to_string(&mut text).expect("IO error");
+
+    // With native entities
+    text.push_str(IndexMetadata::graphql_schema_fragment());
+
+    process_graphql_tokens(&namespace, text)
+}
+
+pub(crate) fn process_graphql_tokens(
+    namespace: &str,
+    text: String,
+) -> proc_macro2::TokenStream {
+    let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
+        Ok(ast) => ast,
+        Err(e) => {
+            proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
+        }
+    };
+    let (primitives, _) = build_schema_objects_set(&base_ast);
+
+    let ast = match parse_schema::<String>(&text) {
+        Ok(ast) => ast,
+        Err(e) => {
+            proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
+        }
+    };
+    let (mut types, _) = build_schema_objects_set(&ast);
+    types.extend(primitives.clone());
+
+    let namespace_tokens = const_item("NAMESPACE", namespace);
+    let version = const_item("VERSION", &schema_version(&text));
+
+    let mut output = quote! {
+        #namespace_tokens
+        #version
+    };
+
+    let query_root = get_query_root(&types, &ast);
+
+    let mut processed: HashSet<String> = HashSet::new();
+    let types_map: HashMap<String, String> = build_schema_fields_and_types_map(&ast);
+
+    for definition in ast.definitions.iter() {
+        if let Some(def) = process_definition(
+            &query_root,
+            namespace,
+            &types,
+            definition,
+            &mut processed,
+            &primitives,
+            &types_map,
+        ) {
+            output = quote! {
+                #output
+                #def
+            };
+        }
+    }
+    output
+}
+
+#[allow(unused)]
 pub(crate) fn process_graphql_schema(
     namespace: String,
     schema_path: String,
@@ -286,51 +370,5 @@ pub(crate) fn process_graphql_schema(
     let mut text = String::new();
     file.read_to_string(&mut text).expect("IO error");
 
-    let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
-        Ok(ast) => ast,
-        Err(e) => {
-            proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
-        }
-    };
-    let (primitives, _) = build_schema_objects_set(&base_ast);
-
-    let ast = match parse_schema::<String>(&text) {
-        Ok(ast) => ast,
-        Err(e) => {
-            proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
-        }
-    };
-    let (mut types, _) = build_schema_objects_set(&ast);
-    types.extend(primitives.clone());
-
-    let namespace_tokens = const_item("NAMESPACE", &namespace);
-    let version = const_item("VERSION", &schema_version(&text));
-
-    let mut output = quote! {
-        #namespace_tokens
-        #version
-    };
-
-    let query_root = get_query_root(&types, &ast);
-
-    let mut processed: HashSet<String> = HashSet::new();
-    let types_map: HashMap<String, String> = build_schema_fields_and_types_map(&ast);
-
-    for definition in ast.definitions.iter() {
-        if let Some(def) = process_definition(
-            &query_root,
-            &namespace,
-            &types,
-            definition,
-            &mut processed,
-            &primitives,
-            &types_map,
-        ) {
-            output = quote! {
-                #output
-                #def
-            };
-        }
-    }
-    output
+    process_graphql_tokens(&namespace, text)
 }
