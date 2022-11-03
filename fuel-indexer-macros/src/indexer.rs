@@ -1,6 +1,6 @@
 use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
-use crate::schema::process_graphql_schema;
+use crate::schema::process_graphql_schema_with_native_entities;
 use crate::wasm::handler_block_wasm;
 use fuel_indexer_lib::{
     manifest::Manifest,
@@ -554,6 +554,8 @@ fn process_fn_items(
                     decoder.dispatch();
                 }
                 // TODO: save block height process to DB...
+                let metadata = IndexMetadataEntity{ id: Bytes32::from([0u8; 32]), block_height: block.height, time: block.time };
+                metadata.save();
             }
         },
         quote! {
@@ -626,13 +628,13 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     let Manifest {
         abi,
         namespace,
-        graphql_schema,
+        graphql_schema: schema_path,
         ..
     } = manifest.clone();
 
     let indexer_module = parse_macro_input!(item as ItemMod);
 
-    let (abi, schema_string) = prefix_abi_and_schema_paths(abi.as_ref(), graphql_schema);
+    let (abi, schema_path) = prefix_abi_and_schema_paths(abi.as_ref(), schema_path);
 
     // TOOD: https://github.com/FuelLabs/fuel-indexer/issues/289
     let abi_path = abi.unwrap_or_else(|| {
@@ -650,7 +652,8 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     });
 
     let abi_tokens = get_abi_tokens(&namespace, &abi_path);
-    let graphql_tokens = process_graphql_schema(namespace, schema_string);
+    let graphql_tokens =
+        process_graphql_schema_with_native_entities(namespace, schema_path);
 
     let (handler_block, fn_items) =
         process_fn_items(&manifest, &abi_path, indexer_module);
@@ -676,6 +679,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use std::collections::HashMap;
 
+        // TODO: Please remove this or put it somewhere else
         type B256 = [u8; 32];
 
         #abi_tokens
