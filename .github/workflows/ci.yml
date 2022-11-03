@@ -538,8 +538,8 @@ jobs:
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-macros/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-plugin/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-schema/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-types/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
 
       - name: Publish crate
         uses: katyo/publish-crates@v1
