@@ -10,6 +10,7 @@ on:
 
 env:
   DATABASE_URL: postgres://postgres:my-secret@localhost:5432
+  DASEL_VERSION: https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
   REGISTRY: ghcr.io
@@ -128,8 +129,21 @@ jobs:
         with:
           command: build
           args: -p fuel-indexer-test --release --target wasm32-unknown-unknown
-        env:
-          RUSTFLAGS: '-D warnings'
+
+  get-workspace-members:
+    runs-on: ubuntu-latest
+    outputs:
+      members: ${{ steps.set-members.outputs.members }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - id: set-members
+        run: |
+          # install dasel
+          curl -sSLf "$DASEL_VERSION" -L -o dasel && chmod +x dasel
+          mv ./dasel /usr/local/bin/dasel
+          members=$(cat Cargo.toml | dasel -r toml -w json 'workspace.members' | jq -r ".[]" | xargs -I '{}' dasel -f {}/Cargo.toml 'package.name' | jq -R '[.]' | jq -s -c 'add')
+          echo "members=$members" >> $GITHUB_OUTPUT
 
   cargo-verifications:
     runs-on: ubuntu-latest
@@ -147,33 +161,24 @@ jobs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
       - cargo-build-wasm-example
+      - get-workspace-members
     strategy:
       matrix:
+        package: ${{fromJSON(needs.get-workspace-members.outputs.members)}}
         include:
           - command: fmt
             args: --all --verbose -- --check
-            env:
-              RUSTFLAGS: '-D warnings'
           - command: clippy
             args: --all-features --all-targets
-            env:
-              RUSTFLAGS: '-D warnings'
           - command: check
-            args: --locked --workspace --all-features --all-targets
-            env:
-              RUSTFLAGS: '-D warnings'
+            args: --all-features --locked --workspace --all-targets
           - command: build
             args: --locked --workspace --all-features --all-targets
-            env:
-              RUSTFLAGS: '-D warnings'
           - command: test
             args: --locked --workspace
-            env:
-              RUSTFLAGS: '-D warnings'
           - command: test
             args: --locked --all-targets --no-default-features --workspace
-            env:
-              RUSTFLAGS: '-D warnings'
+
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
     continue-on-error: ${{ matrix.skip-error || false }}
@@ -316,7 +321,7 @@ jobs:
       - name: Build fuel-indexer
         run: |
           cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer -p fuel-indexer-api-server
-  
+
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
         run: strip "target/${{ matrix.job.target }}/release/fuel-indexer"
@@ -495,7 +500,7 @@ jobs:
 
   notify-slack-on-failure:
     if: ${{ always() }} && github.ref == 'refs/heads/master'
-    needs: 
+    needs:
       - validation-complete
     runs-on: ubuntu-latest
     steps:
@@ -513,7 +518,7 @@ jobs:
 
   publish:
     # Only do this job if publishing a release and validations pass.
-    needs: 
+    needs:
       - validation-complete
       - publish-fuel-indexer-binaries
     if: github.event_name == 'release' && github.event.action == 'published'
@@ -521,6 +526,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+
       - name: Install toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -547,7 +553,7 @@ jobs:
         with:
           publish-delay: 30000
           registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-          
+
       - name: Notify Slack On Failure
         uses: ravsamhq/notify-slack-action@v1
         if: always()
