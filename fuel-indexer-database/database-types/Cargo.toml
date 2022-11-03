@@ -2,8 +2,9 @@
 name = "fuel-indexer-database-types"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "BUSL-1.1"
+repository = "https://github.com/FuelLabs/fuel-indexer"
+description = "Fuel Indexer Database Types"
 
 [dependencies]
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }

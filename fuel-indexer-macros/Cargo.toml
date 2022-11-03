@@ -3,6 +3,8 @@ name = "fuel-indexer-macros"
 version = "0.1.0"
 edition = "2021"
 license = "BUSL-1.1"
+repository = "https://github.com/FuelLabs/fuel-indexer"
+description = "Fuel Indexer Macros"
 
 [package.metadata.cargo-udeps.ignore]
 development = ["fuels", "fuel-indexer-plugin"]

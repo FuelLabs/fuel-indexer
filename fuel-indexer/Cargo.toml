@@ -3,6 +3,8 @@ name = "fuel-indexer"
 version = "0.1.0"
 edition = "2021"
 license = "BUSL-1.1"
+repository = "https://github.com/FuelLabs/fuel-indexer"
+description = "Fuel Indexer"
 
 [dependencies]
 anyhow = { version = "1.0", default-features = false }
