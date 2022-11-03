@@ -1,7 +1,5 @@
 use crate::{
-    config::{FuelNodeConfig, IndexerConfig},
-    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, SchemaManager,
-    WasmIndexExecutor,
+    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, WasmIndexExecutor,
 };
 use async_std::{fs::File, io::ReadExt, sync::Arc};
 use fuel_gql_client::client::{
@@ -11,11 +9,13 @@ use fuel_gql_client::client::{
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
 use fuel_indexer_lib::{
+    config::{FuelNodeConfig, IndexerConfig},
     defaults::{
         DATABASE_CONNECTION_RETRY_ATTEMPTS, DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR,
     },
     utils::AssetReloadRequest,
 };
+use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_types::{
     native::{BlockData, TransactionData},
     tx::{TransactionStatus, TxId},

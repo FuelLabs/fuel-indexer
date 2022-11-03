@@ -1,6 +1,7 @@
 use fuel_indexer::{
-    executor::WasmIndexExecutor, Executor, IndexerError, Manifest, Module, SchemaManager,
+    executor::WasmIndexExecutor, Executor, IndexerError, Manifest, Module,
 };
+use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
 use fuel_indexer_types::{
     native::{BlockData, TransactionData},

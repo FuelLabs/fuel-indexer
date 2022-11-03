@@ -1,24 +1,23 @@
-use thiserror::Error;
-use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
-
-pub mod api;
-pub mod config;
 mod database;
 pub mod executor;
 pub mod ffi;
 mod service;
 
-pub use api::GraphQlApi;
-pub use config::IndexerConfig;
-pub use database::{Database, SchemaManager};
+pub use database::Database;
 pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
 pub use fuel_indexer_database::IndexerDatabaseError;
-pub use fuel_indexer_lib::manifest::{Manifest, Module};
-pub use fuel_indexer_schema::FtColumn;
+pub use fuel_indexer_lib::{
+    config::IndexerConfig,
+    manifest::{Manifest, Module},
+};
+pub use fuel_indexer_schema::{db::IndexerSchemaError, FtColumn};
 use fuel_indexer_types::native::BlockData;
 pub use fuel_types::{Address, ContractId};
-use serde::{Deserialize, Serialize};
 pub use service::IndexerService;
+
+use serde::{Deserialize, Serialize};
+use thiserror::Error;
+use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
 
@@ -60,6 +59,8 @@ pub enum IndexerError {
     NoTransactionError,
     #[error("Unknown error")]
     Unknown,
+    #[error("Indexer schema error: {0:?}")]
+    SchemaError(#[from] IndexerSchemaError),
 }
 
 #[derive(Serialize, Deserialize)]
