@@ -3,7 +3,9 @@ extern crate log;
 
 extern crate pretty_env_logger;
 
-use fuels::prelude::{Contract, Provider, TxParameters, WalletUnlocked};
+use fuels::prelude::{
+    Bech32ContractId, Contract, Provider, TxParameters, WalletUnlocked,
+};
 use fuels_abigen_macro::abigen;
 use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
@@ -20,7 +22,7 @@ abigen!(
     "examples/simple-wasm/contracts/simple-wasm/out/debug/contracts-abi.json"
 );
 
-async fn get_contract_id(wallet: &WalletUnlocked) -> String {
+async fn get_contract_id(wallet: &WalletUnlocked) -> Bech32ContractId {
     debug!("Creating new deployment for non-existent contract");
 
     let _compiled =
@@ -36,7 +38,7 @@ async fn get_contract_id(wallet: &WalletUnlocked) -> String {
     .await
     .unwrap();
 
-    contract_id.to_string()
+    contract_id
 }
 
 async fn setup_provider_and_wallet(port: u16) -> (Provider, WalletUnlocked) {
@@ -57,8 +59,8 @@ async fn main() -> std::io::Result<()> {
     pretty_env_logger::init();
 
     let (_provider, wallet) = setup_provider_and_wallet(4000).await;
-    let contract_id: String = get_contract_id(&wallet).await;
-    info!("Using contract at {}", contract_id);
+    let contract_id: Bech32ContractId = get_contract_id(&wallet).await;
+    info!("Using contract at {}", contract_id.to_string());
     let contract: Simple = Simple::new(contract_id, wallet);
 
     let _ = contract.methods().gimme_someevent(7980).call().await;
