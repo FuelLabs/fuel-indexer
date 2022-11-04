@@ -2530,7 +2530,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2574,7 +2574,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2598,7 +2598,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2612,7 +2612,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "serde",
  "strum 0.24.1",
@@ -2620,7 +2620,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-lib"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "anyhow",
  "clap",
@@ -2634,7 +2634,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macros"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "fuel-indexer-database",
  "fuel-indexer-database-types",
@@ -2660,7 +2660,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-plugin"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "fuel-indexer-database",
  "fuel-indexer-database-types",
@@ -2671,7 +2671,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2681,7 +2681,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-schema"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "bincode",
  "chrono",
@@ -2706,7 +2706,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-sqlite"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2783,7 +2783,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-types"
-version = "0.1.0"
+version = "0.1.2"
 dependencies = [
  "chrono",
  "fuel-indexer-lib",

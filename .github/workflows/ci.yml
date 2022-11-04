@@ -14,6 +14,7 @@ env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
   REGISTRY: ghcr.io
+  SQLX_OFFLINE: true
 
 jobs:
   cancel-previous-runs:
@@ -251,7 +252,7 @@ jobs:
 
       - name: Cargo Test Workspace
         uses: actions-rs/cargo@v1
-      - run: RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --workspace --all-features --all-targets
+      - run: cargo test --locked --workspace --all-features --all-targets
       - run: bash scripts/utils/kill_test_components.bash
 
   publish-fuel-indexer-binaries:
@@ -548,7 +549,14 @@ jobs:
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-types/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
 
-      - name: Publish crate
+      - name: Install WASM target
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      
+      - name: Publish crates
         uses: katyo/publish-crates@v1
         with:
           publish-delay: 30000

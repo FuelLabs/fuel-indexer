@@ -1,16 +1,16 @@
 [package]
 name = "fuel-indexer-database"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
 license = "BUSL-1.1"
 repository = "https://github.com/FuelLabs/fuel-indexer"
 description = "Fuel Indexer Database"
 
 [dependencies]
-fuel-indexer-database-types = { version = "0.1.0", path = "./database-types" }
-fuel-indexer-lib = { version = "0.1.0", path = "../fuel-indexer-lib" }
-fuel-indexer-postgres = { version = "0.1.0", path = "./postgres" }
-fuel-indexer-sqlite = { version = "0.1.0", path = "./sqlite" }
+fuel-indexer-database-types = { version = "0.1", path = "./database-types" }
+fuel-indexer-lib = { version = "0.1", path = "../fuel-indexer-lib" }
+fuel-indexer-postgres = { version = "0.1", path = "./postgres" }
+fuel-indexer-sqlite = { version = "0.1", path = "./sqlite" }
 sqlx = { version = "0.6" }
 thiserror = { version = "1.0" }
 tracing = "0.1"
