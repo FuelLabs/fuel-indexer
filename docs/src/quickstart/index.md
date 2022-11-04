@@ -93,9 +93,9 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = { version = "0.1.0", default-features = false }
+fuel-indexer-macros = { version = "0.1", default-features = false }
 fuel-indexer-plugin = "0.1"
-fuel-indexer-schema = { version = "0.1.0", default-features = false }
+fuel-indexer-schema = { version = "0.1", default-features = false }
 fuel-tx = "0.18"
 fuels-core = "0.26"
 fuels-types = "0.26"
