@@ -1,10 +1,10 @@
 [package]
 name = "fuel-indexer-lib"
-description = "A library used throughout various components of the Fuel indexer serivce."
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+license = "BUSL-1.1"
+repository = "https://github.com/FuelLabs/fuel-indexer"
+description = "Fuel Indexer Library"
 
 [dependencies]
 anyhow = "1.0"
