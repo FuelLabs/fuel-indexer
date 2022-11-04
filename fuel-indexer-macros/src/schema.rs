@@ -171,29 +171,57 @@ fn process_type_def<'a>(
 
             processed.insert(strct.to_string());
 
-            Some(quote! {
-                #[derive(Debug, PartialEq, Eq, Hash)]
-                pub struct #strct {
-                    #block
-                }
+            let entity = match () {
+                #[cfg(feature = "native-exec")]
+                () => Some(quote! {
+                    #[derive(Debug, PartialEq, Eq, Hash)]
+                    pub struct #strct {
+                        #block
+                    }
 
-                impl Entity for #strct {
-                    const TYPE_ID: u64 = #type_id;
+                    impl NativeEntity for #strct {
+                        const TYPE_ID: u64 = #type_id;
 
-                    fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                        #row_extractors
-                        Self {
-                            #construction
+                        fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                            #row_extractors
+                            Self {
+                                #construction
+                            }
+                        }
+
+                        fn to_row(&self) -> Vec<FtColumn> {
+                            vec![
+                                #flattened
+                            ]
                         }
                     }
-
-                    fn to_row(&self) -> Vec<FtColumn> {
-                        vec![
-                            #flattened
-                        ]
+                }),
+                () => Some(quote! {
+                    #[derive(Debug, PartialEq, Eq, Hash)]
+                    pub struct #strct {
+                        #block
                     }
-                }
-            })
+
+                    impl WasmEntity for #strct {
+                        const TYPE_ID: u64 = #type_id;
+
+                        fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                            #row_extractors
+                            Self {
+                                #construction
+                            }
+                        }
+
+                        fn to_row(&self) -> Vec<FtColumn> {
+                            vec![
+                                #flattened
+                            ]
+                        }
+                    }
+                }),
+            };
+
+            entity
         }
         obj => panic!("Unexpected type: {:?}", obj),
     }

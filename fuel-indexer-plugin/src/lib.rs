@@ -8,6 +8,11 @@ use fuel_indexer_types::log::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 
+#[cfg(feature = "natiev-exec")]
+use fuel_indexer_database::{
+    queries, IndexerConnection, IndexerConnectionPool, IndexerDatabaseError,
+};
+
 pub mod types {
     pub use fuel_indexer_schema::FtColumn;
     pub use fuel_indexer_types::{native as fuel, tx, *};
@@ -49,7 +54,7 @@ impl Logger {
     }
 }
 
-pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
+pub trait WasmEntity: Sized + PartialEq + Eq + std::fmt::Debug {
     const TYPE_ID: u64;
 
     fn from_row(vec: Vec<FtColumn>) -> Self;
@@ -60,6 +65,7 @@ pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
         Self::TYPE_ID
     }
 
+    // TODO: should take accept any id type, not just u64
     fn load(id: u64) -> Option<Self> {
         unsafe {
             let buf = id.to_le_bytes();
@@ -85,6 +91,24 @@ pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
             ff_put_object(Self::TYPE_ID, buf.as_ptr(), buf.len() as u32)
         }
     }
+}
+
+#[cfg(feature = "natiev-exec")]
+pub trait NativeEntity: Sized + PartialEq + Eq + std::fmt::Debug {
+    const TYPE_ID: u64;
+
+    fn from_row(vec: Vec<FtColumn>) -> Self;
+
+    fn to_row(&self) -> Vec<FtColumn>;
+
+    fn type_id(&self) -> u64 {
+        Self::TYPE_ID
+    }
+
+    // TODO: should take accept any id type, not just u64?
+    fn load(id: u64, conn: &mut IndexerConnection) -> Option<Self> {}
+
+    fn save(&self) {}
 }
 
 #[no_mangle]

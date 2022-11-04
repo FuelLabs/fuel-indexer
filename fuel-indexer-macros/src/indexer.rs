@@ -670,7 +670,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
                 tx::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
             },
             utils,
-            Entity, Logger
+            WasmEntity, Logger
         };
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
