@@ -9,7 +9,7 @@ use std::path::Path;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 use tokio::{net::TcpStream, task::spawn_blocking};
-use tracing::error;
+use tracing::{error, debug};
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store,
     WasmerEnv,
@@ -81,22 +81,22 @@ impl NativeIndexExecutor {
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
 
-        let mut process = tokio::process::Command::new(path)
+        let mut process = tokio::process::Command::new("ls")
             .kill_on_drop(true)
             .spawn()?;
 
-        let mut reader = BufReader::new(
-            process
-                .stdout
-                .take()
-                .ok_or(IndexerError::ExecutorInitError)?,
-        );
-        let mut out = String::new();
-        reader.read_line(&mut out).await?;
+        // let mut reader = BufReader::new(
+        //     process
+        //         .stdout
+        //         .take()
+        //         .ok_or(IndexerError::ExecutorInitError)?,
+        // );
+        // let mut out = String::new();
+        // reader.read_line(&mut out).await?;;
 
-        let port: u16 = out.parse()?;
+        // let port: u16 = out.parse()?;
 
-        let stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
+        let stream = TcpStream::connect(format!("0.0.0.0:{}", 6789)).await?;
 
         Ok(Self {
             db,
@@ -122,14 +122,25 @@ impl Executor for NativeIndexExecutor {
         self.stream.write_all(&msg).await?;
 
         loop {
-            let size = self.stream.read_u64().await? as usize;
+            let stream_size = self.stream.read_u64().await? as usize;
+            let mut stream_size_read = 0;
+            let mut frames = Vec::new();
 
-            if self.stream.read_exact(&mut buf[..size]).await? < size {
-                return Err(IndexerError::HandlerError);
+            while stream_size_read < stream_size {
+                let bytes_to_read = std::cmp::min(stream_size - stream_size_read, 4096);
+                let bytes_read =
+                    self.stream.read_exact(&mut buf[..bytes_to_read]).await?;
+                stream_size_read += bytes_read;
+                frames.push(buf);
+                buf = [0u8; 4096];
             }
 
-            let object: IndexerRequest = deserialize(&buf[..size])
-                .expect("Could not deserialize message from indexer.");
+            let buf = frames.concat();
+
+            let object: IndexerRequest =
+                deserialize(&buf).expect("Could not deserialize message from indexer.");
+
+            debug!("Incoming: {:?}", object);
 
             match object {
                 IndexerRequest::GetObject(type_id, object_id) => {

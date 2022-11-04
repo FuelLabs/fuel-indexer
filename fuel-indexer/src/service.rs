@@ -333,26 +333,28 @@ impl IndexerService {
                 .await?;
 
                 let mut items = vec![
-                    (IndexAssetType::Wasm, wasm_bytes.unwrap()),
-                    (IndexAssetType::Manifest, manifest.to_bytes()),
-                    (IndexAssetType::Schema, schema_bytes),
+                    (IndexAssetType::Wasm, wasm_bytes),
+                    (IndexAssetType::Manifest, Some(manifest.to_bytes())),
+                    (IndexAssetType::Schema, Some(schema_bytes)),
                 ];
 
                 while let Some((asset_type, bytes)) = items.pop() {
-                    info!(
-                        "Registering Asset({:?}) for Index({})",
-                        asset_type,
-                        index.uid()
-                    );
-                    {
-                        queries::register_index_asset(
-                            &mut conn,
-                            &namespace,
-                            &identifier,
-                            bytes,
+                    if let Some(bytes) = bytes {
+                        info!(
+                            "Registering Asset({:?}) for Index({})",
                             asset_type,
-                        )
-                        .await?;
+                            index.uid()
+                        );
+                        {
+                            queries::register_index_asset(
+                                &mut conn,
+                                &namespace,
+                                &identifier,
+                                bytes,
+                                asset_type,
+                            )
+                            .await?;
+                        }
                     }
                 }
 

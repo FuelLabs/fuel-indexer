@@ -674,7 +674,6 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         };
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
-        use std::collections::HashMap;
 
         type B256 = [u8; 32];
 

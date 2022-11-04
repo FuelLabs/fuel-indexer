@@ -69,7 +69,7 @@ pub enum IndexerResponse {
     Object(Vec<u8>),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum IndexerRequest {
     GetObject(u64, u64),
     PutObject(u64, Vec<u8>, Vec<FtColumn>),

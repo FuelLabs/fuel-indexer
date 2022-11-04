@@ -1,0 +1,19 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    message: Message
+}
+
+type Account {
+    id: Address! @unique
+}
+
+type Message {
+    id: Bytes32! @unique
+    sender: Account!
+    receiver: Account!
+    text: Jsonb!
+    time: Timestamp!
+}

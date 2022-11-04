@@ -16,6 +16,6 @@ pub fn handler_block_native(
 
 fn native_prelude() -> proc_macro2::TokenStream {
     quote! {
-        todo!("Native prelude here")
+        use std::collections::HashMap;
     }
 }
