@@ -2557,6 +2557,7 @@ dependencies = [
  "hyper",
  "hyper-tls",
  "itertools",
+ "libloading",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -2667,6 +2668,8 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
+ "tracing",
+ "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -4074,6 +4077,23 @@ dependencies = [
  "mime",
  "spin 0.9.4",
  "version_check",
+]
+
+[[package]]
+name = "native-index"
+version = "0.0.0"
+dependencies = [
+ "chrono",
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels-core",
+ "fuels-types",
+ "getrandom 0.2.7",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

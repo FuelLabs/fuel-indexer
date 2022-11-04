@@ -146,7 +146,7 @@ pub(crate) async fn register_index_assets(
                 IndexAssetType::from_str(&name).expect("Invalid asset type.");
 
             let asset: IndexAsset = match asset_type {
-                IndexAssetType::Wasm | IndexAssetType::Manifest => {
+                IndexAssetType::Module | IndexAssetType::Manifest => {
                     match queries::register_index_asset(
                         &mut conn,
                         &namespace,
@@ -236,7 +236,7 @@ pub async fn run_query(
             Ok(row)
         }
         Err(e) => {
-            error!("Error querying database");
+            error!("Error querying database.");
             Err(e.into())
         }
     }

@@ -8,7 +8,11 @@ pub fn handler_block_native(
     quote! {
         #native_prelude
 
-        fn handle_events(blocks: Vec<BlockData>) {
+        #[no_mangle]
+        pub extern "C" fn handle_events(blocks: Vec<BlockData>) {
+
+            let _ = NativeLogger::init();
+
             #handler_block
         }
     }
@@ -16,6 +20,7 @@ pub fn handler_block_native(
 
 fn native_prelude() -> proc_macro2::TokenStream {
     quote! {
-        todo!("Native prelude here")
+        use std::collections::HashMap;
+
     }
 }

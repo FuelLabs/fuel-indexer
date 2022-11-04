@@ -1,14 +1,13 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult, Manifest};
+use crate::{IndexerError, IndexerResult, Manifest};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
-use fuel_indexer_schema::utils::{deserialize, serialize};
+use fuel_indexer_schema::utils::serialize;
 use fuel_indexer_types::native::BlockData;
 use std::path::Path;
 use thiserror::Error;
-use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
-use tokio::{net::TcpStream, task::spawn_blocking};
+use tokio::task::spawn_blocking;
 use tracing::error;
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store,
@@ -61,18 +60,11 @@ impl IndexEnv {
 
 pub struct NativeIndexExecutor {
     db: Arc<Mutex<Database>>,
-    #[allow(dead_code)]
     manifest: Manifest,
-    _process: tokio::process::Child,
-    stream: TcpStream,
 }
 
 impl NativeIndexExecutor {
-    pub async fn new(
-        db_conn: &str,
-        manifest: Manifest,
-        path: String,
-    ) -> IndexerResult<Self> {
+    pub async fn new(db_conn: &str, manifest: Manifest) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(
             Database::new(db_conn)
                 .await
@@ -81,29 +73,7 @@ impl NativeIndexExecutor {
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
 
-        let mut process = tokio::process::Command::new(path)
-            .kill_on_drop(true)
-            .spawn()?;
-
-        let mut reader = BufReader::new(
-            process
-                .stdout
-                .take()
-                .ok_or(IndexerError::ExecutorInitError)?,
-        );
-        let mut out = String::new();
-        reader.read_line(&mut out).await?;
-
-        let port: u16 = out.parse()?;
-
-        let stream = TcpStream::connect(format!("127.0.0.1:{}", port)).await?;
-
-        Ok(Self {
-            db,
-            manifest,
-            _process: process,
-            stream,
-        })
+        Ok(Self { db, manifest })
     }
 }
 
@@ -114,44 +84,35 @@ impl Executor for NativeIndexExecutor {
     }
 
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
-        let mut buf = [0u8; 4096];
-
-        let msg = serialize(&IndexerResponse::Blocks(blocks));
-
-        self.stream.write_u64(msg.len() as u64).await?;
-        self.stream.write_all(&msg).await?;
-
-        loop {
-            let size = self.stream.read_u64().await? as usize;
-
-            if self.stream.read_exact(&mut buf[..size]).await? < size {
-                return Err(IndexerError::HandlerError);
-            }
-
-            let object: IndexerRequest = deserialize(&buf[..size])
-                .expect("Could not deserialize message from indexer.");
-
-            match object {
-                IndexerRequest::GetObject(type_id, object_id) => {
-                    let object =
-                        self.db.lock().await.get_object(type_id, object_id).await;
-                    if let Some(obj) = object {
-                        self.stream.write_u64(obj.len() as u64).await?;
-                        self.stream.write_all(&obj).await?
-                    } else {
-                        self.stream.write_u64(0).await?;
+        fn native_call(module_path: String, blocks: Vec<BlockData>) -> IndexerResult<()> {
+            unsafe {
+                match libloading::Library::new(module_path) {
+                    Ok(lib) => {
+                        let func: libloading::Symbol<
+                            unsafe extern "C" fn(Vec<BlockData>),
+                        > = lib.get(b"handle_events")?;
+                        func(blocks);
+                        Ok(())
                     }
+                    Err(e) => Err(IndexerError::NativeModuleLoadingError(e)),
                 }
-                IndexerRequest::PutObject(type_id, bytes, columns) => {
-                    self.db
-                        .lock()
-                        .await
-                        .put_object(type_id, columns, bytes)
-                        .await;
-                }
-                IndexerRequest::Commit => break,
             }
         }
+
+        let module_path = self.manifest.module.path().clone();
+
+        self.db.lock().await.start_transaction().await?;
+
+        let res = spawn_blocking(move || native_call(module_path, blocks)).await?;
+
+        if let Err(e) = res {
+            error!("NativeExecutor handle_events failed: {e:?}.");
+            self.db.lock().await.revert_transaction().await?;
+            return Err(e);
+        } else {
+            self.db.lock().await.commit_transaction().await?;
+        }
+
         Ok(())
     }
 }

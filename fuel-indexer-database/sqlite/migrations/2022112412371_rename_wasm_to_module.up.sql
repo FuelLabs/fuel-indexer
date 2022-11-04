@@ -1,0 +1,1 @@
+alter table index_asset_registry_wasm rename to index_asset_registry_module;

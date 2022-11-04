@@ -10,17 +10,19 @@ description = "Fuel Indexer Plugin"
 crate-type = ['rlib']
 
 [dependencies]
-fuel-indexer-database = { version = "0.1.0", path = "../fuel-indexer-database", optional = true }
-fuel-indexer-database-types = { version = "0.1.0", path = "../fuel-indexer-database/database-types", optional = true }
+fuel-indexer-database = { version = "0.1", path = "../fuel-indexer-database", optional = true }
+fuel-indexer-database-types = { version = "0.1", path = "../fuel-indexer-database/database-types", optional = true }
 fuel-indexer-lib = { version = "0.1", path = "../fuel-indexer-lib", default-features = false }
 fuel-indexer-schema = { version = "0.1", path = "../fuel-indexer-schema", default-features = false }
 fuel-indexer-types = { version = "0.1", path = "../fuel-indexer-types" }
-
-
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.2", features = ["env-filter"], optional = true }
 
 [features]
 default = []
-natiev-exec = [
+native-execution = [
     "fuel-indexer-database", 
-    "fuel-indexer-database-types"
+    "fuel-indexer-database-types",
+    "tracing",
+    "tracing-subscriber"
 ]
