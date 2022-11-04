@@ -549,12 +549,14 @@ jobs:
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-types/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
 
-      - name: Publish crate
+      - name: Install WASM target
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           toolchain: stable
           target: wasm32-unknown-unknown
+      
+      - name: Publish crates
         uses: katyo/publish-crates@v1
         with:
           publish-delay: 30000
