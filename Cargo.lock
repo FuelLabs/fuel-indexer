@@ -7168,6 +7168,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "ws-index"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels-core",
+ "fuels-types",
+ "getrandom 0.2.7",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "ws_stream_wasm"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

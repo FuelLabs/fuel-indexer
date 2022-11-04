@@ -1,0 +1,6 @@
+namespace: fuel_examples
+identifier: ws_index
+abi: examples/native-websockets/contracts/sway-chat/out/debug/sway-chat-abi.json
+graphql_schema: examples/block-explorer/schema/explorer.graphql
+module:
+  native: /foo/bar
