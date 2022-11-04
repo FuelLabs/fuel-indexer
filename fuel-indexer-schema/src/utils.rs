@@ -252,7 +252,6 @@ type Block {
     id: Bytes32! @unique
     height: UInt8!
     timestamp: Int8!
-    miner: Address!
     gas_limit: UInt8!
 }
 
