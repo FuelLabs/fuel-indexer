@@ -50,7 +50,7 @@ mod explorer_index {
     //
     //  https://github.com/FuelLabs/fuel-indexer/blob/master/fuel-indexer-schema/src/types/fuel.rs#L28
     fn index_explorer_data(block_data: BlockData) {
-        let mut block_gas_limit = 0;
+        let block_gas_limit = 0;
 
         // Convert the deserialized block `BlockData` struct that we get from our Fuel node, into
         // a block entity `Block` that we can persist to the database. The `Block` type below is
@@ -78,37 +78,44 @@ mod explorer_index {
             // outputs, script_data, and other pieces of metadata.
             match &tx.transaction {
                 #[allow(unused)]
-                Transaction::Script {
-                    gas_price,
-                    gas_limit,
-                    maturity,
-                    receipts_root,
-                    script,
-                    script_data,
-                    inputs,
-                    outputs,
-                    witnesses,
-                    metadata,
-                } => {
+                Transaction::Script(script) => {
+                    let json = &tx.transaction.to_json();
+                    // let {
+                    // gas_price,
+                    // gas_limit,
+                    // maturity,
+                    // receipts_root,
+                    // script,
+                    // script_data,
+                    // inputs,
+                    // outputs,
+                    // witnesses,
+                    // metadata,
+                    // } = script;
                     Logger::info("Inside a script transaction. (>^‿^)>");
-                    block_gas_limit += gas_limit;
+                    // block_gas_limit += script.gas_limit;
                 }
                 #[allow(unused)]
-                Transaction::Create {
-                    gas_price,
-                    gas_limit,
-                    maturity,
-                    bytecode_length,
-                    bytecode_witness_index,
-                    salt,
-                    storage_slots,
-                    inputs,
-                    outputs,
-                    witnesses,
-                    metadata,
-                } => {
+                Transaction::Create(
+                    create,
+                    // gas_price,
+                    // gas_limit,
+                    // maturity,
+                    // bytecode_length,
+                    // bytecode_witness_index,
+                    // salt,
+                    // storage_slots,
+                    // inputs,
+                    // outputs,
+                    // witnesses,
+                    // metadata,
+                ) => {
                     Logger::info("Inside a create transaction. <(^.^)>");
-                    block_gas_limit += gas_limit;
+                    // block_gas_limit += gas_limit;
+                }
+                #[allow(unused)]
+                Transaction::Mint(mint) => {
+                    Logger::info("Inside a mint transaction. <(^‿^<)");
                 }
             }
 
