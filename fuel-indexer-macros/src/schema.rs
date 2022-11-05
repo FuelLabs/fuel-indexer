@@ -6,7 +6,7 @@ use fuel_indexer_schema::{
         get_join_directive_info, schema_version, BASE_SCHEMA,
     },
 };
-use fuel_indexer_types::IndexMetadata;
+use fuel_indexer_types::{graphql::IndexMetadata, GraphQlEntity};
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{
     Definition, Document, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
@@ -264,7 +264,7 @@ fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
     }
 }
 
-pub(crate) fn process_graphql_schema_with_native_entities(
+pub(crate) fn process_graphql_schema(
     namespace: String,
     schema_path: String,
 ) -> proc_macro2::TokenStream {
@@ -288,7 +288,7 @@ pub(crate) fn process_graphql_schema_with_native_entities(
     file.read_to_string(&mut text).expect("IO error");
 
     // With native entities
-    text.push_str(IndexMetadata::graphql_schema_fragment());
+    text.push_str(IndexMetadata::schema_fragment());
 
     process_graphql_tokens(&namespace, text)
 }
@@ -344,31 +344,4 @@ pub(crate) fn process_graphql_tokens(
         }
     }
     output
-}
-
-#[allow(unused)]
-pub(crate) fn process_graphql_schema(
-    namespace: String,
-    schema_path: String,
-) -> proc_macro2::TokenStream {
-    let path = match local_repository_root() {
-        Some(p) => Path::new(&p).join(schema_path),
-        None => PathBuf::from(&schema_path),
-    };
-
-    let mut file = match File::open(&path) {
-        Ok(f) => f,
-        Err(e) => {
-            proc_macro_error::abort_call_site!(
-                "Could not open schema file {:?} {:?}",
-                path,
-                e
-            )
-        }
-    };
-
-    let mut text = String::new();
-    file.read_to_string(&mut text).expect("IO error");
-
-    process_graphql_tokens(&namespace, text)
 }

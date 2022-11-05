@@ -1,12 +1,12 @@
 use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
-use crate::schema::process_graphql_schema_with_native_entities;
+use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
 use fuel_indexer_lib::{
     manifest::Manifest,
     utils::{local_repository_root, type_id},
 };
-use fuel_indexer_types::native as fuel;
+use fuel_indexer_types::abi as fuel;
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
@@ -652,8 +652,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     });
 
     let abi_tokens = get_abi_tokens(&namespace, &abi_path);
-    let graphql_tokens =
-        process_graphql_schema_with_native_entities(namespace, schema_path);
+    let graphql_tokens = process_graphql_schema(namespace, schema_path);
 
     let (handler_block, fn_items) =
         process_fn_items(&manifest, &abi_path, indexer_module);
