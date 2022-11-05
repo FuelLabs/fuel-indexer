@@ -6,7 +6,7 @@ use fuel_indexer_lib::{
     manifest::Manifest,
     utils::{local_repository_root, type_id},
 };
-use fuel_indexer_types::native as fuel;
+use fuel_indexer_types::abi as fuel;
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
@@ -553,7 +553,9 @@ fn process_fn_items(
 
                     decoder.dispatch();
                 }
-                // TODO: save block height process to DB...
+
+                let metadata = IndexMetadataEntity{ id: block.height, time: block.time };
+                metadata.save();
             }
         },
         quote! {
