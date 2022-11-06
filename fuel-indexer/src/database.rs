@@ -128,7 +128,7 @@ impl Database {
     }
 
     pub async fn get_object(&mut self, type_id: u64, object_id: u64) -> Option<Vec<u8>> {
-        let table = &self.tables[&type_id];
+        let table = self.tables.get(&type_id).unwrap_or_else(|| panic!("TypeId({}) not found in tables: {:?}", type_id, self.tables));
         let query = self.get_query(table, object_id);
 
         let conn = self

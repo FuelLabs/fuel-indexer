@@ -63,10 +63,9 @@ async fn spawn_executor_from_manifest(
 
             Ok((kill_switch, handle, Some(bytes)))
         }
-        Module::Native(ref path) => {
-            let path = path.clone();
+        Module::Native(ref _path) => {
             let executor =
-                NativeIndexExecutor::new(&database_url, manifest.to_owned(), path)
+                NativeIndexExecutor::new(&database_url, manifest.to_owned())
                     .await?;
             let kill_switch = Arc::new(AtomicBool::new(run_once));
             let handle = tokio::spawn(make_task(
@@ -107,7 +106,7 @@ async fn spawn_executor_from_index_asset_registry(
         Module::Native(ref path) => {
             let path = path.clone();
             let executor =
-                NativeIndexExecutor::new(&db_url, manifest.to_owned(), path).await?;
+                NativeIndexExecutor::new(&db_url, manifest.to_owned()).await?;
             let kill_switch = Arc::new(AtomicBool::new(run_once));
             let handle = tokio::spawn(make_task(
                 fuel_node.into(),

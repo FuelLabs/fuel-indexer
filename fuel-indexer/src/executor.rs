@@ -61,17 +61,13 @@ impl IndexEnv {
 
 pub struct NativeIndexExecutor {
     db: Arc<Mutex<Database>>,
-    #[allow(dead_code)]
     manifest: Manifest,
-    _process: tokio::process::Child,
-    stream: TcpStream,
 }
 
 impl NativeIndexExecutor {
     pub async fn new(
         db_conn: &str,
         manifest: Manifest,
-        path: String,
     ) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(
             Database::new(db_conn)
@@ -81,28 +77,9 @@ impl NativeIndexExecutor {
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
 
-        let mut process = tokio::process::Command::new("ls")
-            .kill_on_drop(true)
-            .spawn()?;
-
-        // let mut reader = BufReader::new(
-        //     process
-        //         .stdout
-        //         .take()
-        //         .ok_or(IndexerError::ExecutorInitError)?,
-        // );
-        // let mut out = String::new();
-        // reader.read_line(&mut out).await?;;
-
-        // let port: u16 = out.parse()?;
-
-        let stream = TcpStream::connect(format!("0.0.0.0:{}", 6789)).await?;
-
         Ok(Self {
             db,
             manifest,
-            _process: process,
-            stream,
         })
     }
 }
@@ -114,54 +91,10 @@ impl Executor for NativeIndexExecutor {
     }
 
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
-        let mut buf = [0u8; 4096];
-
-        let msg = serialize(&IndexerResponse::Blocks(blocks));
-
-        self.stream.write_u64(msg.len() as u64).await?;
-        self.stream.write_all(&msg).await?;
-
-        loop {
-            let stream_size = self.stream.read_u64().await? as usize;
-            let mut stream_size_read = 0;
-            let mut frames = Vec::new();
-
-            while stream_size_read < stream_size {
-                let bytes_to_read = std::cmp::min(stream_size - stream_size_read, 4096);
-                let bytes_read =
-                    self.stream.read_exact(&mut buf[..bytes_to_read]).await?;
-                stream_size_read += bytes_read;
-                frames.push(buf);
-                buf = [0u8; 4096];
-            }
-
-            let buf = frames.concat();
-
-            let object: IndexerRequest =
-                deserialize(&buf).expect("Could not deserialize message from indexer.");
-
-            debug!("Incoming: {:?}", object);
-
-            match object {
-                IndexerRequest::GetObject(type_id, object_id) => {
-                    let object =
-                        self.db.lock().await.get_object(type_id, object_id).await;
-                    if let Some(obj) = object {
-                        self.stream.write_u64(obj.len() as u64).await?;
-                        self.stream.write_all(&obj).await?
-                    } else {
-                        self.stream.write_u64(0).await?;
-                    }
-                }
-                IndexerRequest::PutObject(type_id, bytes, columns) => {
-                    self.db
-                        .lock()
-                        .await
-                        .put_object(type_id, columns, bytes)
-                        .await;
-                }
-                IndexerRequest::Commit => break,
-            }
+        unsafe {
+            let lib = libloading::Library::new(&self.manifest.module.path()).expect("foo");
+            let func: libloading::Symbol<unsafe extern fn(Vec<BlockData>)> = lib.get(b"handle_events").expect("bar");
+            func(blocks);
         }
         Ok(())
     }

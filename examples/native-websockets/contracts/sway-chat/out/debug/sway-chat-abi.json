@@ -5,6 +5,12 @@
       "type": "bool",
       "components": null,
       "typeParameters": null
+    },
+    {
+      "typeId": 1,
+      "type": "u64",
+      "components": null,
+      "typeParameters": null
     }
   ],
   "functions": [
@@ -18,5 +24,14 @@
       }
     }
   ],
-  "loggedTypes": []
+  "loggedTypes": [
+    {
+      "logId": 1018137,
+      "loggedType": {
+        "name": "",
+        "type": 1,
+        "typeArguments": null
+      }
+    }
+  ]
 }

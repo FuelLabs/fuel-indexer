@@ -8,6 +8,7 @@ pub fn handler_block_native(
     quote! {
         #native_prelude
 
+        #[no_mangle]
         fn handle_events(blocks: Vec<BlockData>) {
             #handler_block
         }
