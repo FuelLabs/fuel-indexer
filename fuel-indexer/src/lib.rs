@@ -11,11 +11,9 @@ pub use fuel_indexer_lib::{
     manifest::{Manifest, Module},
 };
 pub use fuel_indexer_schema::{db::IndexerSchemaError, FtColumn};
-use fuel_indexer_types::native::BlockData;
 pub use fuel_types::{Address, ContractId};
 pub use service::IndexerService;
 
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
@@ -53,6 +51,9 @@ pub enum IndexerError {
     ExecutorInitError,
     #[error("Error executing handler")]
     HandlerError,
+    // FIXME
+    #[error("Error loading native module")]
+    NativeModuleError,
     #[error("Invalid port {0:?}")]
     InvalidPortNumber(#[from] core::num::ParseIntError),
     #[error("No transaction is open.")]
@@ -61,17 +62,4 @@ pub enum IndexerError {
     Unknown,
     #[error("Indexer schema error: {0:?}")]
     SchemaError(#[from] IndexerSchemaError),
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum IndexerResponse {
-    Blocks(Vec<BlockData>),
-    Object(Vec<u8>),
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum IndexerRequest {
-    GetObject(u64, u64),
-    PutObject(u64, Vec<u8>, Vec<FtColumn>),
-    Commit,
 }

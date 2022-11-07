@@ -2668,6 +2668,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
+ "tracing",
 ]
 
 [[package]]

@@ -15,11 +15,12 @@ fuel-indexer-database-types = { version = "0.1", path = "../fuel-indexer-databas
 fuel-indexer-lib = { version = "0.1", path = "../fuel-indexer-lib", default-features = false }
 fuel-indexer-schema = { version = "0.1", path = "../fuel-indexer-schema", default-features = false }
 fuel-indexer-types = { version = "0.1", path = "../fuel-indexer-types" }
-
+tracing = { version = "0.1", optional = true }
 
 [features]
-default = []
-natiev-exec = [
+default = ["native-exec"]
+native-exec = [
     "fuel-indexer-database", 
-    "fuel-indexer-database-types"
+    "fuel-indexer-database-types",
+    "tracing",
 ]

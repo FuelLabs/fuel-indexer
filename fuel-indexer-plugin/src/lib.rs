@@ -8,10 +8,14 @@ use fuel_indexer_types::log::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 
-#[cfg(feature = "natiev-exec")]
+#[cfg(feature = "native-exec")]
+#[allow(unused)] // FIXME
 use fuel_indexer_database::{
     queries, IndexerConnection, IndexerConnectionPool, IndexerDatabaseError,
 };
+
+#[cfg(feature = "native-exec")]
+use tracing::{debug, error, info, trace, warn};
 
 pub mod types {
     pub use fuel_indexer_schema::FtColumn;
@@ -29,28 +33,62 @@ extern "C" {
     fn ff_log_data(ptr: *const u8, len: u32, log_level: u32);
 }
 
-// TODO: more to do here, hook up to 'impl log::Log for Logger'
-pub struct Logger;
+pub trait Logger {
+    fn error(log: &str);
+    fn warn(log: &str);
+    fn info(log: &str);
+    fn debug(log: &str);
+    fn trace(log: &str);
+}
 
-impl Logger {
-    pub fn error(log: &str) {
+// TODO: more to do here, hook up to 'impl log::Log for WasmLogger'
+pub struct WasmLogger;
+
+impl Logger for WasmLogger {
+    fn error(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_ERROR) }
     }
 
-    pub fn warn(log: &str) {
+    fn warn(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_WARN) }
     }
 
-    pub fn info(log: &str) {
+    fn info(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_INFO) }
     }
 
-    pub fn debug(log: &str) {
+    fn debug(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_DEBUG) }
     }
 
-    pub fn trace(log: &str) {
+    fn trace(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_TRACE) }
+    }
+}
+
+#[cfg(feature = "native-exec")]
+pub struct NativeLogger;
+
+#[cfg(feature = "native-exec")]
+impl Logger for NativeLogger {
+    fn error(log: &str) {
+        error!(log);
+    }
+
+    fn warn(log: &str) {
+        warn!(log);
+    }
+
+    fn info(log: &str) {
+        info!(log);
+    }
+
+    fn debug(log: &str) {
+        debug!(log);
+    }
+
+    fn trace(log: &str) {
+        trace!(log);
     }
 }
 
@@ -93,7 +131,7 @@ pub trait WasmEntity: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 }
 
-#[cfg(feature = "natiev-exec")]
+#[cfg(feature = "native-exec")]
 pub trait NativeEntity: Sized + PartialEq + Eq + std::fmt::Debug {
     const TYPE_ID: u64;
 
@@ -106,7 +144,10 @@ pub trait NativeEntity: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     // TODO: should take accept any id type, not just u64?
-    fn load(id: u64, conn: &mut IndexerConnection) -> Option<Self> {}
+    #[allow(unused)]
+    fn load(id: u64, conn: &mut IndexerConnection) -> Option<Self> {
+        None
+    }
 
     fn save(&self) {}
 }

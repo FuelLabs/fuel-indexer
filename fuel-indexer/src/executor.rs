@@ -1,15 +1,14 @@
 use crate::database::Database;
 use crate::ffi;
-use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult, Manifest};
+use crate::{IndexerError, IndexerResult, Manifest};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
-use fuel_indexer_schema::utils::{deserialize, serialize};
+use fuel_indexer_schema::utils::serialize;
 use fuel_indexer_types::native::BlockData;
 use std::path::Path;
 use thiserror::Error;
-use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
-use tokio::{net::TcpStream, task::spawn_blocking};
-use tracing::{error, debug};
+use tokio::task::spawn_blocking;
+use tracing::error;
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store,
     WasmerEnv,
@@ -65,10 +64,7 @@ pub struct NativeIndexExecutor {
 }
 
 impl NativeIndexExecutor {
-    pub async fn new(
-        db_conn: &str,
-        manifest: Manifest,
-    ) -> IndexerResult<Self> {
+    pub async fn new(db_conn: &str, manifest: Manifest) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(
             Database::new(db_conn)
                 .await
@@ -77,10 +73,7 @@ impl NativeIndexExecutor {
 
         db.lock().await.load_schema_native(manifest.clone()).await?;
 
-        Ok(Self {
-            db,
-            manifest,
-        })
+        Ok(Self { db, manifest })
     }
 }
 
@@ -91,11 +84,41 @@ impl Executor for NativeIndexExecutor {
     }
 
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
-        unsafe {
-            let lib = libloading::Library::new(&self.manifest.module.path()).expect("foo");
-            let func: libloading::Symbol<unsafe extern fn(Vec<BlockData>)> = lib.get(b"handle_events").expect("bar");
-            func(blocks);
+        fn native_call(module_path: String, blocks: Vec<BlockData>) -> IndexerResult<()> {
+            unsafe {
+                match libloading::Library::new(module_path) {
+                    Ok(lib) => {
+                        // FIXME: panic
+                        let func: libloading::Symbol<
+                            unsafe extern "C" fn(Vec<BlockData>),
+                        > = lib
+                            .get(b"handle_events")
+                            .unwrap_or_else(|_e| panic!("Could not load module."));
+                        func(blocks);
+                        return Ok(());
+                    }
+                    Err(_e) => {
+                        return Err(IndexerError::NativeModuleError);
+                    }
+                }
+            }
         }
+
+        let module_path = self.manifest.module.path().clone();
+
+        self.db.lock().await.start_transaction().await?;
+
+        let res = spawn_blocking(move || native_call(module_path, blocks)).await?;
+
+        if let Err(e) = res {
+            error!("NativeExecutor handle_events failed: {e:?}.");
+            self.db.lock().await.revert_transaction().await?;
+            // FIXME
+            return Err(IndexerError::NativeModuleError);
+        } else {
+            self.db.lock().await.commit_transaction().await?;
+        }
+
         Ok(())
     }
 }

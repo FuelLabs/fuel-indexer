@@ -13,7 +13,7 @@ pub fn handler_block_wasm(
                 Err(msg) => {
                     // TODO: probably need some error codes to send back to runtime.
                     core::mem::forget(bytes);
-                    Logger::error(&msg);
+                    WasmLogger::error(&msg);
                     return;
                 }
             };

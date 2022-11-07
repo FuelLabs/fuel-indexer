@@ -147,7 +147,7 @@ fn decode_snippet(
         // what the primitive is for... and to which handler it will go.
         quote! {
             #ty_id => {
-                Logger::warn("Skipping primitive decoder.");
+                // WasmLogger::warn("Skipping primitive decoder.");
             }
         }
     } else {
@@ -294,9 +294,17 @@ fn process_fn_items(
         None => quote! {},
     };
 
+    // IMPORTANT: When using async with native execution, either all functions
+    // need to be async, or no functions are async. Can't mix and match.
+    let mut asyncness = quote! {};
+
     for item in contents {
         match item {
             Item::Fn(fn_item) => {
+                if fn_item.sig.asyncness.is_some() {
+                    asyncness = quote! {async};
+                }
+
                 let mut input_checks = Vec::new();
                 let mut arg_list = Vec::new();
 
@@ -410,11 +418,19 @@ fn process_fn_items(
 
                 let fn_name = &fn_item.sig.ident;
 
-                abi_dispatchers.push(quote! {
-                    if ( #(#input_checks)&&* ) {
-                        #fn_name(#(#arg_list),*);
-                    }
-                });
+                if fn_item.sig.asyncness.is_none() {
+                    abi_dispatchers.push(quote! {
+                        if ( #(#input_checks)&&* ) {
+                            #fn_name(#(#arg_list),*);
+                        }
+                    });
+                } else {
+                    abi_dispatchers.push(quote! {
+                        if ( #(#input_checks)&&* ) {
+                            #fn_name(#(#arg_list),*).await;
+                        }
+                    });
+                }
 
                 handler_fns.push(fn_item);
             }
@@ -485,7 +501,7 @@ fn process_fn_items(
                 #messageout_decoder
             }
 
-            pub fn dispatch(&self) {
+            pub #asyncness fn dispatch(&self) {
                 #(#abi_dispatchers)*
             }
         }
@@ -546,7 +562,7 @@ fn process_fn_items(
                                 decoder.decode_messageout(payload);
                             }
                             _ => {
-                                Logger::info("This type is not handled yet. (>'.')>");
+                                // WasmLogger::info("This type is not handled yet. (>'.')>");
                             }
                         }
                     }
@@ -664,13 +680,14 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     let output = quote! {
         use alloc::{format, vec, vec::Vec};
         use fuel_indexer_plugin::{
+            Logger,
             types::{
                 fuel,
                 fuel::{BlockData, TransactionData}, *,
                 tx::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
             },
             utils,
-            WasmEntity, Logger
+            WasmEntity, WasmLogger, NativeLogger
         };
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};

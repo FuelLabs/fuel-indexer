@@ -9,7 +9,7 @@ pub fn handler_block_native(
         #native_prelude
 
         #[no_mangle]
-        fn handle_events(blocks: Vec<BlockData>) {
+        pub extern "C" fn handle_events(blocks: Vec<BlockData>) {
             #handler_block
         }
     }

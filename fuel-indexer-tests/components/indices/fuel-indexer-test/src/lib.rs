@@ -14,7 +14,7 @@ pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
 mod fuel_indexer_test {
 
     fn fuel_indexer_test_ping(ping: Ping) {
-        Logger::info("fuel_indexer_test_ping handling a Ping event.");
+        WasmLogger::info("fuel_indexer_test_ping handling a Ping event.");
 
         let entity = PingEntity {
             id: ping.id,
@@ -48,7 +48,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_transfer(transfer: fuel::Transfer) {
-        Logger::info("fuel_indexer_test_transfer handling Transfer event.");
+        WasmLogger::info("fuel_indexer_test_transfer handling Transfer event.");
 
         let fuel::Transfer {
             contract_id,
@@ -73,7 +73,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_transferout(transferout: fuel::TransferOut) {
-        Logger::info("fuel_indexer_test_transferout handling TransferOut event.");
+        WasmLogger::info("fuel_indexer_test_transferout handling TransferOut event.");
 
         let fuel::TransferOut {
             contract_id,
@@ -98,7 +98,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_log(log: fuel::Log) {
-        Logger::info("fuel_indexer_test_log handling Log event.");
+        WasmLogger::info("fuel_indexer_test_log handling Log event.");
 
         let fuel::Log {
             contract_id, rb, ..
@@ -115,7 +115,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_logdata(logdata_entity: Pung) {
-        Logger::info("fuel_indexer_test_logdata handling LogData event.");
+        WasmLogger::info("fuel_indexer_test_logdata handling LogData event.");
 
         let entity = PungEntity {
             id: 1,
@@ -127,7 +127,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_scriptresult(scriptresult: fuel::ScriptResult) {
-        Logger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
+        WasmLogger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
 
         let fuel::ScriptResult { result, gas_used } = scriptresult;
 
@@ -141,7 +141,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_messageout(messageout: fuel::MessageOut) {
-        Logger::info("fuel_indexer_test_messageout handling MessageOut event");
+        WasmLogger::info("fuel_indexer_test_messageout handling MessageOut event");
 
         let fuel::MessageOut {
             sender,

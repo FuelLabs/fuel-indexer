@@ -91,7 +91,7 @@ mod explorer_index {
                     witnesses,
                     metadata,
                 } => {
-                    Logger::info("Inside a script transaction. (>^‿^)>");
+                    WasmLogger::info("Inside a script transaction. (>^‿^)>");
                     block_gas_limit += gas_limit;
                 }
                 #[allow(unused)]
@@ -108,7 +108,7 @@ mod explorer_index {
                     witnesses,
                     metadata,
                 } => {
-                    Logger::info("Inside a create transaction. <(^.^)>");
+                    WasmLogger::info("Inside a create transaction. <(^.^)>");
                     block_gas_limit += gas_limit;
                 }
             }
@@ -213,7 +213,9 @@ mod explorer_index {
                             last_seen: 0,
                         });
 
-                        Logger::info("LogData types are unused in this example. (>'')>");
+                        WasmLogger::info(
+                            "LogData types are unused in this example. (>'')>",
+                        );
                     }
                     #[allow(unused)]
                     Receipt::ScriptResult { result, gas_used } => {
@@ -247,10 +249,12 @@ mod explorer_index {
                             last_seen: 0,
                         });
 
-                        Logger::info("LogData types are unused in this example. (>'')>");
+                        WasmLogger::info(
+                            "LogData types are unused in this example. (>'')>",
+                        );
                     }
                     _ => {
-                        Logger::info("This type is not handled yet.");
+                        WasmLogger::info("This type is not handled yet.");
                     }
                 }
             }
