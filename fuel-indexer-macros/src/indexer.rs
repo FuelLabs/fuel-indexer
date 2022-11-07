@@ -294,17 +294,9 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    // IMPORTANT: When using async with native execution, either all functions
-    // need to be async, or no functions are async. Can't mix and match.
-    let mut asyncness = quote! {};
-
     for item in contents {
         match item {
             Item::Fn(fn_item) => {
-                if fn_item.sig.asyncness.is_some() {
-                    asyncness = quote! {async};
-                }
-
                 let mut input_checks = Vec::new();
                 let mut arg_list = Vec::new();
 
@@ -418,19 +410,11 @@ fn process_fn_items(
 
                 let fn_name = &fn_item.sig.ident;
 
-                if fn_item.sig.asyncness.is_none() {
-                    abi_dispatchers.push(quote! {
-                        if ( #(#input_checks)&&* ) {
-                            #fn_name(#(#arg_list),*);
-                        }
-                    });
-                } else {
-                    abi_dispatchers.push(quote! {
-                        if ( #(#input_checks)&&* ) {
-                            #fn_name(#(#arg_list),*).await;
-                        }
-                    });
-                }
+                abi_dispatchers.push(quote! {
+                    if ( #(#input_checks)&&* ) {
+                        #fn_name(#(#arg_list),*);
+                    }
+                });
 
                 handler_fns.push(fn_item);
             }
@@ -501,7 +485,7 @@ fn process_fn_items(
                 #messageout_decoder
             }
 
-            pub #asyncness fn dispatch(&self) {
+            pub fn dispatch(&self) {
                 #(#abi_dispatchers)*
             }
         }
