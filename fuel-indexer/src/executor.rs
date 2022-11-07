@@ -95,11 +95,9 @@ impl Executor for NativeIndexExecutor {
                             .get(b"handle_events")
                             .unwrap_or_else(|_e| panic!("Could not load module."));
                         func(blocks);
-                        return Ok(());
+                        Ok(())
                     }
-                    Err(_e) => {
-                        return Err(IndexerError::NativeModuleError);
-                    }
+                    Err(_e) => Err(IndexerError::NativeModuleError),
                 }
             }
         }

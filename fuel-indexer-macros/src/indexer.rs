@@ -671,10 +671,12 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
                 tx::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
             },
             utils,
-            WasmEntity, WasmLogger, NativeLogger
+            WasmEntity, WasmLogger
         };
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
+        #[cfg(not(target_arch = "wasm32"))]
+        use fuel_indexer_plugin::{NativeLogger, NativeEntity};
 
         type B256 = [u8; 32];
 

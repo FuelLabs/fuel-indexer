@@ -9,7 +9,7 @@ crate-type = ['cdylib']
 
 [dependencies]
 fuel-indexer-macros = { version = "0.1", path = "../../../fuel-indexer-macros", default-features = false }
-fuel-indexer-plugin = { version = "0.1", path = "../../../fuel-indexer-plugin" }
+fuel-indexer-plugin = { version = "0.1", path = "../../../fuel-indexer-plugin", features = ["native-exec"] }
 fuel-indexer-schema = { version = "0.1", path = "../../../fuel-indexer-schema", default-features = false }
 fuel-tx = "0.18"
 fuels-core = "0.26"

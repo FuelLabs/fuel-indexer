@@ -41,7 +41,7 @@ async fn spawn_executor_from_manifest(
     manifest: &Manifest,
     run_once: bool,
     database_url: String,
-) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>, Option<Vec<u8>>)> {
+) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>, Vec<u8>)> {
     let start_block = manifest.start_block;
 
     match manifest.module {
@@ -61,9 +61,13 @@ async fn spawn_executor_from_manifest(
                 start_block,
             ));
 
-            Ok((kill_switch, handle, Some(bytes)))
+            Ok((kill_switch, handle, bytes))
         }
-        Module::Native(ref _path) => {
+        Module::Native(ref path) => {
+            let mut bytes = Vec::<u8>::new();
+            let mut file = File::open(path).await?;
+            file.read_to_end(&mut bytes).await?;
+
             let executor =
                 NativeIndexExecutor::new(&database_url, manifest.to_owned()).await?;
             let kill_switch = Arc::new(AtomicBool::new(run_once));
@@ -74,7 +78,7 @@ async fn spawn_executor_from_manifest(
                 start_block,
             ));
 
-            Ok((kill_switch, handle, None))
+            Ok((kill_switch, handle, bytes))
         }
     }
 }
@@ -84,14 +88,14 @@ async fn spawn_executor_from_index_asset_registry(
     db_url: String,
     manifest: &Manifest,
     run_once: bool,
-    wasm_bytes: Vec<u8>,
+    module_bytes: Vec<u8>,
 ) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>)> {
     let start_block = manifest.start_block;
 
     match manifest.module {
         Module::Wasm(ref _module) => {
             let executor =
-                WasmIndexExecutor::new(db_url, manifest.to_owned(), wasm_bytes).await?;
+                WasmIndexExecutor::new(db_url, manifest.to_owned(), module_bytes).await?;
             let kill_switch = Arc::new(AtomicBool::new(run_once));
             let handle = tokio::spawn(make_task(
                 fuel_node.into(),
@@ -320,7 +324,7 @@ impl IndexerService {
 
                 self.manager.new_schema(&namespace, &schema).await?;
 
-                let (kill_switch, handle, wasm_bytes) = spawn_executor_from_manifest(
+                let (kill_switch, handle, module_bytes) = spawn_executor_from_manifest(
                     self.config.fuel_node.clone(),
                     &manifest,
                     run_once,
@@ -329,28 +333,26 @@ impl IndexerService {
                 .await?;
 
                 let mut items = vec![
-                    (IndexAssetType::Wasm, wasm_bytes),
-                    (IndexAssetType::Manifest, Some(manifest.to_bytes())),
-                    (IndexAssetType::Schema, Some(schema_bytes)),
+                    (IndexAssetType::Module, module_bytes),
+                    (IndexAssetType::Manifest, manifest.to_bytes()),
+                    (IndexAssetType::Schema, schema_bytes),
                 ];
 
                 while let Some((asset_type, bytes)) = items.pop() {
-                    if let Some(bytes) = bytes {
-                        info!(
-                            "Registering Asset({:?}) for Index({})",
+                    info!(
+                        "Registering Asset({:?}) for Index({})",
+                        asset_type,
+                        index.uid()
+                    );
+                    {
+                        queries::register_index_asset(
+                            &mut conn,
+                            &namespace,
+                            &identifier,
+                            bytes,
                             asset_type,
-                            index.uid()
-                        );
-                        {
-                            queries::register_index_asset(
-                                &mut conn,
-                                &namespace,
-                                &identifier,
-                                bytes,
-                                asset_type,
-                            )
-                            .await?;
-                        }
+                        )
+                        .await?;
                     }
                 }
 
@@ -372,7 +374,7 @@ impl IndexerService {
                         self.config.database.to_string(),
                         &manifest,
                         run_once,
-                        assets.wasm.bytes,
+                        assets.module.bytes,
                     )
                     .await?;
 
@@ -445,7 +447,7 @@ impl IndexerService {
                     self.config.database.to_string(),
                     &manifest,
                     false,
-                    assets.wasm.bytes,
+                    assets.module.bytes,
                 )
                 .await
                 .unwrap();

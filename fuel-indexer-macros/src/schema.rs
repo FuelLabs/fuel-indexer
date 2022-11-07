@@ -171,9 +171,8 @@ fn process_type_def<'a>(
 
             processed.insert(strct.to_string());
 
-            let entity = match () {
-                #[cfg(feature = "native-exec")]
-                () => Some(quote! {
+            if cfg!(feature = "native-exec") {
+                Some(quote! {
                     #[derive(Debug, PartialEq, Eq, Hash)]
                     pub struct #strct {
                         #block
@@ -195,8 +194,9 @@ fn process_type_def<'a>(
                             ]
                         }
                     }
-                }),
-                () => Some(quote! {
+                })
+            } else {
+                Some(quote! {
                     #[derive(Debug, PartialEq, Eq, Hash)]
                     pub struct #strct {
                         #block
@@ -218,10 +218,8 @@ fn process_type_def<'a>(
                             ]
                         }
                     }
-                }),
-            };
-
-            entity
+                })
+            }
         }
         obj => panic!("Unexpected type: {:?}", obj),
     }
