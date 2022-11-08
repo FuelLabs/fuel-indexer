@@ -1,5 +1,5 @@
 use crate::uses::{
-    authorize_middleware, health_check, query_graph, register_index_assets,
+    authorize_middleware, health_check, metrics, query_graph, register_index_assets,
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
@@ -137,8 +137,11 @@ impl GraphQlApi {
             .layer(Extension(pool))
             .layer(Extension(start_time));
 
+        let metrics_route = Router::new().route("/metrics", get(metrics));
+
         let api_routes = Router::new()
             .nest("/", health_route)
+            .nest("/", metrics_route)
             .nest("/index", asset_route)
             .nest("/graph", graph_route);
 
