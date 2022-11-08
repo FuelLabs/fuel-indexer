@@ -1,4 +1,4 @@
-use crate::Jsonb;
+use crate::graphql::Jsonb;
 use chrono::{DateTime, NaiveDateTime, Utc};
 pub use fuel_tx::{Receipt, ScriptExecutionResult, Transaction, TxId};
 use serde::{Deserialize, Serialize};

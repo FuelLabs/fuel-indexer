@@ -28,7 +28,7 @@ mod tests {
             .parent()
             .unwrap()
             .join("fuel-indexer-tests")
-            .join("macro-data");
+            .join("trybuild");
 
         t.compile_fail(macro_data_root.join("fail_if_attribute_args_include_self.rs"));
         t.compile_fail(macro_data_root.join("fail_if_attribute_args_not_included.rs"));
