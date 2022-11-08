@@ -2,10 +2,11 @@ use crate::api::{ApiError, HttpError};
 use anyhow::Result;
 use async_std::sync::{Arc, RwLock};
 use axum::{
+    body::Body,
     extract::{multipart::Multipart, Extension, Json, Path},
     http::{Request, StatusCode},
     middleware::Next,
-    response::IntoResponse,
+    response::{IntoResponse, Response},
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::{IndexAsset, IndexAssetType};
@@ -24,6 +25,9 @@ use std::str::FromStr;
 use std::time::Instant;
 use tokio::sync::mpsc::Sender;
 use tracing::error;
+
+#[cfg(feature = "metrics")]
+use fuel_indexer_metrics::{encode_metrics_response, METRICS};
 
 #[derive(Clone, Debug, Deserialize)]
 pub struct Query {
@@ -51,6 +55,9 @@ pub(crate) async fn query_graph(
 }
 
 pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
+    #[cfg(feature = "metrics")]
+    METRICS.web.health.requests.inc();
+
     let url = format!("{}/health", config.fuel_node.derive_http_url())
         .parse()
         .expect("Failed to parse fuel /health url.");
@@ -236,8 +243,29 @@ pub async fn run_query(
             Ok(row)
         }
         Err(e) => {
-            error!("Error querying database");
+            error!("Error querying database.");
             Err(e.into())
         }
+    }
+}
+
+pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
+    #[cfg(feature = "metrics")]
+    {
+        match encode_metrics_response() {
+            Ok((buff, fmt_type)) => Response::builder()
+                .status(StatusCode::OK)
+                .header(http::header::CONTENT_TYPE, &fmt_type)
+                .body(Body::from(buff))
+                .unwrap(),
+            Err(_e) => Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::from("Error"))
+                .unwrap(),
+        }
+    }
+    #[cfg(not(feature = "metrics"))]
+    {
+        (StatusCode::NOT_FOUND, "Metrics collection disabled.")
     }
 }

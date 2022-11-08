@@ -27,7 +27,7 @@ pub mod fixtures {
     use fuels::prelude::TxParameters;
     use sqlx::{pool::Pool, Postgres};
 
-    pub async fn postgres_connection(db_url: &str) -> Pool<Postgres> {
+    pub async fn postgres_connection_pool(db_url: &str) -> Pool<Postgres> {
         match IndexerConnectionPool::connect(db_url).await.unwrap() {
             IndexerConnectionPool::Postgres(p) => p,
             _ => panic!("Should be postgres."),

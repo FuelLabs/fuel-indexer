@@ -81,6 +81,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
             database: "postgres".to_string(),
         },
         graphql_api: GraphQLConfig::default(),
+        metrics: false,
     };
 
     let mut indexer_service = IndexerService::new(config, None).await.unwrap();

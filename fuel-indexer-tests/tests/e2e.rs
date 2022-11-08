@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "e2e"), allow(dead_code, unused_imports))]
 use fuel_indexer_tests::{
     defaults,
-    fixtures::{http_client, postgres_connection},
+    fixtures::{http_client, postgres_connection_pool},
 };
 use sqlx::Row;
 use tokio::time::{sleep, Duration};
@@ -9,7 +9,7 @@ use tokio::time::{sleep, Duration};
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_blocks_and_transactions() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
     let client = http_client();
@@ -52,7 +52,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_ping_event() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
     let client = http_client();
@@ -79,7 +79,7 @@ async fn test_can_trigger_and_index_ping_event() {
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_transfer_event() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
     sqlx::query("DELETE FROM fuel_indexer_test.transfer WHERE id IS NOT NULL")
@@ -111,7 +111,7 @@ async fn test_can_trigger_and_index_transfer_event() {
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_log_event() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
     sqlx::query("DELETE FROM fuel_indexer_test.log WHERE id IS NOT NULL")
@@ -141,7 +141,7 @@ async fn test_can_trigger_and_index_log_event() {
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_logdata_event() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
     let client = http_client();
@@ -168,7 +168,7 @@ async fn test_can_trigger_and_index_logdata_event() {
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_scriptresult_event() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
     sqlx::query("DELETE FROM fuel_indexer_test.scriptresult WHERE id IS NOT NULL")
@@ -200,7 +200,7 @@ async fn test_can_trigger_and_index_scriptresult_event() {
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_transferout_event() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
     let _conn = pool.acquire().await.unwrap();
 
     let client = http_client();
@@ -219,7 +219,7 @@ async fn test_can_trigger_and_index_transferout_event() {
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_messageout_event() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
     let client = http_client();
