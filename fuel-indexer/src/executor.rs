@@ -4,7 +4,7 @@ use crate::{IndexerError, IndexerRequest, IndexerResponse, IndexerResult, Manife
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_indexer_schema::utils::{deserialize, serialize};
-use fuel_indexer_types::native::BlockData;
+use fuel_indexer_types::abi::BlockData;
 use std::path::Path;
 use thiserror::Error;
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
