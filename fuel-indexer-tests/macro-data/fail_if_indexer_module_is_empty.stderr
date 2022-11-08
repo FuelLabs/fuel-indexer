@@ -1,4 +1,4 @@
-error: No module body, must specify at least one handler function.
+error: custom attribute panicked
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_indexer_module_is_empty.rs
   |
   | / #[indexer(
@@ -6,7 +6,7 @@ error: No module body, must specify at least one handler function.
   | | )]
   | |__^
   |
-  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = help: message: Manifest at 'fuel-indexer-tests/assets/macros/simple_wasm.yaml' does not exist
 
 error[E0601]: `main` function not found in crate `$CRATE`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_indexer_module_is_empty.rs

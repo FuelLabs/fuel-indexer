@@ -1,12 +1,10 @@
-error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(219..226) }' not defined in the ABI.
+error: custom attribute panicked
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  | / #[indexer(
-  | |     manifest = "fuel-indexer-tests/assets/macros/simple_wasm.yaml"
-  | | )]
-  | |__^
+  | #[indexer(manifest = "fuel-indexer-tests/assets/macros/simple_wasm.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
-  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+  = help: message: Manifest at 'fuel-indexer-tests/assets/macros/simple_wasm.yaml' does not exist
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -55,8 +53,8 @@ help: consider importing one of these items
 error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |             TransactionData {
-  |             ^^^^^^^^^^^^^^^ not found in this scope
+  |         transactions: vec![TransactionData {
+  |                            ^^^^^^^^^^^^^^^ not found in this scope
   |
 help: consider importing one of these items
    |
@@ -68,8 +66,8 @@ help: consider importing one of these items
 error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |                 status: TransactionStatus::default(),
-  |                         ^^^^^^^^^^^^^^^^^ not found in this scope
+  |             status: TransactionStatus::default(),
+  |                     ^^^^^^^^^^^^^^^^^ use of undeclared type `TransactionStatus`
   |
 help: consider importing one of these items
    |
@@ -86,8 +84,8 @@ help: consider importing one of these items
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |                 transaction: Transaction::default(),
-  |                              ^^^^^^^^^^^ not found in this scope
+  |             transaction: Transaction::default(),
+  |                          ^^^^^^^^^^^ use of undeclared type `Transaction`
   |
 help: consider importing one of these items
    |
@@ -99,7 +97,7 @@ help: consider importing one of these items
    |
 2  | use fuels::client::schema::schema::Transaction;
    |
-     and 2 other candidates
+     and 3 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -120,10 +118,10 @@ error[E0425]: cannot find function `handle_events` in this scope
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope
 
-error: unused import: `Tokenizable`
+warning: unused import: `Tokenizable`
  --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
   |                                               ^^^^^^^^^^^
   |
-  = note: `-D unused-imports` implied by `-D warnings`
+  = note: `#[warn(unused_imports)]` on by default
