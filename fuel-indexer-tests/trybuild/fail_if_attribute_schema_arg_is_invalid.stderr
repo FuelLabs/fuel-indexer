@@ -1,5 +1,5 @@
 error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `namespace[Name]`\nExpected `schema`, `extend`, `scalar`, `type`, `interface`, `union`, `enum`, `input` or `directive`\n")
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   | #[indexer(manifest = "fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml")]
   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -7,25 +7,25 @@ error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |                 Receipt::Call {
   |                 ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0433]: failed to resolve: use of undeclared type `Receipt`
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |                 Receipt::ReturnData {
   |                 ^^^^^^^ use of undeclared type `Receipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |     let s = SomeEvent {
   |             ^^^^^^^^^ not found in this scope
 
 error[E0412]: cannot find type `BlockData` in this scope
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |     let data: Vec<BlockData> = vec![BlockData {
   |                   ^^^^^^^^^ not found in this scope
@@ -34,11 +34,11 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::types::fuel::BlockData;
    |
-2  | use fuel_indexer_types::native::BlockData;
+2  | use fuel_indexer_types::abi::BlockData;
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |     let data: Vec<BlockData> = vec![BlockData {
   |                                     ^^^^^^^^^ not found in this scope
@@ -47,11 +47,11 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::types::fuel::BlockData;
    |
-2  | use fuel_indexer_types::native::BlockData;
+2  | use fuel_indexer_types::abi::BlockData;
    |
 
 error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |         transactions: vec![TransactionData {
   |                            ^^^^^^^^^^^^^^^ not found in this scope
@@ -60,11 +60,11 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::types::fuel::TransactionData;
    |
-2  | use fuel_indexer_types::native::TransactionData;
+2  | use fuel_indexer_types::abi::TransactionData;
    |
 
 error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |             status: TransactionStatus::default(),
   |                     ^^^^^^^^^^^^^^^^^ not found in this scope
@@ -82,7 +82,7 @@ help: consider importing one of these items
      and 1 other candidate
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |             transaction: Transaction::default(),
   |                          ^^^^^^^^^^^ not found in this scope
@@ -100,7 +100,7 @@ help: consider importing one of these items
      and 3 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |     let mut bytes = serialize(&data);
   |                     ^^^^^^^^^ not found in this scope
@@ -113,13 +113,13 @@ help: consider importing one of these items
    |
 
 error[E0425]: cannot find function `handle_events` in this scope
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope
 
 error: unused import: `Tokenizable`
- --> $WORKSPACE/fuel-indexer-tests/macro-data/fail_if_attribute_schema_arg_is_invalid.rs
+ --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
   |                                               ^^^^^^^^^^^

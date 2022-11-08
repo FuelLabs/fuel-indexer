@@ -112,8 +112,8 @@ impl ForeignKey {
 
     pub fn name(&self) -> String {
         format!(
-            "fk_{}_{}",
-            self.reference_table_name, self.reference_column_name
+            "fk_{}_{}_{}",
+            self.table_name, self.reference_table_name, self.reference_column_name
         )
     }
 }
@@ -136,7 +136,7 @@ impl CreateStatement for ForeignKey {
                 )
             }
             DbType::Sqlite => {
-                fn derive_sqlite_type(t: &str) -> String {
+                fn schema_type_to_sqlite_type(t: &str) -> String {
                     match t {
                         "ID" => "BIGINT".to_string(),
                         "UInt8" | "Int8" | "Int4" | "UInt4" => "INTEGER".to_string(),
@@ -150,7 +150,7 @@ impl CreateStatement for ForeignKey {
                     self.column_name,
                     self.table_name,
                     self.column_name,
-                    derive_sqlite_type(&self.reference_column_type),
+                    schema_type_to_sqlite_type(&self.reference_column_type),
                     self.reference_table_name,
                     self.reference_column_name,
                 )

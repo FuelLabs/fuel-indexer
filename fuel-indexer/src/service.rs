@@ -17,7 +17,7 @@ use fuel_indexer_lib::{
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_types::{
-    native::{BlockData, TransactionData},
+    abi::{BlockData, TransactionData},
     tx::{TransactionStatus, TxId},
     Bytes32,
 };
