@@ -1,6 +1,9 @@
 use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerResult};
 use fuel_indexer_database::{queries, IndexerConnectionPool};
-use fuel_indexer_schema::{db::manager::SchemaManager, utils::schema_version};
+use fuel_indexer_schema::{
+    db::manager::SchemaManager,
+    utils::{inject_native_entities_into_schema, schema_version},
+};
 use fuel_types::Address;
 use wasmer::{imports, Instance, Module, Store, WasmerEnv};
 use wasmer_compiler_cranelift::Cranelift;
@@ -14,7 +17,7 @@ fn compiler() -> Cranelift {
 const GRAPHQL_SCHEMA: &str = include_str!("./../assets/simple_wasm.graphql");
 const WASM_BYTES: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
 const THING1_TYPE: u64 = 0xA21A262A00405632;
-const TEST_COLUMNS: [(&str, i32, &str); 7] = [
+const TEST_COLUMNS: [(&str, i32, &str); 10] = [
     ("thing2", 0, "id"),
     ("thing2", 1, "account"),
     ("thing2", 2, "hash"),
@@ -22,6 +25,9 @@ const TEST_COLUMNS: [(&str, i32, &str); 7] = [
     ("thing1", 0, "id"),
     ("thing1", 1, "account"),
     ("thing1", 2, "object"),
+    ("indexmetadataentity", 0, "id"),
+    ("indexmetadataentity", 1, "time"),
+    ("indexmetadataentity", 2, "object"),
 ];
 
 async fn load_wasm_module(database_url: &str) -> IndexerResult<Instance> {
@@ -59,6 +65,10 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         .await
         .expect("Could not create SchemaManager");
 
+    // SchemaManager.build calls inject_native_entities_into_schema so since we're using
+    // `version` later in this test we need to manually call `inject_native_entities_into_schema` here
+    let schema = inject_native_entities_into_schema(GRAPHQL_SCHEMA);
+
     let result = manager.new_schema("test_namespace", GRAPHQL_SCHEMA).await;
     assert!(result.is_ok());
 
@@ -66,7 +76,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         .await
         .expect("Connection pool error");
 
-    let version = schema_version(GRAPHQL_SCHEMA);
+    let version = schema_version(&schema);
     let mut conn = pool
         .acquire()
         .await
