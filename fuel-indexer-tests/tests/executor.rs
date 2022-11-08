@@ -4,7 +4,7 @@ use fuel_indexer::{
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
 use fuel_indexer_types::{
-    native::{BlockData, TransactionData},
+    abi::{BlockData, TransactionData},
     tx::TransactionStatus,
 };
 use fuel_tx::{Receipt, Transaction};
