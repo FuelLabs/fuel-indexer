@@ -8,12 +8,12 @@ publish = false
 
 [dependencies]
 fuel-crypto = "0.6"
-fuel-gql-client = "0.13"
+fuel-gql-client = "0.14"
 fuel-tx = "0.23"
-fuels = "0.28"
-fuels-abigen-macro = "0.28"
-fuels-core = "0.28"
-fuels-types = "0.28"
+fuels = "0.30"
+fuels-abigen-macro = "0.30"
+fuels-core = "0.30"
+fuels-types = "0.30"
 log = "0.4"
 pretty_env_logger = "0.4"
 rand = "0.8"

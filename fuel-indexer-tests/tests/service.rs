@@ -47,7 +47,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
         DEFAULT_COIN_AMOUNT,
     );
 
-    let (client, _) = setup_test_client(coins, vec![], None, None).await;
+    let (client, _) = setup_test_client(coins, vec![], None, None, None).await;
 
     let provider = Provider::new(client);
 

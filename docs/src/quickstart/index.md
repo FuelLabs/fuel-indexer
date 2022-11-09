@@ -97,8 +97,8 @@ fuel-indexer-macros = { version = "0.1", default-features = false }
 fuel-indexer-plugin = "0.1"
 fuel-indexer-schema = { version = "0.1", default-features = false }
 fuel-tx = "0.23"
-fuels-core = "0.28"
-fuels-types = "0.28"
+fuels-core = "0.30"
+fuels-types = "0.30"
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
