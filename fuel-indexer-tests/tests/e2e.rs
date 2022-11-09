@@ -28,7 +28,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
 
     let id: String = row.get(0);
     let height: i64 = row.get(1);
-    let timestamp: i64 = row.get(3);
+    let timestamp: i64 = row.get(2);
 
     assert_eq!(height, 1);
     assert!(timestamp > 0);
@@ -41,7 +41,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
     .await
     .unwrap();
 
-    assert_eq!(row.len(), 1);
+    assert_eq!(row.len(), 2);
 }
 
 #[tokio::test]
