@@ -7,10 +7,9 @@ abi Simple {
     fn gimme_anotherevent(num: u64) -> AnotherEvent;
 }
 
-
 fn make_someevent(num: u64) -> SomeEvent {
     let a_bignum: b256 = sha256(num);
-    let fake_account: Address = ~Address::from(a_bignum);
+    let fake_account: Address = Address::from(a_bignum);
 
     SomeEvent {
         id: num,
@@ -35,7 +34,6 @@ impl Simple for Contract {
     }
 
     fn gimme_anotherevent(num: u64) -> AnotherEvent {
-
         let some_event = make_someevent(num);
 
         AnotherEvent {
