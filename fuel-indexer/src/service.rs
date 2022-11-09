@@ -2,6 +2,7 @@ use crate::{
     Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, WasmIndexExecutor,
 };
 use async_std::{fs::File, io::ReadExt, sync::Arc};
+use chrono::{TimeZone, Utc};
 use fuel_gql_client::client::{
     types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
@@ -191,7 +192,10 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                         block_id,
                                         time,
                                         ..
-                                    } => TransactionStatus::Success { block_id, time },
+                                    } => TransactionStatus::Success {
+                                        block_id,
+                                        time: Utc.timestamp(time.to_unix(), 0),
+                                    },
                                     GqlTransactionStatus::Failure {
                                         block_id,
                                         time,
@@ -199,11 +203,14 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                         ..
                                     } => TransactionStatus::Failure {
                                         block_id,
-                                        time,
+                                        time: Utc.timestamp(time.to_unix(), 0),
                                         reason,
                                     },
                                     GqlTransactionStatus::Submitted { submitted_at } => {
-                                        TransactionStatus::Submitted { submitted_at }
+                                        TransactionStatus::Submitted {
+                                            submitted_at: Utc
+                                                .timestamp(submitted_at.to_unix(), 0),
+                                        }
                                     }
                                 };
 
@@ -228,7 +235,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                 let block = BlockData {
                     height: block.header.height.0,
                     id: Bytes32::from(block.id),
-                    time: block.header.time.timestamp(),
+                    time: block.header.time.0.to_unix(),
                     transactions,
                 };
 
