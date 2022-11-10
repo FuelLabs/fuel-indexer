@@ -21,10 +21,9 @@
 //! cargo run --bin fuel-indexer -- --manifest examples/block-explorer/manifest.yaml
 //! ```
 
-use fuels_core::tx::field::*;
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
+use fuel_indexer_plugin::{types::tx::*, types::Bytes32, utils::sha256_digest};
 use std::collections::HashSet;
 
 // Entities require IDs - naively create unique IDs using some caller and the data used
@@ -83,6 +82,8 @@ mod explorer_index {
             match &tx.transaction {
                 #[allow(unused)]
                 Transaction::Script(t) => {
+                    Logger::info("Inside a script transaction. (>^‿^)>");
+
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
                     let maturity = t.maturity();
@@ -94,11 +95,12 @@ mod explorer_index {
                     let witnesses = t.witnesses();
 
                     let json = &tx.transaction.to_json();
-                    Logger::info("Inside a script transaction. (>^‿^)>");
                     block_gas_limit += gas_limit;
                 }
                 #[allow(unused)]
                 Transaction::Create(t) => {
+                    Logger::info("Inside a create transaction. <(^.^)>");
+
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
                     let maturity = t.maturity();
@@ -109,15 +111,14 @@ mod explorer_index {
                     let outputs = t.outputs();
                     let witnesses = t.witnesses();
                     let storage_slots = t.storage_slots();
-
-                    Logger::info("Inside a create transaction. <(^.^)>");
                     block_gas_limit += gas_limit;
                 }
                 #[allow(unused)]
                 Transaction::Mint(t) => {
+                    Logger::info("Inside a mint transaction. <(^‿^<)");
+
                     let tx_pointer = t.tx_pointer();
                     let outputs = t.outputs();
-                    Logger::info("Inside a mint transaction. <(^‿^<)");
                 }
             }
 
