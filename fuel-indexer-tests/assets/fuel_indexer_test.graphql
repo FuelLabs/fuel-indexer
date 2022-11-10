@@ -31,7 +31,6 @@ type PungEntity {
 type Block {
     id: Bytes32! @unique
     height: UInt8!
-    producer: Address!
     timestamp: Int8!
 }
 

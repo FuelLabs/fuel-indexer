@@ -28,14 +28,9 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
 
     let id: String = row.get(0);
     let height: i64 = row.get(1);
-    let producer: String = row.get(2);
-    let timestamp: i64 = row.get(3);
+    let timestamp: i64 = row.get(2);
 
     assert_eq!(height, 1);
-    assert_eq!(
-        producer,
-        "0000000000000000000000000000000000000000000000000000000000000000".to_string()
-    );
     assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
@@ -46,7 +41,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
     .await
     .unwrap();
 
-    assert_eq!(row.len(), 1);
+    assert_eq!(row.len(), 2);
 }
 
 #[tokio::test]
@@ -246,4 +241,37 @@ async fn test_can_trigger_and_index_messageout_event() {
     );
     assert_eq!(amount, 100);
     assert_eq!(len, 24);
+}
+
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_index_metadata_is_saved_when_indexer_macro_is_called() {
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let mut conn = pool.acquire().await.unwrap();
+
+    sqlx::query("DELETE FROM fuel_indexer_test.indexmetadataentity WHERE id IS NOT NULL")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
+    let client = http_client();
+    // Doesn't matter what event we trigger
+    let _ = client
+        .post("http://127.0.0.1:8000/ping")
+        .send()
+        .await
+        .unwrap();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.indexmetadataentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let block_height: i64 = row.get(0);
+    let time: i64 = row.get(1);
+
+    assert!(block_height >= 1);
+    assert!(time >= 1);
 }

@@ -1,6 +1,6 @@
-use crate::Jsonb;
+use crate::graphql::Jsonb;
 use chrono::{DateTime, NaiveDateTime, Utc};
-pub use fuel_tx::{Receipt, ScriptExecutionResult, Transaction, TxId};
+pub use fuel_tx::{field::*, Receipt, ScriptExecutionResult, Transaction, TxId};
 use serde::{Deserialize, Serialize};
 
 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286

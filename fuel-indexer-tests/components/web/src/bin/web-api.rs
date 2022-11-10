@@ -212,11 +212,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await
     .unwrap();
 
-    let contract_id = contract_id.to_string();
+    info!("Using contract at {}", contract_id.to_string());
 
-    info!("Using contract at {}", contract_id);
-
-    let contract = FuelIndexerTest::new(contract_id.to_string(), wallet.clone());
+    let contract = FuelIndexerTest::new(contract_id, wallet.clone());
 
     info!("Starting server at {}", defaults::WEB_API_ADDR);
 

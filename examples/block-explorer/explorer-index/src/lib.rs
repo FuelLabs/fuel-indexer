@@ -23,7 +23,7 @@
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
+use fuel_indexer_plugin::{types::tx::*, types::Bytes32, utils::sha256_digest};
 use std::collections::HashSet;
 
 // Entities require IDs - naively create unique IDs using some caller and the data used
@@ -56,11 +56,13 @@ mod explorer_index {
         // a block entity `Block` that we can persist to the database. The `Block` type below is
         // defined in our schema/explorer.graphql and represents the type that we will
         // save to our database.
+        //
+        // Note: There is no miner/producer address for blocks in this example; the producer field
+        // was removed from the `Block` struct as part of fuel-core v0.12.
         let block = Block {
             id: block_data.id,
             height: block_data.height,
             timestamp: block_data.time,
-            miner: block_data.producer,
             gas_limit: block_gas_limit,
         };
 
@@ -75,41 +77,51 @@ mod explorer_index {
             let mut tx_amount = 0;
             let mut tokens_transferred = Vec::new();
 
-            // `Transaction::Script` and `Transaction::Create` are unused but demonstrate properties like gas, inputs,
-            // outputs, script_data, and other pieces of metadata.
+            // `Transaction::Script`, `Transaction::Create`, and `Transaction::Mint`
+            // are unused but demonstrate properties like gas, inputs,
+            // outputs, script_data, and other pieces of metadata. You can access
+            // properties that have the corresponding transaction `Field` traits
+            // implemented; examples below.
             match &tx.transaction {
                 #[allow(unused)]
-                Transaction::Script {
-                    gas_price,
-                    gas_limit,
-                    maturity,
-                    receipts_root,
-                    script,
-                    script_data,
-                    inputs,
-                    outputs,
-                    witnesses,
-                    metadata,
-                } => {
+                Transaction::Script(t) => {
                     Logger::info("Inside a script transaction. (>^‿^)>");
+
+                    let gas_limit = t.gas_limit();
+                    let gas_price = t.gas_price();
+                    let maturity = t.maturity();
+                    let script = t.script();
+                    let script_data = t.script_data();
+                    let receipts_root = t.receipts_root();
+                    let inputs = t.inputs();
+                    let outputs = t.outputs();
+                    let witnesses = t.witnesses();
+
+                    let json = &tx.transaction.to_json();
                     block_gas_limit += gas_limit;
                 }
                 #[allow(unused)]
-                Transaction::Create {
-                    gas_price,
-                    gas_limit,
-                    maturity,
-                    bytecode_length,
-                    bytecode_witness_index,
-                    salt,
-                    storage_slots,
-                    inputs,
-                    outputs,
-                    witnesses,
-                    metadata,
-                } => {
+                Transaction::Create(t) => {
                     Logger::info("Inside a create transaction. <(^.^)>");
+
+                    let gas_limit = t.gas_limit();
+                    let gas_price = t.gas_price();
+                    let maturity = t.maturity();
+                    let salt = t.salt();
+                    let bytecode_length = t.bytecode_length();
+                    let bytecode_witness_index = t.bytecode_witness_index();
+                    let inputs = t.inputs();
+                    let outputs = t.outputs();
+                    let witnesses = t.witnesses();
+                    let storage_slots = t.storage_slots();
                     block_gas_limit += gas_limit;
+                }
+                #[allow(unused)]
+                Transaction::Mint(t) => {
+                    Logger::info("Inside a mint transaction. <(^‿^<)");
+
+                    let tx_pointer = t.tx_pointer();
+                    let outputs = t.outputs();
                 }
             }
 

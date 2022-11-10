@@ -28,7 +28,6 @@ mod fuel_indexer_test {
         let block = Block {
             id: block_data.id,
             height: block_data.height,
-            producer: block_data.producer,
             timestamp: block_data.time,
         };
 
