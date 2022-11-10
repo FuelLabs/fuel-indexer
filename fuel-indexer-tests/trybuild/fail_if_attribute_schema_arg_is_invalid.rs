@@ -4,9 +4,7 @@ use fuel_indexer_macros::indexer;
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
 
-#[indexer(
-    manifest = "fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml"
-)]
+#[indexer(manifest = "fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml")]
 mod indexer {
     fn function_one(event: SomeEvent) {
         let SomeEvent { id, account } = event;
@@ -29,14 +27,12 @@ fn main() {
 
     let data: Vec<BlockData> = vec![BlockData {
         id: [0u8; 32].into(),
-        producer: [0u8; 32].into(),
         time: 1,
         height: 0,
-        transactions: vec![
-            TransactionData {
-                id: [0u8; 32].into(),
-                status: TransactionStatus::default(),
-                receipts: vec![
+        transactions: vec![TransactionData {
+            id: [0u8; 32].into(),
+            status: TransactionStatus::default(),
+            receipts: vec![
                 Receipt::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
@@ -58,9 +54,8 @@ fn main() {
                     is: 0,
                 },
             ],
-                transaction: Transaction::default(),
-            }
-        ],
+            transaction: Transaction::default(),
+        }],
     }];
 
     let mut bytes = serialize(&data);

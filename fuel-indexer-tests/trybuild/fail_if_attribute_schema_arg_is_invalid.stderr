@@ -1,10 +1,8 @@
 error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `namespace[Name]`\nExpected `schema`, `extend`, `scalar`, `type`, `interface`, `union`, `enum`, `input` or `directive`\n")
  --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  | / #[indexer(
-  | |     manifest = "fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml"
-  | | )]
-  | |__^
+  | #[indexer(manifest = "fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
@@ -55,8 +53,8 @@ help: consider importing one of these items
 error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
  --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |             TransactionData {
-  |             ^^^^^^^^^^^^^^^ not found in this scope
+  |         transactions: vec![TransactionData {
+  |                            ^^^^^^^^^^^^^^^ not found in this scope
   |
 help: consider importing one of these items
    |
@@ -68,8 +66,8 @@ help: consider importing one of these items
 error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
  --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |                 status: TransactionStatus::default(),
-  |                         ^^^^^^^^^^^^^^^^^ not found in this scope
+  |             status: TransactionStatus::default(),
+  |                     ^^^^^^^^^^^^^^^^^ not found in this scope
   |
 help: consider importing one of these items
    |
@@ -86,8 +84,8 @@ help: consider importing one of these items
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
  --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |                 transaction: Transaction::default(),
-  |                              ^^^^^^^^^^^ not found in this scope
+  |             transaction: Transaction::default(),
+  |                          ^^^^^^^^^^^ not found in this scope
   |
 help: consider importing one of these items
    |
@@ -99,7 +97,7 @@ help: consider importing one of these items
    |
 2  | use fuels::client::schema::schema::Transaction;
    |
-     and 2 other candidates
+     and 3 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> $WORKSPACE/fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs

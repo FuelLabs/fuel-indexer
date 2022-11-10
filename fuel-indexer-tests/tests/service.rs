@@ -47,7 +47,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
         DEFAULT_COIN_AMOUNT,
     );
 
-    let (client, _) = setup_test_client(coins, vec![], None, None).await;
+    let (client, _) = setup_test_client(coins, vec![], None, None, None).await;
 
     let provider = Provider::new(client);
 
@@ -62,7 +62,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
     .await
     .unwrap();
 
-    let contract = Simple::new(contract_id.to_string(), wallet);
+    let contract = Simple::new(contract_id, wallet);
 
     let _ = contract.methods().gimme_someevent(78).call().await;
     let _ = contract.methods().gimme_anotherevent(899).call().await;

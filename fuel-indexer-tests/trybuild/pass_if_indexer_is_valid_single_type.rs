@@ -7,9 +7,7 @@ fn ff_log_data(_inp: ()) {}
 #[no_mangle]
 fn ff_put_object(_inp: ()) {}
 
-#[indexer(
-    manifest = "fuel-indexer-tests/assets/macros/simple_wasm.yaml"
-)]
+#[indexer(manifest = "fuel-indexer-tests/assets/macros/simple_wasm.yaml")]
 mod indexer {
     fn function_one(event: SomeEvent) {
         let SomeEvent { id, account } = event;
@@ -20,7 +18,7 @@ mod indexer {
 }
 
 fn main() {
-    use fuels_core::{abi_encoder::ABIEncoder};
+    use fuels_core::abi_encoder::ABIEncoder;
 
     let s = SomeEvent {
         id: 9,
@@ -29,17 +27,15 @@ fn main() {
 
     let encoded = ABIEncoder::encode(&[s.into_token()]).expect("Failed compile test");
     let bytes = encoded.resolve(0);
-    
+
     let data: Vec<BlockData> = vec![BlockData {
         id: [0u8; 32].into(),
-        producer: [0u8; 32].into(),
         time: 1,
         height: 0,
-        transactions: vec![
-            TransactionData {
-                status: TransactionStatus::default(),
-                id: [0u8; 32].into(),
-                receipts: vec![
+        transactions: vec![TransactionData {
+            status: TransactionStatus::default(),
+            id: [0u8; 32].into(),
+            receipts: vec![
                 Receipt::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
@@ -61,9 +57,8 @@ fn main() {
                     is: 0,
                 },
             ],
-                transaction: Transaction::default(),
-            }
-        ],
+            transaction: Transaction::default(),
+        }],
     }];
 
     let mut bytes = serialize(&data);

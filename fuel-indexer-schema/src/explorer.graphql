@@ -17,7 +17,6 @@
 #     id: ID!
 #     height: UInt8!
 #     timestamp: Int8!
-#     miner: Address!
 #     block_reward: UInt8!
 #     difficulty: UInt8!
 #     size_bytes: UInt8!
