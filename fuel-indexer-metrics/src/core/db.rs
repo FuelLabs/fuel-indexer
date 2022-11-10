@@ -4,174 +4,177 @@ use prometheus::{self, register_int_counter, Counter, Encoder, IntCounter, TextE
 
 #[derive(Clone, Debug)]
 pub struct Queries {
-    pub graph_root_latest: IntCounter,
-    pub new_graph_root: IntCounter,
-    pub type_id_list_by_name: IntCounter,
-    pub type_id_latest: IntCounter,
-    pub type_id_insert: IntCounter,
-    pub schema_exists: IntCounter,
-    pub new_column_insert: IntCounter,
-    pub list_column_by_id: IntCounter,
-    pub columns_get_schema: IntCounter,
-    pub put_object: IntCounter,
-    pub get_object: IntCounter,
-    pub run_query: IntCounter,
-    pub execute_query: IntCounter,
-    pub root_columns_list_by_id: IntCounter,
-    pub new_root_columns: IntCounter,
-    pub index_is_registered: IntCounter,
-    pub register_index: IntCounter,
-    pub registered_indices: IntCounter,
-    pub index_asset_version: IntCounter,
-    pub register_index_asset: IntCounter,
-    pub latest_asset_for_index: IntCounter,
-    pub latest_assets_for_index: IntCounter,
-    pub asset_already_exists: IntCounter,
-    pub index_id_for: IntCounter,
-    pub start_transaction: IntCounter,
-    pub commit_transaction: IntCounter,
-    pub revert_transaction: IntCounter,
-    pub run_migration: IntCounter,
+    pub graph_root_latest_calls: IntCounter,
+    pub new_graph_root_calls: IntCounter,
+    pub type_id_list_by_name_calls: IntCounter,
+    pub type_id_latest_calls: IntCounter,
+    pub type_id_insert_calls: IntCounter,
+    pub schema_exists_calls: IntCounter,
+    pub new_column_insert_calls: IntCounter,
+    pub list_column_by_id_calls: IntCounter,
+    pub columns_get_schema_calls: IntCounter,
+    pub put_object_calls: IntCounter,
+    pub get_object_calls: IntCounter,
+    pub run_query_calls: IntCounter,
+    pub execute_query_calls: IntCounter,
+    pub root_columns_list_by_id_calls: IntCounter,
+    pub new_root_columns_calls: IntCounter,
+    pub index_is_registered_calls: IntCounter,
+    pub register_index_calls: IntCounter,
+    pub registered_indices_calls: IntCounter,
+    pub index_asset_version_calls: IntCounter,
+    pub register_index_asset_calls: IntCounter,
+    pub latest_asset_for_index_calls: IntCounter,
+    pub latest_assets_for_index_calls: IntCounter,
+    pub asset_already_exists_calls: IntCounter,
+    pub index_id_for_calls: IntCounter,
+    pub start_transaction_calls: IntCounter,
+    pub commit_transaction_calls: IntCounter,
+    pub revert_transaction_calls: IntCounter,
+    pub run_migration_calls: IntCounter,
 }
 
 impl Metric for Queries {
     fn init() -> Self {
         Self {
-            graph_root_latest: register_int_counter!(
-                "graph_root_latest",
-                "Count of calls to graph_root_latest."
+            graph_root_latest_calls: register_int_counter!(
+                "graph_root_latest_calls",
+                "Count of calls to graph_root_latest_calls."
             )
             .unwrap(),
-            new_graph_root: register_int_counter!(
-                "new_graph_root",
-                "Count of calls to new_graph_root."
+            new_graph_root_calls: register_int_counter!(
+                "new_graph_root_calls",
+                "Count of calls to new_graph_root_calls."
             )
             .unwrap(),
-            type_id_list_by_name: register_int_counter!(
-                "type_id_list_by_name",
-                "Count of calls to type_id_list_by_name"
+            type_id_list_by_name_calls: register_int_counter!(
+                "type_id_list_by_name_calls",
+                "Count of calls to type_id_list_by_name_calls"
             )
             .unwrap(),
-            type_id_latest: register_int_counter!(
-                "type_id_latest",
-                "Count of calls to type_id_latest."
+            type_id_latest_calls: register_int_counter!(
+                "type_id_latest_calls",
+                "Count of calls to type_id_latest_calls."
             )
             .unwrap(),
-            type_id_insert: register_int_counter!(
-                "type_id_insert",
-                "Count of calls to type_id_insert."
+            type_id_insert_calls: register_int_counter!(
+                "type_id_insert_calls",
+                "Count of calls to type_id_insert_calls."
             )
             .unwrap(),
-            schema_exists: register_int_counter!(
-                "schema_exists",
-                "Count of calls to schema_exists."
+            schema_exists_calls: register_int_counter!(
+                "schema_exists_calls",
+                "Count of calls to schema_exists_calls."
             )
             .unwrap(),
-            new_column_insert: register_int_counter!(
-                "new_column_insert",
-                "Count of calls to new_column_insert."
+            new_column_insert_calls: register_int_counter!(
+                "new_column_insert_calls",
+                "Count of calls to new_column_insert_calls."
             )
             .unwrap(),
-            list_column_by_id: register_int_counter!(
-                "list_column_by_id",
-                "Count of calls to list_column_by_id."
+            list_column_by_id_calls: register_int_counter!(
+                "list_column_by_id_calls",
+                "Count of calls to list_column_by_id_calls."
             )
             .unwrap(),
-            columns_get_schema: register_int_counter!(
-                "columns_get_schema",
-                "Count of calls to columns_get_schema."
+            columns_get_schema_calls: register_int_counter!(
+                "columns_get_schema_calls",
+                "Count of calls to columns_get_schema_calls."
             )
             .unwrap(),
-            put_object: register_int_counter!(
-                "put_object",
-                "Count of calls to put_object."
+            put_object_calls: register_int_counter!(
+                "put_object_calls",
+                "Count of calls to put_object_calls."
             )
             .unwrap(),
-            get_object: register_int_counter!(
-                "get_object",
-                "Count of calls to get_object."
+            get_object_calls: register_int_counter!(
+                "get_object_calls",
+                "Count of calls to get_object_calls."
             )
             .unwrap(),
-            run_query: register_int_counter!("run_query", "Count of calls to run_query.")
-                .unwrap(),
-            execute_query: register_int_counter!(
-                "execute_query",
-                "Count of calls to execute_query."
+            run_query_calls: register_int_counter!(
+                "run_query_calls",
+                "Count of calls to run_query_calls."
             )
             .unwrap(),
-            root_columns_list_by_id: register_int_counter!(
-                "root_columns_list_by_id",
-                "Count of calls to root_columns_list_by_id."
+            execute_query_calls: register_int_counter!(
+                "execute_query_calls",
+                "Count of calls to execute_query_calls."
             )
             .unwrap(),
-            new_root_columns: register_int_counter!(
-                "new_root_columns",
-                "Count of calls to new_root_columns."
+            root_columns_list_by_id_calls: register_int_counter!(
+                "root_columns_list_by_id_calls",
+                "Count of calls to root_columns_list_by_id_calls."
             )
             .unwrap(),
-            index_is_registered: register_int_counter!(
-                "index_is_registered",
-                "Count of calls to index_is_registered."
+            new_root_columns_calls: register_int_counter!(
+                "new_root_columns_calls",
+                "Count of calls to new_root_columns_calls."
             )
             .unwrap(),
-            register_index: register_int_counter!(
-                "register_index",
-                "Count of calls to register_index."
+            index_is_registered_calls: register_int_counter!(
+                "index_is_registered_calls",
+                "Count of calls to index_is_registered_calls."
             )
             .unwrap(),
-            registered_indices: register_int_counter!(
-                "registered_indices",
-                "Count of calls to registered_indices."
+            register_index_calls: register_int_counter!(
+                "register_index_calls",
+                "Count of calls to register_index_calls."
             )
             .unwrap(),
-            index_asset_version: register_int_counter!(
-                "index_asset_version",
-                "Count of calls to index_asset_version."
+            registered_indices_calls: register_int_counter!(
+                "registered_indices_calls",
+                "Count of calls to registered_indices_calls."
             )
             .unwrap(),
-            register_index_asset: register_int_counter!(
-                "register_index_asset",
-                "Count of calls to register_index_asset."
+            index_asset_version_calls: register_int_counter!(
+                "index_asset_version_calls",
+                "Count of calls to index_asset_version_calls."
             )
             .unwrap(),
-            latest_asset_for_index: register_int_counter!(
-                "latest_asset_for_index",
-                "Count of calls to latest_asset_for_index."
+            register_index_asset_calls: register_int_counter!(
+                "register_index_asset_calls",
+                "Count of calls to register_index_asset_calls."
             )
             .unwrap(),
-            latest_assets_for_index: register_int_counter!(
-                "latest_assets_for_index",
-                "Count of calls to latest_assets_for_index."
+            latest_asset_for_index_calls: register_int_counter!(
+                "latest_asset_for_index_calls",
+                "Count of calls to latest_asset_for_index_calls."
             )
             .unwrap(),
-            asset_already_exists: register_int_counter!(
-                "asset_already_exists",
-                "Count of calls to asset_already_exists."
+            latest_assets_for_index_calls: register_int_counter!(
+                "latest_assets_for_index_calls",
+                "Count of calls to latest_assets_for_index_calls."
             )
             .unwrap(),
-            index_id_for: register_int_counter!(
-                "index_id_for",
-                "Count of calls to index_id_for."
+            asset_already_exists_calls: register_int_counter!(
+                "asset_already_exists_calls",
+                "Count of calls to asset_already_exists_calls."
             )
             .unwrap(),
-            start_transaction: register_int_counter!(
-                "start_transaction",
-                "Count of calls to start_transaction."
+            index_id_for_calls: register_int_counter!(
+                "index_id_for_calls",
+                "Count of calls to index_id_for_calls."
             )
             .unwrap(),
-            commit_transaction: register_int_counter!(
-                "commit_transaction",
-                "Count of calls to commit_transaction."
+            start_transaction_calls: register_int_counter!(
+                "start_transaction_calls",
+                "Count of calls to start_transaction_calls."
             )
             .unwrap(),
-            revert_transaction: register_int_counter!(
-                "revert_transaction",
-                "Count of calls to revert_transaction."
+            commit_transaction_calls: register_int_counter!(
+                "commit_transaction_calls",
+                "Count of calls to commit_transaction_calls."
             )
             .unwrap(),
-            run_migration: register_int_counter!(
-                "run_migration",
-                "Count of calls to run_migration."
+            revert_transaction_calls: register_int_counter!(
+                "revert_transaction_calls",
+                "Count of calls to revert_transaction_calls."
+            )
+            .unwrap(),
+            run_migration_calls: register_int_counter!(
+                "run_migration_calls",
+                "Count of calls to run_migration_calls."
             )
             .unwrap(),
         }
