@@ -499,9 +499,9 @@ crate-type = ['cdylib']
 fuel-indexer-macros = { version = &quot;0.1&quot;, default-features = false }
 fuel-indexer-plugin = &quot;0.1&quot;
 fuel-indexer-schema = { version = &quot;0.1&quot;, default-features = false }
-fuel-tx = &quot;0.18&quot;
-fuels-core = &quot;0.26&quot;
-fuels-types = &quot;0.26&quot;
+fuel-tx = &quot;0.23&quot;
+fuels-core = &quot;0.30&quot;
+fuels-types = &quot;0.30&quot;
 getrandom = { version = &quot;0.2&quot;, features = [&quot;js&quot;] }
 serde = { version = &quot;1.0&quot;, default-features = false, features = [&quot;derive&quot;] }
 serde_json = { version = &quot;1.0&quot;, default-features = false, features = [&quot;alloc&quot;] }
@@ -632,7 +632,6 @@ mod explorer_index {
             id: block_data.id,
             height: block_data.height,
             timestamp: block_data.time,
-            miner: block_data.producer,
             gas_limit: block_gas_limit,
         };
 
@@ -1508,7 +1507,6 @@ mod explorer_index {
             id: block_data.id,
             height: block_data.height,
             timestamp: block_data.time,
-            miner: block_data.producer,
             gas_limit: block_gas_limit,
         };
 
