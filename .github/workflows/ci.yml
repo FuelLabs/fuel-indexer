@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        run: bash scripts/utils/test_binaries_checksums.bash $(which sha1sum)
+        run: bash scripts/utils/validate_test_binaries.bash $(which sha1sum)
 
   cargo-verifications:
     runs-on: ubuntu-latest
