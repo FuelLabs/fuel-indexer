@@ -14,7 +14,7 @@ pub async fn graph_root_latest(
     name: &str,
 ) -> sqlx::Result<GraphRoot> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.graph_root_latest.inc();
+    METRICS.db.queries.graph_root_latest_calls.inc();
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::graph_root_latest(c, name).await
@@ -28,7 +28,7 @@ pub async fn new_graph_root(
     root: NewGraphRoot,
 ) -> sqlx::Result<usize> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.new_graph_root.inc();
+    METRICS.db.queries.new_graph_root_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::new_graph_root(c, root).await,
@@ -42,7 +42,7 @@ pub async fn type_id_list_by_name(
     version: &str,
 ) -> sqlx::Result<Vec<TypeId>> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.type_id_list_by_name.inc();
+    METRICS.db.queries.type_id_list_by_name_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -59,7 +59,7 @@ pub async fn type_id_latest(
     schema_name: &str,
 ) -> sqlx::Result<String> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.type_id_latest.inc();
+    METRICS.db.queries.type_id_latest_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -76,7 +76,7 @@ pub async fn type_id_insert(
     type_ids: Vec<TypeId>,
 ) -> sqlx::Result<usize> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.type_id_insert.inc();
+    METRICS.db.queries.type_id_insert_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -92,7 +92,7 @@ pub async fn schema_exists(
     version: &str,
 ) -> sqlx::Result<bool> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.schema_exists.inc();
+    METRICS.db.queries.schema_exists_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -109,7 +109,7 @@ pub async fn new_column_insert(
     cols: Vec<NewColumn>,
 ) -> sqlx::Result<usize> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.new_column_insert.inc();
+    METRICS.db.queries.new_column_insert_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -124,7 +124,7 @@ pub async fn list_column_by_id(
     col_id: i64,
 ) -> sqlx::Result<Vec<Columns>> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.list_column_by_id.inc();
+    METRICS.db.queries.list_column_by_id_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -142,7 +142,7 @@ pub async fn columns_get_schema(
     version: &str,
 ) -> sqlx::Result<Vec<ColumnInfo>> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.columns_get_schema.inc();
+    METRICS.db.queries.columns_get_schema_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -160,7 +160,7 @@ pub async fn put_object(
     bytes: Vec<u8>,
 ) -> sqlx::Result<usize> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.put_object.inc();
+    METRICS.db.queries.put_object_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -175,7 +175,7 @@ pub async fn get_object(
     query: String,
 ) -> sqlx::Result<Vec<u8>> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.get_object.inc();
+    METRICS.db.queries.get_object_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::get_object(c, query).await,
@@ -188,7 +188,7 @@ pub async fn run_query(
     query: String,
 ) -> sqlx::Result<JsonValue> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.run_query.inc();
+    METRICS.db.queries.run_query_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::run_query(c, query).await,
@@ -201,7 +201,7 @@ pub async fn execute_query(
     query: String,
 ) -> sqlx::Result<usize> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.execute_query.inc();
+    METRICS.db.queries.execute_query_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::execute_query(c, query).await,
@@ -214,7 +214,7 @@ pub async fn root_columns_list_by_id(
     root_id: i64,
 ) -> sqlx::Result<Vec<RootColumns>> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.root_columns_list_by_id.inc();
+    METRICS.db.queries.root_columns_list_by_id_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -231,7 +231,7 @@ pub async fn new_root_columns(
     cols: Vec<NewRootColumns>,
 ) -> sqlx::Result<usize> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.new_root_columns.inc();
+    METRICS.db.queries.new_root_columns_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -247,7 +247,7 @@ pub async fn index_is_registered(
     identifier: &str,
 ) -> sqlx::Result<Option<RegisteredIndex>> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.index_is_registered.inc();
+    METRICS.db.queries.index_is_registered_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -265,7 +265,7 @@ pub async fn register_index(
     identifier: &str,
 ) -> sqlx::Result<RegisteredIndex> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.register_index.inc();
+    METRICS.db.queries.register_index_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -281,7 +281,7 @@ pub async fn registered_indices(
     conn: &mut IndexerConnection,
 ) -> sqlx::Result<Vec<RegisteredIndex>> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.registered_indices.inc();
+    METRICS.db.queries.registered_indices_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::registered_indices(c).await,
@@ -295,7 +295,7 @@ pub async fn index_asset_version(
     asset_type: &IndexAssetType,
 ) -> sqlx::Result<i64> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.index_asset_version.inc();
+    METRICS.db.queries.index_asset_version_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -315,7 +315,7 @@ pub async fn register_index_asset(
     asset_type: IndexAssetType,
 ) -> sqlx::Result<IndexAsset> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.register_index_asset.inc();
+    METRICS.db.queries.register_index_asset_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -335,7 +335,7 @@ pub async fn latest_asset_for_index(
     asset_type: IndexAssetType,
 ) -> sqlx::Result<IndexAsset> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.latest_asset_for_index.inc();
+    METRICS.db.queries.latest_asset_for_index_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -352,7 +352,7 @@ pub async fn latest_assets_for_index(
     index_id: &i64,
 ) -> sqlx::Result<IndexAssetBundle> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.latest_assets_for_index.inc();
+    METRICS.db.queries.latest_assets_for_index_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -371,7 +371,7 @@ pub async fn asset_already_exists(
     index_id: &i64,
 ) -> sqlx::Result<Option<IndexAsset>> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.asset_already_exists.inc();
+    METRICS.db.queries.asset_already_exists_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -389,7 +389,7 @@ pub async fn index_id_for(
     identifier: &str,
 ) -> sqlx::Result<i64> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.index_id_for.inc();
+    METRICS.db.queries.index_id_for_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -403,7 +403,7 @@ pub async fn index_id_for(
 
 pub async fn start_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.start_transaction.inc();
+    METRICS.db.queries.start_transaction_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::start_transaction(c).await,
@@ -413,7 +413,7 @@ pub async fn start_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usi
 
 pub async fn commit_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.commit_transaction.inc();
+    METRICS.db.queries.commit_transaction_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::commit_transaction(c).await,
@@ -423,7 +423,7 @@ pub async fn commit_transaction(conn: &mut IndexerConnection) -> sqlx::Result<us
 
 pub async fn revert_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.revert_transaction.inc();
+    METRICS.db.queries.revert_transaction_calls.inc();
 
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::revert_transaction(c).await,
@@ -433,7 +433,7 @@ pub async fn revert_transaction(conn: &mut IndexerConnection) -> sqlx::Result<us
 
 pub async fn run_migration(database_url: &str) {
     #[cfg(feature = "metrics")]
-    METRICS.db.queries.run_migration.inc();
+    METRICS.db.queries.run_migration_calls.inc();
 
     let url =
         Url::from_str(database_url).expect("Database URL should be correctly formed");

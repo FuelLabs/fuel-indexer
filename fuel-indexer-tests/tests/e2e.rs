@@ -246,7 +246,7 @@ async fn test_can_trigger_and_index_messageout_event() {
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called() {
-    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
     let mut conn = pool.acquire().await.unwrap();
 
     sqlx::query("DELETE FROM fuel_indexer_test.indexmetadataentity WHERE id IS NOT NULL")
