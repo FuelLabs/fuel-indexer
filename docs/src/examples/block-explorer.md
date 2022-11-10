@@ -65,7 +65,6 @@ mod explorer_index {
             id: block_data.id,
             height: block_data.height,
             timestamp: block_data.time,
-            miner: block_data.producer,
             gas_limit: block_gas_limit,
         };
 
