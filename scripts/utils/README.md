@@ -9,6 +9,8 @@ General utilty scripts used to improve devx
 ├── kill_test_components.bash
 ├── refresh_test_db.bash
 └── start_test_components.bash
+└── validate_test_binaries.bash
+
 
 0 directories, 5 files
 ```
@@ -21,3 +23,5 @@ General utilty scripts used to improve devx
   - Drop the default testing database, recreate it, and run migrations
 - start_test_components
   - Start all testing components (Fuel node, Web API)
+- validate_test_binaries
+  - Ensure that the binaries used for testing components are up to date
