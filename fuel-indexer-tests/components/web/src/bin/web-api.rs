@@ -61,7 +61,6 @@ async fn fuel_indexer_test_transfer(state: web::Data<Arc<AppState>>) -> impl Res
         .contract
         .methods()
         .trigger_transfer()
-        .append_variable_outputs(1)
         .tx_params(tx_params())
         .call_params(call_params)
         .call()
@@ -112,11 +111,15 @@ async fn fuel_indexer_test_scriptresult(
 async fn fuel_indexer_test_transferout(
     state: web::Data<Arc<AppState>>,
 ) -> impl Responder {
+    let call_params = CallParameters::new(Some(1_000_000), None, None);
+
     let _ = state
         .contract
         .methods()
         .trigger_transferout()
+        .append_variable_outputs(1)
         .tx_params(tx_params())
+        .call_params(call_params)
         .call()
         .await;
 
