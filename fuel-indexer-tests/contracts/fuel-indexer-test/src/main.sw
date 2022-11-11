@@ -79,7 +79,6 @@ impl FuelIndexer for Contract {
         log(0);
     }
 
-    // This should trigger both a TR and TRO instruction
     fn trigger_transferout() {
         const RECEIVER = Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
         transfer(1, BASE_ASSET_ID, Identity::Address(RECEIVER));
