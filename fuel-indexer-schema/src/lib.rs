@@ -2,7 +2,7 @@ extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Jsonb, Salt,
+    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Jsonb, MessageId, Salt,
 };
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +34,7 @@ pub enum FtColumn {
     Timestamp(u64),
     Salt(Salt),
     Jsonb(Jsonb),
+    MessageId(MessageId),
 }
 
 impl FtColumn {
@@ -118,6 +119,11 @@ impl FtColumn {
             ColumnType::Jsonb => FtColumn::Jsonb(Jsonb(
                 String::from_utf8_lossy(&bytes[..size]).to_string(),
             )),
+            ColumnType::MessageId => {
+                let message_id =
+                    MessageId::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::MessageId(message_id)
+            }
         }
     }
 
@@ -165,6 +171,9 @@ impl FtColumn {
             FtColumn::Jsonb(value) => {
                 format!("'{}'", value.0)
             }
+            FtColumn::MessageId(value) => {
+                format!("'{:x}'", value)
+            }
         }
     }
 }
@@ -190,6 +199,8 @@ mod tests {
         let uint8 = FtColumn::UInt8(u64::from_le_bytes([0x78; 8]));
         let uint64 = FtColumn::Timestamp(u64::from_le_bytes([0x78; 8]));
         let salt = FtColumn::Salt(Salt::try_from([0x31; 32]).expect("Bad bytes"));
+        let message_id =
+            FtColumn::MessageId(MessageId::try_from([0x0F; 32]).expect("Bad bytes"));
 
         insta::assert_yaml_snapshot!(id.query_fragment());
         insta::assert_yaml_snapshot!(addr.query_fragment());
@@ -204,5 +215,6 @@ mod tests {
         insta::assert_yaml_snapshot!(uint4.query_fragment());
         insta::assert_yaml_snapshot!(uint8.query_fragment());
         insta::assert_yaml_snapshot!(uint64.query_fragment());
+        insta::assert_yaml_snapshot!(message_id.query_fragment());
     }
 }

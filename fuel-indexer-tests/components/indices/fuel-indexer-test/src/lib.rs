@@ -154,7 +154,7 @@ mod fuel_indexer_test {
         } = messageout;
 
         let entity = MessageOut {
-            id: derive_id(*message_id, digest.to_vec()),
+            id: message_id,
             sender,
             recipient,
             amount,
