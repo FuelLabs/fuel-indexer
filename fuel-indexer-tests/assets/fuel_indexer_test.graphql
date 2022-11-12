@@ -74,7 +74,7 @@ type ScriptResult {
 
 type MessageOut {
     # TODO: https://github.com/FuelLabs/fuel-indexer/issues/298
-    id: Bytes32! @unique
+    id: MessageId! @unique
     sender: Address!
     recipient: Address!
     amount: UInt8!

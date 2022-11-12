@@ -244,10 +244,13 @@ async fn test_can_trigger_and_index_messageout_event() {
         .await
         .unwrap();
 
+    let message_id: &str = row.get(0);
     let recipient: &str = row.get(2);
     let amount: i64 = row.get(3);
     let len: i64 = row.get(5);
 
+    // Message ID is different on each receipt, so we'll just check that it's well-formed
+    assert_eq!(message_id.len(), 64);
     assert_eq!(
         recipient,
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
