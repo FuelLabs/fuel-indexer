@@ -140,7 +140,7 @@ pub mod my_counter_index_module {
 ### 4. Compile the index
 
 ```bash
-cargo build -p my-index --release --wasm32-unknown-unknown
+cargo build -p my-index --release --target wasm32-unknown-unknown
 ```
 
 > IMPORTANT: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash).
