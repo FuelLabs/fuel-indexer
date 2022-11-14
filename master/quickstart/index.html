@@ -292,7 +292,7 @@ pub mod my_counter_index_module {
 <span class="boring">}
 </span></code></pre></pre>
 <h3 id="4-compile-the-index"><a class="header" href="#4-compile-the-index">4. Compile the index</a></h3>
-<pre><code class="language-bash">cargo build -p my-index --release --wasm32-unknown-unknown
+<pre><code class="language-bash">cargo build -p my-index --release --target wasm32-unknown-unknown
 </code></pre>
 <blockquote>
 <p>IMPORTANT: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash">here</a>.</p>
