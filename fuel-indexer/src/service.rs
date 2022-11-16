@@ -212,6 +212,9 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                                 .timestamp(submitted_at.to_unix(), 0),
                                         }
                                     }
+                                    GqlTransactionStatus::SqueezedOut { reason } => {
+                                        TransactionStatus::SqueezedOut { reason }
+                                    }
                                 };
 
                                 let tx_data = TransactionData {

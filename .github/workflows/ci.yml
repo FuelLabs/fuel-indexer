@@ -272,22 +272,23 @@ jobs:
             platform: linux
             target: x86_64-unknown-linux-gnu
             cross_image: x86_64-linux-gnu
-          # - os: macos-latest
-          #   platform: darwin
-          #   target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            platform: linux-arm
+            target: aarch64-unknown-linux-gnu
+            cross_image: aarch64-linux-gnu
+          - os: macos-latest
+            platform: darwin
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            platform: darwin-arm
+            target: aarch64-apple-darwin
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
+        if: matrix.job.cross_image
         uses: docker/setup-buildx-action@v1
-
-      - name: Log in to the ghcr.io registry
-        uses: docker/login-action@v1
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup custom cross env ${{ matrix.job.cross_image }}
         if: matrix.job.cross_image
@@ -325,7 +326,9 @@ jobs:
 
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
-        run: strip "target/${{ matrix.job.target }}/release/fuel-indexer"
+        run: |
+          strip "target/${{ matrix.job.target }}/release/fuel-indexer"
+          strip "target/${{ matrix.job.target }}/release/fuel-indexer-api-server"
 
       - name: Strip release binary aarch64-linux-gnu
         if: matrix.job.target == 'aarch64-unknown-linux-gnu'
@@ -342,24 +345,11 @@ jobs:
           aarch64-linux-gnu-strip \
           /target/aarch64-unknown-linux-gnu/release/fuel-indexer-api-server
 
-      - name: Strip release binary aarch64-linux-musl
-        if: matrix.job.target == 'aarch64-unknown-linux-musl'
-        run: |
-          docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          aarch64-linux-musl:latest \
-          aarch64-linux-musl-strip \
-          /target/aarch64-unknown-linux-musl/release/fuel-indexer
-
-          docker run --rm -v \
-          "$PWD/target:/target:Z" \
-          aarch64-linux-musl:latest \
-          aarch64-linux-musl-strip \
-          /target/aarch64-unknown-linux-musl/release/fuel-indexer-api-server
-
       - name: Strip release binary mac
         if: matrix.job.os == 'macos-latest'
-        run: strip -x "target/${{ matrix.job.target }}/release/fuel-indexer"
+        run: |
+          strip -x "target/${{ matrix.job.target }}/release/fuel-indexer"
+          strip -x "target/${{ matrix.job.target }}/release/fuel-indexer-api-server"
 
       - name: Prepare Binary Artifact
         env:
