@@ -27,7 +27,11 @@ impl Default for TransactionStatus {
     fn default() -> Self {
         Self::Success {
             block_id: "0".into(),
-            time: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+            time: DateTime::<Utc>::from_utc(
+                NaiveDateTime::from_timestamp_opt(0, 0)
+                    .expect("Failed to create timestamp"),
+                Utc,
+            ),
         }
     }
 }

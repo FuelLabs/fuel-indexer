@@ -194,7 +194,12 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                         ..
                                     } => TransactionStatus::Success {
                                         block_id,
-                                        time: Utc.timestamp(time.to_unix(), 0),
+                                        time: Utc
+                                            .timestamp_opt(time.to_unix(), 0)
+                                            .single()
+                                            .expect(
+                                                "Failed to parse transaction timestamp",
+                                            ),
                                     },
                                     GqlTransactionStatus::Failure {
                                         block_id,
@@ -203,13 +208,22 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                         ..
                                     } => TransactionStatus::Failure {
                                         block_id,
-                                        time: Utc.timestamp(time.to_unix(), 0),
+                                        time: Utc
+                                            .timestamp_opt(time.to_unix(), 0)
+                                            .single()
+                                            .expect(
+                                                "Failed to parse transaction timestamp",
+                                            ),
                                         reason,
                                     },
                                     GqlTransactionStatus::Submitted { submitted_at } => {
                                         TransactionStatus::Submitted {
                                             submitted_at: Utc
-                                                .timestamp(submitted_at.to_unix(), 0),
+                                                .timestamp_opt(submitted_at.to_unix(), 0)
+                                                .single()
+                                                .expect(
+                                                    "Failed to parse transaction timestamp"
+                                                ),
                                         }
                                     }
                                     GqlTransactionStatus::SqueezedOut { reason } => {
