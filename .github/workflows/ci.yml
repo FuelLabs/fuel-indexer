@@ -262,7 +262,7 @@ jobs:
       - cancel-previous-runs
       - cargo-verifications
       - cargo-test-workspace-all-features
-    # if: github.event_name == 'release' && github.event.action == 'published'
+    if: github.event_name == 'release' && github.event.action == 'published'
      # Only do this job if publishing a release
     strategy:
       matrix:
