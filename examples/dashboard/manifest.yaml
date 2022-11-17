@@ -1,0 +1,6 @@
+namespace: fuel_examples
+identifier: dashboard_index
+# abi: No abi for this example
+graphql_schema: examples/block-explorer/schema/dashboard.graphql
+module:
+  wasm: fuel-indexer-tests/assets/dashboard_index.wasm

@@ -1,0 +1,50 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    tx: Tx
+    account: Account
+}
+
+type Tx {
+    id: Bytes32! @unique
+    timestamp: Int8!
+    status: Jsonb!
+    value: UInt8!
+    tokens_transferred: Jsonb!
+}
+
+type Account {
+    id: Address! @unique
+    last_seen: UInt8!
+}
+
+type Transfer {
+    id: Bytes32! @unique
+    contract_id: Contract!
+    # `to` is a reserved SQL keyword
+    receiver: ContractId! @indexed
+    amount: UInt8!
+    asset_id: AssetId! @indexed
+}
+
+type TransferOut {
+    id: Bytes32! @unique
+    contract_id: Contract!
+    # `to` is a reserved SQL keyword
+    receiver: Account!
+    amount: UInt8!
+    asset_id: AssetId! @indexed
+}
+
+type MessageOut {
+    # TODO: https://github.com/FuelLabs/fuel-indexer/issues/298
+    id: Bytes32! @unique
+    sender: Address!
+    recipient: Address!
+    amount: UInt8!
+    nonce: Bytes32!
+    len: UInt8!
+    digest: Bytes32!
+}
