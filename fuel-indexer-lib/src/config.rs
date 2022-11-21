@@ -383,6 +383,7 @@ pub struct IndexerConfig {
     pub graphql_api: GraphQLConfig,
     #[serde(default)]
     pub database: DatabaseConfig,
+    #[serde(default)]
     pub metrics: bool,
 }
 

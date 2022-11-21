@@ -179,6 +179,8 @@ jobs:
             args: --locked --workspace
           - command: test
             args: --locked --all-targets --no-default-features --workspace
+          - command: test
+            args: --locked --all-targets --features e2e --workspace
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -209,51 +211,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
           RUSTFLAGS: -D warnings
-
-  # TODO: https://github.com/FuelLabs/fuel-indexer/issues/269
-  cargo-test-workspace-all-features:
-    needs: cancel-previous-runs
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo install sqlx-cli
-      - run: bash scripts/run_migrations.bash
-
-      - name: Build fuel-indexer and fuel-indexer-test-web
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -p fuel-indexer -p fuel-indexer-test-web --locked --release
-        env:
-          RUSTFLAGS: '-D warnings'
-
-      - name: Install wasm-snip
-        run: cargo install wasm-snip
-      - name: Build updated WASM test module
-        run: bash scripts/utils/build_test_wasm_module.bash
-      - name: Start test web components
-        run: bash scripts/utils/start_test_components.bash
-
-      - name: Cargo Test Workspace
-        uses: actions-rs/cargo@v1
-      - run: cargo test --locked --workspace --all-features --all-targets
-      - run: bash scripts/utils/kill_test_components.bash
 
   publish-fuel-indexer-binaries:
     name: Release fuel-indexer binaries

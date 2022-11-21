@@ -42,6 +42,11 @@ impl Manifest {
         Ok(manifest)
     }
 
+    pub fn from_str_contents(content: &str) -> Result<Self> {
+        let manifest: Manifest = serde_yaml::from_str(content)?;
+        Ok(manifest)
+    }
+
     pub fn to_bytes(&self) -> Vec<u8> {
         serde_yaml::to_string(&self)
             .expect("Failed converting manifest to bytes.")

@@ -15,7 +15,7 @@ fn compiler() -> Cranelift {
 
 // TODO: sqlite and postgres now....
 const GRAPHQL_SCHEMA: &str = include_str!("./../assets/simple_wasm.graphql");
-const WASM_BYTES: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
+const SIMPLE_WASM_WASM: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
 const THING1_TYPE: u64 = 0xA21A262A00405632;
 const TEST_COLUMNS: [(&str, i32, &str); 10] = [
     ("thing2", 0, "id"),
@@ -33,7 +33,7 @@ const TEST_COLUMNS: [(&str, i32, &str); 10] = [
 async fn load_wasm_module(database_url: &str) -> IndexerResult<Instance> {
     let compiler = compiler();
     let store = Store::new(&Universal::new(compiler).engine());
-    let module = Module::new(&store, WASM_BYTES)?;
+    let module = Module::new(&store, SIMPLE_WASM_WASM)?;
 
     let mut import_object = imports! {};
     let mut env = IndexEnv::new(database_url.to_string()).await?;

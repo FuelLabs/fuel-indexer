@@ -1,25 +1,44 @@
 #![cfg_attr(not(feature = "e2e"), allow(dead_code, unused_imports))]
+use actix_web::test;
+use fuel_indexer_lib::manifest::Manifest;
+use fuel_indexer_postgres as postgres;
 use fuel_indexer_tests::{
+    assets::FUEL_INDEXER_TEST_MANIFEST,
     defaults,
-    fixtures::{http_client, postgres_connection_pool},
+    fixtures::{
+        connect_to_deployed_contract, indexer_service, postgres_connection,
+        setup_test_client_and_deploy_contract, test_web::app,
+    },
+    utils::update_test_manifest_asset_paths,
 };
 use sqlx::Row;
-use tokio::time::{sleep, Duration};
 
-#[tokio::test]
+#[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_blocks_and_transactions() {
-    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let mut conn = postgres_connection().await;
+    let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    let srv = indexer_service(manifest, None).await;
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/block")
-        .send()
+    // Cleanup
+    let _ = postgres::start_transaction(&mut conn).await;
+    sqlx::query("DELETE FROM fuel_indexer_test.tx WHERE id IS NOT NULL")
+        .execute(&mut conn)
         .await
         .unwrap();
+    sqlx::query("DELETE FROM fuel_indexer_test.block WHERE height IS NOT NULL")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+    let _ = postgres::commit_transaction(&mut conn).await;
 
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    srv.run().await;
+
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = test::call_service(&app, req).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.block WHERE height = 1")
         .fetch_one(&mut conn)
@@ -44,20 +63,20 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
     assert_eq!(row.len(), 2);
 }
 
-#[tokio::test]
+#[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_ping_event() {
-    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let mut conn = postgres_connection().await;
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/ping")
-        .send()
-        .await
-        .unwrap();
+    let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    let srv = indexer_service(manifest, None).await;
+    srv.run().await;
 
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = test::call_service(&app, req).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.pingentity WHERE id = 1")
         .fetch_one(&mut conn)
@@ -71,25 +90,20 @@ async fn test_can_trigger_and_index_ping_event() {
     assert_eq!(value, 123);
 }
 
-#[tokio::test]
+#[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_transfer_event() {
-    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let mut conn = postgres_connection().await;
 
-    sqlx::query("DELETE FROM fuel_indexer_test.transfer WHERE id IS NOT NULL")
-        .execute(&mut conn)
-        .await
-        .unwrap();
+    let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    let srv = indexer_service(manifest, None).await;
+    srv.run().await;
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/transfer")
-        .send()
-        .await
-        .unwrap();
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let req = test::TestRequest::post().uri("/transfer").to_request();
+    let _ = test::call_service(&app, req).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.transfer LIMIT 1")
         .fetch_one(&mut conn)
@@ -99,29 +113,24 @@ async fn test_can_trigger_and_index_transfer_event() {
     let amount: i64 = row.get(3);
     let asset_id: &str = row.get(4);
 
-    assert_eq!(amount, 1); // value is defined in test contract
+    assert_eq!(amount, 1);
     assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
 }
 
-#[tokio::test]
+#[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_log_event() {
-    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let mut conn = postgres_connection().await;
 
-    sqlx::query("DELETE FROM fuel_indexer_test.log WHERE id IS NOT NULL")
-        .execute(&mut conn)
-        .await
-        .unwrap();
+    let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    let srv = indexer_service(manifest, None).await;
+    srv.run().await;
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/log")
-        .send()
-        .await
-        .unwrap();
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let req = test::TestRequest::post().uri("/log").to_request();
+    let _ = test::call_service(&app, req).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.log LIMIT 1")
         .fetch_one(&mut conn)
@@ -133,20 +142,20 @@ async fn test_can_trigger_and_index_log_event() {
     assert_eq!(ra, 8675309);
 }
 
-#[tokio::test]
+#[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_logdata_event() {
-    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let mut conn = postgres_connection().await;
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/logdata")
-        .send()
-        .await
-        .unwrap();
+    let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    let srv = indexer_service(manifest, None).await;
+    srv.run().await;
 
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let req = test::TestRequest::post().uri("/logdata").to_request();
+    let _ = test::call_service(&app, req).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.pungentity WHERE id = 1")
         .fetch_one(&mut conn)
@@ -160,25 +169,29 @@ async fn test_can_trigger_and_index_logdata_event() {
     assert_eq!(is_pung, 1);
 }
 
-#[tokio::test]
+#[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_scriptresult_event() {
-    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let mut conn = postgres_connection().await;
 
+    let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    let srv = indexer_service(manifest, None).await;
+
+    // Cleanup
+    let _ = postgres::start_transaction(&mut conn).await;
     sqlx::query("DELETE FROM fuel_indexer_test.scriptresult WHERE id IS NOT NULL")
         .execute(&mut conn)
         .await
         .unwrap();
+    let _ = postgres::commit_transaction(&mut conn).await;
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/scriptresult")
-        .send()
-        .await
-        .unwrap();
+    srv.run().await;
 
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let req = test::TestRequest::post().uri("/scriptresult").to_request();
+    let _ = test::call_service(&app, req).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.scriptresult LIMIT 1")
         .fetch_one(&mut conn)
@@ -192,39 +205,40 @@ async fn test_can_trigger_and_index_scriptresult_event() {
     assert!(gas_used > 0);
 }
 
-#[tokio::test]
+#[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_transferout_event() {
-    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
-    let _conn = pool.acquire().await.unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let _conn = postgres_connection().await;
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/transferout")
-        .send()
-        .await
-        .unwrap();
+    let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    let srv = indexer_service(manifest, None).await;
 
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    srv.run().await;
+
+    let req = test::TestRequest::post().uri("/transferout").to_request();
+    let _ = test::call_service(&app, req).await;
 
     // FIXME: Still need to trigger an actual receipt
     assert_eq!(1, 1);
 }
 
-#[tokio::test]
+#[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_messageout_event() {
-    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let mut conn = postgres_connection().await;
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/messageout")
-        .send()
-        .await
-        .unwrap();
+    let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    let srv = indexer_service(manifest, None).await;
+    srv.run().await;
 
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let req = test::TestRequest::post().uri("/messageout").to_request();
+    let _ = test::call_service(&app, req).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.messageout LIMIT 1")
         .fetch_one(&mut conn)
@@ -243,26 +257,20 @@ async fn test_can_trigger_and_index_messageout_event() {
     assert_eq!(len, 24);
 }
 
-#[tokio::test]
+#[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called() {
-    let pool = postgres_connection_pool("postgres://postgres:my-secret@127.0.0.1").await;
-    let mut conn = pool.acquire().await.unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let mut conn = postgres_connection().await;
 
-    sqlx::query("DELETE FROM fuel_indexer_test.indexmetadataentity WHERE id IS NOT NULL")
-        .execute(&mut conn)
-        .await
-        .unwrap();
+    let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    let srv = indexer_service(manifest, None).await;
+    srv.run().await;
 
-    let client = http_client();
-    // Doesn't matter what event we trigger
-    let _ = client
-        .post("http://127.0.0.1:8000/ping")
-        .send()
-        .await
-        .unwrap();
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let req = test::TestRequest::post().uri("/blocks").to_request();
+    let _ = test::call_service(&app, req).await;
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.indexmetadataentity LIMIT 1")
         .fetch_one(&mut conn)

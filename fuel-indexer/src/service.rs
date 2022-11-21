@@ -34,7 +34,6 @@ use tokio::{
     task::JoinHandle,
     time::{sleep, Duration},
 };
-
 use tracing::{debug, error, info, warn};
 
 async fn spawn_executor_from_manifest(
@@ -147,7 +146,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                     direction: PageDirection::Forward,
                 })
                 .await
-                .expect("Failed to retrieve blocks");
+                .expect("Failed to retrieve blocks.");
 
             debug!("Processing {} results", results.len());
 
@@ -220,6 +219,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                     transaction,
                                     id: TxId::from(trans.id),
                                 };
+
                                 transactions.push(tx_data);
                             }
                         }
@@ -276,7 +276,7 @@ pub struct IndexerService {
     manager: SchemaManager,
     database_url: String,
     handles: RefCell<HashMap<String, JoinHandle<()>>>,
-    killers: HashMap<String, Arc<AtomicBool>>,
+    killers: RefCell<HashMap<String, Arc<AtomicBool>>>,
 }
 
 impl IndexerService {
@@ -294,7 +294,7 @@ impl IndexerService {
             manager,
             database_url,
             handles: RefCell::new(HashMap::default()),
-            killers: HashMap::default(),
+            killers: RefCell::new(HashMap::default()),
         })
     }
 
@@ -362,9 +362,12 @@ impl IndexerService {
                     }
                 }
 
-                info!("Registered indexer {}", identifier);
-                self.handles.borrow_mut().insert(namespace.clone(), handle);
-                self.killers.insert(namespace, kill_switch);
+                let index_uid = manifest.uid();
+
+                info!("Registered executor for Index({})", &index_uid);
+                self.handles.borrow_mut().insert(index_uid.clone(), handle);
+
+                self.killers.borrow_mut().insert(index_uid, kill_switch);
             }
             None => {
                 let indices = queries::registered_indices(&mut conn).await?;
@@ -384,11 +387,11 @@ impl IndexerService {
                     )
                     .await?;
 
-                    info!("Registered indexer {}", manifest.uid());
-                    self.handles
-                        .borrow_mut()
-                        .insert(manifest.namespace.clone(), handle);
-                    self.killers.insert(manifest.namespace, kill_switch);
+                    let index_uid = manifest.uid();
+
+                    info!("Registered executor for Index({})", &index_uid);
+                    self.handles.borrow_mut().insert(index_uid.clone(), handle);
+                    self.killers.borrow_mut().insert(index_uid, kill_switch);
                 }
             }
         }
@@ -397,17 +400,18 @@ impl IndexerService {
             Ok(v) => v,
             Err(_e) => queries::revert_transaction(&mut conn)
                 .await
-                .expect("Could not revert database transaction"),
+                .expect("Could not revert database transaction."),
         };
 
         Ok(())
     }
 
-    pub fn stop_indexer(&mut self, executor_name: &str) {
-        if let Some(killer) = self.killers.remove(executor_name) {
+    // TOOD: https://github.com/FuelLabs/fuel-indexer/issues/348
+    pub fn stop_executor(&self, index_uid: &str) {
+        if let Some(killer) = self.killers.borrow_mut().remove(index_uid) {
             killer.store(true, Ordering::SeqCst);
         } else {
-            warn!("Stop Indexer: No indexer with the name {executor_name}");
+            warn!("No executor found for Index({index_uid}).");
         }
     }
 
@@ -415,7 +419,7 @@ impl IndexerService {
         let IndexerService {
             handles,
             mut rx,
-            mut killers,
+            killers,
             ..
         } = self;
         let mut futs = FuturesUnordered::from_iter(handles.take().into_values());
@@ -458,10 +462,12 @@ impl IndexerService {
                 .await
                 .unwrap();
 
-                handles
-                    .borrow_mut()
-                    .insert(request.namespace.clone(), handle);
-                killers.insert(request.namespace, kill_switch);
+                let index_uid = manifest.uid();
+
+                info!("Re-registering executor for Index({})", &index_uid);
+
+                handles.borrow_mut().insert(index_uid.clone(), handle);
+                killers.borrow_mut().insert(index_uid, kill_switch);
             }
         }
     }

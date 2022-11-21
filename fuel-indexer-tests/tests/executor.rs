@@ -1,8 +1,13 @@
-use fuel_indexer::{
-    executor::WasmIndexExecutor, Executor, IndexerError, Manifest, Module,
-};
+use fuel_indexer::{executor::WasmIndexExecutor, Executor, IndexerError, Manifest};
 use fuel_indexer_schema::db::manager::SchemaManager;
-use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
+use fuel_indexer_tests::{
+    assets::{
+        BAD_SIMPLE_WASM_MANIFEST, BAD_SIMPLE_WASM_WASM, SIMPLE_WASM_MANIFEST,
+        SIMPLE_WASM_WASM,
+    },
+    fixtures::test_sqlite_db_path,
+    utils::update_test_manifest_asset_paths,
+};
 use fuel_indexer_types::{
     abi::{BlockData, TransactionData},
     tx::TransactionStatus,
@@ -11,9 +16,6 @@ use fuel_tx::{Receipt, Transaction};
 use fuels_abigen_macro::abigen;
 use fuels_core::{abi_encoder::ABIEncoder, types::Bits256, Tokenizable};
 use sqlx::{Connection, Row};
-use std::path::Path;
-
-pub const MANIFEST_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
 abigen!(
     MyContract,
@@ -54,42 +56,9 @@ async fn test_can_create_wasm_executor_and_index_abi_entity_in_postgres() {
     );
 }
 
-// NOTE: This is a hack to update the `manifest` with the proper absolute path.
-// This is already done in the #[indexer] attribute, but since these tests skip
-// over that functionality we have to hack that in here. This allows us to keep
-// a single consistent manifest file, regardless of where/how it's used.
-fn update_manifest_with_proper_paths(manifest: &mut Manifest) {
-    let manifest_dir = Path::new(MANIFEST_ROOT);
-    manifest.graphql_schema = manifest_dir
-        .join("..")
-        .join(&manifest.graphql_schema)
-        .into_os_string()
-        .to_str()
-        .unwrap()
-        .to_string();
-    manifest.abi = Some(
-        manifest_dir
-            .join("..")
-            .join(&manifest.abi.clone().unwrap())
-            .into_os_string()
-            .to_str()
-            .unwrap()
-            .to_string(),
-    );
-    manifest.module = Module::Wasm(
-        manifest_dir
-            .join("..")
-            .join(&manifest.graphql_schema)
-            .into_os_string()
-            .to_str()
-            .unwrap()
-            .to_string(),
-    );
-}
-
 #[tokio::test]
 async fn test_can_create_wasm_executor_and_index_abi_entity_in_sqlite() {
-    let database_url = format!("sqlite://{}/test.db", MANIFEST_ROOT);
+    let database_url = test_sqlite_db_path();
 
     create_wasm_executor_and_handle_events(&database_url).await;
 
@@ -115,19 +84,23 @@ async fn test_can_create_wasm_executor_and_index_abi_entity_in_sqlite() {
 }
 
 async fn create_wasm_executor_and_handle_events(database_url: &str) {
-    let mut manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file.");
-    update_manifest_with_proper_paths(&mut manifest);
+    let mut manifest: Manifest =
+        serde_yaml::from_str(SIMPLE_WASM_MANIFEST).expect("Bad yaml file.");
+    update_test_manifest_asset_paths(&mut manifest);
 
     let sm = SchemaManager::new(database_url).await.unwrap();
     let _ = sm.new_schema(&manifest.namespace, &manifest.graphql_schema().unwrap());
 
     let mut bad_manifest: Manifest =
-        serde_yaml::from_str(BAD_MANIFEST).expect("Bad yaml file.");
-    update_manifest_with_proper_paths(&mut bad_manifest);
+        serde_yaml::from_str(BAD_SIMPLE_WASM_MANIFEST).expect("Bad yaml file.");
+    update_test_manifest_asset_paths(&mut bad_manifest);
 
-    let executor =
-        WasmIndexExecutor::new(database_url.to_string(), bad_manifest, BAD_WASM_BYTES)
-            .await;
+    let executor = WasmIndexExecutor::new(
+        database_url.to_string(),
+        bad_manifest,
+        BAD_SIMPLE_WASM_WASM,
+    )
+    .await;
 
     match executor {
         Err(IndexerError::MissingHandler) => (),
@@ -135,7 +108,8 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
     }
 
     let executor =
-        WasmIndexExecutor::new(database_url.to_string(), manifest, WASM_BYTES).await;
+        WasmIndexExecutor::new(database_url.to_string(), manifest, SIMPLE_WASM_WASM)
+            .await;
     assert!(executor.is_ok());
 
     let mut executor = executor.unwrap();

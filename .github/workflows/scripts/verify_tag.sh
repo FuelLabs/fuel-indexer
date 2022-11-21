@@ -12,21 +12,21 @@ status() {
 }
 
 REF=$1
-MANIFEST=$2
+SIMPLE_WASM_MANIFEST=$2
 
 if [ -z "$REF" ]; then
     err "Expected ref to be set"
     exit 1
 fi
 
-if [ -z "$MANIFEST" ]; then
+if [ -z "$SIMPLE_WASM_MANIFEST" ]; then
     err "Expected manifest to be set"
     exit 1
 fi
 
 # strip preceeding 'v' if it exists on tag
 REF=${REF/#v}
-TOML_VERSION=$(cat $MANIFEST | dasel -r toml 'package.version')
+TOML_VERSION=$(cat $SIMPLE_WASM_MANIFEST | dasel -r toml 'package.version')
 
 if [ "$TOML_VERSION" != "$REF" ]; then
     err "Crate version $TOML_VERSION, doesn't match tag version $REF"

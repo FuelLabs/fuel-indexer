@@ -1,10 +1,16 @@
 pub mod core;
+pub mod queries;
 
-pub use crate::core::METRICS;
+use crate::core::{Metric, Metrics};
+use lazy_static::lazy_static;
 use prometheus::{self, Encoder, Error, TextEncoder};
 use thiserror::Error;
 
-pub type MetricsResult<T> = std::result::Result<T, MetricsError>;
+lazy_static! {
+    pub static ref METRICS: Metrics = Metrics::init();
+}
+
+pub(crate) type MetricsResult<T> = std::result::Result<T, MetricsError>;
 
 #[derive(Error, Debug)]
 pub enum MetricsError {

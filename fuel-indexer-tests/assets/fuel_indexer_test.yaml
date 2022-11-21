@@ -1,12 +1,8 @@
 namespace: fuel_indexer_test
 graphql_schema: fuel-indexer-tests/assets/fuel_indexer_test.graphql
 abi: fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json
-# NOTE: `contract_id` and `start_block` are more so references for now, so that we can
-# verify that the codegen works as expected. It's a little tricky to test this type
-# of functionality at this time, so they are mostly unused
-#
 # contract_id: "0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051"
-# start_block: 1564
+start_block: 1
 identifier: index1
 module:
   wasm: fuel-indexer-tests/assets/fuel_indexer_test.wasm

@@ -69,7 +69,7 @@ impl Database {
         let sql_table = self.pool.database_type().table_name(&self.namespace, table);
 
         // FIXME: We have hard-coded the concept of an 'id' field here <(-_-<)
-        format!(
+        let u = format!(
             "INSERT INTO {}
                 ({})
              VALUES
@@ -80,7 +80,9 @@ impl Database {
             columns.join(", "),
             inserts.join(", "),
             updates.join(", "),
-        )
+        );
+
+        u
     }
 
     fn get_query(&self, table: &str, object_id: u64) -> String {
@@ -101,6 +103,7 @@ impl Database {
                 type_id, self.tables
             )
         });
+
         let inserts: Vec<_> = columns.iter().map(|col| col.query_fragment()).collect();
         let updates: Vec<_> = self.schema[table]
             .iter()

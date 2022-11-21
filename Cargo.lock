@@ -64,6 +64,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "actix-macros"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "465a6172cf69b960917811022d8f29bc0b7fa1398bc4f78b3c466673db1213b6"
+dependencies = [
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "actix-router"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -133,11 +143,13 @@ checksum = "d48f7b6534e06c7bfc72ee91db7917d4af6afe23e7d223b51e68fffbb21e96b9"
 dependencies = [
  "actix-codec",
  "actix-http",
+ "actix-macros",
  "actix-router",
  "actix-rt",
  "actix-server",
  "actix-service",
  "actix-utils",
+ "actix-web-codegen",
  "ahash",
  "bytes",
  "bytestring",
@@ -161,6 +173,18 @@ dependencies = [
  "socket2",
  "time 0.3.17",
  "url",
+]
+
+[[package]]
+name = "actix-web-codegen"
+version = "4.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1fa9362663c8643d67b2d5eafba49e4cb2c8a053a29ed00a0bea121f17c76b13"
+dependencies = [
+ "actix-router",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -2202,7 +2226,6 @@ version = "0.1.2"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
- "fuel-indexer-metrics",
  "fuel-indexer-postgres",
  "fuel-indexer-sqlite",
  "sqlx",
@@ -2281,6 +2304,7 @@ version = "0.1.2"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
+ "fuel-indexer-metrics",
  "sqlx",
  "tracing",
 ]
@@ -2316,6 +2340,7 @@ version = "0.1.2"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
+ "fuel-indexer-metrics",
  "sqlx",
  "tracing",
 ]
@@ -2341,7 +2366,6 @@ dependencies = [
  "actix-web",
  "anyhow",
  "async-std",
- "clap",
  "fuel-indexer-lib",
  "fuel-indexer-tests",
  "fuel-tx",
@@ -2362,12 +2386,16 @@ dependencies = [
 name = "fuel-indexer-tests"
 version = "0.0.0"
 dependencies = [
+ "actix-service",
+ "actix-web",
  "async-std",
  "chrono",
  "fuel-indexer",
  "fuel-indexer-database",
  "fuel-indexer-lib",
+ "fuel-indexer-postgres",
  "fuel-indexer-schema",
+ "fuel-indexer-sqlite",
  "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
@@ -2382,6 +2410,8 @@ dependencies = [
  "serde_yaml",
  "sqlx",
  "tokio",
+ "tracing",
+ "tracing-subscriber 0.2.25",
  "wasmer",
  "wasmer-compiler-cranelift",
  "wasmer-engine-universal",

@@ -4,7 +4,7 @@ use fuel_indexer_lib::{
     config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
     manifest::Manifest,
 };
-use fuel_indexer_tests::{defaults, fixtures::tx_params};
+use fuel_indexer_tests::{assets, defaults, fixtures::tx_params, WORKSPACE_ROOT};
 use fuels::prelude::{
     setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
     WalletUnlocked, DEFAULT_COIN_AMOUNT,
@@ -14,9 +14,6 @@ use fuels_abigen_macro::abigen;
 use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
 
-const MANIFEST: &str = include_str!("./../assets/macros/simple_wasm.yaml");
-const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
-
 abigen!(
     Simple,
     "fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json"
@@ -25,16 +22,21 @@ abigen!(
 #[tokio::test]
 #[cfg_attr(feature = "e2e", ignore)]
 async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres() {
-    let workdir = Path::new(WORKSPACE_DIR);
+    let workdir = Path::new(WORKSPACE_ROOT);
 
-    let wallet_path = workdir.join("assets/wallet.json");
+    let wallet_path = workdir.join("assets").join("wallet.json");
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
     let mut wallet =
         WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
             .unwrap();
 
-    let bin_path = workdir.join("contracts/simple-wasm/out/debug/contracts.bin");
+    let bin_path = workdir
+        .join("contracts")
+        .join("simple-wasm")
+        .join("out")
+        .join("debug")
+        .join("contracts.bin");
     let bin_path_str = bin_path.as_os_str().to_str().unwrap();
     let _compiled = Contract::load_contract(bin_path_str, &None).unwrap();
 
@@ -86,7 +88,8 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     let mut indexer_service = IndexerService::new(config, None).await.unwrap();
 
-    let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file.");
+    let manifest: Manifest =
+        serde_yaml::from_str(assets::SIMPLE_WASM_MACRO_MANIFEST).expect("Bad yaml file.");
 
     indexer_service
         .register_indices(Some(manifest), true)
