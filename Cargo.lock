@@ -1542,6 +1542,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashboard-index"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels-core",
+ "fuels-types",
+ "getrandom 0.2.8",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "dashmap"
 version = "5.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

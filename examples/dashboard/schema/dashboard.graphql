@@ -3,21 +3,17 @@ schema {
 }
 
 type QueryRoot {
-    tx: Tx
+    transfer: Transfer
     account: Account
-}
-
-type Tx {
-    id: Bytes32! @unique
-    timestamp: Int8!
-    status: Jsonb!
-    value: UInt8!
-    tokens_transferred: Jsonb!
 }
 
 type Account {
     id: Address! @unique
     last_seen: UInt8!
+}
+
+type Contract {
+    id: ContractId! @unique
 }
 
 type Transfer {
@@ -39,12 +35,8 @@ type TransferOut {
 }
 
 type MessageOut {
-    # TODO: https://github.com/FuelLabs/fuel-indexer/issues/298
-    id: Bytes32! @unique
+    id: MessageId! @unique
     sender: Address!
     recipient: Address!
     amount: UInt8!
-    nonce: Bytes32!
-    len: UInt8!
-    digest: Bytes32!
 }
