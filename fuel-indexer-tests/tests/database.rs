@@ -1,6 +1,5 @@
 use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerResult};
 use fuel_indexer_database::{queries, IndexerConnectionPool};
-use fuel_indexer_lib::config::DatabaseConfig;
 use fuel_indexer_schema::{
     db::manager::SchemaManager,
     utils::{inject_native_entities_into_schema, schema_version},
@@ -51,8 +50,8 @@ async fn load_wasm_module(database_url: &str) -> IndexerResult<Instance> {
 
 #[tokio::test]
 async fn test_schema_manager_generates_and_loads_schema_postgres() {
-    let database_url = DatabaseConfig::default().to_string();
-    generate_schema_then_load_schema_from_wasm_module(&database_url).await;
+    let database_url = "postgres://postgres:my-secret@127.0.0.1:5432";
+    generate_schema_then_load_schema_from_wasm_module(database_url).await;
 }
 
 #[tokio::test]

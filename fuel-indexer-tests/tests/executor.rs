@@ -226,5 +226,6 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
             ],
         }])
         .await;
+    println!(">>>> RESULT: {:?}", result);
     assert!(result.is_ok());
 }
