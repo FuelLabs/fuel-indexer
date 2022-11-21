@@ -6,7 +6,7 @@ type QueryRoot {
     block: Block
     tx: Tx
     account: Account
-    conract: Contract
+    contract: Contract
 }
 
 # https://ethereum.org/en/developers/docs/data-and-analytics/block-explorers/
@@ -69,8 +69,7 @@ type Log {
 
 
 type MessageOut {
-    # TODO: https://github.com/FuelLabs/fuel-indexer/issues/298
-    id: Bytes32! @unique
+    id: MessageId! @unique
     sender: Address!
     recipient: Address!
     amount: UInt8!
