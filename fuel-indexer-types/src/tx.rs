@@ -11,6 +11,9 @@ pub enum TransactionStatus {
         time: DateTime<Utc>,
         reason: String,
     },
+    SqueezedOut {
+        reason: String,
+    },
     Submitted {
         submitted_at: DateTime<Utc>,
     },
@@ -24,7 +27,11 @@ impl Default for TransactionStatus {
     fn default() -> Self {
         Self::Success {
             block_id: "0".into(),
-            time: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+            time: DateTime::<Utc>::from_utc(
+                NaiveDateTime::from_timestamp_opt(0, 0)
+                    .expect("Failed to create timestamp"),
+                Utc,
+            ),
         }
     }
 }
@@ -38,6 +45,9 @@ impl From<TransactionStatus> for Jsonb {
                 reason,
             } => Jsonb(format!(
                 r#"{{"status":"failed","block":"{block_id}","time":"{time}","reason":"{reason}"}}"#
+            )),
+            TransactionStatus::SqueezedOut { reason } => Jsonb(format!(
+                r#"{{"status":"squeezed_out","reason":"{reason}"}}"#
             )),
             TransactionStatus::Submitted { submitted_at } => Jsonb(format!(
                 r#"{{"status":"submitted","time":"{submitted_at}"}}"#

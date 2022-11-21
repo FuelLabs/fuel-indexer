@@ -140,7 +140,7 @@ pub mod my_counter_index_module {
 ### 4. Compile the index
 
 ```bash
-cargo build -p my-index --release --wasm32-unknown-unknown
+cargo build -p my-index --release --target wasm32-unknown-unknown
 ```
 
 > IMPORTANT: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash).
@@ -157,4 +157,30 @@ contract: 0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051
 graphql_schema: /full/path/to/your/graphql.schema
 module:
   wasm: /full/path/to/my_index.wasm
+```
+
+## Start the indexer
+
+```sh
+cargo run --bin fuel-indexer -- --manifest full/path/to/your/manifest.yaml
+```
+
+## Query the Indexer
+
+After calling the `count()` method of your Sway contract, query the indexer for the data that you wish to receive.
+
+```sh
+curl -X POST http://127.0.0.1:29987/api/graph/your_org_name \
+   -H 'content-type: application/json' \
+   -d '{"query": "query { count { id count }}", "params": "b"}' \
+| json_pp
+```
+
+```json
+[
+   {
+      "id" : 1,
+      "count" : "1"
+   }
+]
 ```

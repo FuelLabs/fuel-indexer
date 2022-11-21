@@ -1,6 +1,6 @@
 [package]
 name = "fuel-indexer-api-server"
-version = "0.1.2"
+version = "0.1.4"
 edition = "2021"
 license = "BUSL-1.1"
 repository = "https://github.com/FuelLabs/fuel-indexer"
@@ -17,7 +17,7 @@ fuel-indexer-metrics = { version = "0.1", path = "../fuel-indexer-metrics", opti
 fuel-indexer-schema = { version = "0.1", path = "../fuel-indexer-schema", features = ["db-models"] }
 http = "0.2"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}
-hyper-tls = "0.5"
+hyper-rustls = { version = "0.23", features = ["http2"] }
 prometheus = { version = "0.13", optional = true }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }

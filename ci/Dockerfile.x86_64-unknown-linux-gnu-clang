@@ -1,24 +1,24 @@
-FROM ubuntu:22.04
+FROM ghcr.io/cross-rs/x86_64-unknown-linux-gnu:main
 
 ENV SQLX_OFFLINE=1
 
 RUN apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        binutils-aarch64-linux-gnu \
-        build-essential \
-        ca-certificates \
-        clang \
-        cmake \
-        gcc \
-        git \
-        libclang-dev \
-        libpq-dev \
-        lld \
-        llvm \
-        pkg-config \
-        tzdata \
-        wget \
-        && apt-get clean
+    binutils-aarch64-linux-gnu \
+    build-essential \
+    ca-certificates \
+    clang \
+    cmake \
+    gcc \
+    git \
+    libclang-dev \
+    libpq-dev \
+    lld \
+    llvm \
+    pkg-config \
+    tzdata \
+    wget \
+    && apt-get clean
 
 # https://stackoverflow.com/a/72633324
 RUN wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb

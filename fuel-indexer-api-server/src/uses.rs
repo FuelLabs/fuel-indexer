@@ -18,7 +18,7 @@ use fuel_indexer_schema::db::{
     graphql::GraphqlQueryBuilder, manager::SchemaManager, tables::Schema,
 };
 use hyper::Client;
-use hyper_tls::HttpsConnector;
+use hyper_rustls::HttpsConnectorBuilder;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::str::FromStr;
@@ -62,7 +62,13 @@ pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
         .parse()
         .expect("Failed to parse fuel /health url.");
 
-    let https = HttpsConnector::new();
+    let https = HttpsConnectorBuilder::new()
+        .with_native_roots()
+        .https_or_http()
+        .enable_http1()
+        .enable_http2()
+        .build();
+
     let client = Client::builder().build::<_, hyper::Body>(https);
     match client.get(url).await {
         Ok(r) => {

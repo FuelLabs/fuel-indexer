@@ -208,9 +208,7 @@ async fn test_can_trigger_and_index_scriptresult_event() {
 #[actix_web::test]
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_transferout_event() {
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let _conn = postgres_connection().await;
+    let mut conn = postgres_connection().await;
 
     let mut manifest = Manifest::from_str_contents(FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -221,8 +219,21 @@ async fn test_can_trigger_and_index_transferout_event() {
     let req = test::TestRequest::post().uri("/transferout").to_request();
     let _ = test::call_service(&app, req).await;
 
-    // FIXME: Still need to trigger an actual receipt
-    assert_eq!(1, 1);
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.transferout LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let recipient: &str = row.get(2);
+    let amount: i64 = row.get(3);
+    let asset_id: &str = row.get(4);
+
+    assert_eq!(
+        recipient,
+        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
+    );
+    assert_eq!(amount, 1);
+    assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
 }
 
 #[actix_web::test]
@@ -245,10 +256,13 @@ async fn test_can_trigger_and_index_messageout_event() {
         .await
         .unwrap();
 
+    let message_id: &str = row.get(0);
     let recipient: &str = row.get(2);
     let amount: i64 = row.get(3);
     let len: i64 = row.get(5);
 
+    // Message ID is different on each receipt, so we'll just check that it's well-formed
+    assert_eq!(message_id.len(), 64);
     assert_eq!(
         recipient,
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"

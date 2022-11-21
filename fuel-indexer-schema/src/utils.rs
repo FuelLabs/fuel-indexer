@@ -258,6 +258,7 @@ type Block {
     height: UInt8!
     timestamp: Int8!
     gas_limit: UInt8!
+    extra_data: MessageId!
 }
 
 type Tx {
@@ -296,6 +297,10 @@ type Contract {
         assert_eq!(
             *types_map.get("Contract.creator").unwrap(),
             "ContractId".to_string()
+        );
+        assert_eq!(
+            *types_map.get("Block.extra_data").unwrap(),
+            "MessageId".to_string()
         );
         assert_eq!(types_map.get("Block.doesNotExist"), None);
     }
