@@ -158,3 +158,29 @@ graphql_schema: /full/path/to/your/graphql.schema
 module:
   wasm: /full/path/to/my_index.wasm
 ```
+
+## Start the indexer
+
+```sh
+cargo run --bin fuel-indexer -- --manifest full/path/to/your/manifest.yaml
+```
+
+## Query the Indexer
+
+After calling the `count()` method of your Sway contract, query the indexer for the data that you wish to receive.
+
+```sh
+curl -X POST http://127.0.0.1:29987/api/graph/your_org_name \
+   -H 'content-type: application/json' \
+   -d '{"query": "query { count { id count }}", "params": "b"}' \
+| json_pp
+```
+
+```json
+[
+   {
+      "id" : 1,
+      "count" : "1"
+   }
+]
+```
