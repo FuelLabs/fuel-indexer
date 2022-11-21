@@ -1,8 +1,16 @@
+pub mod fixtures;
+
+pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
+
 pub mod assets {
-    pub const MANIFEST: &str = include_str!("./../assets/simple_wasm.yaml");
-    pub const BAD_MANIFEST: &str = include_str!("./../assets/bad_simple_wasm.yaml");
-    pub const BAD_WASM_BYTES: &[u8] = include_bytes!("./../assets/bad_simple_wasm.wasm");
-    pub const WASM_BYTES: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
+    pub const FUEL_INDEXER_TEST_MANIFEST: &str =
+        include_str!("./../assets/fuel_indexer_test.yaml");
+    pub const SIMPLE_WASM_MANIFEST: &str = include_str!("./../assets/simple_wasm.yaml");
+    pub const BAD_SIMPLE_WASM_MANIFEST: &str =
+        include_str!("./../assets/bad_simple_wasm.yaml");
+    pub const BAD_SIMPLE_WASM_WASM: &[u8] =
+        include_bytes!("./../assets/bad_simple_wasm.wasm");
+    pub const SIMPLE_WASM_WASM: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
 }
 
 pub mod defaults {
@@ -21,27 +29,45 @@ pub mod defaults {
     pub const INDEXED_EVENT_WAIT: u64 = 5;
 }
 
-pub mod fixtures {
+pub mod utils {
 
-    use fuel_indexer_database::IndexerConnectionPool;
-    use fuels::prelude::TxParameters;
-    use sqlx::{pool::Pool, Postgres};
+    use super::WORKSPACE_ROOT;
+    use fuel_indexer_lib::manifest::{Manifest, Module};
+    use std::path::Path;
 
-    pub async fn postgres_connection_pool(db_url: &str) -> Pool<Postgres> {
-        match IndexerConnectionPool::connect(db_url).await.unwrap() {
-            IndexerConnectionPool::Postgres(p) => p,
-            _ => panic!("Should be postgres."),
-        }
-    }
-
-    pub fn http_client() -> reqwest::Client {
-        reqwest::Client::new()
-    }
-
-    pub fn tx_params() -> TxParameters {
-        let gas_price = 0;
-        let gas_limit = 1_000_000;
-        let byte_price = 0;
-        TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
+    // NOTE: This is a hack to update the `manifest` with the proper absolute paths.
+    // This is already done in the #[indexer] attribute, but since these tests test
+    // modules that have already been compiled, we need to do this manually here.
+    //
+    // Doing this allows us to use the root of the relative root of the the fuel-indexer/
+    // repo for all test asset paths (i.e., we can simply reference all asset paths in
+    // in manifest files relative from 'fuel-indexer')
+    pub fn update_test_manifest_asset_paths(manifest: &mut Manifest) {
+        let manifest_dir = Path::new(WORKSPACE_ROOT);
+        manifest.graphql_schema = manifest_dir
+            .join("..")
+            .join(&manifest.graphql_schema)
+            .into_os_string()
+            .to_str()
+            .unwrap()
+            .to_string();
+        manifest.abi = Some(
+            manifest_dir
+                .join("..")
+                .join(&manifest.abi.clone().unwrap())
+                .into_os_string()
+                .to_str()
+                .unwrap()
+                .to_string(),
+        );
+        manifest.module = Module::Wasm(
+            manifest_dir
+                .join("..")
+                .join(&manifest.module.path())
+                .into_os_string()
+                .to_str()
+                .unwrap()
+                .to_string(),
+        );
     }
 }

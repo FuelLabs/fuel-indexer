@@ -2220,7 +2220,6 @@ version = "0.1.4"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
- "fuel-indexer-metrics",
  "fuel-indexer-postgres",
  "fuel-indexer-sqlite",
  "sqlx",
@@ -2299,6 +2298,7 @@ version = "0.1.4"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
+ "fuel-indexer-metrics",
  "sqlx",
  "tracing",
 ]
@@ -2334,6 +2334,7 @@ version = "0.1.4"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
+ "fuel-indexer-metrics",
  "sqlx",
  "tracing",
 ]
@@ -2385,7 +2386,9 @@ dependencies = [
  "fuel-indexer",
  "fuel-indexer-database",
  "fuel-indexer-lib",
+ "fuel-indexer-postgres",
  "fuel-indexer-schema",
+ "fuel-indexer-sqlite",
  "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",

@@ -14,7 +14,7 @@ use fuels_abigen_macro::abigen;
 use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
 
-const MANIFEST: &str = include_str!("./../assets/macros/simple_wasm.yaml");
+const SIMPLE_WASM_MANIFEST: &str = include_str!("./../assets/macros/simple_wasm.yaml");
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 abigen!(
@@ -86,7 +86,8 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     let mut indexer_service = IndexerService::new(config, None).await.unwrap();
 
-    let manifest: Manifest = serde_yaml::from_str(MANIFEST).expect("Bad yaml file.");
+    let manifest: Manifest =
+        serde_yaml::from_str(SIMPLE_WASM_MANIFEST).expect("Bad yaml file.");
 
     indexer_service
         .register_indices(Some(manifest), true)
