@@ -10,5 +10,5 @@ spec:
     matchLabels:
       app: fuel-indexer
   endpoints:
-  - path: /metrics 
+  - path: /api/metrics 
     port: http
