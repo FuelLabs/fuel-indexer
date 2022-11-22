@@ -42,9 +42,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let opts = Args::from_args();
-    let wallet_path = opts
-        .wallet_path
-        .unwrap_or_else(|| Path::new(WORKSPACE_ROOT).join("assets").join("wallet.json"));
+    let wallet_path = opts.wallet_path.unwrap_or_else(|| {
+        Path::new(WORKSPACE_ROOT)
+            .join("assets")
+            .join("test-chain-config.json")
+    });
 
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 

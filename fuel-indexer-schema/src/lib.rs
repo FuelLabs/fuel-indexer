@@ -31,7 +31,7 @@ pub enum FtColumn {
     Int8(i64),
     UInt4(u32),
     UInt8(u64),
-    Timestamp(u64),
+    Timestamp(i64),
     Salt(Salt),
     Jsonb(Jsonb),
     MessageId(MessageId),
@@ -105,10 +105,10 @@ impl FtColumn {
                 FtColumn::UInt8(int8)
             }
             ColumnType::Timestamp => {
-                let uint8 = u64::from_le_bytes(
+                let int8 = i64::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
-                FtColumn::Timestamp(uint8)
+                FtColumn::Timestamp(int8)
             }
             ColumnType::Blob => {
                 panic!("Blob not supported for FtColumn.");
@@ -197,7 +197,7 @@ mod tests {
         let int8 = FtColumn::Int8(i64::from_le_bytes([0x78; 8]));
         let uint4 = FtColumn::UInt4(u32::from_le_bytes([0x78; 4]));
         let uint8 = FtColumn::UInt8(u64::from_le_bytes([0x78; 8]));
-        let uint64 = FtColumn::Timestamp(u64::from_le_bytes([0x78; 8]));
+        let int64 = FtColumn::Timestamp(i64::from_le_bytes([0x78; 8]));
         let salt = FtColumn::Salt(Salt::try_from([0x31; 32]).expect("Bad bytes"));
         let message_id =
             FtColumn::MessageId(MessageId::try_from([0x0F; 32]).expect("Bad bytes"));
@@ -214,7 +214,7 @@ mod tests {
         insta::assert_yaml_snapshot!(int8.query_fragment());
         insta::assert_yaml_snapshot!(uint4.query_fragment());
         insta::assert_yaml_snapshot!(uint8.query_fragment());
-        insta::assert_yaml_snapshot!(uint64.query_fragment());
+        insta::assert_yaml_snapshot!(int64.query_fragment());
         insta::assert_yaml_snapshot!(message_id.query_fragment());
     }
 }

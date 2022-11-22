@@ -29,14 +29,16 @@ async fn get_contract_id(wallet: &WalletUnlocked) -> Bech32ContractId {
         Contract::load_contract("../contracts/out/debug/contracts.bin", &None).unwrap();
 
     let bin_path = "../contracts/out/debug/contracts.bin".to_string();
-    Contract::deploy(
+    let contract_id = Contract::deploy(
         &bin_path,
         wallet,
         tx_params(),
         StorageConfiguration::default(),
     )
     .await
-    .unwrap()
+    .unwrap();
+
+    contract_id
 }
 
 async fn setup_provider_and_wallet(port: u16) -> (Provider, WalletUnlocked) {
@@ -45,7 +47,7 @@ async fn setup_provider_and_wallet(port: u16) -> (Provider, WalletUnlocked) {
     let address = format!("127.0.0.1:{}", port);
     let provider = Provider::connect(&address).await.unwrap();
 
-    let path = Path::new(manifest_dir).join("wallet.json");
+    let path = Path::new(manifest_dir).join("test-chain-config.json");
     let wallet =
         WalletUnlocked::load_keystore(&path, "password", Some(provider.clone())).unwrap();
 

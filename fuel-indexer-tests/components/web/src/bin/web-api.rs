@@ -178,7 +178,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts = Args::from_args();
     let wallet_path = opts
         .wallet_path
-        .unwrap_or_else(|| Path::new(&manifest_dir).join("wallet.json"));
+        .unwrap_or_else(|| Path::new(&manifest_dir).join("test-chain-config.json"));
 
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 

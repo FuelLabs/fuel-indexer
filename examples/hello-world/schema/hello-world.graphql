@@ -1,0 +1,27 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    greeting: Greeting
+    greeter: Greeter
+}
+
+# Calling this `Greeter` so as to not clash with `Person` in the contract
+type Greeter {
+    id: ID!
+    name: Bytes32!
+    first_seen: UInt8!
+    last_seen: UInt8!
+}
+
+# Calling this `Salutation` so as to not clash with `Greeting` in the contract
+type Salutation {
+    id: ID!
+    message_hash: Bytes32!
+    message: Jsonb!
+    greeter: Greeter!
+    first_seen: UInt8!
+    last_seen: UInt8!
+}
+

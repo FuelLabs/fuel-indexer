@@ -2998,6 +2998,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "hello-bin"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-lib",
+ "fuel-indexer-tests",
+ "fuel-tx",
+ "fuel-types",
+ "fuels",
+ "fuels-abigen-macro",
+ "fuels-core",
+ "rand 0.8.5",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "hello-index"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels-core",
+ "fuels-types",
+ "getrandom 0.2.8",
+ "instant",
+ "serde",
+]
+
+[[package]]
 name = "hermit-abi"
 version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"

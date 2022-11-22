@@ -15,6 +15,7 @@ pub mod types {
 
 pub mod utils {
     pub use fuel_indexer_lib::utils::sha256_digest;
+    // pub use fuels::core::utils::first_four_bytes_of_sha256_hash;
 }
 
 extern "C" {

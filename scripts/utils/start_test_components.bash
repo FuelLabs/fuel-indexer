@@ -12,13 +12,13 @@ bash ./scripts/utils/kill_test_components.bash
 sleep 1
 
 ./target/release/fuel-node \
-    --wallet-path ./fuel-indexer-tests/components/web/wallet.json \
+    --wallet-path ./fuel-indexer-tests/components/web/test-chain-config.json \
     --bin-path ./fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
 
 sleep 1
 
 ./target/release/web-api \
-    --wallet-path ./fuel-indexer-tests/components/web/wallet.json \
+    --wallet-path ./fuel-indexer-tests/components/web/test-chain-config.json \
     --bin-path ./fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
 
 if [[ ! -z $CI ]] ; then
