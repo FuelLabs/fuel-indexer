@@ -45,7 +45,7 @@ async fn setup_provider_and_wallet(port: u16) -> (Provider, WalletUnlocked) {
     let address = format!("127.0.0.1:{}", port);
     let provider = Provider::connect(&address).await.unwrap();
 
-    let path = Path::new(manifest_dir).join("wallet.json");
+    let path = Path::new(manifest_dir).join("test-chain-config.json");
     let wallet =
         WalletUnlocked::load_keystore(&path, "password", Some(provider.clone())).unwrap();
 

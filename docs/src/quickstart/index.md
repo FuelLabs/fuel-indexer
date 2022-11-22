@@ -4,44 +4,75 @@ A cursory explanation on how to get up and running with an index in 5 minutes. T
 
 ## Write a Sway smart contract
 
-`forc new counter && cd counter/`
+`forc new greeting && cd greeting/`
 
-Write a counter type of smart contract.
+Write a greeting smart contract.
 
 ```sway
 contract;
 
-use std::{address::Address, hash::sha256};
+use std::logging::log;
 
-struct Count {
+struct Person {
+    name: str[32],
+}
+
+struct Greeting {
     id: u64,
-    count: u64,
+    greeting: str[32],
+    person: Person,
 }
 
-abi Counter {
-    fn count() -> Count;
+abi Greet {
+    fn new_greeting(id: u64, greeting: str[32], person_name: str[32]);
 }
 
-impl Counter for Contract {
-    fn count() -> Count {
-        Count{ id: 1, count: 1 }
+impl Greet for Contract {
+    fn new_greeting(id: u64, greeting: str[32], person_name: str[32]) {
+        log(Greeting{ id, greeting, person: Person{ name: person_name }});
     }
 }
+
 ```
 
 > Make sure to compile your smart contract with `forc build`, which will build the ABI JSON asset required by your index.
 
-## Create an index
+## Create and deploy an index
 
-This consists of 5 parts:
+This consists of 6 small parts:
 
-1. Writing your GraphQL schema.
-2. Writing your index manifest.
-3. Writing the actual code to index events.
-4. Compiling your index to WASM.
-5. Updating your index manifest with your newly compiled WASM module.
+1. Initializing a new index project.
+2. Defining the structure of your database models via GraphQL schema.
+3. Specifying an index _manifest_: a YAML file used to configure your index at compile-time and run-time.
+4. Writing the actual code to index events.
+5. Compiling your new index code to a WebAssembly binary.
+6. Kicking off a local indexer service and deploying your newly created index
 
-### 1. Start with some GraphQL schema
+> Below we're using the `forc index` plugin provided by [`forc`](https://fuellabs.github.io/sway/v0.31.1/forc/plugins/index.html).
+
+### 1. Initialize a new index project
+
+```bash
+➜  forc index new hello-index
+
+➜  cd hello-index
+
+➜  hello-index tree .
+.
+├── Cargo.toml
+├── hello-index.manifest.yaml
+├── schema
+│   └── hello-index.schema.graphql
+└── src
+    └── lib.rs
+
+2 directories, 4 files
+```
+
+### 2. Add some GraphQL type definitions
+
+If you open up `hello-index/schema/hello-index.schema.graphql`
+
 
 ```graphql
 schema {
@@ -49,130 +80,248 @@ schema {
 }
 
 type QueryRoot {
-    count: CountEntity
+    greeting: Greeting
+    greeter: Greeter
 }
 
-type CountEntity {
+type Greeter {
+
+    # _All_ types/models defined in GraphQL schema must have an ID field. Further,
+    # for the time being, that ID field must be of type u64
     id: ID!
-    count: UInt8!
+    name: Bytes32!
+    first_seen: UInt8!
+    last_seen: UInt8!
 }
 
-type AdjustedCountEntity {
+type Salutation {
     id: ID!
-    count: CountEntity!
-    adjusted_count: UInt8!
+    message_hash: Bytes32!
+    message: Jsonb!
+
+    # This `greeter` field shows the user of foreign keys. For more info
+    # on how we deal with foreign keys, read through the book at
+    # https://fuellabs.github.io/fuel-indexer/master/components/database/foreign-keys.html
+    greeter: Greeter!
+    first_seen: UInt8!
+    last_seen: UInt8!
 }
+
+
 ```
 
-### 2. Next write a manifest for your index
+### 3. Next update the manifest for your index
+
+If you open up `hello-index/hello-index.manifest.yaml`
 
 ```yaml
-namespace: your_org_name
-identifier: your_index_name
-abi: /full/path/to/your/smart-contract-abi.json
+namespace: fuel_examples
+identifier: hello_index
+
+# ABI files are _not_ required. However, in this example, since we already wrote
+# and compiled our smart contract, we'll include it's ABI JSON output here as well
+abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
 start_block: 1
-# your smart contract ID
-contract: 0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051 
-graphql_schema: /full/path/to/your/graphql.schema
+graphql_schema: examples/hello-world/schema/hello-world.graphql
+module:
+  wasm: we don't have one of these yet
 ```
 
 > Note that we haven't added a `module` parameter to our manifest yet because we haven't actually built a WASM module yet.
 
-### 3. Now write the actual code for your index
+### 4. Now write the actual code for your index
 
-Start with your Cargo.toml.
-
-```toml
-[package]
-name = "my_index"
-version = "0.0.0"
-edition = "2021"
-publish = false
-
-[lib]
-crate-type = ['cdylib']
-
-[dependencies]
-fuel-indexer-macros = { version = "0.1", default-features = false }
-fuel-indexer-plugin = "0.1"
-fuel-indexer-schema = { version = "0.1", default-features = false }
-fuel-tx = "0.23"
-fuels-core = "0.30"
-fuels-types = "0.30"
-getrandom = { version = "0.2", features = ["js"] }
-serde = { version = "1.0", default-features = false, features = ["derive"] }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-```
-
-Then write your literal indexing code.
+If you open up your index library at `hello-index/src/lib.rs`
 
 ```rust
+//! A rudimentary block explorer implementation demonstrating how blocks, transactions,
+//! contracts, and accounts can be persisted into the database.
+//!
+//! Build this example's WASM module using the following command. Note that a
+//! wasm32-unknown-unknown target will be required.
+//!
+//! ```bash
+//! cargo build -p hello-index --release --target wasm32-unknown-unknown
+//! ```
+//!
+//! Start a local test Fuel node
+//!
+//! ```bash
+//! cargo run --bin fuel-node
+//! ```
+//!
+//! With your database backend set up, now start your fuel-indexer binary using the
+//! assets from this example:
+//!
+//! ```bash
+//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello-index.manifest.yaml
+//! ```
+//!
+//! Now trigger an event.
+//!
+//! ```bash
+//! cargo run --bin hello-bin
+//! ```
+
 extern crate alloc;
 use fuel_indexer_macros::indexer;
+use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
 
-#[indexer(manifest = "full/path/to/your/manifest.yaml")]
-pub mod my_counter_index_module {
-
-    fn counter_module_handler_one(event: Count) {
-        let Count { count, id } = event;
-
-        let count_entity = match CountEntity::load(id) {
-            Some(o) => o,
-            None => CountEntity { id, count },
-        };
-
-        count_entity.save();
-
-        let CountEntity { id, count } = count_entity;
-
-        let adjusted_count_entity = AdjustedCountEntity{ 
-            id, 
-            count: count_entity.id, 
-            adjusted_count: count + 1
-        };
-
-        adjusted_count_entity.save();
-    }
+// A utility function used to convert an arbitrarily sized string into Bytes32
+// using the first 32 bytes of the String. This might be provided by a standard-ish
+// library in the future.
+fn bytes32(data: &String) -> Bytes32 {
+    let data = sha256_digest(&data);
+    let mut buff = [0u8; 32];
+    buff.copy_from_slice(&data.as_bytes()[..32]);
+    Bytes32::from(buff)
 }
 
+// A utility function used to convert an arbitrarily sized string into u64
+// using the first 8 bytes of the String. This might be provided by a standard-ish
+// library in the future.
+fn u64_id(data: &String) -> u64 {
+    let mut buff = [0u8; 8];
+    buff.copy_from_slice(&data.as_bytes()[..8]);
+    u64::from_le_bytes(buff)
+}
+
+#[indexer(manifest = "examples/hello-world/hello-index.manifest.yaml")]
+mod hello_world_index {
+    fn index_logged_greeting(event: Greeting, block: BlockData) {
+        // Since all events require a u64 ID field, let's derive an ID using the
+        // name of the person in the Greeting
+        let greeter_id = u64_id(&event.person.name.to_string());
+
+        // As of now, SizedAsciiString's don't have all of the flexibility of standard
+        // String types, so we have to do a bit of conversion to trim whitespace.
+        let greeting = event.greeting.to_string().trim_end().to_string();
+        let name = event.person.name.to_string().trim_end().to_string();
+
+        // Here we 'get or create' a Salutation based on the ID of the event
+        // emiited in the LogData receipt of our smart contract
+        let greeting = match Salutation::load(event.id) {
+            Some(mut g) => {
+                // If we found an event, let's use block height as a proxy for time
+                g.last_seen = block.height;
+                g
+            }
+            None => {
+                // If we did not already have this Saluation stored in the database. Here we
+                // show how you can use the String255 type to store strings with length <= 255
+                let message = format!("{}, my name is {}", greeting, name);
+
+                Salutation {
+                    id: event.id,
+                    message_hash: bytes32(&message),
+                    message,
+                    greeter: greeter_id,
+                    first_seen: block.height,
+                    last_seen: block.height,
+                }
+            }
+        };
+
+        // Here we do the same with Greeter that we did for Saluation -- if we have an event
+        // already saved in the database, load it and update it. If we do not have this Greeter
+        // in the database then create one
+        let greeter = match Greeter::load(greeter_id) {
+            Some(mut g) => {
+                g.last_seen = block.height;
+                g
+            }
+            None => Greeter {
+                id: greeter_id,
+                first_seen: block.height,
+                name,
+                last_seen: block.height,
+            },
+        };
+
+        // Both entity saves will occur in the same transaction
+        greeting.save();
+        greeter.save();
+    }
+}
 ```
 
-### 4. Compile the index
+### 5. Compile the index
 
 ```bash
-cargo build -p my-index --release --target wasm32-unknown-unknown
+cargo build -p hello-index --release --target wasm32-unknown-unknown
 ```
 
 > IMPORTANT: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash).
 
-### 5. Add your new WASM module to your index manifest
+Be sure to add your new WASM module to your index manifest
 
 ```yaml
-namespace: your_org_name
-identifier: your_index_name
-abi: /full/path/to/your/smart-contract-abi.json
+namespace: fuel_examples
+identifier: hello_index
+abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
 start_block: 1
-# your smart contract ID
-contract: 0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051 
-graphql_schema: /full/path/to/your/graphql.schema
+graphql_schema: examples/hello-world/schema/hello-world.graphql
 module:
-  wasm: /full/path/to/my_index.wasm
+  wasm: fuel-indexer-tests/assets/hello_index.wasm
 ```
 
-## Start the indexer
+### 6. Start the indexer & deploy your index
 
-```sh
-cargo run --bin fuel-indexer -- --manifest full/path/to/your/manifest.yaml
+> IMPORTANT: You should already have Postgres running by now
+
+```bash
+
+# Start a local indexer service
+➜  forc index start --background
+
+# Deploy your index to the local service using test authentication
+➜  forc index deploy --manifest hello-index.manifest.yaml --auth fuel
 ```
 
-## Query the Indexer
+If successful, your output should resemble:
 
-After calling the `count()` method of your Sway contract, query the indexer for the data that you wish to receive.
+```text
+➜  hello-index forc index deploy --manifest forc-index.manifest.yaml --auth fuel
+
+🚀 Deploying index at hello-index.manifest.yaml to 'http://127.0.0.1:29987/api/index/fuel/hello_index'
+{
+  "assets": [
+    {
+      "digest": "d797e33a3d3bbc4d93c7ec09980c220b1243e0ffcd9107b6e13b61cb7704d5ec",
+      "id": 1,
+      "index_id": 1,
+      "version": 1
+    },
+    {
+      "digest": "c5af6d278e29efd47a0493de73509bf4329ca58e47d337d0cc368e0a1f110cb9",
+      "id": 1,
+      "index_id": 1,
+      "version": 1
+    },
+    {
+      "digest": "b32879df38991e7b4f19ed02e394e2d31396cf1fa5ba14429e2af50dfca18cc7",
+      "id": 1,
+      "index_id": 1,
+      "version": 1
+    }
+  ],
+  "success": "true"
+}
+
+
+✅ Successfully deployed in at hello-index.manifest.yaml to http://127.0.0.1:29987/api/index/fuel/hello_index
+```
+
+----
+
+## Querying for indexed events
+
+After you've successfully completed all 6 of the aforementioned steps, you can trigger some test events simply by calling the `new_greeting()` method of your Sway contract. This will produce blocks, transactions, and receipts, which will be emitted by your local Fuel node. These events will be picked up by the indexer and subsequently indexed according to the index that you've deployed. Once you have a few indexed events, you can query the indexer for the data that you wish to receive.
 
 ```sh
-curl -X POST http://127.0.0.1:29987/api/graph/your_org_name \
+curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples \
    -H 'content-type: application/json' \
-   -d '{"query": "query { count { id count }}", "params": "b"}' \
+   -d '{"query": "query { greeter { id name last_seen }}", "params": "b"}' \
 | json_pp
 ```
 

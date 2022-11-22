@@ -1,8 +1,4 @@
 use fuel_types::Bytes32;
-use serde::{Deserialize, Serialize};
-
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
-pub struct Jsonb(pub String);
 
 pub trait GraphqlObject {
     fn schema_fragment() -> &'static str;

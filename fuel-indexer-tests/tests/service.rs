@@ -27,7 +27,7 @@ abigen!(
 async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres() {
     let workdir = Path::new(WORKSPACE_DIR);
 
-    let wallet_path = workdir.join("assets/wallet.json");
+    let wallet_path = workdir.join("assets/test-chain-config.json");
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
     let mut wallet =

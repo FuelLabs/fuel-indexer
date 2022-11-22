@@ -667,8 +667,11 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         use alloc::{format, vec, vec::Vec};
         use fuel_indexer_plugin::{
             types::{
+                // So we can use the fuel namespace to refer to fuel types
                 fuel,
-                fuel::{BlockData, TransactionData}, *,
+                // So we don't have to use the fuel namespace to refer to BlockData & TransactionData
+                fuel::{BlockData, TransactionData},
+                *,
                 tx::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
             },
             utils,

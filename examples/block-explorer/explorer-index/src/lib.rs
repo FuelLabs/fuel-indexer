@@ -5,7 +5,7 @@
 //! wasm32-unknown-unknown target will be required.
 //!
 //! ```bash
-//! cargo build -p explorer-index --release
+//! cargo build -p explorer-index --release --target wasm32-unknown-unknown
 //! ```
 //!
 //! Use the fuel-indexer testing components to start your Fuel node and web API

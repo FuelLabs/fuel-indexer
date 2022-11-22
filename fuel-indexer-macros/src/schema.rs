@@ -19,7 +19,7 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 lazy_static! {
-    static ref COPY_TYPES: HashSet<&'static str> = HashSet::from(["Jsonb"]);
+    static ref COPY_TYPES: HashSet<&'static str> = HashSet::from(["Jsonb", "String255"]);
 }
 
 fn process_type<'a>(
