@@ -18,9 +18,16 @@ rm -fv simple_wasm.wasm
 
 cargo build -p explorer-index --release --target wasm32-unknown-unknown
 bash scripts/stripper.bash explorer_index.wasm
+
 # Just putting this in the assets folder for archiving/reference purposes
 cp explorer_index.wasm fuel-indexer-tests/assets/
 cp explorer_index.wasm target/wasm32-unknown-unknown/release/
 rm -fv explorer_index.wasm
+
+cargo build -p dashboard-index --release --target wasm32-unknown-unknown
+bash scripts/stripper.bash dashboard_index.wasm
+cp dashboard_index.wasm fuel-indexer-tests/assets/
+cp dashboard_index.wasm target/wasm32-unknown-unknown/release/
+rm -fv dashboard_index.wasm
 
 set +ex
