@@ -538,8 +538,8 @@ mod tests {
         let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
 
         assert_eq!(foreign_keys.len(), 2);
-        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.lender ADD CONSTRAINT fk_lender_borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
-        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.auditor ADD CONSTRAINT fk_auditor_borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.lender ADD CONSTRAINT fk_lender_borrower__borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.auditor ADD CONSTRAINT fk_auditor_borrower__borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
     }
 
     #[test]
@@ -659,8 +659,8 @@ mod tests {
         let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
 
         assert_eq!(foreign_keys.len(), 2);
-        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.lender ADD CONSTRAINT fk_lender_borrower_account FOREIGN KEY (borrower) REFERENCES namespace.borrower(account) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
-        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.auditor ADD CONSTRAINT fk_auditor_borrower_account FOREIGN KEY (borrower) REFERENCES namespace.borrower(account) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.lender ADD CONSTRAINT fk_lender_borrower__borrower_account FOREIGN KEY (borrower) REFERENCES namespace.borrower(account) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.auditor ADD CONSTRAINT fk_auditor_borrower__borrower_account FOREIGN KEY (borrower) REFERENCES namespace.borrower(account) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
     }
 
     #[test]
@@ -701,5 +701,70 @@ mod tests {
         assert_eq!(foreign_keys.len(), 2);
         assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE lender DROP COLUMN borrower; ALTER TABLE lender ADD COLUMN borrower TEXT REFERENCES borrower(account);");
         assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE auditor DROP COLUMN borrower; ALTER TABLE auditor ADD COLUMN borrower TEXT REFERENCES borrower(account);");
+    }
+
+    #[test]
+    fn test_schema_builder_for_postgres_creates_fk_with_proper_column_names() {
+        let graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+
+        type QueryRoot {
+            account: Account
+            message: Message
+        }
+
+        type Account {
+            id: ID!
+            account: Address! @indexed
+        }
+
+        type Message {
+            id: ID!
+            sender: Account!
+            receiver: Account!
+        }
+    "#;
+
+        let sb = SchemaBuilder::new("namespace", "v1", DbType::Postgres);
+
+        let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
+
+        assert_eq!(foreign_keys.len(), 2);
+        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.message ADD CONSTRAINT fk_message_sender__account_id FOREIGN KEY (sender) REFERENCES namespace.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.message ADD CONSTRAINT fk_message_receiver__account_id FOREIGN KEY (receiver) REFERENCES namespace.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+    }
+    #[test]
+    fn test_schema_builder_for_sqlite_creates_fk_with_proper_column_names() {
+        let graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+
+        type QueryRoot {
+            account: Account
+            message: Message
+        }
+
+        type Account {
+            id: ID!
+            account: Address! @indexed
+        }
+
+        type Message {
+            id: ID!
+            sender: Account!
+            receiver: Account!
+        }
+    "#;
+
+        let sb = SchemaBuilder::new("namespace", "v1", DbType::Sqlite);
+
+        let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
+
+        assert_eq!(foreign_keys.len(), 2);
+        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE message DROP COLUMN sender; ALTER TABLE message ADD COLUMN sender INTEGER REFERENCES account(id);".to_string());
+        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE message DROP COLUMN receiver; ALTER TABLE message ADD COLUMN receiver INTEGER REFERENCES account(id);".to_string());
     }
 }
