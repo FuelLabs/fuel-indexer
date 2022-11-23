@@ -23,7 +23,7 @@
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{types::tx::*, types::Bytes32, utils::sha256_digest};
+use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
 use std::collections::HashSet;
 
 pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
