@@ -12,13 +12,9 @@ type Account {
     last_seen: UInt8!
 }
 
-type Contract {
-    id: ContractId! @unique
-}
-
 type Transfer {
     id: Bytes32! @unique
-    contract_id: Contract!
+    contract_id: ContractId!
     # `to` is a reserved SQL keyword
     receiver: ContractId! @indexed
     amount: UInt8!
@@ -27,7 +23,7 @@ type Transfer {
 
 type TransferOut {
     id: Bytes32! @unique
-    contract_id: Contract!
+    contract_id: ContractId!
     # `to` is a reserved SQL keyword
     receiver: Account!
     amount: UInt8!

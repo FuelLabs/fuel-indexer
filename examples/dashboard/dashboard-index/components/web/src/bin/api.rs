@@ -2,9 +2,8 @@ use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use async_std::sync::Arc;
 use clap::Parser;
 use dashboard_example::helpers::generate_multi_wallet_config;
-use fuels::{
-    prelude::{CallParameters, Contract, Provider, TxParameters, WalletUnlocked},
-    signers::Signer,
+use fuels::prelude::{
+    Bech32ContractId, Contract, Provider, TxParameters, WalletUnlocked,
 };
 use fuels_abigen_macro::abigen;
 use fuels_core::parameters::StorageConfiguration;
@@ -40,18 +39,16 @@ async fn preload_transfers(state: web::Data<Arc<AppState>>) -> impl Responder {
     let mut rng = rand::thread_rng();
 
     for wallet in wallets.iter() {
-        let asset_id = rng.gen_range(0..10);
-        let amount = rng.gen_range(0..10);
         for _ in 0..rng.gen_range(1..6) {
-            let call_params = CallParameters::new(Some(1_000_000), None, None);
-            let _ = state
-                .contract
-                .methods()
-                .create_transfer(amount, [asset_id; 32].into(), wallet.address().into())
-                .append_variable_outputs(1)
-                .tx_params(TxParameters::default())
-                .call_params(call_params)
-                .call()
+            let amount = rng.gen_range(0..1_000_000);
+            let asset_id = rng.gen_range(0..10);
+            let _ = wallet
+                .force_transfer_to_contract(
+                    &state.contract_id,
+                    amount,
+                    [asset_id; 32].into(),
+                    TxParameters::default(),
+                )
                 .await;
         }
     }
@@ -60,7 +57,7 @@ async fn preload_transfers(state: web::Data<Arc<AppState>>) -> impl Responder {
 }
 
 pub struct AppState {
-    pub contract: Dashboard,
+    pub contract_id: Bech32ContractId,
     pub wallets: Vec<WalletUnlocked>,
 }
 
@@ -128,7 +125,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let contract_id = Contract::deploy(
         bin_path_str,
-        &wallets[0],
+        &wallets[wallets.len() - 1],
         TxParameters::default(),
         StorageConfiguration::default(),
     )
@@ -137,11 +134,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Using contract at {}", contract_id.to_string());
 
-    let contract = Dashboard::new(contract_id, wallets[0].clone());
+    let _ = wallets.pop();
 
     info!("Starting server at {}", "127.0.0.1:8000");
 
-    let state = web::Data::new(Arc::new(AppState { contract, wallets }));
+    let state = web::Data::new(Arc::new(AppState {
+        contract_id,
+        wallets,
+    }));
 
     let _ = HttpServer::new(move || {
         App::new()

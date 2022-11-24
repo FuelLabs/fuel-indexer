@@ -5,7 +5,7 @@ pub mod helpers {
         let num_wallets = 10;
         let num_assets = 10;
         let num_coins = 10;
-        let coin_amount = 10000;
+        let coin_amount = 1_000_000;
 
         let mut assets = vec![AssetConfig {
             id: BASE_ASSET_ID,

@@ -57,7 +57,13 @@ mod dashboard_index {
                     let transfer = Transfer {
                         id: derive_id(
                             **id,
-                            [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
+                            [
+                                id.to_vec(),
+                                to.to_vec(),
+                                asset_id.to_vec(),
+                                amount.to_be_bytes().to_vec(),
+                            ]
+                            .concat(),
                         ),
                         contract_id: *id,
                         receiver: *to,
@@ -68,44 +74,6 @@ mod dashboard_index {
                     transfer.save();
 
                     assets.insert(asset_id);
-                }
-                Receipt::TransferOut {
-                    id,
-                    to,
-                    amount,
-                    asset_id,
-                    ..
-                } => {
-                    let transfer_out = TransferOut {
-                        id: derive_id(
-                            **id,
-                            [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
-                        ),
-                        contract_id: *id,
-                        receiver: *to,
-                        amount: *amount,
-                        asset_id: *asset_id,
-                    };
-
-                    transfer_out.save();
-
-                    assets.insert(asset_id);
-                }
-                Receipt::MessageOut {
-                    message_id,
-                    sender,
-                    recipient,
-                    amount,
-                    ..
-                } => {
-                    let message_out = MessageOut {
-                        id: *message_id,
-                        sender: *sender,
-                        recipient: *recipient,
-                        amount: *amount,
-                    };
-
-                    message_out.save();
                 }
                 _ => Logger::info("This type is not handled in this example. (>''<)"),
             }
