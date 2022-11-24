@@ -28,5 +28,3 @@
     - [Registering Indices](./components/indices/registration.md)
 - [Indexing](./indexing/index.md)
   - [Receipts](./indexing/receipts.md)
-- [Examples](./examples/index.md)
-  - [Block Explorer](./examples/block-explorer.md)

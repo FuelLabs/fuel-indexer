@@ -2,6 +2,7 @@ extern crate alloc;
 use crate::directives;
 use alloc::vec::Vec;
 pub use fuel_indexer_database_types as sql_types;
+use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
 use graphql_parser::schema::{
     Definition, Directive, Document, Field, ObjectType, TypeDefinition,
 };
@@ -14,6 +15,10 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
+
+pub fn inject_native_entities_into_schema(schema: &str) -> String {
+    format!("{}{}", schema, IndexMetadata::schema_fragment())
+}
 
 #[derive(Debug, EnumString, AsRefStr, Default)]
 pub enum IndexMethod {
@@ -252,8 +257,8 @@ type Block {
     id: Bytes32! @unique
     height: UInt8!
     timestamp: Int8!
-    miner: Address!
     gas_limit: UInt8!
+    extra_data: MessageId!
 }
 
 type Tx {
@@ -292,6 +297,10 @@ type Contract {
         assert_eq!(
             *types_map.get("Contract.creator").unwrap(),
             "ContractId".to_string()
+        );
+        assert_eq!(
+            *types_map.get("Block.extra_data").unwrap(),
+            "MessageId".to_string()
         );
         assert_eq!(types_map.get("Block.doesNotExist"), None);
     }

@@ -61,7 +61,6 @@ async fn fuel_indexer_test_transfer(state: web::Data<Arc<AppState>>) -> impl Res
         .contract
         .methods()
         .trigger_transfer()
-        .append_variable_outputs(1)
         .tx_params(tx_params())
         .call_params(call_params)
         .call()
@@ -112,11 +111,15 @@ async fn fuel_indexer_test_scriptresult(
 async fn fuel_indexer_test_transferout(
     state: web::Data<Arc<AppState>>,
 ) -> impl Responder {
+    let call_params = CallParameters::new(Some(1_000_000), None, None);
+
     let _ = state
         .contract
         .methods()
         .trigger_transferout()
+        .append_variable_outputs(1)
         .tx_params(tx_params())
+        .call_params(call_params)
         .call()
         .await;
 
@@ -212,11 +215,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await
     .unwrap();
 
-    let contract_id = contract_id.to_string();
+    info!("Using contract at {}", contract_id.to_string());
 
-    info!("Using contract at {}", contract_id);
-
-    let contract = FuelIndexerTest::new(contract_id.to_string(), wallet.clone());
+    let contract = FuelIndexerTest::new(contract_id, wallet.clone());
 
     info!("Starting server at {}", defaults::WEB_API_ADDR);
 

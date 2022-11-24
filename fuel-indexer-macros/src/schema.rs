@@ -3,7 +3,8 @@ use fuel_indexer_schema::{
     directives,
     utils::{
         build_schema_fields_and_types_map, build_schema_objects_set,
-        get_join_directive_info, schema_version, BASE_SCHEMA,
+        get_join_directive_info, inject_native_entities_into_schema, schema_version,
+        BASE_SCHEMA,
     },
 };
 use graphql_parser::parse_schema;
@@ -311,6 +312,8 @@ pub(crate) fn process_graphql_schema(
 
     let mut text = String::new();
     file.read_to_string(&mut text).expect("IO error");
+
+    let text = inject_native_entities_into_schema(&text);
 
     let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
         Ok(ast) => ast,

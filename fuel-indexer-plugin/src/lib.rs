@@ -4,7 +4,7 @@ use fuel_indexer_schema::{
     utils::{deserialize, serialize},
     FtColumn,
 };
-use fuel_indexer_types::log::{
+use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 
@@ -21,7 +21,7 @@ use tracing_subscriber::filter::EnvFilter;
 
 pub mod types {
     pub use fuel_indexer_schema::FtColumn;
-    pub use fuel_indexer_types::{native as fuel, tx, *};
+    pub use fuel_indexer_types::{abi as fuel, tx, *};
 }
 
 pub mod utils {

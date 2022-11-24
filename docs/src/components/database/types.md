@@ -16,6 +16,7 @@ Below is a mapping of GraphQL schema types to their Postgres equivalents, refere
 | u64 | Int8 | bigint |
 | u64 | Timestamp | timestamp |
 | str[] | Blob | bytes |
+| str[32] | MessageId | varchar(64) |
 
 ## Example
 

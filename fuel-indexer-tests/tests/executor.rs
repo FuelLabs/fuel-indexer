@@ -4,7 +4,7 @@ use fuel_indexer::{
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_tests::assets::{BAD_MANIFEST, BAD_WASM_BYTES, MANIFEST, WASM_BYTES};
 use fuel_indexer_types::{
-    native::{BlockData, TransactionData},
+    abi::{BlockData, TransactionData},
     tx::TransactionStatus,
 };
 use fuel_tx::{Receipt, Transaction};
@@ -158,7 +158,6 @@ async fn create_wasm_executor_and_handle_events(database_url: &str) {
     let result = executor
         .handle_events(vec![BlockData {
             id: [0u8; 32].into(),
-            producer: [0u8; 32].into(),
             time: 1,
             height: 0,
             transactions: vec![

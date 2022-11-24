@@ -1,0 +1,7 @@
+---
+source: fuel-indexer-schema/src/lib.rs
+assertion_line: 218
+expression: message_id.query_fragment()
+---
+"'0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f'"
+

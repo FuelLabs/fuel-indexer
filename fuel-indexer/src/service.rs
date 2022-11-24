@@ -2,6 +2,7 @@ use crate::{
     Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, WasmIndexExecutor,
 };
 use async_std::{fs::File, io::ReadExt, sync::Arc};
+use chrono::{TimeZone, Utc};
 use fuel_gql_client::client::{
     types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
@@ -17,9 +18,9 @@ use fuel_indexer_lib::{
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_types::{
-    native::{BlockData, TransactionData},
+    abi::{BlockData, TransactionData},
     tx::{TransactionStatus, TxId},
-    Address, Bytes32,
+    Bytes32,
 };
 use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::cell::RefCell;
@@ -152,10 +153,10 @@ fn make_task<T: 'static + Executor + Send + Sync>(
 
             let mut block_info = Vec::new();
             for block in results.into_iter().rev() {
-                if block.height.0 != next_block {
+                if block.header.height.0 != next_block {
                     continue;
                 }
-                next_block = block.height.0 + 1;
+                next_block = block.header.height.0 + 1;
 
                 // NOTE: for now assuming we have a single contract instance,
                 // we'll need to watch contract creation events here in
@@ -191,7 +192,15 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                         block_id,
                                         time,
                                         ..
-                                    } => TransactionStatus::Success { block_id, time },
+                                    } => TransactionStatus::Success {
+                                        block_id,
+                                        time: Utc
+                                            .timestamp_opt(time.to_unix(), 0)
+                                            .single()
+                                            .expect(
+                                                "Failed to parse transaction timestamp",
+                                            ),
+                                    },
                                     GqlTransactionStatus::Failure {
                                         block_id,
                                         time,
@@ -199,11 +208,26 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                                         ..
                                     } => TransactionStatus::Failure {
                                         block_id,
-                                        time,
+                                        time: Utc
+                                            .timestamp_opt(time.to_unix(), 0)
+                                            .single()
+                                            .expect(
+                                                "Failed to parse transaction timestamp",
+                                            ),
                                         reason,
                                     },
                                     GqlTransactionStatus::Submitted { submitted_at } => {
-                                        TransactionStatus::Submitted { submitted_at }
+                                        TransactionStatus::Submitted {
+                                            submitted_at: Utc
+                                                .timestamp_opt(submitted_at.to_unix(), 0)
+                                                .single()
+                                                .expect(
+                                                    "Failed to parse transaction timestamp"
+                                                ),
+                                        }
+                                    }
+                                    GqlTransactionStatus::SqueezedOut { reason } => {
+                                        TransactionStatus::SqueezedOut { reason }
                                     }
                                 };
 
@@ -226,10 +250,9 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                 }
 
                 let block = BlockData {
-                    height: block.height.0,
+                    height: block.header.height.0,
                     id: Bytes32::from(block.id),
-                    time: block.time.timestamp(),
-                    producer: Address::from(block.producer),
+                    time: block.header.time.0.to_unix(),
                     transactions,
                 };
 

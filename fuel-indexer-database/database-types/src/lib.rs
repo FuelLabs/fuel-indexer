@@ -110,6 +110,7 @@ impl NewColumn {
                 panic!("ForeignKey ColumnType is a reference type only.")
             }
             ColumnType::Jsonb => "jsonb",
+            ColumnType::MessageId => "varchar(64)",
         }
     }
 }
@@ -141,6 +142,7 @@ pub enum ColumnType {
     Blob = 13,
     ForeignKey = 14,
     Jsonb = 15,
+    MessageId = 16,
 }
 
 impl From<ColumnType> for i32 {
@@ -162,6 +164,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Blob => 13,
             ColumnType::ForeignKey => 14,
             ColumnType::Jsonb => 15,
+            ColumnType::MessageId => 16,
         }
     }
 }
@@ -191,6 +194,7 @@ impl From<i32> for ColumnType {
             13 => ColumnType::Blob,
             14 => ColumnType::ForeignKey,
             15 => ColumnType::Jsonb,
+            16 => ColumnType::MessageId,
             _ => panic!("Invalid column type."),
         }
     }
@@ -215,6 +219,7 @@ impl From<&str> for ColumnType {
             "Blob" => ColumnType::Blob,
             "ForeignKey" => ColumnType::ForeignKey,
             "Jsonb" => ColumnType::Jsonb,
+            "MessageId" => ColumnType::MessageId,
             _ => panic!("Invalid column type: '{}'", name),
         }
     }

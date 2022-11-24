@@ -28,14 +28,9 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
 
     let id: String = row.get(0);
     let height: i64 = row.get(1);
-    let producer: String = row.get(2);
-    let timestamp: i64 = row.get(3);
+    let timestamp: i64 = row.get(2);
 
     assert_eq!(height, 1);
-    assert_eq!(
-        producer,
-        "0000000000000000000000000000000000000000000000000000000000000000".to_string()
-    );
     assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
@@ -46,7 +41,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
     .await
     .unwrap();
 
-    assert_eq!(row.len(), 1);
+    assert_eq!(row.len(), 2);
 }
 
 #[tokio::test]
@@ -201,7 +196,7 @@ async fn test_can_trigger_and_index_scriptresult_event() {
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_transferout_event() {
     let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
-    let _conn = pool.acquire().await.unwrap();
+    let mut conn = pool.acquire().await.unwrap();
 
     let client = http_client();
     let _ = client
@@ -212,8 +207,21 @@ async fn test_can_trigger_and_index_transferout_event() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    // FIXME: Still need to trigger an actual receipt
-    assert_eq!(1, 1);
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.transferout LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let recipient: &str = row.get(2);
+    let amount: i64 = row.get(3);
+    let asset_id: &str = row.get(4);
+
+    assert_eq!(
+        recipient,
+        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
+    );
+    assert_eq!(amount, 1);
+    assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
 }
 
 #[tokio::test]
@@ -236,14 +244,50 @@ async fn test_can_trigger_and_index_messageout_event() {
         .await
         .unwrap();
 
+    let message_id: &str = row.get(0);
     let recipient: &str = row.get(2);
     let amount: i64 = row.get(3);
     let len: i64 = row.get(5);
 
+    // Message ID is different on each receipt, so we'll just check that it's well-formed
+    assert_eq!(message_id.len(), 64);
     assert_eq!(
         recipient,
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
     );
     assert_eq!(amount, 100);
     assert_eq!(len, 24);
+}
+
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_index_metadata_is_saved_when_indexer_macro_is_called() {
+    let pool = postgres_connection("postgres://postgres:my-secret@127.0.0.1").await;
+    let mut conn = pool.acquire().await.unwrap();
+
+    sqlx::query("DELETE FROM fuel_indexer_test.indexmetadataentity WHERE id IS NOT NULL")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
+    let client = http_client();
+    // Doesn't matter what event we trigger
+    let _ = client
+        .post("http://127.0.0.1:8000/ping")
+        .send()
+        .await
+        .unwrap();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test.indexmetadataentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let block_height: i64 = row.get(0);
+    let time: i64 = row.get(1);
+
+    assert!(block_height >= 1);
+    assert!(time >= 1);
 }

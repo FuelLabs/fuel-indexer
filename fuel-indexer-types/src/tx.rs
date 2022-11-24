@@ -1,6 +1,6 @@
-use crate::Jsonb;
+use crate::graphql::Jsonb;
 use chrono::{DateTime, NaiveDateTime, Utc};
-pub use fuel_tx::{Receipt, ScriptExecutionResult, Transaction, TxId};
+pub use fuel_tx::{field::*, Receipt, ScriptExecutionResult, Transaction, TxId};
 use serde::{Deserialize, Serialize};
 
 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
@@ -9,6 +9,9 @@ pub enum TransactionStatus {
     Failure {
         block_id: String,
         time: DateTime<Utc>,
+        reason: String,
+    },
+    SqueezedOut {
         reason: String,
     },
     Submitted {
@@ -24,7 +27,11 @@ impl Default for TransactionStatus {
     fn default() -> Self {
         Self::Success {
             block_id: "0".into(),
-            time: DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+            time: DateTime::<Utc>::from_utc(
+                NaiveDateTime::from_timestamp_opt(0, 0)
+                    .expect("Failed to create timestamp"),
+                Utc,
+            ),
         }
     }
 }
@@ -38,6 +45,9 @@ impl From<TransactionStatus> for Jsonb {
                 reason,
             } => Jsonb(format!(
                 r#"{{"status":"failed","block":"{block_id}","time":"{time}","reason":"{reason}"}}"#
+            )),
+            TransactionStatus::SqueezedOut { reason } => Jsonb(format!(
+                r#"{{"status":"squeezed_out","reason":"{reason}"}}"#
             )),
             TransactionStatus::Submitted { submitted_at } => Jsonb(format!(
                 r#"{{"status":"submitted","time":"{submitted_at}"}}"#

@@ -2,8 +2,8 @@ contract;
 
 use std::{
     address::Address,
+    call_frames::contract_id,
     constants::BASE_ASSET_ID,
-    context::call_frames::contract_id,
     identity::Identity,
     logging::log,
     message::send_message,
@@ -79,14 +79,13 @@ impl FuelIndexer for Contract {
         log(0);
     }
 
-    // This should trigger both a TR and TRO instruction
     fn trigger_transferout() {
-        const RECEIVER = ~Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
+        const RECEIVER = Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
         transfer(1, BASE_ASSET_ID, Identity::Address(RECEIVER));
     }
 
     fn trigger_messageout() {
-        let mut v: Vec<u64> = ~Vec::new();
+        let mut v: Vec<u64> = Vec::new();
         v.push(1);
         v.push(2);
         v.push(3);
