@@ -147,7 +147,7 @@ fn decode_snippet(
         // what the primitive is for... and to which handler it will go.
         quote! {
             #ty_id => {
-                // WasmLogger::warn("Skipping primitive decoder.");
+                WasmLogger::warn("Skipping primitive decoder.");
             }
         }
     } else {
@@ -546,7 +546,7 @@ fn process_fn_items(
                                 decoder.decode_messageout(payload);
                             }
                             _ => {
-                                // WasmLogger::info("This type is not handled yet. (>'.')>");
+                                WasmLogger::info("This type is not handled yet. (>'.')>");
                             }
                         }
                     }
@@ -677,7 +677,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         };
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
-        #[cfg(not(target_arch = "wasm32"))]
+        #[cfg(and(not(target_arch = "wasm32")), feature = "native-execution")]
         use fuel_indexer_plugin::{NativeLogger, NativeEntity};
 
         type B256 = [u8; 32];

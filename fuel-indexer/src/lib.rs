@@ -11,7 +11,6 @@ pub use fuel_indexer_lib::{
     manifest::{Manifest, Module},
 };
 pub use fuel_indexer_schema::{db::IndexerSchemaError, FtColumn};
-use fuel_indexer_types::abi::BlockData;
 pub use fuel_types::{Address, ContractId};
 pub use service::IndexerService;
 
