@@ -174,7 +174,6 @@ fn process_type_def<'a>(
             processed.insert(strct.to_string());
 
             if is_native {
-                // println!(">>> i have native exec enabled : {}!!!", namespace);
                 Some(quote! {
                     #[derive(Debug, PartialEq, Eq, Hash)]
                     pub struct #strct {

@@ -9,7 +9,7 @@ pub fn handler_block_native(
         #native_prelude
 
         #[no_mangle]
-        pub extern "C" fn handle_events(blocks: Vec<BlockData>, db: Arc<Mutex<Database>>) {
+        pub extern "C" fn handle_events(blocks: Vec<BlockData>) {
 
             NativeLogger::init();
 
@@ -21,7 +21,5 @@ pub fn handler_block_native(
 fn native_prelude() -> proc_macro2::TokenStream {
     quote! {
         use fuel_indexer_plugin::{NativeEntity, NativeLogger};
-        use async_std::sync::{Arc, Mutex};
-        use fuel_indexer::database::Database;
     }
 }

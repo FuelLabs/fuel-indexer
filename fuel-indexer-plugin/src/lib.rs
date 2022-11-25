@@ -163,8 +163,6 @@ pub trait NativeEntity: Sized + PartialEq + Eq + std::fmt::Debug {
         Self::TYPE_ID
     }
 
-    // TODO: should take accept any id type, not just u64?
-    #[allow(unused)]
     fn load(id: u64) -> Option<Self> {
         None
     }

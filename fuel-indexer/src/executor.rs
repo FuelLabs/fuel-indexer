@@ -83,18 +83,14 @@ impl Executor for NativeIndexExecutor {
     }
 
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
-        fn native_call(
-            module_path: String,
-            blocks: Vec<BlockData>,
-            db: Arc<Mutex<Database>>,
-        ) -> IndexerResult<()> {
+        fn native_call(module_path: String, blocks: Vec<BlockData>) -> IndexerResult<()> {
             unsafe {
                 match libloading::Library::new(module_path) {
                     Ok(lib) => {
                         let func: libloading::Symbol<
-                            unsafe extern "C" fn(Vec<BlockData>, Arc<Mutex<Database>>),
+                            unsafe extern "C" fn(Vec<BlockData>),
                         > = lib.get(b"handle_events")?;
-                        func(blocks, db);
+                        func(blocks);
                         Ok(())
                     }
                     Err(e) => Err(IndexerError::NativeModuleLoadingError(e)),
@@ -104,11 +100,9 @@ impl Executor for NativeIndexExecutor {
 
         let module_path = self.manifest.module.path().clone();
 
-        let db = self.db.clone();
-
         self.db.lock().await.start_transaction().await?;
 
-        let res = spawn_blocking(move || native_call(module_path, blocks, db)).await?;
+        let res = spawn_blocking(move || native_call(module_path, blocks)).await?;
 
         if let Err(e) = res {
             error!("NativeExecutor handle_events failed: {e:?}.");
