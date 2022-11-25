@@ -85,7 +85,7 @@ mod explorer_index {
             match &tx.transaction {
                 #[allow(unused)]
                 Transaction::Script(t) => {
-                    Logger::info("Inside a script transaction. (>^‿^)>");
+                    WasmLogger::info("Inside a script transaction. (>^‿^)>");
 
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
@@ -102,7 +102,7 @@ mod explorer_index {
                 }
                 #[allow(unused)]
                 Transaction::Create(t) => {
-                    Logger::info("Inside a create transaction. <(^.^)>");
+                    WasmLogger::info("Inside a create transaction. <(^.^)>");
 
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
@@ -118,7 +118,7 @@ mod explorer_index {
                 }
                 #[allow(unused)]
                 Transaction::Mint(t) => {
-                    Logger::info("Inside a mint transaction. <(^‿^<)");
+                    WasmLogger::info("Inside a mint transaction. <(^‿^<)");
 
                     let tx_pointer = t.tx_pointer();
                     let outputs = t.outputs();
@@ -225,7 +225,9 @@ mod explorer_index {
                             last_seen: 0,
                         });
 
-                        Logger::info("LogData types are unused in this example. (>'')>");
+                        WasmLogger::info(
+                            "LogData types are unused in this example. (>'')>",
+                        );
                     }
                     #[allow(unused)]
                     Receipt::ScriptResult { result, gas_used } => {
@@ -259,10 +261,12 @@ mod explorer_index {
                             last_seen: 0,
                         });
 
-                        Logger::info("LogData types are unused in this example. (>'')>");
+                        WasmLogger::info(
+                            "LogData types are unused in this example. (>'')>",
+                        );
                     }
                     _ => {
-                        Logger::info("This type is not handled yet.");
+                        WasmLogger::info("This type is not handled yet.");
                     }
                 }
             }

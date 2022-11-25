@@ -4,6 +4,7 @@ resolver = "2"
 members = [
    "examples/block-explorer/explorer-index",
    "examples/simple-wasm/simple-wasm",
+   "examples/native-execution/native-index",
    "examples/simple-wasm/simple",
    "fuel-indexer-api-server",
    "fuel-indexer-database",

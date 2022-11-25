@@ -7,7 +7,6 @@ use fuel_indexer_lib::{
     manifest::Manifest,
     utils::AssetReloadRequest,
 };
-use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
@@ -50,17 +49,11 @@ pub async fn main() -> Result<()> {
         &config.fuel_node.to_string()
     );
 
-    #[allow(unused)]
-    let (tx, rx): (
-        Option<Sender<AssetReloadRequest>>,
-        Option<Receiver<AssetReloadRequest>>,
-    ) = match () {
-        #[cfg(feature = "api-server")]
-        () => {
-            let (tx, rx) = channel::<AssetReloadRequest>(ASSET_REFRESH_CHANNEL_SIZE);
-            (Some(tx), Some(rx))
-        }
-        () => (None, None),
+    let (tx, rx) = if cfg!(feature = "api-server") {
+        let (tx, rx) = channel::<AssetReloadRequest>(ASSET_REFRESH_CHANNEL_SIZE);
+        (Some(tx), Some(rx))
+    } else {
+        (None, None)
     };
 
     let mut service = IndexerService::new(config.clone(), rx).await?;

@@ -8,6 +8,25 @@ use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 
+#[cfg(feature = "native-execution")]
+use fuel_indexer_database::{
+    queries, IndexerConnection, IndexerConnectionPool, IndexerDatabaseError,
+};
+
+#[cfg(feature = "native-execution")]
+use tracing::{debug, error, info, trace, warn};
+
+#[cfg(feature = "native-execution")]
+use tracing_subscriber::filter::EnvFilter;
+
+pub trait Logger {
+    fn error(log: &str);
+    fn warn(log: &str);
+    fn info(log: &str);
+    fn debug(log: &str);
+    fn trace(log: &str);
+}
+
 pub mod types {
     pub use fuel_indexer_schema::FtColumn;
     pub use fuel_indexer_types::{abi as fuel, tx, *};
@@ -25,31 +44,76 @@ extern "C" {
 }
 
 // TODO: more to do here, hook up to 'impl log::Log for Logger'
-pub struct Logger;
+pub struct WasmLogger;
 
-impl Logger {
-    pub fn error(log: &str) {
+impl Logger for WasmLogger {
+    fn error(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_ERROR) }
     }
 
-    pub fn warn(log: &str) {
+    fn warn(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_WARN) }
     }
 
-    pub fn info(log: &str) {
+    fn info(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_INFO) }
     }
 
-    pub fn debug(log: &str) {
+    fn debug(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_DEBUG) }
     }
 
-    pub fn trace(log: &str) {
+    fn trace(log: &str) {
         unsafe { ff_log_data(log.as_ptr(), log.len() as u32, LOG_LEVEL_TRACE) }
     }
 }
 
-pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
+#[cfg(feature = "native-execution")]
+pub struct NativeLogger;
+
+#[cfg(feature = "native-execution")]
+impl Logger for NativeLogger {
+    fn error(log: &str) {
+        error!(log);
+    }
+
+    fn warn(log: &str) {
+        warn!(log);
+    }
+
+    fn info(log: &str) {
+        info!(log);
+    }
+
+    fn debug(log: &str) {
+        debug!(log);
+    }
+
+    fn trace(log: &str) {
+        trace!(log);
+    }
+}
+
+#[cfg(feature = "native-execution")]
+impl NativeLogger {
+    pub fn init() -> Result<(), Box<dyn std::error::Error>> {
+        let filter = match std::env::var_os("RUST_LOG") {
+            Some(_) => {
+                EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
+            }
+            None => EnvFilter::new("info"),
+        };
+
+        let _ = tracing_subscriber::fmt::Subscriber::builder()
+            .with_writer(std::io::stderr)
+            .with_env_filter(filter)
+            .try_init();
+
+        Ok(())
+    }
+}
+
+pub trait WasmEntity: Sized + PartialEq + Eq + std::fmt::Debug {
     const TYPE_ID: u64;
 
     fn from_row(vec: Vec<FtColumn>) -> Self;
@@ -85,6 +149,27 @@ pub trait Entity: Sized + PartialEq + Eq + std::fmt::Debug {
             ff_put_object(Self::TYPE_ID, buf.as_ptr(), buf.len() as u32)
         }
     }
+}
+
+#[cfg(feature = "native-execution")]
+pub trait NativeEntity: Sized + PartialEq + Eq + std::fmt::Debug {
+    const TYPE_ID: u64;
+
+    fn from_row(vec: Vec<FtColumn>) -> Self;
+
+    fn to_row(&self) -> Vec<FtColumn>;
+
+    fn type_id(&self) -> u64 {
+        Self::TYPE_ID
+    }
+
+    // TODO: should take accept any id type, not just u64?
+    #[allow(unused)]
+    fn load(id: u64) -> Option<Self> {
+        None
+    }
+
+    fn save(&self) {}
 }
 
 #[no_mangle]

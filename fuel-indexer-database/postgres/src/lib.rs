@@ -430,9 +430,9 @@ pub async fn latest_assets_for_index(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
 ) -> sqlx::Result<IndexAssetBundle> {
-    let wasm = latest_asset_for_index(conn, index_id, IndexAssetType::Wasm)
+    let module = latest_asset_for_index(conn, index_id, IndexAssetType::Module)
         .await
-        .expect("Failed to retrieve wasm asset.");
+        .expect("Failed to retrieve module asset.");
     let schema = latest_asset_for_index(conn, index_id, IndexAssetType::Schema)
         .await
         .expect("Failed to retrieve schema asset.");
@@ -441,7 +441,7 @@ pub async fn latest_assets_for_index(
         .expect("Failed to retrieve manifest asset.");
 
     Ok(IndexAssetBundle {
-        wasm,
+        module,
         schema,
         manifest,
     })

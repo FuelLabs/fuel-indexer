@@ -239,13 +239,13 @@ pub struct IndexAsset {
 pub struct IndexAssetBundle {
     pub schema: IndexAsset,
     pub manifest: IndexAsset,
-    pub wasm: IndexAsset,
+    pub module: IndexAsset,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, EnumString, AsRefStr)]
 pub enum IndexAssetType {
-    #[strum(serialize = "wasm")]
-    Wasm,
+    #[strum(serialize = "module")]
+    Module,
     #[strum(serialize = "manifest")]
     Manifest,
     #[strum(serialize = "schema")]

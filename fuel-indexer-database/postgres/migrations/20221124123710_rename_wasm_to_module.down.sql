@@ -1,0 +1,3 @@
+alter table index_asset_registry_module rename to index_asset_registry_wasm;
+alter table index_asset_registry_module_index_id_seq rename to index_asset_registry_wasm_index_id_seq;
+alter table index_asset_registry_module_id_seq rename to index_asset_registry_wasm_id_seq;

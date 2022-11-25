@@ -147,7 +147,7 @@ fn decode_snippet(
         // what the primitive is for... and to which handler it will go.
         quote! {
             #ty_id => {
-                Logger::warn("Skipping primitive decoder.");
+                println!("Skipping primitive decoder.");
             }
         }
     } else {
@@ -546,7 +546,7 @@ fn process_fn_items(
                                 decoder.decode_messageout(payload);
                             }
                             _ => {
-                                Logger::info("This type is not handled yet. (>'.')>");
+                                println!("This type is not handled yet. (>'.')>");
                             }
                         }
                     }
@@ -652,7 +652,8 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     });
 
     let abi_tokens = get_abi_tokens(&namespace, &abi_path);
-    let graphql_tokens = process_graphql_schema(namespace, schema_string);
+    let graphql_tokens =
+        process_graphql_schema(namespace, schema_string, manifest.is_native());
 
     let (handler_block, fn_items) =
         process_fn_items(&manifest, &abi_path, indexer_module);
@@ -671,8 +672,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
                 fuel::{BlockData, TransactionData}, *,
                 tx::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
             },
-            utils,
-            Entity, Logger
+            utils, Logger
         };
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};

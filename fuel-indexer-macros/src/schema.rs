@@ -112,6 +112,7 @@ fn process_type_def<'a>(
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
     types_map: &HashMap<String, String>,
+    is_native: bool,
 ) -> Option<proc_macro2::TokenStream> {
     match typ {
         TypeDefinition::Object(obj) => {
@@ -172,29 +173,56 @@ fn process_type_def<'a>(
 
             processed.insert(strct.to_string());
 
-            Some(quote! {
-                #[derive(Debug, PartialEq, Eq, Hash)]
-                pub struct #strct {
-                    #block
-                }
+            if is_native {
+                // println!(">>> i have native exec enabled : {}!!!", namespace);
+                Some(quote! {
+                    #[derive(Debug, PartialEq, Eq, Hash)]
+                    pub struct #strct {
+                        #block
+                    }
 
-                impl Entity for #strct {
-                    const TYPE_ID: u64 = #type_id;
+                    impl NativeEntity for #strct {
+                        const TYPE_ID: u64 = #type_id;
 
-                    fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                        #row_extractors
-                        Self {
-                            #construction
+                        fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                            #row_extractors
+                            Self {
+                                #construction
+                            }
+                        }
+
+                        fn to_row(&self) -> Vec<FtColumn> {
+                            vec![
+                                #flattened
+                            ]
                         }
                     }
-
-                    fn to_row(&self) -> Vec<FtColumn> {
-                        vec![
-                            #flattened
-                        ]
+                })
+            } else {
+                Some(quote! {
+                    #[derive(Debug, PartialEq, Eq, Hash)]
+                    pub struct #strct {
+                        #block
                     }
-                }
-            })
+
+                    impl WasmEntity for #strct {
+                        const TYPE_ID: u64 = #type_id;
+
+                        fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                            #row_extractors
+                            Self {
+                                #construction
+                            }
+                        }
+
+                        fn to_row(&self) -> Vec<FtColumn> {
+                            vec![
+                                #flattened
+                            ]
+                        }
+                    }
+                })
+            }
         }
         obj => panic!("Unexpected type: {:?}", obj),
     }
@@ -208,10 +236,12 @@ fn process_definition<'a>(
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
     types_map: &HashMap<String, String>,
+    is_native: bool,
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
         Definition::TypeDefinition(def) => process_type_def(
             query_root, namespace, types, def, processed, primitives, types_map,
+            is_native,
         ),
         Definition::SchemaDefinition(_def) => None,
         def => {
@@ -267,6 +297,7 @@ fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
 pub(crate) fn process_graphql_schema(
     namespace: String,
     schema_path: String,
+    is_native: bool,
 ) -> proc_macro2::TokenStream {
     let path = match local_repository_root() {
         Some(p) => Path::new(&p).join(schema_path),
@@ -328,6 +359,7 @@ pub(crate) fn process_graphql_schema(
             &mut processed,
             &primitives,
             &types_map,
+            is_native,
         ) {
             output = quote! {
                 #output
