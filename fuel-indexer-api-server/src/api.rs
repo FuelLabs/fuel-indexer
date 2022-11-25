@@ -22,6 +22,7 @@ use serde_json::json;
 use std::time::Instant;
 use thiserror::Error;
 use tokio::sync::mpsc::Sender;
+use tower_http::cors::CorsLayer;
 use tracing::error;
 
 #[derive(Debug, Error)]
@@ -142,7 +143,9 @@ impl GraphQlApi {
             .nest("/index", asset_route)
             .nest("/graph", graph_route);
 
-        let app = Router::new().nest("/api", api_routes);
+        let app = Router::new()
+            .nest("/api", api_routes)
+            .layer(CorsLayer::permissive());
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())
