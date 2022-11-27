@@ -140,18 +140,21 @@ fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
 }
 
 pub fn get_object_native(
-    db: Arc<Mutex<Database>>,
+    db: Option<Arc<Mutex<Database>>>,
     type_id: u64,
     id: u64,
 ) -> Option<Vec<FtColumn>> {
     // TODO: stash this thing somewhere??
-    let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
-    let bytes = rt.block_on(async { db.lock().await.get_object(type_id, id).await });
+    if let Some(db) = db {
+        let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
+        let bytes = rt.block_on(async { db.lock().await.get_object(type_id, id).await });
 
-    if let Some(bytes) = bytes {
-        let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
+        if let Some(bytes) = bytes {
+            let columns: Vec<FtColumn> =
+                bincode::deserialize(&bytes).expect("Serde error.");
 
-        return Some(columns);
+            return Some(columns);
+        }
     }
 
     None
@@ -180,11 +183,13 @@ fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
     });
 }
 
-pub fn put_object_native(db: Arc<Mutex<Database>>, type_id: u64, data: Vec<u8>) {
-    let columns: Vec<FtColumn> = bincode::deserialize(&data).expect("Serde error.");
-    // TODO: stash this??
-    let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
-    rt.block_on(async { db.lock().await.put_object(type_id, columns, data).await });
+pub fn put_object_native(db: Option<Arc<Mutex<Database>>>, type_id: u64, data: Vec<u8>) {
+    if let Some(db) = db {
+        let columns: Vec<FtColumn> = bincode::deserialize(&data).expect("Serde error.");
+        // TODO: stash this??
+        let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
+        rt.block_on(async { db.lock().await.put_object(type_id, columns, data).await });
+    }
 }
 
 pub fn get_exports(env: &IndexEnv, store: &Store) -> Exports {

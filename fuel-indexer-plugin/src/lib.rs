@@ -140,7 +140,7 @@ pub trait NativeEntity: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     fn load(id: u64) -> Option<Self> {
-        match get_object_native(Self::TYPE_ID, id) {
+        match get_object_native(None, Self::TYPE_ID, id) {
             Some(v) => Some(Self::from_row(v)),
             None => None,
         }
@@ -148,7 +148,7 @@ pub trait NativeEntity: Sized + PartialEq + Eq + std::fmt::Debug {
 
     fn save(&self) {
         let data = serialize(&self.to_row());
-        put_object_native(Self::TYPE_ID, data)
+        put_object_native(None, Self::TYPE_ID, data)
     }
 }
 
