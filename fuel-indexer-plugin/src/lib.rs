@@ -9,7 +9,11 @@ use fuel_indexer_types::ffi::{
 };
 
 #[cfg(feature = "native-execution")]
-use tracing::{debug, error, info, trace, warn};
+pub use tracing_subscriber;
+
+#[cfg(feature = "native-execution")]
+#[allow(unused)]
+pub use tracing::{debug, error, info, trace, warn};
 
 #[cfg(feature = "native-execution")]
 use fuel_indexer::ffi::{get_object_native, log_data_native, put_object_native};
