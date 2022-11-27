@@ -6,12 +6,12 @@ edition = "2021"
 publish = false
 
 [[bin]]
-name = "api"
-path = "src/bin/api.rs"
+name = "web-api"
+path = "src/bin/web-api.rs"
 
 [[bin]]
-name = "node"
-path = "src/bin/node.rs"
+name = "fuel-node"
+path = "src/bin/fuel-node.rs"
 
 [dependencies]
 actix-web = { version = "4", default-features = false }

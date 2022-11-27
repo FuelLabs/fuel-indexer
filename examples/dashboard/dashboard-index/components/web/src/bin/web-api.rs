@@ -38,9 +38,11 @@ async fn preload_transfers(state: web::Data<Arc<AppState>>) -> impl Responder {
     let wallets = state.wallets.clone();
     let mut rng = rand::thread_rng();
 
+    // For each wallet, send a random amount of a
+    // randomly-selected asset a random number of times
     for wallet in wallets.iter() {
         for _ in 0..rng.gen_range(1..6) {
-            let amount = rng.gen_range(0..1_000_000);
+            let amount = rng.gen_range(0..10000);
             let asset_id = rng.gen_range(0..10);
             let _ = wallet
                 .force_transfer_to_contract(

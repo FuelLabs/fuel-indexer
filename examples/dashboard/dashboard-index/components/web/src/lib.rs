@@ -1,6 +1,9 @@
 pub mod helpers {
     use fuels::prelude::{AssetConfig, AssetId, BASE_ASSET_ID};
     use fuels::test_helpers::WalletsConfig;
+
+    // Generate a configuration for multiple wallets so that the wallets
+    // used in the node and API are exactly the same.
     pub fn generate_multi_wallet_config() -> WalletsConfig {
         let num_wallets = 10;
         let num_assets = 10;

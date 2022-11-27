@@ -24,7 +24,6 @@
 extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
-use std::collections::HashSet;
 
 pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
     let mut buff: [u8; 32] = [0u8; 32];
@@ -37,8 +36,6 @@ pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
 mod dashboard_index {
 
     fn index_dashboard_data(block_data: BlockData) {
-        let mut assets = HashSet::new();
-
         let receipts: Vec<Receipt> = block_data
             .transactions
             .into_iter()
@@ -52,9 +49,13 @@ mod dashboard_index {
                     to,
                     asset_id,
                     amount,
+                    pc,
+                    is,
                     ..
                 } => {
                     let transfer = Transfer {
+                        // Currently, custom schema types require an ID;
+                        // thus, we leverage each field to generate it
                         id: derive_id(
                             **id,
                             [
@@ -62,6 +63,8 @@ mod dashboard_index {
                                 to.to_vec(),
                                 asset_id.to_vec(),
                                 amount.to_be_bytes().to_vec(),
+                                pc.to_be_bytes().to_vec(),
+                                is.to_be_bytes().to_vec(),
                             ]
                             .concat(),
                         ),
@@ -72,8 +75,59 @@ mod dashboard_index {
                     };
 
                     transfer.save();
+                }
 
-                    assets.insert(asset_id);
+                Receipt::TransferOut {
+                    id,
+                    to,
+                    asset_id,
+                    amount,
+                    pc,
+                    is,
+                    ..
+                } => {
+                    let transfer_out = TransferOut {
+                        id: derive_id(
+                            **id,
+                            [
+                                id.to_vec(),
+                                to.to_vec(),
+                                asset_id.to_vec(),
+                                amount.to_be_bytes().to_vec(),
+                                pc.to_be_bytes().to_vec(),
+                                is.to_be_bytes().to_vec(),
+                            ]
+                            .concat(),
+                        ),
+                        contract_id: *id,
+                        receiver: *to,
+                        amount: *amount,
+                        asset_id: *asset_id,
+                    };
+
+                    transfer_out.save();
+                }
+
+                #[allow(unused)]
+                Receipt::MessageOut {
+                    message_id,
+                    sender,
+                    recipient,
+                    amount,
+                    nonce,
+                    len,
+                    digest,
+                    data,
+                    ..
+                } => {
+                    let message_out = MessageOut {
+                        id: *message_id,
+                        sender: *sender,
+                        recipient: *recipient,
+                        amount: *amount,
+                    };
+
+                    message_out.save();
                 }
                 _ => Logger::info("This type is not handled in this example. (>''<)"),
             }
