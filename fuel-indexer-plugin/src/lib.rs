@@ -9,15 +9,10 @@ use fuel_indexer_types::ffi::{
 };
 
 #[cfg(feature = "native-execution")]
-use fuel_indexer_database::{
-    queries, IndexerConnection, IndexerConnectionPool, IndexerDatabaseError,
-};
-
-#[cfg(feature = "native-execution")]
 use tracing::{debug, error, info, trace, warn};
 
 #[cfg(feature = "native-execution")]
-use tracing_subscriber::filter::EnvFilter;
+use fuel_indexer::ffi::{get_object_native, log_data_native, put_object_native};
 
 pub trait Logger {
     fn error(log: &str);
@@ -74,42 +69,23 @@ pub struct NativeLogger;
 #[cfg(feature = "native-execution")]
 impl Logger for NativeLogger {
     fn error(log: &str) {
-        error!(log);
+        log_data_native(log, LOG_LEVEL_ERROR);
     }
 
     fn warn(log: &str) {
-        warn!(log);
+        log_data_native(log, LOG_LEVEL_WARN);
     }
 
     fn info(log: &str) {
-        info!(log);
+        log_data_native(log, LOG_LEVEL_INFO);
     }
 
     fn debug(log: &str) {
-        debug!(log);
+        log_data_native(log, LOG_LEVEL_DEBUG);
     }
 
     fn trace(log: &str) {
-        trace!(log);
-    }
-}
-
-#[cfg(feature = "native-execution")]
-impl NativeLogger {
-    pub fn init() -> Result<(), Box<dyn std::error::Error>> {
-        let filter = match std::env::var_os("RUST_LOG") {
-            Some(_) => {
-                EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
-            }
-            None => EnvFilter::new("info"),
-        };
-
-        let _ = tracing_subscriber::fmt::Subscriber::builder()
-            .with_writer(std::io::stderr)
-            .with_env_filter(filter)
-            .try_init();
-
-        Ok(())
+        log_data_native(log, LOG_LEVEL_TRACE);
     }
 }
 
@@ -164,10 +140,16 @@ pub trait NativeEntity: Sized + PartialEq + Eq + std::fmt::Debug {
     }
 
     fn load(id: u64) -> Option<Self> {
-        None
+        match get_object_native(Self::TYPE_ID, id) {
+            Some(v) => Some(Self::from_row(v)),
+            None => None,
+        }
     }
 
-    fn save(&self) {}
+    fn save(&self) {
+        let data = serialize(&self.to_row());
+        put_object_native(Self::TYPE_ID, data)
+    }
 }
 
 #[no_mangle]

@@ -2287,6 +2287,7 @@ dependencies = [
 name = "fuel-indexer-plugin"
 version = "0.1.4"
 dependencies = [
+ "fuel-indexer",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",

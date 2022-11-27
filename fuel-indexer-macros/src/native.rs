@@ -11,8 +11,6 @@ pub fn handler_block_native(
         #[no_mangle]
         pub extern "C" fn handle_events(blocks: Vec<BlockData>) {
 
-            NativeLogger::init();
-
             #handler_block
         }
     }

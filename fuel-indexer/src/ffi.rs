@@ -1,3 +1,5 @@
+use crate::Database;
+use async_std::sync::{Arc, Mutex};
 use fuel_indexer_schema::FtColumn;
 use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
@@ -95,6 +97,17 @@ fn log_data(env: &IndexEnv, ptr: u32, len: u32, log_level: u32) {
     }
 }
 
+pub fn log_data_native(log_string: &str, log_level: u32) {
+    match log_level {
+        LOG_LEVEL_ERROR => error!("{}", log_string),
+        LOG_LEVEL_WARN => warn!("{}", log_string),
+        LOG_LEVEL_INFO => info!("{}", log_string),
+        LOG_LEVEL_DEBUG => debug!("{}", log_string),
+        LOG_LEVEL_TRACE => trace!("{}", log_string),
+        l => panic!("Invalid log level: {}", l),
+    }
+}
+
 fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
     let mem = env.memory_ref().expect("Memory uninitialized.");
 
@@ -126,6 +139,24 @@ fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
     }
 }
 
+pub fn get_object_native(
+    db: Arc<Mutex<Database>>,
+    type_id: u64,
+    id: u64,
+) -> Option<Vec<FtColumn>> {
+    // TODO: stash this thing somewhere??
+    let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
+    let bytes = rt.block_on(async { db.lock().await.get_object(type_id, id).await });
+
+    if let Some(bytes) = bytes {
+        let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
+
+        return Some(columns);
+    }
+
+    None
+}
+
 fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
     let mem = env.memory_ref().expect("Memory uninitialized.");
 
@@ -147,6 +178,13 @@ fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
             .put_object(type_id, columns, bytes)
             .await
     });
+}
+
+pub fn put_object_native(db: Arc<Mutex<Database>>, type_id: u64, data: Vec<u8>) {
+    let columns: Vec<FtColumn> = bincode::deserialize(&data).expect("Serde error.");
+    // TODO: stash this??
+    let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
+    rt.block_on(async { db.lock().await.put_object(type_id, columns, data).await });
 }
 
 pub fn get_exports(env: &IndexEnv, store: &Store) -> Exports {
