@@ -11,6 +11,7 @@
 - [Quickstart](./quickstart/index.md)
 - [Examples](./examples/index.md)
   - [Block Explorer](./examples/block-explorer.md)
+  - [Dashboard](./examples/dashboard.md)
 - [Components](./components/index.md)
   - [Assets](./components/assets/index.md)
     - [Manifest](./components/assets/manifest.md)
