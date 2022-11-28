@@ -2276,7 +2276,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-metrics"
-version = "0.1.2"
+version = "0.1.6"
 dependencies = [
  "lazy_static",
  "prometheus",
