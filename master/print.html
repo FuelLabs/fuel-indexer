@@ -944,6 +944,7 @@ graphql_schema: path/to/my/schema.graphql
 start_block: 1564
 module:
   wasm: path/to/my/wasm_module.wasm
+report_metrics: true
 </code></pre>
 <h2 id="namespace"><a class="header" href="#namespace"><code>namespace</code></a></h2>
 <ul>
@@ -985,6 +986,10 @@ module:
 <blockquote>
 <p>Important: At this time, <code>wasm</code> is the preferred method of execution.</p>
 </blockquote>
+<h2 id="report_metrics"><a class="header" href="#report_metrics"><code>report_metrics</code></a></h2>
+<ul>
+<li>Whether or not to report Prometheus metrics to the Fuel backend</li>
+</ul>
 <h1 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h1>
 <p>GraphQL schema is a required component of the Fuel Indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the schema.</p>
 <p>In its most basic form, Fuel indexer GraphQL schema should have a <code>schema</code> definition that contains a defined query root. The rest of the implementation is up to you. Here's an example of a well-formed schema:</p>
