@@ -30,7 +30,7 @@ else
     cd -
 
     touch $PWD/packages/fuel-indexer-tests/test.db
-    export DATABASE_URL="sqlite://${PWD}/fuel-indexer-tests/test.db"
+    export DATABASE_URL="sqlite://${PWD}/packages/fuel-indexer-tests/test.db"
     cd packages/fuel-indexer-database/sqlite
     sqlx database create
     sqlx migrate run
