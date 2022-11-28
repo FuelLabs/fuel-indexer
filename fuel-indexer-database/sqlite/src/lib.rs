@@ -92,7 +92,6 @@ pub async fn execute_query(
     Ok(result.rows_affected() as usize)
 }
 
-// TODO: https://github.com/FuelLabs/fuel-indexer/issues/347
 pub async fn root_columns_list_by_id(
     conn: &mut PoolConnection<Sqlite>,
     root_id: i64,
@@ -100,31 +99,16 @@ pub async fn root_columns_list_by_id(
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.root_columns_list_by_id_calls.inc();
 
-    let query = format!(
+    sqlx::query_as!(
+        RootColumns,
         r#"SELECT
-               id, root_id, column_name, graphql_type
+               id AS "id: i64", root_id AS "root_id: i64", column_name, graphql_type
            FROM graph_registry_root_columns
-           WHERE root_id = {}"#,
+           WHERE root_id = $1"#,
         root_id
-    );
-    let rows = sqlx::query(&query).fetch_all(conn).await?;
-
-    let mut results = Vec::with_capacity(rows.len());
-    for row in rows {
-        let id = row.get(0);
-        let root_id = row.get(1);
-        let column_name = row.get(2);
-        let graphql_type = row.get(3);
-
-        results.push(RootColumns {
-            id,
-            root_id,
-            column_name,
-            graphql_type,
-        });
-    }
-
-    Ok(results)
+    )
+    .fetch_all(conn)
+    .await
 }
 
 pub async fn new_root_columns(
@@ -183,25 +167,13 @@ pub async fn graph_root_latest(
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.graph_root_latest_calls.inc();
 
-    let query = format!(
-        "SELECT * FROM graph_registry_graph_root WHERE schema_name = '{}' ORDER BY id DESC LIMIT 1",
+    sqlx::query_as!(
+        GraphRoot,
+        "SELECT * FROM graph_registry_graph_root WHERE schema_name = $1 ORDER BY id DESC LIMIT 1",
         name
-    );
-    let row = sqlx::query(&query).fetch_one(conn).await?;
-
-    let id = row.get(0);
-    let version = row.get(1);
-    let schema_name = row.get(2);
-    let query = row.get(3);
-    let schema = row.get(4);
-
-    Ok(GraphRoot {
-        id,
-        version,
-        schema_name,
-        query,
-        schema,
-    })
+    )
+    .fetch_one(conn)
+    .await
 }
 
 pub async fn type_id_list_by_name(
@@ -212,27 +184,14 @@ pub async fn type_id_list_by_name(
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.type_id_list_by_name_calls.inc();
 
-    let query = format!("SELECT id, schema_version, schema_name, graphql_name, table_name FROM graph_registry_type_ids WHERE schema_name = {} AND schema_version = {}", name, version);
-    let rows = sqlx::query(&query).fetch_all(conn).await?;
-
-    let mut results = Vec::with_capacity(rows.len());
-    for row in rows {
-        let id = row.get(0);
-        let schema_version = row.get(1);
-        let schema_name = row.get(2);
-        let graphql_name = row.get(3);
-        let table_name = row.get(4);
-
-        results.push(TypeId {
-            id,
-            schema_version,
-            schema_name,
-            graphql_name,
-            table_name,
-        });
-    }
-
-    Ok(results)
+    sqlx::query_as!(
+        TypeId,
+        "SELECT id, schema_version, schema_name, graphql_name, table_name FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_version = $2",
+        name,
+        version
+    )
+    .fetch_all(conn)
+    .await
 }
 
 pub async fn type_id_latest(
@@ -242,13 +201,15 @@ pub async fn type_id_latest(
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.type_id_latest_calls.inc();
 
-    let query = format!(
-        "SELECT schema_version FROM graph_registry_type_ids WHERE schema_name = '{}' ORDER BY id",
+    let latest = sqlx::query_as!(
+        IdLatest,
+        "SELECT schema_version FROM graph_registry_type_ids WHERE schema_name = $1 ORDER BY id",
         schema_name
-    );
-    let row = sqlx::query(&query).fetch_one(conn).await?;
+    )
+    .fetch_one(conn)
+    .await?;
 
-    Ok(row.get(0))
+    Ok(latest.schema_version)
 }
 
 pub async fn type_id_insert(
@@ -283,12 +244,11 @@ pub async fn schema_exists(
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.schema_exists_calls.inc();
 
-    let query = format!("SELECT count(*) as num FROM graph_registry_type_ids WHERE schema_name = '{}' AND schema_version = '{}'", name, version);
-    let row = sqlx::query(&query).fetch_one(conn).await?;
-
-    let num: i64 = row.get(0);
-
-    Ok(num > 0)
+    let versions = sqlx::query_as!(NumVersions, r#"SELECT count(*) as "num?: i64" FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_version = $2"#, name, version).fetch_one(conn).await?;
+    Ok(versions
+        .num
+        .expect("num field should be present in versions query results")
+        > 0)
 }
 
 pub async fn new_column_insert(
@@ -323,31 +283,7 @@ pub async fn list_column_by_id(
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.list_column_by_id_calls.inc();
 
-    let query = format!("SELECT id, type_id, column_position, column_name, column_type, nullable, graphql_type FROM graph_registry_columns WHERE type_id = {}", col_id);
-    let rows = sqlx::query(&query).fetch_all(conn).await?;
-
-    let mut results = Vec::with_capacity(rows.len());
-    for row in rows {
-        let id = row.get(0);
-        let type_id = row.get(1);
-        let column_position = row.get(3);
-        let column_name = row.get(4);
-        let column_type = row.get(5);
-        let nullable = row.get(6);
-        let graphql_type = row.get(7);
-
-        results.push(Columns {
-            id,
-            type_id,
-            column_position,
-            column_name,
-            column_type,
-            nullable,
-            graphql_type,
-        });
-    }
-
-    Ok(results)
+    sqlx::query_as!(Columns, r#"SELECT id, type_id, column_position as "column_position: i32", column_name, column_type, nullable, graphql_type FROM graph_registry_columns WHERE type_id = $1"#, col_id).fetch_all(conn).await
 }
 
 pub async fn columns_get_schema(
@@ -358,42 +294,25 @@ pub async fn columns_get_schema(
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.columns_get_schema_calls.inc();
 
-    let query = format!(
+    sqlx::query_as!(
+        ColumnInfo,
         r#"SELECT
                c.type_id as type_id,
                t.table_name as table_name,
-               c.column_position as column_position,
+               c.column_position as "column_position: i32",
                c.column_name as column_name,
                c.column_type as column_type
            FROM graph_registry_type_ids as t
            INNER JOIN graph_registry_columns as c
            ON t.id = c.type_id
-           WHERE t.schema_name = '{}'
-           AND t.schema_version = '{}'
+           WHERE t.schema_name = $1
+           AND t.schema_version = $2
            ORDER BY c.type_id, c.column_position"#,
-        name, version
-    );
-
-    let rows = sqlx::query(&query).fetch_all(conn).await?;
-
-    let mut results = Vec::with_capacity(rows.len());
-    for row in rows {
-        let type_id = row.get(0);
-        let table_name = row.get(1);
-        let column_position = row.get(2);
-        let column_name = row.get(3);
-        let column_type = row.get(4);
-
-        results.push(ColumnInfo {
-            type_id,
-            table_name,
-            column_position,
-            column_name,
-            column_type,
-        });
-    }
-
-    Ok(results)
+        name,
+        version
+    )
+    .fetch_all(conn)
+    .await
 }
 
 pub async fn index_is_registered(
@@ -404,24 +323,16 @@ pub async fn index_is_registered(
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.index_is_registered_calls.inc();
 
-    match sqlx::query(&format!(
-        "SELECT * FROM index_registry WHERE namespace = '{}' AND identifier = '{}'",
-        namespace, identifier
-    ))
+    match sqlx::query_as!(
+        RegisteredIndex,
+        r#"SELECT id as "id!", namespace, identifier FROM index_registry WHERE namespace = $1 AND identifier = $2"#,
+        namespace,
+        identifier
+    )
     .fetch_one(conn)
     .await
     {
-        Ok(row) => {
-            let id = row.get(0);
-            let namespace = row.get(1);
-            let identifier = row.get(2);
-
-            Ok(Some(RegisteredIndex {
-                id,
-                namespace,
-                identifier,
-            }))
-        }
+        Ok(row) => Ok(Some(row)),
         Err(_e) => Ok(None),
     }
 }
@@ -465,26 +376,9 @@ pub async fn registered_indices(
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.registered_indices_calls.inc();
 
-    let rows = sqlx::query("SELECT * FROM index_registry")
+    sqlx::query_as!(RegisteredIndex, "SELECT * FROM index_registry")
         .fetch_all(conn)
-        .await?;
-
-    let indices = rows
-        .iter()
-        .map(|row| {
-            let id = row.get(0);
-            let namespace = row.get(1);
-            let identifier = row.get(2);
-
-            RegisteredIndex {
-                id,
-                namespace,
-                identifier,
-            }
-        })
-        .collect();
-
-    Ok(indices)
+        .await
 }
 
 pub async fn index_asset_version(
