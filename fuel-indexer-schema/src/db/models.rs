@@ -112,8 +112,11 @@ impl ForeignKey {
 
     pub fn name(&self) -> String {
         format!(
-            "fk_{}_{}_{}",
-            self.table_name, self.reference_table_name, self.reference_column_name
+            "fk_{}_{}__{}_{}",
+            self.table_name,
+            self.column_name,
+            self.reference_table_name,
+            self.reference_column_name
         )
     }
 }
