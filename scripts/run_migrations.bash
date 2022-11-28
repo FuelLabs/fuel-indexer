@@ -2,6 +2,8 @@
 
 set -ex
 
+cd packages/
+
 if [[ -z $CI ]] ; then
     if [ -z "$DATABASE_URL" ]; then
         echo "DATABASE_URL is not set in this shell. Please set DATABASE_URL and retry."
@@ -35,5 +37,7 @@ else
     sqlx database create
     sqlx migrate run
 fi
+
+cd ..
 
 set +ex
