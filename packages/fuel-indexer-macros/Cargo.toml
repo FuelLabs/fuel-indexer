@@ -13,9 +13,9 @@ development = ["fuels", "fuel-indexer-plugin"]
 proc-macro = true
 
 [dependencies]
-fuel-indexer-lib = { version = "0.1", path = "../fuel-indexer-lib", default-features = false }
-fuel-indexer-schema = { version = "0.1", path = "../fuel-indexer-schema", default-features = false }
-fuel-indexer-types = { version = "0.1", path = "../fuel-indexer-types" }
+fuel-indexer-lib = { version = "0.1", default-features = false }
+fuel-indexer-schema = { version = "0.1", default-features = false }
+fuel-indexer-types = { version = "0.1" }
 fuel-tx = "0.23"
 fuels-core = { version = "0.30" }
 fuels-types = { version = "0.30" }
@@ -30,7 +30,7 @@ sha2 = "0.9.5"
 syn = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
-fuel-indexer-plugin = { version = "0.1", path = "../fuel-indexer-plugin" }
+fuel-indexer-plugin = { version = "0.1" }
 fuels = { version = "0.30" }
 trybuild = "1.0"
 

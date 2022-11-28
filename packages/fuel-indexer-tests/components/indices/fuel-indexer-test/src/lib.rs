@@ -10,7 +10,7 @@ pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
     Bytes32::from(buff)
 }
 
-#[indexer(manifest = "fuel-indexer-tests/assets/fuel_indexer_test.yaml")]
+#[indexer(manifest = "packages/fuel-indexer-tests/assets/fuel_indexer_test.yaml")]
 mod fuel_indexer_test {
 
     fn fuel_indexer_test_ping(ping: Ping) {

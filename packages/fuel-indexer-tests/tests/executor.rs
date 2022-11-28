@@ -20,7 +20,7 @@ pub const MANIFEST_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
 abigen!(
     MyContract,
-    "fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json"
+    "packages/fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json"
 );
 
 #[derive(Debug)]

@@ -11,10 +11,10 @@ if [[ -z $CI ]] ; then
     fi
 
     if [[ $DATABASE_URL = postgres* ]]; then
-        cd fuel-indexer-database/postgres
+        cd packages/fuel-indexer-database/postgres
         DATABASE_URL=$DATABASE_URL sqlx migrate run
     elif [[ $DATABASE_URL = sqlite* ]]; then
-        cd fuel-indexer-database/sqlite
+        cd packages/fuel-indexer-database/sqlite
         DATABASE_URL=$DATABASE_URL sqlx database create
         DATABASE_URL=$DATABASE_URL sqlx migrate run
     else
@@ -24,14 +24,14 @@ if [[ -z $CI ]] ; then
 else
     export DATABASE_URL="postgres://postgres:my-secret@localhost:5432/postgres"
 
-    cd fuel-indexer-database/postgres
+    cd packages/fuel-indexer-database/postgres
     sqlx migrate run
 
     cd -
 
-    touch $PWD/fuel-indexer-tests/test.db
+    touch $PWD/packages/fuel-indexer-tests/test.db
     export DATABASE_URL="sqlite://${PWD}/fuel-indexer-tests/test.db"
-    cd fuel-indexer-database/sqlite
+    cd packages/fuel-indexer-database/sqlite
     sqlx database create
     sqlx migrate run
 fi

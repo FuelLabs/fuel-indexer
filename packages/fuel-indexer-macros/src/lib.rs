@@ -25,8 +25,7 @@ mod tests {
         std::env::set_var("COMPILE_TEST_PREFIX", manifest_dir);
 
         let macro_data_root = std::path::Path::new(manifest_dir)
-            .parent()
-            .unwrap()
+            .join("..")
             .join("fuel-indexer-tests")
             .join("trybuild");
 

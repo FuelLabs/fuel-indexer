@@ -14,7 +14,7 @@ use tracing_subscriber::filter::EnvFilter;
 
 abigen!(
     FuelIndexerTest,
-    "fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
+    "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
 );
 
 #[derive(Debug, Parser, Clone)]
