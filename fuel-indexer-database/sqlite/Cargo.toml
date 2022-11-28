@@ -9,5 +9,11 @@ description = "Fuel Indexer Sqlite"
 [dependencies]
 fuel-indexer-database-types = { version = "0.1", path = "../database-types" }
 fuel-indexer-lib = { version = "0.1", path = "../../fuel-indexer-lib" }
+fuel-indexer-metrics = { version = "0.1", path = "../../fuel-indexer-metrics", optional = true }
 sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "sqlite", "offline", "json"] }
 tracing = "0.1"
+
+
+[features]
+default = ["metrics"]
+metrics = ["fuel-indexer-metrics"]

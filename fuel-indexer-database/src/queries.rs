@@ -364,6 +364,3 @@ pub async fn run_migration(database_url: &str) {
         }
     }
 }
-
-#[cfg(test)]
-mod tests {}

@@ -70,6 +70,8 @@ pub struct IndexerArgs {
     pub postgres_port: Option<String>,
     #[clap(long, help = "Run database migrations for the GraphQL API service.")]
     pub run_migrations: Option<bool>,
+    #[clap(long, help = "Use Prometheus metrics reporting.")]
+    pub metrics: Option<bool>,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -381,6 +383,7 @@ pub struct IndexerConfig {
     pub graphql_api: GraphQLConfig,
     #[serde(default)]
     pub database: DatabaseConfig,
+    pub metrics: bool,
 }
 
 impl IndexerConfig {
@@ -439,6 +442,7 @@ impl IndexerConfig {
                 port: args.graphql_api_port,
                 run_migrations: args.run_migrations,
             },
+            metrics: args.metrics.unwrap_or(false),
         };
 
         config.inject_opt_env_vars();

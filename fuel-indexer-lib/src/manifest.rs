@@ -10,6 +10,7 @@ pub struct Manifest {
     pub identifier: String,
     pub graphql_schema: String,
     pub module: Module,
+    pub metrics: Option<bool>,
     pub contract_id: Option<String>,
     pub start_block: Option<u64>,
 }

@@ -4,6 +4,7 @@ use fuel_indexer_schema::{
     db::manager::SchemaManager,
     utils::{inject_native_entities_into_schema, schema_version},
 };
+use fuel_indexer_tests::fixtures::test_sqlite_db_path;
 use fuel_types::Address;
 use wasmer::{imports, Instance, Module, Store, WasmerEnv};
 use wasmer_compiler_cranelift::Cranelift;
@@ -15,7 +16,7 @@ fn compiler() -> Cranelift {
 
 // TODO: sqlite and postgres now....
 const GRAPHQL_SCHEMA: &str = include_str!("./../assets/simple_wasm.graphql");
-const WASM_BYTES: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
+const SIMPLE_WASM_WASM: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
 const THING1_TYPE: u64 = 0xA21A262A00405632;
 const TEST_COLUMNS: [(&str, i32, &str); 10] = [
     ("thing2", 0, "id"),
@@ -33,7 +34,7 @@ const TEST_COLUMNS: [(&str, i32, &str); 10] = [
 async fn load_wasm_module(database_url: &str) -> IndexerResult<Instance> {
     let compiler = compiler();
     let store = Store::new(&Universal::new(compiler).engine());
-    let module = Module::new(&store, WASM_BYTES)?;
+    let module = Module::new(&store, SIMPLE_WASM_WASM)?;
 
     let mut import_object = imports! {};
     let mut env = IndexEnv::new(database_url.to_string()).await?;
@@ -55,9 +56,7 @@ async fn test_schema_manager_generates_and_loads_schema_postgres() {
 
 #[tokio::test]
 async fn test_schema_manager_generates_and_loads_schema_sqlite() {
-    let workspace_root = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-    let database_url = format!("sqlite://{}/test.db", workspace_root.display());
-    generate_schema_then_load_schema_from_wasm_module(&database_url).await;
+    generate_schema_then_load_schema_from_wasm_module(&test_sqlite_db_path()).await;
 }
 
 async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
