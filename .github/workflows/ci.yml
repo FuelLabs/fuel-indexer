@@ -212,6 +212,7 @@ jobs:
 
   # TODO: https://github.com/FuelLabs/fuel-indexer/issues/269
   cargo-test-workspace-all-features:
+    if: github.event_name != 'release' && github.event.action != 'published'
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
     services:
@@ -415,8 +416,7 @@ jobs:
 
   publish-docker-image:
     needs: cargo-toml-fmt-check
-
-    if: always()
+    if: github.event_name == 'release' || github.event.action == 'published'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -480,11 +480,9 @@ jobs:
 
   validation-complete:
     needs:
-      [
-        cargo-verifications,
-        cargo-test-workspace-all-features,
-        mdbook-build,
-      ]
+      - cargo-verifications
+      - cargo-test-workspace-all-features
+      - mdbook-build
     runs-on: ubuntu-latest
     steps:
       - run: true
@@ -527,17 +525,18 @@ jobs:
         run: |
           curl -sSLf "https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64" -L -o dasel && chmod +x dasel
           mv ./dasel /usr/local/bin/dasel
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-api-server/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-database/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-database/database-types/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-database/postgres/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-database/sqlite/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-lib/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-macros/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-plugin/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-schema/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer-types/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} fuel-indexer/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-api-server/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/database-types/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/postgres/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/sqlite/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-lib/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-macros/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-metrics/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-plugin/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-schema/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-types/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer/Cargo.toml
 
       - name: Install WASM target
         uses: actions-rs/toolchain@v1

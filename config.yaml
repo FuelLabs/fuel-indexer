@@ -32,3 +32,5 @@
 
 #   sqlite:
 #     path: database/sqlite/sqlite.db
+#
+# metrics: true
