@@ -63,6 +63,7 @@ pub struct AssetReloadRequest {
 #[derive(Debug)]
 pub struct IndexStopRequest {
     pub namespace: String,
+    pub identifier: String,
 }
 
 #[derive(Debug)]

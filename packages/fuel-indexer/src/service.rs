@@ -14,7 +14,7 @@ use fuel_indexer_lib::{
     defaults::{
         DATABASE_CONNECTION_RETRY_ATTEMPTS, DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR,
     },
-    utils::AssetReloadRequest,
+    utils::ServiceRequest,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_types::{
@@ -289,17 +289,17 @@ fn make_task<T: 'static + Executor + Send + Sync>(
 
 pub struct IndexerService {
     config: IndexerConfig,
-    rx: Option<Receiver<AssetReloadRequest>>,
+    rx: Option<Receiver<ServiceRequest>>,
     manager: SchemaManager,
     database_url: String,
     handles: RefCell<HashMap<String, JoinHandle<()>>>,
-    killers: HashMap<String, Arc<AtomicBool>>,
+    killers: RefCell<HashMap<String, Arc<AtomicBool>>>,
 }
 
 impl IndexerService {
     pub async fn new(
         config: IndexerConfig,
-        rx: Option<Receiver<AssetReloadRequest>>,
+        rx: Option<Receiver<ServiceRequest>>,
     ) -> IndexerResult<IndexerService> {
         let database_url = config.database.to_string().clone();
 
@@ -311,7 +311,7 @@ impl IndexerService {
             manager,
             database_url,
             handles: RefCell::new(HashMap::default()),
-            killers: HashMap::default(),
+            killers: RefCell::new(HashMap::default()),
         })
     }
 
@@ -381,7 +381,9 @@ impl IndexerService {
 
                 info!("Registered indexer {}", identifier);
                 self.handles.borrow_mut().insert(manifest.uid(), handle);
-                self.killers.insert(manifest.uid(), kill_switch);
+                self.killers
+                    .borrow_mut()
+                    .insert(manifest.uid(), kill_switch);
             }
             None => {
                 let indices = queries::registered_indices(&mut conn).await?;
@@ -403,7 +405,9 @@ impl IndexerService {
 
                     info!("Registered indexer {}", manifest.uid());
                     self.handles.borrow_mut().insert(manifest.uid(), handle);
-                    self.killers.insert(manifest.uid(), kill_switch);
+                    self.killers
+                        .borrow_mut()
+                        .insert(manifest.uid(), kill_switch);
                 }
             }
         }
@@ -418,19 +422,11 @@ impl IndexerService {
         Ok(())
     }
 
-    pub fn stop_indexer(&mut self, executor_name: &str) {
-        if let Some(killer) = self.killers.remove(executor_name) {
-            killer.store(true, Ordering::SeqCst);
-        } else {
-            warn!("Stop Indexer: No indexer with the name {executor_name}");
-        }
-    }
-
     pub async fn run(self) {
         let IndexerService {
             handles,
             mut rx,
-            mut killers,
+            killers,
             ..
         } = self;
         let mut futs = FuturesUnordered::from_iter(handles.take().into_values());
@@ -440,41 +436,56 @@ impl IndexerService {
         }
 
         if let Some(ref mut rx) = rx {
-            while let Some(request) = rx.recv().await {
-                debug!("Retired a future {request:?}");
+            while let Some(service_request) = rx.recv().await {
+                debug!("Retired a future {service_request:?}");
+                match service_request {
+                    ServiceRequest::AssetReload(request) => {
+                        let database_url = self.config.database.clone().to_string();
+                        let pool =
+                            IndexerConnectionPool::connect(&database_url).await.unwrap();
 
-                let database_url = self.config.database.clone().to_string();
-                let pool = IndexerConnectionPool::connect(&database_url).await.unwrap();
+                        let mut conn = pool.acquire().await.unwrap();
 
-                let mut conn = pool.acquire().await.unwrap();
+                        let index_id = queries::index_id_for(
+                            &mut conn,
+                            &request.namespace,
+                            &request.identifier,
+                        )
+                        .await
+                        .unwrap();
 
-                let index_id = queries::index_id_for(
-                    &mut conn,
-                    &request.namespace,
-                    &request.identifier,
-                )
-                .await
-                .unwrap();
+                        let assets =
+                            queries::latest_assets_for_index(&mut conn, &index_id)
+                                .await
+                                .expect("Could not get latest assets for index");
 
-                let assets = queries::latest_assets_for_index(&mut conn, &index_id)
-                    .await
-                    .expect("Could not get latest assets for index");
+                        let manifest: Manifest =
+                            serde_yaml::from_slice(&assets.manifest.bytes).unwrap();
 
-                let manifest: Manifest =
-                    serde_yaml::from_slice(&assets.manifest.bytes).unwrap();
+                        let (kill_switch, handle) =
+                            spawn_executor_from_index_asset_registry(
+                                self.config.fuel_node.clone(),
+                                self.config.database.to_string(),
+                                &manifest,
+                                false,
+                                assets.wasm.bytes,
+                            )
+                            .await
+                            .unwrap();
 
-                let (kill_switch, handle) = spawn_executor_from_index_asset_registry(
-                    self.config.fuel_node.clone(),
-                    self.config.database.to_string(),
-                    &manifest,
-                    false,
-                    assets.wasm.bytes,
-                )
-                .await
-                .unwrap();
-
-                handles.borrow_mut().insert(manifest.uid(), handle);
-                killers.insert(manifest.uid(), kill_switch);
+                        handles.borrow_mut().insert(manifest.uid(), handle);
+                        killers.borrow_mut().insert(manifest.uid(), kill_switch);
+                    }
+                    ServiceRequest::IndexStop(request) => {
+                        let uid = format!("{}.{}", request.namespace, request.identifier);
+                        if let Some(killer) = killers.borrow_mut().remove(&uid) {
+                            killer.store(true, Ordering::SeqCst);
+                            info!("Stopped indexer {}", &uid);
+                        } else {
+                            warn!("Stop Indexer: No indexer with the name {}", &uid);
+                        }
+                    }
+                }
             }
         }
     }

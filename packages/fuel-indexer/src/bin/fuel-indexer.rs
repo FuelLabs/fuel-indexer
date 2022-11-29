@@ -5,7 +5,7 @@ use fuel_indexer_database::queries;
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig, Parser},
     manifest::Manifest,
-    utils::AssetReloadRequest,
+    utils::ServiceRequest,
 };
 use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::info;
@@ -15,7 +15,7 @@ use tracing_subscriber::filter::EnvFilter;
 use fuel_indexer_api_server::api::GraphQlApi;
 
 #[cfg(feature = "api-server")]
-use fuel_indexer_lib::defaults::ASSET_REFRESH_CHANNEL_SIZE;
+use fuel_indexer_lib::defaults::SERVICE_REQUEST_CHANNEL_SIZE;
 
 #[cfg(feature = "api-server")]
 use tokio::sync::mpsc::channel;
@@ -52,12 +52,12 @@ pub async fn main() -> Result<()> {
 
     #[allow(unused)]
     let (tx, rx): (
-        Option<Sender<AssetReloadRequest>>,
-        Option<Receiver<AssetReloadRequest>>,
+        Option<Sender<ServiceRequest>>,
+        Option<Receiver<ServiceRequest>>,
     ) = match () {
         #[cfg(feature = "api-server")]
         () => {
-            let (tx, rx) = channel::<AssetReloadRequest>(ASSET_REFRESH_CHANNEL_SIZE);
+            let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
             (Some(tx), Some(rx))
         }
         () => (None, None),

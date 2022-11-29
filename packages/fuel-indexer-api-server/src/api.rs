@@ -1,5 +1,6 @@
 use crate::uses::{
     authorize_middleware, health_check, metrics, query_graph, register_index_assets,
+    stop_indexer,
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
@@ -7,13 +8,13 @@ use axum::{
     http::StatusCode,
     middleware::{self},
     response::{IntoResponse, Response},
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_lib::{
     config::{IndexerConfig, MutableConfig},
-    utils::AssetReloadRequest,
+    utils::ServiceRequest,
 };
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
@@ -102,7 +103,7 @@ impl IntoResponse for ApiError {
 pub struct GraphQlApi;
 
 impl GraphQlApi {
-    pub async fn run(config: IndexerConfig, tx: Option<Sender<AssetReloadRequest>>) {
+    pub async fn run(config: IndexerConfig, tx: Option<Sender<ServiceRequest>>) {
         let sm = SchemaManager::new(&config.database.to_string())
             .await
             .expect("SchemaManager create failed");
@@ -127,9 +128,14 @@ impl GraphQlApi {
         let asset_route = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
             .route_layer(middleware::from_fn(authorize_middleware))
-            .layer(Extension(tx))
+            .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()));
+
+        let stop_index_route = Router::new()
+            .route("/:namespace/:identifier", delete(stop_indexer))
+            .route_layer(middleware::from_fn(authorize_middleware))
+            .layer(Extension(tx));
 
         let health_route = Router::new()
             .route("/health", get(health_check))
@@ -143,6 +149,7 @@ impl GraphQlApi {
             .nest("/", health_route)
             .nest("/", metrics_route)
             .nest("/index", asset_route)
+            .nest("/index", stop_index_route)
             .nest("/graph", graph_route);
 
         let app = Router::new().nest("/api", api_routes);
