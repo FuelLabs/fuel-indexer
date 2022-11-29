@@ -9,29 +9,17 @@ set -x
 
 bash ./scripts/utils/kill_test_components.bash
 
-export CARGO_MANIFEST_DIR=$PWD/fuel-indexer-tests/components/web
-
 sleep 1
 
 ./target/release/fuel-node \
-<<<<<<< HEAD
-    --wallet-path ./fuel-indexer-tests/assets/test-chain-config.json \
-    --contract-bin-path ./fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
-=======
     --wallet-path packages/fuel-indexer-tests/components/web/wallet.json \
     --bin-path packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
->>>>>>> a0ab2354c5936a99fc9f00593e4e1d143a7b5097
 
 sleep 1
 
 ./target/release/web-api \
-<<<<<<< HEAD
-    --wallet-path ./fuel-indexer-tests/assets/test-chain-config.json \
-    --contract-bin-path ./fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
-=======
     --wallet-path packages/fuel-indexer-tests/components/web/wallet.json \
     --bin-path packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
->>>>>>> a0ab2354c5936a99fc9f00593e4e1d143a7b5097
 
 if [[ ! -z $CI ]] ; then
     sleep 2
