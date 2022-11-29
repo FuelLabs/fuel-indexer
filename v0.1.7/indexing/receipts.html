@@ -1,0 +1,367 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Receipts - The Fuel Indexer Service</title>
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="../favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="../favicon.png">
+        
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        
+        <link rel="stylesheet" href="../css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="../fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="../getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/setup.html"><strong aria-hidden="true">1.1.</strong> Setting up</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/system-dependencies.html"><strong aria-hidden="true">1.1.1.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="../getting-started/application-dependencies.html"><strong aria-hidden="true">1.1.2.</strong> Application dependencies</a></li></ol></li><li class="chapter-item expanded "><a href="../getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.2.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/configuration.html"><strong aria-hidden="true">1.2.1.</strong> Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../quickstart/index.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../examples/index.html"><strong aria-hidden="true">3.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../examples/block-explorer.html"><strong aria-hidden="true">3.1.</strong> Block Explorer</a></li></ol></li><li class="chapter-item expanded "><a href="../components/index.html"><strong aria-hidden="true">4.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/assets/index.html"><strong aria-hidden="true">4.1.</strong> Assets</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/assets/manifest.html"><strong aria-hidden="true">4.1.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../components/assets/schema.html"><strong aria-hidden="true">4.1.2.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../components/assets/wasm.html"><strong aria-hidden="true">4.1.3.</strong> WASM Modules</a></li></ol></li><li class="chapter-item expanded "><a href="../components/database/index.html"><strong aria-hidden="true">4.2.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/database/types.html"><strong aria-hidden="true">4.2.1.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="../components/database/foreign-keys.html"><strong aria-hidden="true">4.2.2.</strong> Foreign Keys</a></li></ol></li><li class="chapter-item expanded "><a href="../components/graphql/index.html"><strong aria-hidden="true">4.3.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/assets/schema.html"><strong aria-hidden="true">4.3.1.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../components/graphql/api-server.html"><strong aria-hidden="true">4.3.2.</strong> API Server</a></li><li class="chapter-item expanded "><a href="../components/database/types.html"><strong aria-hidden="true">4.3.3.</strong> Types</a></li><li class="chapter-item expanded "><a href="../components/graphql/directives.html"><strong aria-hidden="true">4.3.4.</strong> Directives</a></li></ol></li><li class="chapter-item expanded "><a href="../components/indices/index.html"><strong aria-hidden="true">4.4.</strong> Indices</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/indices/registration.html"><strong aria-hidden="true">4.4.1.</strong> Registering Indices</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../indexing/index.html"><strong aria-hidden="true">5.</strong> Indexing</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../indexing/receipts.html" class="active"><strong aria-hidden="true">5.1.</strong> Receipts</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">The Fuel Indexer Service</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                        <a href="https://github.com/FuelLabs/fuel-indexer" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="receipts"><a class="header" href="#receipts">Receipts</a></h1>
+<p>When a Sway contract is deployed and called on a Fuel node, receipts may be generated during its execution. You can think of these receipts as informative objects that are emitted when certain things happen, e.g. transfers, messages, etc. By building <a href="indices/index.html">indices</a> for receipts, you can create mappings to store this data, allowing your application to answer queries about the contract.</p>
+<p>The Fuel indexer currently supports the following receipt types:</p>
+<ul>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L69">Log</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L79">LogData</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L114">MessageOut</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L91">Transfer</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L100">TransferOut</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L109">ScriptResult</a></li>
+</ul>
+<p>Below we'll discuss each of these receipts and how you can leverage them to get the most out of your dApp.</p>
+<h2 id="log"><a class="header" href="#log">Log</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::ContractId;
+pub struct Log {
+    pub contract_id: ContractId,
+    pub ra: u64,
+    pub rb: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>Log</code> receipt is generated when calling <code>log()</code> on a non-reference types in a Sway contracts.
+<ul>
+<li>Specifically <code>bool</code>, <code>u8</code>, <code>u16</code>, <code>u32</code>, and <code>u64</code>.</li>
+</ul>
+</li>
+<li>The <code>ra</code> field includes the value being logged while <code>rb</code> may include a non-zero value representing a unique ID for the <code>log</code> instance.</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#log-receipt">Read more about <code>Log</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="logdata"><a class="header" href="#logdata">LogData</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::ContractId;
+pub struct LogData {
+    pub contract_id: ContractId,
+    pub data: Vec&lt;u8&gt;,
+    pub rb: u64,
+    pub len: u64,
+    pub ptr: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>LogData</code> receipt is generated when calling <code>log()</code> in a Sway contract on a reference type; this includes all types <em>except</em> non-reference types.</li>
+<li>The <code>data</code> field will include the logged value as a hexadecimal.
+<ul>
+<li>The <code>rb</code> field will contain a unique ID that can be used to look up the logged data type.</li>
+</ul>
+</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#logdata-receipt">Read more about <code>LogData</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="messageout"><a class="header" href="#messageout">MessageOut</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::{MessageId, Bytes32, Address};
+pub struct MessageOut {
+    pub message_id: MessageId,
+    pub sender: Address,
+    pub recipient: Address,
+    pub amount: u64,
+    pub nonce: Bytes32,
+    pub len: u64,
+    pub digest: Bytes32,
+    pub data: Vec&lt;u8&gt;,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>MessageOut</code> receipt is generated as a result of the <code>send_message()</code> Sway method in which a message is sent to a recipient address along with a certain amount of coins.</li>
+<li>The <code>data</code> field currently supports only a vector of non-reference types rather than something like a struct.</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#messageout-receipt">Read more about <code>MessageOut</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="transfer"><a class="header" href="#transfer">Transfer</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::{ContractId, AssetId};
+pub struct Transfer {
+    pub contract_id: ContractId,
+    pub to: ContractId,
+    pub amount: u64,
+    pub asset_id: AssetId,
+    pub pc: u64,
+    pub is: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>Transfer</code> receipt is generated when coins are transferred to a contract as part of a Sway contract.</li>
+<li>The <code>asset_id</code> field contains the asset ID of the transferred coins, as the FuelVM has built-in support for working with multiple assets.
+<ul>
+<li>The <code>pc</code> and <code>is</code> fields aren't currently used for anything, but are included for completeness.</li>
+</ul>
+</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#transfer-receipt">Read more about <code>Transfer</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="transferout"><a class="header" href="#transferout">TransferOut</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::{ContractId, AssetId, Address};
+pub struct TransferOut {
+    pub contract_id: ContractId,
+    pub to: Address,
+    pub amount: u64,
+    pub asset_id: AssetId,
+    pub pc: u64,
+    pub is: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>TransferOut</code> receipt is generated when coins are transferred to an address rather than a contract.</li>
+<li>Every other field of the receipt works the same way as it does in the <code>Transfer</code> receipt.</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#transferout-receipt">Read more about <code>TransferOut</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="scriptresult"><a class="header" href="#scriptresult">ScriptResult</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct ScriptResult {
+    pub result: u64,
+    pub gas_used: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>ScriptResult</code> receipt is generated when a contract call resolves; that is, it's generated as a result of the <code>RET</code>, <code>RETD</code>, and <code>RVRT</code> instructions.</li>
+<li>The <code>result</code> field will contain a <code>0</code> for success, and a non-zero value otherwise.</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#scriptresult-receipt">Read more about <code>ScriptResult</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="../indexing/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a rel="prev" href="../indexing/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>
