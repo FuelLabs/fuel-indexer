@@ -2039,7 +2039,6 @@ dependencies = [
  "serde_yaml",
  "tokio",
  "tracing",
- "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
