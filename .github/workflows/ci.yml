@@ -212,6 +212,7 @@ jobs:
 
   # TODO: https://github.com/FuelLabs/fuel-indexer/issues/269
   cargo-test-workspace-all-features:
+    if: github.event_name != 'release' && github.event.action != 'published'
     needs: cancel-previous-runs
     runs-on: ubuntu-latest
     services:
@@ -415,8 +416,7 @@ jobs:
 
   publish-docker-image:
     needs: cargo-toml-fmt-check
-
-    if: always()
+    if: github.event_name == 'release' || github.event.action == 'published'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -480,11 +480,9 @@ jobs:
 
   validation-complete:
     needs:
-      [
-        cargo-verifications,
-        cargo-test-workspace-all-features,
-        mdbook-build,
-      ]
+      - cargo-verifications
+      - cargo-test-workspace-all-features
+      - mdbook-build
     runs-on: ubuntu-latest
     steps:
       - run: true
