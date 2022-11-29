@@ -1,0 +1,33 @@
+[package]
+name = "forc-index"
+version = "0.1.0"
+authors = ["Fuel Labs <contact@fuel.sh>"]
+edition = "2021"
+homepage = "https://fuel.network/"
+license = "Apache-2.0"
+repository = "https://github.com/FuelLabs/fuel-indexer"
+description = "A `forc` plugin for basic Fuel Indexer interaction."
+
+[dependencies]
+anyhow = "1"
+clap = { version = "3", features = ["derive", "env"] }
+forc-tracing = { version = "0.31", default-features = false }
+forc-util = { version = "0.31" }
+fuel-tx = { version = "0.23", features = ["builder"] }
+fuels-types = "0.31"
+hex = "0.4.3"
+hyper-rustls = { version = "0.23", features = ["http2"] }
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls", "multipart", "blocking"] }
+serde = "1.0"
+serde_json = "1.0.73"
+serde_yaml = "0.8"
+tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "process"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.2", features = ["env-filter"] }
+
+[[bin]]
+name = "forc-index"
+path = "src/bin/forc-index.rs"
+
+[lib]
+path = "src/lib.rs"

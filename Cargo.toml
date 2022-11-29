@@ -20,6 +20,7 @@ members = [
    "packages/fuel-indexer-tests/components/web",
    "packages/fuel-indexer-types",
    "packages/fuel-indexer",
+   "plugins/forc-index",
 ]
 
 [profile.release]
