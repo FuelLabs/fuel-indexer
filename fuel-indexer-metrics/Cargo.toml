@@ -1,7 +1,10 @@
 [package]
 name = "fuel-indexer-metrics"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
+license = "BUSL-1.1"
+repository = "https://github.com/FuelLabs/fuel-indexer"
+description = "Fuel Indexer Metrics"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
