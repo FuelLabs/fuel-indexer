@@ -323,13 +323,14 @@ jobs:
 
       - name: Build fuel-indexer
         run: |
-          cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer -p fuel-indexer-api-server
+          cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer -p fuel-indexer-api-server -p forc-index
 
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
         run: |
           strip "target/${{ matrix.job.target }}/release/fuel-indexer"
           strip "target/${{ matrix.job.target }}/release/fuel-indexer-api-server"
+          strip "target/${{ matrix.job.target }}/release/forc-index"
 
       - name: Strip release binary aarch64-linux-gnu
         if: matrix.job.target == 'aarch64-unknown-linux-gnu'
@@ -346,11 +347,18 @@ jobs:
           aarch64-linux-gnu-strip \
           /target/aarch64-unknown-linux-gnu/release/fuel-indexer-api-server
 
+          docker run --rm -v \
+          "$PWD/target:/target:Z" \
+          aarch64-linux-gnu:latest \
+          aarch64-linux-gnu-strip \
+          /target/aarch64-unknown-linux-gnu/release/forc-index
+
       - name: Strip release binary mac
         if: matrix.job.os == 'macos-latest'
         run: |
           strip -x "target/${{ matrix.job.target }}/release/fuel-indexer"
           strip -x "target/${{ matrix.job.target }}/release/fuel-indexer-api-server"
+          strip -x "target/${{ matrix.job.target }}/release/forc-index"
 
       - name: Prepare Binary Artifact
         env:
@@ -367,18 +375,24 @@ jobs:
           # setup artifact filename
           INDEXER_ARTIFACT="fuel-indexer-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
           API_SERVER_ARTIFACT="fuel-indexer-api-server-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
+          FORC_INDEX_ARTIFACT="forc-index-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
           INDEXER_ZIP_FILE_NAME="$INDEXER_ARTIFACT.tar.gz"
           API_SERVER_ZIP_FILE_NAME="$API_SERVER_ARTIFACT.tar.gz"
+          FORC_INDEX_ZIP_FILE_NAME="$FORC_INDEX_ARTIFACT.tar.gz"
           echo "INDEXER_ZIP_FILE_NAME=$INDEXER_ZIP_FILE_NAME" >> $GITHUB_ENV
           echo "API_SERVER_ZIP_FILE_NAME=$API_SERVER_ZIP_FILE_NAME" >> $GITHUB_ENV
+          echo "FORC_INDEX_ZIP_FILE_NAME=$FORC_INDEX_ZIP_FILE_NAME" >> $GITHUB_ENV
 
           # create zip file
           mkdir -pv "$INDEXER_ARTIFACT"
           mkdir -pv "$API_SERVER_ARTIFACT"
+          mkdir -pv "$FORC_INDEX_ARTIFACT"
           cp "target/${{ matrix.job.target }}/release/fuel-indexer" "$INDEXER_ARTIFACT"
           cp "target/${{ matrix.job.target }}/release/fuel-indexer-api-server" "$API_SERVER_ARTIFACT"
+          cp "target/${{ matrix.job.target }}/release/forc-index" "$FORC_INDEX_ARTIFACT"
           tar -czvf "$INDEXER_ZIP_FILE_NAME" "$INDEXER_ARTIFACT"
           tar -czvf "$API_SERVER_ZIP_FILE_NAME" "$API_SERVER_ARTIFACT"
+          tar -czvf "$FORC_INDEX_ZIP_FILE_NAME" "$FORC_INDEX_ARTIFACT"
 
       - name: Upload Indexer Binary Artifact
         uses: actions/upload-release-asset@v1
@@ -398,6 +412,16 @@ jobs:
           upload_url: ${{ github.event.release.upload_url }}
           asset_path: ./${{ env.API_SERVER_ZIP_FILE_NAME }}
           asset_name: ${{ env.API_SERVER_ZIP_FILE_NAME }}
+          asset_content_type: application/gzip
+
+      - name: Upload Forc Index Binary Artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./${{ env.FORC_INDEX_ZIP_FILE_NAME }}
+          asset_name: ${{ env.FORC_INDEX_ZIP_FILE_NAME }}
           asset_content_type: application/gzip
 
       - name: Notify if Job Fails
@@ -544,7 +568,7 @@ jobs:
           profile: minimal
           toolchain: stable
           target: wasm32-unknown-unknown
-      
+
       - name: Publish crates
         uses: katyo/publish-crates@v1
         with:
