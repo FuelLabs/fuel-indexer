@@ -1,4 +1,7 @@
-use crate::{cli::InitCommand, utils::{defaults, dasherize_to_underscore}};
+use crate::{
+    cli::InitCommand,
+    utils::{dasherize_to_underscore, defaults},
+};
 use anyhow::Context;
 use forc_util::validate_name;
 use std::{
