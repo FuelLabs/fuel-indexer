@@ -34,6 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .join("..")
         .join("..")
         .join("..")
+        .join("packages")
         .join("fuel-indexer-tests")
         .join("assets")
         .join("test-chain-config.json");

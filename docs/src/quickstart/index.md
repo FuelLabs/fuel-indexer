@@ -134,8 +134,7 @@ module:
 If you open up your index library at `hello-index/src/lib.rs`
 
 ```rust
-//! A rudimentary block explorer implementation demonstrating how blocks, transactions,
-//! contracts, and accounts can be persisted into the database.
+//! A "Hello World" type of program for the Fuel Indexer service.
 //!
 //! Build this example's WASM module using the following command. Note that a
 //! wasm32-unknown-unknown target will be required.
@@ -170,7 +169,7 @@ use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
 // A utility function used to convert an arbitrarily sized string into Bytes32
 // using the first 32 bytes of the String. This might be provided by a standard-ish
 // library in the future.
-fn bytes32(data: &String) -> Bytes32 {
+fn bytes32(data: &str) -> Bytes32 {
     let data = sha256_digest(&data);
     let mut buff = [0u8; 32];
     buff.copy_from_slice(&data.as_bytes()[..32]);
@@ -180,7 +179,7 @@ fn bytes32(data: &String) -> Bytes32 {
 // A utility function used to convert an arbitrarily sized string into u64
 // using the first 8 bytes of the String. This might be provided by a standard-ish
 // library in the future.
-fn u64_id(data: &String) -> u64 {
+fn u64_id(data: &str) -> u64 {
     let mut buff = [0u8; 8];
     buff.copy_from_slice(&data.as_bytes()[..8]);
     u64::from_le_bytes(buff)
@@ -193,11 +192,6 @@ mod hello_world_index {
         // name of the person in the Greeting
         let greeter_id = u64_id(&event.person.name.to_string());
 
-        // As of now, SizedAsciiString's don't have all of the flexibility of standard
-        // String types, so we have to do a bit of conversion to trim whitespace.
-        let greeting = event.greeting.to_string().trim_end().to_string();
-        let name = event.person.name.to_string().trim_end().to_string();
-
         // Here we 'get or create' a Salutation based on the ID of the event
         // emiited in the LogData receipt of our smart contract
         let greeting = match Salutation::load(event.id) {
@@ -209,7 +203,8 @@ mod hello_world_index {
             None => {
                 // If we did not already have this Saluation stored in the database. Here we
                 // show how you can use the String255 type to store strings with length <= 255
-                let message = format!("{}, my name is {}", greeting, name);
+                let message =
+                    format!("{} 👋, my name is {}", &event.greeting, &event.person.name);
 
                 Salutation {
                     id: event.id,
@@ -233,7 +228,7 @@ mod hello_world_index {
             None => Greeter {
                 id: greeter_id,
                 first_seen: block.height,
-                name,
+                name: event.person.name.to_string(),
                 last_seen: block.height,
             },
         };
@@ -281,7 +276,7 @@ module:
 If successful, your output should resemble:
 
 ```text
-➜  hello-index forc index deploy --manifest forc-index.manifest.yaml --auth fuel
+➜  hello-index forc index deploy --manifest forc-index.manifest.yaml
 
 🚀 Deploying index at hello-index.manifest.yaml to 'http://127.0.0.1:29987/api/index/fuel/hello_index'
 {
@@ -312,24 +307,62 @@ If successful, your output should resemble:
 ✅ Successfully deployed in at hello-index.manifest.yaml to http://127.0.0.1:29987/api/index/fuel/hello_index
 ```
 
+## Test data
+
+Now that we've successfully deployed our index, let's make a few calls to our Sway contract in order to produce a few events, and index some data.
+
+```bash
+cargo run --bin hello-bin
+```
+
+- Run this command several times in order to index data.
+
 ----
 
 ## Querying for indexed events
 
 After you've successfully completed all 6 of the aforementioned steps, you can trigger some test events simply by calling the `new_greeting()` method of your Sway contract. This will produce blocks, transactions, and receipts, which will be emitted by your local Fuel node. These events will be picked up by the indexer and subsequently indexed according to the index that you've deployed. Once you have a few indexed events, you can query the indexer for the data that you wish to receive.
 
-```sh
-curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples \
-   -H 'content-type: application/json' \
-   -d '{"query": "query { greeter { id name last_seen }}", "params": "b"}' \
-| json_pp
-```
+### Fetching data
 
-```json
+#### Query for all of our `Greeter` types
+
+```sh
+➜ curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples \
+   -H 'content-type: application/json' \
+   -d '{"query": "query { greeter { id name first_seen last_seen }}", "params": "b"}' \
+| json_pp
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   364  100   287  100    77   6153   1650 --:--:-- --:--:-- --:--:--  9100
 [
    {
-      "id" : 1,
-      "count" : "1"
+      "first_seen" : 4,
+      "id" : 2314885811371338051,
+      "last_seen" : 4,
+      "name" : "Ciara"
+   },
+   {
+      "first_seen" : 6,
+      "id" : 2314885532299390017,
+      "last_seen" : 6,
+      "name" : "Alex"
+   },
+   {
+      "first_seen" : 8,
+      "id" : 7957705993296504916,
+      "last_seen" : 8,
+      "name" : "Thompson"
+   },
+   {
+      "first_seen" : 10,
+      "id" : 2314885530822735425,
+      "last_seen" : 10,
+      "name" : "Ava"
    }
 ]
 ```
+
+### Querying mutations
+
+<< todo >>
