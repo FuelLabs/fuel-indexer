@@ -15,6 +15,7 @@ scalar ContractId
 scalar Salt
 scalar Jsonb
 scalar MessageId
+scalar String255
 
 enum IndexType {
     Btree,

@@ -18,6 +18,8 @@ pub mod db;
 pub mod directives;
 pub mod utils;
 
+const MAX_STRING_LEN: usize = 255;
+
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
     ID(u64),
@@ -31,10 +33,11 @@ pub enum FtColumn {
     Int8(i64),
     UInt4(u32),
     UInt8(u64),
-    Timestamp(u64),
+    Timestamp(i64),
     Salt(Salt),
     Jsonb(Jsonb),
     MessageId(MessageId),
+    String255(String),
 }
 
 impl FtColumn {
@@ -105,10 +108,10 @@ impl FtColumn {
                 FtColumn::UInt8(int8)
             }
             ColumnType::Timestamp => {
-                let uint8 = u64::from_le_bytes(
+                let int8 = i64::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
-                FtColumn::Timestamp(uint8)
+                FtColumn::Timestamp(int8)
             }
             ColumnType::Blob => {
                 panic!("Blob not supported for FtColumn.");
@@ -123,6 +126,17 @@ impl FtColumn {
                 let message_id =
                     MessageId::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::MessageId(message_id)
+            }
+            ColumnType::String255 => {
+                let trimmed: Vec<u8> = bytes[..size]
+                    .iter()
+                    .filter_map(|x| if *x != b' ' { Some(*x) } else { None })
+                    .collect();
+
+                let s = String::from_utf8_lossy(&trimmed).to_string();
+
+                assert!(s.len() <= MAX_STRING_LEN, "String255 exceeds max length.");
+                FtColumn::String255(s)
             }
         }
     }
@@ -174,6 +188,9 @@ impl FtColumn {
             FtColumn::MessageId(value) => {
                 format!("'{:x}'", value)
             }
+            FtColumn::String255(value) => {
+                format!("'{}'", value)
+            }
         }
     }
 }
@@ -197,10 +214,12 @@ mod tests {
         let int8 = FtColumn::Int8(i64::from_le_bytes([0x78; 8]));
         let uint4 = FtColumn::UInt4(u32::from_le_bytes([0x78; 4]));
         let uint8 = FtColumn::UInt8(u64::from_le_bytes([0x78; 8]));
-        let uint64 = FtColumn::Timestamp(u64::from_le_bytes([0x78; 8]));
+        let int64 = FtColumn::Timestamp(i64::from_le_bytes([0x78; 8]));
         let salt = FtColumn::Salt(Salt::try_from([0x31; 32]).expect("Bad bytes"));
         let message_id =
             FtColumn::MessageId(MessageId::try_from([0x0F; 32]).expect("Bad bytes"));
+        let string255 = FtColumn::String255(String::from("hello world"));
+        let jsonb = FtColumn::Jsonb(Jsonb(r#"{"hello":"world"}"#.to_string()));
 
         insta::assert_yaml_snapshot!(id.query_fragment());
         insta::assert_yaml_snapshot!(addr.query_fragment());
@@ -214,7 +233,9 @@ mod tests {
         insta::assert_yaml_snapshot!(int8.query_fragment());
         insta::assert_yaml_snapshot!(uint4.query_fragment());
         insta::assert_yaml_snapshot!(uint8.query_fragment());
-        insta::assert_yaml_snapshot!(uint64.query_fragment());
+        insta::assert_yaml_snapshot!(int64.query_fragment());
         insta::assert_yaml_snapshot!(message_id.query_fragment());
+        insta::assert_yaml_snapshot!(string255.query_fragment());
+        insta::assert_yaml_snapshot!(jsonb.query_fragment())
     }
 }

@@ -1,0 +1,7 @@
+---
+source: fuel-indexer-schema/src/lib.rs
+assertion_line: 236
+expression: jsonb.query_fragment()
+---
+"'{\"hello\":\"world\"}'"
+

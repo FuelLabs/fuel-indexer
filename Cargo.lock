@@ -2532,6 +2532,8 @@ dependencies = [
  "serde_yaml",
  "sqlx",
  "tokio",
+ "tracing",
+ "tracing-subscriber 0.2.25",
  "wasmer",
  "wasmer-compiler-cranelift",
  "wasmer-engine-universal",
@@ -3164,6 +3166,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
 dependencies = [
  "unicode-segmentation",
+]
+
+[[package]]
+name = "hello-bin"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-lib",
+ "fuel-indexer-tests",
+ "fuel-tx",
+ "fuel-types",
+ "fuels",
+ "fuels-abigen-macro",
+ "fuels-core",
+ "rand 0.8.5",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "hello-index"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels-core",
+ "fuels-types 0.30.0",
+ "getrandom 0.2.8",
+ "instant",
+ "serde",
 ]
 
 [[package]]

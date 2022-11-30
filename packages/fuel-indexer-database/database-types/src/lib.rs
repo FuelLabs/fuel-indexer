@@ -111,6 +111,7 @@ impl NewColumn {
             }
             ColumnType::Jsonb => "jsonb",
             ColumnType::MessageId => "varchar(64)",
+            ColumnType::String255 => "varchar(255)",
         }
     }
 }
@@ -143,6 +144,7 @@ pub enum ColumnType {
     ForeignKey = 14,
     Jsonb = 15,
     MessageId = 16,
+    String255 = 17,
 }
 
 impl From<ColumnType> for i32 {
@@ -165,6 +167,7 @@ impl From<ColumnType> for i32 {
             ColumnType::ForeignKey => 14,
             ColumnType::Jsonb => 15,
             ColumnType::MessageId => 16,
+            ColumnType::String255 => 17,
         }
     }
 }
@@ -195,6 +198,7 @@ impl From<i32> for ColumnType {
             14 => ColumnType::ForeignKey,
             15 => ColumnType::Jsonb,
             16 => ColumnType::MessageId,
+            17 => ColumnType::String255,
             _ => panic!("Invalid column type."),
         }
     }
@@ -220,6 +224,7 @@ impl From<&str> for ColumnType {
             "ForeignKey" => ColumnType::ForeignKey,
             "Jsonb" => ColumnType::Jsonb,
             "MessageId" => ColumnType::MessageId,
+            "String255" => ColumnType::String255,
             _ => panic!("Invalid column type: '{}'", name),
         }
     }

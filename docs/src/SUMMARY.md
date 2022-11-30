@@ -10,6 +10,7 @@
     - [Configuration](./getting-started/configuration.md)
 - [Quickstart](./quickstart/index.md)
 - [Examples](./examples/index.md)
+  - [Hello World](./examples/hello-world.md)
   - [Block Explorer](./examples/block-explorer.md)
 - [Components](./components/index.md)
   - [Assets](./components/assets/index.md)

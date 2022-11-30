@@ -380,8 +380,8 @@ impl IndexerService {
                 }
 
                 info!("Registered indexer {}", identifier);
-                self.handles.borrow_mut().insert(namespace.clone(), handle);
-                self.killers.insert(namespace, kill_switch);
+                self.handles.borrow_mut().insert(manifest.uid(), handle);
+                self.killers.insert(manifest.uid(), kill_switch);
             }
             None => {
                 let indices = queries::registered_indices(&mut conn).await?;
@@ -402,10 +402,8 @@ impl IndexerService {
                     .await?;
 
                     info!("Registered indexer {}", manifest.uid());
-                    self.handles
-                        .borrow_mut()
-                        .insert(manifest.namespace.clone(), handle);
-                    self.killers.insert(manifest.namespace, kill_switch);
+                    self.handles.borrow_mut().insert(manifest.uid(), handle);
+                    self.killers.insert(manifest.uid(), kill_switch);
                 }
             }
         }
@@ -475,10 +473,8 @@ impl IndexerService {
                 .await
                 .unwrap();
 
-                handles
-                    .borrow_mut()
-                    .insert(request.namespace.clone(), handle);
-                killers.insert(request.namespace, kill_switch);
+                handles.borrow_mut().insert(manifest.uid(), handle);
+                killers.insert(manifest.uid(), kill_switch);
             }
         }
     }

@@ -26,5 +26,5 @@ DATABASE_URL=postgres://postgres@localhost bash scripts/run_migrations.bash
 ### Start the service
 
 ```bash
-cargo run --bin fuel-indexer -- --manifest fuel-indexer-tests/assets/fuel_indexer_test.yaml
+cargo run --bin fuel-indexer
 ```
