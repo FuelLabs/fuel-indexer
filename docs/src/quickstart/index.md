@@ -1,14 +1,21 @@
 # Quickstart
 
-A cursory explanation on how to get up and running with an index in 5 minutes. This section will assume you've already read over [Getting Started](./../getting-started/index.md) and have already installed all relevant [sytem](./../getting-started/system-dependencies.md) and [application](./../getting-started/application-dependencies.md) dependencies.
+- A cursory explanation on how to get up and running with an index in 5 minutes.
+- This will assume that you've:
+  - Read over [Getting Started](./../getting-started/index.md)
+  - Have installed all relevant [sytem](./../getting-started/system-dependencies.md)
+  - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies.
+  - Have already created a Fuel project according to [the recommended project structure](./../getting-started/fuel-indexer-project.md)
+
 
 ## Write a Sway smart contract
 
-`forc new greeting && cd greeting/`
+`cd contracts/ && forc new greeting`
 
 Write a greeting smart contract.
 
 ```sway
+// src/main.sw
 contract;
 
 use std::logging::log;
@@ -35,14 +42,14 @@ impl Greet for Contract {
 
 ```
 
-> Make sure to compile your smart contract with `forc build`, which will build the ABI JSON asset required by your index.
+> Compile your smart contract with [`forc build`](https://fuellabs.github.io/sway/v0.31.2/forc/commands/forc_build.html), which will build the ABI JSON asset required by your index.
 
 ## Create and deploy an index
 
-This consists of 6 small parts:
+This consists of a few small parts:
 
 1. Initializing a new index project.
-2. Defining the structure of your database models via GraphQL schema.
+2. Defining the structure of your data models and queries via GraphQL schema.
 3. Specifying an index _manifest_: a YAML file used to configure your index at compile-time and run-time.
 4. Writing the actual code to index events.
 5. Compiling your new index code to a WebAssembly binary.
@@ -85,8 +92,7 @@ type QueryRoot {
 }
 
 type Greeter {
-
-    # _All_ types/models defined in GraphQL schema must have an ID field. Further,
+    # All types/models defined in GraphQL schema must have an ID field. Further,
     # for the time being, that ID field must be of type u64
     id: ID!
     name: Bytes32!
@@ -98,7 +104,6 @@ type Salutation {
     id: ID!
     message_hash: Bytes32!
     message: Jsonb!
-
     # This `greeter` field shows the user of foreign keys. For more info
     # on how we deal with foreign keys, read through the book at
     # https://fuellabs.github.io/fuel-indexer/master/components/database/foreign-keys.html
@@ -129,7 +134,7 @@ module:
 
 > Note that we haven't added a `module` parameter to our manifest yet because we haven't actually built a WASM module yet.
 
-### 4. Now write the actual code for your index
+### 4. Write the actual code for your index
 
 If you open up your index library at `hello-index/src/lib.rs`
 
@@ -149,14 +154,14 @@ If you open up your index library at `hello-index/src/lib.rs`
 //! cargo run --bin fuel-node
 //! ```
 //!
-//! With your database backend set up, now start your fuel-indexer binary using the
+//! With your database backend set up, start your fuel-indexer binary using the
 //! assets from this example:
 //!
 //! ```bash
 //! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello-index.manifest.yaml
 //! ```
 //!
-//! Now trigger an event.
+//! Call the contract
 //!
 //! ```bash
 //! cargo run --bin hello-bin
@@ -307,7 +312,7 @@ If successful, your output should resemble:
 ✅ Successfully deployed in at hello-index.manifest.yaml to http://127.0.0.1:29987/api/index/fuel/hello_index
 ```
 
-## Test data
+## Generating test data
 
 Now that we've successfully deployed our index, let's make a few calls to our Sway contract in order to produce a few events, and index some data.
 
@@ -315,7 +320,7 @@ Now that we've successfully deployed our index, let's make a few calls to our Sw
 cargo run --bin hello-bin
 ```
 
-- Run this command several times in order to index data.
+> One contract call will be made, and one event will be emitted to be indexed.
 
 ----
 
@@ -325,7 +330,9 @@ After you've successfully completed all 6 of the aforementioned steps, you can t
 
 ### Fetching data
 
-#### Query for all of our `Greeter` types
+<< TODO >>
+
+#### Query for all records of a type
 
 ```sh
 ➜ curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples \
@@ -363,6 +370,6 @@ After you've successfully completed all 6 of the aforementioned steps, you can t
 ]
 ```
 
-### Querying mutations
+#### Querying mutations
 
 << todo >>
