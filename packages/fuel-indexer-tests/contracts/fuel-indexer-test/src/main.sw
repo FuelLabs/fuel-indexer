@@ -26,6 +26,7 @@ pub struct Pung {
     id: u64,
     value: u64,
     is_pung: bool,
+    from: Identity,
 }
 
 abi FuelIndexer {
@@ -71,6 +72,8 @@ impl FuelIndexer for Contract {
             id: 1,
             value: 456,
             is_pung: true,
+            from:
+            Identity::Address(Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96)),
         };
         log(p);
     }

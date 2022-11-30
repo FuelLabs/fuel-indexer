@@ -2,7 +2,8 @@ extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Jsonb, MessageId, Salt,
+    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Identity, Jsonb, MessageId,
+    Salt,
 };
 use serde::{Deserialize, Serialize};
 
@@ -38,6 +39,7 @@ pub enum FtColumn {
     Jsonb(Jsonb),
     MessageId(MessageId),
     String255(String),
+    Identity(Identity),
 }
 
 impl FtColumn {
@@ -138,6 +140,11 @@ impl FtColumn {
                 assert!(s.len() <= MAX_STRING_LEN, "String255 exceeds max length.");
                 FtColumn::String255(s)
             }
+            ColumnType::Identity => {
+                let identity =
+                    Identity::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::Identity(identity)
+            }
         }
     }
 
@@ -191,6 +198,10 @@ impl FtColumn {
             FtColumn::String255(value) => {
                 format!("'{}'", value)
             }
+            FtColumn::Identity(value) => match value {
+                Identity::Address => format!("'{:x}'", value),
+                Identity::ContractId => format!("'{:x}'", value),
+            },
         }
     }
 }
@@ -220,6 +231,7 @@ mod tests {
             FtColumn::MessageId(MessageId::try_from([0x0F; 32]).expect("Bad bytes"));
         let string255 = FtColumn::String255(String::from("hello world"));
         let jsonb = FtColumn::Jsonb(Jsonb(r#"{"hello":"world"}"#.to_string()));
+        let identity = FtColumn::Identity(Identity::Address([0u8; 32]));
 
         insta::assert_yaml_snapshot!(id.query_fragment());
         insta::assert_yaml_snapshot!(addr.query_fragment());
@@ -236,6 +248,7 @@ mod tests {
         insta::assert_yaml_snapshot!(int64.query_fragment());
         insta::assert_yaml_snapshot!(message_id.query_fragment());
         insta::assert_yaml_snapshot!(string255.query_fragment());
-        insta::assert_yaml_snapshot!(jsonb.query_fragment())
+        insta::assert_yaml_snapshot!(jsonb.query_fragment());
+        insta::assert_yaml_snapshot!(identity.query_fragment());
     }
 }

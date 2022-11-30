@@ -49,7 +49,7 @@ fn get_json_abi(abi: &str) -> ProgramABI {
         Ok(src) => src,
         Err(e) => {
             proc_macro_error::abort_call_site!(
-                "`abi` must be a file path to valid json abi: {:?}",
+                "`abi` must be a file path to valid json abi: {:?}.",
                 e
             )
         }
@@ -58,14 +58,14 @@ fn get_json_abi(abi: &str) -> ProgramABI {
     let source = match src.get() {
         Ok(s) => s,
         Err(e) => {
-            proc_macro_error::abort_call_site!("Could not fetch JSON ABI. {:?}", e)
+            proc_macro_error::abort_call_site!("Could not fetch JSON ABI: {:?}.", e)
         }
     };
 
     match serde_json::from_str(&source) {
         Ok(parsed) => parsed,
         Err(e) => {
-            proc_macro_error::abort_call_site!("Invalid JSON from ABI spec! {:?}", e)
+            proc_macro_error::abort_call_site!("Invalid JSON from ABI spec: {:?}.", e)
         }
     }
 }
@@ -117,7 +117,10 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "MessageOut" => quote! { fuel::MessageOut },
             o if o.starts_with("str[") => quote! { String },
             o => {
-                proc_macro_error::abort_call_site!("Unrecognized primitive type: {:?}", o)
+                proc_macro_error::abort_call_site!(
+                    "Unrecognized primitive type: {:?}.",
+                    o
+                )
             }
         }
     }

@@ -120,6 +120,7 @@ mod fuel_indexer_test {
             id: 1,
             value: logdata_entity.value,
             is_pung: 1,
+            from: logdata_entity.from,
         };
 
         entity.save();

@@ -6,7 +6,7 @@ pub mod tx;
 pub use fuel_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
 };
-pub use fuels_core::types::Bits256;
+pub use fuels_core::{types::Bits256, Identity};
 use serde::{Deserialize, Serialize};
 
 pub type ID = u64;
