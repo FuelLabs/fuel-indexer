@@ -3193,7 +3193,7 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels-core",
- "fuels-types",
+ "fuels-types 0.30.0",
  "getrandom 0.2.8",
  "instant",
  "serde",

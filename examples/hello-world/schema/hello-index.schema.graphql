@@ -15,15 +15,6 @@ type Greeter {
     last_seen: UInt8!
 }
 
-query AllGreeters {
-    greeter {
-        id
-        name
-        first_seen
-        last_seen
-    }
-}
-
 # Calling this `Salutation` so as to not clash with `Greeting` in the contract
 type Salutation {
     id: ID!
@@ -33,4 +24,3 @@ type Salutation {
     first_seen: UInt8!
     last_seen: UInt8!
 }
-
