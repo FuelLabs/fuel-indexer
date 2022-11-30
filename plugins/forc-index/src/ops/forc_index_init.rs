@@ -1,4 +1,4 @@
-use crate::{cli::InitCommand, utils::defaults};
+use crate::{cli::InitCommand, utils::{defaults, dasherize_to_underscore}};
 use anyhow::Context;
 use forc_util::validate_name;
 use std::{
@@ -29,7 +29,7 @@ fn print_welcome_message() {
     );
 
     let ascii_tag = r#"
-███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████  
+███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 
 ██      ██    ██ ██      ██          ██ ████   ██ ██   ██ ██       ██ ██  ██      ██   ██ 
 █████   ██    ██ █████   ██          ██ ██ ██  ██ ██   ██ █████     ███   █████   ██████  
 ██      ██    ██ ██      ██          ██ ██  ██ ██ ██   ██ ██       ██ ██  ██      ██   ██ 
@@ -79,6 +79,9 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
             .to_string_lossy()
             .into_owned(),
     };
+
+    // Indexer expects underscores not dashes
+    let project_name = dasherize_to_underscore(&project_name);
 
     validate_name(&project_name, "project name")?;
 
