@@ -3,7 +3,7 @@
 - A cursory explanation on how to get up and running with an index in 5 minutes.
 - This will assume that you've:
   - Read over [Getting Started](./../getting-started/index.md)
-  - Have installed all relevant [sytem](./../getting-started/system-dependencies.md) dependencies.
+  - Have installed all relevant [system](./../getting-started/system-dependencies.md) dependencies.
   - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies.
   - Have already created a Fuel project according to [the recommended project structure](./../getting-started/fuel-indexer-project.md)
 
@@ -91,27 +91,23 @@ type QueryRoot {
     greeter: Greeter
 }
 
+# Calling this `Greeter` so as to not clash with `Person` in the contract
 type Greeter {
-    # All types/models defined in GraphQL schema must have an ID field. Further,
-    # for the time being, that ID field must be of type u64
     id: ID!
-    name: Bytes32!
+    name: String255!
     first_seen: UInt8!
     last_seen: UInt8!
 }
 
+# Calling this `Salutation` so as to not clash with `Greeting` in the contract
 type Salutation {
     id: ID!
     message_hash: Bytes32!
-    message: Jsonb!
-    # This `greeter` field shows the user of foreign keys. For more info
-    # on how we deal with foreign keys, read through the book at
-    # https://fuellabs.github.io/fuel-indexer/master/components/database/foreign-keys.html
+    message: String255!
     greeter: Greeter!
     first_seen: UInt8!
     last_seen: UInt8!
 }
-
 ```
 
 ### 3. Next update the manifest for your index
@@ -125,7 +121,7 @@ identifier: hello_index
 # and compiled our smart contract, we'll include it's ABI JSON output here.
 abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
 start_block: 1
-graphql_schema: examples/hello-world/schema/hello-world.graphql
+graphql_schema: examples/hello-world/schema/hello_world.schema.graphql
 module:
   wasm: we don't have one of these yet
 ```
@@ -261,7 +257,7 @@ namespace: fuel_examples
 identifier: hello_index
 abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
 start_block: 1
-graphql_schema: examples/hello-world/schema/hello-world.graphql
+graphql_schema: examples/hello-world/schema/hello_world.schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/hello_index.wasm
 ```
