@@ -12,8 +12,8 @@ Below is a mapping of GraphQL schema types to their Postgres equivalents, refere
 | str[32] | AssetId | varchar(64) |
 | b256 | ContractId | varchar(64) |
 | str[32] | Salt | varchar(64) |
-| u32 | Int4 | integer |
-| u64 | Int8 | bigint |
+| u32 | UInt4 | integer |
+| u64 | UInt8 | bigint |
 | u64 | Timestamp | timestamp |
 | str[] | Blob | bytes |
 | str[32] | MessageId | varchar(64) |
@@ -40,7 +40,7 @@ type Event {
 }
 ```
 
-And finall, this GraphQL schema will generate the following Postgres schema:
+And finally, this GraphQL schema will generate the following Postgres schema:
 
 ```text
                                            Table "schema.event"
