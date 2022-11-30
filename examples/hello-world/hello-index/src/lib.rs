@@ -57,7 +57,7 @@ mod hello_world_index {
         let greeter_id = u64_id(&event.person.name.to_string());
 
         // Here we 'get or create' a Salutation based on the ID of the event
-        // emiited in the LogData receipt of our smart contract
+        // emitted in the LogData receipt of our smart contract
         let greeting = match Salutation::load(event.id) {
             Some(mut g) => {
                 // If we found an event, let's use block height as a proxy for time
