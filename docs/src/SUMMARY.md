@@ -28,4 +28,5 @@
   - [Indices](./components/indices/index.md)
     - [Registering Indices](./components/indices/registration.md)
 - [Indexing](./indexing/index.md)
+  - [Blocks and Transactions](./indexing/blocks-and-transactions.md)
   - [Receipts](./indexing/receipts.md)
