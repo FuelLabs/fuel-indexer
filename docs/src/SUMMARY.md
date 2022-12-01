@@ -12,6 +12,8 @@
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-world.md)
   - [Block Explorer](./examples/block-explorer.md)
+- [Plugins](./plugins/index.md)
+  - [`forc index`](./plugins/forc-index.md)
 - [Components](./components/index.md)
   - [Assets](./components/assets/index.md)
     - [Manifest](./components/assets/manifest.md)
