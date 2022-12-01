@@ -3,8 +3,8 @@
 - A cursory explanation on how to get up and running with an index in 5 minutes.
 - This will assume that you've:
   - Read over [Getting Started](./../getting-started/index.md)
-  - Have installed all relevant [system](./../getting-started/system-dependencies.md) dependencies.
-  - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies.
+  - Have installed all relevant [system](./../getting-started/system-dependencies.md) dependencies
+  - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies
   - Have already created a Fuel project according to [the recommended project structure](./../getting-started/fuel-indexer-project.md)
 
 ## Write a Sway smart contract
@@ -250,7 +250,7 @@ cargo build --release --target wasm32-unknown-unknown
 > IMPORTANT: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash).
 >
 >
-> IMPORTANT: Be sure to add your new WASM module to your index manifest
+> IMPORTANT: Be sure to add your new WASM module to your index manifest as shown below.
 
 ```yaml
 namespace: fuel_examples
@@ -264,9 +264,11 @@ module:
 
 ### 6. Start the indexer & deploy your index
 
-> IMPORTANT: You should already have Postgres running by now
+> IMPORTANT: You should already have Postgres running by now.
 
 ```bash
+# Go back to the repository root
+➜ cd fuel-indexer/
 
 # Start a local fuel node
 ➜  cargo run --bin fuel-node
@@ -320,6 +322,7 @@ Now that we've successfully deployed our index, let's make a few calls to our Sw
 # Go back to the repository root
 ➜ cd fuel-indexer/
 
+# Run the test data generator for this example
 ➜ cargo run --bin hello-bin
 ```
 
@@ -330,7 +333,7 @@ You can continue running this command to generate more data.
 
 ## Querying for indexed events
 
-After you've successfully completed all 6 of the aforementioned steps, you can trigger some test events simply by calling the `new_greeting()` method of your Sway contract. This will produce blocks, transactions, and receipts, which will be emitted by your local Fuel node. These events will be picked up by the indexer and subsequently indexed according to the index that you've deployed. Once you have a few indexed events, you can query the indexer for the data that you wish to receive.
+After you've successfully completed all six of the aforementioned steps, you can trigger some test events simply by calling the `new_greeting()` method of your Sway contract. This will produce blocks, transactions, and receipts, which will be emitted by your local Fuel node. These events will be picked up by the indexer and subsequently indexed according to the index that you've deployed. Once you have a few indexed events, you can query the indexer for the data that you wish to receive.
 
 ### Query for all records of a type
 
