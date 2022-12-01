@@ -68,9 +68,9 @@ This consists of a few small parts:
 ➜ hello-index tree .
 .
 ├── Cargo.toml
-├── hello-index.manifest.yaml
+├── hello_index.manifest.yaml
 ├── schema
-│   └── hello-index.schema.graphql
+│   └── hello_index.schema.graphql
 └── src
     └── lib.rs
 
@@ -79,7 +79,7 @@ This consists of a few small parts:
 
 ### 2. Add some GraphQL type definitions
 
-If you open up `hello-index/schema/hello-index.schema.graphql`
+If you open up `hello-index/schema/hello_index.schema.graphql`
 
 ```graphql
 schema {
@@ -112,7 +112,7 @@ type Salutation {
 
 ### 3. Next update the manifest for your index
 
-If you open up `hello-index/hello-index.manifest.yaml`
+If you open up `hello-index/hello_index.manifest.yaml`
 
 ```yaml
 namespace: fuel_examples
@@ -152,7 +152,7 @@ If you open up your index library at `hello-index/src/lib.rs`
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello-index.manifest.yaml
+//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello_index.manifest.yaml
 //! ```
 //!
 //! Call the contract
@@ -184,7 +184,7 @@ fn u64_id(data: &str) -> u64 {
     u64::from_le_bytes(buff)
 }
 
-#[indexer(manifest = "examples/hello-world/hello-index.manifest.yaml")]
+#[indexer(manifest = "examples/hello-world/hello_index.manifest.yaml")]
 mod hello_world_index {
     fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the
@@ -275,15 +275,15 @@ module:
 ➜  forc index start --background 2>/dev/null
 
 # Deploy your index to the local service using test authentication
-➜  forc index deploy --manifest hello-index.manifest.yaml
+➜  forc index deploy --manifest hello_index.manifest.yaml
 ```
 
 If successful, your output should resemble:
 
 ```text
-➜  forc index deploy --manifest forc-index.manifest.yaml
+➜  forc index deploy --manifest forc_index.manifest.yaml
 
-🚀 Deploying index at hello-index.manifest.yaml to 'http://127.0.0.1:29987/api/index/fuel/hello_index'
+🚀 Deploying index at hello_index.manifest.yaml to 'http://127.0.0.1:29987/api/index/fuel/hello_index'
 {
   "assets": [
     {
@@ -308,7 +308,7 @@ If successful, your output should resemble:
   "success": "true"
 }
 
-✅ Successfully deployed in at hello-index.manifest.yaml to http://127.0.0.1:29987/api/index/fuel/hello_index
+✅ Successfully deployed index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/fuel/hello_index
 ```
 
 ## Generating test data

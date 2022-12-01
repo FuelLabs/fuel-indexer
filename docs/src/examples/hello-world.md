@@ -23,7 +23,7 @@ A "Hello World" type of program for the Fuel Indexer service.
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello-index.manifest.yaml
+//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello_index.manifest.yaml
 //! ```
 //!
 //! Now trigger an event.
@@ -55,7 +55,7 @@ fn u64_id(data: &str) -> u64 {
     u64::from_le_bytes(buff)
 }
 
-#[indexer(manifest = "examples/hello-world/hello-index.manifest.yaml")]
+#[indexer(manifest = "examples/hello-world/hello_index.manifest.yaml")]
 mod hello_world_index {
     fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the

@@ -27,9 +27,9 @@ The convetion for a Fuel project layout including a Fuel indexer is:
 └── indexer
     └── hello-index
         ├── Cargo.toml
-        ├── hello-index.manifest.yaml
+        ├── hello_index.manifest.yaml
         ├── schema
-        │   └── hello-index.schema.graphql
+        │   └── hello_index.schema.graphql
         └── src
             └── lib.rs
 
