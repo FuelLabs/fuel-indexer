@@ -1,6 +1,6 @@
 use crate::uses::{
     authorize_middleware, health_check, metrics, query_graph, register_index_assets,
-    stop_indexer,
+    stop_index,
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
@@ -133,7 +133,7 @@ impl GraphQlApi {
             .layer(Extension(pool.clone()));
 
         let stop_index_route = Router::new()
-            .route("/:namespace/:identifier", delete(stop_indexer))
+            .route("/:namespace/:identifier", delete(stop_index))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(tx));
 

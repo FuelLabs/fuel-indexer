@@ -134,7 +134,7 @@ pub(crate) async fn authorize_middleware<B>(
     }
 }
 
-pub(crate) async fn stop_indexer(
+pub(crate) async fn stop_index(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
 ) -> impl IntoResponse {
