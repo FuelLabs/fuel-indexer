@@ -3,8 +3,8 @@
 - A cursory explanation on how to get up and running with an index in 5 minutes.
 - This will assume that you've:
   - Read over [Getting Started](./../getting-started/index.md)
-  - Have installed all relevant [system](./../getting-started/system-dependencies.md) dependencies.
-  - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies.
+  - Have installed all relevant [system](./../getting-started/system-dependencies.md) dependencies
+  - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies
   - Have already created a Fuel project according to [the recommended project structure](./../getting-started/fuel-indexer-project.md)
 
 ## Write a Sway smart contract
@@ -68,9 +68,9 @@ This consists of a few small parts:
 ➜ hello-index tree .
 .
 ├── Cargo.toml
-├── hello-index.manifest.yaml
+├── hello_index.manifest.yaml
 ├── schema
-│   └── hello-index.schema.graphql
+│   └── hello_index.schema.graphql
 └── src
     └── lib.rs
 
@@ -79,7 +79,7 @@ This consists of a few small parts:
 
 ### 2. Add some GraphQL type definitions
 
-If you open up `hello-index/schema/hello-index.schema.graphql`
+If you open up `hello-index/schema/hello_index.schema.graphql`
 
 ```graphql
 schema {
@@ -112,7 +112,7 @@ type Salutation {
 
 ### 3. Next update the manifest for your index
 
-If you open up `hello-index/hello-index.manifest.yaml`
+If you open up `hello-index/hello_index.manifest.yaml`
 
 ```yaml
 namespace: fuel_examples
@@ -152,7 +152,7 @@ If you open up your index library at `hello-index/src/lib.rs`
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello-index.manifest.yaml
+//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello_index.manifest.yaml
 //! ```
 //!
 //! Call the contract
@@ -184,7 +184,7 @@ fn u64_id(data: &str) -> u64 {
     u64::from_le_bytes(buff)
 }
 
-#[indexer(manifest = "examples/hello-world/hello-index.manifest.yaml")]
+#[indexer(manifest = "examples/hello-world/hello_index.manifest.yaml")]
 mod hello_world_index {
     fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the
@@ -250,7 +250,7 @@ cargo build --release --target wasm32-unknown-unknown
 > IMPORTANT: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash).
 >
 >
-> IMPORTANT: Be sure to add your new WASM module to your index manifest
+> IMPORTANT: Be sure to add your new WASM module to your index manifest as shown below.
 
 ```yaml
 namespace: fuel_examples
@@ -264,9 +264,11 @@ module:
 
 ### 6. Start the indexer & deploy your index
 
-> IMPORTANT: You should already have Postgres running by now
+> IMPORTANT: You should already have Postgres running by now.
 
 ```bash
+# Go back to the repository root
+➜ cd fuel-indexer/
 
 # Start a local fuel node
 ➜  cargo run --bin fuel-node
@@ -275,15 +277,15 @@ module:
 ➜  forc index start --background 2>/dev/null
 
 # Deploy your index to the local service using test authentication
-➜  forc index deploy --manifest hello-index.manifest.yaml
+➜  forc index deploy --manifest hello_index.manifest.yaml
 ```
 
 If successful, your output should resemble:
 
 ```text
-➜  forc index deploy --manifest forc-index.manifest.yaml
+➜  forc index deploy --manifest forc_index.manifest.yaml
 
-🚀 Deploying index at hello-index.manifest.yaml to 'http://127.0.0.1:29987/api/index/fuel/hello_index'
+🚀 Deploying index at hello_index.manifest.yaml to 'http://127.0.0.1:29987/api/index/fuel/hello_index'
 {
   "assets": [
     {
@@ -308,7 +310,7 @@ If successful, your output should resemble:
   "success": "true"
 }
 
-✅ Successfully deployed in at hello-index.manifest.yaml to http://127.0.0.1:29987/api/index/fuel/hello_index
+✅ Successfully deployed index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/fuel/hello_index
 ```
 
 ## Generating test data
@@ -320,6 +322,7 @@ Now that we've successfully deployed our index, let's make a few calls to our Sw
 # Go back to the repository root
 ➜ cd fuel-indexer/
 
+# Run the test data generator for this example
 ➜ cargo run --bin hello-bin
 ```
 
@@ -330,7 +333,7 @@ You can continue running this command to generate more data.
 
 ## Querying for indexed events
 
-After you've successfully completed all 6 of the aforementioned steps, you can trigger some test events simply by calling the `new_greeting()` method of your Sway contract. This will produce blocks, transactions, and receipts, which will be emitted by your local Fuel node. These events will be picked up by the indexer and subsequently indexed according to the index that you've deployed. Once you have a few indexed events, you can query the indexer for the data that you wish to receive.
+After you've successfully completed all six of the aforementioned steps, you can trigger some test events simply by calling the `new_greeting()` method of your Sway contract. This will produce blocks, transactions, and receipts, which will be emitted by your local Fuel node. These events will be picked up by the indexer and subsequently indexed according to the index that you've deployed. Once you have a few indexed events, you can query the indexer for the data that you wish to receive.
 
 ### Query for all records of a type
 

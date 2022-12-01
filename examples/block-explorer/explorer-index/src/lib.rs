@@ -39,7 +39,7 @@ pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
 // work. In the fuel-indexer repository, we use relative paths (starting from the
 // fuel-indexer root) but if you're building an index outside of the fuel-indexer
 // project you'll want to use full/absolute paths.
-#[indexer(manifest = "examples/block-explorer/manifest.yaml")]
+#[indexer(manifest = "examples/block-explorer/explorer_index.manifest.yaml")]
 mod explorer_index {
 
     // When specifying args to your handler functions, you can either use types defined
