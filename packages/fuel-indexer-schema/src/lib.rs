@@ -2,23 +2,23 @@ extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Jsonb, MessageId, Salt,
+    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Identity, Json, MessageId,
+    Salt,
 };
 use serde::{Deserialize, Serialize};
 
 pub use fuel_indexer_database_types as sql_types;
 
-pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
-pub const JOIN_DIRECTIVE_NAME: &str = "foreign_key";
-pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
-
 #[cfg(feature = "db-models")]
 pub mod db;
-
 pub mod directives;
 pub mod utils;
 
-const MAX_STRING_LEN: usize = 255;
+pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
+pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
+
+const MAX_CHARFIELD_LENGTH: usize = 255;
+const WHITESPACE: u8 = 0x20;
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
@@ -35,9 +35,10 @@ pub enum FtColumn {
     UInt8(u64),
     Timestamp(i64),
     Salt(Salt),
-    Jsonb(Jsonb),
+    Json(Json),
     MessageId(MessageId),
-    String255(String),
+    Charfield(String),
+    Identity(Identity),
 }
 
 impl FtColumn {
@@ -119,24 +120,33 @@ impl FtColumn {
             ColumnType::ForeignKey => {
                 panic!("ForeignKey not supported for FtColumn.");
             }
-            ColumnType::Jsonb => FtColumn::Jsonb(Jsonb(
-                String::from_utf8_lossy(&bytes[..size]).to_string(),
-            )),
+            ColumnType::Json => {
+                FtColumn::Json(Json(String::from_utf8_lossy(&bytes[..size]).to_string()))
+            }
             ColumnType::MessageId => {
                 let message_id =
                     MessageId::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::MessageId(message_id)
             }
-            ColumnType::String255 => {
-                let trimmed: Vec<u8> = bytes[..size]
-                    .iter()
-                    .filter_map(|x| if *x != b' ' { Some(*x) } else { None })
-                    .collect();
+            ColumnType::Charfield => {
+                let s = String::from_utf8_lossy(
+                    &bytes[..size]
+                        .iter()
+                        .filter_map(|x| if *x != WHITESPACE { Some(*x) } else { None })
+                        .collect::<Vec<u8>>(),
+                )
+                .to_string();
 
-                let s = String::from_utf8_lossy(&trimmed).to_string();
-
-                assert!(s.len() <= MAX_STRING_LEN, "String255 exceeds max length.");
-                FtColumn::String255(s)
+                assert!(
+                    s.len() <= MAX_CHARFIELD_LENGTH,
+                    "Charfield exceeds max length."
+                );
+                FtColumn::Charfield(s)
+            }
+            ColumnType::Identity => {
+                let identity =
+                    Identity::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::Identity(identity)
             }
         }
     }
@@ -182,15 +192,19 @@ impl FtColumn {
             FtColumn::Salt(value) => {
                 format!("'{:x}'", value)
             }
-            FtColumn::Jsonb(value) => {
+            FtColumn::Json(value) => {
                 format!("'{}'", value.0)
             }
             FtColumn::MessageId(value) => {
                 format!("'{:x}'", value)
             }
-            FtColumn::String255(value) => {
+            FtColumn::Charfield(value) => {
                 format!("'{}'", value)
             }
+            FtColumn::Identity(value) => match value {
+                Identity::Address(v) => format!("'{:x}'", v),
+                Identity::ContractId(v) => format!("'{:x}'", v),
+            },
         }
     }
 }
@@ -218,8 +232,8 @@ mod tests {
         let salt = FtColumn::Salt(Salt::try_from([0x31; 32]).expect("Bad bytes"));
         let message_id =
             FtColumn::MessageId(MessageId::try_from([0x0F; 32]).expect("Bad bytes"));
-        let string255 = FtColumn::String255(String::from("hello world"));
-        let jsonb = FtColumn::Jsonb(Jsonb(r#"{"hello":"world"}"#.to_string()));
+        let charfield = FtColumn::Charfield(String::from("hello world"));
+        let json = FtColumn::Json(Json(r#"{"hello":"world"}"#.to_string()));
 
         insta::assert_yaml_snapshot!(id.query_fragment());
         insta::assert_yaml_snapshot!(addr.query_fragment());
@@ -235,7 +249,7 @@ mod tests {
         insta::assert_yaml_snapshot!(uint8.query_fragment());
         insta::assert_yaml_snapshot!(int64.query_fragment());
         insta::assert_yaml_snapshot!(message_id.query_fragment());
-        insta::assert_yaml_snapshot!(string255.query_fragment());
-        insta::assert_yaml_snapshot!(jsonb.query_fragment())
+        insta::assert_yaml_snapshot!(charfield.query_fragment());
+        insta::assert_yaml_snapshot!(json.query_fragment())
     }
 }

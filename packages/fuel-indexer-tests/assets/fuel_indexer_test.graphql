@@ -26,6 +26,7 @@ type PungEntity {
     id: ID!
     value: UInt8!
     is_pung: Int4!
+    pung_from: Identity!
 }
 
 type Block {
@@ -38,7 +39,7 @@ type Block {
 type Tx {
     id: Bytes32! @unique
     block: Block!
-    input_data: Jsonb!
+    input_data: Json!
     timestamp: Int8!
 }
 

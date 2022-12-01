@@ -17,6 +17,12 @@ pub mod utils {
     pub use fuel_indexer_lib::utils::sha256_digest;
 }
 
+pub mod prelude {
+    pub use super::types::*;
+
+    pub use super::utils::*;
+}
+
 extern "C" {
     // TODO: error codes? or just panic and let the runtime handle it?
     fn ff_get_object(type_id: u64, ptr: *const u8, len: *mut u8) -> *mut u8;

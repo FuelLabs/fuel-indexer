@@ -265,7 +265,7 @@ mod explorer_index {
                 id: tx.id,
                 value: tx_amount,
                 status: tx.status.clone().into(),
-                tokens_transferred: Jsonb(
+                tokens_transferred: Json(
                     serde_json::to_value(tokens_transferred)
                         .unwrap()
                         .to_string(),

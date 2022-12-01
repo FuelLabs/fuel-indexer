@@ -37,28 +37,28 @@
 #     timestamp: Int8!
 #     from: Address!
 #     to: Address!
-#     tokens_transferred: Jsonb!
+#     tokens_transferred: Json!
 #     value: UInt8!
 #     transaction_fee: UInt8!
 #     gas_limit: UInt8!
 #     gas_used: UInt8!
 #     gas_price: UInt8!
 #     nonce: Int8!
-#     input_data: Jsonb!
+#     input_data: Json!
 # }
 
 # type Account {
 #     address: Address!
 #     balance: UInt8!
-#     tokens: Jsonb!
+#     tokens: Json!
 # }
 
 
 # type Contract {
 #     creator: Address!
 #     creation_transaction: Transaction!
-#     source_code: Jsonb!
-#     abi: Jsonb!
-#     creation_code: Jsonb!
+#     source_code: Json!
+#     abi: Json!
+#     creation_code: Json!
 #     events: Bytes32!
 # }
