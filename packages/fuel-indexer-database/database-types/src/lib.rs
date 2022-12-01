@@ -109,9 +109,10 @@ impl NewColumn {
             ColumnType::ForeignKey => {
                 panic!("ForeignKey ColumnType is a reference type only.")
             }
-            ColumnType::Jsonb => "jsonb",
+            ColumnType::Json => "Json",
             ColumnType::MessageId => "varchar(64)",
-            ColumnType::String255 => "varchar(255)",
+            ColumnType::Charfield => "varchar(255)",
+            ColumnType::Identity => "varchar(66)",
         }
     }
 }
@@ -142,9 +143,10 @@ pub enum ColumnType {
     Timestamp = 12,
     Blob = 13,
     ForeignKey = 14,
-    Jsonb = 15,
+    Json = 15,
     MessageId = 16,
-    String255 = 17,
+    Charfield = 17,
+    Identity = 18,
 }
 
 impl From<ColumnType> for i32 {
@@ -165,9 +167,10 @@ impl From<ColumnType> for i32 {
             ColumnType::Timestamp => 12,
             ColumnType::Blob => 13,
             ColumnType::ForeignKey => 14,
-            ColumnType::Jsonb => 15,
+            ColumnType::Json => 15,
             ColumnType::MessageId => 16,
-            ColumnType::String255 => 17,
+            ColumnType::Charfield => 17,
+            ColumnType::Identity => 18,
         }
     }
 }
@@ -196,9 +199,10 @@ impl From<i32> for ColumnType {
             12 => ColumnType::Timestamp,
             13 => ColumnType::Blob,
             14 => ColumnType::ForeignKey,
-            15 => ColumnType::Jsonb,
+            15 => ColumnType::Json,
             16 => ColumnType::MessageId,
-            17 => ColumnType::String255,
+            17 => ColumnType::Charfield,
+            18 => ColumnType::Identity,
             _ => panic!("Invalid column type."),
         }
     }
@@ -222,9 +226,10 @@ impl From<&str> for ColumnType {
             "Timestamp" => ColumnType::Timestamp,
             "Blob" => ColumnType::Blob,
             "ForeignKey" => ColumnType::ForeignKey,
-            "Jsonb" => ColumnType::Jsonb,
+            "Json" => ColumnType::Json,
             "MessageId" => ColumnType::MessageId,
-            "String255" => ColumnType::String255,
+            "Charfield" => ColumnType::Charfield,
+            "Identity" => ColumnType::Identity,
             _ => panic!("Invalid column type: '{}'", name),
         }
     }

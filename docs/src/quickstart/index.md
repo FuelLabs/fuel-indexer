@@ -94,7 +94,7 @@ type QueryRoot {
 # Calling this `Greeter` so as to not clash with `Person` in the contract
 type Greeter {
     id: ID!
-    name: String255!
+    name: Charfield!
     first_seen: UInt8!
     last_seen: UInt8!
 }
@@ -103,7 +103,7 @@ type Greeter {
 type Salutation {
     id: ID!
     message_hash: Bytes32!
-    message: String255!
+    message: Charfield!
     greeter: Greeter!
     first_seen: UInt8!
     last_seen: UInt8!
@@ -201,7 +201,7 @@ mod hello_world_index {
             }
             None => {
                 // If we did not already have this Saluation stored in the database. Here we
-                // show how you can use the String255 type to store strings with length <= 255
+                // show how you can use the Charfield type to store strings with length <= 255
                 let message =
                     format!("{} 👋, my name is {}", &event.greeting, &event.person.name);
 

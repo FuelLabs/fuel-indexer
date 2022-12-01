@@ -265,9 +265,9 @@ type Tx {
     id: Bytes32! @unique
     block: Block!
     timestamp: Int8!
-    status: Jsonb!
+    status: Json!
     value: UInt8!
-    tokens_transferred: Jsonb!
+    tokens_transferred: Json!
 }
 
 type Account {
