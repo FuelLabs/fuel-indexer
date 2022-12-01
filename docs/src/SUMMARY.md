@@ -21,6 +21,7 @@
     - [WASM Modules](components/assets/wasm.md)
   - [Database](./components/database/index.md)
     - [Data Types](./components/database/types.md)
+      - [ID Types](./components/database/ids.md)
     - [Foreign Keys](./components/database/foreign-keys.md)
   - [GraphQL](./components/graphql/index.md)
     - [Schema](./components/assets/schema.md)
