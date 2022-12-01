@@ -1,7 +1,7 @@
 use crate::{
     Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, WasmIndexExecutor,
 };
-use async_std::{fs::File, io::ReadExt, sync::Arc};
+use async_std::{fs::File, io::ReadExt};
 use chrono::{TimeZone, Utc};
 use fuel_gql_client::client::{
     types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
@@ -22,13 +22,11 @@ use fuel_indexer_types::{
     tx::{TransactionStatus, TxId},
     Bytes32,
 };
-use futures::stream::{futures_unordered::FuturesUnordered, StreamExt};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::future::Future;
 use std::marker::{Send, Sync};
 use std::net::SocketAddr;
-use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     sync::mpsc::Receiver,
     task::JoinHandle,
@@ -40,9 +38,8 @@ use tracing::{debug, error, info, warn};
 async fn spawn_executor_from_manifest(
     fuel_node: FuelNodeConfig,
     manifest: &Manifest,
-    run_once: bool,
     database_url: String,
-) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>, Option<Vec<u8>>)> {
+) -> IndexerResult<(JoinHandle<()>, Option<Vec<u8>>)> {
     let start_block = manifest.start_block;
 
     match manifest.module {
@@ -54,30 +51,18 @@ async fn spawn_executor_from_manifest(
             let executor =
                 WasmIndexExecutor::new(database_url, manifest.to_owned(), bytes.clone())
                     .await?;
-            let kill_switch = Arc::new(AtomicBool::new(run_once));
-            let handle = tokio::spawn(make_task(
-                fuel_node.into(),
-                kill_switch.clone(),
-                executor,
-                start_block,
-            ));
+            let handle = tokio::spawn(make_task(fuel_node.into(), executor, start_block));
 
-            Ok((kill_switch, handle, Some(bytes)))
+            Ok((handle, Some(bytes)))
         }
         Module::Native(ref path) => {
             let path = path.clone();
             let executor =
                 NativeIndexExecutor::new(&database_url, manifest.to_owned(), path)
                     .await?;
-            let kill_switch = Arc::new(AtomicBool::new(run_once));
-            let handle = tokio::spawn(make_task(
-                fuel_node.into(),
-                kill_switch.clone(),
-                executor,
-                start_block,
-            ));
+            let handle = tokio::spawn(make_task(fuel_node.into(), executor, start_block));
 
-            Ok((kill_switch, handle, None))
+            Ok((handle, None))
         }
     }
 }
@@ -86,45 +71,31 @@ async fn spawn_executor_from_index_asset_registry(
     fuel_node: FuelNodeConfig,
     db_url: String,
     manifest: &Manifest,
-    run_once: bool,
     wasm_bytes: Vec<u8>,
-) -> IndexerResult<(Arc<AtomicBool>, JoinHandle<()>)> {
+) -> IndexerResult<JoinHandle<()>> {
     let start_block = manifest.start_block;
 
     match manifest.module {
         Module::Wasm(ref _module) => {
             let executor =
                 WasmIndexExecutor::new(db_url, manifest.to_owned(), wasm_bytes).await?;
-            let kill_switch = Arc::new(AtomicBool::new(run_once));
-            let handle = tokio::spawn(make_task(
-                fuel_node.into(),
-                kill_switch.clone(),
-                executor,
-                start_block,
-            ));
+            let handle = tokio::spawn(make_task(fuel_node.into(), executor, start_block));
 
-            Ok((kill_switch, handle))
+            Ok(handle)
         }
         Module::Native(ref path) => {
             let path = path.clone();
             let executor =
                 NativeIndexExecutor::new(&db_url, manifest.to_owned(), path).await?;
-            let kill_switch = Arc::new(AtomicBool::new(run_once));
-            let handle = tokio::spawn(make_task(
-                fuel_node.into(),
-                kill_switch.clone(),
-                executor,
-                start_block,
-            ));
+            let handle = tokio::spawn(make_task(fuel_node.into(), executor, start_block));
 
-            Ok((kill_switch, handle))
+            Ok(handle)
         }
     }
 }
 
 fn make_task<T: 'static + Executor + Send + Sync>(
     fuel_node_addr: SocketAddr,
-    kill_switch: Arc<AtomicBool>,
     mut executor: T,
     start_block: Option<u64>,
 ) -> impl Future<Output = ()> {
@@ -279,10 +250,6 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                 sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
             };
             retry_count = 0;
-
-            if kill_switch.load(Ordering::SeqCst) {
-                break;
-            }
         }
     }
 }
@@ -293,7 +260,6 @@ pub struct IndexerService {
     manager: SchemaManager,
     database_url: String,
     handles: RefCell<HashMap<String, JoinHandle<()>>>,
-    killers: RefCell<HashMap<String, Arc<AtomicBool>>>,
 }
 
 impl IndexerService {
@@ -311,15 +277,13 @@ impl IndexerService {
             manager,
             database_url,
             handles: RefCell::new(HashMap::default()),
-            killers: RefCell::new(HashMap::default()),
         })
     }
 
-    // TODO: run_once should come from the index's manifest
+    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/383
     pub async fn register_indices(
         &mut self,
         manifest: Option<Manifest>,
-        run_once: bool,
     ) -> IndexerResult<()> {
         let database_url = self.database_url.clone();
 
@@ -347,10 +311,9 @@ impl IndexerService {
 
                 self.manager.new_schema(&namespace, &schema).await?;
 
-                let (kill_switch, handle, wasm_bytes) = spawn_executor_from_manifest(
+                let (handle, wasm_bytes) = spawn_executor_from_manifest(
                     self.config.fuel_node.clone(),
                     &manifest,
-                    run_once,
                     database_url.clone(),
                 )
                 .await?;
@@ -381,9 +344,6 @@ impl IndexerService {
 
                 info!("Registered indexer {}", identifier);
                 self.handles.borrow_mut().insert(manifest.uid(), handle);
-                self.killers
-                    .borrow_mut()
-                    .insert(manifest.uid(), kill_switch);
             }
             None => {
                 let indices = queries::registered_indices(&mut conn).await?;
@@ -394,20 +354,16 @@ impl IndexerService {
                         serde_yaml::from_slice(&assets.manifest.bytes)
                             .expect("Could not read manifest in registry.");
 
-                    let (kill_switch, handle) = spawn_executor_from_index_asset_registry(
+                    let handle = spawn_executor_from_index_asset_registry(
                         self.config.fuel_node.clone(),
                         self.config.database.to_string(),
                         &manifest,
-                        run_once,
                         assets.wasm.bytes,
                     )
                     .await?;
 
                     info!("Registered indexer {}", manifest.uid());
                     self.handles.borrow_mut().insert(manifest.uid(), handle);
-                    self.killers
-                        .borrow_mut()
-                        .insert(manifest.uid(), kill_switch);
                 }
             }
         }
@@ -424,20 +380,11 @@ impl IndexerService {
 
     pub async fn run(self) {
         let IndexerService {
-            handles,
-            mut rx,
-            killers,
-            ..
+            handles, mut rx, ..
         } = self;
-        let mut futs = FuturesUnordered::from_iter(handles.take().into_values());
-
-        while let Some(fut) = futs.next().await {
-            debug!("Retired a future {fut:?}");
-        }
 
         if let Some(ref mut rx) = rx {
             while let Some(service_request) = rx.recv().await {
-                debug!("Retired a future {service_request:?}");
                 match service_request {
                     ServiceRequest::AssetReload(request) => {
                         let database_url = self.config.database.clone().to_string();
@@ -462,27 +409,25 @@ impl IndexerService {
                         let manifest: Manifest =
                             serde_yaml::from_slice(&assets.manifest.bytes).unwrap();
 
-                        let (kill_switch, handle) =
-                            spawn_executor_from_index_asset_registry(
-                                self.config.fuel_node.clone(),
-                                self.config.database.to_string(),
-                                &manifest,
-                                false,
-                                assets.wasm.bytes,
-                            )
-                            .await
-                            .unwrap();
+                        let handle = spawn_executor_from_index_asset_registry(
+                            self.config.fuel_node.clone(),
+                            self.config.database.to_string(),
+                            &manifest,
+                            assets.wasm.bytes,
+                        )
+                        .await
+                        .unwrap();
 
                         handles.borrow_mut().insert(manifest.uid(), handle);
-                        killers.borrow_mut().insert(manifest.uid(), kill_switch);
                     }
+
                     ServiceRequest::IndexStop(request) => {
                         let uid = format!("{}.{}", request.namespace, request.identifier);
-                        if let Some(killer) = killers.borrow_mut().remove(&uid) {
-                            killer.store(true, Ordering::SeqCst);
-                            info!("Stopped indexer {}", &uid);
+                        if let Some(handle) = handles.borrow_mut().remove(&uid) {
+                            handle.abort();
+                            info!("Stopped index for {}", &uid);
                         } else {
-                            warn!("Stop Indexer: No indexer with the name {}", &uid);
+                            warn!("Stop Indexer: No index with the name {}", &uid);
                         }
                     }
                 }

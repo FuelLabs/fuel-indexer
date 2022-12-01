@@ -82,7 +82,7 @@ pub async fn main() -> Result<()> {
         manifest = Some(local_manifest);
     }
 
-    service.register_indices(manifest, false).await?;
+    service.register_indices(manifest).await?;
 
     let service_handle = tokio::spawn(service.run());
 
