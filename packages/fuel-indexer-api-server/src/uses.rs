@@ -12,7 +12,10 @@ use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::{IndexAsset, IndexAssetType};
 use fuel_indexer_lib::{
     config::{IndexerConfig, MutableConfig},
-    utils::{AssetReloadRequest, FuelNodeHealthResponse, ServiceStatus},
+    utils::{
+        AssetReloadRequest, FuelNodeHealthResponse, IndexStopRequest, ServiceRequest,
+        ServiceStatus,
+    },
 };
 use fuel_indexer_schema::db::{
     graphql::GraphqlQueryBuilder, manager::SchemaManager, tables::Schema,
@@ -131,9 +134,32 @@ pub(crate) async fn authorize_middleware<B>(
     }
 }
 
+pub(crate) async fn stop_index(
+    Path((namespace, identifier)): Path<(String, String)>,
+    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+) -> impl IntoResponse {
+    if let Some(tx) = tx {
+        tx.send(ServiceRequest::IndexStop(IndexStopRequest {
+            namespace,
+            identifier,
+        }))
+        .await
+        .unwrap();
+
+        return Json(json!({
+            "success": "true",
+        }))
+        .into_response();
+    }
+
+    // Generally, we shouldn't start the service or API without the
+    // necessary channels, but we should return something just in case.
+    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+}
+
 pub(crate) async fn register_index_assets(
     Path((namespace, identifier)): Path<(String, String)>,
-    Extension(tx): Extension<Option<Sender<AssetReloadRequest>>>,
+    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     multipart: Option<Multipart>,
@@ -214,10 +240,10 @@ pub(crate) async fn register_index_assets(
         };
 
         if let Some(tx) = tx {
-            tx.send(AssetReloadRequest {
+            tx.send(ServiceRequest::AssetReload(AssetReloadRequest {
                 namespace,
                 identifier,
-            })
+            }))
             .await
             .unwrap();
         }

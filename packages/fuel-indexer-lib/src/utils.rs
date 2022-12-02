@@ -60,6 +60,18 @@ pub struct AssetReloadRequest {
     pub identifier: String,
 }
 
+#[derive(Debug)]
+pub struct IndexStopRequest {
+    pub namespace: String,
+    pub identifier: String,
+}
+
+#[derive(Debug)]
+pub enum ServiceRequest {
+    AssetReload(AssetReloadRequest),
+    IndexStop(IndexStopRequest),
+}
+
 pub fn sha256_digest<T: AsRef<[u8]>>(blob: &T) -> String {
     let mut hasher = Sha256::new();
     hasher.update(blob);
