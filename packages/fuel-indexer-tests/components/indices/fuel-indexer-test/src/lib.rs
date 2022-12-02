@@ -1,6 +1,6 @@
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
+use fuel_indexer_plugin::prelude::*;
 
 // Copied over from the block-explorer example
 pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
@@ -120,7 +120,8 @@ mod fuel_indexer_test {
             id: 1,
             value: logdata_entity.value,
             is_pung: 1,
-            pung_from: Identity::Address(Address::from([0u8; 32])),
+            // TODO: https://github.com/FuelLabs/fuel-indexer/issues/386
+            pung_from: Identity::from(logdata_entity.pung_from),
         };
 
         entity.save();

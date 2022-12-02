@@ -202,8 +202,8 @@ impl FtColumn {
                 format!("'{}'", value)
             }
             FtColumn::Identity(value) => match value {
-                Identity::Address(v) => format!("'{:x}'", v),
-                Identity::ContractId(v) => format!("'{:x}'", v),
+                Identity::Address(v) => format!("'00{:x}'", v),
+                Identity::ContractId(v) => format!("'01{:x}'", v),
             },
         }
     }
@@ -234,6 +234,8 @@ mod tests {
             FtColumn::MessageId(MessageId::try_from([0x0F; 32]).expect("Bad bytes"));
         let charfield = FtColumn::Charfield(String::from("hello world"));
         let json = FtColumn::Json(Json(r#"{"hello":"world"}"#.to_string()));
+        let identity =
+            FtColumn::Identity(Identity::Address(Address::try_from([0x12; 32]).unwrap()));
 
         insta::assert_yaml_snapshot!(id.query_fragment());
         insta::assert_yaml_snapshot!(addr.query_fragment());
@@ -250,6 +252,7 @@ mod tests {
         insta::assert_yaml_snapshot!(int64.query_fragment());
         insta::assert_yaml_snapshot!(message_id.query_fragment());
         insta::assert_yaml_snapshot!(charfield.query_fragment());
-        insta::assert_yaml_snapshot!(json.query_fragment())
+        insta::assert_yaml_snapshot!(json.query_fragment());
+        insta::assert_yaml_snapshot!(identity.query_fragment());
     }
 }

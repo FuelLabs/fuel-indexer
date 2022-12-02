@@ -28,7 +28,7 @@
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
+use fuel_indexer_plugin::prelude::*;
 
 // A utility function used to convert an arbitrarily sized string into Bytes32
 // using the first 32 bytes of the String. This might be provided by a standard-ish

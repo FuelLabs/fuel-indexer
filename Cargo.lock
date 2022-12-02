@@ -2525,6 +2525,7 @@ dependencies = [
  "fuels-abigen-macro",
  "fuels-core",
  "futures",
+ "hex",
  "itertools",
  "rand 0.8.5",
  "reqwest",
