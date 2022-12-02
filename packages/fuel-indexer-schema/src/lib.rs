@@ -16,9 +16,7 @@ pub mod utils;
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
-
 const MAX_CHARFIELD_LENGTH: usize = 255;
-const WHITESPACE: u8 = 0x20;
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
@@ -129,13 +127,7 @@ impl FtColumn {
                 FtColumn::MessageId(message_id)
             }
             ColumnType::Charfield => {
-                let s = String::from_utf8_lossy(
-                    &bytes[..size]
-                        .iter()
-                        .filter_map(|x| if *x != WHITESPACE { Some(*x) } else { None })
-                        .collect::<Vec<u8>>(),
-                )
-                .to_string();
+                let s = String::from_utf8_lossy(&bytes[..size]).trim().to_string();
 
                 assert!(
                     s.len() <= MAX_CHARFIELD_LENGTH,
