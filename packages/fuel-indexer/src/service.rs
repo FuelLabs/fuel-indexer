@@ -26,7 +26,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::future::Future;
 use std::marker::{Send, Sync};
-use std::net::SocketAddr;
+use std::str::FromStr;
 use tokio::{
     sync::mpsc::Receiver,
     task::JoinHandle,
@@ -51,7 +51,8 @@ async fn spawn_executor_from_manifest(
             let executor =
                 WasmIndexExecutor::new(database_url, manifest.to_owned(), bytes.clone())
                     .await?;
-            let handle = tokio::spawn(make_task(fuel_node.into(), executor, start_block));
+            let handle =
+                tokio::spawn(make_task(&fuel_node.to_string(), executor, start_block));
 
             Ok((handle, Some(bytes)))
         }
@@ -60,7 +61,8 @@ async fn spawn_executor_from_manifest(
             let executor =
                 NativeIndexExecutor::new(&database_url, manifest.to_owned(), path)
                     .await?;
-            let handle = tokio::spawn(make_task(fuel_node.into(), executor, start_block));
+            let handle =
+                tokio::spawn(make_task(&fuel_node.to_string(), executor, start_block));
 
             Ok((handle, None))
         }
@@ -79,7 +81,8 @@ async fn spawn_executor_from_index_asset_registry(
         Module::Wasm(ref _module) => {
             let executor =
                 WasmIndexExecutor::new(db_url, manifest.to_owned(), wasm_bytes).await?;
-            let handle = tokio::spawn(make_task(fuel_node.into(), executor, start_block));
+            let handle =
+                tokio::spawn(make_task(&fuel_node.to_string(), executor, start_block));
 
             Ok(handle)
         }
@@ -87,7 +90,8 @@ async fn spawn_executor_from_index_asset_registry(
             let path = path.clone();
             let executor =
                 NativeIndexExecutor::new(&db_url, manifest.to_owned(), path).await?;
-            let handle = tokio::spawn(make_task(fuel_node.into(), executor, start_block));
+            let handle =
+                tokio::spawn(make_task(&fuel_node.to_string(), executor, start_block));
 
             Ok(handle)
         }
@@ -95,13 +99,16 @@ async fn spawn_executor_from_index_asset_registry(
 }
 
 fn make_task<T: 'static + Executor + Send + Sync>(
-    fuel_node_addr: SocketAddr,
+    fuel_node_addr: &str,
     mut executor: T,
     start_block: Option<u64>,
 ) -> impl Future<Output = ()> {
     let mut next_cursor = None;
     let mut next_block = start_block.unwrap_or(1);
-    let client = FuelClient::from(fuel_node_addr);
+    let client = FuelClient::from_str(fuel_node_addr).expect(&format!(
+        "Unable to connect to fuel node via url : {}",
+        fuel_node_addr
+    ));
 
     async move {
         let mut retry_count = 0;
