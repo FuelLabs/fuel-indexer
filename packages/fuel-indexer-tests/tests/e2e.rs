@@ -3,6 +3,8 @@ use fuel_indexer_tests::{
     defaults,
     fixtures::{http_client, postgres_connection},
 };
+use fuel_indexer_types::{Address, Identity};
+use hex::FromHex;
 use sqlx::Row;
 use tokio::time::{sleep, Duration};
 
@@ -150,9 +152,20 @@ async fn test_can_trigger_and_index_logdata_event() {
 
     let value: i64 = row.get(1);
     let is_pung: i32 = row.get(2);
+    let pung_from: String = row.get(3);
+    let from_buff = <[u8; 33]>::from_hex(&pung_from).unwrap();
+
+    let addr_buff = <[u8; 32]>::from_hex(
+        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    )
+    .unwrap();
 
     assert_eq!(value, 456);
     assert_eq!(is_pung, 1);
+    assert_eq!(
+        Identity::from(from_buff),
+        Identity::Address(Address::from(addr_buff)),
+    );
 }
 
 #[tokio::test]

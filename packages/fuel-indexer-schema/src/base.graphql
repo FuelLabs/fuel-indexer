@@ -13,9 +13,10 @@ scalar Timestamp
 scalar Color
 scalar ContractId
 scalar Salt
-scalar Jsonb
+scalar Json
 scalar MessageId
-scalar String255
+scalar Charfield
+scalar Identity
 
 enum IndexType {
     Btree,

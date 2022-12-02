@@ -28,7 +28,7 @@
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
+use fuel_indexer_plugin::prelude::*;
 
 // A utility function used to convert an arbitrarily sized string into Bytes32
 // using the first 32 bytes of the String. This might be provided by a standard-ish
@@ -66,7 +66,7 @@ mod hello_world_index {
             }
             None => {
                 // If we did not already have this Saluation stored in the database. Here we
-                // show how you can use the String255 type to store strings with length <= 255
+                // show how you can use the Charfield type to store strings with length <= 255
                 let message =
                     format!("{} 👋, my name is {}", &event.greeting, &event.person.name);
 

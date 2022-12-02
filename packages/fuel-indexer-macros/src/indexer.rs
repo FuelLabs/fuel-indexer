@@ -109,6 +109,7 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u64" => quote! { u64 },
             "b256" => quote! { B256 },
             "Log" => quote! { fuel::Log },
+            "Identity" => quote! { fuel::Identity },
             "BlockData" => quote! { BlockData },
             "LogData" => quote! { fuel::LogData },
             "Transfer" => quote! { fuel::Transfer },

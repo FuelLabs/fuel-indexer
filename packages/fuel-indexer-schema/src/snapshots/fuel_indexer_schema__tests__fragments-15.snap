@@ -1,7 +1,7 @@
 ---
 source: fuel-indexer-schema/src/lib.rs
 assertion_line: 234
-expression: string255.query_fragment()
+expression: Charfield.query_fragment()
 ---
 "'hello world'"
 

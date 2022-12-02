@@ -1,4 +1,4 @@
-use crate::Jsonb;
+use crate::Json;
 use chrono::{DateTime, NaiveDateTime, Utc};
 pub use fuel_tx::{field::*, Receipt, ScriptExecutionResult, Transaction, TxId};
 use serde::{Deserialize, Serialize};
@@ -36,23 +36,23 @@ impl Default for TransactionStatus {
     }
 }
 
-impl From<TransactionStatus> for Jsonb {
-    fn from(t: TransactionStatus) -> Jsonb {
+impl From<TransactionStatus> for Json {
+    fn from(t: TransactionStatus) -> Json {
         match t {
             TransactionStatus::Failure {
                 block_id,
                 time,
                 reason,
-            } => Jsonb(format!(
+            } => Json(format!(
                 r#"{{"status":"failed","block":"{block_id}","time":"{time}","reason":"{reason}"}}"#
             )),
-            TransactionStatus::SqueezedOut { reason } => Jsonb(format!(
+            TransactionStatus::SqueezedOut { reason } => Json(format!(
                 r#"{{"status":"squeezed_out","reason":"{reason}"}}"#
             )),
-            TransactionStatus::Submitted { submitted_at } => Jsonb(format!(
+            TransactionStatus::Submitted { submitted_at } => Json(format!(
                 r#"{{"status":"submitted","time":"{submitted_at}"}}"#
             )),
-            TransactionStatus::Success { block_id, time } => Jsonb(format!(
+            TransactionStatus::Success { block_id, time } => Json(format!(
                 r#"{{"status":"success","block":"{block_id}","time":"{time}"}}"#
             )),
         }

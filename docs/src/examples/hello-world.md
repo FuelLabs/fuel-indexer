@@ -72,7 +72,7 @@ mod hello_world_index {
             }
             None => {
                 // If we did not already have this Saluation stored in the database. Here we
-                // show how you can use the String255 type to store strings with length <= 255
+                // show how you can use the Charfield type to store strings with length <= 255
                 let message =
                     format!("{} 👋, my name is {}", &event.greeting, &event.person.name);
 
