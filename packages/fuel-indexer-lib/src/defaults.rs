@@ -17,7 +17,7 @@ pub const SQLITE_DATABASE: &str = "sqlite.db";
 
 pub const GRAPHQL_API_RUN_MIGRATIONS: Option<bool> = None;
 
-pub const ASSET_REFRESH_CHANNEL_SIZE: usize = 100;
+pub const SERVICE_REQUEST_CHANNEL_SIZE: usize = 100;
 
 pub const MAX_DATABASE_CONNECTION_ATTEMPTS: usize = 5;
 pub const INITIAL_RETRY_DELAY_SECS: u64 = 2;
