@@ -667,17 +667,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let output = quote! {
         use alloc::{format, vec, vec::Vec};
-        use fuel_indexer_plugin::{
-            types::{
-                // So we can use the fuel namespace to refer to fuel types
-                fuel,
-                // So we don't have to use the fuel namespace to refer to BlockData & TransactionData
-                fuel::{BlockData, TransactionData},
-                *,
-                tx::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
-            },
-            utils, Logger
-        };
+        use fuel_indexer_plugin::{types::{fuel, fuel::{BlockData, TransactionData}, *}, utils, Logger};
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use std::collections::HashMap;

@@ -3,9 +3,12 @@ pub mod ffi;
 pub mod graphql;
 pub mod tx;
 
-pub use crate::abi::Identity;
+pub use crate::{
+    abi::Identity,
+    tx::{Receipt, Salt, ScriptExecutionResult, Transaction, TxId},
+};
 pub use fuel_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
+    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Word,
 };
 pub use fuels_core::types::Bits256;
 use serde::{Deserialize, Serialize};
