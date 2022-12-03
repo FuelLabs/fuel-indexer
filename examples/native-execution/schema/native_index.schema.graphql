@@ -3,16 +3,18 @@ schema {
 }
 
 type QueryRoot {
+    account: Account
     message: Message
 }
 
 type Account {
-    id: Address! @unique
+    id: ID!
+    address: Address! @unique
     last_seen: Timestamp!
 }
 
 type Message {
-    id: Bytes32! @unique
+    id: ID!
     sender: Account!
     receiver: Account!
     text: Charfield!
