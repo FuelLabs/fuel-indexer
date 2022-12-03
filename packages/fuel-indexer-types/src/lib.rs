@@ -5,7 +5,14 @@ pub mod tx;
 
 pub use crate::{
     abi::Identity,
-    tx::{Receipt, Salt, ScriptExecutionResult, Transaction, TxId},
+    tx::{
+        fields::{
+            BytecodeLength, BytecodeWitnessIndex, GasLimit, GasPrice, Inputs, Maturity,
+            Outputs, ReceiptsRoot, Salt as FieldSalt, Script, ScriptData, StorageSlots,
+            TxPointer, Witnesses,
+        },
+        Receipt, Salt, ScriptExecutionResult, Transaction, TxId,
+    },
 };
 pub use fuel_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Word,

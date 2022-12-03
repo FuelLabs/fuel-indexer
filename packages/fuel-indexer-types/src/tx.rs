@@ -1,7 +1,15 @@
 use crate::Json;
 use chrono::{DateTime, NaiveDateTime, Utc};
-pub use fuel_tx::{field::*, Receipt, Salt, ScriptExecutionResult, Transaction, TxId};
+pub use fuel_tx::{Receipt, Salt, ScriptExecutionResult, Transaction, TxId};
 use serde::{Deserialize, Serialize};
+
+pub mod fields {
+    pub use fuel_tx::field::{
+        BytecodeLength, BytecodeWitnessIndex, GasLimit, GasPrice, Inputs, Maturity,
+        Outputs, ReceiptsRoot, Salt, Script, ScriptData, StorageSlots, TxPointer,
+        Witnesses,
+    };
+}
 
 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
 #[derive(Debug, Clone, Serialize, Deserialize)]
