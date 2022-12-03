@@ -252,11 +252,13 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                 }
             }
 
-            next_cursor = cursor;
-            if next_cursor.is_none() {
-                info!("No next page, sleeping.");
+            if cursor.is_none() {
+                info!("No new blocks to process, sleeping.");
                 sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
-            };
+            } else {
+                next_cursor = cursor;
+            }
+
             retry_count = 0;
         }
     }
