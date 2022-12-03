@@ -3,4 +3,4 @@ identifier: explorer_index
 # abi: No abi for this example
 graphql_schema: examples/block-explorer/schema/explorer.graphql
 module:
-  wasm: fuel-indexer-tests/assets/explorer_index.wasm
+  wasm: packages/fuel-indexer-tests/assets/explorer_index.wasm

@@ -1,0 +1,16 @@
+[package]
+name = "fuel-indexer-types"
+version = "0.1.8"
+edition = "2021"
+license = "BUSL-1.1"
+repository = "https://github.com/FuelLabs/fuel-indexer"
+description = "Fuel Indexer Types"
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+fuel-indexer-lib = { version = "0.1", path = "../fuel-indexer-lib" }
+fuel-tx = { version = "0.23", features = ["serde"] }
+fuel-types = "0.5"
+fuels-core = "0.30"
+fuels-types = "0.30"
+serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }

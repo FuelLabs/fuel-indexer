@@ -1,0 +1,44 @@
+[package]
+name = "fuel-indexer-macros"
+version = "0.1.8"
+edition = "2021"
+license = "BUSL-1.1"
+repository = "https://github.com/FuelLabs/fuel-indexer"
+description = "Fuel Indexer Macros"
+
+[package.metadata.cargo-udeps.ignore]
+development = ["fuels", "fuel-indexer-plugin"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+fuel-indexer-database = { version = "0.1", path = "../fuel-indexer-database", optional = true }
+fuel-indexer-database-types = { version = "0.1", path = "../fuel-indexer-database/database-types", optional = true }
+fuel-indexer-lib = { version = "0.1", path = "../fuel-indexer-lib", default-features = false }
+fuel-indexer-schema = { version = "0.1", path = "../fuel-indexer-schema", default-features = false }
+fuel-indexer-types = { version = "0.1", path = "../fuel-indexer-types" }
+fuel-tx = "0.23"
+fuels-core = { version = "0.30" }
+fuels-types = { version = "0.30" }
+graphql-parser = "0.3"
+lazy_static = "1.4"
+proc-macro-error = "1.0"
+proc-macro2 = "1.0"
+quote = "1.0"
+serde = { version = "1.0", default-features = false, features = ["derive"] }
+serde_json = "1.0.64"
+sha2 = "0.9.5"
+syn = { version = "1.0", features = ["full"] }
+
+[dev-dependencies]
+fuel-indexer-plugin = { version = "0.1", path = "../fuel-indexer-plugin" }
+fuels = { version = "0.30" }
+trybuild = "1.0"
+
+[features]
+default = ["fuel-indexer-schema/db-models"]
+native-execution = [
+    "fuel-indexer-database", 
+    "fuel-indexer-database-types",
+]

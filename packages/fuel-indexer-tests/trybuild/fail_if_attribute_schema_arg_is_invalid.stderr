@@ -1,0 +1,127 @@
+error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `namespace[Name]`\nExpected `schema`, `extend`, `scalar`, `type`, `interface`, `union`, `enum`, `input` or `directive`\n")
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  | #[indexer(manifest = "packages/fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0433]: failed to resolve: use of undeclared type `Receipt`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |                 Receipt::Call {
+  |                 ^^^^^^^ use of undeclared type `Receipt`
+
+error[E0433]: failed to resolve: use of undeclared type `Receipt`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |                 Receipt::ReturnData {
+  |                 ^^^^^^^ use of undeclared type `Receipt`
+
+error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |     let s = SomeEvent {
+  |             ^^^^^^^^^ not found in this scope
+
+error[E0412]: cannot find type `BlockData` in this scope
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |     let data: Vec<BlockData> = vec![BlockData {
+  |                   ^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::prelude::fuel::BlockData;
+   |
+2  | use fuel_indexer_types::abi::BlockData;
+   |
+
+error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |     let data: Vec<BlockData> = vec![BlockData {
+  |                                     ^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::prelude::fuel::BlockData;
+   |
+2  | use fuel_indexer_types::abi::BlockData;
+   |
+
+error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |         transactions: vec![TransactionData {
+  |                            ^^^^^^^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::prelude::fuel::TransactionData;
+   |
+2  | use fuel_indexer_types::abi::TransactionData;
+   |
+
+error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |             status: TransactionStatus::default(),
+  |                     ^^^^^^^^^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::prelude::tx::TransactionStatus;
+   |
+2  | use fuel_indexer_types::tx::TransactionStatus;
+   |
+2  | use fuels::client::schema::schema::TransactionStatus;
+   |
+2  | use fuels::client::schema::tx::TransactionStatus;
+   |
+     and 1 other candidate
+
+error[E0433]: failed to resolve: use of undeclared type `Transaction`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |             transaction: Transaction::default(),
+  |                          ^^^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::prelude::tx::Transaction;
+   |
+2  | use fuel_indexer_types::tx::Transaction;
+   |
+2  | use fuel_tx::Transaction;
+   |
+2  | use fuels::client::schema::schema::Transaction;
+   |
+     and 3 other candidates
+
+error[E0425]: cannot find function `serialize` in this scope
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |     let mut bytes = serialize(&data);
+  |                     ^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_schema::utils::serialize;
+   |
+2  | use fuels::prelude::serde_hex::serialize;
+   |
+
+error[E0425]: cannot find function `handle_events` in this scope
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |     handle_events(ptr, len);
+  |     ^^^^^^^^^^^^^ not found in this scope
+
+error: unused import: `Tokenizable`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+  |                                               ^^^^^^^^^^^
+  |
+  = note: `-D unused-imports` implied by `-D warnings`

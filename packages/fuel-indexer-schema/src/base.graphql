@@ -1,0 +1,30 @@
+scalar ID
+scalar Address
+scalar AssetId
+scalar Bytes4
+scalar Bytes8
+scalar Bytes32
+scalar Bytes64
+scalar Int4
+scalar Int8
+scalar UInt4
+scalar UInt8
+scalar Timestamp
+scalar Color
+scalar ContractId
+scalar Salt
+scalar Json
+scalar MessageId
+scalar Charfield
+scalar Identity
+
+enum IndexType {
+    Btree,
+    Hash,
+}
+
+directive @indexed(type: IndexType = Btree) on FIELD_DEFINITION | ENUM_VALUE
+
+directive @join(on: String) on OBJECT
+
+directive @unique on FIELD_DEFINITION | ENUM_VALUE

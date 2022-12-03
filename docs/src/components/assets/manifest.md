@@ -11,6 +11,7 @@ graphql_schema: path/to/my/schema.graphql
 start_block: 1564
 module:
   wasm: path/to/my/wasm_module.wasm
+report_metrics: true
 ```
 
 ## `namespace`
@@ -47,3 +48,7 @@ module:
   - When specifying a `wasm` module, the provided path must lead to a compiled WASM binary.
 
 > Important: At this time, `wasm` is the preferred method of execution.
+
+## `report_metrics`
+
+- Whether or not to report Prometheus metrics to the Fuel backend

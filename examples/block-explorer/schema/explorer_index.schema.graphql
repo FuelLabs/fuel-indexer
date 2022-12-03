@@ -1,0 +1,79 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    block: Block
+    tx: Tx
+    account: Account
+    contract: Contract
+}
+
+# https://ethereum.org/en/developers/docs/data-and-analytics/block-explorers/
+
+type Block {
+    id: Bytes32! @unique
+    height: UInt8!
+    timestamp: Int8!
+    gas_limit: UInt8!
+}
+
+type Tx {
+    id: Bytes32! @unique
+    block: Block!
+    timestamp: Int8!
+    status: Json!
+    value: UInt8!
+    tokens_transferred: Json!
+}
+
+type Account {
+    id: Address! @unique
+    last_seen: UInt8!
+}
+
+type Contract {
+    id: ContractId! @unique
+    last_seen: UInt8!
+}
+
+type Transfer {
+    id: Bytes32! @unique
+    contract_id: Contract!
+    # `to` is a reserved SQL keyword
+    receiver: ContractId! @indexed
+    amount: UInt8!
+    asset_id: AssetId! @indexed
+}
+
+type TransferOut {
+    id: Bytes32! @unique
+    contract_id: Contract!
+    # `to` is a reserved SQL keyword
+    receiver: Account!
+    amount: UInt8!
+    asset_id: AssetId! @indexed
+}
+
+type ScriptResult {
+    id: Bytes32! @unique
+    result: UInt8!
+    gas_used: UInt8!
+}
+
+type Log {
+    id: Bytes32! @unique
+    contract_id: ContractId!
+    rb: UInt8!
+}
+
+
+type MessageOut {
+    id: MessageId! @unique
+    sender: Address!
+    recipient: Address!
+    amount: UInt8!
+    nonce: Bytes32!
+    len: UInt8!
+    digest: Bytes32!
+}

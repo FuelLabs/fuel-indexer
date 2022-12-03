@@ -1,11 +1,3 @@
-# WASM indexer
+# simple-wasm
 
-A simple example of a wasm custom indexer
-
-## building
-
-cargo b --release
-
-## Running as a standalone
-
-cargo r --bin index-runner -- --wasm target/wasm32-wasi/release/simple_wasm.wasm
+⚠️ This is a legacy example and should not be referenced.

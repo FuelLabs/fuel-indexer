@@ -5,7 +5,7 @@
 //! wasm32-unknown-unknown target will be required.
 //!
 //! ```bash
-//! cargo build -p explorer-index --release
+//! cargo build -p explorer-index --release --target wasm32-unknown-unknown
 //! ```
 //!
 //! Use the fuel-indexer testing components to start your Fuel node and web API
@@ -39,7 +39,7 @@ pub fn derive_id(id: [u8; 32], data: Vec<u8>) -> Bytes32 {
 // work. In the fuel-indexer repository, we use relative paths (starting from the
 // fuel-indexer root) but if you're building an index outside of the fuel-indexer
 // project you'll want to use full/absolute paths.
-#[indexer(manifest = "examples/block-explorer/manifest.yaml")]
+#[indexer(manifest = "examples/block-explorer/explorer_index.manifest.yaml")]
 mod explorer_index {
 
     // When specifying args to your handler functions, you can either use types defined
@@ -278,7 +278,7 @@ mod explorer_index {
                 id: tx.id,
                 value: tx_amount,
                 status: tx.status.clone().into(),
-                tokens_transferred: Jsonb(
+                tokens_transferred: Json(
                     serde_json::to_value(tokens_transferred)
                         .unwrap()
                         .to_string(),

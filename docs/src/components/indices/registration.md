@@ -6,6 +6,18 @@
 
 ## Usage
 
+We encourage users to use the [`forc index`](./../../plugins/forc-index.md) plugin for most (if not all) Fuel Indexer interaction.
+
+### With `forc index`
+
+To upload assets using `forc index` you'd simply use
+
+```bash
+forc index deploy --manifest my_index.manifest.yaml --url http://127.0.0.1:29987
+```
+
+### With `curL`
+
 - An example of registering a new index via the command line:
 
 ```bash

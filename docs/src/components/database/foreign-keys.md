@@ -1,7 +1,7 @@
 # Foreign Keys
 
 - The Fuel indexer service supports foreign key constraints and relationships using a combination of GraphQL schema and a database (whether Postgres or SQLite).
-- There are two types of uses for foreign keys - _implicit_ and _explicit_
+- There are two types of uses for foreign keys - _implicit_ and _explicit_.
 
 > IMPORTANT:
 >
@@ -9,8 +9,7 @@
 >
 > Note that implicit foreign key relationships _only_ use the `id` field on the referenced table. If you plan to use implicit foreign keys, the object being referenced _must_ have an `id` field.
 >
-> Explicit foreign keys on the other hand, _do_ require a `@join` directive. Explicit foreign key references work similarly to implicit foreign keys, however, when using explicit
-foreign key references, you must add a `@join` directive after your object type. This `@join` directive includes the field in your foreign object that you would like to reference (shown below).
+> In contrast, explicit foreign keys _do_ require a `@join` directive. Explicit foreign key references work similarly to implicit foreign keys; however, when using explicit foreign key references, you must add a `@join` directive after your object type. This `@join` directive includes the field in your foreign object that you would like to reference (shown below).
 
 - To demonstrate how the indexer uses GraphQL schema to resolve foreign key relationships, let's look at the following schema:
 
