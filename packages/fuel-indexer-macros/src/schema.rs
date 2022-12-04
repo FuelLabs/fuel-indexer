@@ -105,6 +105,7 @@ fn process_fk_field<'a>(
     (typ, ident, extractor)
 }
 
+#[warn(clippy::too_many_arguments)]
 fn process_type_def<'a>(
     query_root: &str,
     namespace: &str,
@@ -228,6 +229,7 @@ fn process_type_def<'a>(
     }
 }
 
+#[warn(clippy::too_many_arguments)]
 fn process_definition<'a>(
     query_root: &str,
     namespace: &str,
