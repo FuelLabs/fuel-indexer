@@ -5,6 +5,7 @@ members = [
    "examples/block-explorer/explorer-index",
    "examples/hello-world/hello-bin",
    "examples/hello-world/hello-index",
+   "examples/hello-world-native/hello-index-native",
    "examples/simple-wasm/simple-wasm",
    "examples/simple-wasm/simple",
    "packages/fuel-indexer-api-server",
@@ -29,4 +30,3 @@ members = [
 codegen-units = 1
 lto = "fat"
 panic = "abort"
-
