@@ -172,6 +172,7 @@ jobs:
       - cancel-previous-runs
       - cargo-build-wasm-example
       - get-workspace-members
+    if: github.event_name != 'release' && github.event.action != 'published'
     strategy:
       matrix:
         package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
@@ -271,7 +272,6 @@ jobs:
   publish-docker-image:
     needs:
       - cancel-previous-runs
-      - cargo-verifications
     if: github.event_name == 'release' || github.event.action == 'published'
     runs-on: ubuntu-latest
     permissions:
@@ -338,7 +338,6 @@ jobs:
     runs-on: ${{ matrix.job.os }}
     needs:
       - cancel-previous-runs
-      - cargo-verifications
       - publish-docker-image
     if: github.event_name == 'release' && github.event.action == 'published'
      # Only do this job if publishing a release
