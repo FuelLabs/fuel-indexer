@@ -31,7 +31,8 @@ pub fn env_or_default(var: EnvVar, default: String) -> String {
 #[derive(Debug, Parser, Clone)]
 #[clap(
     name = "Indexer Service",
-    about = "Standalone binary for the fuel indexer service"
+    about = "Standalone binary for the fuel indexer service",
+    version
 )]
 pub struct IndexerArgs {
     #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
