@@ -103,6 +103,7 @@ fn process_fk_field<'a>(
     (typ, ident, extractor)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn process_type_def<'a>(
     query_root: &str,
     namespace: &str,
@@ -111,6 +112,7 @@ fn process_type_def<'a>(
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
     types_map: &HashMap<String, String>,
+    is_native: bool,
 ) -> Option<proc_macro2::TokenStream> {
     match typ {
         TypeDefinition::Object(obj) => {
@@ -171,34 +173,95 @@ fn process_type_def<'a>(
 
             processed.insert(strct.to_string());
 
-            Some(quote! {
-                #[derive(Debug, PartialEq, Eq, Hash)]
-                pub struct #strct {
-                    #block
-                }
+            if is_native {
+                Some(quote! {
+                    #[derive(Debug, PartialEq, Eq, Hash)]
+                    pub struct #strct {
+                        #block
+                    }
 
-                impl Entity for #strct {
-                    const TYPE_ID: u64 = #type_id;
+                    #[async_trait::async_trait]
+                    impl Entity for #strct {
+                        const TYPE_ID: i64 = #type_id;
 
-                    fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                        #row_extractors
-                        Self {
-                            #construction
+                        fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                            #row_extractors
+                            Self {
+                                #construction
+                            }
+                        }
+
+                        fn to_row(&self) -> Vec<FtColumn> {
+                            vec![
+                                #flattened
+                            ]
+                        }
+
+                        async fn load(id: u64) -> Option<Self> {
+                            unsafe {
+                                match &db {
+                                    Some(d) => {
+                                        match d.lock().await.get_object(Self::TYPE_ID, id).await {
+                                            Some(bytes) => {
+                                                let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
+                                                let obj = Self::from_row(columns);
+                                                Some(obj)
+                                            },
+                                            None => None,
+                                        }
+                                    }
+                                    None => None,
+                                }
+                            }
+                        }
+
+                        async fn save(&self) {
+                            unsafe {
+                                match &db {
+                                    Some(d) => {
+                                        d.lock().await.put_object(
+                                            Self::TYPE_ID,
+                                            self.to_row(),
+                                            serialize(&self.to_row())
+                                        ).await;
+                                    }
+                                    None => {},
+                                }
+                            }
                         }
                     }
-
-                    fn to_row(&self) -> Vec<FtColumn> {
-                        vec![
-                            #flattened
-                        ]
+                })
+            } else {
+                Some(quote! {
+                    #[derive(Debug, PartialEq, Eq, Hash)]
+                    pub struct #strct {
+                        #block
                     }
-                }
-            })
+
+                    impl Entity for #strct {
+                        const TYPE_ID: i64 = #type_id;
+
+                        fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                            #row_extractors
+                            Self {
+                                #construction
+                            }
+                        }
+
+                        fn to_row(&self) -> Vec<FtColumn> {
+                            vec![
+                                #flattened
+                            ]
+                        }
+                    }
+                })
+            }
         }
         obj => panic!("Unexpected type: {:?}", obj),
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn process_definition<'a>(
     query_root: &str,
     namespace: &str,
@@ -207,10 +270,12 @@ fn process_definition<'a>(
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
     types_map: &HashMap<String, String>,
+    is_native: bool,
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
         Definition::TypeDefinition(def) => process_type_def(
             query_root, namespace, types, def, processed, primitives, types_map,
+            is_native,
         ),
         Definition::SchemaDefinition(_def) => None,
         def => {
@@ -266,6 +331,7 @@ fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
 pub(crate) fn process_graphql_schema(
     namespace: String,
     schema_path: String,
+    is_native: bool,
 ) -> proc_macro2::TokenStream {
     let path = match local_repository_root() {
         Some(p) => Path::new(&p).join(schema_path),
@@ -327,6 +393,7 @@ pub(crate) fn process_graphql_schema(
             &mut processed,
             &primitives,
             &types_map,
+            is_native,
         ) {
             output = quote! {
                 #output

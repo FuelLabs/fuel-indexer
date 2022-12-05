@@ -32,14 +32,14 @@ pub enum ManifestError {
 #[serde(rename_all = "lowercase")]
 pub enum Module {
     Wasm(String),
-    Native(String),
+    Native,
 }
 
 impl Module {
     pub fn path(&self) -> String {
         match self {
             Self::Wasm(o) => o.clone(),
-            Self::Native(o) => o.clone(),
+            Self::Native => unimplemented!(),
         }
     }
 }
@@ -85,7 +85,7 @@ impl Manifest {
 
     pub fn is_native(&self) -> bool {
         match &self.module {
-            Module::Native(_o) => true,
+            Module::Native => true,
             Module::Wasm(_o) => false,
         }
     }
@@ -99,7 +99,7 @@ impl Manifest {
 
                 Ok(bytes)
             }
-            Module::Native(_p) => unimplemented!(),
+            Module::Native => unimplemented!(),
         }
     }
 }

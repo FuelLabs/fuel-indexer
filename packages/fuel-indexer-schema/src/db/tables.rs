@@ -301,13 +301,8 @@ impl SchemaBuilder {
 
                 let table_name = o.name.to_lowercase();
                 let type_id = type_id(&self.namespace, &o.name);
-                let columns = self.generate_columns(
-                    o,
-                    type_id as i64,
-                    &o.fields,
-                    &table_name,
-                    types_map,
-                );
+                let columns =
+                    self.generate_columns(o, type_id, &o.fields, &table_name, types_map);
 
                 let sql_table = self.db_type.table_name(&self.namespace, &table_name);
 
@@ -318,7 +313,7 @@ impl SchemaBuilder {
 
                 self.statements.push(create);
                 self.type_ids.push(TypeId {
-                    id: type_id as i64,
+                    id: type_id,
                     schema_version: self.version.to_string(),
                     schema_name: self.namespace.to_string(),
                     graphql_name: o.name.to_string(),

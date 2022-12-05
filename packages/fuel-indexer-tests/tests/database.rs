@@ -19,7 +19,7 @@ fn compiler() -> Cranelift {
 const SIMPLE_WASM_MANIFEST: &str = include_str!("./../assets/simple_wasm.yaml");
 const SIMPLE_WASM_GRAPHQL_SCHEMA: &str = include_str!("./../assets/simple_wasm.graphql");
 const SIMPLE_WASM_WASM: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
-const THING1_TYPE: u64 = 0xA21A262A00405632;
+const THING1_TYPE: i64 = -6766053528336050638;
 const TEST_COLUMNS: [(&str, i32, &str); 10] = [
     ("thing2", 0, "id"),
     ("thing2", 1, "account"),

@@ -1,9 +1,11 @@
-use crate::{ffi, IndexerError, IndexerResult, Manifest};
+use crate::ffi;
+use crate::{IndexerError, IndexerResult, Manifest};
 use fuel_indexer_database::{
     queries, types::IdCol, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
+use tracing::error;
 use wasmer::Instance;
 
 /// Database for an executor instance, with schema info.
@@ -14,7 +16,7 @@ pub struct Database {
     pub namespace: String,
     pub version: String,
     pub schema: HashMap<String, Vec<String>>,
-    pub tables: HashMap<u64, String>,
+    pub tables: HashMap<i64, String>,
 }
 
 // Hmm, TODO Mutecks instedddD
@@ -60,7 +62,6 @@ impl Database {
         Ok(queries::execute_query(&mut conn, "ROLLBACK".into()).await?)
     }
 
-    // FIXME: Upsert requires entities that have 1+ fields
     fn upsert_query(
         &self,
         table: &str,
@@ -69,8 +70,6 @@ impl Database {
         updates: Vec<String>,
     ) -> String {
         let sql_table = self.pool.database_type().table_name(&self.namespace, table);
-
-        // FIXME: We have hard-coded the concept of an 'id' field here <(-_-<)
         format!(
             "INSERT INTO {}
                 ({})
@@ -92,16 +91,18 @@ impl Database {
 
     pub async fn put_object(
         &mut self,
-        type_id: u64,
+        type_id: i64,
         columns: Vec<FtColumn>,
         bytes: Vec<u8>,
     ) {
-        let table = self.tables.get(&type_id).unwrap_or_else(|| {
-            panic!(
-                "TypeId({}) not found in tables: {:?}. Is your WASM module up-to-date?",
-                type_id, self.tables
-            )
-        });
+        let table = match self.tables.get(&type_id) {
+            Some(t) => t,
+            None => {
+                error!("TypeId({}) not found in tables: {:?}", type_id, self.tables,);
+                return;
+            }
+        };
+
         let inserts: Vec<_> = columns.iter().map(|col| col.query_fragment()).collect();
         let updates: Vec<_> = self.schema[table]
             .iter()
@@ -126,10 +127,10 @@ impl Database {
 
         queries::put_object(conn, query_text, bytes)
             .await
-            .unwrap_or_else(|e| panic!("Failed to insert object: {:?}", e));
+            .expect("Failed to put object.");
     }
 
-    pub async fn get_object(&mut self, type_id: u64, object_id: u64) -> Option<Vec<u8>> {
+    pub async fn get_object(&mut self, type_id: i64, object_id: u64) -> Option<Vec<u8>> {
         let table = &self.tables[&type_id];
         let query = self.get_query(table, object_id);
         let conn = self
@@ -167,7 +168,7 @@ impl Database {
                     let table = &column.table_name;
 
                     self.tables
-                        .entry(column.type_id as u64)
+                        .entry(column.type_id)
                         .or_insert_with(|| table.to_string());
 
                     let columns = self
@@ -180,6 +181,7 @@ impl Database {
             }
             false => {
                 let instance = instance.unwrap();
+
                 self.namespace = ffi::get_namespace(instance)?;
                 self.version = ffi::get_version(instance)?;
 
@@ -195,7 +197,7 @@ impl Database {
                     let table = &column.table_name;
 
                     self.tables
-                        .entry(column.type_id as u64)
+                        .entry(column.type_id)
                         .or_insert_with(|| table.to_string());
 
                     let columns = self

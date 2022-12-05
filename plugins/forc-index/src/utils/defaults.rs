@@ -8,6 +8,31 @@ pub const CARGO_CONFIG_FILENAME: &str = "config";
 pub const DEFAULT_INDEXER_URL: &str = "http://127.0.0.1:29987";
 pub const DEFAULT_GRAPHQ_API_PORT: &str = defaults::GRAPHQL_API_PORT;
 
+pub fn default_native_index_cargo_toml(index_name: &str) -> String {
+    format!(
+        r#"[package]
+name = "{index_name}"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fuel-indexer-macros = {{ version = "0.1", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.1", features = ["native-execution"] }}
+fuel-indexer-schema = {{ version = "0.1", default-features = false }}
+fuel-tx = "0.23"
+fuels = {{ version = "0.30", features = ["fuel-core-lib"] }}
+fuels-core = "0.30"
+fuels-types = "0.30"
+getrandom = {{ version = "0.2", features = ["js"] }}
+serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
+"#
+    )
+}
+
 pub fn default_index_cargo_toml(index_name: &str) -> String {
     format!(
         r#"[package]

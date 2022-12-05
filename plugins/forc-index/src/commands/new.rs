@@ -16,6 +16,13 @@ pub struct Command {
     /// Name of the index namespace
     #[clap(long, help = "Namespace in which index belongs.")]
     pub namespace: Option<String>,
+
+    /// Whether to initialize an index with native execution enabled
+    #[clap(
+        long,
+        help = "Whether to initialize an index with native execution enabled."
+    )]
+    pub native: bool,
 }
 
 pub fn exec(command: Command) -> Result<()> {
