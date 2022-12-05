@@ -103,8 +103,14 @@ fn make_task<T: 'static + Executor + Send + Sync>(
     mut executor: T,
     start_block: Option<u64>,
 ) -> impl Future<Output = ()> {
-    let mut next_cursor = None;
-    let mut next_block = start_block.unwrap_or(1);
+    let start_block_value = start_block.unwrap_or(1);
+    // cursor will return result from block + 1, so negating with 1 to start from `start_block - 1`
+    let mut next_cursor = if start_block_value > 1 {
+        let decremented = start_block_value - 1;
+        Some(decremented.to_string())
+    } else {
+        None
+    };
     let client = FuelClient::from_str(fuel_node_addr).expect(&format!(
         "Unable to connect to fuel node via url : {}",
         fuel_node_addr
@@ -115,7 +121,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
 
         loop {
             debug!("Fetching paginated results from {:?}", next_cursor);
-            // TODO: can we have a "start at height" option?
+
             let PaginatedResult {
                 cursor, results, ..
             } = client
@@ -131,11 +137,6 @@ fn make_task<T: 'static + Executor + Send + Sync>(
 
             let mut block_info = Vec::new();
             for block in results.into_iter().rev() {
-                if block.header.height.0 != next_block {
-                    continue;
-                }
-                next_block = block.header.height.0 + 1;
-
                 // NOTE: for now assuming we have a single contract instance,
                 // we'll need to watch contract creation events here in
                 // case an indexer would be interested in processing it.
@@ -251,11 +252,13 @@ fn make_task<T: 'static + Executor + Send + Sync>(
                 }
             }
 
-            next_cursor = cursor;
-            if next_cursor.is_none() {
-                info!("No next page, sleeping.");
+            if cursor.is_none() {
+                info!("No new blocks to process, sleeping.");
                 sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
-            };
+            } else {
+                next_cursor = cursor;
+            }
+
             retry_count = 0;
         }
     }
