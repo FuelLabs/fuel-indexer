@@ -32,14 +32,18 @@ impl Module {
 }
 
 impl Manifest {
+    pub fn from_str_content(content: &str) -> Result<Self> {
+        let manifest: Manifest = serde_yaml::from_str(content)?;
+        Ok(manifest)
+    }
+
     pub fn from_file(path: &Path) -> Result<Self> {
         let mut file = File::open(path).unwrap_or_else(|_| {
             panic!("Manifest at '{}' does not exist", path.display())
         });
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        let manifest: Manifest = serde_yaml::from_str(&contents)?;
-        Ok(manifest)
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+        Self::from_str_content(&content)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

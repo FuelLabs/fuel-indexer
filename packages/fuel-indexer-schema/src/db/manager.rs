@@ -38,7 +38,7 @@ impl SchemaManager {
         Ok(())
     }
 
-    pub async fn load_schema_wasm(&self, name: &str) -> IndexerSchemaResult<Schema> {
+    pub async fn load_schema(&self, name: &str) -> IndexerSchemaResult<Schema> {
         // TODO: might be nice to cache this data in server?
         Ok(Schema::load_from_db(&self.pool, name).await?)
     }

@@ -1,5 +1,6 @@
 use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerResult};
 use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_schema::{
     db::manager::SchemaManager,
     utils::{inject_native_entities_into_schema, schema_version},
@@ -15,9 +16,10 @@ fn compiler() -> Cranelift {
 }
 
 // TODO: sqlite and postgres now....
-const GRAPHQL_SCHEMA: &str = include_str!("./../assets/simple_wasm.graphql");
+const SIMPLE_WASM_MANIFEST: &str = include_str!("./../assets/simple_wasm.yaml");
+const SIMPLE_WASM_GRAPHQL_SCHEMA: &str = include_str!("./../assets/simple_wasm.graphql");
 const SIMPLE_WASM_WASM: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
-const THING1_TYPE: u64 = 0xA21A262A00405632;
+const THING1_TYPE: u64 = 11680690545373500978;
 const TEST_COLUMNS: [(&str, i32, &str); 10] = [
     ("thing2", 0, "id"),
     ("thing2", 1, "account"),
@@ -64,11 +66,15 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         .await
         .expect("Could not create SchemaManager");
 
+    let manifest = Manifest::from_str_content(SIMPLE_WASM_MANIFEST).unwrap();
+
     // SchemaManager.build calls inject_native_entities_into_schema so since we're using
     // `version` later in this test we need to manually call `inject_native_entities_into_schema` here
-    let schema = inject_native_entities_into_schema(GRAPHQL_SCHEMA);
+    let schema = inject_native_entities_into_schema(SIMPLE_WASM_GRAPHQL_SCHEMA);
 
-    let result = manager.new_schema("test_namespace", GRAPHQL_SCHEMA).await;
+    let result = manager
+        .new_schema("test_namespace", SIMPLE_WASM_GRAPHQL_SCHEMA)
+        .await;
     assert!(result.is_ok());
 
     let pool = IndexerConnectionPool::connect(database_url)
@@ -98,7 +104,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         .await
         .expect("Failed to create database object.");
 
-    db.load_schema_wasm(&instance)
+    db.load_schema(&manifest, Some(&instance))
         .await
         .expect("Could not load db schema");
 
@@ -120,7 +126,16 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         .expect("Start transaction failed");
     db.put_object(THING1_TYPE, columns, bytes.clone()).await;
 
+    db.commit_transaction()
+        .await
+        .expect("commit transaction failed");
+
+    db.start_transaction()
+        .await
+        .expect("Start transaction failed");
+
     let obj = db.get_object(THING1_TYPE, object_id).await;
+
     assert!(obj.is_some());
     let obj = obj.expect("Failed to get object from database");
 

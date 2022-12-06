@@ -45,7 +45,7 @@ pub(crate) async fn query_graph(
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
 ) -> impl IntoResponse {
-    match manager.read().await.load_schema_wasm(&name).await {
+    match manager.read().await.load_schema(&name).await {
         Ok(schema) => match run_query(query, schema, &pool).await {
             Ok(response) => Ok(Json(response)),
             Err(e) => Err(e),

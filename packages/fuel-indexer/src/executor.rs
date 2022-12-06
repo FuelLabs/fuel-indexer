@@ -79,7 +79,7 @@ impl NativeIndexExecutor {
                 .expect("Failed to connect to database"),
         ));
 
-        db.lock().await.load_schema_native(manifest.clone()).await?;
+        db.lock().await.load_schema(&manifest, None).await?;
 
         let mut process = tokio::process::Command::new(path)
             .kill_on_drop(true)
@@ -168,7 +168,7 @@ pub struct WasmIndexExecutor {
 impl WasmIndexExecutor {
     pub async fn new(
         db_conn: String,
-        _manifest: Manifest,
+        manifest: Manifest,
         wasm_bytes: impl AsRef<[u8]>,
     ) -> IndexerResult<Self> {
         let store = Store::new(&Universal::new(compiler()).engine());
@@ -182,7 +182,11 @@ impl WasmIndexExecutor {
 
         let instance = Instance::new(&module, &import_object)?;
         env.init_with_instance(&instance)?;
-        env.db.lock().await.load_schema_wasm(&instance).await?;
+        env.db
+            .lock()
+            .await
+            .load_schema(&manifest, Some(&instance))
+            .await?;
 
         if !instance
             .exports
