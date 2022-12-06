@@ -54,12 +54,17 @@ pub async fn main() -> Result<()> {
 
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
-    let manifest = opt.manifest.map(|p| {
+    match opt.manifest.map(|p| {
         info!("Using bootstrap manifest file located at '{}'", p.display());
         Manifest::from_file(&p).unwrap()
-    });
-
-    service.register_index(manifest).await?;
+    }) {
+        Some(m) => {
+            service.register_index_from_manifest(m).await?;
+        }
+        None => {
+            service.register_indices_from_registry().await?;
+        }
+    }
 
     let service_handle = tokio::spawn(service.run());
 

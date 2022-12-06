@@ -45,7 +45,8 @@ impl Module {
 }
 
 impl Manifest {
-    pub fn from_str_content(content: &str) -> ManifestResult<Self> {
+    #[allow(clippy::should_implement_trait)]
+    pub fn from_str(content: &str) -> ManifestResult<Self> {
         let manifest: Manifest = serde_yaml::from_str(content)?;
         Ok(manifest)
     }
@@ -56,7 +57,11 @@ impl Manifest {
         });
         let mut content = String::new();
         file.read_to_string(&mut content)?;
-        Self::from_str_content(&content)
+        Self::from_str(&content)
+    }
+
+    pub fn from_slice(s: &[u8]) -> ManifestResult<Self> {
+        Ok(serde_yaml::from_slice(s)?)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

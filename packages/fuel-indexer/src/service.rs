@@ -290,98 +290,100 @@ impl IndexerService {
         })
     }
 
-    pub async fn register_index(
+    pub async fn register_index_from_manifest(
         &mut self,
-        manifest: Option<Manifest>,
+        manifest: Manifest,
     ) -> IndexerResult<()> {
         let database_url = self.database_url.clone();
 
+        let mut conn = self.pool.acquire().await?;
+
+        let _ = queries::start_transaction(&mut conn).await?;
+
+        let index =
+            queries::register_index(&mut conn, &manifest.namespace, &manifest.identifier)
+                .await?;
+
+        let schema = manifest
+            .graphql_schema()
+            .expect("Failed to read GraphQL schema file in manifest.");
+
+        let schema_bytes = schema.as_bytes().to_vec();
+
+        self.manager
+            .new_schema(&manifest.namespace, &schema)
+            .await?;
+
+        let (handle, module_bytes) = create_executor(
+            self.config.fuel_node.clone(),
+            database_url.clone(),
+            &manifest,
+            None,
+        )
+        .await?;
+
+        let mut items = vec![
+            (IndexAssetType::Wasm, module_bytes.unwrap()),
+            (IndexAssetType::Manifest, manifest.to_bytes()),
+            (IndexAssetType::Schema, schema_bytes),
+        ];
+
+        while let Some((asset_type, bytes)) = items.pop() {
+            info!(
+                "Registering Asset({:?}) for Index({})",
+                asset_type,
+                index.uid()
+            );
+            {
+                queries::register_index_asset(
+                    &mut conn,
+                    &manifest.namespace,
+                    &manifest.identifier,
+                    bytes,
+                    asset_type,
+                )
+                .await?;
+            }
+        }
+
+        let _ = queries::commit_transaction(&mut conn).await?;
+
+        info!("Registered Index({})", &manifest.uid());
+        self.handles.borrow_mut().insert(manifest.uid(), handle);
+
+        Ok(())
+    }
+
+    pub async fn register_indices_from_registry(&mut self) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
 
         let _ = queries::start_transaction(&mut conn)
             .await
             .expect("Could not start database transaction");
 
-        match manifest {
-            Some(manifest) => {
-                let namespace = manifest.namespace.clone();
-                let identifier = manifest.identifier.clone();
+        let indices = queries::registered_indices(&mut conn).await?;
 
-                let index =
-                    queries::register_index(&mut conn, &namespace, &identifier).await?;
+        println!(">>> INDICIES : {:?}", indices);
+        for index in indices {
+            let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
+            let manifest = Manifest::from_slice(&assets.manifest.bytes)?;
 
-                let schema = manifest
-                    .graphql_schema()
-                    .expect("Failed to read GraphQL schema file in manifest.");
+            let handle = create_executor(
+                self.config.fuel_node.clone(),
+                self.config.database.to_string(),
+                &manifest,
+                Some(assets.wasm.bytes),
+            )
+            .await?
+            .0;
 
-                let schema_bytes = schema.as_bytes().to_vec();
-
-                self.manager.new_schema(&namespace, &schema).await?;
-
-                let (handle, module_bytes) = create_executor(
-                    self.config.fuel_node.clone(),
-                    database_url.clone(),
-                    &manifest,
-                    None,
-                )
-                .await?;
-
-                let mut items = vec![
-                    (IndexAssetType::Wasm, module_bytes.unwrap()),
-                    (IndexAssetType::Manifest, manifest.to_bytes()),
-                    (IndexAssetType::Schema, schema_bytes),
-                ];
-
-                while let Some((asset_type, bytes)) = items.pop() {
-                    info!(
-                        "Registering Asset({:?}) for Index({})",
-                        asset_type,
-                        index.uid()
-                    );
-                    {
-                        queries::register_index_asset(
-                            &mut conn,
-                            &namespace,
-                            &identifier,
-                            bytes,
-                            asset_type,
-                        )
-                        .await?;
-                    }
-                }
-
-                info!("Registered indexer {}", identifier);
-                self.handles.borrow_mut().insert(manifest.uid(), handle);
-            }
-            None => {
-                let indices = queries::registered_indices(&mut conn).await?;
-                for index in indices {
-                    let assets =
-                        queries::latest_assets_for_index(&mut conn, &index.id).await?;
-                    let manifest: Manifest =
-                        serde_yaml::from_slice(&assets.manifest.bytes)
-                            .expect("Could not read manifest in registry.");
-
-                    let handle = create_executor(
-                        self.config.fuel_node.clone(),
-                        self.config.database.to_string(),
-                        &manifest,
-                        Some(assets.wasm.bytes),
-                    )
-                    .await?
-                    .0;
-
-                    info!("Registered indexer {}", manifest.uid());
-                    self.handles.borrow_mut().insert(manifest.uid(), handle);
-                }
-            }
+            info!("Registered indexer {}", manifest.uid());
+            self.handles.borrow_mut().insert(manifest.uid(), handle);
         }
 
         let _ = match queries::commit_transaction(&mut conn).await {
             Ok(v) => v,
-            Err(_e) => queries::revert_transaction(&mut conn)
-                .await
-                .expect("Could not revert database transaction"),
+            Err(_e) => queries::revert_transaction(&mut conn).await?,
         };
 
         Ok(())
