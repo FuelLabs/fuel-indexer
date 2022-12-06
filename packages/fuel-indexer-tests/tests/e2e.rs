@@ -1,7 +1,9 @@
 #![cfg_attr(not(feature = "e2e"), allow(dead_code, unused_imports))]
+use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
-    defaults,
-    fixtures::{http_client, postgres_connection},
+    assets, defaults,
+    fixtures::{http_client, indexer_service, postgres_connection},
+    utils::update_test_manifest_asset_paths,
 };
 use fuel_indexer_types::{Address, Identity};
 use hex::FromHex;
@@ -12,6 +14,17 @@ use tokio::time::{sleep, Duration};
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_blocks_and_transactions() {
     let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
 
     let client = http_client();
     let _ = client
@@ -49,6 +62,17 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_ping_event() {
     let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
 
     let client = http_client();
     let _ = client
@@ -75,6 +99,17 @@ async fn test_can_trigger_and_index_ping_event() {
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_transfer_event() {
     let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
 
     sqlx::query("DELETE FROM fuel_indexer_test.transfer WHERE id IS NOT NULL")
         .execute(&mut conn)
@@ -106,6 +141,17 @@ async fn test_can_trigger_and_index_transfer_event() {
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_log_event() {
     let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
 
     sqlx::query("DELETE FROM fuel_indexer_test.log WHERE id IS NOT NULL")
         .execute(&mut conn)
@@ -135,6 +181,17 @@ async fn test_can_trigger_and_index_log_event() {
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_logdata_event() {
     let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
 
     let client = http_client();
     let _ = client
@@ -172,6 +229,17 @@ async fn test_can_trigger_and_index_logdata_event() {
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_scriptresult_event() {
     let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
 
     sqlx::query("DELETE FROM fuel_indexer_test.scriptresult WHERE id IS NOT NULL")
         .execute(&mut conn)
@@ -203,6 +271,17 @@ async fn test_can_trigger_and_index_scriptresult_event() {
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_transferout_event() {
     let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
 
     let client = http_client();
     let _ = client
@@ -234,6 +313,17 @@ async fn test_can_trigger_and_index_transferout_event() {
 #[cfg(feature = "e2e")]
 async fn test_can_trigger_and_index_messageout_event() {
     let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
 
     let client = http_client();
     let _ = client
@@ -268,6 +358,17 @@ async fn test_can_trigger_and_index_messageout_event() {
 #[cfg(feature = "e2e")]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called() {
     let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
 
     sqlx::query("DELETE FROM fuel_indexer_test.indexmetadataentity WHERE id IS NOT NULL")
         .execute(&mut conn)
