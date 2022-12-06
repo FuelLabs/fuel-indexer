@@ -412,7 +412,10 @@ impl IndexerService {
                             &request.identifier,
                         )
                         .await
-                        .unwrap();
+                        .expect(&format!(
+                            "Failed to get id for {}.{}",
+                            &request.namespace, &request.identifier
+                        ));
 
                         let assets =
                             queries::latest_assets_for_index(&mut conn, &index_id)
@@ -420,7 +423,8 @@ impl IndexerService {
                                 .expect("Could not get latest assets for index");
 
                         let manifest: Manifest =
-                            serde_yaml::from_slice(&assets.manifest.bytes).unwrap();
+                            serde_yaml::from_slice(&assets.manifest.bytes)
+                                .expect("Failed to deserialize manifest");
 
                         let handle = spawn_executor_from_index_asset_registry(
                             self.config.fuel_node.clone(),
@@ -429,7 +433,7 @@ impl IndexerService {
                             assets.wasm.bytes,
                         )
                         .await
-                        .unwrap();
+                        .expect("Failed to spawn executor from index asset registry");
 
                         handles.borrow_mut().insert(manifest.uid(), handle);
                     }
