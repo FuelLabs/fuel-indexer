@@ -1,10 +1,9 @@
 extern crate alloc;
-use fuel_indexer::IndexerService;
-use fuel_indexer_lib::{
-    config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
-    manifest::Manifest,
+use fuel_indexer_lib::manifest::Manifest;
+use fuel_indexer_tests::{
+    defaults,
+    fixtures::{indexer_service, tx_params},
 };
-use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::prelude::{
     setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
     WalletUnlocked, DEFAULT_COIN_AMOUNT,
@@ -67,33 +66,14 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
     let _ = contract.methods().gimme_someevent(78).call().await;
     let _ = contract.methods().gimme_anotherevent(899).call().await;
 
-    // TODO: REplace
-    let config = IndexerConfig {
-        fuel_node: FuelNodeConfig::from(
-            defaults::FUEL_NODE_ADDR
-                .parse::<std::net::SocketAddr>()
-                .unwrap(),
-        ),
-        database: DatabaseConfig::Postgres {
-            user: "postgres".into(),
-            password: "my-secret".into(),
-            host: "127.0.0.1".into(),
-            port: "5432".into(),
-            database: "postgres".to_string(),
-        },
-        graphql_api: GraphQLConfig::default(),
-        metrics: false,
-    };
-
-    let mut indexer_service = IndexerService::new(config, None).await.unwrap();
+    let mut srvc = indexer_service().await;
 
     let manifest: Manifest =
         serde_yaml::from_str(SIMPLE_WASM_MANIFEST).expect("Bad yaml file.");
 
-    indexer_service
-        .register_indices(Some(manifest))
+    srvc.register_indices(Some(manifest))
         .await
         .expect("Failed to initialize indexer.");
 
-    indexer_service.run().await;
+    srvc.run().await;
 }

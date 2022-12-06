@@ -1,8 +1,8 @@
 use crate::{defaults, WORKSPACE_ROOT};
 use fuel_indexer::IndexerService;
 use fuel_indexer_database::IndexerConnectionPool;
-use fuel_indexer_lib::{
-    config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
+use fuel_indexer_lib::config::{
+    DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
 };
 use fuels::{
     prelude::{
