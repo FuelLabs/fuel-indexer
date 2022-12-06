@@ -1,5 +1,4 @@
 use anyhow::Result;
-use async_std::{fs::File, io::ReadExt};
 use fuel_indexer::IndexerService;
 use fuel_indexer_database::queries;
 use fuel_indexer_lib::{
@@ -7,7 +6,6 @@ use fuel_indexer_lib::{
     manifest::Manifest,
     utils::ServiceRequest,
 };
-use tokio::sync::mpsc::{Receiver, Sender};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
 
@@ -29,10 +27,10 @@ pub async fn main() -> Result<()> {
         None => EnvFilter::new("info"),
     };
 
-    tracing_subscriber::fmt::Subscriber::builder()
+    let _ = tracing_subscriber::fmt::Subscriber::builder()
         .with_writer(std::io::stderr)
         .with_env_filter(filter)
-        .init();
+        .try_init();
 
     let opt = IndexerArgs::from_args();
 
@@ -45,42 +43,19 @@ pub async fn main() -> Result<()> {
 
     queries::run_migration(&config.database.to_string()).await;
 
-    info!(
-        "Subscribing to Fuel node at {}",
-        &config.fuel_node.to_string()
-    );
-
-    #[allow(unused)]
-    let (tx, rx): (
-        Option<Sender<ServiceRequest>>,
-        Option<Receiver<ServiceRequest>>,
-    ) = match () {
-        #[cfg(feature = "api-server")]
-        () => {
-            let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
-            (Some(tx), Some(rx))
-        }
-        () => (None, None),
+    let (tx, rx) = if cfg!(feature = "api-server") {
+        let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+        (Some(tx), Some(rx))
+    } else {
+        (None, None)
     };
 
     let mut service = IndexerService::new(config.clone(), rx).await?;
 
-    let mut manifest: Option<Manifest> = None;
-
-    if opt.manifest.is_some() {
-        let path = opt.manifest.expect("Could not get path from manifest");
-
-        info!(
-            "Using bootstrap manifest file located at '{}'",
-            path.display()
-        );
-
-        let mut file = File::open(&path).await?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).await?;
-        let local_manifest: Manifest = serde_yaml::from_str(&contents)?;
-        manifest = Some(local_manifest);
-    }
+    let manifest = opt.manifest.map(|p| {
+        info!("Using bootstrap manifest file located at '{}'", p.display());
+        Manifest::from_file(&p).unwrap()
+    });
 
     service.register_indices(manifest).await?;
 

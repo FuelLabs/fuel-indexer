@@ -111,6 +111,9 @@ fn make_task<T: 'static + Executor + Send + Sync>(
     } else {
         None
     };
+
+    info!("Subscribing to Fuel node at {}", fuel_node_addr);
+
     let client = FuelClient::from_str(fuel_node_addr).unwrap_or_else(|e| {
         panic!(
             "Unable to connect to Fuel node at '{}': {}",
