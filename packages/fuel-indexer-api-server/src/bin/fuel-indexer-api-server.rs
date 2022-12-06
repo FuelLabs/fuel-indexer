@@ -1,5 +1,6 @@
 use anyhow::Result;
 use fuel_indexer_api_server::api::GraphQlApi;
+use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{IndexerArgs, IndexerConfig, Parser};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
@@ -27,7 +28,9 @@ pub async fn main() -> Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    GraphQlApi::run(config.clone(), None, None).await;
+    let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+
+    GraphQlApi::run(config.clone(), pool, None).await;
 
     Ok(())
 }

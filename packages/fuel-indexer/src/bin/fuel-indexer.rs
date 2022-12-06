@@ -63,9 +63,7 @@ pub async fn main() -> Result<()> {
         () => (None, None),
     };
 
-    let pool = IndexerConnectionPool::connect(&config.database.to_string())
-        .await
-        .expect("Failed to open connection pool");
+    let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
@@ -91,7 +89,7 @@ pub async fn main() -> Result<()> {
     let service_handle = tokio::spawn(service.run());
 
     #[cfg(feature = "api-server")]
-    GraphQlApi::run(config, Some(pool.clone()), tx).await;
+    GraphQlApi::run(config, pool, tx).await;
 
     service_handle.await?;
 

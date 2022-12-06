@@ -105,15 +105,9 @@ pub struct GraphQlApi;
 impl GraphQlApi {
     pub async fn run(
         config: IndexerConfig,
-        connection_pool: Option<IndexerConnectionPool>,
+        pool: IndexerConnectionPool,
         tx: Option<Sender<ServiceRequest>>,
     ) {
-        let pool = match connection_pool {
-            Some(p) => p,
-            None => IndexerConnectionPool::connect(&config.database.to_string())
-                .await
-                .expect("Failed to establish connection pool"),
-        };
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();

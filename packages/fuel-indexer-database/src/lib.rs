@@ -77,21 +77,20 @@ impl IndexerConnectionPool {
         let url = url.expect("Database URL should be correctly formed");
         match url.scheme() {
             "postgres" => {
+                let connection_options = PgConnectOptions::from_str(database_url)?;
                 let pool = attempt_database_connection(|| {
-                    let connection_options = PgConnectOptions::from_str(database_url)
-                        .expect("Failed to parse Postgres connection options");
-                    sqlx::postgres::PgPoolOptions::new().connect_with(connection_options)
+                    sqlx::postgres::PgPoolOptions::new()
+                        .connect_with(connection_options.clone())
                 })
                 .await;
 
                 Ok(IndexerConnectionPool::Postgres(pool))
             }
             "sqlite" => {
+                let connection_options = SqliteConnectOptions::from_str(database_url)?;
                 let pool = attempt_database_connection(|| {
-                    let connection_options = SqliteConnectOptions::from_str(database_url)
-                        .expect("Failed to parse SQLite connection options");
                     sqlx::sqlite::SqlitePoolOptions::new()
-                        .connect_with(connection_options)
+                        .connect_with(connection_options.clone())
                 })
                 .await;
 
