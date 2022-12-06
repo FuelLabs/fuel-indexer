@@ -1,6 +1,9 @@
 use crate::{defaults, WORKSPACE_ROOT};
+use fuel_indexer::IndexerService;
 use fuel_indexer_database::IndexerConnectionPool;
-use fuel_indexer_lib::config::DatabaseConfig;
+use fuel_indexer_lib::{
+    config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig},
+};
 use fuels::{
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
@@ -150,4 +153,25 @@ pub async fn get_contract_id(
     info!("Using contract at {:?}", &contract_id);
 
     Ok((wallet, contract_id))
+}
+
+pub async fn indexer_service() -> IndexerService {
+    let config = IndexerConfig {
+        fuel_node: FuelNodeConfig::from(
+            defaults::FUEL_NODE_ADDR
+                .parse::<std::net::SocketAddr>()
+                .unwrap(),
+        ),
+        database: DatabaseConfig::Postgres {
+            user: "postgres".into(),
+            password: "my-secret".into(),
+            host: "127.0.0.1".into(),
+            port: "5432".into(),
+            database: "postgres".to_string(),
+        },
+        graphql_api: GraphQLConfig::default(),
+        metrics: false,
+    };
+
+    IndexerService::new(config, None).await.unwrap()
 }
