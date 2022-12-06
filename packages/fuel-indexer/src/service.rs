@@ -111,10 +111,12 @@ fn make_task<T: 'static + Executor + Send + Sync>(
     } else {
         None
     };
-    let client = FuelClient::from_str(fuel_node_addr).expect(&format!(
-        "Unable to connect to fuel node via url : {}",
-        fuel_node_addr
-    ));
+    let client = FuelClient::from_str(fuel_node_addr).unwrap_or_else(|e| {
+        panic!(
+            "Unable to connect to Fuel node at '{}': {}",
+            fuel_node_addr, e
+        )
+    });
 
     async move {
         let mut retry_count = 0;

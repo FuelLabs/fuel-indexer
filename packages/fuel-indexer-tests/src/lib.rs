@@ -47,6 +47,7 @@ pub mod utils {
         let manifest_dir = Path::new(WORKSPACE_ROOT);
         manifest.graphql_schema = manifest_dir
             .join("..")
+            .join("..")
             .join(&manifest.graphql_schema)
             .into_os_string()
             .to_str()
@@ -54,6 +55,7 @@ pub mod utils {
             .to_string();
         manifest.abi = Some(
             manifest_dir
+                .join("..")
                 .join("..")
                 .join(&manifest.abi.clone().unwrap())
                 .into_os_string()
@@ -63,6 +65,7 @@ pub mod utils {
         );
         manifest.module = Module::Wasm(
             manifest_dir
+                .join("..")
                 .join("..")
                 .join(&manifest.module.path())
                 .into_os_string()
