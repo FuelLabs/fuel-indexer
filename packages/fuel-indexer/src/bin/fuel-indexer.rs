@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_std::{fs::File, io::ReadExt};
 use fuel_indexer::IndexerService;
-use fuel_indexer_database::queries;
+use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig, Parser},
     manifest::Manifest,
@@ -63,7 +63,11 @@ pub async fn main() -> Result<()> {
         () => (None, None),
     };
 
-    let mut service = IndexerService::new(config.clone(), rx).await?;
+    let pool = IndexerConnectionPool::connect(&config.database.to_string())
+        .await
+        .expect("Failed to open connection pool");
+
+    let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
     let mut manifest: Option<Manifest> = None;
 
@@ -87,7 +91,7 @@ pub async fn main() -> Result<()> {
     let service_handle = tokio::spawn(service.run());
 
     #[cfg(feature = "api-server")]
-    GraphQlApi::run(config, tx).await;
+    GraphQlApi::run(config, Some(pool.clone()), tx).await;
 
     service_handle.await?;
 

@@ -27,7 +27,7 @@ pub async fn main() -> Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    GraphQlApi::run(config.clone(), None).await;
+    GraphQlApi::run(config.clone(), None, None).await;
 
     Ok(())
 }

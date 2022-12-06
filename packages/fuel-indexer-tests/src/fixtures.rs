@@ -173,5 +173,7 @@ pub async fn indexer_service() -> IndexerService {
         metrics: false,
     };
 
-    IndexerService::new(config, None).await.unwrap()
+    let pool = IndexerConnectionPool::connect(&config.database.to_string());
+
+    IndexerService::new(config, pool, None).await.unwrap()
 }

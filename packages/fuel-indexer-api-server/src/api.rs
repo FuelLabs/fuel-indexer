@@ -103,18 +103,22 @@ impl IntoResponse for ApiError {
 pub struct GraphQlApi;
 
 impl GraphQlApi {
-    pub async fn run(config: IndexerConfig, tx: Option<Sender<ServiceRequest>>) {
-        let sm = SchemaManager::new(&config.database.to_string())
-            .await
-            .expect("SchemaManager create failed");
+    pub async fn run(
+        config: IndexerConfig,
+        connection_pool: Option<IndexerConnectionPool>,
+        tx: Option<Sender<ServiceRequest>>,
+    ) {
+        let pool = match connection_pool {
+            Some(p) => p,
+            None => IndexerConnectionPool::connect(&config.database.to_string())
+                .await
+                .expect("Failed to establish connection pool"),
+        };
+        let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();
         let start_time = Arc::new(Instant::now());
         let listen_on = config.graphql_api.derive_socket_addr();
-
-        let pool = IndexerConnectionPool::connect(&config.database.to_string())
-            .await
-            .expect("Failed to establish connection pool");
 
         if config.graphql_api.run_migrations.is_some() {
             queries::run_migration(&config.database.to_string()).await;
