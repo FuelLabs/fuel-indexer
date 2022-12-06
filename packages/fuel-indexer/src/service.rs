@@ -272,6 +272,7 @@ fn make_task<T: 'static + Executor + Send + Sync>(
 pub struct IndexerService {
     config: IndexerConfig,
     rx: Option<Receiver<ServiceRequest>>,
+    pool: IndexerConnectionPool,
     manager: SchemaManager,
     database_url: String,
     handles: RefCell<HashMap<String, JoinHandle<()>>>,
@@ -280,15 +281,17 @@ pub struct IndexerService {
 impl IndexerService {
     pub async fn new(
         config: IndexerConfig,
+        pool: IndexerConnectionPool,
         rx: Option<Receiver<ServiceRequest>>,
     ) -> IndexerResult<IndexerService> {
-        let database_url = config.database.to_string().clone();
+        let database_url = config.database.to_string();
 
-        let manager = SchemaManager::new(&database_url).await?;
+        let manager = SchemaManager::new(pool.clone());
 
         Ok(IndexerService {
             config,
             rx,
+            pool,
             manager,
             database_url,
             handles: RefCell::new(HashMap::default()),
@@ -302,9 +305,7 @@ impl IndexerService {
     ) -> IndexerResult<()> {
         let database_url = self.database_url.clone();
 
-        let pool =
-            IndexerConnectionPool::connect(&self.config.database.to_string()).await?;
-        let mut conn = pool.acquire().await?;
+        let mut conn = self.pool.acquire().await?;
 
         let _ = queries::start_transaction(&mut conn)
             .await
@@ -402,11 +403,11 @@ impl IndexerService {
             while let Some(service_request) = rx.recv().await {
                 match service_request {
                     ServiceRequest::AssetReload(request) => {
-                        let database_url = self.config.database.clone().to_string();
-                        let pool =
-                            IndexerConnectionPool::connect(&database_url).await.unwrap();
-
-                        let mut conn = pool.acquire().await.unwrap();
+                        let mut conn = self
+                            .pool
+                            .acquire()
+                            .await
+                            .expect("Failed to acquire connection from pool");
 
                         let index_id = queries::index_id_for(
                             &mut conn,
@@ -414,7 +415,12 @@ impl IndexerService {
                             &request.identifier,
                         )
                         .await
-                        .unwrap();
+                        .unwrap_or_else(|_| {
+                            panic!(
+                                "Failed to get id for {}.{}",
+                                &request.namespace, &request.identifier
+                            )
+                        });
 
                         let assets =
                             queries::latest_assets_for_index(&mut conn, &index_id)
@@ -422,7 +428,8 @@ impl IndexerService {
                                 .expect("Could not get latest assets for index");
 
                         let manifest: Manifest =
-                            serde_yaml::from_slice(&assets.manifest.bytes).unwrap();
+                            serde_yaml::from_slice(&assets.manifest.bytes)
+                                .expect("Failed to deserialize manifest");
 
                         let handle = spawn_executor_from_index_asset_registry(
                             self.config.fuel_node.clone(),
@@ -431,7 +438,7 @@ impl IndexerService {
                             assets.wasm.bytes,
                         )
                         .await
-                        .unwrap();
+                        .expect("Failed to spawn executor from index asset registry");
 
                         handles.borrow_mut().insert(manifest.uid(), handle);
                     }

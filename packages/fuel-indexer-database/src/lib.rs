@@ -1,8 +1,11 @@
 use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_sqlite as sqlite;
-use sqlx::{pool::PoolConnection, Error as SqlxError};
-use std::cmp::Ordering;
+use sqlx::{
+    pool::PoolConnection, postgres::PgConnectOptions, sqlite::SqliteConnectOptions,
+    Error as SqlxError,
+};
+use std::{cmp::Ordering, str::FromStr};
 use thiserror::Error;
 
 pub mod queries;
@@ -74,16 +77,20 @@ impl IndexerConnectionPool {
         let url = url.expect("Database URL should be correctly formed");
         match url.scheme() {
             "postgres" => {
+                let connection_options = PgConnectOptions::from_str(database_url)?;
                 let pool = attempt_database_connection(|| {
-                    sqlx::Pool::<sqlx::Postgres>::connect(database_url)
+                    sqlx::postgres::PgPoolOptions::new()
+                        .connect_with(connection_options.clone())
                 })
                 .await;
 
                 Ok(IndexerConnectionPool::Postgres(pool))
             }
             "sqlite" => {
+                let connection_options = SqliteConnectOptions::from_str(database_url)?;
                 let pool = attempt_database_connection(|| {
-                    sqlx::Pool::<sqlx::Sqlite>::connect(database_url)
+                    sqlx::sqlite::SqlitePoolOptions::new()
+                        .connect_with(connection_options.clone())
                 })
                 .await;
 

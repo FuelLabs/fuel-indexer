@@ -12,10 +12,8 @@ pub struct SchemaManager {
 }
 
 impl SchemaManager {
-    pub async fn new(db_conn: impl Into<String>) -> IndexerSchemaResult<SchemaManager> {
-        let pool = IndexerConnectionPool::connect(&db_conn.into()).await?;
-
-        Ok(SchemaManager { pool })
+    pub fn new(pool: IndexerConnectionPool) -> SchemaManager {
+        SchemaManager { pool }
     }
 
     pub async fn new_schema(&self, name: &str, schema: &str) -> IndexerSchemaResult<()> {

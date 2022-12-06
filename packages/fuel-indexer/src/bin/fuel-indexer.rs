@@ -1,6 +1,6 @@
 use anyhow::Result;
 use fuel_indexer::IndexerService;
-use fuel_indexer_database::queries;
+use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig, Parser},
     manifest::Manifest,
@@ -50,7 +50,9 @@ pub async fn main() -> Result<()> {
         (None, None)
     };
 
-    let mut service = IndexerService::new(config.clone(), rx).await?;
+    let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+
+    let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
     let manifest = opt.manifest.map(|p| {
         info!("Using bootstrap manifest file located at '{}'", p.display());
@@ -62,7 +64,7 @@ pub async fn main() -> Result<()> {
     let service_handle = tokio::spawn(service.run());
 
     #[cfg(feature = "api-server")]
-    GraphQlApi::run(config, tx).await;
+    GraphQlApi::run(config, pool, tx).await;
 
     service_handle.await?;
 
