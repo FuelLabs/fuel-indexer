@@ -60,9 +60,11 @@ async fn test_schema_manager_generates_and_loads_schema_sqlite() {
 }
 
 async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
-    let manager = SchemaManager::new(database_url)
+    let pool = IndexerConnectionPool::connect(database_url)
         .await
-        .expect("Could not create SchemaManager");
+        .expect("Connection pool error");
+
+    let manager = SchemaManager::new(pool.clone());
 
     // SchemaManager.build calls inject_native_entities_into_schema so since we're using
     // `version` later in this test we need to manually call `inject_native_entities_into_schema` here
@@ -70,10 +72,6 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
 
     let result = manager.new_schema("test_namespace", GRAPHQL_SCHEMA).await;
     assert!(result.is_ok());
-
-    let pool = IndexerConnectionPool::connect(database_url)
-        .await
-        .expect("Connection pool error");
 
     let version = schema_version(&schema);
     let mut conn = pool
