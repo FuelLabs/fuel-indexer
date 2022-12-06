@@ -281,7 +281,7 @@ impl IndexerService {
         pool: IndexerConnectionPool,
         rx: Option<Receiver<ServiceRequest>>,
     ) -> IndexerResult<IndexerService> {
-        let database_url = config.database.to_string().clone();
+        let database_url = config.database.to_string();
 
         let manager = SchemaManager::new(pool.clone());
 
@@ -412,10 +412,12 @@ impl IndexerService {
                             &request.identifier,
                         )
                         .await
-                        .expect(&format!(
-                            "Failed to get id for {}.{}",
-                            &request.namespace, &request.identifier
-                        ));
+                        .unwrap_or_else(|_| {
+                            panic!(
+                                "Failed to get id for {}.{}",
+                                &request.namespace, &request.identifier
+                            )
+                        });
 
                         let assets =
                             queries::latest_assets_for_index(&mut conn, &index_id)
