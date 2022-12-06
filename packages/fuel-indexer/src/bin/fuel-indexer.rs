@@ -59,7 +59,7 @@ pub async fn main() -> Result<()> {
         Manifest::from_file(&p).unwrap()
     });
 
-    service.register_indices(manifest).await?;
+    service.register_index(manifest).await?;
 
     let service_handle = tokio::spawn(service.run());
 

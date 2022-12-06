@@ -1,5 +1,6 @@
 use crate::{
-    Executor, IndexerResult, Manifest, Module, NativeIndexExecutor, WasmIndexExecutor,
+    Executor, IndexerConfig, IndexerResult, Manifest, Module, NativeIndexExecutor,
+    WasmIndexExecutor,
 };
 use async_std::{fs::File, io::ReadExt};
 use chrono::{TimeZone, Utc};
@@ -10,7 +11,7 @@ use fuel_gql_client::client::{
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_database_types::IndexAssetType;
 use fuel_indexer_lib::{
-    config::{FuelNodeConfig, IndexerConfig},
+    config::FuelNodeConfig,
     defaults::{
         DATABASE_CONNECTION_RETRY_ATTEMPTS, DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR,
     },
@@ -32,69 +33,64 @@ use tokio::{
     task::JoinHandle,
     time::{sleep, Duration},
 };
-
 use tracing::{debug, error, info, warn};
 
-async fn spawn_executor_from_manifest(
-    fuel_node: FuelNodeConfig,
-    manifest: &Manifest,
-    database_url: String,
-) -> IndexerResult<(JoinHandle<()>, Option<Vec<u8>>)> {
-    let start_block = manifest.start_block;
-
-    match manifest.module {
-        Module::Wasm(ref module) => {
-            let mut bytes = Vec::<u8>::new();
-            let mut file = File::open(module).await?;
-            file.read_to_end(&mut bytes).await?;
-
-            let executor =
-                WasmIndexExecutor::new(database_url, manifest.to_owned(), bytes.clone())
-                    .await?;
-            let handle =
-                tokio::spawn(make_task(&fuel_node.to_string(), executor, start_block));
-
-            Ok((handle, Some(bytes)))
-        }
-        Module::Native(ref _path) => {
-            let executor =
-                NativeIndexExecutor::new(&database_url, manifest.to_owned()).await?;
-            let handle =
-                tokio::spawn(make_task(&fuel_node.to_string(), executor, start_block));
-
-            Ok((handle, None))
-        }
-    }
-}
-
-async fn spawn_executor_from_index_asset_registry(
+async fn create_executor(
     fuel_node: FuelNodeConfig,
     db_url: String,
     manifest: &Manifest,
-    wasm_bytes: Vec<u8>,
-) -> IndexerResult<JoinHandle<()>> {
-    let start_block = manifest.start_block;
+    module_bytes: Option<Vec<u8>>,
+) -> IndexerResult<(JoinHandle<()>, Option<Vec<u8>>)> {
+    // If the task creation is via index asset registry
+    if module_bytes.is_none() {
+        match &manifest.module {
+            Module::Wasm(ref module) => {
+                let mut bytes = Vec::<u8>::new();
+                let mut file = File::open(module).await?;
+                file.read_to_end(&mut bytes).await?;
 
-    match manifest.module {
-        Module::Wasm(ref _module) => {
-            let executor =
-                WasmIndexExecutor::new(db_url, manifest.to_owned(), wasm_bytes).await?;
-            let handle =
-                tokio::spawn(make_task(&fuel_node.to_string(), executor, start_block));
+                let executor =
+                    WasmIndexExecutor::new(db_url, manifest.to_owned(), bytes.clone())
+                        .await?;
+                let handle = tokio::spawn(run_executor(
+                    &fuel_node.to_string(),
+                    executor,
+                    manifest.start_block,
+                ));
 
-            Ok(handle)
+                Ok((handle, Some(bytes)))
+            }
+            Module::Native(ref _path) => {
+                let executor =
+                    NativeIndexExecutor::new(&db_url, manifest.to_owned()).await?;
+                let handle = tokio::spawn(run_executor(
+                    &fuel_node.to_string(),
+                    executor,
+                    manifest.start_block,
+                ));
+
+                Ok((handle, None))
+            }
         }
-        Module::Native(ref path) => {
-            let executor = NativeIndexExecutor::new(&db_url, manifest.to_owned()).await?;
-            let handle =
-                tokio::spawn(make_task(&fuel_node.to_string(), executor, start_block));
+    // If the task creation is via the bootstrap manifest
+    } else {
+        let executor = WasmIndexExecutor::new(
+            db_url,
+            manifest.to_owned(),
+            module_bytes.clone().unwrap(),
+        )
+        .await?;
+        let handle = tokio::spawn(run_executor(
+            &fuel_node.to_string(),
+            executor,
+            manifest.start_block,
+        ));
 
-            Ok(handle)
-        }
+        Ok((handle, module_bytes))
     }
 }
 
-fn make_task<T: 'static + Executor + Send + Sync>(
+fn run_executor<T: 'static + Executor + Send + Sync>(
     fuel_node_addr: &str,
     mut executor: T,
     start_block: Option<u64>,
@@ -294,8 +290,7 @@ impl IndexerService {
         })
     }
 
-    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/383
-    pub async fn register_indices(
+    pub async fn register_index(
         &mut self,
         manifest: Option<Manifest>,
     ) -> IndexerResult<()> {
@@ -323,15 +318,16 @@ impl IndexerService {
 
                 self.manager.new_schema(&namespace, &schema).await?;
 
-                let (handle, wasm_bytes) = spawn_executor_from_manifest(
+                let (handle, module_bytes) = create_executor(
                     self.config.fuel_node.clone(),
-                    &manifest,
                     database_url.clone(),
+                    &manifest,
+                    None,
                 )
                 .await?;
 
                 let mut items = vec![
-                    (IndexAssetType::Wasm, wasm_bytes.unwrap()),
+                    (IndexAssetType::Wasm, module_bytes.unwrap()),
                     (IndexAssetType::Manifest, manifest.to_bytes()),
                     (IndexAssetType::Schema, schema_bytes),
                 ];
@@ -366,13 +362,14 @@ impl IndexerService {
                         serde_yaml::from_slice(&assets.manifest.bytes)
                             .expect("Could not read manifest in registry.");
 
-                    let handle = spawn_executor_from_index_asset_registry(
+                    let handle = create_executor(
                         self.config.fuel_node.clone(),
                         self.config.database.to_string(),
                         &manifest,
-                        assets.wasm.bytes,
+                        Some(assets.wasm.bytes),
                     )
-                    .await?;
+                    .await?
+                    .0;
 
                     info!("Registered indexer {}", manifest.uid());
                     self.handles.borrow_mut().insert(manifest.uid(), handle);
@@ -427,14 +424,15 @@ impl IndexerService {
                             serde_yaml::from_slice(&assets.manifest.bytes)
                                 .expect("Failed to deserialize manifest");
 
-                        let handle = spawn_executor_from_index_asset_registry(
+                        let handle = create_executor(
                             self.config.fuel_node.clone(),
                             self.config.database.to_string(),
                             &manifest,
-                            assets.wasm.bytes,
+                            Some(assets.wasm.bytes),
                         )
                         .await
-                        .expect("Failed to spawn executor from index asset registry");
+                        .expect("Failed to spawn executor from index asset registry")
+                        .0;
 
                         handles.borrow_mut().insert(manifest.uid(), handle);
                     }
