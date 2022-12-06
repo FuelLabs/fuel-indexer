@@ -79,6 +79,10 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         .await;
     assert!(result.is_ok());
 
+    let pool = IndexerConnectionPool::connect(database_url)
+        .await
+        .expect("Connection pool error");
+
     let version = schema_version(&schema);
     let mut conn = pool
         .acquire()

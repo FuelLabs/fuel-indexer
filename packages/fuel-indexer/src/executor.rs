@@ -26,7 +26,7 @@ pub trait Executor
 where
     Self: Sized,
 {
-    fn from_file(index: &Path) -> IndexerResult<Self>;
+    async fn from_file(db_conn: String, manifest_path: &Path) -> IndexerResult<Self>;
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
 }
 
@@ -109,7 +109,7 @@ impl NativeIndexExecutor {
 
 #[async_trait]
 impl Executor for NativeIndexExecutor {
-    fn from_file(_index: &Path) -> IndexerResult<Self> {
+    async fn from_file(_db_conn: String, _manifest_path: &Path) -> IndexerResult<Self> {
         unimplemented!()
     }
 
@@ -207,8 +207,10 @@ impl WasmIndexExecutor {
 #[async_trait]
 impl Executor for WasmIndexExecutor {
     /// Restore index from wasm file
-    fn from_file(_index: &Path) -> IndexerResult<Self> {
-        unimplemented!()
+    async fn from_file(db_conn: String, manifest_path: &Path) -> IndexerResult<Self> {
+        let manifest = Manifest::from_file(manifest_path)?;
+        let bytes = manifest.module_bytes()?;
+        Self::new(db_conn, manifest, bytes).await
     }
 
     /// Trigger a WASM event handler, passing in a serialized event struct.

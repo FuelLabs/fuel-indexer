@@ -8,7 +8,7 @@ pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
 pub use fuel_indexer_database::IndexerDatabaseError;
 pub use fuel_indexer_lib::{
     config::IndexerConfig,
-    manifest::{Manifest, Module},
+    manifest::{Manifest, ManifestError, Module},
 };
 pub use fuel_indexer_schema::{db::IndexerSchemaError, FtColumn};
 use fuel_indexer_types::abi::BlockData;
@@ -61,6 +61,8 @@ pub enum IndexerError {
     Unknown,
     #[error("Indexer schema error: {0:?}")]
     SchemaError(#[from] IndexerSchemaError),
+    #[error("Manifest error: {0:?}")]
+    ManifestError(#[from] ManifestError),
 }
 
 #[derive(Serialize, Deserialize)]
