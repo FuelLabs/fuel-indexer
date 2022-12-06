@@ -173,7 +173,9 @@ pub async fn indexer_service() -> IndexerService {
         metrics: false,
     };
 
-    let pool = IndexerConnectionPool::connect(&config.database.to_string());
+    let pool = IndexerConnectionPool::connect(&config.database.to_string())
+        .await
+        .expect("Failed to create connection pool");
 
     IndexerService::new(config, pool, None).await.unwrap()
 }
