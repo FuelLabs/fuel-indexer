@@ -16,7 +16,6 @@ use lazy_static::lazy_static;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
-use std::fs::canonicalize;
 use std::path::{Path, PathBuf};
 use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
 
@@ -42,31 +41,47 @@ lazy_static! {
     ]);
     static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
+    static ref BASE_ABI_JSON: String =
+        r#"{"types": [],"functions": [],"loggedTypes": []}"#.to_string();
 }
 
-fn get_json_abi(abi: &str) -> ProgramABI {
-    let src = match Source::parse(abi) {
-        Ok(src) => src,
-        Err(e) => {
-            proc_macro_error::abort_call_site!(
-                "`abi` must be a file path to valid json abi: {:?}",
-                e
-            )
-        }
-    };
+fn get_json_abi(abi_path: Option<String>) -> ProgramABI {
+    match abi_path {
+        Some(abi) => {
+            let src = match Source::parse(abi) {
+                Ok(src) => src,
+                Err(e) => {
+                    proc_macro_error::abort_call_site!(
+                        "`abi` must be a file path to valid json abi: {:?}",
+                        e
+                    )
+                }
+            };
 
-    let source = match src.get() {
-        Ok(s) => s,
-        Err(e) => {
-            proc_macro_error::abort_call_site!("Could not fetch JSON ABI. {:?}", e)
-        }
-    };
+            let source = match src.get() {
+                Ok(s) => s,
+                Err(e) => {
+                    proc_macro_error::abort_call_site!(
+                        "Could not fetch JSON ABI. {:?}",
+                        e
+                    )
+                }
+            };
 
-    match serde_json::from_str(&source) {
-        Ok(parsed) => parsed,
-        Err(e) => {
-            proc_macro_error::abort_call_site!("Invalid JSON from ABI spec! {:?}", e)
+            match serde_json::from_str(&source) {
+                Ok(parsed) => parsed,
+                Err(e) => {
+                    proc_macro_error::abort_call_site!(
+                        "Invalid JSON from ABI spec! {:?}",
+                        e
+                    )
+                }
+            }
         }
+        None => match serde_json::from_str(&BASE_ABI_JSON) {
+            Ok(parsed) => parsed,
+            Err(_e) => unreachable!(),
+        },
     }
 }
 
@@ -164,7 +179,7 @@ fn decode_snippet(
 
 fn process_fn_items(
     manifest: &Manifest,
-    abi: &str,
+    abi: Option<String>,
     indexer_module: ItemMod,
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
     if indexer_module.content.is_none()
@@ -187,6 +202,7 @@ fn process_fn_items(
     let mut abi_decoders = Vec::new();
     let mut type_vecs = Vec::new();
     let mut abi_dispatchers = Vec::new();
+    let mut logged_types = Vec::new();
 
     let mut type_map = HashMap::new();
     let mut type_ids = FUEL_PRIMITIVES
@@ -199,7 +215,6 @@ fn process_fn_items(
         })
         .collect::<HashMap<String, usize>>();
 
-    let mut logged_types = Vec::new();
     if let Some(parsed_logged_types) = parsed.logged_types {
         for typ in parsed_logged_types {
             let log_id = typ.log_id;
@@ -442,15 +457,19 @@ fn process_fn_items(
             fn selector_to_type_id(&self, sel: u64) -> usize {
                 match sel {
                     #(#abi_selectors)*
-                    // TODO: should handle this a little more gently
-                    _ => panic!("Unknown type id."),
+                    _ => {
+                        Logger::warn("Unknown selector; check ABI to make sure function outputs match to types");
+                        0
+                    }
                 }
             }
 
             fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
                     #(#abi_decoders),*
-                    _ => panic!("Unkown type id '{}'.", ty_id),
+                    _ => {
+                        Logger::warn("Unknown type ID; check ABI to make sure types are well-formed");
+                    },
                 }
             }
 
@@ -478,7 +497,7 @@ fn process_fn_items(
             pub fn decode_logdata(&mut self, rb: u64, data: Vec<u8>) {
                 match rb {
                     #(#logged_types),*
-                    _ => panic!("Unknown logged type id '{}'.", rb),
+                    _ => Logger::warn("Unknown logged type ID; check ABI to make sure that logged types are well-formed")
                 }
             }
 
@@ -641,26 +660,14 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let (abi, schema_string) = prefix_abi_and_schema_paths(abi.as_ref(), graphql_schema);
 
-    // TOOD: https://github.com/FuelLabs/fuel-indexer/issues/289
-    let abi_path = abi.unwrap_or_else(|| {
-        canonicalize(
-            Path::new(file!())
-                .parent()
-                .unwrap()
-                .join("default-abi.json"),
-        )
-        .unwrap()
-        .into_os_string()
-        .to_str()
-        .expect("Failed to resolve default-abi.json")
-        .to_string()
-    });
+    let abi_tokens = match abi {
+        Some(ref abi_path) => get_abi_tokens(&namespace, abi_path),
+        None => get_abi_tokens(&namespace, &BASE_ABI_JSON),
+    };
 
-    let abi_tokens = get_abi_tokens(&namespace, &abi_path);
     let graphql_tokens = process_graphql_schema(namespace, schema_string);
 
-    let (handler_block, fn_items) =
-        process_fn_items(&manifest, &abi_path, indexer_module);
+    let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
 
     let handler_block = if manifest.is_native() {
         handler_block_native(handler_block)
