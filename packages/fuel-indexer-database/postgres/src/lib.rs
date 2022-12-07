@@ -341,11 +341,8 @@ pub async fn register_index(
     METRICS.db.postgres.register_index_calls.inc();
 
     if let Some(index) = index_is_registered(conn, namespace, identifier).await? {
-        println!(">>>> IS REGISTERED >>>");
         return Ok(index);
     }
-
-    println!(">>>> IS NOT REGISTERED >>>");
 
     let query = format!(
         r#"INSERT INTO index_registry (namespace, identifier) VALUES ('{}', '{}') RETURNING *"#,
