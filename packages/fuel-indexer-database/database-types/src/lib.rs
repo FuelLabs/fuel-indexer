@@ -113,6 +113,7 @@ impl NewColumn {
             ColumnType::MessageId => "varchar(64)",
             ColumnType::Charfield => "varchar(255)",
             ColumnType::Identity => "varchar(66)",
+            ColumnType::Boolean => "boolean",
         }
     }
 }
@@ -147,6 +148,7 @@ pub enum ColumnType {
     MessageId = 16,
     Charfield = 17,
     Identity = 18,
+    Boolean = 19,
 }
 
 impl From<ColumnType> for i32 {
@@ -171,6 +173,7 @@ impl From<ColumnType> for i32 {
             ColumnType::MessageId => 16,
             ColumnType::Charfield => 17,
             ColumnType::Identity => 18,
+            ColumnType::Boolean => 19,
         }
     }
 }
@@ -203,6 +206,7 @@ impl From<i32> for ColumnType {
             16 => ColumnType::MessageId,
             17 => ColumnType::Charfield,
             18 => ColumnType::Identity,
+            19 => ColumnType::Boolean,
             _ => panic!("Invalid column type."),
         }
     }
@@ -230,6 +234,7 @@ impl From<&str> for ColumnType {
             "MessageId" => ColumnType::MessageId,
             "Charfield" => ColumnType::Charfield,
             "Identity" => ColumnType::Identity,
+            "Boolean" => ColumnType::Boolean,
             _ => panic!("Invalid column type: '{}'", name),
         }
     }

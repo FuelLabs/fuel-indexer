@@ -352,6 +352,10 @@ fn process_fn_items(
                                             #name: Vec<#ty>
                                         });
 
+                                        abi_types.insert(*ty_id);
+                                        // NOTE: this might have to be added back later
+                                        // type_ids.insert(ty.to_string(), *ty_id);
+
                                         // NOTE: we can't use the generic struct_decoders here because each decoder takes a different
                                         // data param. The generic struct_decoders all take Vec<u8> as their data param while native
                                         // Fuel types take different data params (e.g., Transfer, BlockData, etc)
