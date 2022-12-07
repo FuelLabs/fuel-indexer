@@ -141,6 +141,15 @@
   "functions": [
     {
       "inputs": [],
+      "name": "trigger_callreturn",
+      "output": {
+        "name": "",
+        "type": 9,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [],
       "name": "trigger_log",
       "output": {
         "name": "",
@@ -163,6 +172,15 @@
       "output": {
         "name": "",
         "type": 0,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [],
+      "name": "trigger_multiargs",
+      "output": {
+        "name": "",
+        "type": 7,
         "typeArguments": null
       }
     },
@@ -231,6 +249,22 @@
     },
     {
       "logId": 2,
+      "loggedType": {
+        "name": "",
+        "type": 9,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 3,
+      "loggedType": {
+        "name": "",
+        "type": 8,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 4,
       "loggedType": {
         "name": "",
         "type": 10,

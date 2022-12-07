@@ -12,9 +12,29 @@ use fuels::{
     signers::Signer,
 };
 use fuels_core::parameters::StorageConfiguration;
-use sqlx::{pool::PoolConnection, Postgres, Sqlite};
+use sqlx::{
+    pool::{Pool, PoolConnection},
+    Postgres, Sqlite,
+};
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
+
+pub async fn postgres_connection_pool() -> Pool<Postgres> {
+    let config = DatabaseConfig::Postgres {
+        user: "postgres".into(),
+        password: "my-secret".into(),
+        host: "127.0.0.1".into(),
+        port: "5432".into(),
+        database: "postgres".to_string(),
+    };
+    match IndexerConnectionPool::connect(&config.to_string())
+        .await
+        .unwrap()
+    {
+        IndexerConnectionPool::Postgres(p) => p,
+        _ => panic!("Expected Postgres connection."),
+    }
+}
 
 pub async fn postgres_connection() -> PoolConnection<Postgres> {
     let config = DatabaseConfig::Postgres {
@@ -46,7 +66,10 @@ pub async fn sqlite_connection() -> PoolConnection<Sqlite> {
 }
 
 pub fn http_client() -> reqwest::Client {
-    reqwest::Client::new()
+    reqwest::ClientBuilder::new()
+        .pool_max_idle_per_host(0)
+        .build()
+        .unwrap()
 }
 
 pub fn tx_params() -> TxParameters {

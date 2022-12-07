@@ -127,7 +127,7 @@ fn run_executor<T: 'static + Executor + Send + Sync>(
                     direction: PageDirection::Forward,
                 })
                 .await
-                .expect("Failed to retrieve blocks");
+                .unwrap_or_else(|e| panic!("Failed to retrieve blocks: {}", e));
 
             debug!("Processing {} results", results.len());
 
