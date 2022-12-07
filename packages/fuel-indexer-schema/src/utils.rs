@@ -54,7 +54,6 @@ pub fn type_name(typ: &TypeDefinition<String>) -> String {
     }
 }
 
-#[cfg(feature = "db-models")]
 pub fn get_index_directive(
     field: &Field<String>,
 ) -> Option<sql_types::directives::Index> {
@@ -74,7 +73,6 @@ pub fn get_index_directive(
     None
 }
 
-#[cfg(feature = "db-models")]
 pub fn get_unique_directive(field: &Field<String>) -> sql_types::directives::Unique {
     let Field { mut directives, .. } = field.clone();
 
@@ -88,7 +86,6 @@ pub fn get_unique_directive(field: &Field<String>) -> sql_types::directives::Uni
     sql_types::directives::Unique(false)
 }
 
-#[cfg(feature = "db-models")]
 pub fn get_join_directive_info<'a>(
     field: &Field<'a, String>,
     obj: &ObjectType<'a, String>,
