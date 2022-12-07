@@ -5,10 +5,84 @@ use fuel_indexer_tests::{
     fixtures::{http_client, indexer_service, postgres_connection},
     utils::update_test_manifest_asset_paths,
 };
-use fuel_indexer_types::{Address, Identity};
+use fuel_indexer_types::{Address, ContractId, Identity};
 use hex::FromHex;
 use sqlx::Row;
 use tokio::time::{sleep, Duration};
+
+#[tokio::test]
+#[cfg(feature = "e2e")]
+async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler() {
+    let mut conn = postgres_connection().await;
+    let mut srvc = indexer_service().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indices(Some(manifest))
+        .await
+        .expect("Failed to initialize indexer.");
+
+    srvc.run().await;
+
+    let client = http_client();
+    let _ = client
+        .post("http://127.0.0.1:8000/multiargs")
+        .send()
+        .await
+        .unwrap();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let block_row =
+        sqlx::query("SELECT * FROM fuel_indexer_test.block ORDER BY height DESC LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let height: i64 = block_row.get(1);
+    let timestamp: i64 = block_row.get(2);
+    assert!(height >= 1);
+    assert!(timestamp > 0);
+
+    let ping_row =
+        sqlx::query("SELECT * FROM fuel_indexer_test.pingentity WHERE id = 12345")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let ping_value: i64 = ping_row.get(1);
+    assert_eq!(ping_value, 12345);
+
+    let pong_row =
+        sqlx::query("SELECT * FROM fuel_indexer_test.pongentity WHERE id = 45678")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let pong_value: i64 = pong_row.get(1);
+    assert_eq!(pong_value, 45678);
+
+    let pung_row =
+        sqlx::query("SELECT * FROM fuel_indexer_test.pungentity WHERE id = 123")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let pung_from: String = pung_row.get(3);
+    let from_buff = <[u8; 33]>::from_hex(&pung_from).unwrap();
+
+    let contract_buff = <[u8; 32]>::from_hex(
+        "322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    )
+    .unwrap();
+
+    assert_eq!(
+        Identity::from(from_buff),
+        Identity::ContractId(ContractId::from(contract_buff)),
+    );
+}
 
 #[tokio::test]
 #[cfg(feature = "e2e")]

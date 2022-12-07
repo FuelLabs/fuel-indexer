@@ -8,6 +8,7 @@ schema {
 type QueryRoot {
     pingentity: PingEntity
     pungentity: PungEntity
+    pongentity: PongEntity
     block: Block
     tx: Tx
     transfer: Transfer
@@ -20,6 +21,7 @@ type QueryRoot {
 type PingEntity {
     id: ID!
     value: UInt8!
+    message: Charfield!
 }
 
 type PungEntity {
@@ -27,6 +29,11 @@ type PungEntity {
     value: UInt8!
     is_pung: Boolean!
     pung_from: Identity!
+}
+
+type PongEntity {
+    id: ID!
+    value: UInt8!
 }
 
 type Block {

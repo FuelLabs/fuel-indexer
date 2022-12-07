@@ -177,6 +177,15 @@
     },
     {
       "inputs": [],
+      "name": "trigger_multiargs",
+      "output": {
+        "name": "",
+        "type": 7,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [],
       "name": "trigger_ping",
       "output": {
         "name": "",
@@ -240,6 +249,22 @@
     },
     {
       "logId": 2,
+      "loggedType": {
+        "name": "",
+        "type": 9,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 3,
+      "loggedType": {
+        "name": "",
+        "type": 8,
+        "typeArguments": []
+      }
+    },
+    {
+      "logId": 4,
       "loggedType": {
         "name": "",
         "type": 10,

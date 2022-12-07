@@ -30,6 +30,7 @@ pub struct Pung {
 }
 
 abi FuelIndexer {
+    fn trigger_multiargs() -> Ping;
     fn trigger_callreturn() -> Pung;
     fn trigger_ping() -> Ping;
     fn trigger_pong() -> Pong;
@@ -42,6 +43,20 @@ abi FuelIndexer {
 }
 
 impl FuelIndexer for Contract {
+    fn trigger_multiargs() -> Ping {
+        log(Pung {
+            id: 123,
+            value: 54321,
+            is_pung: false,
+            pung_from: Identity::ContractId(ContractId::from(0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96)),
+        });
+
+        log(Pong { id: 45678, value: 45678 });
+
+
+        Ping { id: 12345, value: 12345, message: "a multiarg ping entity          " }
+    }
+
     fn trigger_callreturn() -> Pung {
         Pung {
             id: 3,

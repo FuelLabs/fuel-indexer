@@ -19,6 +19,7 @@ mod fuel_indexer_test {
         let entity = PingEntity {
             id: ping.id,
             value: ping.value,
+            message: ping.message.to_string(),
         };
 
         entity.save();
@@ -169,7 +170,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_callreturn(pungentity: Pung) {
-        Logger::info("fuel_indexer_test_logdata handling Pung event.");
+        Logger::info("fuel_indexer_test_callreturn handling Pung event.");
 
         let entity = PungEntity {
             id: pungentity.id,
@@ -180,5 +181,46 @@ mod fuel_indexer_test {
         };
 
         entity.save();
+    }
+
+    fn fuel_indexer_test_multiargs(
+        pung: Pung,
+        pong: Pong,
+        ping: Ping,
+        block_data: BlockData,
+    ) {
+        Logger::info("fuel_indexer_test_multiargs handling Pung, Pong, Ping, and BlockData events.");
+
+        let block = Block {
+            id: block_data.id,
+            height: block_data.height,
+            timestamp: block_data.time,
+        };
+
+        block.save();
+
+        let pu = PungEntity {
+            id: pung.id,
+            value: pung.value,
+            is_pung: pung.is_pung,
+            pung_from: Identity::from(pung.pung_from),
+        };
+
+        pu.save();
+
+        let po = PongEntity {
+            id: pong.id,
+            value: pong.value,
+        };
+
+        po.save();
+
+        let pi = PingEntity {
+            id: ping.id,
+            value: ping.value,
+            message: ping.message.to_string(),
+        };
+
+        pi.save();
     }
 }
