@@ -127,6 +127,19 @@ async fn fuel_indexer_test_messageout(state: web::Data<Arc<AppState>>) -> impl R
     HttpResponse::Ok()
 }
 
+async fn fuel_indexer_test_callreturn(state: web::Data<Arc<AppState>>) -> impl Responder {
+    let _ = state
+        .contract
+        .methods()
+        .trigger_callreturn()
+        .tx_params(tx_params())
+        .call()
+        .await
+        .unwrap();
+
+    HttpResponse::Ok()
+}
+
 pub struct AppState {
     pub contract: FuelIndexerTest,
 }
@@ -179,6 +192,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 web::post().to(fuel_indexer_test_transferout),
             )
             .route("/messageout", web::post().to(fuel_indexer_test_messageout))
+            .route("/callreturn", web::post().to(fuel_indexer_test_callreturn))
     })
     .bind(defaults::WEB_API_ADDR)
     .unwrap()

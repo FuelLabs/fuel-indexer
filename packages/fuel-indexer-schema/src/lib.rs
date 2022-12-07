@@ -37,6 +37,7 @@ pub enum FtColumn {
     MessageId(MessageId),
     Charfield(String),
     Identity(Identity),
+    Boolean(bool),
 }
 
 impl FtColumn {
@@ -140,6 +141,12 @@ impl FtColumn {
                     Identity::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Identity(identity)
             }
+            ColumnType::Boolean => {
+                let value = u8::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
+                FtColumn::Boolean(value != 0)
+            }
         }
     }
 
@@ -197,6 +204,9 @@ impl FtColumn {
                 Identity::Address(v) => format!("'00{:x}'", v),
                 Identity::ContractId(v) => format!("'01{:x}'", v),
             },
+            FtColumn::Boolean(value) => {
+                format!("{}", value)
+            }
         }
     }
 }

@@ -30,6 +30,7 @@ pub struct Pung {
 }
 
 abi FuelIndexer {
+    fn trigger_callreturn() -> Pung;
     fn trigger_ping() -> Ping;
     fn trigger_pong() -> Pong;
     fn trigger_transfer();
@@ -41,6 +42,15 @@ abi FuelIndexer {
 }
 
 impl FuelIndexer for Contract {
+    fn trigger_callreturn() -> Pung {
+        Pung {
+            id: 3,
+            value: 12345,
+            is_pung: true,
+            pung_from: Identity::Address(Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96)),
+        }
+    }
+
     fn trigger_ping() -> Ping {
         let p = Ping {
             id: 1,

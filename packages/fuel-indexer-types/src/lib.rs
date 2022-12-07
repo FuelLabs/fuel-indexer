@@ -18,6 +18,7 @@ pub type UInt4 = u32;
 pub type UInt8 = u64;
 pub type Timestamp = u64;
 pub type Charfield = String;
+pub type Boolean = bool;
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Json(pub String);

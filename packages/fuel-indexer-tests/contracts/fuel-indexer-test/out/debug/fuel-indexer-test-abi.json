@@ -141,6 +141,15 @@
   "functions": [
     {
       "inputs": [],
+      "name": "trigger_callreturn",
+      "output": {
+        "name": "",
+        "type": 9,
+        "typeArguments": null
+      }
+    },
+    {
+      "inputs": [],
       "name": "trigger_log",
       "output": {
         "name": "",

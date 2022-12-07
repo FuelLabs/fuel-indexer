@@ -117,9 +117,9 @@ mod fuel_indexer_test {
         Logger::info("fuel_indexer_test_logdata handling LogData event.");
 
         let entity = PungEntity {
-            id: 1,
+            id: logdata_entity.id,
             value: logdata_entity.value,
-            is_pung: 1,
+            is_pung: logdata_entity.is_pung,
             // TODO: https://github.com/FuelLabs/fuel-indexer/issues/386
             pung_from: Identity::from(logdata_entity.pung_from),
         };
@@ -163,6 +163,20 @@ mod fuel_indexer_test {
             nonce,
             len,
             digest,
+        };
+
+        entity.save();
+    }
+
+    fn fuel_indexer_test_callreturn(pungentity: Pung) {
+        Logger::info("fuel_indexer_test_logdata handling Pung event.");
+
+        let entity = PungEntity {
+            id: pungentity.id,
+            value: pungentity.value,
+            is_pung: pungentity.is_pung,
+            // TODO: https://github.com/FuelLabs/fuel-indexer/issues/386
+            pung_from: Identity::from(pungentity.pung_from),
         };
 
         entity.save();
