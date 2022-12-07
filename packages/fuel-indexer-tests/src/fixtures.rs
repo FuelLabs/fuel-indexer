@@ -46,7 +46,10 @@ pub async fn sqlite_connection() -> PoolConnection<Sqlite> {
 }
 
 pub fn http_client() -> reqwest::Client {
-    reqwest::Client::new()
+    reqwest::ClientBuilder::new()
+        .pool_max_idle_per_host(0)
+        .build()
+        .unwrap()
 }
 
 pub fn tx_params() -> TxParameters {

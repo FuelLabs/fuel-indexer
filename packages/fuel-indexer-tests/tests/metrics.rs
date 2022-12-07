@@ -1,23 +1,20 @@
-#![cfg_attr(not(feature = "e2e"), allow(dead_code, unused_imports))]
 use fuel_indexer_lib::config::IndexerConfig;
 use fuel_indexer_postgres as postgres;
-#[allow(unused)]
 use fuel_indexer_sqlite as sqlite;
-#[allow(unused)]
-use fuel_indexer_tests::fixtures::{http_client, postgres_connection, sqlite_connection};
+use fuel_indexer_tests::fixtures::{
+    http_client, indexer_service, postgres_connection, sqlite_connection,
+};
 
 #[tokio::test]
 #[cfg(feature = "e2e")]
 async fn test_metrics_endpoint_returns_proper_count_of_metrics() {
+    // let config = IndexerConfig::default();
+    // let srvc = indexer_service().await;
+    // srvc.run().await;
+
     let client = http_client();
-
-    let config = IndexerConfig::default();
-
     let resp = client
-        .get(format!(
-            "http://{}:{}/api/metrics",
-            config.graphql_api.host, config.graphql_api.port
-        ))
+        .get("http://127.0.0.1:29987/api/metrics")
         .send()
         .await
         .unwrap()
@@ -33,18 +30,12 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics() {
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
     let mut conn = postgres_connection().await;
-
     let _ = postgres::start_transaction(&mut conn);
-
     let client = http_client();
-
     let config = IndexerConfig::default();
 
     let resp = client
-        .get(format!(
-            "http://{}:{}/api/metrics",
-            config.graphql_api.host, config.graphql_api.port
-        ))
+        .get("http://127.0.0.1:29987/api/metrics")
         .send()
         .await
         .unwrap()
