@@ -48,7 +48,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler()
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -128,7 +128,7 @@ async fn test_can_trigger_and_index_callreturn() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
