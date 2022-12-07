@@ -17,6 +17,7 @@ scalar Json
 scalar MessageId
 scalar Charfield
 scalar Identity
+scalar Boolean
 
 enum IndexType {
     Btree,
