@@ -2513,7 +2513,6 @@ dependencies = [
  "async-std",
  "chrono",
  "fuel-indexer",
- "fuel-indexer-api-server",
  "fuel-indexer-database",
  "fuel-indexer-lib",
  "fuel-indexer-postgres",
