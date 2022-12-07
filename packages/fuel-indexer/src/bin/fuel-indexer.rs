@@ -30,7 +30,7 @@ pub async fn main() -> Result<()> {
     let _ = tracing_subscriber::fmt::Subscriber::builder()
         .with_writer(std::io::stderr)
         .with_env_filter(filter)
-        .try_init();
+        .try_init()?;
 
     let opt = IndexerArgs::from_args();
 
