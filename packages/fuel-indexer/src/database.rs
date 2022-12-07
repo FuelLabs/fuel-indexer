@@ -1,6 +1,6 @@
 use crate::{ffi, IndexerError, IndexerResult, Manifest};
 use fuel_indexer_database::{
-    models::IdCol, queries, IndexerConnection, IndexerConnectionPool,
+    queries, types::IdCol, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;

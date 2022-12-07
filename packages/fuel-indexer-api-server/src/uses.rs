@@ -8,8 +8,11 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
-use fuel_indexer_database::{queries, IndexerConnectionPool};
-use fuel_indexer_database_types::{IndexAsset, IndexAssetType};
+use fuel_indexer_database::{
+    queries,
+    types::{IndexAsset, IndexAssetType},
+    IndexerConnectionPool,
+};
 use fuel_indexer_lib::{
     config::{IndexerConfig, MutableConfig},
     utils::{

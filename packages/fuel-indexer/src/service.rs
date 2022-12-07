@@ -8,8 +8,7 @@ use fuel_gql_client::client::{
     types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
-use fuel_indexer_database::{queries, IndexerConnectionPool};
-use fuel_indexer_database_types::IndexAssetType;
+use fuel_indexer_database::{queries, types::IndexAssetType, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::FuelNodeConfig,
     defaults::{

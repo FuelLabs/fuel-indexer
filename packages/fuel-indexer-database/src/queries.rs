@@ -1,5 +1,4 @@
-use crate::IndexerConnection;
-use fuel_indexer_database_types::*;
+use crate::{types::*, IndexerConnection};
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_sqlite as sqlite;
 use sqlx::types::JsonValue;
