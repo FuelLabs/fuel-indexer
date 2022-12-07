@@ -27,10 +27,10 @@ pub async fn main() -> Result<()> {
         None => EnvFilter::new("info"),
     };
 
-    let _ = tracing_subscriber::fmt::Subscriber::builder()
+    tracing_subscriber::fmt::Subscriber::builder()
         .with_writer(std::io::stderr)
         .with_env_filter(filter)
-        .try_init()?;
+        .init();
 
     let opt = IndexerArgs::from_args();
 

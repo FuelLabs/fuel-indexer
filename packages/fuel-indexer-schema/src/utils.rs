@@ -1,15 +1,16 @@
 extern crate alloc;
-use crate::directives;
+use crate::db::directives;
 use alloc::vec::Vec;
 pub use fuel_indexer_database_types as sql_types;
 use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
 use graphql_parser::schema::{
     Definition, Directive, Document, Field, ObjectType, TypeDefinition,
 };
+
+use fuel_indexer_database::models::IdCol;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
-use strum::{AsRefStr, EnumString};
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
@@ -20,32 +21,12 @@ pub fn inject_native_entities_into_schema(schema: &str) -> String {
     format!("{}{}", schema, IndexMetadata::schema_fragment())
 }
 
-#[derive(Debug, EnumString, AsRefStr, Default)]
-pub enum IndexMethod {
-    #[default]
-    #[strum(serialize = "btree")]
-    Btree,
-    #[strum(serialize = "hash")]
-    Hash,
-}
-
 pub fn normalize_field_type_name(name: &str) -> String {
     name.replace('!', "")
 }
 
 pub fn field_type_table_name(f: &Field<String>) -> String {
     normalize_field_type_name(&f.field_type.to_string()).to_lowercase()
-}
-
-pub struct IdCol {}
-impl IdCol {
-    pub fn to_lowercase_string() -> String {
-        "id".to_string()
-    }
-
-    pub fn to_uppercase_string() -> String {
-        "ID".to_string()
-    }
 }
 
 // serde_scale for now, can look at other options if necessary.

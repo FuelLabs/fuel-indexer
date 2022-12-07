@@ -1,6 +1,8 @@
 use crate::{ffi, IndexerError, IndexerResult, Manifest};
-use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
-use fuel_indexer_schema::{utils::IdCol, FtColumn};
+use fuel_indexer_database::{
+    models::IdCol, queries, IndexerConnection, IndexerConnectionPool,
+};
+use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
 use wasmer::Instance;
 

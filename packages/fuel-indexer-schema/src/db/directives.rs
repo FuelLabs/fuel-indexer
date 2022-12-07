@@ -1,4 +1,5 @@
-use crate::utils::IndexMethod;
+#[cfg(feature = "db-models")]
+use fuel_indexer_database::models::IndexMethod;
 pub struct Join {
     pub reference_field_name: String,
     pub field_name: String,

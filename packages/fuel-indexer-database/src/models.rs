@@ -1,5 +1,4 @@
-use crate::utils::IndexMethod;
-use fuel_indexer_database::DbType;
+use crate::DbType;
 use std::fmt::Write;
 use strum::{AsRefStr, EnumString};
 
@@ -159,5 +158,25 @@ impl CreateStatement for ForeignKey {
                 )
             }
         }
+    }
+}
+
+#[derive(Debug, EnumString, AsRefStr, Default)]
+pub enum IndexMethod {
+    #[default]
+    #[strum(serialize = "btree")]
+    Btree,
+    #[strum(serialize = "hash")]
+    Hash,
+}
+
+pub struct IdCol {}
+impl IdCol {
+    pub fn to_lowercase_string() -> String {
+        "id".to_string()
+    }
+
+    pub fn to_uppercase_string() -> String {
+        "ID".to_string()
     }
 }

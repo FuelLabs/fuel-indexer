@@ -1,13 +1,15 @@
 use crate::{
-    db::models::{ColumnIndex, CreateStatement, ForeignKey},
-    directives,
+    db::directives,
     utils::{
         build_schema_fields_and_types_map, build_schema_objects_set,
         field_type_table_name, get_index_directive, get_join_directive_info,
         get_unique_directive, normalize_field_type_name, BASE_SCHEMA,
     },
 };
-use fuel_indexer_database::{queries, DbType, IndexerConnection, IndexerConnectionPool};
+use fuel_indexer_database::{
+    models::{ColumnIndex, CreateStatement, ForeignKey},
+    queries, DbType, IndexerConnection, IndexerConnectionPool,
+};
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::type_id;
 use graphql_parser::parse_schema;

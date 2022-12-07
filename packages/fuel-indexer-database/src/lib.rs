@@ -8,6 +8,7 @@ use sqlx::{
 use std::{cmp::Ordering, str::FromStr};
 use thiserror::Error;
 
+pub mod models;
 pub mod queries;
 
 #[derive(Debug, Error)]
