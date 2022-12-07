@@ -1,4 +1,3 @@
-pub mod directives;
 pub mod graphql;
 pub mod manager;
 pub mod tables;
