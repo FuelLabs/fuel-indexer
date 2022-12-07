@@ -22,10 +22,7 @@ use tokio::time::{sleep, Duration};
 async fn cleanup_database_tables(tables: Vec<&str>, pool: Pool<Postgres>) {
     let mut conn = pool.acquire().await.unwrap();
 
-    let _ = sqlx::query("BEGIN")
-        .execute(&mut conn)
-        .await
-        .unwrap();
+    let _ = sqlx::query("BEGIN").execute(&mut conn).await.unwrap();
 
     for table in tables {
         sqlx::query(&format!(
@@ -37,10 +34,7 @@ async fn cleanup_database_tables(tables: Vec<&str>, pool: Pool<Postgres>) {
         .unwrap();
     }
 
-    let _ = sqlx::query("COMMIT")
-        .execute(&mut conn)
-        .await
-        .unwrap();
+    let _ = sqlx::query("COMMIT").execute(&mut conn).await.unwrap();
 }
 
 #[tokio::test]
@@ -59,7 +53,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler()
         .expect("Failed to initialize indexer.");
 
     cleanup_database_tables(
-        vec!["block", "pingentity", "pongentity", "pungentity"],
+        vec!["tx", "block", "pingentity", "pongentity", "pungentity"],
         pool.clone(),
     )
     .await;
@@ -149,7 +143,7 @@ async fn test_can_trigger_and_index_callreturn() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let mut conn = postgres_connection().await;
+    let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.pungentity WHERE id = 3")
         .fetch_one(&mut conn)
         .await
@@ -188,7 +182,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
         .await
         .expect("Failed to initialize indexer.");
 
-    cleanup_database_tables(vec!["block", "tx"], pool.clone()).await;
+    cleanup_database_tables(vec!["tx", "block"], pool.clone()).await;
 
     let client = http_client();
     let _ = client
@@ -199,7 +193,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let mut conn = postgres_connection().await;
+    let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.block WHERE height = 1")
         .fetch_one(&mut conn)
         .await
@@ -249,7 +243,7 @@ async fn test_can_trigger_and_index_ping_event() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let mut conn = postgres_connection().await;
+    let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.pingentity WHERE id = 1")
         .fetch_one(&mut conn)
         .await
@@ -318,7 +312,7 @@ async fn test_can_trigger_and_index_log_event() {
 
     cleanup_database_tables(vec!["log"], pool.clone()).await;
 
-    let mut conn = postgres_connection().await;
+    let mut conn = pool.acquire().await.unwrap();
     sqlx::query("DELETE FROM fuel_indexer_test.log WHERE id IS NOT NULL")
         .execute(&mut conn)
         .await
@@ -369,7 +363,7 @@ async fn test_can_trigger_and_index_logdata_event() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let mut conn = postgres_connection().await;
+    let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.pungentity WHERE id = 1")
         .fetch_one(&mut conn)
         .await
@@ -418,7 +412,7 @@ async fn test_can_trigger_and_index_scriptresult_event() {
         .unwrap();
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    let mut conn = postgres_connection().await;
+    let mut conn = pool.acquire().await.unwrap();
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.scriptresult LIMIT 1")
         .fetch_one(&mut conn)
@@ -458,7 +452,7 @@ async fn test_can_trigger_and_index_transferout_event() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let mut conn = postgres_connection().await;
+    let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.transferout LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -502,7 +496,7 @@ async fn test_can_trigger_and_index_messageout_event() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let mut conn = postgres_connection().await;
+    let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.messageout LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -550,12 +544,11 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let mut conn = postgres_connection().await;
+    let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test.indexmetadataentity LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();
-
     let block_height: i64 = row.get(0);
     let time: i64 = row.get(1);
 
