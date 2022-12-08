@@ -456,7 +456,7 @@ fn process_fn_items(
                     #(#abi_selectors)*
                     _ => {
                         Logger::warn("Unknown selector; check ABI to make sure function outputs match to types");
-                        0
+                        usize::MAX
                     }
                 }
             }
