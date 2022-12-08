@@ -58,7 +58,6 @@ pub enum ApiError {
 impl From<StatusCode> for ApiError {
     fn from(status: StatusCode) -> Self {
         match status {
-            // TODO: Finish as needed`
             StatusCode::BAD_REQUEST => ApiError::Http(HttpError::BadRequest),
             StatusCode::UNAUTHORIZED => ApiError::Http(HttpError::Unauthorized),
             _ => ApiError::Http(HttpError::InternalServer),

@@ -1,5 +1,5 @@
 extern crate alloc;
-use crate::directives;
+
 use alloc::vec::Vec;
 pub use fuel_indexer_database_types as sql_types;
 use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
@@ -9,7 +9,6 @@ use graphql_parser::schema::{
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
-use strum::{AsRefStr, EnumString};
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
@@ -20,32 +19,12 @@ pub fn inject_native_entities_into_schema(schema: &str) -> String {
     format!("{}{}", schema, IndexMetadata::schema_fragment())
 }
 
-#[derive(Debug, EnumString, AsRefStr, Default)]
-pub enum IndexMethod {
-    #[default]
-    #[strum(serialize = "btree")]
-    Btree,
-    #[strum(serialize = "hash")]
-    Hash,
-}
-
 pub fn normalize_field_type_name(name: &str) -> String {
     name.replace('!', "")
 }
 
 pub fn field_type_table_name(f: &Field<String>) -> String {
     normalize_field_type_name(&f.field_type.to_string()).to_lowercase()
-}
-
-pub struct IdCol {}
-impl IdCol {
-    pub fn to_lowercase_string() -> String {
-        "id".to_string()
-    }
-
-    pub fn to_uppercase_string() -> String {
-        "ID".to_string()
-    }
 }
 
 // serde_scale for now, can look at other options if necessary.
@@ -75,7 +54,9 @@ pub fn type_name(typ: &TypeDefinition<String>) -> String {
     }
 }
 
-pub fn get_index_directive(field: &Field<String>) -> Option<directives::Index> {
+pub fn get_index_directive(
+    field: &Field<String>,
+) -> Option<sql_types::directives::Index> {
     let Field {
         mut directives,
         name: field_name,
@@ -85,31 +66,31 @@ pub fn get_index_directive(field: &Field<String>) -> Option<directives::Index> {
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
         if name == INDEX_DIRECTIVE_NAME {
-            return Some(directives::Index::new(field_name));
+            return Some(sql_types::directives::Index::new(field_name));
         }
     }
 
     None
 }
 
-pub fn get_unique_directive(field: &Field<String>) -> directives::Unique {
+pub fn get_unique_directive(field: &Field<String>) -> sql_types::directives::Unique {
     let Field { mut directives, .. } = field.clone();
 
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
         if name == UNIQUE_DIRECTIVE_NAME {
-            return directives::Unique(true);
+            return sql_types::directives::Unique(true);
         }
     }
 
-    directives::Unique(false)
+    sql_types::directives::Unique(false)
 }
 
 pub fn get_join_directive_info<'a>(
     field: &Field<'a, String>,
     obj: &ObjectType<'a, String>,
     types_map: &HashMap<String, String>,
-) -> directives::Join {
+) -> sql_types::directives::Join {
     let Field {
         name: field_name,
         mut directives,
@@ -145,7 +126,7 @@ pub fn get_join_directive_info<'a>(
 
         (ref_field_name.to_string(), ref_field_type_name)
     } else {
-        let ref_field_name = IdCol::to_lowercase_string();
+        let ref_field_name = sql_types::IdCol::to_lowercase_string();
         let field_id = format!("{}.{}", field_type_name, ref_field_name);
         let mut ref_field_type_name = types_map
             .get(&field_id)
@@ -163,14 +144,14 @@ pub fn get_join_directive_info<'a>(
         // an integer type here. Might have to do this for foreign key directives (above)
         // as well
         let non_primary_key_int = sql_types::ColumnType::UInt8.to_string();
-        if ref_field_type_name == IdCol::to_uppercase_string() {
+        if ref_field_type_name == sql_types::IdCol::to_uppercase_string() {
             ref_field_type_name = non_primary_key_int;
         }
 
         (ref_field_name, ref_field_type_name)
     };
 
-    directives::Join {
+    sql_types::directives::Join {
         field_type_name,
         field_name,
         reference_field_name,

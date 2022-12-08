@@ -1,6 +1,8 @@
 use crate::{ffi, IndexerError, IndexerResult, Manifest};
-use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
-use fuel_indexer_schema::{utils::IdCol, FtColumn};
+use fuel_indexer_database::{
+    queries, types::IdCol, IndexerConnection, IndexerConnectionPool,
+};
+use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
 use wasmer::Instance;
 
@@ -20,8 +22,8 @@ unsafe impl Sync for Database {}
 unsafe impl Send for Database {}
 
 impl Database {
-    pub async fn new(db_conn: &str) -> IndexerResult<Database> {
-        let pool = IndexerConnectionPool::connect(db_conn).await?;
+    pub async fn new(conn_uri: &str) -> IndexerResult<Database> {
+        let pool = IndexerConnectionPool::connect(conn_uri).await?;
 
         Ok(Database {
             pool,
@@ -84,7 +86,6 @@ impl Database {
     }
 
     fn get_query(&self, table: &str, object_id: u64) -> String {
-        // FIXME: We have hard-coded the concept of an 'id' field here <(-_-<)
         let sql_table = self.pool.database_type().table_name(&self.namespace, table);
         format!("SELECT object from {} where id = {}", sql_table, object_id)
     }
@@ -122,78 +123,89 @@ impl Database {
             .stashed
             .as_mut()
             .expect("No transaction has been opened.");
-        let query = queries::put_object(conn, query_text, bytes).await;
 
-        query.expect("Query failed.");
+        queries::put_object(conn, query_text, bytes)
+            .await
+            .unwrap_or_else(|e| panic!("Failed to insert object: {:?}", e));
     }
 
     pub async fn get_object(&mut self, type_id: u64, object_id: u64) -> Option<Vec<u8>> {
         let table = &self.tables[&type_id];
         let query = self.get_query(table, object_id);
-
         let conn = self
             .stashed
             .as_mut()
             .expect("No transaction has been opened.");
+
         match queries::get_object(conn, query).await {
-            Ok(object) => Some(object),
-            Err(sqlx::Error::RowNotFound) => None,
-            e => {
-                panic!("Error getting object: {:?}.", e);
+            Ok(v) => Some(v),
+            Err(_e) => None,
+        }
+    }
+
+    pub async fn load_schema(
+        &mut self,
+        manifest: &Manifest,
+        instance: Option<&Instance>,
+    ) -> IndexerResult<()> {
+        match manifest.is_native() {
+            true => {
+                self.namespace = manifest.namespace.clone();
+
+                let mut conn = self.pool.acquire().await?;
+                self.version =
+                    queries::type_id_latest(&mut conn, &self.namespace).await?;
+
+                let results = queries::columns_get_schema(
+                    &mut conn,
+                    &self.namespace,
+                    &self.version,
+                )
+                .await?;
+
+                for column in results {
+                    let table = &column.table_name;
+
+                    self.tables
+                        .entry(column.type_id as u64)
+                        .or_insert_with(|| table.to_string());
+
+                    let columns = self
+                        .schema
+                        .entry(table.to_string())
+                        .or_insert_with(Vec::new);
+
+                    columns.push(column.column_name);
+                }
             }
-        }
-    }
+            false => {
+                let instance = instance.unwrap();
+                self.namespace = ffi::get_namespace(instance)?;
+                self.version = ffi::get_version(instance)?;
 
-    pub async fn load_schema_native(&mut self, manifest: Manifest) -> IndexerResult<()> {
-        self.namespace = manifest.namespace;
-
-        let mut conn = self.pool.acquire().await?;
-        self.version = queries::type_id_latest(&mut conn, &self.namespace).await?;
-
-        let results =
-            queries::columns_get_schema(&mut conn, &self.namespace, &self.version)
+                let mut conn = self.pool.acquire().await?;
+                let results = queries::columns_get_schema(
+                    &mut conn,
+                    &self.namespace,
+                    &self.version,
+                )
                 .await?;
 
-        for column in results {
-            let table = &column.table_name;
+                for column in results {
+                    let table = &column.table_name;
 
-            self.tables
-                .entry(column.type_id as u64)
-                .or_insert_with(|| table.to_string());
+                    self.tables
+                        .entry(column.type_id as u64)
+                        .or_insert_with(|| table.to_string());
 
-            let columns = self
-                .schema
-                .entry(table.to_string())
-                .or_insert_with(Vec::new);
+                    let columns = self
+                        .schema
+                        .entry(table.to_string())
+                        .or_insert_with(Vec::new);
 
-            columns.push(column.column_name);
-        }
-
-        Ok(())
-    }
-
-    pub async fn load_schema_wasm(&mut self, instance: &Instance) -> IndexerResult<()> {
-        self.namespace = ffi::get_namespace(instance)?;
-        self.version = ffi::get_version(instance)?;
-
-        let mut conn = self.pool.acquire().await?;
-        let results =
-            queries::columns_get_schema(&mut conn, &self.namespace, &self.version)
-                .await?;
-
-        for column in results {
-            let table = &column.table_name;
-
-            self.tables
-                .entry(column.type_id as u64)
-                .or_insert_with(|| table.to_string());
-
-            let columns = self
-                .schema
-                .entry(table.to_string())
-                .or_insert_with(Vec::new);
-
-            columns.push(column.column_name);
+                    columns.push(column.column_name);
+                }
+            }
         }
 
         Ok(())

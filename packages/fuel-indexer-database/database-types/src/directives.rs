@@ -1,4 +1,14 @@
-use crate::utils::IndexMethod;
+use strum::{AsRefStr, EnumString};
+
+#[derive(Debug, EnumString, AsRefStr, Default)]
+pub enum IndexMethod {
+    #[default]
+    #[strum(serialize = "btree")]
+    Btree,
+    #[strum(serialize = "hash")]
+    Hash,
+}
+
 pub struct Join {
     pub reference_field_name: String,
     pub field_name: String,

@@ -48,7 +48,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler()
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -128,7 +128,7 @@ async fn test_can_trigger_and_index_callreturn() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -178,7 +178,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -228,7 +228,7 @@ async fn test_can_trigger_and_index_ping_event() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -267,7 +267,7 @@ async fn test_can_trigger_and_index_transfer_event() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -306,7 +306,7 @@ async fn test_can_trigger_and_index_log_event() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -348,7 +348,7 @@ async fn test_can_trigger_and_index_logdata_event() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -398,7 +398,7 @@ async fn test_can_trigger_and_index_scriptresult_event() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -437,7 +437,7 @@ async fn test_can_trigger_and_index_transferout_event() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -481,7 +481,7 @@ async fn test_can_trigger_and_index_messageout_event() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -528,7 +528,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_indices(Some(manifest))
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
