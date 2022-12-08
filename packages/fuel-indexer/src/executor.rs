@@ -155,7 +155,17 @@ impl Executor for WasmIndexExecutor {
         let res = spawn_blocking(move || fun.call(ptr, len)).await?;
 
         if let Err(e) = res {
-            error!("WasmIndexExecutor handle_events failed: {e:?}.");
+            error!("WasmIndexExecutor handle_events failed: {}.", e.message());
+            let frames = e.trace();
+            for (i, frame) in frames.iter().enumerate() {
+                println!(
+                    "Frame #{}: {:?}::{:?}",
+                    i,
+                    frame.module_name(),
+                    frame.function_name()
+                );
+            }
+
             self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::RuntimeError(e));
         } else {
