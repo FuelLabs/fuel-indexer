@@ -41,11 +41,9 @@ lazy_static! {
     ]);
     static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
-    static ref BASE_ABI_JSON: String =
-        r#"{"types": [],"functions": [],"loggedTypes": []}"#.to_string();
 }
 
-fn get_json_abi(abi_path: Option<String>) -> ProgramABI {
+fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
     match abi_path {
         Some(abi) => {
             let src = match Source::parse(abi) {
@@ -69,7 +67,7 @@ fn get_json_abi(abi_path: Option<String>) -> ProgramABI {
             };
 
             match serde_json::from_str(&source) {
-                Ok(parsed) => parsed,
+                Ok(parsed) => Some(parsed),
                 Err(e) => {
                     proc_macro_error::abort_call_site!(
                         "Invalid JSON from ABI spec! {:?}",
@@ -78,10 +76,7 @@ fn get_json_abi(abi_path: Option<String>) -> ProgramABI {
                 }
             }
         }
-        None => match serde_json::from_str(&BASE_ABI_JSON) {
-            Ok(parsed) => parsed,
-            Err(_e) => unreachable!(),
-        },
+        None => None,
     }
 }
 
@@ -179,7 +174,7 @@ fn decode_snippet(
 
 fn process_fn_items(
     manifest: &Manifest,
-    abi: Option<String>,
+    abi_path: Option<String>,
     indexer_module: ItemMod,
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
     if indexer_module.content.is_none()
@@ -195,7 +190,7 @@ fn process_fn_items(
         )
     }
 
-    let parsed = get_json_abi(abi);
+    let abi = get_json_abi(abi_path);
 
     let mut abi_types = HashSet::new();
     let mut abi_selectors = Vec::new();
@@ -215,62 +210,64 @@ fn process_fn_items(
         })
         .collect::<HashMap<String, usize>>();
 
-    if let Some(parsed_logged_types) = parsed.logged_types {
-        for typ in parsed_logged_types {
-            let log_id = typ.log_id;
-            let ty_id = typ.application.type_id;
+    if let Some(parsed) = abi {
+        if let Some(parsed_logged_types) = parsed.logged_types {
+            for typ in parsed_logged_types {
+                let log_id = typ.log_id;
+                let ty_id = typ.application.type_id;
 
-            logged_types.push(quote! {
-                #log_id => {
-                    self.decode_type(#ty_id, data);
-                }
+                logged_types.push(quote! {
+                    #log_id => {
+                        self.decode_type(#ty_id, data);
+                    }
+                });
+            }
+        }
+
+        for typ in parsed.types {
+            if IGNORED_ABI_JSON_TYPES.contains(typ.type_field.as_str()) {
+                continue;
+            }
+
+            type_map.insert(typ.type_id, typ.clone());
+
+            let ty = rust_type(&typ);
+            let name = rust_name(&typ);
+            let ty_id = typ.type_id;
+
+            if is_fuel_primitive(&ty) {
+                proc_macro_error::abort_call_site!("'{:?}' is a reserved Fuel type.")
+            }
+
+            type_ids.insert(ty.to_string(), ty_id);
+
+            if !abi_types.contains(&ty_id) {
+                type_vecs.push(quote! {
+                    #name: Vec<#ty>
+                });
+
+                abi_decoders.push(decode_snippet(ty_id, &ty, &name));
+                abi_types.insert(ty_id);
+            }
+        }
+
+        for function in parsed.functions {
+            let params: Vec<ParamType> = function
+                .inputs
+                .iter()
+                .map(|x| {
+                    ParamType::try_from_type_application(x, &type_map)
+                        .expect("Could not derive TypeApplication param types.")
+                })
+                .collect();
+            let sig = resolve_fn_selector(&function.name, &params[..]);
+            let selector = u64::from_be_bytes(sig);
+            let ty_id = function.output.type_id;
+
+            abi_selectors.push(quote! {
+                #selector => #ty_id,
             });
         }
-    }
-
-    for typ in parsed.types {
-        if IGNORED_ABI_JSON_TYPES.contains(typ.type_field.as_str()) {
-            continue;
-        }
-
-        type_map.insert(typ.type_id, typ.clone());
-
-        let ty = rust_type(&typ);
-        let name = rust_name(&typ);
-        let ty_id = typ.type_id;
-
-        if is_fuel_primitive(&ty) {
-            proc_macro_error::abort_call_site!("'{:?}' is a reserved Fuel type.")
-        }
-
-        type_ids.insert(ty.to_string(), ty_id);
-
-        if !abi_types.contains(&ty_id) {
-            type_vecs.push(quote! {
-                #name: Vec<#ty>
-            });
-
-            abi_decoders.push(decode_snippet(ty_id, &ty, &name));
-            abi_types.insert(ty_id);
-        }
-    }
-
-    for function in parsed.functions {
-        let params: Vec<ParamType> = function
-            .inputs
-            .iter()
-            .map(|x| {
-                ParamType::try_from_type_application(x, &type_map)
-                    .expect("Could not derive TypeApplication param types.")
-            })
-            .collect();
-        let sig = resolve_fn_selector(&function.name, &params[..]);
-        let selector = u64::from_be_bytes(sig);
-        let ty_id = function.output.type_id;
-
-        abi_selectors.push(quote! {
-            #selector => #ty_id,
-        });
     }
 
     let contents = indexer_module
@@ -662,7 +659,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let abi_tokens = match abi {
         Some(ref abi_path) => get_abi_tokens(&namespace, abi_path),
-        None => get_abi_tokens(&namespace, &BASE_ABI_JSON),
+        None => proc_macro2::TokenStream::new(),
     };
 
     let graphql_tokens = process_graphql_schema(namespace, schema_string);
