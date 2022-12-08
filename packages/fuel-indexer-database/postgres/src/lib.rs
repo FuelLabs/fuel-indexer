@@ -65,15 +65,13 @@ pub async fn run_query(
 
     let query = builder.build();
 
-    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/344
-    let raw_rows = query.fetch_all(conn).await?;
 
-    let rows = raw_rows
+    Ok(query
+        .fetch_all(conn)
+        .await?
         .iter()
         .map(|r| r.get::<'_, JsonValue, usize>(0))
-        .collect();
-
-    Ok(rows)
+        .collect())
 }
 
 pub async fn execute_query(
