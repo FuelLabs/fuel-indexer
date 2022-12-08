@@ -5,8 +5,6 @@ members = [
    "examples/block-explorer/explorer-index",
    "examples/hello-world/hello-bin",
    "examples/hello-world/hello-index",
-   "examples/simple-wasm/simple-wasm",
-   "examples/simple-wasm/simple",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-database",
    "packages/fuel-indexer-database/database-types",
