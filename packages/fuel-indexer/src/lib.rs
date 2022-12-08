@@ -8,16 +8,21 @@ pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
 pub use fuel_indexer_database::IndexerDatabaseError;
 pub use fuel_indexer_lib::{
     config::IndexerConfig,
-    manifest::{Manifest, Module},
+    manifest::{Manifest, ManifestError, Module},
 };
 pub use fuel_indexer_schema::{db::IndexerSchemaError, FtColumn};
-use fuel_indexer_types::abi::BlockData;
-pub use fuel_types::{Address, ContractId};
 pub use service::IndexerService;
-
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
+
+pub mod prelude {
+    pub use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
+
+    pub use super::{
+        Database, Executor, FtColumn, IndexEnv, IndexerConfig, IndexerError,
+        IndexerService, Manifest, Module, NativeIndexExecutor, WasmIndexExecutor,
+    };
+}
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
 
@@ -61,17 +66,6 @@ pub enum IndexerError {
     Unknown,
     #[error("Indexer schema error: {0:?}")]
     SchemaError(#[from] IndexerSchemaError),
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum IndexerResponse {
-    Blocks(Vec<BlockData>),
-    Object(Vec<u8>),
-}
-
-#[derive(Serialize, Deserialize)]
-pub enum IndexerRequest {
-    GetObject(u64, u64),
-    PutObject(u64, Vec<u8>, Vec<FtColumn>),
-    Commit,
+    #[error("Manifest error: {0:?}")]
+    ManifestError(#[from] ManifestError),
 }

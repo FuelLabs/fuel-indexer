@@ -11,7 +11,6 @@ pub use fuel_indexer_database_types as sql_types;
 
 #[cfg(feature = "db-models")]
 pub mod db;
-pub mod directives;
 pub mod utils;
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");

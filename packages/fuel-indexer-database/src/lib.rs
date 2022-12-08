@@ -1,3 +1,4 @@
+pub use fuel_indexer_database_types::DbType;
 use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_sqlite as sqlite;
@@ -9,6 +10,9 @@ use std::{cmp::Ordering, str::FromStr};
 use thiserror::Error;
 
 pub mod queries;
+pub mod types {
+    pub use fuel_indexer_database_types::*;
+}
 
 #[derive(Debug, Error)]
 pub enum IndexerDatabaseError {
@@ -34,27 +38,6 @@ pub enum IndexerConnection {
 pub enum IndexerConnectionPool {
     Postgres(sqlx::Pool<sqlx::Postgres>),
     Sqlite(sqlx::Pool<sqlx::Sqlite>),
-}
-
-#[derive(Eq, PartialEq, Debug, Clone)]
-pub enum DbType {
-    Postgres,
-    Sqlite,
-}
-
-impl Default for DbType {
-    fn default() -> DbType {
-        DbType::Postgres
-    }
-}
-
-impl DbType {
-    pub fn table_name(&self, namespace: &str, table_name: &str) -> String {
-        match self {
-            DbType::Postgres => format!("{}.{}", namespace, table_name),
-            DbType::Sqlite => table_name.to_string(),
-        }
-    }
 }
 
 impl IndexerConnectionPool {
