@@ -3,7 +3,7 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Create a new Forc project in an existing directory.
+/// Deploy an index asset bundle to a remote or locally running indexer server.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// URL at which to upload index assets

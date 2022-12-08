@@ -13,7 +13,7 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
                 Command::new("which")
                     .arg("fuel-indexer")
                     .output()
-                    .expect("❌ Failed to detect fuel-indexer binary.")
+                    .expect("❌ Failed to locate fuel-indexer binary.")
                     .stdout,
             )
             .unwrap(),
