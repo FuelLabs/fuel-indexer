@@ -2,23 +2,6 @@
 
 There are a few system requirements that you'll need to get started with a Fuel indexer.
 
-## Fuel system dependencies
-
-Getting started with a Fuel indexer requires a single primary dependency from the Fuel ecosystem -- `fuelup`
-
-- `fuelup` installs the Fuel toolchain from Fuel's official release channels, enabling you to easily keep the toolchain updated, and
-use various Fuel components without having to download git repositories with tons of dependencies.
-
-  - For more info on getting started with `fuelup`, take a look at the [`fuelup` repository](https://github.com/fuellabs/fuelup).
-
-### `fuelup` Installation
-
-Install `fuelup` with the following command:
-
-```bash
-fuelup toolchain install latest
-```
-
 ## Other system dependencies
 
 Other system dependencies related to compilation, tooling, and SQL backends, include:
