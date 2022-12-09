@@ -1,4 +1,4 @@
-use crate::cli::DeployCommand;
+use crate::{cli::DeployCommand, utils::extract_manifest_fields};
 use reqwest::{
     blocking::{multipart::Form, Client},
     header::{HeaderMap, AUTHORIZATION},
@@ -9,45 +9,6 @@ use std::fs;
 use std::io::{BufReader, Read};
 use std::path::Path;
 use tracing::{error, info};
-
-fn extract_manifest_fields(
-    manifest: serde_yaml::Value,
-) -> anyhow::Result<(String, String, String, String)> {
-    let namespace: String = manifest
-        .get(&serde_yaml::Value::String("namespace".into()))
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .to_string();
-    let identifier: String = manifest
-        .get(&serde_yaml::Value::String("identifier".into()))
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .to_string();
-    let graphql_schema: String = manifest
-        .get(&serde_yaml::Value::String("graphql_schema".into()))
-        .unwrap()
-        .as_str()
-        .unwrap()
-        .to_string();
-    let module: serde_yaml::Value = manifest
-        .get(&serde_yaml::Value::String("module".into()))
-        .unwrap()
-        .to_owned();
-    let module_path: String = module
-        .get(&serde_yaml::Value::String("wasm".into()))
-        .unwrap_or_else(|| {
-            module
-                .get(&serde_yaml::Value::String("native".into()))
-                .unwrap()
-        })
-        .as_str()
-        .unwrap()
-        .to_string();
-
-    Ok((namespace, identifier, graphql_schema, module_path))
-}
 
 pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let mut manifest_file = fs::File::open(&command.manifest).unwrap_or_else(|_| {

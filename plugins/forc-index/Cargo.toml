@@ -13,6 +13,7 @@ anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
 forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.31" }
+fuel-indexer-lib = { version = "0.1", path = "../../packages/fuel-indexer-lib" }
 fuel-tx = { version = "0.23", features = ["builder"] }
 fuels-types = "0.31"
 hex = "0.4.3"
