@@ -5280,6 +5280,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "simple-wasm"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels-core",
+ "fuels-types 0.30.0",
+ "getrandom 0.2.8",
+ "serde",
+]
+
+[[package]]
 name = "siphasher"
 version = "0.3.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"

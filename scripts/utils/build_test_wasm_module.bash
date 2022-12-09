@@ -11,6 +11,11 @@ bash scripts/stripper.bash fuel_indexer_test.wasm
 cp fuel_indexer_test.wasm packages/fuel-indexer-tests/assets/
 rm -fv fuel_indexer_test.wasm
 
+cargo build -p simple-wasm --release --target wasm32-unknown-unknown
+bash scripts/stripper.bash simple_wasm.wasm
+cp simple_wasm.wasm packages/fuel-indexer-tests/assets/
+rm -fv simple_wasm.wasm
+
 cargo build -p explorer-index --release --target wasm32-unknown-unknown
 bash scripts/stripper.bash explorer_index.wasm
 # Just putting this in the assets folder for archiving/reference purposes
