@@ -114,7 +114,8 @@ impl GraphQlApi {
         let listen_on = config.graphql_api.derive_socket_addr();
 
         if config.graphql_api.run_migrations.is_some() {
-            queries::run_migration(&config.database.to_string()).await;
+            let mut c = pool.acquire().await.unwrap();
+            queries::run_migration(&mut c).await;
         }
 
         let graph_route = Router::new()

@@ -1,8 +1,6 @@
 use fuel_indexer_database_types::*;
-use fuel_indexer_lib::utils::{attempt_database_connection, sha256_digest};
-use sqlx::{
-    pool::PoolConnection, types::JsonValue, Connection, PgConnection, Postgres, Row,
-};
+use fuel_indexer_lib::utils::sha256_digest;
+use sqlx::{pool::PoolConnection, types::JsonValue, Postgres, Row};
 use tracing::info;
 
 #[cfg(feature = "metrics")]
@@ -41,15 +39,12 @@ pub async fn get_object(
     Ok(row.get(0))
 }
 
-pub async fn run_migration(database_url: &str) {
+pub async fn run_migration(conn: &mut PoolConnection<Postgres>) {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.run_migration_calls.inc();
 
-    let mut conn =
-        attempt_database_connection(|| PgConnection::connect(database_url)).await;
-
     sqlx::migrate!()
-        .run(&mut conn)
+        .run(conn)
         .await
         .expect("Failed postgres migration.");
 }
@@ -64,7 +59,6 @@ pub async fn run_query(
     let mut builder = sqlx::QueryBuilder::new(query);
 
     let query = builder.build();
-
 
     Ok(query
         .fetch_all(conn)

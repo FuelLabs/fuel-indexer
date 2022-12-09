@@ -60,20 +60,26 @@ impl IndexerConnectionPool {
         let url = url.expect("Database URL should be correctly formed");
         match url.scheme() {
             "postgres" => {
-                let connection_options = PgConnectOptions::from_str(database_url)?;
                 let pool = attempt_database_connection(|| {
                     sqlx::postgres::PgPoolOptions::new()
-                        .connect_with(connection_options.clone())
+                        .connect_with(PgConnectOptions::from_str(database_url).unwrap())
                 })
                 .await;
 
                 Ok(IndexerConnectionPool::Postgres(pool))
             }
             "sqlite" => {
-                let connection_options = SqliteConnectOptions::from_str(database_url)?;
                 let pool = attempt_database_connection(|| {
                     sqlx::sqlite::SqlitePoolOptions::new()
-                        .connect_with(connection_options.clone())
+                        .max_connections(10)
+                        .idle_timeout(std::time::Duration::from_secs(2))
+                        .connect_with(
+                            SqliteConnectOptions::from_str(database_url)
+                                .unwrap()
+                                .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+                                .foreign_keys(true)
+                                .locking_mode(sqlx::sqlite::SqliteLockingMode::Normal),
+                        )
                 })
                 .await;
 

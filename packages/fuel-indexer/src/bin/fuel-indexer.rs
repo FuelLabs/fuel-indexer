@@ -41,8 +41,6 @@ pub async fn main() -> Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    queries::run_migration(&config.database.to_string()).await;
-
     let (tx, rx) = if cfg!(feature = "api-server") {
         let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
         (Some(tx), Some(rx))
@@ -51,6 +49,9 @@ pub async fn main() -> Result<()> {
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+
+    let mut c = pool.acquire().await.unwrap();
+    queries::run_migration(&mut c).await;
 
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
