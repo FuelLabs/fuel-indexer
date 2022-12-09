@@ -50,8 +50,8 @@ pub async fn main() -> Result<()> {
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
-    let mut c = pool.acquire().await.unwrap();
-    queries::run_migration(&mut c).await;
+    let mut c = pool.acquire().await?;
+    queries::run_migration(&mut c).await?;
 
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 

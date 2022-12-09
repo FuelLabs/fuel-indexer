@@ -345,7 +345,7 @@ pub async fn revert_transaction(conn: &mut IndexerConnection) -> sqlx::Result<us
     }
 }
 
-pub async fn run_migration(conn: &mut IndexerConnection) {
+pub async fn run_migration(conn: &mut IndexerConnection) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::run_migration(c).await,
         IndexerConnection::Sqlite(ref mut c) => sqlite::run_migration(c).await,

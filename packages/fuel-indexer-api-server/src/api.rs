@@ -115,7 +115,7 @@ impl GraphQlApi {
 
         if config.graphql_api.run_migrations.is_some() {
             let mut c = pool.acquire().await.unwrap();
-            queries::run_migration(&mut c).await;
+            queries::run_migration(&mut c).await.unwrap();
         }
 
         let graph_route = Router::new()

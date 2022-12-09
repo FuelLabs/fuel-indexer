@@ -39,14 +39,13 @@ pub async fn get_object(
     Ok(row.get(0))
 }
 
-pub async fn run_migration(conn: &mut PoolConnection<Sqlite>) {
+pub async fn run_migration(conn: &mut PoolConnection<Sqlite>) -> sqlx::Result<()> {
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.run_migration_calls.inc();
 
-    sqlx::migrate!()
-        .run(conn)
-        .await
-        .expect("Failed sqlite migration.");
+    sqlx::migrate!().run(conn).await?;
+
+    Ok(())
 }
 
 pub async fn run_query(
