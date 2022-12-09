@@ -297,8 +297,6 @@ impl IndexerService {
 
         let mut conn = self.pool.acquire().await?;
 
-        let _ = queries::start_transaction(&mut conn).await?;
-
         let index =
             queries::register_index(&mut conn, &manifest.namespace, &manifest.identifier)
                 .await?;
@@ -343,8 +341,6 @@ impl IndexerService {
             }
         }
 
-        let _ = queries::commit_transaction(&mut conn).await?;
-
         info!("Registered Index({})", &manifest.uid());
         self.handles.borrow_mut().insert(manifest.uid(), handle);
 
@@ -353,8 +349,6 @@ impl IndexerService {
 
     pub async fn register_indices_from_registry(&mut self) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
-
-        let _ = queries::start_transaction(&mut conn).await?;
 
         let indices = queries::registered_indices(&mut conn).await?;
 
@@ -374,11 +368,6 @@ impl IndexerService {
             info!("Registered indexer {}", manifest.uid());
             self.handles.borrow_mut().insert(manifest.uid(), handle);
         }
-
-        let _ = match queries::commit_transaction(&mut conn).await {
-            Ok(v) => v,
-            Err(_e) => queries::revert_transaction(&mut conn).await?,
-        };
 
         Ok(())
     }
