@@ -1,9 +1,12 @@
+use fuel_indexer_lib::defaults;
+
 pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
 pub const INDEX_LIB_FILENAME: &str = "lib.rs";
 pub const DEFAULT_NAMESPACE: &str = "fuel";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
 pub const DEFAULT_INDEXER_URL: &str = "http://127.0.0.1:29987";
+pub const DEFAULT_GRAPHQ_API_PORT: &str = defaults::GRAPHQL_API_PORT;
 
 pub fn default_index_cargo_toml(index_name: &str) -> String {
     format!(
