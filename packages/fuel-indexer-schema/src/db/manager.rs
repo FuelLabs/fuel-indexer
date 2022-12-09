@@ -30,8 +30,7 @@ impl SchemaManager {
                 SchemaBuilder::new(name, &version, self.pool.database_type())
                     .build(&schema)
                     .commit_metadata(&mut connection)
-                    .await
-                    .unwrap_or_else(|e| panic!("Failed to build new schema: {}", e));
+                    .await?;
         }
         Ok(())
     }

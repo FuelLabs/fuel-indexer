@@ -14,6 +14,7 @@ pub const POSTGRES_PASSWORD: &str = "";
 pub const DATABASE_CONNECTION_RETRY_ATTEMPTS: usize = 5;
 
 pub const SQLITE_DATABASE: &str = "sqlite.db";
+pub const SQLITE_IDLE_TIMEOUT_SECS: u64 = 2;
 
 pub const GRAPHQL_API_RUN_MIGRATIONS: Option<bool> = None;
 

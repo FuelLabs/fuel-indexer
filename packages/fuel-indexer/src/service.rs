@@ -297,15 +297,11 @@ impl IndexerService {
 
         let mut conn = self.pool.acquire().await?;
 
-        let _ = queries::start_transaction(&mut conn).await?;
-
         let index =
             queries::register_index(&mut conn, &manifest.namespace, &manifest.identifier)
                 .await?;
 
-        let schema = manifest
-            .graphql_schema()
-            .expect("Failed to read GraphQL schema file in manifest.");
+        let schema = manifest.graphql_schema()?;
 
         let schema_bytes = schema.as_bytes().to_vec();
 
@@ -345,8 +341,6 @@ impl IndexerService {
             }
         }
 
-        let _ = queries::commit_transaction(&mut conn).await?;
-
         info!("Registered Index({})", &manifest.uid());
         self.handles.borrow_mut().insert(manifest.uid(), handle);
 
@@ -356,13 +350,8 @@ impl IndexerService {
     pub async fn register_indices_from_registry(&mut self) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
 
-        let _ = queries::start_transaction(&mut conn)
-            .await
-            .expect("Could not start database transaction");
-
         let indices = queries::registered_indices(&mut conn).await?;
 
-        println!(">>> INDICIES : {:?}", indices);
         for index in indices {
             let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
             let manifest = Manifest::from_slice(&assets.manifest.bytes)?;
@@ -379,11 +368,6 @@ impl IndexerService {
             info!("Registered indexer {}", manifest.uid());
             self.handles.borrow_mut().insert(manifest.uid(), handle);
         }
-
-        let _ = match queries::commit_transaction(&mut conn).await {
-            Ok(v) => v,
-            Err(_e) => queries::revert_transaction(&mut conn).await?,
-        };
 
         Ok(())
     }
