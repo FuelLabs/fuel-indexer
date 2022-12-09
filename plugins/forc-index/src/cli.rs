@@ -37,10 +37,7 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::New(command) => crate::commands::new::exec(command),
         ForcIndex::Deploy(command) => crate::commands::deploy::exec(command),
         ForcIndex::Start(command) => crate::commands::start::exec(command),
-<<<<<<< HEAD
         ForcIndex::Check(command) => crate::commands::check::exec(command),
-=======
         ForcIndex::Stop(command) => crate::commands::stop::exec(command),
->>>>>>> 1d0bfb5440a36e1fa7d2a62a136c3739567663ee
     }
 }
