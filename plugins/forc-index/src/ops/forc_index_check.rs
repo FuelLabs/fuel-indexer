@@ -10,9 +10,12 @@ fn center_align(s: &str, n: usize) -> String {
 
 fn format_exec_msg(exec_name: &str, path: Option<String>) -> String {
     if path.is_some() {
-        format!("Found '{}' located at '{}'", exec_name, path.unwrap())
+        center_align(
+            &format!("Found '{}' located at '{}'", exec_name, path.unwrap()),
+            76,
+        )
     } else {
-        format!("Could not located '{}'", exec_name)
+        center_align(&format!("Could not located '{}'", exec_name), 76)
     }
 }
 
@@ -55,10 +58,10 @@ fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
             .strip_suffix('\n')  {
             Some(pid) => (
                 center_align("✅", 5),
-                format!(
+                center_align(&format!(
                     "Local fuel-indexer service found: PID({}) | Port({})",
                     &pid, &cmd.grpahql_api_port
-                ),
+                ), 76)
             ),
             None => (
                 center_align("⛔️", 5),
@@ -117,11 +120,11 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     }
 
     let (binary_emoji, binary_path) = find_executable(fuel_indexer);
-    let binary_msg = center_align(&format_exec_msg(fuel_indexer, binary_path), 76);
+    let binary_msg = format_exec_msg(fuel_indexer, binary_path);
     let (psql_emoji, psql_path) = find_executable(psql);
-    let psql_msg = center_align(&format_exec_msg(psql, psql_path), 76);
+    let psql_msg = format_exec_msg(psql, psql_path);
     let (sqlite_emoji, sqlite_path) = find_executable_with_fallback(sqlite, sqlite3);
-    let sqlite_msg = center_align(&format_exec_msg(sqlite, sqlite_path), 76);
+    let sqlite_msg = format_exec_msg(sqlite, sqlite_path);
     let (service_emoji, service_msg) = find_indexer_service_info(&command);
 
     let details_header = center_align("Details", 76);
@@ -136,11 +139,11 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let stdout = format!(
         r#"   
 +----------+----------------------------------+----------------------------------------------------------------------------+
-| {status_headers}  |  {check_header}  |{details_header}|
+|  {status_headers} |  {check_header}  |{details_header}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
-| {binary_emoji}   |  {binary_header}  |{binary_msg}|
+|  {binary_emoji}  |  {binary_header}  |{binary_msg}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
-|   {service_emoji}  | {service_header}   |{service_msg}|
+|  {service_emoji}  | {service_header}   |{service_msg}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
 |  {psql_emoji}  | {psql_header}   |{psql_msg}|
 +----------+----------------------------------+----------------------------------------------------------------------------+

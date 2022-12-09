@@ -1,7 +1,7 @@
 pub(crate) use crate::commands::{
-    deploy::Command as DeployCommand, init::Command as InitCommand,
-    new::Command as NewCommand, start::Command as StartCommand,
-    stop::Command as StopCommand, check::Command as CheckCommand,
+    check::Command as CheckCommand, deploy::Command as DeployCommand,
+    init::Command as InitCommand, new::Command as NewCommand,
+    start::Command as StartCommand, stop::Command as StopCommand,
 };
 use clap::{Parser, Subcommand};
 use forc_tracing::{init_tracing_subscriber, TracingSubscriberOptions};

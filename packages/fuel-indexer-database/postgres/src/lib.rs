@@ -65,7 +65,6 @@ pub async fn run_query(
 
     let query = builder.build();
 
-
     Ok(query
         .fetch_all(conn)
         .await?
