@@ -1,5 +1,8 @@
 pub use fuel_indexer_database_types::DbType;
-use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
+use fuel_indexer_lib::{
+    defaults,
+    utils::{attempt_database_connection, ServiceStatus},
+};
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_sqlite as sqlite;
 use sqlx::{
@@ -60,20 +63,32 @@ impl IndexerConnectionPool {
         let url = url.expect("Database URL should be correctly formed");
         match url.scheme() {
             "postgres" => {
-                let connection_options = PgConnectOptions::from_str(database_url)?;
                 let pool = attempt_database_connection(|| {
-                    sqlx::postgres::PgPoolOptions::new()
-                        .connect_with(connection_options.clone())
+                    sqlx::postgres::PgPoolOptions::new().connect_with(
+                        PgConnectOptions::from_str(database_url).unwrap_or_else(|e| {
+                            panic!("Could not derive PgConnectOptions: {}", e)
+                        }),
+                    )
                 })
                 .await;
 
                 Ok(IndexerConnectionPool::Postgres(pool))
             }
             "sqlite" => {
-                let connection_options = SqliteConnectOptions::from_str(database_url)?;
                 let pool = attempt_database_connection(|| {
                     sqlx::sqlite::SqlitePoolOptions::new()
-                        .connect_with(connection_options.clone())
+                        .idle_timeout(std::time::Duration::from_secs(
+                            defaults::SQLITE_IDLE_TIMEOUT_SECS,
+                        ))
+                        .connect_with(
+                            SqliteConnectOptions::from_str(database_url)
+                                .unwrap_or_else(|e| {
+                                    panic!("Could not derive SqliteConnectOptions: {}", e)
+                                })
+                                .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
+                                .foreign_keys(true)
+                                .locking_mode(sqlx::sqlite::SqliteLockingMode::Normal),
+                        )
                 })
                 .await;
 
@@ -86,11 +101,10 @@ impl IndexerConnectionPool {
     pub async fn is_connected(&self) -> sqlx::Result<ServiceStatus> {
         match self {
             IndexerConnectionPool::Postgres(p) => {
-                let mut conn = p.acquire().await.expect("Failed to get pool connection");
+                let mut conn = p.acquire().await?;
                 let result =
                     postgres::execute_query(&mut conn, "SELECT true;".to_string())
-                        .await
-                        .expect("Failed to test Postgres connection.");
+                        .await?;
 
                 match result.cmp(&1) {
                     Ordering::Equal => Ok(ServiceStatus::OK),
@@ -98,10 +112,9 @@ impl IndexerConnectionPool {
                 }
             }
             IndexerConnectionPool::Sqlite(p) => {
-                let mut conn = p.acquire().await.expect("Failed to get pool connection");
-                let result = sqlite::execute_query(&mut conn, "SELECT true;".to_string())
-                    .await
-                    .expect("Failed to test Sqlite connection.");
+                let mut conn = p.acquire().await?;
+                let result =
+                    sqlite::execute_query(&mut conn, "SELECT true;".to_string()).await?;
 
                 match result.cmp(&1) {
                     Ordering::Equal => Ok(ServiceStatus::OK),

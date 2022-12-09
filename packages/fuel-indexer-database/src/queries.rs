@@ -2,8 +2,6 @@ use crate::{types::*, IndexerConnection};
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_sqlite as sqlite;
 use sqlx::types::JsonValue;
-use std::str::FromStr;
-use url::Url;
 
 pub async fn graph_root_latest(
     conn: &mut IndexerConnection,
@@ -347,19 +345,9 @@ pub async fn revert_transaction(conn: &mut IndexerConnection) -> sqlx::Result<us
     }
 }
 
-pub async fn run_migration(database_url: &str) {
-    let url =
-        Url::from_str(database_url).expect("Database URL should be correctly formed");
-
-    match url.scheme() {
-        "postgres" => {
-            postgres::run_migration(database_url).await;
-        }
-        "sqlite" => {
-            sqlite::run_migration(database_url).await;
-        }
-        e => {
-            panic!("database {} is not supported, use sqlite or postgres", e);
-        }
+pub async fn run_migration(conn: &mut IndexerConnection) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::run_migration(c).await,
+        IndexerConnection::Sqlite(ref mut c) => sqlite::run_migration(c).await,
     }
 }
