@@ -15,12 +15,18 @@ fn rightpad_whitespace(s: &str, n: usize) -> String {
 fn format_exec_msg(exec_name: &str, path: Option<String>) -> String {
     if path.is_some() {
         rightpad_whitespace(
-            &format!("  Found '{}' located at '{}'", exec_name, path.unwrap()),
+            &format!("  Found '{}' at '{}'", exec_name, path.unwrap()),
             76,
         )
     } else {
         rightpad_whitespace(&format!("Could not located '{}'", exec_name), 76)
     }
+}
+
+fn find_executable_with_msg(exec_name: &str) -> (String, Option<String>, String) {
+    let (emoji, path) = find_executable(exec_name);
+    let p = path.clone();
+    (emoji, path, format_exec_msg(exec_name, p))
 }
 
 fn find_executable(exec_name: &str) -> (String, Option<String>) {
@@ -33,7 +39,7 @@ fn find_executable(exec_name: &str) -> (String, Option<String>) {
         }
         Err(e) => {
             error!("  Could not locate {}: {}", exec_name, e);
-            (center_align("❌", 5), None)
+            (center_align("⛔️", 5), None)
         }
     }
 }
@@ -49,6 +55,15 @@ fn find_executable_with_fallback(
         let (emoji, path) = find_executable(fallback_exec_name);
         (emoji, path)
     }
+}
+
+fn find_executable_with_fallback_msg(
+    exec_name: &str,
+    fallback_exec_name: &str,
+) -> (String, Option<String>, String) {
+    let (emoji, path) = find_executable_with_fallback(exec_name, fallback_exec_name);
+    let p = path.clone();
+    (emoji, path, format_exec_msg(exec_name, p))
 }
 
 fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
@@ -80,7 +95,7 @@ fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
         Err(e) => {
             error!("Could not find info for fuel-indexer service: {}", e);
             (
-                center_align("⚠️", 5),
+                center_align("⛔️", 5),
                 center_align(
                     &format!(
                 "Failed to detect a locally running fuel-indexer service at port: {}.",
@@ -104,6 +119,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let fuel_indexer = "fuel-indexer";
     let fuel_core = "fuel-core";
     let docker = "docker";
+    let fuelup = "fuelup";
 
     match Client::new().get(&target).send() {
         Ok(res) => {
@@ -121,21 +137,20 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
                 .expect("Failed to read JSON response.");
         }
         Err(e) => {
-            error!("Could not connect to Indexer service: {}", e);
+            error!("\n❌ Could not connect to indexers service: {}", e);
         }
     }
 
-    let (binary_emoji, binary_path) = find_executable(fuel_indexer);
-    let binary_msg = format_exec_msg(fuel_indexer, binary_path);
-    let (psql_emoji, psql_path) = find_executable(psql);
-    let psql_msg = format_exec_msg(psql, psql_path);
-    let (sqlite_emoji, sqlite_path) = find_executable_with_fallback(sqlite, sqlite3);
-    let sqlite_msg = format_exec_msg(sqlite, sqlite_path);
-    let (fuel_core_emoji, fuel_core_path) = find_executable(fuel_indexer);
-    let fuel_core_msg = format_exec_msg(fuel_core, fuel_core_path);
+    let (indexer_emoji, _indexer_path, indexer_msg) =
+        find_executable_with_msg(fuel_indexer);
+    let (psql_emoji, _psql_path, psql_msg) = find_executable_with_msg(psql);
+    let (sqlite_emoji, _sqlite_path, sqlite_msg) =
+        find_executable_with_fallback_msg(sqlite, sqlite3);
+    let (fuel_core_emoji, _fuelcore_path, fuel_core_msg) =
+        find_executable_with_msg(fuel_core);
     let (service_emoji, service_msg) = find_indexer_service_info(&command);
-    let (docker_emoji, docker_path) = find_executable(docker);
-    let docker_msg = format_exec_msg(docker, docker_path);
+    let (docker_emoji, _docker_path, docker_msg) = find_executable_with_msg(docker);
+    let (fuelup_emoji, _fuelup_path, fuelup_msg) = find_executable_with_msg(fuelup);
 
     let details_header = center_align("Details", 76);
     let check_header = center_align("Component", 30);
@@ -146,6 +161,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let sqlite_header = rightpad_whitespace(sqlite, 30);
     let fuel_core_header = rightpad_whitespace(fuel_core, 30);
     let docker_header = rightpad_whitespace(docker, 30);
+    let fuelup_header = rightpad_whitespace(fuelup, 30);
 
     // TODO: Simplify this by just padding/justifying the strings (>'.')>
     let stdout = format!(
@@ -153,7 +169,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
 +----------+----------------------------------+----------------------------------------------------------------------------+
 |  {status_headers} |  {check_header}  |{details_header}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
-|  {binary_emoji}  |  {binary_header}  |{binary_msg}|
+|  {indexer_emoji}  | {binary_header}   |{indexer_msg}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
 |  {service_emoji}  | {service_header}   |{service_msg}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
@@ -164,6 +180,8 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
 |  {fuel_core_emoji}  | {fuel_core_header}   |{fuel_core_msg}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
 |  {docker_emoji}  | {docker_header}   |{docker_msg}|
++----------+----------------------------------+----------------------------------------------------------------------------+
+|  {fuelup_emoji}  | {fuelup_header}   |{fuelup_msg}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
 "#
     );
