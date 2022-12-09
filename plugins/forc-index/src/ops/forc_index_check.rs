@@ -1,6 +1,6 @@
 use crate::cli::CheckCommand;
 use reqwest::{blocking::Client, StatusCode};
-use serde_json::{value::Value, Map};
+use serde_json::{to_string_pretty, value::Value, Map};
 use std::process::Command;
 use tracing::error;
 
@@ -132,9 +132,14 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
                 return Ok(());
             }
 
-            let _res_json = res
+            let res_json = res
                 .json::<Map<String, Value>>()
                 .expect("Failed to read JSON response.");
+
+            println!(
+                "\n✅ Sucessfully retrieved indexer service health:\n\n{}",
+                to_string_pretty(&res_json).unwrap()
+            );
         }
         Err(e) => {
             error!("\n❌ Could not connect to indexers service: {}", e);
@@ -163,7 +168,6 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let docker_header = rightpad_whitespace(docker, 30);
     let fuelup_header = rightpad_whitespace(fuelup, 30);
 
-    // TODO: Simplify this by just padding/justifying the strings (>'.')>
     let stdout = format!(
         r#"   
 +----------+----------------------------------+----------------------------------------------------------------------------+
