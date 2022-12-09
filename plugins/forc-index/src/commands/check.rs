@@ -2,7 +2,7 @@ use crate::{ops::forc_index_check, utils::defaults};
 use anyhow::Result;
 use clap::Parser;
 
-/// Check to ensure that all indexer components are up and running.
+/// Get status checks on all indexer components.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// URL at which to upload index assets
