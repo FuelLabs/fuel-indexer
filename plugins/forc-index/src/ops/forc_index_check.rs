@@ -142,7 +142,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
             );
         }
         Err(e) => {
-            error!("\n❌ Could not connect to indexers service: {}", e);
+            error!("\n❌ Could not connect to indexer service: {}", e);
         }
     }
 
