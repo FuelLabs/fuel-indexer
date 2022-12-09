@@ -8,14 +8,18 @@ fn center_align(s: &str, n: usize) -> String {
     format!("{: ^width$}", s, width = n)
 }
 
+fn rightpad_whitespace(s: &str, n: usize) -> String {
+    format!("{:0width$}", s, width = n)
+}
+
 fn format_exec_msg(exec_name: &str, path: Option<String>) -> String {
     if path.is_some() {
-        center_align(
-            &format!("Found '{}' located at '{}'", exec_name, path.unwrap()),
+        rightpad_whitespace(
+            &format!("  Found '{}' located at '{}'", exec_name, path.unwrap()),
             76,
         )
     } else {
-        center_align(&format!("Could not located '{}'", exec_name), 76)
+        rightpad_whitespace(&format!("Could not located '{}'", exec_name), 76)
     }
 }
 
@@ -28,7 +32,7 @@ fn find_executable(exec_name: &str) -> (String, Option<String>) {
             (center_align("✅", 5), path)
         }
         Err(e) => {
-            error!("Could not locate {}: {}", exec_name, e);
+            error!("  Could not locate {}: {}", exec_name, e);
             (center_align("❌", 5), None)
         }
     }
@@ -136,12 +140,12 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let details_header = center_align("Details", 76);
     let check_header = center_align("Component", 30);
     let status_headers = center_align("Status", 7);
-    let binary_header = center_align("fuel-indexer binary", 30);
-    let service_header = center_align("fuel-indexer service", 30);
-    let psql_header = center_align(psql, 30);
-    let sqlite_header = center_align(sqlite, 30);
-    let fuel_core_header = center_align(fuel_core, 30);
-    let docker_header = center_align(docker, 30);
+    let binary_header = rightpad_whitespace("fuel-indexer binary", 30);
+    let service_header = rightpad_whitespace("fuel-indexer service", 30);
+    let psql_header = rightpad_whitespace(psql, 30);
+    let sqlite_header = rightpad_whitespace(sqlite, 30);
+    let fuel_core_header = rightpad_whitespace(fuel_core, 30);
+    let docker_header = rightpad_whitespace(docker, 30);
 
     // TODO: Simplify this by just padding/justifying the strings (>'.')>
     let stdout = format!(
