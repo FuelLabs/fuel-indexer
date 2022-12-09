@@ -5,7 +5,7 @@ use clap::Parser;
 /// Get status checks on all indexer components.
 #[derive(Debug, Parser)]
 pub struct Command {
-    /// URL at which to find indeer service.
+    /// URL at which to find indexer service.
     #[clap(long, default_value = defaults::DEFAULT_INDEXER_URL, help = "URL at which to find indexer service.")]
     pub url: String,
 
