@@ -35,11 +35,11 @@ fn find_executable(exec_name: &str) -> (String, Option<String>) {
             let path = String::from_utf8_lossy(&o.stdout)
                 .strip_suffix('\n')
                 .map(|x| x.to_string());
-            (center_align("✅", 5), path)
+            (center_align("✅", 3), path)
         }
         Err(e) => {
             error!("  Could not locate {}: {}", exec_name, e);
-            (center_align("⛔️", 5), None)
+            (center_align("⛔️", 3), None)
         }
     }
 }
@@ -76,7 +76,7 @@ fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
             .to_string()
             .strip_suffix('\n')  {
             Some(pid) => (
-                center_align("✅", 5),
+                center_align("✅", 3),
                 center_align(&format!(
                     "Local fuel-indexer service found: PID({}) | Port({})",
                     &pid, &cmd.grpahql_api_port
@@ -95,7 +95,7 @@ fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
         Err(e) => {
             error!("Could not find info for fuel-indexer service: {}", e);
             (
-                center_align("⛔️", 5),
+                center_align("⛔️", 3),
                 center_align(
                     &format!(
                 "Failed to detect a locally running fuel-indexer service at port: {}.",
@@ -158,35 +158,35 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let (fuelup_emoji, _fuelup_path, fuelup_msg) = find_executable_with_msg(fuelup);
 
     let details_header = center_align("Details", 76);
-    let check_header = center_align("Component", 30);
-    let status_headers = center_align("Status", 7);
-    let binary_header = rightpad_whitespace("fuel-indexer binary", 30);
-    let service_header = rightpad_whitespace("fuel-indexer service", 30);
-    let psql_header = rightpad_whitespace(psql, 30);
-    let sqlite_header = rightpad_whitespace(sqlite, 30);
-    let fuel_core_header = rightpad_whitespace(fuel_core, 30);
-    let docker_header = rightpad_whitespace(docker, 30);
-    let fuelup_header = rightpad_whitespace(fuelup, 30);
+    let check_header = center_align("Component", 20);
+    let status_headers = center_align("Status", 5);
+    let binary_header = rightpad_whitespace("fuel-indexer binary", 20);
+    let service_header = rightpad_whitespace("fuel-indexer service", 20);
+    let psql_header = rightpad_whitespace(psql, 20);
+    let sqlite_header = rightpad_whitespace(sqlite, 20);
+    let fuel_core_header = rightpad_whitespace(fuel_core, 20);
+    let docker_header = rightpad_whitespace(docker, 20);
+    let fuelup_header = rightpad_whitespace(fuelup, 20);
 
     let stdout = format!(
         r#"   
-+----------+----------------------------------+----------------------------------------------------------------------------+
-|  {status_headers} |  {check_header}  |{details_header}|
-+----------+----------------------------------+----------------------------------------------------------------------------+
++--------+-------------------------+----------------------------------------------------------------------------+
+| {status_headers} |  {check_header}  |{details_header}|
++--------+------------------------+----------------------------------------------------------------------------+
 |  {indexer_emoji}  | {binary_header}   |{indexer_msg}|
-+----------+----------------------------------+----------------------------------------------------------------------------+
-|  {service_emoji}  | {service_header}   |{service_msg}|
-+----------+----------------------------------+----------------------------------------------------------------------------+
++--------+------------------------+----------------------------------------------------------------------------+
+| {service_emoji} | {service_header}   |{service_msg}|
++--------+------------------------+----------------------------------------------------------------------------+
 |  {psql_emoji}  | {psql_header}   |{psql_msg}|
-+----------+----------------------------------+----------------------------------------------------------------------------+
++--------+------------------------+----------------------------------------------------------------------------+
 |  {sqlite_emoji}  | {sqlite_header}   |{sqlite_msg}|
-+----------+----------------------------------+----------------------------------------------------------------------------+
++--------+------------------------+----------------------------------------------------------------------------+
 |  {fuel_core_emoji}  | {fuel_core_header}   |{fuel_core_msg}|
-+----------+----------------------------------+----------------------------------------------------------------------------+
++--------+------------------------+----------------------------------------------------------------------------+
 |  {docker_emoji}  | {docker_header}   |{docker_msg}|
-+----------+----------------------------------+----------------------------------------------------------------------------+
++--------+------------------------+----------------------------------------------------------------------------+
 |  {fuelup_emoji}  | {fuelup_header}   |{fuelup_msg}|
-+----------+----------------------------------+----------------------------------------------------------------------------+
++--------+------------------------+----------------------------------------------------------------------------+
 "#
     );
 
