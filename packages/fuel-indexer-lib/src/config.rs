@@ -58,7 +58,7 @@ pub struct IndexerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres", "sqlite"]))]
     pub database: String,
     #[clap(long, help = "Sqlite database.", default_value = defaults::SQLITE_DATABASE)]
-    pub sqlite_database: PathBuf,
+    pub sqlite_database: String,
     #[clap(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
     #[clap(long, help = "Postgres database.")]
@@ -178,7 +178,7 @@ impl std::string::ToString for FuelNodeConfig {
 #[serde(rename_all = "snake_case")]
 pub enum DatabaseConfig {
     Sqlite {
-        path: PathBuf,
+        path: String,
     },
     Postgres {
         user: String,
@@ -224,16 +224,10 @@ impl MutableConfig for DatabaseConfig {
                 }
             }
             DatabaseConfig::Sqlite { path } => {
-                let os_str = path
-                    .as_os_str()
-                    .to_str()
-                    .expect("Failed to convert path to &str slice");
-                if is_opt_env_var(os_str) {
-                    *path = PathBuf::from(
-                        std::env::var(trim_opt_env_key(os_str)).unwrap_or_else(|_| {
-                            format!("Failed to read '{}' from env", os_str)
-                        }),
-                    );
+                if is_opt_env_var(path) {
+                    *path = std::env::var(trim_opt_env_key(path)).unwrap_or_else(|_| {
+                        format!("Failed to read '{}' from env", path)
+                    });
                 }
             }
         }
@@ -272,7 +266,7 @@ impl std::string::ToString for DatabaseConfig {
                 )
             }
             DatabaseConfig::Sqlite { path } => {
-                format!("sqlite://{}", path.display())
+                format!("sqlite://{}", path)
             }
         }
     }
@@ -561,9 +555,7 @@ impl IndexerConfig {
                     db_path = db_path_value.as_str().unwrap().to_string();
                 }
 
-                config.database = DatabaseConfig::Sqlite {
-                    path: PathBuf::from(db_path),
-                };
+                config.database = DatabaseConfig::Sqlite { path: db_path };
             }
         }
 
