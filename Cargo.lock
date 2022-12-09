@@ -2025,6 +2025,7 @@ dependencies = [
  "clap",
  "forc-tracing",
  "forc-util",
+ "fuel-indexer-lib",
  "fuel-tx",
  "fuels-types 0.31.1",
  "hex",

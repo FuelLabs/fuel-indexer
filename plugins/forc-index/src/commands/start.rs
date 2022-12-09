@@ -3,7 +3,7 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Create a new Forc project in an existing directory.
+/// Start a local indexer service.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// Log level passed to the Fuel Indexer service.

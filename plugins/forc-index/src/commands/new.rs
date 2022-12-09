@@ -3,7 +3,7 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Create a new Forc project in an existing directory.
+/// Create a new indexer project in a new directory.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// Name of index
