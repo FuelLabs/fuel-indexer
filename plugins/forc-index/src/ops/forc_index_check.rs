@@ -64,7 +64,7 @@ fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
                 ), 76)
             ),
             None => (
-                center_align("⛔️", 5),
+                center_align("⛔️", 6),
                 center_align(&format!(
                     "Failed to detect a locally running fuel-indexer service at Port({}).",
                     cmd.grpahql_api_port
@@ -98,6 +98,8 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let sqlite = "sqlite";
     let sqlite3 = "sqlite3";
     let fuel_indexer = "fuel-indexer";
+    let fuel_core = "fuel-core";
+    let docker = "docker";
 
     match Client::new().get(&target).send() {
         Ok(res) => {
@@ -125,15 +127,21 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let psql_msg = format_exec_msg(psql, psql_path);
     let (sqlite_emoji, sqlite_path) = find_executable_with_fallback(sqlite, sqlite3);
     let sqlite_msg = format_exec_msg(sqlite, sqlite_path);
+    let (fuel_core_emoji, fuel_core_path) = find_executable(fuel_indexer);
+    let fuel_core_msg = format_exec_msg(fuel_core, fuel_core_path);
     let (service_emoji, service_msg) = find_indexer_service_info(&command);
+    let (docker_emoji, docker_path) = find_executable(docker);
+    let docker_msg = format_exec_msg(docker, docker_path);
 
     let details_header = center_align("Details", 76);
     let check_header = center_align("Component", 30);
     let status_headers = center_align("Status", 7);
     let binary_header = center_align("fuel-indexer binary", 30);
     let service_header = center_align("fuel-indexer service", 30);
-    let psql_header = center_align("postgres", 30);
-    let sqlite_header = center_align("sqlite", 30);
+    let psql_header = center_align(psql, 30);
+    let sqlite_header = center_align(sqlite, 30);
+    let fuel_core_header = center_align(fuel_core, 30);
+    let docker_header = center_align(docker, 30);
 
     // TODO: Simplify this by just padding/justifying the strings (>'.')>
     let stdout = format!(
@@ -148,6 +156,10 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
 |  {psql_emoji}  | {psql_header}   |{psql_msg}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
 |  {sqlite_emoji}  | {sqlite_header}   |{sqlite_msg}|
++----------+----------------------------------+----------------------------------------------------------------------------+
+|  {fuel_core_emoji}  | {fuel_core_header}   |{fuel_core_msg}|
++----------+----------------------------------+----------------------------------------------------------------------------+
+|  {docker_emoji}  | {docker_header}   |{docker_msg}|
 +----------+----------------------------------+----------------------------------------------------------------------------+
 "#
     );
