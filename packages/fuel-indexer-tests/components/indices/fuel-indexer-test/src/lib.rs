@@ -47,10 +47,10 @@ mod fuel_indexer_test {
         }
     }
 
-    fn fuel_indexer_test_transfer(transfer: fuel::Transfer) {
+    fn fuel_indexer_test_transfer(transfer: abi::Transfer) {
         Logger::info("fuel_indexer_test_transfer handling Transfer event.");
 
-        let fuel::Transfer {
+        let abi::Transfer {
             contract_id,
             to,
             asset_id,
@@ -72,10 +72,10 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_transferout(transferout: fuel::TransferOut) {
+    fn fuel_indexer_test_transferout(transferout: abi::TransferOut) {
         Logger::info("fuel_indexer_test_transferout handling TransferOut event.");
 
-        let fuel::TransferOut {
+        let abi::TransferOut {
             contract_id,
             to,
             asset_id,
@@ -97,10 +97,10 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_log(log: fuel::Log) {
+    fn fuel_indexer_test_log(log: abi::Log) {
         Logger::info("fuel_indexer_test_log handling Log event.");
 
-        let fuel::Log {
+        let abi::Log {
             contract_id, rb, ..
         } = log;
 
@@ -128,10 +128,10 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_scriptresult(scriptresult: fuel::ScriptResult) {
+    fn fuel_indexer_test_scriptresult(scriptresult: abi::ScriptResult) {
         Logger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
 
-        let fuel::ScriptResult { result, gas_used } = scriptresult;
+        let abi::ScriptResult { result, gas_used } = scriptresult;
 
         let entity = ScriptResult {
             id: derive_id([0u8; 32], u64::to_be_bytes(result).to_vec()),
@@ -142,10 +142,10 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_messageout(messageout: fuel::MessageOut) {
+    fn fuel_indexer_test_messageout(messageout: abi::MessageOut) {
         Logger::info("fuel_indexer_test_messageout handling MessageOut event");
 
-        let fuel::MessageOut {
+        let abi::MessageOut {
             sender,
             message_id,
             recipient,

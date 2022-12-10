@@ -5,6 +5,7 @@ use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_indexer_schema::utils::serialize;
 use fuel_indexer_types::abi::BlockData;
+use futures::Future;
 use std::path::Path;
 use thiserror::Error;
 use tokio::task::spawn_blocking;
@@ -25,7 +26,6 @@ pub trait Executor
 where
     Self: Sized,
 {
-    async fn from_file(db_conn: String, manifest_path: &Path) -> IndexerResult<Self>;
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
 }
 
@@ -58,25 +58,45 @@ impl IndexEnv {
     }
 }
 
-pub struct NativeIndexExecutor {
-    _db: Arc<Mutex<Database>>,
-    _manifest: Manifest,
+unsafe impl<F: Future + Send> Sync for NativeIndexExecutor<F> {}
+unsafe impl<F: Future + Send> Send for NativeIndexExecutor<F> {}
+
+#[allow(dead_code)]
+pub struct NativeIndexExecutor<F>
+where
+    F: Future + Send,
+{
+    db: Arc<Mutex<Database>>,
+    manifest: Manifest,
+    handle_events_fn: fn(Vec<BlockData>) -> F,
 }
 
-impl NativeIndexExecutor {
-    pub async fn new(_db_conn: &str, _manifest: Manifest) -> IndexerResult<Self> {
-        unimplemented!()
+impl<F> NativeIndexExecutor<F>
+where
+    F: Future + Send,
+{
+    pub async fn new(
+        db_conn: &str,
+        manifest: Manifest,
+        handle_events_fn: fn(Vec<BlockData>) -> F,
+    ) -> IndexerResult<Self> {
+        let db = Arc::new(Mutex::new(Database::new(db_conn).await?));
+        Ok(Self {
+            db,
+            manifest,
+            handle_events_fn,
+        })
     }
 }
 
 #[async_trait]
-impl Executor for NativeIndexExecutor {
-    async fn from_file(_db_conn: String, _manifest_path: &Path) -> IndexerResult<Self> {
-        unimplemented!()
-    }
-
-    async fn handle_events(&mut self, _blocks: Vec<BlockData>) -> IndexerResult<()> {
-        unimplemented!()
+impl<F> Executor for NativeIndexExecutor<F>
+where
+    F: Future + Send,
+{
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+        (self.handle_events_fn)(blocks).await;
+        Ok(())
     }
 }
 
@@ -126,17 +146,17 @@ impl WasmIndexExecutor {
             db: env.db.clone(),
         })
     }
-}
 
-#[async_trait]
-impl Executor for WasmIndexExecutor {
     /// Restore index from wasm file
-    async fn from_file(db_conn: String, manifest_path: &Path) -> IndexerResult<Self> {
+    pub async fn from_file(db_conn: String, manifest_path: &Path) -> IndexerResult<Self> {
         let manifest = Manifest::from_file(manifest_path)?;
         let bytes = manifest.module_bytes()?;
         Self::new(db_conn, manifest, bytes).await
     }
+}
 
+#[async_trait]
+impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);

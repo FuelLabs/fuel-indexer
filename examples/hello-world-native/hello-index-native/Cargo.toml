@@ -5,8 +5,9 @@ edition = "2021"
 publish = false
 
 [dependencies]
+fuel-indexer = { version = "0.1", path = "../../../packages/fuel-indexer", features = ["api-server", "native-execution"] }
 fuel-indexer-macros = { version = "0.1", path = "../../../packages/fuel-indexer-macros", default-features = false }
-fuel-indexer-plugin = { version = "0.1", path = "../../../packages/fuel-indexer-plugin" }
+fuel-indexer-plugin = { version = "0.1", path = "../../../packages/fuel-indexer-plugin", default-features = false, features = ["native-execution"] }
 fuel-indexer-schema = { version = "0.1", path = "../../../packages/fuel-indexer-schema", default-features = false }
 fuel-tx = "0.23"
 fuels-core = "0.30"

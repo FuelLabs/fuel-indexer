@@ -9,7 +9,7 @@ use axum::{
     middleware::{self},
     response::{IntoResponse, Response},
     routing::{delete, get, post},
-    Router,
+    Error as AxumError, Router,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_lib::{
@@ -22,7 +22,7 @@ use fuel_indexer_schema::db::{
 use serde_json::json;
 use std::time::Instant;
 use thiserror::Error;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{error::SendError, Sender};
 use tracing::error;
 
 #[derive(Debug, Error)]
@@ -53,6 +53,10 @@ pub enum ApiError {
     Generic,
     #[error("Schema error {0:?}")]
     SchemaError(#[from] IndexerSchemaError),
+    #[error("Channel send error: {0:?}")]
+    ChannelSendError(#[from] SendError<ServiceRequest>),
+    #[error("Axum error: {0:?}")]
+    AxumError(#[from] AxumError),
 }
 
 impl From<StatusCode> for ApiError {
@@ -83,6 +87,10 @@ impl IntoResponse for ApiError {
             }
             ApiError::Sqlx(err) => {
                 error!("ApiError::Sqlx: {}", err);
+                (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
+            }
+            ApiError::AxumError(err) => {
+                error!("ApiError::AxumError: {}", err);
                 (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
             }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg),

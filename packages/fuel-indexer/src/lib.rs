@@ -4,7 +4,11 @@ pub mod ffi;
 mod service;
 
 pub use database::Database;
-pub use executor::{Executor, IndexEnv, NativeIndexExecutor, WasmIndexExecutor};
+pub use executor::{Executor, IndexEnv, WasmIndexExecutor};
+
+#[cfg(feature = "native-execution")]
+pub use executor::NativeIndexExecutor;
+
 pub use fuel_indexer_database::IndexerDatabaseError;
 pub use fuel_indexer_lib::{
     config::IndexerConfig,
@@ -16,15 +20,24 @@ use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
 pub mod prelude {
+
     pub use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
 
     pub use super::{
         Database, Executor, FtColumn, IndexEnv, IndexerConfig, IndexerError,
-        IndexerService, Manifest, Module, NativeIndexExecutor, WasmIndexExecutor,
+        IndexerResult, IndexerService, Manifest, Module, WasmIndexExecutor,
     };
+
+    #[cfg(feature = "native-execution")]
+    pub use crate::executor::NativeIndexExecutor;
+
+    pub use fuel_indexer_types::*;
 }
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
+
+#[cfg(feature = "native-execution")]
+pub type NativeExecutionResult<T> = core::result::Result<T, IndexerError>;
 
 #[derive(Error, Debug)]
 pub enum IndexerError {
@@ -68,4 +81,6 @@ pub enum IndexerError {
     SchemaError(#[from] IndexerSchemaError),
     #[error("Manifest error: {0:?}")]
     ManifestError(#[from] ManifestError),
+    #[error("Error creating native executor.")]
+    NativeExecutionInstantiationError,
 }

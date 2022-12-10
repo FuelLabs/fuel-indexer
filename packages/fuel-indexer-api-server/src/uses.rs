@@ -142,22 +142,25 @@ pub(crate) async fn stop_index(
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
 ) -> impl IntoResponse {
     if let Some(tx) = tx {
-        tx.send(ServiceRequest::IndexStop(IndexStopRequest {
-            namespace,
-            identifier,
-        }))
-        .await
-        .unwrap();
+        if let Err(_e) = tx
+            .send(ServiceRequest::IndexStop(IndexStopRequest {
+                namespace,
+                identifier,
+            }))
+            .await
+        {
+            return Err(ApiError::Generic.into_response());
+        };
 
-        return Json(json!({
+        return Ok(Json(json!({
             "success": "true",
         }))
-        .into_response();
+        .into_response());
     }
 
     // Generally, we shouldn't start the service or API without the
     // necessary channels, but we should return something just in case.
-    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+    Ok(StatusCode::INTERNAL_SERVER_ERROR.into_response())
 }
 
 pub(crate) async fn register_index_assets(
@@ -247,8 +250,7 @@ pub(crate) async fn register_index_assets(
                 namespace,
                 identifier,
             }))
-            .await
-            .unwrap();
+            .await?;
         }
 
         return Ok(Json(json!({
@@ -278,7 +280,7 @@ pub async fn run_query(
             Ok(row)
         }
         Err(e) => {
-            error!("Error querying database.");
+            error!("Error querying database: {}.", e);
             Err(e.into())
         }
     }

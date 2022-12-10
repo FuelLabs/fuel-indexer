@@ -6,7 +6,7 @@ use fuel_indexer_lib::{
     manifest::Manifest,
     utils::{local_repository_root, type_id},
 };
-use fuel_indexer_types::abi as fuel;
+use fuel_indexer_types::abi;
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
@@ -118,14 +118,14 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u32" => quote! { u32 },
             "u64" => quote! { u64 },
             "b256" => quote! { B256 },
-            "Log" => quote! { fuel::Log },
-            "Identity" => quote! { fuel::Identity },
+            "Log" => quote! { abi::Log },
+            "Identity" => quote! { abi::Identity },
             "BlockData" => quote! { BlockData },
-            "LogData" => quote! { fuel::LogData },
-            "Transfer" => quote! { fuel::Transfer },
-            "TransferOut" => quote! { fuel::TransferOut },
-            "ScriptResult" => quote! { fuel::ScriptResult },
-            "MessageOut" => quote! { fuel::MessageOut },
+            "LogData" => quote! { abi::LogData },
+            "Transfer" => quote! { abi::Transfer },
+            "TransferOut" => quote! { abi::TransferOut },
+            "ScriptResult" => quote! { abi::ScriptResult },
+            "MessageOut" => quote! { abi::MessageOut },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!("Unrecognized primitive type: {:?}", o)
@@ -177,6 +177,7 @@ fn process_fn_items(
     abi_path: Option<String>,
     indexer_module: ItemMod,
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
+    let is_native = manifest.is_native();
     if indexer_module.content.is_none()
         || indexer_module
             .content
@@ -205,7 +206,7 @@ fn process_fn_items(
         .map(|x| {
             (
                 x.to_string(),
-                type_id(fuel::FUEL_TYPES_NAMESPACE, x) as usize,
+                type_id(abi::FUEL_TYPES_NAMESPACE, x) as usize,
             )
         })
         .collect::<HashMap<String, usize>>();
@@ -305,6 +306,17 @@ fn process_fn_items(
             }
         }
         None => quote! {},
+    };
+
+    let asyncness = if is_native {
+        quote! {async}
+    } else {
+        quote! {}
+    };
+    let awaitness = if is_native {
+        quote! {.await}
+    } else {
+        quote! {}
     };
 
     for item in contents {
@@ -429,7 +441,7 @@ fn process_fn_items(
 
                 abi_dispatchers.push(quote! {
                     if ( #(#input_checks)&&* ) {
-                        #fn_name(#(#arg_list),*);
+                        #fn_name(#(#arg_list),*)#awaitness;
                     }
                 });
 
@@ -479,15 +491,15 @@ fn process_fn_items(
                 #blockdata_decoder
             }
 
-            pub fn decode_transfer(&mut self, data: fuel::Transfer) {
+            pub fn decode_transfer(&mut self, data: abi::Transfer) {
                 #transfer_decoder
             }
 
-            pub fn decode_transferout(&mut self, data: fuel::TransferOut) {
+            pub fn decode_transferout(&mut self, data: abi::TransferOut) {
                 #transferout_decoder
             }
 
-            pub fn decode_log(&mut self, data: fuel::Log) {
+            pub fn decode_log(&mut self, data: abi::Log) {
                 #log_decoder
             }
 
@@ -498,15 +510,15 @@ fn process_fn_items(
                 }
             }
 
-            pub fn decode_scriptresult(&mut self, data: fuel::ScriptResult) {
+            pub fn decode_scriptresult(&mut self, data: abi::ScriptResult) {
                 #scriptresult_decoder
             }
 
-            pub fn decode_messageout(&mut self, data: fuel::MessageOut) {
+            pub fn decode_messageout(&mut self, data: abi::MessageOut) {
                 #messageout_decoder
             }
 
-            pub fn dispatch(&self) {
+            pub #asyncness fn dispatch(&self) {
                 #(#abi_dispatchers)*
             }
         }
@@ -538,17 +550,17 @@ fn process_fn_items(
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 #contract_conditional
-                                let data = fuel::Transfer{ contract_id: id, to, asset_id, amount, pc, is };
+                                let data = abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transfer(data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
                                 #contract_conditional
-                                let data = fuel::TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
+                                let data = abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transferout(data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
                                 #contract_conditional
-                                let data = fuel::Log{ contract_id: id, ra, rb };
+                                let data = abi::Log{ contract_id: id, ra, rb };
                                 decoder.decode_log(data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
@@ -558,12 +570,12 @@ fn process_fn_items(
                             }
                             Receipt::ScriptResult { result, gas_used } => {
                                 #contract_conditional
-                                let data = fuel::ScriptResult{ result: u64::from(result), gas_used };
+                                let data = abi::ScriptResult{ result: u64::from(result), gas_used };
                                 decoder.decode_scriptresult(data);
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
                                 #contract_conditional
-                                let payload = fuel::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
+                                let payload = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
                                 decoder.decode_messageout(payload);
                             }
                             _ => {
@@ -572,7 +584,7 @@ fn process_fn_items(
                         }
                     }
 
-                    decoder.dispatch();
+                    decoder.dispatch()#awaitness;
                 }
 
                 let metadata = IndexMetadataEntity{ id: block.height, time: block.time };
@@ -618,17 +630,28 @@ pub fn prefix_abi_and_schema_paths(
     (None, schema_string)
 }
 
-pub fn get_abi_tokens(namespace: &str, abi: &String) -> proc_macro2::TokenStream {
+pub fn get_abi_tokens(
+    namespace: &str,
+    abi: &String,
+    is_native: bool,
+) -> proc_macro2::TokenStream {
     match Abigen::new(namespace, abi) {
-        Ok(abi) => match abi.no_std().expand() {
-            Ok(tokens) => tokens,
-            Err(e) => {
-                proc_macro_error::abort_call_site!(
-                    "Could not generate tokens for abi: {:?}.",
-                    e
-                )
+        Ok(abi) => {
+            let abigen = if is_native {
+                abi.expand()
+            } else {
+                abi.no_std().expand()
+            };
+            match abigen {
+                Ok(tokens) => tokens,
+                Err(e) => {
+                    proc_macro_error::abort_call_site!(
+                        "Could not generate tokens for abi: {:?}.",
+                        e
+                    )
+                }
             }
-        },
+        }
         Err(e) => {
             proc_macro_error::abort_call_site!("Could not generate abi object: {:?}.", e)
         }
@@ -654,51 +677,103 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     } = manifest.clone();
 
     let indexer_module = parse_macro_input!(item as ItemMod);
+    let _module_name = indexer_module.ident.to_string();
+    let is_native = manifest.is_native();
 
     let (abi, schema_string) = prefix_abi_and_schema_paths(abi.as_ref(), graphql_schema);
 
     let abi_tokens = match abi {
-        Some(ref abi_path) => get_abi_tokens(&namespace, abi_path),
+        Some(ref abi_path) => get_abi_tokens(&namespace, abi_path, is_native),
         None => proc_macro2::TokenStream::new(),
     };
 
     let graphql_tokens = process_graphql_schema(namespace, schema_string);
 
-    let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
+    let output = if is_native {
+        let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
+        let handler_block = handler_block_native(handler_block);
 
-    let handler_block = if manifest.is_native() {
-        handler_block_native(handler_block)
+        quote! {
+
+                    #abi_tokens
+
+                    #graphql_tokens
+
+                    #handler_block
+
+                    #fn_items
+
+                    #[tokio::main]
+                    async fn main() -> anyhow::Result<()> {
+
+                        let filter = match std::env::var_os("RUST_LOG") {
+                            Some(_) => {
+                                EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
+                            }
+                            None => EnvFilter::new("info"),
+                        };
+
+                        tracing_subscriber::fmt::Subscriber::builder()
+                            .with_writer(std::io::stderr)
+                            .with_env_filter(filter)
+                            .init();
+
+                        let opt = IndexerArgs::from_args();
+
+                        let config = match &opt.config {
+                            Some(path) => IndexerConfig::from_file(path)?,
+                            None => IndexerConfig::from_opts(opt.clone()),
+                        };
+
+                        info!("Configuration: {:?}", config);
+
+                        let (tx, rx) = if cfg!(feature = "api-server") {
+                            let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+                            (Some(tx), Some(rx))
+                        } else {
+                            (None, None)
+                        };
+
+                        let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+
+                        let mut c = pool.acquire().await?;
+                        queries::run_migration(&mut c).await?;
+
+                        let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
+
+                        if opt.manifest.is_none() {
+                            panic!("No manifest");
+                        }
+
+                        let p = opt.manifest.unwrap();
+                        info!("Using manifest file located at '{}'", p.display());
+                        let manifest = Manifest::from_file(&p)?;
+                        service.register_native_index(manifest, handle_events).await?;
+                        let service_handle = tokio::spawn(service.run());
+
+        //                 #[cfg(feature = "api-server")]
+                        let gql_handle =  GraphQlApi::run(config, pool, tx);
+
+                        let _ = tokio::join!(service_handle, gql_handle);
+
+                        Ok(())
+                    }
+
+                }
     } else {
-        handler_block_wasm(handler_block)
-    };
+        let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
+        let handler_block = handler_block_wasm(handler_block);
 
-    let output = quote! {
-        use alloc::{format, vec, vec::Vec};
-        use fuel_indexer_plugin::{
-            types::{
-                // So we can use the fuel namespace to refer to fuel types
-                fuel,
-                // So we don't have to use the fuel namespace to refer to BlockData & TransactionData
-                fuel::{BlockData, TransactionData},
-                *,
-                tx::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
-            },
-            utils,
-            Entity, Logger
-        };
-        use fuel_indexer_schema::utils::{serialize, deserialize};
-        use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
-        use std::collections::HashMap;
+        quote! {
 
-        type B256 = [u8; 32];
+            #abi_tokens
 
-        #abi_tokens
+            #graphql_tokens
 
-        #graphql_tokens
+            #handler_block
 
-        #handler_block
-
-        #fn_items
+            #fn_items
+        }
     };
 
     proc_macro::TokenStream::from(output)

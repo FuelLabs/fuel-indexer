@@ -56,6 +56,7 @@ rand = "0.8"
 [features]
 default = ["api-server", "metrics"]
 api-server = ["fuel-indexer-api-server"]
+native-execution = []
 metrics = [
     "fuel-indexer-metrics", 
     "prometheus"

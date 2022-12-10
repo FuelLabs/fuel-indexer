@@ -1,7 +1,6 @@
 namespace: fuel_examples
 identifier: hello_index_native
-abi: examples/hello-world-native/contracts/chat/out/debug/chat-abi.json
+# abi: packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json
 start_block: 1
 graphql_schema: examples/hello-world-native/schema/hello_index_native.schema.graphql
-module:
-  native: packages/fuel-indexer-tests/assets/hello-index-native
+module: native
