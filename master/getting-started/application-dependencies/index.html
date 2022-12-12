@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Types - The Fuel Indexer Service</title>
+        <title>Application dependencies - The Fuel Indexer Service</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="../../getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../getting-started/installing-rust.html"><strong aria-hidden="true">1.1.</strong> Installing Rust</a></li><li class="chapter-item expanded "><a href="../../getting-started/system-dependencies.html"><strong aria-hidden="true">1.2.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="../../getting-started/application-dependencies/index.html"><strong aria-hidden="true">1.3.</strong> Application dependencies</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../getting-started/application-dependencies/fuelup.html"><strong aria-hidden="true">1.3.1.</strong> fuelup</a></li><li class="chapter-item expanded "><a href="../../getting-started/application-dependencies/sqlx.html"><strong aria-hidden="true">1.3.2.</strong> sqlx</a></li><li class="chapter-item expanded "><a href="../../getting-started/application-dependencies/wasm-snip.html"><strong aria-hidden="true">1.3.3.</strong> wasm-snip</a></li></ol></li><li class="chapter-item expanded "><a href="../../getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.4.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="../../quickstart/index.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../../examples/index.html"><strong aria-hidden="true">3.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../examples/hello-world.html"><strong aria-hidden="true">3.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="../../examples/block-explorer.html"><strong aria-hidden="true">3.2.</strong> Block Explorer</a></li></ol></li><li class="chapter-item expanded "><a href="../../plugins/index.html"><strong aria-hidden="true">4.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../plugins/forc-index.html"><strong aria-hidden="true">4.1.</strong> forc index</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/index.html"><strong aria-hidden="true">5.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/assets/index.html"><strong aria-hidden="true">5.1.</strong> Assets</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/assets/manifest.html"><strong aria-hidden="true">5.1.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../../components/assets/schema.html"><strong aria-hidden="true">5.1.2.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../../components/assets/module.html"><strong aria-hidden="true">5.1.3.</strong> Module</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/database/index.html"><strong aria-hidden="true">5.2.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/database/types.html" class="active"><strong aria-hidden="true">5.2.1.</strong> Data Types</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/database/ids.html"><strong aria-hidden="true">5.2.1.1.</strong> ID Types</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/database/foreign-keys.html"><strong aria-hidden="true">5.2.2.</strong> Foreign Keys</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/graphql/index.html"><strong aria-hidden="true">5.3.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/assets/schema.html"><strong aria-hidden="true">5.3.1.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../../components/graphql/api-server.html"><strong aria-hidden="true">5.3.2.</strong> API Server</a></li><li class="chapter-item expanded "><a href="../../components/database/types.html" class="active"><strong aria-hidden="true">5.3.3.</strong> Types</a></li><li class="chapter-item expanded "><a href="../../components/graphql/directives.html"><strong aria-hidden="true">5.3.4.</strong> Directives</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/indices/index.html"><strong aria-hidden="true">5.4.</strong> Indices</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/indices/registration.html"><strong aria-hidden="true">5.4.1.</strong> Registering Indices</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../indexing/index.html"><strong aria-hidden="true">6.</strong> Indexing</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../indexing/blocks-and-transactions.html"><strong aria-hidden="true">6.1.</strong> Blocks and Transactions</a></li><li class="chapter-item expanded "><a href="../../indexing/receipts.html"><strong aria-hidden="true">6.2.</strong> Receipts</a></li></ol></li><li class="chapter-item expanded "><a href="../../getting-started/configuration.html"><strong aria-hidden="true">7.</strong> Configuration</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="../../getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../getting-started/installing-rust.html"><strong aria-hidden="true">1.1.</strong> Installing Rust</a></li><li class="chapter-item expanded "><a href="../../getting-started/system-dependencies.html"><strong aria-hidden="true">1.2.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="../../getting-started/application-dependencies/index.html" class="active"><strong aria-hidden="true">1.3.</strong> Application dependencies</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../getting-started/application-dependencies/fuelup.html"><strong aria-hidden="true">1.3.1.</strong> fuelup</a></li><li class="chapter-item expanded "><a href="../../getting-started/application-dependencies/sqlx.html"><strong aria-hidden="true">1.3.2.</strong> sqlx</a></li><li class="chapter-item expanded "><a href="../../getting-started/application-dependencies/wasm-snip.html"><strong aria-hidden="true">1.3.3.</strong> wasm-snip</a></li></ol></li><li class="chapter-item expanded "><a href="../../getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.4.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="../../quickstart/index.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../../examples/index.html"><strong aria-hidden="true">3.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../examples/hello-world.html"><strong aria-hidden="true">3.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="../../examples/block-explorer.html"><strong aria-hidden="true">3.2.</strong> Block Explorer</a></li></ol></li><li class="chapter-item expanded "><a href="../../plugins/index.html"><strong aria-hidden="true">4.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../plugins/forc-index.html"><strong aria-hidden="true">4.1.</strong> forc index</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/index.html"><strong aria-hidden="true">5.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/assets/index.html"><strong aria-hidden="true">5.1.</strong> Assets</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/assets/manifest.html"><strong aria-hidden="true">5.1.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../../components/assets/schema.html"><strong aria-hidden="true">5.1.2.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../../components/assets/module.html"><strong aria-hidden="true">5.1.3.</strong> Module</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/database/index.html"><strong aria-hidden="true">5.2.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/database/types.html"><strong aria-hidden="true">5.2.1.</strong> Data Types</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/database/ids.html"><strong aria-hidden="true">5.2.1.1.</strong> ID Types</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/database/foreign-keys.html"><strong aria-hidden="true">5.2.2.</strong> Foreign Keys</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/graphql/index.html"><strong aria-hidden="true">5.3.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/assets/schema.html"><strong aria-hidden="true">5.3.1.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../../components/graphql/api-server.html"><strong aria-hidden="true">5.3.2.</strong> API Server</a></li><li class="chapter-item expanded "><a href="../../components/database/types.html"><strong aria-hidden="true">5.3.3.</strong> Types</a></li><li class="chapter-item expanded "><a href="../../components/graphql/directives.html"><strong aria-hidden="true">5.3.4.</strong> Directives</a></li></ol></li><li class="chapter-item expanded "><a href="../../components/indices/index.html"><strong aria-hidden="true">5.4.</strong> Indices</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../components/indices/registration.html"><strong aria-hidden="true">5.4.1.</strong> Registering Indices</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../indexing/index.html"><strong aria-hidden="true">6.</strong> Indexing</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../indexing/blocks-and-transactions.html"><strong aria-hidden="true">6.1.</strong> Blocks and Transactions</a></li><li class="chapter-item expanded "><a href="../../indexing/receipts.html"><strong aria-hidden="true">6.2.</strong> Receipts</a></li></ol></li><li class="chapter-item expanded "><a href="../../getting-started/configuration.html"><strong aria-hidden="true">7.</strong> Configuration</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -167,66 +167,25 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="types"><a class="header" href="#types">Types</a></h1>
-<p>Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing <a href="https://www.postgresql.org/docs/14/datatype.html">Postgres 14</a> data types.</p>
-<table><thead><tr><th>Sway Type</th><th>GraphQL Schema Type</th><th>Postgres Type</th></tr></thead><tbody>
-<tr><td>u64</td><td>ID</td><td>bigint primary key</td></tr>
-<tr><td>b256</td><td>Address</td><td>varchar(64)</td></tr>
-<tr><td>str[4]</td><td>Bytes4</td><td>varchar(16)</td></tr>
-<tr><td>str[8]</td><td>Bytes8</td><td>varchar(64)</td></tr>
-<tr><td>str[32]</td><td>Bytes32</td><td>varchar(64)</td></tr>
-<tr><td>str[32]</td><td>AssetId</td><td>varchar(64)</td></tr>
-<tr><td>b256</td><td>ContractId</td><td>varchar(64)</td></tr>
-<tr><td>str[32]</td><td>Salt</td><td>varchar(64)</td></tr>
-<tr><td>u32</td><td>UInt4</td><td>integer</td></tr>
-<tr><td>u64</td><td>UInt8</td><td>bigint</td></tr>
-<tr><td>i64</td><td>Timestamp</td><td>timestamp</td></tr>
-<tr><td>str[]</td><td>Blob</td><td>bytes</td></tr>
-<tr><td>str[32]</td><td>MessageId</td><td>varchar(64)</td></tr>
-<tr><td>bool</td><td>Boolean</td><td>bool</td></tr>
-<tr><td></td><td>Json</td><td>json</td></tr>
-<tr><td></td><td>Charfield</td><td>varchar(255)</td></tr>
-</tbody></table>
-<h2 id="example"><a class="header" href="#example">Example</a></h2>
-<p>Let's define an <code>Event</code> struct in a Sway contract:</p>
-<pre><code class="language-sway">struct Event {
-    id: u64,
-    address: Address,
-    block_height: u64,
-}
-</code></pre>
-<p>The corresponding GraphQL schema to mirror this <code>Event</code> struct would resemble:</p>
-<pre><code class="language-graphql">type Event {
-    id: ID!
-    account: Address!
-    block_height: UInt8!
-}
-</code></pre>
-<p>And finally, this GraphQL schema will generate the following Postgres schema:</p>
-<pre><code class="language-text">                                           Table &quot;schema.event&quot;
-    Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description
---------------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
- id           |    bigint   |           | not null |         | plain        |             |              |
- block_height |    bigint   |           | not null |         | plain    |             |              |
- address      | varchar(64) |           | not null |         | plain    |             |              |
- object       |    bytea    |           | not null |         | extended |             |              |
-Indexes:
-    &quot;event_pkey&quot; PRIMARY KEY, btree (id)
-Access method: heap
-</code></pre>
+                        <h1 id="application-dependencies"><a class="header" href="#application-dependencies">Application dependencies</a></h1>
+<ul>
+<li><a href="./fuelup.html"><code>fuelup</code></a></li>
+<li><a href="./sqlx.html"><code>sqlx</code></a></li>
+<li><a href="./wasm-snip.html"><code>wasm-snip</code></a></li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="../../components/database/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../../getting-started/system-dependencies.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="../../components/database/ids.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="../../getting-started/application-dependencies/fuelup.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -238,13 +197,13 @@ Access method: heap
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="../../components/database/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../../getting-started/system-dependencies.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="../../components/database/ids.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="../../getting-started/application-dependencies/fuelup.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
