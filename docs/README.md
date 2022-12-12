@@ -12,7 +12,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
 - [Documentation](#documentation)
 - [Quickstart](#quickstart)
   - [Setup](#setup)
-    - [Rust](#rust)
+    - [Installing Rust](#installing-rust)
     - [`fuelup`](#fuelup)
     - [Database](#database)
       - [PostgreSQL](#postgresql)
@@ -42,13 +42,29 @@ Additional information and examples can be found in the [Quickstart](https://fue
 
 ### Setup
 
-#### Rust
+#### Installing Rust
 
-The Fuel indexer is coded in Rust and makes extensive use of its features. You can install the current stable release of Rust by using `rustup`. Installing Rust using `rustup` will also install `cargo`, which you also eventually use. You can install Rust and `rustup` by running the following command, which downloads `rustup` and subsequently installs the most recent version of Rust for your system:
+The Fuel indexer is built in Rust and also uses `cargo`. The easiest way to get both is to use `rustup`, Rust's toolchain installer. Installing Rust using `rustup` will also install `cargo`.
+
+On Linux and macOS systems, this is done as follows:
 
 ```bash
 curl https://sh.rustup.rs -sSf | sh
 ```
+
+It will download a script, and start the installation. If everything goes well, you’ll see this appear:
+
+```text
+Rust is installed now. Great!
+```
+
+On Windows, download and run [rustup-init.exe](https://win.rustup.rs/). It will start the installation in a console and present the above message on success.
+
+After this, you can use the rustup command to also install beta or nightly channels for Rust and Cargo.
+
+For other installation options and information, visit the [install](https://www.rust-lang.org/tools/install) page of the Rust website.
+
+Alternatively, you can [build Cargo from source.](https://github.com/rust-lang/cargo#compiling-from-source)
 
 #### `fuelup`
 
