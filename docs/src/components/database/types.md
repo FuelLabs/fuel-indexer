@@ -14,9 +14,12 @@ Below is a mapping of GraphQL schema types to their Postgres equivalents, refere
 | str[32] | Salt | varchar(64) |
 | u32 | UInt4 | integer |
 | u64 | UInt8 | bigint |
-| u64 | Timestamp | timestamp |
+| i64 | Timestamp | timestamp |
 | str[] | Blob | bytes |
 | str[32] | MessageId | varchar(64) |
+| bool | Boolean | bool |
+|  | Json | json |
+|  | Charfield | varchar(255) |
 
 ## Example
 
@@ -24,8 +27,8 @@ Let's define an `Event` struct in a Sway contract:
 
 ```sway
 struct Event {
-    address: Address,
     id: u64,
+    address: Address,
     block_height: u64,
 }
 ```

@@ -35,3 +35,19 @@ Deploy a given index project to a particular endpoint
 ```bash
 forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
 ```
+
+### `forc index stop`
+
+Stop a running index
+
+```bash
+forc index stop --url https://index.swayswap.io --manifest my_index.manifest.yaml
+```
+
+### `forc index check`
+
+Check to see which indexer components you have installed
+
+```bash
+forc index check
+```
