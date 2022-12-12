@@ -26,7 +26,9 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics() {
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
     let mut conn = postgres_connection().await;
-    let _ = postgres::start_transaction(&mut conn);
+    let _ = postgres::execute_query(&mut conn, "SELECT 1;".into());
+    let _ = postgres::execute_query(&mut conn, "SELECT 1;".into());
+
     let client = http_client();
     let config = IndexerConfig::default();
 
@@ -42,15 +44,16 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
     let categories = resp.split('\n').collect::<Vec<&str>>();
 
     assert_eq!(
-        categories[81],
-        "# HELP postgres_start_transaction_calls Count of calls to postgres start_transaction_calls."
+        categories[18],
+        "# HELP postgres_execute_query_calls Count of calls to postgres execute_query_calls."
     );
     assert_eq!(
-        categories[82],
-        "# TYPE postgres_start_transaction_calls counter"
+        categories[19],
+        "# TYPE postgres_execute_query_calls counter"
     );
+
     assert!(
-        categories[83].split(' ').collect::<Vec<&str>>()[1]
+        categories[20].split(' ').collect::<Vec<&str>>()[1]
             .to_string()
             .parse::<i64>()
             .unwrap()

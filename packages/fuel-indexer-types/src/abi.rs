@@ -17,7 +17,6 @@ pub trait NativeFuelType {
     fn type_id() -> usize;
 }
 
-// TODO: https://github.com/FuelLabs/fuel-indexer/issues/285
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TransactionData {
     pub transaction: Transaction,

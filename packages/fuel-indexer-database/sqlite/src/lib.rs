@@ -1,8 +1,6 @@
 use fuel_indexer_database_types::*;
-use fuel_indexer_lib::utils::{attempt_database_connection, sha256_digest};
-use sqlx::{
-    pool::PoolConnection, types::JsonValue, Connection, Row, Sqlite, SqliteConnection,
-};
+use fuel_indexer_lib::utils::sha256_digest;
+use sqlx::{pool::PoolConnection, types::JsonValue, Row, Sqlite};
 use tracing::info;
 
 #[cfg(feature = "metrics")]
@@ -41,17 +39,13 @@ pub async fn get_object(
     Ok(row.get(0))
 }
 
-pub async fn run_migration(database_url: &str) {
+pub async fn run_migration(conn: &mut PoolConnection<Sqlite>) -> sqlx::Result<()> {
     #[cfg(feature = "metrics")]
     METRICS.db.sqlite.run_migration_calls.inc();
 
-    let mut conn =
-        attempt_database_connection(|| SqliteConnection::connect(database_url)).await;
+    sqlx::migrate!().run(conn).await?;
 
-    sqlx::migrate!()
-        .run(&mut conn)
-        .await
-        .expect("Failed sqlite migration.");
+    Ok(())
 }
 
 pub async fn run_query(
@@ -65,15 +59,12 @@ pub async fn run_query(
 
     let query = builder.build();
 
-    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/344
-    let raw_rows = query.fetch_all(conn).await?;
-
-    let rows = raw_rows
+    Ok(query
+        .fetch_all(conn)
+        .await?
         .iter()
         .map(|r| r.get::<'_, JsonValue, usize>(0))
-        .collect();
-
-    Ok(rows)
+        .collect())
 }
 
 pub async fn execute_query(
