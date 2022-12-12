@@ -1,6 +1,6 @@
 # A Fuel Indexer Project
 
-The Fuel indexer project can currently be used in two different ways:
+The Fuel indexer project can currently be used in three different ways:
 
 1. Indexer tooling can be used to compile arbitrary indicies.
 2. The indexer service can be run as a standalone binary, outside the scope of a larger Fuel project.
