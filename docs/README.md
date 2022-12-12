@@ -1,7 +1,6 @@
-
 ![Fuel Logo](./src/img/fuel.png "Fuel Logo")
-# Fuel Indexer
 
+# Fuel Indexer
 
 [![build](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/fuel-indexer?label=latest)](https://crates.io/crates/fuel-indexer)
@@ -9,6 +8,28 @@
 [![discord](https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xfpK4Pe)
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
+
+- [Documentation](#documentation)
+- [Quickstart](#quickstart)
+  - [Setup](#setup)
+    - [`fuelup`](#fuelup)
+    - [Database](#database)
+      - [PostgreSQL](#postgresql)
+      - [SQLite](#sqlite)
+      - [SQLx](#sqlx)
+    - [Fuel Node](#fuel-node)
+  - [`forc index`](#forc-index)
+  - [Creating an Index](#creating-an-index)
+    - [Schema](#schema)
+    - [Manifest](#manifest)
+  - [Compiling an Index](#compiling-an-index)
+  - [Deploying an Index](#deploying-an-index)
+  - [Querying an Index](#querying-an-index)
+- [Building from Source](#building-from-source)
+  - [Clone repository](#clone-repository)
+  - [Run migrations](#run-migrations)
+  - [Start the service](#start-the-service)
+  - [Run tests](#run-tests)
 
 ## Documentation
 
@@ -30,7 +51,29 @@ curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-in
 
 #### Database
 
-At this time, the Fuel indexer requires the use of a database. We currently support two database options: PostgreSQL and SQLite. After setting up your database, you should install `sqlx-cli` in order to run migrations for your indexer service; you can do so by running `cargo install sqlx-cli --features postgres,sqlite`. Once installed, you can run the migrations by running the following command after changing `DATABASE_URL` to match your setup. For example:
+At this time, the Fuel indexer requires the use of a database. We currently support two database options: PostgreSQL and SQLite. PostgreSQL is a database solution with a complex feature set and requires a database server. SQLite is an embedded database solution with a simpler set of features and can be setup and moved to different systems.
+
+##### PostgreSQL
+
+> Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.
+
+On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add PostgreSQL to your system by running `brew install postgresql`. You can then start the service through `brew services start postgresql`. You'll need to create a database for your index data, which you can do by running `createdb [DATABASE_NAME]`. You may also need to create the `postgres` role; you can do so by running `createuser -s postgres`.
+
+For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new `postgres` user account; you can switch to that account by running `sudo -i -u postgres`. After you have switched accounts, you may need to create a `postgres` database role by running `createuser --interactive`. You will be asked a few questions; the name of the role should be `postgres` and you should elect for the new role to be a superuser. Finally, you can create a database by running `createdb [DATABASE_NAME]`.
+
+In either case, your PostgreSQL database should now be accessible at `postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]`.
+
+##### SQLite
+
+On macOS systems, you can install SQLite through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add SQLite to your system by running `brew install sqlite`. You can create a database by running `sqlite3 [DATABASE_FILE_PATH]`.
+
+For Linux-based systems, you should first install SQLite according to the instructions for your distribution. Once installed, you can create a database by running `sqlite3 [DATABASE_FILE_PATH]`.
+
+In either case, your SQLite database is now accessible at `sqlite://[DATABASE_FILE_PATH]`.
+
+##### SQLx
+
+After setting up your database, you should install `sqlx-cli` in order to run migrations for your indexer service; you can do so by running `cargo install sqlx-cli --features postgres,sqlite`. Once installed, you can run the migrations by running the following command after changing `DATABASE_URL` to match your setup. For example:
 
 ```sh
 DATABASE_URL=sqlite://indexer_database.db bash scripts/run_migrations.bash
@@ -78,7 +121,7 @@ A typical project that uses the Fuel indexer has the following directory structu
 
 We'll use a small example Sway contract to demonstrate the functionality of the indexer.
 
-```
+```sway
 contract;
 
 use std::logging::log;
@@ -134,7 +177,7 @@ The new project directory contains the following items:
 
 The schema defines how data captured by your index should be stored in the database. In its most basic form, a Fuel indexer GraphQL schema should have a `schema` definition that contains a defined query root. The rest of the implementation is up to you. For the example contract above, the schema may look like this:
 
-```
+```graphql
 schema {
     query: QueryRoot
 }
@@ -355,6 +398,6 @@ cargo run --bin fuel-indexer
 
 ### Run tests
 
-```
+```txt
 cargo test --locked --workspace --all-features --all-targets
 ```
