@@ -1,11 +1,16 @@
 # A Fuel Indexer Project
 
-The Fuel indexer service can currently be used in two different ways:
+The Fuel indexer project can currently be used in two different ways:
 
-1. The service can be run as a standalone binary, outside the scope of a larger Fuel project.
-2. The service can be included in a larger Fuel project, as a tandem service.
+1. Indexer tooling can be used to compile arbitrary indicies.
+2. The indexer service can be run as a standalone binary, outside the scope of a larger Fuel project.
+3. The indexer service can be included in a larger Fuel project, as a tandem service.
 
-We'll describe these two different implementations below.
+We'll describe these three different implementations below.
+
+## Compiling arbitrary indices
+
+For info on how to use indexer tooling to compile arbitrary indices, checkout our [Quickstart](./../quickstart/index.md)
 
 ## As a standalone service
 
