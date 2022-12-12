@@ -12,6 +12,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
 - [Documentation](#documentation)
 - [Quickstart](#quickstart)
   - [Setup](#setup)
+    - [Rust](#rust)
     - [`fuelup`](#fuelup)
     - [Database](#database)
       - [PostgreSQL](#postgresql)
@@ -40,6 +41,14 @@ Full documentation can be found in the [Fuel indexer book](https://fuellabs.gith
 Additional information and examples can be found in the [Quickstart](https://fuellabs.github.io/fuel-indexer/master/quickstart/index.html) and [Examples](https://fuellabs.github.io/fuel-indexer/master/examples/index.html) sections of the book.
 
 ### Setup
+
+#### Rust
+
+The Fuel indexer is coded in Rust and makes extensive use of its features. You can install the current stable release of Rust by using `rustup`. Installing Rust using `rustup` will also install `cargo`, which you also eventually use. You can install Rust and `rustup` by running the following command, which downloads `rustup` and subsequently installs the most recent version of Rust for your system:
+
+```bash
+curl https://sh.rustup.rs -sSf | sh
+```
 
 #### `fuelup`
 
