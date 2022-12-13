@@ -135,21 +135,28 @@ fn process_type_def<'a>(
                 let (mut type_name, mut field_name, mut ext) =
                     process_field(types, field);
 
-                let type_name_str = type_name.to_string();
+                let (is_nullable, mut column_type_name) =
+                    get_column_type(type_name.clone());
 
-                if processed.contains(&type_name_str)
-                    && !primitives.contains(&type_name_str)
+                let mut column_type_name_str = column_type_name.to_string();
+
+                if processed.contains(&column_type_name_str)
+                    && !primitives.contains(&column_type_name_str)
                 {
                     (type_name, field_name, ext) =
                         process_fk_field(types, obj, field, types_map);
+                    column_type_name = type_name.clone();
+                    column_type_name_str = column_type_name.to_string();
                 }
 
-                processed.insert(type_name_str.clone());
+                processed.insert(column_type_name_str);
 
-                let decoder = if COPY_TYPES.contains(type_name_str.as_str()) {
-                    quote! { FtColumn::#type_name(self.#field_name.clone()), }
+                let decoder = quote! { FtColumn::#column_type_name(self.#field_name), };
+
+                let full_field_name = if is_nullable {
+                    quote! { Some(#field_name) }
                 } else {
-                    quote! { FtColumn::#type_name(self.#field_name), }
+                    quote! { #field_name }
                 };
 
                 block = quote! {
@@ -165,7 +172,7 @@ fn process_type_def<'a>(
 
                 construction = quote! {
                     #construction
-                    #field_name,
+                    #field_name: #full_field_name,
                 };
 
                 flattened = quote! {
