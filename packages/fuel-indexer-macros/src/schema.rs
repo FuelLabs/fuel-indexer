@@ -10,6 +10,7 @@ use graphql_parser::schema::{
     Definition, Document, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
 };
 use lazy_static::lazy_static;
+use proc_macro2::{TokenStream, TokenTree};
 use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -59,10 +60,13 @@ fn process_field<'a>(
     let typ = process_type(types, field_type, true);
     let ident = format_ident! {"{}", name};
 
+    // Type may be nullable, so let's grab the actual column type
+    let (_, column_type) = get_column_type(typ.clone());
+
     let extractor = quote! {
         let item = vec.pop().expect("Missing item in row");
         let #ident = match item {
-            FtColumn::#typ(t) => t,
+            FtColumn::#column_type(t) => t,
             _ => panic!("Invalid column type {:?}", item),
         };
 
@@ -402,4 +406,27 @@ pub(crate) fn process_graphql_schema(
         }
     }
     output
+}
+
+// Note: This may have to change once we support list types -- deekerno
+fn get_column_type(typ: TokenStream) -> (bool, TokenStream) {
+    let mut is_option_type = false;
+    let tokens: TokenStream = typ
+        .into_iter()
+        .filter(|token| {
+            if let TokenTree::Ident(ident) = token {
+                let is_option_token = ident.to_string() == "Option";
+                if is_option_token {
+                    is_option_type = true;
+                    return false;
+                }
+
+                // Keep ident tokens that are not "Option"
+                return true;
+            }
+            false
+        })
+        .collect::<TokenStream>();
+
+    (is_option_type, tokens)
 }
