@@ -1,14 +1,35 @@
-use crate::{
+pub mod database;
+pub mod fuel_node;
+pub mod graphql;
+
+pub use crate::{
+    config::{
+        database::DatabaseConfig, fuel_node::FuelNodeConfig, graphql::GraphQLConfig,
+    },
     defaults,
-    utils::{derive_socket_addr, is_opt_env_var, trim_opt_env_key},
 };
-use anyhow::Result;
 pub use clap::Parser;
 use serde::Deserialize;
 use std::fs::File;
-use std::net::SocketAddr;
+use std::io::Error;
+use std::net::AddrParseError;
 use std::path::{Path, PathBuf};
 use strum::{AsRefStr, EnumString};
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum IndexerConfigError {
+    #[error("Invalid address: {0:?}")]
+    InvalidSocketAddr(#[from] AddrParseError),
+    #[error("Error parsing env variables from config")]
+    EnvVarParseError(#[from] std::env::VarError),
+    #[error("Error processing file: {0:?}")]
+    ConfigFileError(#[from] Error),
+    #[error("Error processing YAML file: {0:?}")]
+    SerdeYamlError(#[from] serde_yaml::Error),
+}
+
+type IndexerConfigResult<T> = core::result::Result<T, IndexerConfigError>;
 
 #[derive(Debug, EnumString, AsRefStr)]
 pub enum EnvVar {
@@ -106,267 +127,12 @@ fn derive_http_url(host: &String, port: &String) -> String {
 }
 
 pub trait MutableConfig {
-    fn inject_opt_env_vars(&mut self) -> Result<()>;
-    fn derive_socket_addr(&self) -> SocketAddr;
-    fn derive_http_url(&self) -> String;
-}
-
-#[derive(Clone, Deserialize, Debug)]
-pub struct FuelNodeConfig {
-    #[serde(default)]
-    pub host: String,
-    #[serde(default)]
-    pub port: String,
-}
-
-impl MutableConfig for FuelNodeConfig {
-    fn inject_opt_env_vars(&mut self) -> Result<()> {
-        if is_opt_env_var(&self.host) {
-            self.host = std::env::var(trim_opt_env_key(&self.host))
-                .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
-        }
-
-        if is_opt_env_var(&self.port) {
-            self.port = std::env::var(trim_opt_env_key(&self.port))
-                .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
-        }
-
-        Ok(())
-    }
-
-    fn derive_socket_addr(&self) -> SocketAddr {
-        derive_socket_addr(&self.host, &self.port)
-    }
-
-    fn derive_http_url(&self) -> String {
-        derive_http_url(&self.host, &self.port)
-    }
-}
-
-impl Default for FuelNodeConfig {
-    fn default() -> Self {
-        Self {
-            host: defaults::FUEL_NODE_HOST.into(),
-            port: defaults::FUEL_NODE_PORT.into(),
-        }
-    }
-}
-
-impl From<SocketAddr> for FuelNodeConfig {
-    fn from(s: SocketAddr) -> FuelNodeConfig {
-        let parts: Vec<String> = s.to_string().split(':').map(|x| x.to_owned()).collect();
-        let host = parts[0].to_owned();
-        let port = parts[1].to_owned();
-        FuelNodeConfig { host, port }
-    }
-}
-
-#[allow(clippy::from_over_into)]
-impl Into<SocketAddr> for FuelNodeConfig {
-    fn into(self) -> SocketAddr {
-        format!("{}:{}", self.host, self.port).parse().unwrap()
-    }
+    fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()>;
 }
 
 impl std::string::ToString for FuelNodeConfig {
     fn to_string(&self) -> String {
         format!("{}:{}", self.host, self.port)
-    }
-}
-
-#[derive(Clone, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum DatabaseConfig {
-    Sqlite {
-        path: String,
-    },
-    Postgres {
-        user: String,
-        password: String,
-        host: String,
-        port: String,
-        database: String,
-    },
-}
-
-impl MutableConfig for DatabaseConfig {
-    fn inject_opt_env_vars(&mut self) -> Result<()> {
-        match self {
-            DatabaseConfig::Postgres {
-                user,
-                password,
-                host,
-                port,
-                database,
-            } => {
-                if is_opt_env_var(user) {
-                    *user = std::env::var(trim_opt_env_key(user))
-                        .expect("Failed to read POSTGRES_USER from env.");
-                }
-                if is_opt_env_var(password) {
-                    *password = std::env::var(trim_opt_env_key(password))
-                        .expect("Failed to read POSTGRES_PASSWORD from env.");
-                }
-
-                if is_opt_env_var(host) {
-                    *host = std::env::var(trim_opt_env_key(host))
-                        .expect("Failed to read POSTGRES_HOST from env.");
-                }
-
-                if is_opt_env_var(port) {
-                    *port = std::env::var(trim_opt_env_key(port))
-                        .expect("Failed to read POSTGRES_PORT from env.");
-                }
-
-                if is_opt_env_var(database) {
-                    *database = std::env::var(trim_opt_env_key(database))
-                        .expect("Failed to read POSTGRES_DATABASE from env.");
-                }
-            }
-            DatabaseConfig::Sqlite { path } => {
-                if is_opt_env_var(path) {
-                    *path = std::env::var(trim_opt_env_key(path)).unwrap_or_else(|_| {
-                        format!("Failed to read '{}' from env", path)
-                    });
-                }
-            }
-        }
-        Ok(())
-    }
-
-    fn derive_socket_addr(&self) -> SocketAddr {
-        match self {
-            DatabaseConfig::Postgres { host, port, .. } => derive_socket_addr(host, port),
-            _ => {
-                panic!(
-                    "Cannot use MutableConfig::derive_socket_addr on a SQLite database."
-                )
-            }
-        }
-    }
-
-    fn derive_http_url(&self) -> String {
-        todo!()
-    }
-}
-
-impl std::string::ToString for DatabaseConfig {
-    fn to_string(&self) -> String {
-        match self {
-            DatabaseConfig::Postgres {
-                user,
-                password,
-                host,
-                port,
-                database,
-            } => {
-                format!(
-                    "postgres://{}:{}@{}:{}/{}",
-                    user, password, host, port, database
-                )
-            }
-            DatabaseConfig::Sqlite { path } => {
-                format!("sqlite://{}", path)
-            }
-        }
-    }
-}
-
-impl std::fmt::Debug for DatabaseConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            DatabaseConfig::Postgres {
-                user,
-                host,
-                port,
-                database,
-                ..
-            } => {
-                let _ = f
-                    .debug_struct("PostgresConfig")
-                    .field("user", &user)
-                    .field("password", &"XXXX")
-                    .field("host", &host)
-                    .field("port", &port)
-                    .field("database", &database)
-                    .finish();
-            }
-            DatabaseConfig::Sqlite { path } => {
-                let _ = f.debug_struct("SqliteConfig").field("path", &path).finish();
-            }
-        }
-
-        Ok(())
-    }
-}
-
-impl Default for DatabaseConfig {
-    fn default() -> Self {
-        DatabaseConfig::Postgres {
-            user: defaults::POSTGRES_USER.into(),
-            password: defaults::POSTGRES_PASSWORD.into(),
-            host: defaults::POSTGRES_HOST.into(),
-            port: defaults::POSTGRES_PORT.into(),
-            database: defaults::POSTGRES_DATABASE.into(),
-        }
-    }
-}
-
-#[derive(Clone, Deserialize, Debug)]
-pub struct GraphQLConfig {
-    #[serde(default)]
-    pub host: String,
-    #[serde(default)]
-    pub port: String,
-    #[serde(default)]
-    pub run_migrations: Option<bool>,
-}
-
-impl std::string::ToString for GraphQLConfig {
-    fn to_string(&self) -> String {
-        format!("{}:{}", self.host, self.port)
-    }
-}
-
-impl Default for GraphQLConfig {
-    fn default() -> Self {
-        Self {
-            host: defaults::GRAPHQL_API_HOST.into(),
-            port: defaults::GRAPHQL_API_PORT.into(),
-            run_migrations: defaults::GRAPHQL_API_RUN_MIGRATIONS,
-        }
-    }
-}
-
-impl From<GraphQLConfig> for SocketAddr {
-    fn from(cfg: GraphQLConfig) -> SocketAddr {
-        format!("{}:{}", cfg.host, cfg.port)
-            .parse()
-            .expect("Failed to parse GraphQL host.")
-    }
-}
-
-impl MutableConfig for GraphQLConfig {
-    fn inject_opt_env_vars(&mut self) -> Result<()> {
-        if is_opt_env_var(&self.host) {
-            self.host = std::env::var(trim_opt_env_key(&self.host))
-                .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.host));
-        }
-
-        if is_opt_env_var(&self.port) {
-            self.port = std::env::var(trim_opt_env_key(&self.port))
-                .unwrap_or_else(|_| panic!("Failed to read '{}' from env", &self.port));
-        }
-
-        Ok(())
-    }
-
-    fn derive_socket_addr(&self) -> SocketAddr {
-        derive_socket_addr(&self.host, &self.port)
-    }
-
-    fn derive_http_url(&self) -> String {
-        derive_http_url(&self.host, &self.port)
     }
 }
 
@@ -448,7 +214,7 @@ impl IndexerConfig {
     // When building the config via a file, if any section (e.g., graphql, fuel_node, etc),
     // or if any individual setting in a section (e.g., fuel_node.host) is empty, replace it
     // with its respective default value
-    pub fn from_file(path: &Path) -> Result<Self> {
+    pub fn from_file(path: &Path) -> IndexerConfigResult<Self> {
         let file = File::open(path)?;
 
         let mut config = IndexerConfig::default();
@@ -612,7 +378,7 @@ mod tests {
             user: jimmy
             database: my_fancy_db
             password: super_secret_password
-    
+
         "#;
 
         let tmp_file_path = "./bar.yaml";

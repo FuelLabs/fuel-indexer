@@ -25,3 +25,5 @@ pub const INITIAL_RETRY_DELAY_SECS: u64 = 2;
 
 pub const DELAY_FOR_SERVICE_ERR: u64 = 5;
 pub const DELAY_FOR_EMPTY_PAGE: u64 = 1;
+
+pub const TLS_PORT: &str = "443";
