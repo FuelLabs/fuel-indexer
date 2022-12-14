@@ -72,7 +72,10 @@ pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
         .build();
 
     let client = Client::builder().build::<_, hyper::Body>(https);
-    match client.get(config.to_owned().fuel_node.into()).await {
+    match client
+        .get(config.to_owned().fuel_node.health_check_uri())
+        .await
+    {
         Ok(r) => {
             let body_bytes = hyper::body::to_bytes(r.into_body())
                 .await

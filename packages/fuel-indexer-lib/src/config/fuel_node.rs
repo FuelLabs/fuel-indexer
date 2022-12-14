@@ -17,6 +17,15 @@ pub struct FuelNodeConfig {
     pub port: String,
 }
 
+impl FuelNodeConfig {
+    pub fn health_check_uri(self) -> Uri {
+        let base = Uri::from(self);
+        format!("{}{}", base, "health")
+            .parse()
+            .unwrap_or_else(|e| panic!("Failed to build health Uri: {}", e))
+    }
+}
+
 impl MutConfig for FuelNodeConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         if is_opt_env_var(&self.host) {

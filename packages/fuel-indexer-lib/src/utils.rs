@@ -161,7 +161,7 @@ impl From<FuelNodeHealthResponse> for ServiceStatus {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct FuelNodeHealthResponse {
     up: bool,
 }
