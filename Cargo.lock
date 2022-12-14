@@ -2369,6 +2369,7 @@ version = "0.1.11"
 dependencies = [
  "anyhow",
  "clap",
+ "http",
  "serde",
  "serde_yaml",
  "sha2 0.9.9",
