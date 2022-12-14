@@ -31,6 +31,11 @@ fn print_welcome_message() {
         "Fuel Indexer Issues: https://github.com/FuelLabs/fuel-indexer/issues/new"
     );
 
+    let plugin_msg = format!(
+        "Ensure you have the proper components installed:\n- {}",
+        "`forc index check`"
+    );
+
     let ascii_tag = r#"
 ███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 
 ██      ██    ██ ██      ██          ██ ████   ██ ██   ██ ██       ██ ██  ██      ██   ██ 
@@ -43,8 +48,8 @@ An easy-to-use, flexible indexing service built to go fast. 🚗💨
     "#;
 
     info!(
-        "\n{}\n\n----\n\n{}\n\n{}\n\n{}\n\n",
-        ascii_tag, read_the_docs, join_the_community, report_bugs
+        "\n{}\n\n----\n\n{}\n\n{}\n\n{}\n\n{}\n\n",
+        ascii_tag, read_the_docs, join_the_community, report_bugs, plugin_msg
     );
 }
 
