@@ -1,5 +1,5 @@
 use crate::{
-    config::{IndexerConfigResult, MutableConfig},
+    config::{IndexerConfigResult, MutConfig},
     defaults,
     utils::{is_opt_env_var, trim_opt_env_key},
 };
@@ -25,16 +25,6 @@ impl std::string::ToString for GraphQLConfig {
         format!("{}:{}", self.host, self.port)
     }
 }
-
-// impl From<Uri> for GraphQLConfig {
-//     fn from(uri: Uri) -> Self {
-//         GraphQLConfig {
-//             host: uri.host().expect("Uri has no host.").to_string(),
-//             port: uri.port().expect("Uri has no port.").to_string(),
-//             run_migrations: None,
-//         }
-//     }
-// }
 
 impl From<GraphQLConfig> for Uri {
     fn from(config: GraphQLConfig) -> Self {
@@ -66,7 +56,7 @@ impl From<GraphQLConfig> for SocketAddr {
     }
 }
 
-impl MutableConfig for GraphQLConfig {
+impl MutConfig for GraphQLConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         if is_opt_env_var(&self.host) {
             self.host = std::env::var(trim_opt_env_key(&self.host))?;

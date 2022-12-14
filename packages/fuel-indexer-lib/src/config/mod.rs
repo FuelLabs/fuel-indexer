@@ -126,7 +126,7 @@ fn derive_http_url(host: &String, port: &String) -> String {
     format!("{}://{}:{}", protocol, host, port)
 }
 
-pub trait MutableConfig {
+pub trait MutConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()>;
 }
 

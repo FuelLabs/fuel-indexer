@@ -1,5 +1,5 @@
 use crate::{
-    config::{IndexerConfigResult, MutableConfig},
+    config::{IndexerConfigResult, MutConfig},
     defaults,
     utils::{is_opt_env_var, trim_opt_env_key},
 };
@@ -22,7 +22,7 @@ pub enum DatabaseConfig {
     },
 }
 
-impl MutableConfig for DatabaseConfig {
+impl MutConfig for DatabaseConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         match self {
             DatabaseConfig::Postgres {
