@@ -1,6 +1,6 @@
 use fuel_indexer_tests::fixtures::{get_contract_id, tx_params};
+use fuels::fuels_abigen::abigen;
 use fuels::prelude::SizedAsciiString;
-use fuels_abigen_macro::abigen;
 use rand::{seq::SliceRandom, Rng};
 use std::path::Path;
 

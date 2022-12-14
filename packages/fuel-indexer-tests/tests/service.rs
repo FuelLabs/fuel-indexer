@@ -4,13 +4,13 @@ use fuel_indexer_tests::{
     defaults,
     fixtures::{indexer_service, tx_params},
 };
+use fuels::core::parameters::StorageConfiguration;
+use fuels::fuels_abigen::abigen;
 use fuels::prelude::{
     setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
     WalletUnlocked, DEFAULT_COIN_AMOUNT,
 };
 use fuels::signers::Signer;
-use fuels_abigen_macro::abigen;
-use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
 
 const SIMPLE_WASM_MANIFEST: &str = include_str!("./../assets/macros/simple_wasm.yaml");

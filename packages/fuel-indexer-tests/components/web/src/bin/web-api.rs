@@ -4,8 +4,8 @@ use fuel_indexer_tests::{
     defaults,
     fixtures::{get_contract_id, tx_params},
 };
+use fuels::fuels_abigen::abigen;
 use fuels::prelude::CallParameters;
-use fuels_abigen_macro::abigen;
 use std::path::Path;
 use tracing::info;
 
