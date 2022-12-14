@@ -81,7 +81,6 @@ type ScriptResult {
 }
 
 type MessageOut {
-    # TODO: https://github.com/FuelLabs/fuel-indexer/issues/298
     id: MessageId! @unique
     sender: Address!
     recipient: Address!

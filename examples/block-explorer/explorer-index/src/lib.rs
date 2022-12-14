@@ -56,12 +56,15 @@ mod explorer_index {
         // a block entity `Block` that we can persist to the database. The `Block` type below is
         // defined in our schema/explorer.graphql and represents the type that we will
         // save to our database.
-        //
-        // Note: There is no miner/producer address for blocks in this example; the producer field
-        // was removed from the `Block` struct as part of fuel-core v0.12.
+        let miner = match block_data.producer {
+            Some(p) => p,
+            None => Bytes32::zeroed(),
+        };
+
         let block = Block {
             id: block_data.id,
             height: block_data.height,
+            miner,
             timestamp: block_data.time,
             gas_limit: block_gas_limit,
         };

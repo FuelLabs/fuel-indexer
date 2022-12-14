@@ -24,6 +24,7 @@ pub struct TransactionData {
 pub struct BlockData {
     pub height: u64,
     pub id: Bytes32,
+    pub producer: Option<Bytes32>,
     pub time: i64,
     pub transactions: Vec<TransactionData>,
 }
