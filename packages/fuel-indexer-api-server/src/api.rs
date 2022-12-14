@@ -12,15 +12,12 @@ use axum::{
     Router,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
-use fuel_indexer_lib::{
-    config::{IndexerConfig, MutableConfig},
-    utils::ServiceRequest,
-};
+use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
 };
 use serde_json::json;
-use std::time::Instant;
+use std::{net::SocketAddr, time::Instant};
 use thiserror::Error;
 use tokio::sync::mpsc::Sender;
 use tracing::error;
@@ -111,7 +108,7 @@ impl GraphQlApi {
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();
         let start_time = Arc::new(Instant::now());
-        let listen_on = config.graphql_api.derive_socket_addr();
+        let listen_on: SocketAddr = config.graphql_api.clone().into();
 
         if config.graphql_api.run_migrations.is_some() {
             let mut c = pool.acquire().await.unwrap();

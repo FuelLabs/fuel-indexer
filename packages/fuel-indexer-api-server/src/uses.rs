@@ -14,7 +14,7 @@ use fuel_indexer_database::{
     IndexerConnectionPool,
 };
 use fuel_indexer_lib::{
-    config::{IndexerConfig, MutableConfig},
+    config::IndexerConfig,
     utils::{
         AssetReloadRequest, FuelNodeHealthResponse, IndexStopRequest, ServiceRequest,
         ServiceStatus,
@@ -64,10 +64,6 @@ pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
     #[cfg(feature = "metrics")]
     METRICS.web.health.requests.inc();
 
-    let url = format!("{}/health", config.fuel_node.derive_http_url())
-        .parse()
-        .expect("Failed to parse fuel /health url.");
-
     let https = HttpsConnectorBuilder::new()
         .with_native_roots()
         .https_or_http()
@@ -76,7 +72,10 @@ pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
         .build();
 
     let client = Client::builder().build::<_, hyper::Body>(https);
-    match client.get(url).await {
+    match client
+        .get(config.to_owned().fuel_node.health_check_uri())
+        .await
+    {
         Ok(r) => {
             let body_bytes = hyper::body::to_bytes(r.into_body())
                 .await
