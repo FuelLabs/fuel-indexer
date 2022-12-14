@@ -104,7 +104,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler()
             .unwrap();
 
     let pung_from: String = pung_row.get(3);
-    let from_buff = <[u8; 33]>::from_hex(&pung_from).unwrap();
+    let from_buff = <[u8; 32]>::from_hex(&pung_from).unwrap();
 
     let contract_buff = <[u8; 32]>::from_hex(
         "322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
@@ -112,7 +112,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler()
     .unwrap();
 
     assert_eq!(
-        Identity::from(from_buff),
+        Identity::ContractId(ContractId::from(from_buff)),
         Identity::ContractId(ContractId::from(contract_buff)),
     );
 }
@@ -152,7 +152,7 @@ async fn test_can_trigger_and_index_callreturn() {
     let value: i64 = row.get(1);
     let is_pung: bool = row.get(2);
     let pung_from: String = row.get(3);
-    let from_buff = <[u8; 33]>::from_hex(&pung_from).unwrap();
+    let from_buff = <[u8; 32]>::from_hex(&pung_from).unwrap();
 
     let addr_buff = <[u8; 32]>::from_hex(
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
@@ -162,7 +162,7 @@ async fn test_can_trigger_and_index_callreturn() {
     assert_eq!(value, 12345);
     assert!(is_pung);
     assert_eq!(
-        Identity::from(from_buff),
+        Identity::Address(Address::from(from_buff)),
         Identity::Address(Address::from(addr_buff)),
     );
 }
@@ -372,7 +372,7 @@ async fn test_can_trigger_and_index_logdata_event() {
     let value: i64 = row.get(1);
     let is_pung: bool = row.get(2);
     let pung_from: String = row.get(3);
-    let from_buff = <[u8; 33]>::from_hex(&pung_from).unwrap();
+    let from_buff = <[u8; 32]>::from_hex(&pung_from).unwrap();
 
     let addr_buff = <[u8; 32]>::from_hex(
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
@@ -382,7 +382,7 @@ async fn test_can_trigger_and_index_logdata_event() {
     assert_eq!(value, 456);
     assert!(is_pung);
     assert_eq!(
-        Identity::from(from_buff),
+        Identity::Address(Address::from(from_buff)),
         Identity::Address(Address::from(addr_buff)),
     );
 }

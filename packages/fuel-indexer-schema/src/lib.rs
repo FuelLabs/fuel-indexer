@@ -5,6 +5,7 @@ use fuel_indexer_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Identity, Json, MessageId,
     Salt,
 };
+use fuels_core::try_from_bytes;
 use serde::{Deserialize, Serialize};
 
 pub use fuel_indexer_database_types as sql_types;
@@ -136,8 +137,8 @@ impl FtColumn {
                 FtColumn::Charfield(s)
             }
             ColumnType::Identity => {
-                let identity =
-                    Identity::try_from(&bytes[..size]).expect("Invalid slice length");
+                let identity = try_from_bytes::<Identity>(&bytes[..size])
+                    .expect("Invalid slice length");
                 FtColumn::Identity(identity)
             }
             ColumnType::Boolean => {

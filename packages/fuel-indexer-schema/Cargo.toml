@@ -17,7 +17,7 @@ fuel-indexer-sqlite = { version = "0.1", path = "../fuel-indexer-database/sqlite
 fuel-indexer-types = { version = "0.1", path = "../fuel-indexer-types" }
 fuel-tx = { version = "0.23", features = ["serde", "alloc"] }
 fuel-types = { version = "0.5", features = ["serde", "alloc"] }
-fuels-core = "0.30"
+fuels-core = "0.32"
 graphql-parser = "0.3"
 itertools = { version = "0.10", optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"] }

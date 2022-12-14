@@ -620,7 +620,7 @@ pub fn prefix_abi_and_schema_paths(
 
 pub fn get_abi_tokens(namespace: &str, abi: &String) -> proc_macro2::TokenStream {
     match Abigen::new(namespace, abi) {
-        Ok(abi) => match abi.no_std().expand() {
+        Ok(abi) => match abi.no_std().expand_contract() {
             Ok(tokens) => tokens,
             Err(e) => {
                 proc_macro_error::abort_call_site!(
