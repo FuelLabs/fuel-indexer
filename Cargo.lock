@@ -2369,6 +2369,7 @@ version = "0.1.11"
 dependencies = [
  "anyhow",
  "clap",
+ "fuel-indexer-types",
  "http",
  "serde",
  "serde_yaml",
@@ -2548,12 +2549,12 @@ name = "fuel-indexer-types"
 version = "0.1.11"
 dependencies = [
  "chrono",
- "fuel-indexer-lib",
  "fuel-tx",
  "fuel-types",
  "fuels-core",
  "fuels-types 0.30.0",
  "serde",
+ "sha2 0.9.9",
 ]
 
 [[package]]

@@ -1,9 +1,8 @@
 use crate::{
     tx::{Transaction, TransactionStatus, TxId},
-    Address, AssetId, Bytes32, ContractId, MessageId,
+    type_id, Address, AssetId, Bytes32, ContractId, MessageId,
 };
 use core::array::TryFromSliceError;
-use fuel_indexer_lib::utils::type_id;
 pub use fuel_tx::Receipt;
 pub use fuels_core::{Parameterize, Token, Tokenizable};
 use fuels_types::{

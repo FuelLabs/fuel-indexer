@@ -10,17 +10,25 @@ use fuel_indexer_types::ffi::{
 
 pub mod types {
     pub use fuel_indexer_schema::FtColumn;
-    pub use fuel_indexer_types::{abi as fuel, tx, *};
+    pub use fuel_indexer_types::*;
 }
 
 pub mod utils {
-    pub use fuel_indexer_lib::utils::sha256_digest;
+    pub use fuel_indexer_lib::utils::{
+        index_utils::{
+            bytes32_from_inputs, first32_bytes_to_bytes32, first8_bytes_to_u64, u64_id,
+            u64_id_from_inputs,
+        },
+        sha256_digest,
+    };
 }
 
 pub mod prelude {
     pub use super::types::*;
 
     pub use super::utils::*;
+
+    pub use super::{Entity, Logger};
 }
 
 extern "C" {

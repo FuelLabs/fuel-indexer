@@ -1,17 +1,66 @@
 # Quickstart
 
-- A cursory explanation on how to get up and running with an index in 5 minutes.
-- This will assume that you've:
-  - Read over [Getting Started](./../getting-started/index.md)
-  - Have installed all relevant [system](./../getting-started/system-dependencies.md) dependencies
-  - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies
-  - Have already created a Fuel project according to [the recommended project structure](./../getting-started/fuel-indexer-project.md)
+A cursory explanation on how to get up and running with an index in 5 minutes
 
-## Write a Sway smart contract
+> This Quickstart will assume that you've:
+> - Read over [Getting Started](./../getting-started/index.md)
+> - Have installed all relevant [system](./../getting-started/system-dependencies.md) dependencies
+> - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies
+> - Have already created a Fuel project according to [the recommended project structure](./../getting-started/fuel-indexer-project.md)
+> - Have installed the [`forc index`](http://localhost:3000/plugins/forc-index.html) plugin via [`fuelup`](http://localhost:3000/getting-started/application-dependencies/fuelup.html)
+
+## What we'll do
+
+In this Quickstart we're going to write a simple Sway 🌴 smart contract, then
+build and deploy and index that saves events from this contract into a database.
+
+- [Writing a contract](#write-a-sway-smart-contract)
+- [Create and deploy an index](#create-and-deploy-an-index)
+  - [Initializing an index](#1.-initialize-a-new-index-project)
+  - [GraphQL data models](#2.-graphql-data-models)
+  - [Update index manifest](#3.-update-index-manifest)
+  - [Write your index code](#4.-write-your-index-code)
+  - [Compile the index](#5.-compile-the-index)
+  - [Start the index service & deploy your
+      index](#6.-start-the-index-service-&-deploy-your-index)
+
+## What you'll need
+
+For this Quickstart we'll need a few components that include Docker, Postgres,
+and the Fuel Indexer service. In order to see which components you have
+installed already, simply use the `forc index check` command, which will check
+for these executables in your `$PATH`.
+
+```text
+➜  forc index check
+
+❌ Could not connect to indexers service: error sending request for url (http://127.0.0.1:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
+
++--------+-------------------------+----------------------------------------------------------------------------+
+| Status |       Component        |                                  Details                                   |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/rashad/.fuelup/bin/fuel-indexer'          |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ⛔️   | fuel-indexer service   |  Failed to detect a locally running fuel-indexer service at Port(29987).   |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | psql                   |  Found 'psql' at '/usr/local/bin/psql'                                     |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | sqlite                 |  Found 'sqlite' at '/usr/bin/sqlite3'                                      |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | fuel-core              |  Found 'fuel-core' at '/Users/rashad/.fuelup/bin/fuel-core'                |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | docker                 |  Found 'docker' at '/usr/local/bin/docker'                                 |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | fuelup                 |  Found 'fuelup' at '/Users/rashad/.fuelup/bin/fuelup'                      |
++--------+------------------------+----------------------------------------------------------------------------+
+```
+----
+
+### Writing a contract
 
 `cd contracts/ && forc new greeting`
 
-Write a greeting smart contract.
+Write a "greeting" type of Sway smart contract.
 
 ```sway
 // src/main.sw
@@ -77,7 +126,7 @@ This consists of a few small parts:
 2 directories, 4 files
 ```
 
-### 2. Add some GraphQL type definitions
+### 2. GraphQL data models
 
 If you open up `hello-index/schema/hello_index.schema.graphql`
 
@@ -110,7 +159,7 @@ type Salutation {
 }
 ```
 
-### 3. Next update the manifest for your index
+### 3. Update index manifest
 
 If you open up `hello-index/hello_index.manifest.yaml`
 
@@ -128,7 +177,7 @@ module:
 
 > Note that we haven't added a `module` parameter to our manifest yet because we haven't actually built a WASM module yet.
 
-### 4. Write the actual code for your index
+### 4. Write your index code
 
 If you open up your index library at `hello-index/src/lib.rs`
 
@@ -262,7 +311,7 @@ module:
   wasm: target/wasm32-unknown-unknown/release/hello_index.wasm
 ```
 
-### 6. Start the indexer & deploy your index
+### 6. Start the service & deploy your index
 
 > IMPORTANT: You should already have Postgres running by now.
 
