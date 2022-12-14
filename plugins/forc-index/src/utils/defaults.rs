@@ -64,13 +64,13 @@ pub mod {index_name}_index_mod {{
     fn {index_name}_handler(block_data: BlockData) {{
         Logger::info("Processing a block. (>'.')>");
 
-        let block = Block{{ id: u64_id(block.id), height: block.height }};
+        let block = Block{{ id: first8_bytes_to_u64(block.id), height: block.height }};
         block.save();
 
         for transaction in block.transactions.iter() {{
             Logger::info("Handling a transaction (>'.')>");
 
-            let tx = Tx{{ id: u64_id(tx.id), block: block.id }};
+            let tx = Tx{{ id: first8_bytes_to_u64(tx.id), block: block.id }};
             tx.save();
         }}
     }}
@@ -85,7 +85,8 @@ pub fn default_index_schema() -> String {
 }
 
 type QueryRoot {
-    account: Account
+    block: Block
+    tx: Tx
 }
 
 type Block {

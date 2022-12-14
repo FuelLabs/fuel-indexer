@@ -169,7 +169,7 @@ pub mod index_utils {
     pub fn first8_bytes_to_u64(data: impl AsRef<[u8]>) -> u64 {
         let data = sha256_digest(&data);
         let mut buff = [0u8; 8];
-        buff.copy_from_slice(&data.as_bytes()[..32]);
+        buff.copy_from_slice(&data.as_bytes()[..8]);
         u64_id(&buff)
     }
 
