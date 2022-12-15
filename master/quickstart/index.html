@@ -168,20 +168,65 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
-<ul>
-<li>A cursory explanation on how to get up and running with an index in 5 minutes.</li>
-<li>This will assume that you've:
+<p>A cursory explanation on how to get up and running with an index in 5 minutes</p>
+<blockquote>
+<p>This Quickstart will assume that you've:</p>
 <ul>
 <li>Read over <a href="./../getting-started/index.html">Getting Started</a></li>
 <li>Have installed all relevant <a href="./../getting-started/system-dependencies.html">system</a> dependencies</li>
 <li>Have installed all relevant <a href="./../getting-started/application-dependencies.html">application</a> dependencies</li>
 <li>Have already created a Fuel project according to <a href="./../getting-started/fuel-indexer-project.html">the recommended project structure</a></li>
+<li>Have installed the <a href="http://localhost:3000/plugins/forc-index.html"><code>forc index</code></a> plugin via <a href="http://localhost:3000/getting-started/application-dependencies/fuelup.html"><code>fuelup</code></a></li>
+</ul>
+</blockquote>
+<h2 id="what-well-do"><a class="header" href="#what-well-do">What we'll do</a></h2>
+<p>In this Quickstart we're going to write a simple Sway 🌴 smart contract, then
+build and deploy and index that saves events from this contract into a database.</p>
+<ul>
+<li><a href="#write-a-sway-smart-contract">Writing a contract</a></li>
+<li><a href="#create-and-deploy-an-index">Create and deploy an index</a>
+<ul>
+<li><a href="#1.-initialize-a-new-index-project">Initializing an index</a></li>
+<li><a href="#2.-graphql-data-models">GraphQL data models</a></li>
+<li><a href="#3.-update-index-manifest">Update index manifest</a></li>
+<li><a href="#4.-write-your-index-code">Write your index code</a></li>
+<li><a href="#5.-compile-the-index">Compile the index</a></li>
+<li><a href="#6.-start-the-index-service-&amp;-deploy-your-index">Start the index service &amp; deploy your
+index</a></li>
 </ul>
 </li>
 </ul>
-<h2 id="write-a-sway-smart-contract"><a class="header" href="#write-a-sway-smart-contract">Write a Sway smart contract</a></h2>
+<h2 id="what-youll-need"><a class="header" href="#what-youll-need">What you'll need</a></h2>
+<p>For this Quickstart we'll need a few components that include Docker, Postgres,
+and the Fuel Indexer service. In order to see which components you have
+installed already, simply use the <code>forc index check</code> command, which will check
+for these executables in your <code>$PATH</code>.</p>
+<pre><code class="language-text">➜  forc index check
+
+❌ Could not connect to indexers service: error sending request for url (http://127.0.0.1:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
+
++--------+-------------------------+----------------------------------------------------------------------------+
+| Status |       Component        |                                  Details                                   |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/rashad/.fuelup/bin/fuel-indexer'          |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ⛔️   | fuel-indexer service   |  Failed to detect a locally running fuel-indexer service at Port(29987).   |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | psql                   |  Found 'psql' at '/usr/local/bin/psql'                                     |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | sqlite                 |  Found 'sqlite' at '/usr/bin/sqlite3'                                      |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | fuel-core              |  Found 'fuel-core' at '/Users/rashad/.fuelup/bin/fuel-core'                |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | docker                 |  Found 'docker' at '/usr/local/bin/docker'                                 |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | fuelup                 |  Found 'fuelup' at '/Users/rashad/.fuelup/bin/fuelup'                      |
++--------+------------------------+----------------------------------------------------------------------------+
+</code></pre>
+<hr />
+<h3 id="writing-a-contract"><a class="header" href="#writing-a-contract">Writing a contract</a></h3>
 <p><code>cd contracts/ &amp;&amp; forc new greeting</code></p>
-<p>Write a greeting smart contract.</p>
+<p>Write a &quot;greeting&quot; type of Sway smart contract.</p>
 <pre><code class="language-sway">// src/main.sw
 contract;
 
@@ -242,7 +287,7 @@ impl Greet for Contract {
 
 2 directories, 4 files
 </code></pre>
-<h3 id="2-add-some-graphql-type-definitions"><a class="header" href="#2-add-some-graphql-type-definitions">2. Add some GraphQL type definitions</a></h3>
+<h3 id="2-graphql-data-models"><a class="header" href="#2-graphql-data-models">2. GraphQL data models</a></h3>
 <p>If you open up <code>hello-index/schema/hello_index.schema.graphql</code></p>
 <pre><code class="language-graphql">schema {
     query: QueryRoot
@@ -271,7 +316,7 @@ type Salutation {
     last_seen: UInt8!
 }
 </code></pre>
-<h3 id="3-next-update-the-manifest-for-your-index"><a class="header" href="#3-next-update-the-manifest-for-your-index">3. Next update the manifest for your index</a></h3>
+<h3 id="3-update-index-manifest"><a class="header" href="#3-update-index-manifest">3. Update index manifest</a></h3>
 <p>If you open up <code>hello-index/hello_index.manifest.yaml</code></p>
 <pre><code class="language-yaml">namespace: fuel_examples
 identifier: hello_index
@@ -286,7 +331,7 @@ module:
 <blockquote>
 <p>Note that we haven't added a <code>module</code> parameter to our manifest yet because we haven't actually built a WASM module yet.</p>
 </blockquote>
-<h3 id="4-write-the-actual-code-for-your-index"><a class="header" href="#4-write-the-actual-code-for-your-index">4. Write the actual code for your index</a></h3>
+<h3 id="4-write-your-index-code"><a class="header" href="#4-write-your-index-code">4. Write your index code</a></h3>
 <p>If you open up your index library at <code>hello-index/src/lib.rs</code></p>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
@@ -306,14 +351,14 @@ module:
 //! cargo run --bin fuel-node
 //! ```
 //!
-//! With your database backend set up, start your fuel-indexer binary using the
+//! With your database backend set up, now start your fuel-indexer binary using the
 //! assets from this example:
 //!
 //! ```bash
 //! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello_index.manifest.yaml
 //! ```
 //!
-//! Call the contract
+//! Now trigger an event.
 //!
 //! ```bash
 //! cargo run --bin hello-bin
@@ -321,36 +366,18 @@ module:
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
-
-// A utility function used to convert an arbitrarily sized string into Bytes32
-// using the first 32 bytes of the String. This might be provided by a standard-ish
-// library in the future.
-fn bytes32(data: &amp;str) -&gt; Bytes32 {
-    let data = sha256_digest(&amp;data);
-    let mut buff = [0u8; 32];
-    buff.copy_from_slice(&amp;data.as_bytes()[..32]);
-    Bytes32::from(buff)
-}
-
-// A utility function used to convert an arbitrarily sized string into u64
-// using the first 8 bytes of the String. This might be provided by a standard-ish
-// library in the future.
-fn u64_id(data: &amp;str) -&gt; u64 {
-    let mut buff = [0u8; 8];
-    buff.copy_from_slice(&amp;data.as_bytes()[..8]);
-    u64::from_le_bytes(buff)
-}
+use fuel_indexer_plugin::prelude::*;
 
 #[indexer(manifest = &quot;examples/hello-world/hello_index.manifest.yaml&quot;)]
 mod hello_world_index {
+
     fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the
         // name of the person in the Greeting
-        let greeter_id = u64_id(&amp;event.person.name.to_string());
+        let greeter_id = first8_bytes_to_u64(&amp;event.person.name.to_string());
 
         // Here we 'get or create' a Salutation based on the ID of the event
-        // emiited in the LogData receipt of our smart contract
+        // emitted in the LogData receipt of our smart contract
         let greeting = match Salutation::load(event.id) {
             Some(mut g) =&gt; {
                 // If we found an event, let's use block height as a proxy for time
@@ -365,7 +392,7 @@ mod hello_world_index {
 
                 Salutation {
                     id: event.id,
-                    message_hash: bytes32(&amp;message),
+                    message_hash: first32_bytes_to_bytes32(&amp;message),
                     message,
                     greeter: greeter_id,
                     first_seen: block.height,
@@ -414,7 +441,7 @@ graphql_schema: examples/hello-world/schema/hello_world.schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/hello_index.wasm
 </code></pre>
-<h3 id="6-start-the-indexer--deploy-your-index"><a class="header" href="#6-start-the-indexer--deploy-your-index">6. Start the indexer &amp; deploy your index</a></h3>
+<h3 id="6-start-the-service--deploy-your-index"><a class="header" href="#6-start-the-service--deploy-your-index">6. Start the service &amp; deploy your index</a></h3>
 <blockquote>
 <p>IMPORTANT: You should already have Postgres running by now.</p>
 </blockquote>
