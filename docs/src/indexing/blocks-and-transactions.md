@@ -8,12 +8,13 @@ You can index use the `BlockData` and `TransactionData` data structures to index
 pub struct BlockData {
     pub height: u64,
     pub id: Bytes32,
+    pub producer: Option<Bytes32>,
     pub time: i64,
     pub transactions: Vec<TransactionData>,
 }
 ```
 
-The `BlockData` struct is how blocks are represented in the Fuel indexer. It contains metadata such as the ID, height, and time, as well as a list of the transactions it contains (represented by `TransactionData`).
+The `BlockData` struct is how blocks are represented in the Fuel indexer. It contains metadata such as the ID, height, and time, as well as a list of the transactions it contains (represented by `TransactionData`). It also contains the public key hash of the block producer, if present.
 
 ## `TransactionData`
 

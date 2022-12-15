@@ -1191,6 +1191,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "counter"
+version = "0.5.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2d458e66999348f56fd3ffcfbb7f7951542075ca8359687c703de6500c1ddccd"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "cpufeatures"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1488,11 +1497,25 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a086fdece2d6206e52894d978a09b09efca1e61ac59d69a934eab74d8d9ee40"
 dependencies = [
- "cynic-proc-macros",
+ "cynic-proc-macros 1.0.0",
  "json-decode",
  "serde",
  "serde_json",
  "surf",
+ "thiserror",
+]
+
+[[package]]
+name = "cynic"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "07097754f62237ba04e4c3315d50c0f6e85e6b2b95d57256941c3ec88b03be73"
+dependencies = [
+ "cynic-proc-macros 2.2.1",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "static_assertions",
  "thiserror",
 ]
 
@@ -1504,8 +1527,24 @@ checksum = "dd9f0852fe3d3637d4dccb4b69e5a8f881214fc38907a528385ff71cd7b15c3e"
 dependencies = [
  "Inflector",
  "darling 0.13.4",
- "graphql-parser",
+ "graphql-parser 0.3.0",
  "lazy_static",
+ "proc-macro2",
+ "quote",
+ "strsim",
+ "syn",
+]
+
+[[package]]
+name = "cynic-codegen"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "738b5c475d60eb95d83af1234aba8014f3f934fd166c752339011ac05165457f"
+dependencies = [
+ "counter",
+ "darling 0.13.4",
+ "graphql-parser 0.4.0",
+ "once_cell",
  "proc-macro2",
  "quote",
  "strsim",
@@ -1518,7 +1557,17 @@ version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1cabdef46a6ff3c06e337a9c0c6b7d2f71aefae4ab582ed319a0d454ea1085f9"
 dependencies = [
- "cynic-codegen",
+ "cynic-codegen 1.0.0",
+ "syn",
+]
+
+[[package]]
+name = "cynic-proc-macros"
+version = "2.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa32c5bf6c87846b0332ca4b912881b28c91f8945c972cedeae3fd18eaf65751"
+dependencies = [
+ "cynic-codegen 2.2.1",
  "syn",
 ]
 
@@ -2253,7 +2302,7 @@ checksum = "04c4c4a52e2dee7e026307877d79b0bdacbb02cb155a01c2da2e56dc7838459a"
 dependencies = [
  "anyhow",
  "clap",
- "cynic",
+ "cynic 1.0.0",
  "derive_more",
  "eventsource-client",
  "fuel-vm",
@@ -2264,6 +2313,29 @@ dependencies = [
  "serde",
  "serde_json",
  "surf",
+ "tai64",
+ "thiserror",
+]
+
+[[package]]
+name = "fuel-gql-client"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2c2c6a001f6944fddbf488d53edaa7d7c5f8b380f18a69c322380d3d01741885"
+dependencies = [
+ "anyhow",
+ "clap",
+ "cynic 2.2.1",
+ "derive_more",
+ "eventsource-client",
+ "fuel-vm",
+ "futures",
+ "hex",
+ "hyper-rustls 0.22.1",
+ "itertools",
+ "reqwest",
+ "serde",
+ "serde_json",
  "tai64",
  "thiserror",
 ]
@@ -2281,7 +2353,7 @@ dependencies = [
  "chrono",
  "clap",
  "fuel-crypto",
- "fuel-gql-client",
+ "fuel-gql-client 0.15.1",
  "fuel-indexer-api-server",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
@@ -2393,7 +2465,7 @@ dependencies = [
  "fuels",
  "fuels-core",
  "fuels-types 0.30.0",
- "graphql-parser",
+ "graphql-parser 0.3.0",
  "lazy_static",
  "proc-macro-error",
  "proc-macro2",
@@ -2449,7 +2521,7 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuels-core",
- "graphql-parser",
+ "graphql-parser 0.3.0",
  "insta",
  "itertools",
  "serde",
@@ -2693,7 +2765,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d865ee4ac67fc8f67479069067e6f98444d3e27be24313037e428d1089ac707"
 dependencies = [
  "fuel-core",
- "fuel-gql-client",
+ "fuel-gql-client 0.14.1",
  "fuels-abigen-macro",
  "fuels-contract",
  "fuels-core",
@@ -2724,7 +2796,7 @@ checksum = "75368a2eec7f3dcadd97db4dab3ebf56a6d17d823d72ac23186c8b4f2c07dea9"
 dependencies = [
  "anyhow",
  "bytes",
- "fuel-gql-client",
+ "fuel-gql-client 0.14.1",
  "fuel-tx",
  "fuels-core",
  "fuels-signers",
@@ -2784,7 +2856,7 @@ dependencies = [
  "elliptic-curve 0.11.12",
  "eth-keystore",
  "fuel-crypto",
- "fuel-gql-client",
+ "fuel-gql-client 0.14.1",
  "fuel-types",
  "fuels-core",
  "fuels-types 0.30.0",
@@ -2806,7 +2878,7 @@ dependencies = [
  "fuel-chain-config",
  "fuel-core",
  "fuel-core-interfaces",
- "fuel-gql-client",
+ "fuel-gql-client 0.14.1",
  "fuel-types",
  "fuels-contract",
  "fuels-core",
@@ -3085,6 +3157,16 @@ name = "graphql-parser"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d1abd4ce5247dfc04a03ccde70f87a048458c9356c7e41d21ad8c407b3dde6f2"
+dependencies = [
+ "combine",
+ "thiserror",
+]
+
+[[package]]
+name = "graphql-parser"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d2ebc8013b4426d5b81a4364c419a95ed0b404af2b82e2457de52d9348f0e474"
 dependencies = [
  "combine",
  "thiserror",
@@ -3407,6 +3489,7 @@ dependencies = [
  "tokio",
  "tokio-rustls 0.22.0",
  "webpki 0.21.4",
+ "webpki-roots 0.21.1",
 ]
 
 [[package]]
@@ -6803,6 +6886,15 @@ name = "webpki-roots"
 version = "0.20.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f20dea7535251981a9670857150d571846545088359b28e4951d350bdaf179f"
+dependencies = [
+ "webpki 0.21.4",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aabe153544e473b775453675851ecc86863d2a81d786d741f6b76778f2a48940"
 dependencies = [
  "webpki 0.21.4",
 ]
