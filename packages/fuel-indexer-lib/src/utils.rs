@@ -1,5 +1,6 @@
 use crate::defaults;
 use anyhow::Result;
+use fuel_indexer_types::Bytes32;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::str::FromStr;
@@ -13,14 +14,6 @@ use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
 
 const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
-
-pub fn type_id(namespace: &str, type_name: &str) -> u64 {
-    let mut bytes = [0u8; 8];
-    bytes.copy_from_slice(
-        &Sha256::digest(format!("{}:{}", namespace, type_name).as_bytes())[..8],
-    );
-    u64::from_le_bytes(bytes)
-}
 
 // Testing assets use relative paths, while production assets will use absolute paths
 //
@@ -161,7 +154,39 @@ impl From<FuelNodeHealthResponse> for ServiceStatus {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug)]
 pub struct FuelNodeHealthResponse {
     up: bool,
+}
+
+pub mod index_utils {
+    use super::{sha256_digest, Bytes32};
+
+    pub fn u64_id(d: &[u8; 8]) -> u64 {
+        u64::from_le_bytes(*d)
+    }
+
+    pub fn first8_bytes_to_u64(data: impl AsRef<[u8]>) -> u64 {
+        let data = sha256_digest(&data);
+        let mut buff = [0u8; 8];
+        buff.copy_from_slice(&data.as_bytes()[..8]);
+        u64_id(&buff)
+    }
+
+    pub fn first32_bytes_to_bytes32(data: impl AsRef<[u8]>) -> Bytes32 {
+        let data = sha256_digest(&data);
+        let mut buff = [0u8; 32];
+        buff.copy_from_slice(&data.as_bytes()[..32]);
+        Bytes32::from(buff)
+    }
+
+    pub fn u64_id_from_inputs(id: &[u8; 32], inputs: Vec<u8>) -> u64 {
+        let inputs = [id.to_vec(), inputs].concat();
+        first8_bytes_to_u64(&inputs)
+    }
+
+    pub fn bytes32_from_inputs(id: &[u8; 32], inputs: Vec<u8>) -> Bytes32 {
+        let inputs = [id.to_vec(), inputs].concat();
+        first32_bytes_to_bytes32(&inputs)
+    }
 }

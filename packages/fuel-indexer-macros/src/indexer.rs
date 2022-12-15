@@ -2,11 +2,8 @@ use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
-use fuel_indexer_lib::{
-    manifest::Manifest,
-    utils::{local_repository_root, type_id},
-};
-use fuel_indexer_types::abi;
+use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
+use fuel_indexer_types::{abi, type_id};
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,

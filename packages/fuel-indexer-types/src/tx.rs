@@ -1,6 +1,13 @@
 use crate::Json;
 use chrono::{DateTime, NaiveDateTime, Utc};
-pub use fuel_tx::{field::*, Receipt, ScriptExecutionResult, Transaction, TxId};
+pub use fuel_tx::{
+    field::{
+        BytecodeLength, BytecodeWitnessIndex, GasLimit, GasPrice, Inputs, Maturity,
+        Outputs, ReceiptsRoot, Salt as TxFieldSalt, Script, ScriptData, StorageSlots,
+        TxPointer, Witnesses,
+    },
+    Receipt, ScriptExecutionResult, Transaction, TxId,
+};
 use serde::{Deserialize, Serialize};
 
 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286

@@ -1,5 +1,4 @@
-use crate::ffi;
-use crate::{IndexerError, IndexerResult, Manifest};
+use crate::{ffi, IndexerError, IndexerResult, Manifest};
 use fuel_indexer_database::{
     queries, types::IdCol, IndexerConnection, IndexerConnectionPool,
 };
@@ -181,7 +180,6 @@ impl Database {
             }
             false => {
                 let instance = instance.unwrap();
-
                 self.namespace = ffi::get_namespace(instance)?;
                 self.version = ffi::get_version(instance)?;
 

@@ -53,11 +53,12 @@ async fn create_wasm_executor(
                 file.read_to_end(&mut bytes).await?;
 
                 let executor = WasmIndexExecutor::new(
-                    db_url.to_string(),
+                    db_url.to_owned(),
                     manifest.to_owned(),
                     bytes.clone(),
                 )
                 .await?;
+
                 let handle = tokio::spawn(run_executor(
                     &fuel_node.to_string(),
                     executor,

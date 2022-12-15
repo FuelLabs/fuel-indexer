@@ -20,7 +20,6 @@ use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
 pub mod prelude {
-
     pub use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
 
     pub use super::{

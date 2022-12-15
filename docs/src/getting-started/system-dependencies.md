@@ -1,29 +1,8 @@
 # System Requirements
 
-There are a few system requirements that you'll need to get started with a Fuel indexer.
+There are a few system requirements related to compilation, tooling, and SQL backends that you'll need to get started with a Fuel indexer.
 
-## Fuel system dependencies
-
-Getting started with a Fuel indexer requires a single primary dependency from the Fuel ecosystem -- `fuelup`
-
-- `fuelup` installs the Fuel toolchain from Fuel's official release channels, enabling you to easily keep the toolchain updated, and
-use various Fuel components without having to download git repositories with tons of dependencies.
-
-  - For more info on getting started with `fuelup`, take a look at the [`fuelup` repository](https://github.com/fuellabs/fuelup).
-
-### `fuelup` Installation
-
-Install `fuelup` with the following command:
-
-```bash
-fuelup toolchain install latest
-```
-
-## Other system dependencies
-
-Other system dependencies related to compilation, tooling, and SQL backends, include:
-
-### Ubuntu/Debian
+## Ubuntu/Debian
 
 ```bash
 apt update && apt install -y \
@@ -48,7 +27,7 @@ apt update && apt install -y \
 | llvm | Required for building Fuel indexer crate dependencies |
 | libpq-dev | Set of library function helping facilitate interaction with the PostgreSQL backend |
 
-### MacOS
+## MacOS
 
 ```bash
 brew update && brew install \
@@ -65,7 +44,7 @@ brew update && brew install \
 | libpq | Postgres C API library |
 | postgresql | Installs the command line console (psql) as well as a PostgreSQL server locally  |
 
-### Arch
+## Arch
 
 ```bash
 pacman -Syu --needed --noconfirm \

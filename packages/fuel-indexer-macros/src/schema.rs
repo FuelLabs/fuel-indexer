@@ -1,9 +1,10 @@
 use fuel_indexer_database_types::directives;
-use fuel_indexer_lib::utils::{local_repository_root, type_id};
+use fuel_indexer_lib::utils::local_repository_root;
 use fuel_indexer_schema::utils::{
     build_schema_fields_and_types_map, build_schema_objects_set, get_join_directive_info,
     inject_native_entities_into_schema, schema_version, BASE_SCHEMA,
 };
+use fuel_indexer_types::type_id;
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{
     Definition, Document, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,

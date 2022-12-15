@@ -11,7 +11,13 @@ pub mod types {
 }
 
 pub mod utils {
-    pub use fuel_indexer_lib::utils::sha256_digest;
+    pub use fuel_indexer_lib::utils::{
+        index_utils::{
+            bytes32_from_inputs, first32_bytes_to_bytes32, first8_bytes_to_u64, u64_id,
+            u64_id_from_inputs,
+        },
+        sha256_digest,
+    };
 }
 
 pub mod prelude {
