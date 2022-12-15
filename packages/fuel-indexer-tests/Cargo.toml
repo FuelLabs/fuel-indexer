@@ -34,9 +34,9 @@ fuel-indexer-sqlite = { version = "0.1", path = "./../fuel-indexer-database/sqli
 fuel-indexer-types = { version = "0.1", path = "./../fuel-indexer-types" }
 fuel-tx = "0.23"
 fuel-types = "0.5"
-fuels = { version = "0.30", features = ["fuel-core-lib"] }
-fuels-abigen-macro = "0.30"
-fuels-core = "0.30"
+fuels = { version = "0.32", features = ["fuel-core-lib"] }
+fuels-abigen-macro = "0.32"
+fuels-core = "0.32"
 futures = "0.3"
 hex = "0.4"
 itertools = "0.10"
