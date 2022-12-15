@@ -2,11 +2,8 @@ use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
-use fuel_indexer_lib::{
-    manifest::Manifest,
-    utils::{local_repository_root, type_id},
-};
-use fuel_indexer_types::abi as fuel;
+use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
+use fuel_indexer_types::{abi, type_id};
 use fuels_core::{
     code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
     source::Source,
@@ -118,14 +115,14 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u32" => quote! { u32 },
             "u64" => quote! { u64 },
             "b256" => quote! { B256 },
-            "Log" => quote! { fuel::Log },
-            "Identity" => quote! { fuel::Identity },
+            "Log" => quote! { abi::Log },
+            "Identity" => quote! { abi::Identity },
             "BlockData" => quote! { BlockData },
-            "LogData" => quote! { fuel::LogData },
-            "Transfer" => quote! { fuel::Transfer },
-            "TransferOut" => quote! { fuel::TransferOut },
-            "ScriptResult" => quote! { fuel::ScriptResult },
-            "MessageOut" => quote! { fuel::MessageOut },
+            "LogData" => quote! { abi::LogData },
+            "Transfer" => quote! { abi::Transfer },
+            "TransferOut" => quote! { abi::TransferOut },
+            "ScriptResult" => quote! { abi::ScriptResult },
+            "MessageOut" => quote! { abi::MessageOut },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!("Unrecognized primitive type: {:?}", o)
@@ -205,7 +202,7 @@ fn process_fn_items(
         .map(|x| {
             (
                 x.to_string(),
-                type_id(fuel::FUEL_TYPES_NAMESPACE, x) as usize,
+                type_id(abi::FUEL_TYPES_NAMESPACE, x) as usize,
             )
         })
         .collect::<HashMap<String, usize>>();
@@ -479,15 +476,15 @@ fn process_fn_items(
                 #blockdata_decoder
             }
 
-            pub fn decode_transfer(&mut self, data: fuel::Transfer) {
+            pub fn decode_transfer(&mut self, data: abi::Transfer) {
                 #transfer_decoder
             }
 
-            pub fn decode_transferout(&mut self, data: fuel::TransferOut) {
+            pub fn decode_transferout(&mut self, data: abi::TransferOut) {
                 #transferout_decoder
             }
 
-            pub fn decode_log(&mut self, data: fuel::Log) {
+            pub fn decode_log(&mut self, data: abi::Log) {
                 #log_decoder
             }
 
@@ -498,11 +495,11 @@ fn process_fn_items(
                 }
             }
 
-            pub fn decode_scriptresult(&mut self, data: fuel::ScriptResult) {
+            pub fn decode_scriptresult(&mut self, data: abi::ScriptResult) {
                 #scriptresult_decoder
             }
 
-            pub fn decode_messageout(&mut self, data: fuel::MessageOut) {
+            pub fn decode_messageout(&mut self, data: abi::MessageOut) {
                 #messageout_decoder
             }
 
@@ -538,17 +535,17 @@ fn process_fn_items(
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 #contract_conditional
-                                let data = fuel::Transfer{ contract_id: id, to, asset_id, amount, pc, is };
+                                let data = abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transfer(data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
                                 #contract_conditional
-                                let data = fuel::TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
+                                let data = abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
                                 decoder.decode_transferout(data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
                                 #contract_conditional
-                                let data = fuel::Log{ contract_id: id, ra, rb };
+                                let data = abi::Log{ contract_id: id, ra, rb };
                                 decoder.decode_log(data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
@@ -558,12 +555,12 @@ fn process_fn_items(
                             }
                             Receipt::ScriptResult { result, gas_used } => {
                                 #contract_conditional
-                                let data = fuel::ScriptResult{ result: u64::from(result), gas_used };
+                                let data = abi::ScriptResult{ result: u64::from(result), gas_used };
                                 decoder.decode_scriptresult(data);
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
                                 #contract_conditional
-                                let payload = fuel::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
+                                let payload = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
                                 decoder.decode_messageout(payload);
                             }
                             _ => {
@@ -674,18 +671,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
     let output = quote! {
         use alloc::{format, vec, vec::Vec};
-        use fuel_indexer_plugin::{
-            types::{
-                // So we can use the fuel namespace to refer to fuel types
-                fuel,
-                // So we don't have to use the fuel namespace to refer to BlockData & TransactionData
-                fuel::{BlockData, TransactionData},
-                *,
-                tx::{Transaction, Receipt, TransactionStatus, TxId, ScriptExecutionResult}
-            },
-            utils,
-            Entity, Logger
-        };
+        use fuel_indexer_plugin::prelude::*;
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
         use std::collections::HashMap;

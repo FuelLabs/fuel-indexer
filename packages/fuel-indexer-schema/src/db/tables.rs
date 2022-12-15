@@ -8,7 +8,7 @@ use fuel_indexer_database::{
     types::{directives, *},
     DbType, IndexerConnection, IndexerConnectionPool,
 };
-use fuel_indexer_lib::utils::type_id;
+use fuel_indexer_types::type_id;
 use graphql_parser::parse_schema;
 use graphql_parser::schema::{
     Definition, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
