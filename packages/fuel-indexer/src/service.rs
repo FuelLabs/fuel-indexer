@@ -419,7 +419,11 @@ impl IndexerService {
                         .expect("Failed to spawn executor from index asset registry")
                         .0;
 
-                        handles.borrow_mut().insert(manifest.uid(), handle);
+                        if let Some(old_handle) =
+                            handles.borrow_mut().insert(manifest.uid(), handle)
+                        {
+                            old_handle.abort();
+                        };
                     }
 
                     ServiceRequest::IndexStop(request) => {
