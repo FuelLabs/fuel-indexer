@@ -1008,16 +1008,8 @@ mod hello_world_index {
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{types::tx::*, types::Bytes32, utils::sha256_digest};
+use fuel_indexer_plugin::prelude::*;
 use std::collections::HashSet;
-
-// Entities require IDs - naively create unique IDs using some caller and the data used
-pub fn derive_id(id: [u8; 32], data: Vec&lt;u8&gt;) -&gt; Bytes32 {
-    let mut buff: [u8; 32] = [0u8; 32];
-    let result = [id.to_vec(), data].concat();
-    buff.copy_from_slice(&amp;sha256_digest(&amp;result).as_bytes()[..32]);
-    Bytes32::from(buff)
-}
 
 // We'll pass our manifest to our #[indexer] attribute. This manifest contains
 // all of the relevant configuration parameters in regard to how our index will
@@ -1144,8 +1136,8 @@ mod explorer_index {
                         });
 
                         let transfer = Transfer {
-                            id: derive_id(
-                                **id,
+                            id: bytes32_from_inputs(
+                                id,
                                 [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
                             ),
                             contract_id: *id,
@@ -1177,8 +1169,8 @@ mod explorer_index {
 
                         tx_amount += amount;
                         let transfer_out = TransferOut {
-                            id: derive_id(
-                                **id,
+                            id: bytes32_from_inputs(
+                                id,
                                 [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
                             ),
                             contract_id: *id,
@@ -1196,7 +1188,7 @@ mod explorer_index {
                             last_seen: 0,
                         });
                         let log = Log {
-                            id: derive_id(**id, u64::to_le_bytes(*rb).to_vec()),
+                            id: bytes32_from_inputs(id, u64::to_le_bytes(*rb).to_vec()),
                             contract_id: *id,
                             rb: *rb,
                         };
@@ -1221,7 +1213,10 @@ mod explorer_index {
                             ScriptExecutionResult::GenericFailure(_) =&gt; 4,
                         };
                         let r = ScriptResult {
-                            id: derive_id([0u8; 32], u64::to_be_bytes(result).to_vec()),
+                            id: bytes32_from_inputs(
+                                &amp;[0u8; 32],
+                                u64::to_be_bytes(result).to_vec(),
+                            ),
                             result,
                             gas_used: *gas_used,
                         };
