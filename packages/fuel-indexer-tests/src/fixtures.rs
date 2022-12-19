@@ -36,6 +36,20 @@ pub async fn postgres_connection_pool() -> Pool<Postgres> {
     }
 }
 
+pub async fn sqlite_connection_pool() -> Pool<Sqlite> {
+    let config = DatabaseConfig::Sqlite {
+        path: test_sqlite_db_path(),
+    };
+
+    match IndexerConnectionPool::connect(&config.to_string())
+        .await
+        .unwrap()
+    {
+        IndexerConnectionPool::Sqlite(p) => p,
+        _ => panic!("Expected Sqlite connection."),
+    }
+}
+
 pub async fn postgres_connection() -> PoolConnection<Postgres> {
     let config = DatabaseConfig::Postgres {
         user: "postgres".into(),
@@ -55,14 +69,6 @@ pub async fn postgres_connection() -> PoolConnection<Postgres> {
 
 pub fn test_sqlite_db_path() -> String {
     format!("sqlite://{}/test.db", WORKSPACE_ROOT)
-}
-
-pub async fn sqlite_connection() -> PoolConnection<Sqlite> {
-    let db_url = test_sqlite_db_path();
-    match IndexerConnectionPool::connect(&db_url).await.unwrap() {
-        IndexerConnectionPool::Sqlite(p) => p.acquire().await.unwrap(),
-        _ => panic!("Expected Sqlite connection."),
-    }
 }
 
 pub fn http_client() -> reqwest::Client {
@@ -178,7 +184,7 @@ pub async fn get_contract_id(
     Ok((wallet, contract_id))
 }
 
-pub async fn indexer_service() -> IndexerService {
+pub async fn indexer_service_postgres() -> IndexerService {
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::from(
             defaults::FUEL_NODE_ADDR
@@ -191,6 +197,27 @@ pub async fn indexer_service() -> IndexerService {
             host: "127.0.0.1".into(),
             port: "5432".into(),
             database: "postgres".to_string(),
+        },
+        graphql_api: GraphQLConfig::default(),
+        metrics: false,
+    };
+
+    let pool = IndexerConnectionPool::connect(&config.database.to_string())
+        .await
+        .expect("Failed to create connection pool");
+
+    IndexerService::new(config, pool, None).await.unwrap()
+}
+
+pub async fn indexer_service_sqlite() -> IndexerService {
+    let config = IndexerConfig {
+        fuel_node: FuelNodeConfig::from(
+            defaults::FUEL_NODE_ADDR
+                .parse::<std::net::SocketAddr>()
+                .unwrap(),
+        ),
+        database: DatabaseConfig::Sqlite {
+            path: test_sqlite_db_path(),
         },
         graphql_api: GraphQLConfig::default(),
         metrics: false,

@@ -99,7 +99,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     // Make a new directory for the project
     fs::create_dir_all(Path::new(&project_dir).join("src"))?;
 
-    let deafult_toml = if command.native {
+    let default_toml = if command.native {
         defaults::default_native_index_cargo_toml(&project_name)
     } else {
         defaults::default_index_cargo_toml(&project_name)
@@ -111,7 +111,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         .unwrap_or_else(|| defaults::DEFAULT_NAMESPACE.into());
     fs::write(
         Path::new(&project_dir).join(defaults::CARGO_MANIFEST_FILE_NAME),
-        deafult_toml,
+        default_toml,
     )
     .unwrap();
 

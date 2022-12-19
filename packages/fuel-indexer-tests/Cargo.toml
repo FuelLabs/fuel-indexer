@@ -56,3 +56,5 @@ wasmer-engine-universal = "2.0"
 
 [features]
 e2e = []
+postgres = []
+sqlite = []

@@ -4,7 +4,8 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        http_client, indexer_service, postgres_connection, postgres_connection_pool,
+        http_client, indexer_service_postgres, postgres_connection,
+        postgres_connection_pool,
     },
     utils::update_test_manifest_asset_paths,
 };
@@ -18,31 +19,13 @@ use sqlx::{
 };
 use tokio::time::{sleep, Duration};
 
-// Clean up database tables in between sequential test runs
-async fn cleanup_database_tables(tables: Vec<&str>, pool: Pool<Postgres>) {
-    let mut conn = pool.acquire().await.unwrap();
-
-    let _ = sqlx::query("BEGIN").execute(&mut conn).await.unwrap();
-
-    for table in tables {
-        sqlx::query(&format!(
-            "DELETE FROM fuel_indexer_test.{} WHERE id IS NOT NULL",
-            table
-        ))
-        .execute(&mut conn)
-        .await
-        .unwrap();
-    }
-
-    let _ = sqlx::query("COMMIT").execute(&mut conn).await.unwrap();
-}
-
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
+{
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -51,12 +34,6 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler()
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(
-        vec!["tx", "block", "pingentity", "pongentity", "pungentity"],
-        pool.clone(),
-    )
-    .await;
 
     let client = http_client();
     let _ = client
@@ -119,10 +96,10 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler()
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_callreturn() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_callreturn_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -131,8 +108,6 @@ async fn test_can_trigger_and_index_callreturn() {
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(vec!["pungentity"], pool.clone()).await;
 
     let client = http_client();
     let _ = client
@@ -169,10 +144,10 @@ async fn test_can_trigger_and_index_callreturn() {
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_blocks_and_transactions() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -181,8 +156,6 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(vec!["tx", "block"], pool.clone()).await;
 
     let client = http_client();
     let _ = client
@@ -219,10 +192,10 @@ async fn test_can_trigger_and_index_blocks_and_transactions() {
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_ping_event() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_ping_event_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -231,8 +204,6 @@ async fn test_can_trigger_and_index_ping_event() {
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(vec!["pingentity"], pool.clone()).await;
 
     let client = http_client();
     let _ = client
@@ -258,10 +229,10 @@ async fn test_can_trigger_and_index_ping_event() {
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_transfer_event() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_transfer_event_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -270,8 +241,6 @@ async fn test_can_trigger_and_index_transfer_event() {
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(vec!["transfer"], pool.clone()).await;
 
     let client = http_client();
     let _ = client
@@ -297,10 +266,10 @@ async fn test_can_trigger_and_index_transfer_event() {
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_log_event() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_log_event_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -310,14 +279,7 @@ async fn test_can_trigger_and_index_log_event() {
         .await
         .expect("Failed to initialize indexer.");
 
-    cleanup_database_tables(vec!["log"], pool.clone()).await;
-
     let mut conn = pool.acquire().await.unwrap();
-    sqlx::query("DELETE FROM fuel_indexer_test.log WHERE id IS NOT NULL")
-        .execute(&mut conn)
-        .await
-        .unwrap();
-
     let client = http_client();
     let _ = client
         .post("http://127.0.0.1:8000/log")
@@ -327,10 +289,11 @@ async fn test_can_trigger_and_index_log_event() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.log LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test.log WHERE ra = 8675309 LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     let ra: i64 = row.get(2);
 
@@ -339,10 +302,10 @@ async fn test_can_trigger_and_index_log_event() {
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_logdata_event() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_logdata_event_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -351,8 +314,6 @@ async fn test_can_trigger_and_index_logdata_event() {
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(vec!["pungentity"], pool.clone()).await;
 
     let client = http_client();
     let _ = client
@@ -389,10 +350,10 @@ async fn test_can_trigger_and_index_logdata_event() {
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_scriptresult_event() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -401,8 +362,6 @@ async fn test_can_trigger_and_index_scriptresult_event() {
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(vec!["scriptresult"], pool.clone()).await;
 
     let client = http_client();
     let _ = client
@@ -428,10 +387,10 @@ async fn test_can_trigger_and_index_scriptresult_event() {
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_transferout_event() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_transferout_event_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -440,8 +399,6 @@ async fn test_can_trigger_and_index_transferout_event() {
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(vec!["transferout"], pool.clone()).await;
 
     let client = http_client();
     let _ = client
@@ -472,10 +429,10 @@ async fn test_can_trigger_and_index_transferout_event() {
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_can_trigger_and_index_messageout_event() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_messageout_event_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -484,8 +441,6 @@ async fn test_can_trigger_and_index_messageout_event() {
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(vec!["messageout"], pool.clone()).await;
 
     let client = http_client();
     let _ = client
@@ -519,10 +474,10 @@ async fn test_can_trigger_and_index_messageout_event() {
 
 #[tokio::test]
 #[serial]
-#[cfg(feature = "e2e")]
-async fn test_index_metadata_is_saved_when_indexer_macro_is_called() {
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
     let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -531,8 +486,6 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called() {
     srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
-
-    cleanup_database_tables(vec!["indexmetadataentity"], pool.clone()).await;
 
     let client = http_client();
     // Doesn't matter what event we trigger

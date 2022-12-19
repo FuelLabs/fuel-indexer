@@ -2,7 +2,7 @@ extern crate alloc;
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     defaults,
-    fixtures::{indexer_service, tx_params},
+    fixtures::{indexer_service_postgres, tx_params},
 };
 use fuels::prelude::{
     setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
@@ -13,7 +13,7 @@ use fuels_abigen_macro::abigen;
 use fuels_core::parameters::StorageConfiguration;
 use std::path::Path;
 
-const SIMPLE_WASM_MANIFEST: &str = include_str!("./../assets/macros/simple_wasm.yaml");
+const SIMPLE_WASM_MANIFEST: &str = include_str!("./../../assets/macros/simple_wasm.yaml");
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 abigen!(
@@ -66,7 +66,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
     let _ = contract.methods().gimme_someevent(78).call().await;
     let _ = contract.methods().gimme_anotherevent(899).call().await;
 
-    let mut srvc = indexer_service().await;
+    let mut srvc = indexer_service_postgres().await;
 
     let manifest: Manifest =
         serde_yaml::from_str(SIMPLE_WASM_MANIFEST).expect("Bad yaml file.");
