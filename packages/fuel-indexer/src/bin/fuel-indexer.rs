@@ -56,7 +56,7 @@ pub async fn main() -> Result<()> {
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
     match opt.manifest.map(|p| {
-        info!("Using bootstrap manifest file located at '{}'", p.display());
+        info!("Using manifest file located at '{}'", p.display());
         Manifest::from_file(&p).unwrap()
     }) {
         Some(m) => {
@@ -69,10 +69,11 @@ pub async fn main() -> Result<()> {
 
     let service_handle = tokio::spawn(service.run());
 
-    #[cfg(feature = "api-server")]
-    GraphQlApi::run(config, pool, tx).await;
-
-    service_handle.await?;
+    if cfg!(feature = "api-server") {
+        let _ = tokio::join!(service_handle, GraphQlApi::run(config, pool, tx));
+    } else {
+        service_handle.await?;
+    };
 
     Ok(())
 }

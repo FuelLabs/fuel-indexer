@@ -5,6 +5,7 @@ use std::path::Path;
 pub fn init(command: NewCommand) -> anyhow::Result<()> {
     let NewCommand {
         name,
+        native,
         namespace,
         path,
     } = command;
@@ -23,6 +24,7 @@ pub fn init(command: NewCommand) -> anyhow::Result<()> {
 
     let _ = init::exec(InitCommand {
         name,
+        native,
         namespace,
         path: Some(dir_path.to_path_buf()),
     });

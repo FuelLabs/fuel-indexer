@@ -10,6 +10,29 @@ description = "Fuel Indexer Plugin"
 crate-type = ['rlib']
 
 [dependencies]
+anyhow = { version = "1.0", default-features = false, optional = true }
+async-trait = { version = "0.1", optional = true }
+bincode = { version = "1.3.3", optional = true }
+fuel-indexer = { version = "0.1", path = "../fuel-indexer", default-features = false,  optional = true }
+fuel-indexer-api-server = { version = "0.1", path = "../fuel-indexer-api-server", default-features = false, optional = true }
+fuel-indexer-database = { version = "0.1", path = "../fuel-indexer-database", default-features = false, optional = true }
 fuel-indexer-lib = { version = "0.1", path = "../fuel-indexer-lib", default-features = false }
 fuel-indexer-schema = { version = "0.1", path = "../fuel-indexer-schema", default-features = false }
 fuel-indexer-types = { version = "0.1", path = "../fuel-indexer-types" }
+tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "sync", "process"], optional = true }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.2", features = ["env-filter"], optional = true }
+
+[features]
+default = []
+native-execution = [
+    "anyhow",
+    "async-trait",
+    "bincode",
+    "fuel-indexer-api-server",
+    "fuel-indexer-database",
+    "fuel-indexer",
+    "tokio",
+    "tracing-subscriber",
+    "tracing",
+]

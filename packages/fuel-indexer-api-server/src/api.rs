@@ -9,18 +9,21 @@ use axum::{
     middleware::{self},
     response::{IntoResponse, Response},
     routing::{delete, get, post},
-    Router,
+    Error as AxumError, Router,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
 };
+use hyper::Error as HyperError;
 use serde_json::json;
 use std::{net::SocketAddr, time::Instant};
 use thiserror::Error;
-use tokio::sync::mpsc::Sender;
+use tokio::sync::mpsc::{error::SendError, Sender};
 use tracing::error;
+
+pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
 #[derive(Debug, Error)]
 pub enum HttpError {
@@ -46,10 +49,20 @@ pub enum ApiError {
     Sqlx(#[from] sqlx::Error),
     #[error("Http error {0:?}")]
     Http(#[from] HttpError),
-    #[error("Generic error")]
-    Generic,
     #[error("Schema error {0:?}")]
     SchemaError(#[from] IndexerSchemaError),
+    #[error("Channel send error: {0:?}")]
+    ChannelSendError(#[from] SendError<ServiceRequest>),
+    #[error("Axum error: {0:?}")]
+    AxumError(#[from] AxumError),
+    #[error("Hyper error: {0:?}")]
+    HyperError(#[from] HyperError),
+}
+
+impl Default for ApiError {
+    fn default() -> Self {
+        ApiError::Http(HttpError::InternalServer)
+    }
 }
 
 impl From<StatusCode> for ApiError {
@@ -65,25 +78,13 @@ impl From<StatusCode> for ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let generic_err_msg = "Inernal server error.".to_string();
+        // NOTE: Free to add more specific messaging/handing here as needed
+        #[allow(clippy::match_single_binding)]
         let (status, err_msg) = match self {
-            ApiError::Graphql(err) => {
-                error!("ApiError::Graphql: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
-            }
-            ApiError::Serde(err) => {
-                error!("ApiError::Serde: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
-            }
-            ApiError::Database(err) => {
-                error!("ApiError::Database: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
-            }
-            ApiError::Sqlx(err) => {
-                error!("ApiError::Sqlx: {}", err);
-                (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg)
-            }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg),
         };
+
+        error!("{:?} - {}", status, err_msg);
 
         (
             status,
@@ -103,7 +104,7 @@ impl GraphQlApi {
         config: IndexerConfig,
         pool: IndexerConnectionPool,
         tx: Option<Sender<ServiceRequest>>,
-    ) {
+    ) -> ApiResult<()> {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();
@@ -111,8 +112,8 @@ impl GraphQlApi {
         let listen_on: SocketAddr = config.graphql_api.clone().into();
 
         if config.graphql_api.run_migrations.is_some() {
-            let mut c = pool.acquire().await.unwrap();
-            queries::run_migration(&mut c).await.unwrap();
+            let mut c = pool.acquire().await?;
+            queries::run_migration(&mut c).await?;
         }
 
         let graph_route = Router::new()
@@ -130,7 +131,8 @@ impl GraphQlApi {
         let stop_index_route = Router::new()
             .route("/:namespace/:identifier", delete(stop_index))
             .route_layer(middleware::from_fn(authorize_middleware))
-            .layer(Extension(tx));
+            .layer(Extension(tx))
+            .layer(Extension(pool.clone()));
 
         let health_route = Router::new()
             .route("/health", get(health_check))
@@ -151,7 +153,8 @@ impl GraphQlApi {
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())
-            .await
-            .expect("Service failed to start");
+            .await?;
+
+        Ok(())
     }
 }

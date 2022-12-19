@@ -1,4 +1,4 @@
-use crate::api::{ApiError, HttpError};
+use crate::api::{ApiError, ApiResult, HttpError};
 use anyhow::Result;
 use async_std::sync::{Arc, RwLock};
 use axum::{
@@ -47,10 +47,10 @@ pub(crate) async fn query_graph(
     Json(query): Json<Query>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
-) -> impl IntoResponse {
+) -> ApiResult<axum::Json<Value>> {
     match manager.read().await.load_schema(&name).await {
         Ok(schema) => match run_query(query, schema, &pool).await {
-            Ok(response) => Ok(Json(response)),
+            Ok(response) => Ok(axum::Json(response)),
             Err(e) => Err(e),
         },
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
@@ -97,12 +97,12 @@ pub(crate) async fn health_check(
     Extension(config): Extension<IndexerConfig>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(start_time): Extension<Arc<Instant>>,
-) -> impl IntoResponse {
+) -> ApiResult<axum::Json<Value>> {
     let db_status = pool.is_connected().await.unwrap_or(ServiceStatus::NotOk);
     let uptime = start_time.elapsed().as_secs().to_string();
     let fuel_core_status = get_fuel_status(&config).await;
 
-    Ok::<axum::Json<Value>, ApiError>(Json(json!({
+    Ok(Json(json!({
         "fuel_core_status": fuel_core_status,
         "uptime(seconds)": uptime,
         "database_status": db_status,
@@ -139,24 +139,31 @@ pub(crate) async fn authorize_middleware<B>(
 pub(crate) async fn stop_index(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
-) -> impl IntoResponse {
+    Extension(pool): Extension<IndexerConnectionPool>,
+) -> ApiResult<axum::Json<Value>> {
+    let mut conn = pool.acquire().await?;
+
+    let _ = queries::start_transaction(&mut conn).await?;
+
+    if let Err(_e) = queries::remove_index(&mut conn, &namespace, &identifier).await {
+        queries::revert_transaction(&mut conn).await?;
+    } else {
+        queries::commit_transaction(&mut conn).await?;
+    }
+
     if let Some(tx) = tx {
         tx.send(ServiceRequest::IndexStop(IndexStopRequest {
             namespace,
             identifier,
         }))
-        .await
-        .unwrap();
+        .await?;
 
-        return Json(json!({
+        return Ok(Json(json!({
             "success": "true",
-        }))
-        .into_response();
+        })));
     }
 
-    // Generally, we shouldn't start the service or API without the
-    // necessary channels, but we should return something just in case.
-    StatusCode::INTERNAL_SERVER_ERROR.into_response()
+    Err(ApiError::default())
 }
 
 pub(crate) async fn register_index_assets(
@@ -165,7 +172,7 @@ pub(crate) async fn register_index_assets(
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     multipart: Option<Multipart>,
-) -> impl IntoResponse {
+) -> ApiResult<axum::Json<Value>> {
     if let Some(mut multipart) = multipart {
         let mut conn = match pool.acquire().await {
             Ok(conn) => conn,
@@ -174,9 +181,7 @@ pub(crate) async fn register_index_assets(
             }
         };
 
-        if let Err(e) = queries::start_transaction(&mut conn).await {
-            return Err(e.into());
-        }
+        let _ = queries::start_transaction(&mut conn).await?;
 
         let mut assets: Vec<IndexAsset> = Vec::new();
 
@@ -188,20 +193,14 @@ pub(crate) async fn register_index_assets(
 
             let asset: IndexAsset = match asset_type {
                 IndexAssetType::Wasm | IndexAssetType::Manifest => {
-                    match queries::register_index_asset(
+                    queries::register_index_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
                         data.to_vec(),
                         asset_type,
                     )
-                    .await
-                    {
-                        Ok(result) => result,
-                        Err(e) => {
-                            return Err(e.into());
-                        }
-                    }
+                    .await?
                 }
                 IndexAssetType::Schema => {
                     match queries::register_index_asset(
@@ -214,14 +213,12 @@ pub(crate) async fn register_index_assets(
                     .await
                     {
                         Ok(result) => {
-                            if let Err(e) = schema_manager
+                            schema_manager
                                 .write()
                                 .await
                                 .new_schema(&namespace, &String::from_utf8_lossy(&data))
-                                .await
-                            {
-                                return Err(e.into());
-                            }
+                                .await?;
+
                             result
                         }
                         Err(e) => {
@@ -234,20 +231,14 @@ pub(crate) async fn register_index_assets(
             assets.push(asset);
         }
 
-        if let Err(e) = queries::commit_transaction(&mut conn).await {
-            if let Err(e) = queries::revert_transaction(&mut conn).await {
-                return Err(e.into());
-            };
-            return Err(e.into());
-        };
+        let _ = queries::commit_transaction(&mut conn).await?;
 
         if let Some(tx) = tx {
             tx.send(ServiceRequest::AssetReload(AssetReloadRequest {
                 namespace,
                 identifier,
             }))
-            .await
-            .unwrap();
+            .await?;
         }
 
         return Ok(Json(json!({
@@ -256,14 +247,14 @@ pub(crate) async fn register_index_assets(
         })));
     }
 
-    Err(StatusCode::BAD_REQUEST.into())
+    Err(ApiError::default())
 }
 
 pub async fn run_query(
     query: Query,
     schema: Schema,
     pool: &IndexerConnectionPool,
-) -> Result<Value, ApiError> {
+) -> ApiResult<Value> {
     let builder = GraphqlQueryBuilder::new(&schema, &query.query)?;
     let query = builder.build()?;
 
@@ -277,7 +268,7 @@ pub async fn run_query(
             Ok(row)
         }
         Err(e) => {
-            error!("Error querying database.");
+            error!("Error querying database: {}.", e);
             Err(e.into())
         }
     }

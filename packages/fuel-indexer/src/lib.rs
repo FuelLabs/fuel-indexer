@@ -16,12 +16,14 @@ use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
 pub mod prelude {
-    pub use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
-
     pub use super::{
         Database, Executor, FtColumn, IndexEnv, IndexerConfig, IndexerError,
-        IndexerService, Manifest, Module, NativeIndexExecutor, WasmIndexExecutor,
+        IndexerResult, IndexerService, Manifest, Module, NativeIndexExecutor,
+        WasmIndexExecutor,
     };
+    pub use async_std::sync::{Arc, Mutex};
+    pub use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
+    pub use fuel_indexer_types::*;
 }
 
 pub type IndexerResult<T> = core::result::Result<T, IndexerError>;
@@ -68,4 +70,8 @@ pub enum IndexerError {
     SchemaError(#[from] IndexerSchemaError),
     #[error("Manifest error: {0:?}")]
     ManifestError(#[from] ManifestError),
+    #[error("Error creating native executor.")]
+    NativeExecutionInstantiationError,
+    #[error("Native execution runtime error.")]
+    NativeExecutionRuntimeError,
 }

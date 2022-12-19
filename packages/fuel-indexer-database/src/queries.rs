@@ -351,3 +351,18 @@ pub async fn run_migration(conn: &mut IndexerConnection) -> sqlx::Result<()> {
         IndexerConnection::Sqlite(ref mut c) => sqlite::run_migration(c).await,
     }
 }
+
+pub async fn remove_index(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::remove_index(c, namespace, identifier).await
+        }
+        IndexerConnection::Sqlite(ref mut c) => {
+            sqlite::remove_index(c, namespace, identifier).await
+        }
+    }
+}

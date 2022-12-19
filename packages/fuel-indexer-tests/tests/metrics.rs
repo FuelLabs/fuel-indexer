@@ -18,7 +18,7 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics() {
         .await
         .unwrap();
 
-    assert_eq!(resp.split('\n').count(), 184);
+    assert_eq!(resp.split('\n').count(), 190);
 }
 
 #[tokio::test]

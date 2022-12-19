@@ -32,6 +32,7 @@ pub struct PostgreQueries {
     pub commit_transaction_calls: IntCounter,
     pub revert_transaction_calls: IntCounter,
     pub run_migration_calls: IntCounter,
+    pub remove_index: IntCounter,
 }
 
 impl Metric for PostgreQueries {
@@ -175,6 +176,11 @@ impl Metric for PostgreQueries {
             run_migration_calls: register_int_counter!(
                 "postgres_run_migration_calls",
                 "Count of calls to postgres run_migration_calls."
+            )
+            .unwrap(),
+            remove_index: register_int_counter!(
+                "postgres_remove_index",
+                "Count of calls to postgres remove_index."
             )
             .unwrap(),
         }

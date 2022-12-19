@@ -5,6 +5,7 @@ use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_indexer_schema::utils::serialize;
 use fuel_indexer_types::abi::BlockData;
+use futures::Future;
 use std::path::Path;
 use thiserror::Error;
 use tokio::task::spawn_blocking;
@@ -25,7 +26,6 @@ pub trait Executor
 where
     Self: Sized,
 {
-    async fn from_file(db_conn: String, manifest_path: &Path) -> IndexerResult<Self>;
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
 }
 
@@ -58,25 +58,60 @@ impl IndexEnv {
     }
 }
 
-pub struct NativeIndexExecutor {
-    _db: Arc<Mutex<Database>>,
-    _manifest: Manifest,
+unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Sync
+    for NativeIndexExecutor<F>
+{
+}
+unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Send
+    for NativeIndexExecutor<F>
+{
 }
 
-impl NativeIndexExecutor {
-    pub async fn new(_db_conn: &str, _manifest: Manifest) -> IndexerResult<Self> {
-        unimplemented!()
+#[allow(dead_code)]
+pub struct NativeIndexExecutor<F>
+where
+    F: Future<Output = IndexerResult<()>> + Send,
+{
+    db: Arc<Mutex<Database>>,
+    manifest: Manifest,
+    handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
+}
+
+impl<F> NativeIndexExecutor<F>
+where
+    F: Future<Output = IndexerResult<()>> + Send,
+{
+    pub async fn new(
+        db_conn: &str,
+        manifest: Manifest,
+        handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
+    ) -> IndexerResult<Self> {
+        let db = Arc::new(Mutex::new(Database::new(db_conn).await?));
+        db.lock().await.load_schema(&manifest, None).await?;
+        Ok(Self {
+            db,
+            manifest,
+            handle_events_fn,
+        })
     }
 }
 
 #[async_trait]
-impl Executor for NativeIndexExecutor {
-    async fn from_file(_db_conn: String, _manifest_path: &Path) -> IndexerResult<Self> {
-        unimplemented!()
-    }
-
-    async fn handle_events(&mut self, _blocks: Vec<BlockData>) -> IndexerResult<()> {
-        unimplemented!()
+impl<F> Executor for NativeIndexExecutor<F>
+where
+    F: Future<Output = IndexerResult<()>> + Send,
+{
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+        self.db.lock().await.start_transaction().await?;
+        let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
+        if let Err(e) = res {
+            error!("NativeIndexExecutor handle_events failed: {}.", e);
+            self.db.lock().await.revert_transaction().await?;
+            return Err(IndexerError::NativeExecutionRuntimeError);
+        } else {
+            self.db.lock().await.commit_transaction().await?;
+        }
+        Ok(())
     }
 }
 
@@ -126,17 +161,17 @@ impl WasmIndexExecutor {
             db: env.db.clone(),
         })
     }
-}
 
-#[async_trait]
-impl Executor for WasmIndexExecutor {
     /// Restore index from wasm file
-    async fn from_file(db_conn: String, manifest_path: &Path) -> IndexerResult<Self> {
+    pub async fn from_file(db_conn: String, manifest_path: &Path) -> IndexerResult<Self> {
         let manifest = Manifest::from_file(manifest_path)?;
         let bytes = manifest.module_bytes()?;
         Self::new(db_conn, manifest, bytes).await
     }
+}
 
+#[async_trait]
+impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);

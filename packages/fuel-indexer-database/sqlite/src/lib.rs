@@ -597,3 +597,49 @@ pub async fn revert_transaction(
 
     execute_query(conn, "ROLLBACK".into()).await
 }
+
+pub async fn remove_index(
+    conn: &mut PoolConnection<Sqlite>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    #[cfg(feature = "metrics")]
+    METRICS.db.sqlite.remove_index.inc();
+
+    let index_id = index_id_for(conn, namespace, identifier).await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM index_asset_registry_wasm WHERE index_id = {}",
+            index_id
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM index_asset_registry_manifest WHERE index_id = {}",
+            index_id
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM index_asset_registry_schema WHERE index_id = {}",
+            index_id
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!("DELETE FROM index_registry WHERE id = {}", index_id),
+    )
+    .await?;
+
+    Ok(())
+}

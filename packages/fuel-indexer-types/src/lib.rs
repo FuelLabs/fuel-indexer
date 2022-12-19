@@ -8,7 +8,7 @@ pub use crate::tx::*;
 pub use fuel_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
 };
-pub use fuels_core::types::Bits256;
+pub use fuels_core::types::{Bits256, SizedAsciiString};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
@@ -25,10 +25,11 @@ pub type Boolean = bool;
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Json(pub String);
 
-pub fn type_id(namespace: &str, type_name: &str) -> u64 {
+// IMPORTANT: https://github.com/launchbadge/sqlx/issues/499
+pub fn type_id(namespace: &str, type_name: &str) -> i64 {
     let mut bytes = [0u8; 8];
     bytes.copy_from_slice(
         &Sha256::digest(format!("{}:{}", namespace, type_name).as_bytes())[..8],
     );
-    u64::from_le_bytes(bytes)
+    i64::from_le_bytes(bytes)
 }

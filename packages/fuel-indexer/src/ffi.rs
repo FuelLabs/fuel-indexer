@@ -95,7 +95,7 @@ fn log_data(env: &IndexEnv, ptr: u32, len: u32, log_level: u32) {
     }
 }
 
-fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
+fn get_object(env: &IndexEnv, type_id: i64, ptr: u32, len_ptr: u32) -> u32 {
     let mem = env.memory_ref().expect("Memory uninitialized.");
 
     let id = get_object_id(mem, ptr);
@@ -126,7 +126,7 @@ fn get_object(env: &IndexEnv, type_id: u64, ptr: u32, len_ptr: u32) -> u32 {
     }
 }
 
-fn put_object(env: &IndexEnv, type_id: u64, ptr: u32, len: u32) {
+fn put_object(env: &IndexEnv, type_id: i64, ptr: u32, len: u32) {
     let mem = env.memory_ref().expect("Memory uninitialized.");
 
     let mut bytes = Vec::with_capacity(len as usize);

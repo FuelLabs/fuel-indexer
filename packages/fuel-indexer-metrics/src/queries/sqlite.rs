@@ -32,6 +32,7 @@ pub struct SqliteQueries {
     pub commit_transaction_calls: IntCounter,
     pub revert_transaction_calls: IntCounter,
     pub run_migration_calls: IntCounter,
+    pub remove_index: IntCounter,
 }
 
 impl Metric for SqliteQueries {
@@ -175,6 +176,11 @@ impl Metric for SqliteQueries {
             run_migration_calls: register_int_counter!(
                 "sqlite_run_migration_calls",
                 "Count of calls to sqlite run_migration_calls."
+            )
+            .unwrap(),
+            remove_index: register_int_counter!(
+                "sqlite_remove_index",
+                "Count of calls to sqlite remove_index."
             )
             .unwrap(),
         }

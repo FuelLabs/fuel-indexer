@@ -47,7 +47,7 @@ fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
                 Ok(src) => src,
                 Err(e) => {
                     proc_macro_error::abort_call_site!(
-                        "`abi` must be a file path to valid json abi: {:?}",
+                        "`abi` must be a file path to valid json abi: {:?}.",
                         e
                     )
                 }
@@ -67,7 +67,7 @@ fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
                 Ok(parsed) => Some(parsed),
                 Err(e) => {
                     proc_macro_error::abort_call_site!(
-                        "Invalid JSON from ABI spec! {:?}",
+                        "Invalid JSON from ABI spec: {:?}.",
                         e
                     )
                 }
@@ -125,7 +125,10 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "MessageOut" => quote! { abi::MessageOut },
             o if o.starts_with("str[") => quote! { String },
             o => {
-                proc_macro_error::abort_call_site!("Unrecognized primitive type: {:?}", o)
+                proc_macro_error::abort_call_site!(
+                    "Unrecognized primitive type: {:?}.",
+                    o
+                )
             }
         }
     }
@@ -174,6 +177,7 @@ fn process_fn_items(
     abi_path: Option<String>,
     indexer_module: ItemMod,
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
+    let is_native = manifest.is_native();
     if indexer_module.content.is_none()
         || indexer_module
             .content
@@ -304,6 +308,17 @@ fn process_fn_items(
         None => quote! {},
     };
 
+    let asyncness = if is_native {
+        quote! {async}
+    } else {
+        quote! {}
+    };
+    let awaitness = if is_native {
+        quote! {.await}
+    } else {
+        quote! {}
+    };
+
     for item in contents {
         match item {
             Item::Fn(fn_item) => {
@@ -426,7 +441,7 @@ fn process_fn_items(
 
                 abi_dispatchers.push(quote! {
                     if ( #(#input_checks)&&* ) {
-                        #fn_name(#(#arg_list),*);
+                        #fn_name(#(#arg_list),*)#awaitness;
                     }
                 });
 
@@ -503,7 +518,7 @@ fn process_fn_items(
                 #messageout_decoder
             }
 
-            pub fn dispatch(&self) {
+            pub #asyncness fn dispatch(&self) {
                 #(#abi_dispatchers)*
             }
         }
@@ -569,11 +584,11 @@ fn process_fn_items(
                         }
                     }
 
-                    decoder.dispatch();
+                    decoder.dispatch()#awaitness;
                 }
 
                 let metadata = IndexMetadataEntity{ id: block.height, time: block.time };
-                metadata.save();
+                metadata.save()#awaitness;
             }
         },
         quote! {
@@ -615,17 +630,28 @@ pub fn prefix_abi_and_schema_paths(
     (None, schema_string)
 }
 
-pub fn get_abi_tokens(namespace: &str, abi: &String) -> proc_macro2::TokenStream {
+pub fn get_abi_tokens(
+    namespace: &str,
+    abi: &String,
+    is_native: bool,
+) -> proc_macro2::TokenStream {
     match Abigen::new(namespace, abi) {
-        Ok(abi) => match abi.no_std().expand() {
-            Ok(tokens) => tokens,
-            Err(e) => {
-                proc_macro_error::abort_call_site!(
-                    "Could not generate tokens for abi: {:?}.",
-                    e
-                )
+        Ok(abi) => {
+            let abigen = if is_native {
+                abi.expand()
+            } else {
+                abi.no_std().expand()
+            };
+            match abigen {
+                Ok(tokens) => tokens,
+                Err(e) => {
+                    proc_macro_error::abort_call_site!(
+                        "Could not generate tokens for abi: {:?}.",
+                        e
+                    )
+                }
             }
-        },
+        }
         Err(e) => {
             proc_macro_error::abort_call_site!("Could not generate abi object: {:?}.", e)
         }
@@ -651,40 +677,105 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     } = manifest.clone();
 
     let indexer_module = parse_macro_input!(item as ItemMod);
+    let is_native = manifest.is_native();
 
     let (abi, schema_string) = prefix_abi_and_schema_paths(abi.as_ref(), graphql_schema);
 
     let abi_tokens = match abi {
-        Some(ref abi_path) => get_abi_tokens(&namespace, abi_path),
+        Some(ref abi_path) => get_abi_tokens(&namespace, abi_path, is_native),
         None => proc_macro2::TokenStream::new(),
     };
 
-    let graphql_tokens = process_graphql_schema(namespace, schema_string);
+    // NOTE: https://nickb.dev/blog/cargo-workspace-and-the-feature-unification-pitfall/
+    let graphql_tokens =
+        process_graphql_schema(namespace, schema_string, manifest.is_native());
 
-    let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
+    let output = if is_native {
+        let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
+        let handler_block = handler_block_native(handler_block);
 
-    let handler_block = if manifest.is_native() {
-        handler_block_native(handler_block)
+        quote! {
+
+            #abi_tokens
+
+            #graphql_tokens
+
+            #handler_block
+
+            #fn_items
+
+            #[tokio::main]
+            async fn main() -> anyhow::Result<()> {
+
+                let filter = match std::env::var_os("RUST_LOG") {
+                    Some(_) => {
+                        EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided.")
+                    }
+                    None => EnvFilter::new("info"),
+                };
+
+                tracing_subscriber::fmt::Subscriber::builder()
+                    .with_writer(std::io::stderr)
+                    .with_env_filter(filter)
+                    .init();
+
+                let opt = IndexerArgs::from_args();
+
+                let config = match &opt.config {
+                    Some(path) => IndexerConfig::from_file(path)?,
+                    None => IndexerConfig::from_opts(opt.clone()),
+                };
+
+                info!("Configuration: {:?}", config);
+
+                let (tx, rx) = if cfg!(feature = "api-server") {
+                    let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+                    (Some(tx), Some(rx))
+                } else {
+                    (None, None)
+                };
+
+                let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+
+                let mut c = pool.acquire().await?;
+                queries::run_migration(&mut c).await?;
+
+                let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
+
+                if opt.manifest.is_none() {
+                    panic!("Manifest required to use native execution.");
+                }
+
+                let p = opt.manifest.unwrap();
+                info!("Using manifest file located at '{}'.", p.display());
+                let manifest = Manifest::from_file(&p)?;
+                service.register_native_index(manifest, handle_events).await?;
+                let service_handle = tokio::spawn(service.run());
+
+                if cfg!(feature = "api-server") {
+                    let _ = tokio::join!(service_handle, GraphQlApi::run(config, pool, tx));
+                } else {
+                    service_handle.await?;
+                };
+
+                Ok(())
+            }
+
+        }
     } else {
-        handler_block_wasm(handler_block)
-    };
+        let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
+        let handler_block = handler_block_wasm(handler_block);
 
-    let output = quote! {
-        use alloc::{format, vec, vec::Vec};
-        use fuel_indexer_plugin::prelude::*;
-        use fuel_indexer_schema::utils::{serialize, deserialize};
-        use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
-        use std::collections::HashMap;
+        quote! {
 
-        type B256 = [u8; 32];
+            #abi_tokens
 
-        #abi_tokens
+            #graphql_tokens
 
-        #graphql_tokens
+            #handler_block
 
-        #handler_block
-
-        #fn_items
+            #fn_items
+        }
     };
 
     proc_macro::TokenStream::from(output)
