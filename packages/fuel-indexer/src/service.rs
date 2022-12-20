@@ -151,10 +151,7 @@ fn run_executor<T: 'static + Executor + Send + Sync>(
 
             let mut block_info = Vec::new();
             for block in results.into_iter().rev() {
-                let producer = match block.block_producer() {
-                    Some(public_key) => Some(public_key.hash()),
-                    None => None,
-                };
+                let producer = block.block_producer().map(|pk| pk.hash());
 
                 // NOTE: for now assuming we have a single contract instance,
                 // we'll need to watch contract creation events here in

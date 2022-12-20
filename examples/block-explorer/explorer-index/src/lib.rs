@@ -48,10 +48,7 @@ mod explorer_index {
         // a block entity `Block` that we can persist to the database. The `Block` type below is
         // defined in our schema/explorer.graphql and represents the type that we will
         // save to our database.
-        let producer = match block_data.producer {
-            Some(p) => p,
-            None => Bytes32::zeroed(),
-        };
+        let producer = block_data.producer.unwrap_or(Bytes32::zeroed());
 
         let block = Block {
             id: block_data.id,
