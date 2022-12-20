@@ -1903,12 +1903,13 @@ type Library {
 </span>pub struct BlockData {
     pub height: u64,
     pub id: Bytes32,
+    pub producer: Option&lt;Bytes32&gt;,
     pub time: i64,
     pub transactions: Vec&lt;TransactionData&gt;,
 }
 <span class="boring">}
 </span></code></pre></pre>
-<p>The <code>BlockData</code> struct is how blocks are represented in the Fuel indexer. It contains metadata such as the ID, height, and time, as well as a list of the transactions it contains (represented by <code>TransactionData</code>).</p>
+<p>The <code>BlockData</code> struct is how blocks are represented in the Fuel indexer. It contains metadata such as the ID, height, and time, as well as a list of the transactions it contains (represented by <code>TransactionData</code>). It also contains the public key hash of the block producer, if present.</p>
 <h2 id="transactiondata"><a class="header" href="#transactiondata"><code>TransactionData</code></a></h2>
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
