@@ -31,6 +31,7 @@ fn main() {
     let data: Vec<BlockData> = vec![BlockData {
         id: [0u8; 32].into(),
         time: 1,
+        producer: None,
         height: 0,
         transactions: vec![TransactionData {
             status: TransactionStatus::default(),
