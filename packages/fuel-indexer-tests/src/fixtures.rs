@@ -11,13 +11,19 @@ use fuels::{
     },
     signers::Signer,
 };
+use fuels_abigen_macro::abigen;
 use fuels_core::parameters::StorageConfiguration;
 use sqlx::{
     pool::{Pool, PoolConnection},
     Postgres, Sqlite,
 };
-use tracing::info;
+use std::path::Path;
 use tracing_subscriber::filter::EnvFilter;
+
+abigen!(
+    FuelIndexerTest,
+    "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
+);
 
 pub async fn postgres_connection_pool() -> Pool<Postgres> {
     let config = DatabaseConfig::Postgres {
@@ -93,7 +99,7 @@ pub async fn setup_test_fuel_node(
         Some(_) => {
             EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
         }
-        None => EnvFilter::new("info"),
+        None => EnvFilter::new("println"),
     };
 
     let _ = tracing_subscriber::fmt::Subscriber::builder()
@@ -139,7 +145,7 @@ pub async fn setup_test_fuel_node(
 
     let contract_id = contract_id.to_string();
 
-    info!("Contract deployed at: {}", &contract_id);
+    println!("Contract deployed at: {}", &contract_id);
 
     Ok(contract_id)
 }
@@ -152,7 +158,7 @@ pub async fn get_contract_id(
         Some(_) => {
             EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
         }
-        None => EnvFilter::new("info"),
+        None => EnvFilter::new("println"),
     };
 
     let _ = tracing_subscriber::fmt::Subscriber::builder()
@@ -179,7 +185,7 @@ pub async fn get_contract_id(
     .await
     .unwrap();
 
-    info!("Using contract at {:?}", &contract_id);
+    println!("Using contract at {:?}", &contract_id);
 
     Ok((wallet, contract_id))
 }
@@ -228,4 +234,286 @@ pub async fn indexer_service_sqlite() -> IndexerService {
         .expect("Failed to create connection pool");
 
     IndexerService::new(config, pool, None).await.unwrap()
+}
+
+pub async fn connect_to_deployed_contract(
+) -> Result<FuelIndexerTest, Box<dyn std::error::Error>> {
+    let wallet_path = Path::new(WORKSPACE_ROOT).join("assets").join("wallet.json");
+    let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
+    let mut wallet =
+        WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
+            .unwrap();
+
+    let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
+
+    wallet.set_provider(provider.clone());
+
+    println!(
+        "Wallet({}) keystore at: {}",
+        wallet.address(),
+        wallet_path.display()
+    );
+
+    let bin_path = Path::new(WORKSPACE_ROOT)
+        .join("contracts")
+        .join("fuel-indexer-test")
+        .join("out")
+        .join("debug")
+        .join("fuel-indexer-test.bin");
+
+    let bin_path_str = bin_path.as_os_str().to_str().unwrap();
+    let _compiled = Contract::load_contract(bin_path_str, &None).unwrap();
+
+    let contract_id = Contract::deploy(
+        bin_path_str,
+        &wallet,
+        tx_params(),
+        StorageConfiguration::default(),
+    )
+    .await
+    .unwrap();
+
+    println!("Using contract at {}", contract_id);
+
+    let contract = FuelIndexerTest::new(contract_id, wallet.clone());
+
+    Ok(contract)
+}
+
+pub mod test_web {
+
+    use super::{get_contract_id, tx_params, FuelIndexerTest};
+    use crate::defaults;
+    use actix_service::ServiceFactory;
+    use actix_web::{
+        body::MessageBody,
+        dev::{ServiceRequest, ServiceResponse},
+        web, App, Error, HttpResponse, HttpServer, Responder,
+    };
+    use async_std::sync::Arc;
+    use fuels::prelude::CallParameters;
+    use std::path::Path;
+
+    async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_ping()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_ping(state: web::Data<Arc<AppState>>) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_ping()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_transfer(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params = CallParameters::new(Some(1_000_000), None, None);
+
+        let _ = state
+            .contract
+            .methods()
+            .trigger_transfer()
+            .tx_params(tx_params())
+            .call_params(call_params)
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_log(state: web::Data<Arc<AppState>>) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_log()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_logdata(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_logdata()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_scriptresult(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_scriptresult()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_transferout(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params = CallParameters::new(Some(1_000_000), None, None);
+
+        let _ = state
+            .contract
+            .methods()
+            .trigger_transferout()
+            .append_variable_outputs(1)
+            .tx_params(tx_params())
+            .call_params(call_params)
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_messageout(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let call_params = CallParameters::new(Some(1_000_000), None, None);
+
+        let _ = state
+            .contract
+            .methods()
+            .trigger_messageout()
+            .append_message_outputs(1)
+            .tx_params(tx_params())
+            .call_params(call_params)
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_callreturn(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_callreturn()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_multiargs(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_multiargs()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    pub struct AppState {
+        pub contract: FuelIndexerTest,
+    }
+
+    pub fn app(
+        contract: FuelIndexerTest,
+    ) -> App<
+        impl ServiceFactory<
+            ServiceRequest,
+            Response = ServiceResponse<impl MessageBody>,
+            Config = (),
+            InitError = (),
+            Error = Error,
+        >,
+    > {
+        let state = web::Data::new(Arc::new(AppState { contract }));
+        App::new()
+            .app_data(state)
+            .route("/block", web::post().to(fuel_indexer_test_blocks))
+            .route("/ping", web::post().to(fuel_indexer_test_ping))
+            .route("/transfer", web::post().to(fuel_indexer_test_transfer))
+            .route("/log", web::post().to(fuel_indexer_test_log))
+            .route("/logdata", web::post().to(fuel_indexer_test_logdata))
+            .route(
+                "/scriptresult",
+                web::post().to(fuel_indexer_test_scriptresult),
+            )
+            .route(
+                "/transferout",
+                web::post().to(fuel_indexer_test_transferout),
+            )
+            .route("/messageout", web::post().to(fuel_indexer_test_messageout))
+            .route("/callreturn", web::post().to(fuel_indexer_test_callreturn))
+            .route("/multiarg", web::post().to(fuel_indexer_test_multiargs))
+        // .route("/", web::post().to(index))
+    }
+
+    pub async fn server() -> Result<(), Box<dyn std::error::Error>> {
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")?;
+
+        let wallet_path = Path::new(&manifest_dir)
+            .join("..")
+            .join("..")
+            .join("assets")
+            .join("test-chain-config.json");
+
+        let contract_bin_path = Path::new(&manifest_dir)
+            .join("..")
+            .join("..")
+            .join("contracts")
+            .join("fuel-indexer-test")
+            .join("out")
+            .join("debug")
+            .join("fuel-indexer-test.bin");
+
+        let (wallet, contract_id) = get_contract_id(
+            wallet_path.as_os_str().to_str().unwrap(),
+            contract_bin_path.as_os_str().to_str().unwrap(),
+        )
+        .await?;
+
+        println!("Starting server at {}", defaults::WEB_API_ADDR);
+
+        let _ = HttpServer::new(move || {
+            app(FuelIndexerTest::new(contract_id.clone(), wallet.clone()))
+        })
+        .bind(defaults::WEB_API_ADDR)
+        .unwrap()
+        .run()
+        .await;
+
+        Ok(())
+    }
 }
