@@ -44,7 +44,7 @@ jobs:
         run: git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
 
   get-workspace-members:
-    needs: 
+    needs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
     runs-on: ubuntu-latest
@@ -264,10 +264,11 @@ jobs:
       - name: Start test web components
         run: bash scripts/utils/start_test_components.bash
 
-      - name: Cargo Test Workspace
-        uses: actions-rs/cargo@v1
-      - run: cargo test --locked --workspace --all-features --all-targets
-      - run: bash scripts/utils/kill_test_components.bash
+      - uses: actions-rs/cargo@v1
+      - name: Cargo e2e tests
+        run: bash packages/fuel-indexer-tests/scripts/e2e.bash
+      - name: Stop testing components
+        run: bash scripts/utils/kill_test_components.bash
 
   publish-docker-image:
     needs:
