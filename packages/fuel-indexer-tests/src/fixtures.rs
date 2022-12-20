@@ -158,7 +158,7 @@ pub async fn get_contract_id(
         Some(_) => {
             EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
         }
-        None => EnvFilter::new("println"),
+        None => EnvFilter::new("info"),
     };
 
     let _ = tracing_subscriber::fmt::Subscriber::builder()
@@ -477,7 +477,6 @@ pub mod test_web {
             .route("/messageout", web::post().to(fuel_indexer_test_messageout))
             .route("/callreturn", web::post().to(fuel_indexer_test_callreturn))
             .route("/multiarg", web::post().to(fuel_indexer_test_multiargs))
-        // .route("/", web::post().to(index))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {
