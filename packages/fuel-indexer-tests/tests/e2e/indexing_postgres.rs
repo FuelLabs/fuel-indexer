@@ -1,26 +1,26 @@
+use actix_service::Service;
+use actix_web::test;
 use fuel_indexer::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnection};
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        http_client, indexer_service_postgres, postgres_connection,
-        postgres_connection_pool,
+        connect_to_deployed_contract, indexer_service_postgres, postgres_connection,
+        postgres_connection_pool, test_web::app,
     },
     utils::update_test_manifest_asset_paths,
 };
 use fuel_indexer_types::{Address, ContractId, Identity};
 use hex::FromHex;
 use lazy_static::lazy_static;
-use serial_test::serial;
 use sqlx::{
     pool::{Pool, PoolConnection},
     Postgres, Row,
 };
 use tokio::time::{sleep, Duration};
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
 {
@@ -35,12 +35,10 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/multiargs")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/multiarg").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -94,8 +92,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     );
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_callreturn_postgres() {
     let pool = postgres_connection_pool().await;
@@ -109,12 +106,10 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/callreturn")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/callreturn").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -142,8 +137,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
     );
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let pool = postgres_connection_pool().await;
@@ -157,12 +151,10 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/block")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -190,8 +182,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     assert_eq!(row.len(), 2);
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_ping_event_postgres() {
     let pool = postgres_connection_pool().await;
@@ -205,12 +196,10 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/ping")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -227,8 +216,7 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
     assert_eq!(value, 123);
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transfer_event_postgres() {
     let pool = postgres_connection_pool().await;
@@ -242,12 +230,10 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/transfer")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/transfer").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -264,8 +250,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
     assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
     let pool = postgres_connection_pool().await;
@@ -280,12 +265,10 @@ async fn test_can_trigger_and_index_log_event_postgres() {
         .expect("Failed to initialize indexer.");
 
     let mut conn = pool.acquire().await.unwrap();
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/log")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/log").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -300,8 +283,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
     assert_eq!(ra, 8675309);
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
     let pool = postgres_connection_pool().await;
@@ -315,12 +297,10 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/logdata")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/logdata").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -348,8 +328,7 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
     );
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     let pool = postgres_connection_pool().await;
@@ -363,12 +342,10 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/scriptresult")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/scriptresult").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     let mut conn = pool.acquire().await.unwrap();
@@ -385,8 +362,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     assert!(gas_used > 0);
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
     let pool = postgres_connection_pool().await;
@@ -400,12 +376,10 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/transferout")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/transferout").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -427,8 +401,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
     assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
     let pool = postgres_connection_pool().await;
@@ -442,12 +415,10 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    let _ = client
-        .post("http://127.0.0.1:8000/messageout")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/messageout").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -472,8 +443,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     assert_eq!(len, 24);
 }
 
-#[tokio::test]
-#[serial]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
     let pool = postgres_connection_pool().await;
@@ -487,13 +457,10 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let client = http_client();
-    // Doesn't matter what event we trigger
-    let _ = client
-        .post("http://127.0.0.1:8000/ping")
-        .send()
-        .await
-        .unwrap();
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 

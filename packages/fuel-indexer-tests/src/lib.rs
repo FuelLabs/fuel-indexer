@@ -26,7 +26,7 @@ pub mod defaults {
         "0000000000000000000000000000000000000000000000000000000000000000";
     pub const SLEEP: Duration = Duration::from_secs(60 * 60 * 10);
     pub const WALLET_PASSWORD: &str = "password";
-    pub const INDEXED_EVENT_WAIT: u64 = 5;
+    pub const INDEXED_EVENT_WAIT: u64 = 2;
     pub const COIN_AMOUNT: u64 = 11;
 }
 
