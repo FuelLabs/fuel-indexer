@@ -151,6 +151,8 @@ fn run_executor<T: 'static + Executor + Send + Sync>(
 
             let mut block_info = Vec::new();
             for block in results.into_iter().rev() {
+                let producer = block.block_producer().map(|pk| pk.hash());
+
                 // NOTE: for now assuming we have a single contract instance,
                 // we'll need to watch contract creation events here in
                 // case an indexer would be interested in processing it.
@@ -245,6 +247,7 @@ fn run_executor<T: 'static + Executor + Send + Sync>(
                 let block = BlockData {
                     height: block.header.height.0,
                     id: Bytes32::from(block.id),
+                    producer,
                     time: block.header.time.0.to_unix(),
                     transactions,
                 };

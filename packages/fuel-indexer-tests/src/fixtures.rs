@@ -4,15 +4,15 @@ use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{
     DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
 };
+use fuels::core::parameters::StorageConfiguration;
 use fuels::{
+    fuels_abigen::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
         Contract, Provider, TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
-use fuels_abigen_macro::abigen;
-use fuels_core::parameters::StorageConfiguration;
 use sqlx::{
     pool::{Pool, PoolConnection},
     Postgres, Sqlite,
