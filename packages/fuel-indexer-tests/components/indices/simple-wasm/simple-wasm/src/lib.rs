@@ -1,7 +1,9 @@
 extern crate alloc;
 use fuel_indexer_macros::indexer;
 
-#[indexer(manifest = "examples/simple-wasm/manifest.yaml")]
+#[indexer(
+    manifest = "packages/fuel-indexer-tests/components/indices/simple-wasm/manifest.yaml"
+)]
 pub mod test_namespace {
 
     fn function_one(event: SomeEvent, event2: AnotherEvent) {
