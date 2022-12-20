@@ -99,7 +99,7 @@ pub async fn setup_test_fuel_node(
         Some(_) => {
             EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
         }
-        None => EnvFilter::new("println"),
+        None => EnvFilter::new("info"),
     };
 
     let _ = tracing_subscriber::fmt::Subscriber::builder()
