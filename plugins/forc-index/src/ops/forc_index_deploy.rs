@@ -1,22 +1,21 @@
 use crate::{cli::DeployCommand, utils::extract_manifest_fields};
+use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{
     blocking::{multipart::Form, Client},
     header::{HeaderMap, AUTHORIZATION},
     StatusCode,
 };
 use serde_json::{to_string_pretty, value::Value, Map};
-use std::fs;
-use std::io::{BufReader, Read};
-use std::path::Path;
+use std::{
+    fs,
+    io::{BufReader, Read},
+    path::Path,
+    time::Duration,
+};
 use tracing::{error, info};
 
 pub fn init(command: DeployCommand) -> anyhow::Result<()> {
-    let mut manifest_file = fs::File::open(&command.manifest).unwrap_or_else(|_| {
-        panic!(
-            "Index manifest file at '{}' does not exist",
-            command.manifest.display()
-        )
-    });
+    let mut manifest_file = fs::File::open(&command.manifest)?;
     let mut manifest_contents = String::new();
     manifest_file.read_to_string(&mut manifest_contents)?;
     let manifest: serde_yaml::Value = serde_yaml::from_str(&manifest_contents)?;
@@ -35,17 +34,34 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let target = format!("{}/api/index/{}/{}", &command.url, &namespace, &identifier);
 
+    info!(
+        "Deploying index at {} to {}",
+        command.manifest.display(),
+        target
+    );
+
     let mut headers = HeaderMap::new();
     headers.insert(
         AUTHORIZATION,
         command.auth.unwrap_or_else(|| "fuel".into()).parse()?,
     );
 
-    info!(
-        "\n🚀 Deploying index at {} to {}",
-        &command.manifest.display(),
-        &target
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(Duration::from_millis(120));
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.blue} {msg}")
+            .unwrap()
+            .tick_strings(&[
+                "▹▹▹▹▹",
+                "▸▹▹▹▹",
+                "▹▸▹▹▹",
+                "▹▹▸▹▹",
+                "▹▹▹▸▹",
+                "▹▹▹▹▸",
+                "▪▪▪▪▪",
+            ]),
     );
+    pb.set_message("🚀 Deploying...");
 
     let res = Client::new()
         .post(&target)
@@ -69,11 +85,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     println!("\n{}", to_string_pretty(&res_json)?);
 
-    info!(
-        "\n✅ Successfully deployed index at {} to {} \n",
-        &command.manifest.display(),
-        &target
-    );
+    pb.finish_with_message("✅ Successfully deployed index.");
 
     Ok(())
 }

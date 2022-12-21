@@ -336,7 +336,7 @@ impl IndexerService {
 
         let mut items = vec![
             (IndexAssetType::Wasm, module_bytes.unwrap()),
-            (IndexAssetType::Manifest, manifest.to_bytes()),
+            (IndexAssetType::Manifest, manifest.to_bytes()?),
             (IndexAssetType::Schema, schema_bytes),
         ];
 
