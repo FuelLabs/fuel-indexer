@@ -1,4 +1,4 @@
-# Indexing
+# What Can I Index?
 
 - [Blocks and Transactions](./blocks-and-transactions.md)
   - Learn how to index blocks and transactions

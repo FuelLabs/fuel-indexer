@@ -32,7 +32,7 @@
     - [Directives](./components/graphql/directives.md)
   - [Indices](./components/indices/index.md)
     - [Registering Indices](./components/indices/registration.md)
-- [Indexing](./indexing/index.md)
+- [What Can I Index?](./indexing/index.md)
   - [Blocks and Transactions](./indexing/blocks-and-transactions.md)
   - [Receipts](./indexing/receipts.md)
 - [Configuration](./getting-started/configuration.md)
