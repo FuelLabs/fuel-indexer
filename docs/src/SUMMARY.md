@@ -6,6 +6,7 @@
   - [Installing Rust](./getting-started/installing-rust.md)
   - [System dependencies](./getting-started/system-dependencies.md)
   - [Application dependencies](./getting-started/application-dependencies/index.md)
+    - [Database](./getting-started/application-dependencies/database.md)
     - [`fuelup`](./getting-started/application-dependencies/fuelup.md)
     - [`sqlx`](./getting-started/application-dependencies/sqlx.md)
     - [`wasm-snip`](./getting-started/application-dependencies/wasm-snip.md)
