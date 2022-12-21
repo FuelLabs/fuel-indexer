@@ -1,5 +1,7 @@
 use crate::{defaults, WORKSPACE_ROOT};
+use axum::Router;
 use fuel_indexer::IndexerService;
+use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{
     DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
@@ -188,6 +190,52 @@ pub async fn get_contract_id(
     println!("Using contract at {:?}", &contract_id);
 
     Ok((wallet, contract_id))
+}
+
+pub async fn api_server_app_postgres() -> Router {
+    let config = IndexerConfig {
+        fuel_node: FuelNodeConfig::from(
+            defaults::FUEL_NODE_ADDR
+                .parse::<std::net::SocketAddr>()
+                .unwrap(),
+        ),
+        database: DatabaseConfig::Postgres {
+            user: "postgres".into(),
+            password: "my-secret".into(),
+            host: "127.0.0.1".into(),
+            port: "5432".into(),
+            database: "postgres".to_string(),
+        },
+        graphql_api: GraphQLConfig::default(),
+        metrics: true,
+    };
+
+    let pool = IndexerConnectionPool::connect(&config.database.to_string())
+        .await
+        .expect("Failed to create connection pool");
+
+    GraphQlApi::build_router(config, pool, None).await.unwrap()
+}
+
+pub async fn api_server_app_sqlite() -> Router {
+    let config = IndexerConfig {
+        fuel_node: FuelNodeConfig::from(
+            defaults::FUEL_NODE_ADDR
+                .parse::<std::net::SocketAddr>()
+                .unwrap(),
+        ),
+        database: DatabaseConfig::Sqlite {
+            path: test_sqlite_db_path(),
+        },
+        graphql_api: GraphQLConfig::default(),
+        metrics: true,
+    };
+
+    let pool = IndexerConnectionPool::connect(&config.database.to_string())
+        .await
+        .expect("Failed to create connection pool");
+
+    GraphQlApi::build_router(config, pool, None).await.unwrap()
 }
 
 pub async fn indexer_service_postgres() -> IndexerService {

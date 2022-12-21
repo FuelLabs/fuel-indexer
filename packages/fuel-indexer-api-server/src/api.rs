@@ -6,7 +6,7 @@ use async_std::sync::{Arc, RwLock};
 use axum::{
     extract::{Extension, Json},
     http::StatusCode,
-    middleware::{self},
+    middleware,
     response::{IntoResponse, Response},
     routing::{delete, get, post},
     Error as AxumError, Router,
@@ -100,16 +100,15 @@ impl IntoResponse for ApiError {
 pub struct GraphQlApi;
 
 impl GraphQlApi {
-    pub async fn run(
+    pub async fn build_router(
         config: IndexerConfig,
         pool: IndexerConnectionPool,
         tx: Option<Sender<ServiceRequest>>,
-    ) -> ApiResult<()> {
+    ) -> ApiResult<Router> {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();
         let start_time = Arc::new(Instant::now());
-        let listen_on: SocketAddr = config.graphql_api.clone().into();
 
         if config.graphql_api.run_migrations.is_some() {
             let mut c = pool.acquire().await?;
@@ -150,6 +149,17 @@ impl GraphQlApi {
             .nest("/graph", graph_route);
 
         let app = Router::new().nest("/api", api_routes);
+
+        Ok(app)
+    }
+
+    pub async fn run(
+        config: IndexerConfig,
+        pool: IndexerConnectionPool,
+        tx: Option<Sender<ServiceRequest>>,
+    ) -> ApiResult<()> {
+        let listen_on: SocketAddr = config.graphql_api.clone().into();
+        let app = GraphQlApi::build_router(config, pool, tx).await?;
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())
