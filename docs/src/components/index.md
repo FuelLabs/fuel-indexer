@@ -6,5 +6,6 @@ Understanding how these components interact is critical to understanding how to 
 
 - [Assets](./assets/index.md)
 - [Database](./database/index.md)
+- [Fuel Node](./fuel-node.md)
 - [GraphQL API](./graphql/index.md)
 - [Indices](./indices/index.md)
