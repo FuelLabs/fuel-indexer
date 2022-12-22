@@ -25,6 +25,7 @@ members = [
    "plugins/forc-index",
 ]
 
+# Some comments
 [profile.release]
 codegen-units = 1
 lto = "fat"
