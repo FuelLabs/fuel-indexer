@@ -92,7 +92,6 @@ async fn test_database_sqlite_metrics_properly_increments_counts_when_queries_ar
 #[tokio::test]
 #[cfg(all(feature = "sqlite"))]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_sqlite() {
-    let _ = indexer_service_sqlite().await;
     let app = api_server_app_sqlite().await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
