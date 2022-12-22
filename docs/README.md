@@ -114,7 +114,6 @@ You can find all the available Fuel indexer commands by running `forc index`.
 
 ```text
 ❯ forc index
-forc index 0.1.11
 Fuel Index Orchestrator
 
 USAGE:
@@ -130,8 +129,8 @@ SUBCOMMANDS:
     help      Print this message or the help of the given subcommand(s)
     init      Create a new indexer project in the current directory
     new       Create a new indexer project in a new directory
+    remove    Stop and remove a running index
     start     Start a local indexer service
-    stop      Stop a running index
 ```
 
 ### Creating an Index
