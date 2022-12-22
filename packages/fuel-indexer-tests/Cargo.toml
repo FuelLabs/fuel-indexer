@@ -62,3 +62,4 @@ wasmer-engine-universal = "2.0"
 e2e = []
 postgres = []
 sqlite = []
+metrics = []
