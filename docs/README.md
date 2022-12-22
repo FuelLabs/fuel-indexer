@@ -124,6 +124,7 @@ OPTIONS:
     -V, --version    Print version information
 
 SUBCOMMANDS:
+    build     Build an index
     check     Get status checks on all indexer components
     deploy    Deploy an index asset bundle to a remote or locally running indexer server
     help      Print this message or the help of the given subcommand(s)
@@ -315,13 +316,15 @@ mod hello_world_index {
 
 For more information on indexing data from a Fuel node, read the [Indexing](https://fuellabs.github.io/fuel-indexer/master/indexing/index.html) section of the book.
 
-Currently, the Fuel indexer uses WebAssembly (WASM) modules to capture data from the Fuel blockchain. You can compile the code for your index by running `cargo build` in your index's directory.
+Currently, the Fuel indexer supports both WebAssembly (WASM) and native Rust modules to capture data from the Fuel blockchain. You can compile your code by using `forc index build` in the folder for your index; for example, if you were to run the command in `./indexer/example-index` folder, you could expect to see an output similar to this:
 
 ```bash
-cargo build --release
+❯ forc index build --release --manifest ./example_index.manifest.yaml
+▹▹▹▸▹ ⏰ Building...                                                                                                                                                                                                                                 Finished release [optimized] target(s) in 0.32s
+▪▪▪▪▪ ✅ Build succeeded.  
 ```
 
-The WASM module for your index can be found in the `target/wasm32-unknown-unknown/release` subdirectory. For ease of use, feel free to copy the file to a different path on your system. In any case, return to your manifest and fill the `wasm` field of the `module` block with the path to your index's WASM module.
+After running the command, your manifest should now be updated with the path to the newly-built WASM module. There are additional options available for `forc index build`; you can find them in the [`forc index`](https://fuellabs.github.io/fuel-indexer/master/plugins/forc-index.html) section of the book.
 
 For more information on WASM (including potential issues and workarounds), read the [WASM](https://fuellabs.github.io/fuel-indexer/master/components/assets/wasm.html) section of the book.
 
