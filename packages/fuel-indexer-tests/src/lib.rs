@@ -11,6 +11,7 @@ pub mod assets {
     pub const BAD_SIMPLE_WASM_WASM: &[u8] =
         include_bytes!("./../assets/bad_simple_wasm.wasm");
     pub const SIMPLE_WASM_WASM: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
+    pub const SIMPLE_WASM_SCHEMA: &str = include_str!("./../assets/simple_wasm.graphql");
 }
 
 pub mod defaults {
