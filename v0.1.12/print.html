@@ -1,0 +1,2240 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Fuel Indexer Service</title>
+        
+        <meta name="robots" content="noindex" />
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/installing-rust.html"><strong aria-hidden="true">1.1.</strong> Installing Rust</a></li><li class="chapter-item expanded "><a href="getting-started/system-dependencies.html"><strong aria-hidden="true">1.2.</strong> System dependencies</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies/index.html"><strong aria-hidden="true">1.3.</strong> Application dependencies</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/application-dependencies/fuelup.html"><strong aria-hidden="true">1.3.1.</strong> fuelup</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies/sqlx.html"><strong aria-hidden="true">1.3.2.</strong> sqlx</a></li><li class="chapter-item expanded "><a href="getting-started/application-dependencies/wasm-snip.html"><strong aria-hidden="true">1.3.3.</strong> wasm-snip</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/fuel-indexer-project.html"><strong aria-hidden="true">1.4.</strong> A Fuel Indexer Project</a></li></ol></li><li class="chapter-item expanded "><a href="quickstart/index.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">3.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/hello-world.html"><strong aria-hidden="true">3.1.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="examples/block-explorer.html"><strong aria-hidden="true">3.2.</strong> Block Explorer</a></li></ol></li><li class="chapter-item expanded "><a href="plugins/index.html"><strong aria-hidden="true">4.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plugins/forc-index.html"><strong aria-hidden="true">4.1.</strong> forc index</a></li></ol></li><li class="chapter-item expanded "><a href="components/index.html"><strong aria-hidden="true">5.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/assets/index.html"><strong aria-hidden="true">5.1.</strong> Assets</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/assets/manifest.html"><strong aria-hidden="true">5.1.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="components/assets/schema.html"><strong aria-hidden="true">5.1.2.</strong> Schema</a></li><li class="chapter-item expanded "><a href="components/assets/module.html"><strong aria-hidden="true">5.1.3.</strong> Module</a></li></ol></li><li class="chapter-item expanded "><a href="components/database/index.html"><strong aria-hidden="true">5.2.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/database/types.html"><strong aria-hidden="true">5.2.1.</strong> Data Types</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/database/ids.html"><strong aria-hidden="true">5.2.1.1.</strong> ID Types</a></li></ol></li><li class="chapter-item expanded "><a href="components/database/foreign-keys.html"><strong aria-hidden="true">5.2.2.</strong> Foreign Keys</a></li></ol></li><li class="chapter-item expanded "><a href="components/graphql/index.html"><strong aria-hidden="true">5.3.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/assets/schema.html"><strong aria-hidden="true">5.3.1.</strong> Schema</a></li><li class="chapter-item expanded "><a href="components/graphql/api-server.html"><strong aria-hidden="true">5.3.2.</strong> API Server</a></li><li class="chapter-item expanded "><a href="components/database/types.html"><strong aria-hidden="true">5.3.3.</strong> Types</a></li><li class="chapter-item expanded "><a href="components/graphql/directives.html"><strong aria-hidden="true">5.3.4.</strong> Directives</a></li></ol></li><li class="chapter-item expanded "><a href="components/indices/index.html"><strong aria-hidden="true">5.4.</strong> Indices</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/indices/registration.html"><strong aria-hidden="true">5.4.1.</strong> Registering Indices</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="indexing/index.html"><strong aria-hidden="true">6.</strong> Indexing</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="indexing/blocks-and-transactions.html"><strong aria-hidden="true">6.1.</strong> Blocks and Transactions</a></li><li class="chapter-item expanded "><a href="indexing/receipts.html"><strong aria-hidden="true">6.2.</strong> Receipts</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/configuration.html"><strong aria-hidden="true">7.</strong> Configuration</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">The Fuel Indexer Service</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                        <a href="https://github.com/FuelLabs/fuel-indexer" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="fuel-indexer"><a class="header" href="#fuel-indexer">Fuel Indexer</a></h1>
+<p><img src="./img/fuel.png" alt="Fuel Logo" /></p>
+<p>The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within a Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.</p>
+<p>By using a combination of Fuel-flavored GraphQL schema, a SQL backend, and indices written in Rust (that compile to WASM), users of the Fuel indexer can get started creating production-ready backends for their dApps, meant to go fast 🚗💨.</p>
+<p>Feel free to check out <a href="./quickstart/index.html">Quickstart</a> for those wanting to build dApp backends right away. And for those willing to contribute to the Fuel indexer project, please feel free to read <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/docs/CONTRIBUTING.md">our contributor guidelines</a>.</p>
+<h1 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h1>
+<p>This section provides an outline regarding how to get started using the Fuel indexer service, including dependency installation, basic usage, and examples.</p>
+<ul>
+<li><a href="getting-started/./installing-rust.html">Installing Rust</a></li>
+<li><a href="getting-started/./system-dependencies.html">System dependencies</a></li>
+<li><a href="getting-started/./application-dependencies.html">Application dependencies</a></li>
+<li><a href="getting-started/./configuration.html">Indexer Configuration</a></li>
+<li><a href="getting-started/./fuel-indexer-project.html">Project Structure</a></li>
+</ul>
+<p>After you've installed all required dependencies. Feel free to checkout a few examples.</p>
+<ul>
+<li><a href="getting-started/./../examples/index.html">Examples</a>
+<ul>
+<li><a href="getting-started/./../examples/hello-world.html">Hello World</a></li>
+<li><a href="getting-started/./../examples/block-explorer.html">Block Explorer</a></li>
+</ul>
+</li>
+</ul>
+<h1 id="installing-rust"><a class="header" href="#installing-rust">Installing Rust</a></h1>
+<p>The easiest way to get Cargo is to install the current stable release of Rust by using rustup. Installing Rust using rustup will also install cargo.</p>
+<p>On Linux and macOS systems, this is done as follows:</p>
+<pre><code class="language-bash">curl https://sh.rustup.rs -sSf | sh
+</code></pre>
+<p>It will download a script, and start the installation. If everything goes well, you’ll see this appear:</p>
+<pre><code class="language-text">Rust is installed now. Great!
+</code></pre>
+<p>On Windows, download and run <a href="https://win.rustup.rs/">rustup-init.exe</a>. It will start the installation in a console and present the above message on success.</p>
+<p>After this, you can use the rustup command to also install beta or nightly channels for Rust and Cargo.</p>
+<p>For other installation options and information, visit the <a href="https://www.rust-lang.org/tools/install">install</a> page of the Rust website.</p>
+<h2 id="build-and-install-cargo-from-source"><a class="header" href="#build-and-install-cargo-from-source">Build and Install Cargo from Source</a></h2>
+<p>Alternatively, you can <a href="https://github.com/rust-lang/cargo#compiling-from-source">build Cargo from source.</a></p>
+<h1 id="system-requirements"><a class="header" href="#system-requirements">System Requirements</a></h1>
+<p>There are a few system requirements related to compilation, tooling, and SQL backends that you'll need to get started with a Fuel indexer.</p>
+<h2 id="ubuntudebian"><a class="header" href="#ubuntudebian">Ubuntu/Debian</a></h2>
+<pre><code class="language-bash">apt update &amp;&amp; apt install -y \
+    cmake \
+    pkg-config \
+    git \
+    gcc \
+    build-essential \
+    clang \
+    libclang-dev \
+    llvm \
+    libpq-dev
+</code></pre>
+<table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
+<tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
+<tr><td>pkg-config</td><td>Language-agnostic helper tool used when compiling applications and libraries</td></tr>
+<tr><td>git</td><td>Version control system</td></tr>
+<tr><td>gcc</td><td>Compiler tools required to build various Fuel indexer crates</td></tr>
+<tr><td>clang/libclang-dev</td><td>Compiler tools required to build various Fuel indexer crates on Unix-like OSes</td></tr>
+<tr><td>llvm</td><td>Required for building Fuel indexer crate dependencies</td></tr>
+<tr><td>libpq-dev</td><td>Set of library function helping facilitate interaction with the PostgreSQL backend</td></tr>
+</tbody></table>
+<h2 id="macos"><a class="header" href="#macos">MacOS</a></h2>
+<pre><code class="language-bash">brew update &amp;&amp; brew install \
+    cmake \
+    llvm \
+    libpq \
+    postgresql
+</code></pre>
+<table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
+<tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
+<tr><td>llvm</td><td>Compiler infrastructure for building Fuel indexer crate dependencies</td></tr>
+<tr><td>libpq</td><td>Postgres C API library</td></tr>
+<tr><td>postgresql</td><td>Installs the command line console (psql) as well as a PostgreSQL server locally</td></tr>
+</tbody></table>
+<h2 id="arch"><a class="header" href="#arch">Arch</a></h2>
+<pre><code class="language-bash">pacman -Syu --needed --noconfirm \
+    cmake \
+    gcc \
+    pkgconf \
+    git \
+    clang \
+    llvm11 \
+    llvm11-libs \
+    postgresql-libs
+</code></pre>
+<table><thead><tr><th>Dependency</th><th>Required For</th></tr></thead><tbody>
+<tr><td>cmake</td><td>Manages the build process in an operating system and in a compiler-independent manner</td></tr>
+<tr><td>git</td><td>Version control system</td></tr>
+<tr><td>gcc</td><td>Compiler tools required to build various Fuel indexer crates</td></tr>
+<tr><td>llvm11</td><td>Compiler infrastructure for building Fuel indexer crate dependencies</td></tr>
+<tr><td>llvm11-libs</td><td>Compiler infrastructure libs for building Fuel indexer crate dependencies</td></tr>
+<tr><td>pkgconf</td><td>System for configuring build dependency information</td></tr>
+<tr><td>postgresql-libs</td><td>Provides the essential shared libraries for any PostgreSQL client program or interface</td></tr>
+<tr><td>clang</td><td>Compiler required to build various Fuel indexer crates Unix-like OSes</td></tr>
+</tbody></table>
+<h1 id="application-dependencies"><a class="header" href="#application-dependencies">Application dependencies</a></h1>
+<ul>
+<li><a href="getting-started/application-dependencies/./fuelup.html"><code>fuelup</code></a></li>
+<li><a href="getting-started/application-dependencies/./sqlx.html"><code>sqlx</code></a></li>
+<li><a href="getting-started/application-dependencies/./wasm-snip.html"><code>wasm-snip</code></a></li>
+</ul>
+<h1 id="fuelup"><a class="header" href="#fuelup"><code>fuelup</code></a></h1>
+<p><code>fuelup</code> installs the Fuel toolchain from our official release channels, enabling you to easily keep the toolchain updated.</p>
+<p>Currently, this script supports Linux/macOS systems only. For other systems, please <a href="https://fuellabs.github.io/fuelup/master/installation/other.html">read the Installation chapter</a>.</p>
+<p>Installation is simple: all you need is <code>fuelup-init.sh</code>, which downloads the core Fuel binaries needed to get you started on development.</p>
+<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+</code></pre>
+<p>This will automatically install <code>forc</code>, its accompanying plugins, <code>fuel-core</code> and other key components in <code>~/.fuelup/bin</code>. Please read the <a href="https://fuellabs.github.io/fuelup/master/concepts/components.html">Components chapter</a> for more info on the components installed.</p>
+<p>The script will ask for permission to add <code>~/.fuelup/bin</code> to your <code>PATH</code>.</p>
+<p>Otherwise, you can also pass <code>--no-modify-path</code> so that <code>fuelup-init</code> does not modify your <code>PATH</code> and will not ask for permission to do so:</p>
+<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh -s -- --no-modify-path
+</code></pre>
+<p>If you just want <code>fuelup</code> without automatically installing the <code>latest</code> toolchain, you can pass the <code>--skip-toolchain-installation</code> option:</p>
+<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh -s -- --skip-toolchain-installation
+</code></pre>
+<p>For more info on how to install and use fuelup, please <a href="https://fuellabs.github.io/fuelup/v0.14.0/">read the fuelup docs</a>.</p>
+<h1 id="sqlx"><a class="header" href="#sqlx">sqlx</a></h1>
+<p>SQLx's associated command-line utility for managing databases, migrations, and enabling &quot;offline&quot;
+mode with <code>sqlx::query!()</code> and friends.</p>
+<h2 id="install"><a class="header" href="#install">Install</a></h2>
+<h3 id="with-rust-toolchain"><a class="header" href="#with-rust-toolchain">With Rust toolchain</a></h3>
+<pre><code class="language-bash"># supports all databases supported by SQLx
+$ cargo install sqlx-cli
+
+# only for postgres
+$ cargo install sqlx-cli --no-default-features --features native-tls,postgres
+
+# use vendored OpenSSL (build from source)
+$ cargo install sqlx-cli --features openssl-vendored
+
+# use Rustls rather than OpenSSL (be sure to add the features for the databases you intend to use!)
+$ cargo install sqlx-cli --no-default-features --features rustls
+</code></pre>
+<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<p>All commands require that a database url is provided. This can be done either with the <code>--database-url</code> command line option or by setting <code>DATABASE_URL</code>, either in the environment or in a <code>.env</code> file
+in the current working directory.</p>
+<p>For more details, run <code>sqlx &lt;command&gt; --help</code>.</p>
+<pre><code class="language-dotenv"># Postgres
+DATABASE_URL=postgres://postgres@localhost/my_database
+</code></pre>
+<h3 id="createdrop-the-database-at-database_url"><a class="header" href="#createdrop-the-database-at-database_url">Create/drop the database at <code>DATABASE_URL</code></a></h3>
+<pre><code class="language-bash">sqlx database create
+sqlx database drop
+</code></pre>
+<hr />
+<h3 id="create-and-run-migrations"><a class="header" href="#create-and-run-migrations">Create and run migrations</a></h3>
+<pre><code class="language-bash">sqlx migrate add &lt;name&gt;
+</code></pre>
+<p>Creates a new file in <code>migrations/&lt;timestamp&gt;-&lt;name&gt;.sql</code>. Add your database schema changes to
+this new file.</p>
+<hr />
+<pre><code class="language-bash">sqlx migrate run
+</code></pre>
+<p>Compares the migration history of the running database against the <code>migrations/</code> folder and runs
+any scripts that are still pending.</p>
+<hr />
+<p>Users can provide the directory for the migration scripts to <code>sqlx migrate</code> subcommands with the <code>--source</code> flag.</p>
+<pre><code class="language-bash">sqlx migrate info --source ../relative/migrations
+</code></pre>
+<hr />
+<h3 id="reverting-migrations"><a class="header" href="#reverting-migrations">Reverting Migrations</a></h3>
+<p>If you would like to create <em>reversible</em> migrations with corresponding &quot;up&quot; and &quot;down&quot; scripts, you use the <code>-r</code> flag when creating new migrations:</p>
+<pre><code class="language-bash">$ sqlx migrate add -r &lt;name&gt;
+Creating migrations/20211001154420_&lt;name&gt;.up.sql
+Creating migrations/20211001154420_&lt;name&gt;.down.sql
+</code></pre>
+<p>After that, you can run these as above:</p>
+<pre><code class="language-bash">$ sqlx migrate run
+Applied migrations/20211001154420 &lt;name&gt; (32.517835ms)
+</code></pre>
+<p>And reverts work as well:</p>
+<pre><code class="language-bash">$ sqlx migrate revert
+Applied 20211001154420/revert &lt;name&gt;
+</code></pre>
+<p><strong>Note</strong>: attempting to mix &quot;simple&quot; migrations with reversible migrations with result in an error.</p>
+<pre><code class="language-bash">$ sqlx migrate add &lt;name1&gt;
+Creating migrations/20211001154420_&lt;name&gt;.sql
+
+$ sqlx migrate add -r &lt;name2&gt;
+error: cannot mix reversible migrations with simple migrations. All migrations should be reversible or simple migrations
+</code></pre>
+<h3 id="enable-building-in-offline-mode-with-query"><a class="header" href="#enable-building-in-offline-mode-with-query">Enable building in &quot;offline mode&quot; with <code>query!()</code></a></h3>
+<p>There are 3 steps to building with &quot;offline mode&quot;:</p>
+<ol>
+<li>Enable the SQLx's Cargo feature <code>offline</code>
+<ul>
+<li>E.g. in your <code>Cargo.toml</code>, <code>sqlx = { features = [ &quot;offline&quot;, ... ] }</code></li>
+</ul>
+</li>
+<li>Save query metadata for offline usage
+<ul>
+<li><code>cargo sqlx prepare</code></li>
+</ul>
+</li>
+<li>Build</li>
+</ol>
+<p>Note: Saving query metadata must be run as <code>cargo sqlx</code>.</p>
+<pre><code class="language-bash">cargo sqlx prepare
+</code></pre>
+<p>Invoking <code>prepare</code> saves query metadata to <code>sqlx-data.json</code> in the current directory; check this file into version
+control and an active database connection will no longer be needed to build your project.</p>
+<p>Has no effect unless the <code>offline</code> Cargo feature of <code>sqlx</code> is enabled in your project. Omitting that
+feature is the most likely cause if you get a <code>sqlx-data.json</code> file that looks like this:</p>
+<pre><code class="language-json">{
+    &quot;database&quot;: &quot;PostgreSQL&quot;
+}
+</code></pre>
+<hr />
+<pre><code class="language-bash">cargo sqlx prepare --check
+</code></pre>
+<p>Exits with a nonzero exit status if the data in <code>sqlx-data.json</code> is out of date with the current
+database schema and queries in the project. Intended for use in Continuous Integration.</p>
+<h3 id="force-building-in-offline-mode"><a class="header" href="#force-building-in-offline-mode">Force building in offline mode</a></h3>
+<p>The presence of a <code>DATABASE_URL</code> environment variable will take precedence over the presence of <code>sqlx-data.json</code>, meaning SQLx will default to building against a database if it can. To make sure an accidentally-present <code>DATABASE_URL</code> environment variable or <code>.env</code> file does not
+result in <code>cargo build</code> (trying to) access the database, you can set the <code>SQLX_OFFLINE</code> environment
+variable to <code>true</code>.</p>
+<p>If you want to make this the default, just add it to your <code>.env</code> file. <code>cargo sqlx prepare</code> will
+still do the right thing and connect to the database.</p>
+<h3 id="include-queries-behind-feature-flags-such-as-queries-inside-of-tests"><a class="header" href="#include-queries-behind-feature-flags-such-as-queries-inside-of-tests">Include queries behind feature flags (such as queries inside of tests)</a></h3>
+<p>In order for sqlx to be able to find queries behind certain feature flags you need to turn them
+on by passing arguments to rustc.</p>
+<p>This is how you would turn all targets and features on.</p>
+<pre><code class="language-bash">cargo sqlx prepare -- --all-targets --all-features
+</code></pre>
+<h1 id="wasm-snip"><a class="header" href="#wasm-snip"><code>wasm-snip</code></a></h1>
+<blockquote>
+<p>Important: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash">here</a>.</p>
+</blockquote>
+<h2 id="about"><a class="header" href="#about">About</a></h2>
+<p><code>wasm-snip</code> replaces a WebAssembly function's body with an <code>unreachable</code>.</p>
+<p>Maybe you know that some function will never be called at runtime, but the
+compiler can't prove that at compile time? Snip it! All the functions it
+transitively called — which weren't called by anything else and therefore
+could also never be called at runtime — will get removed too.</p>
+<p>Very helpful when shrinking the size of WebAssembly binaries!</p>
+<p>This functionality relies on the &quot;name&quot; section being present in the <code>.wasm</code>
+file, so build with debug symbols:</p>
+<pre><code class="language-toml">[profile.release]
+debug = true
+</code></pre>
+<ul>
+<li><a href="getting-started/application-dependencies/wasm-snip.html#executable">Executable</a></li>
+<li><a href="getting-started/application-dependencies/wasm-snip.html#library">Library</a></li>
+</ul>
+<h3 id="executable"><a class="header" href="#executable">Executable</a></h3>
+<p>To install the <code>wasm-snip</code> executable, run</p>
+<pre><code class="language-bash">cargo install wasm-snip
+</code></pre>
+<p>You can use <code>wasm-snip</code> to remove the <code>annoying_space_waster</code>
+function from <code>input.wasm</code> and put the new binary in <code>output.wasm</code> like this:</p>
+<pre><code class="language-bash">wasm-snip input.wasm -o output.wasm annoying_space_waster
+</code></pre>
+<p>For information on using the <code>wasm-snip</code> executable, run</p>
+<pre><code class="language-bash">wasm-snip --help
+</code></pre>
+<p>And you'll get the most up-to-date help text, like:</p>
+<pre><code class="language-text">Replace a wasm function with an `unreachable`.
+
+USAGE:
+wasm-snip [FLAGS] [OPTIONS] &lt;input&gt; [--] [function]...
+
+FLAGS:
+-h, --help                    Prints help information
+--snip-rust-fmt-code          Snip Rust's `std::fmt` and `core::fmt` code.
+--snip-rust-panicking-code    Snip Rust's `std::panicking` and `core::panicking` code.
+-V, --version                 Prints version information
+
+OPTIONS:
+-o, --output &lt;output&gt;         The path to write the output wasm file to. Defaults to stdout.
+-p, --pattern &lt;pattern&gt;...    Snip any function that matches the given regular expression.
+
+ARGS:
+&lt;input&gt;          The input wasm file containing the function(s) to snip.
+&lt;function&gt;...    The specific function(s) to snip. These must match exactly. Use the -p flag for fuzzy matching.
+</code></pre>
+<h3 id="library"><a class="header" href="#library">Library</a></h3>
+<p>To use <code>wasm-snip</code> as a library, add this to your <code>Cargo.toml</code>:</p>
+<pre><code class="language-toml">[dependencies.wasm-snip]
+# Do not build the executable.
+default-features = false
+</code></pre>
+<p>See <a href="https://docs.rs/wasm-snip">docs.rs/wasm-snip</a> for API documentation.</p>
+<h1 id="a-fuel-indexer-project"><a class="header" href="#a-fuel-indexer-project">A Fuel Indexer Project</a></h1>
+<p>The Fuel indexer project can currently be used in three different ways:</p>
+<ol>
+<li>Indexer tooling can be used to compile arbitrary indicies.</li>
+<li>The indexer service can be run as a standalone binary, outside the scope of a larger Fuel project.</li>
+<li>The indexer service can be included in a larger Fuel project, as a tandem service.</li>
+</ol>
+<p>We'll describe these three different implementations below.</p>
+<h2 id="compiling-arbitrary-indices"><a class="header" href="#compiling-arbitrary-indices">Compiling arbitrary indices</a></h2>
+<p>For info on how to use indexer tooling to compile arbitrary indices, checkout our <a href="getting-started/./../quickstart/index.html">Quickstart</a></p>
+<h2 id="as-a-standalone-service"><a class="header" href="#as-a-standalone-service">As a standalone service</a></h2>
+<p>When running a Fuel indexer service as a standalone binary, you can just simply start the service after migrations have been run.</p>
+<h2 id="with-a-fuel-project"><a class="header" href="#with-a-fuel-project">With a Fuel project</a></h2>
+<p>The convetion for a Fuel project layout including a Fuel indexer is:</p>
+<pre><code class="language-text">.
+├── contracts
+│   └── greeting
+│       ├── Forc.toml
+│       └── src
+│           └── main.sw
+├── frontend
+│   └── index.html
+└── indexer
+    └── hello-index
+        ├── Cargo.toml
+        ├── hello_index.manifest.yaml
+        ├── schema
+        │   └── hello_index.schema.graphql
+        └── src
+            └── lib.rs
+
+8 directories, 7 files
+</code></pre>
+<h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
+<p>A cursory explanation on how to get up and running with an index in 5 minutes</p>
+<blockquote>
+<p>This Quickstart will assume that you've:</p>
+<ul>
+<li>Read over <a href="quickstart/./../getting-started/index.html">Getting Started</a></li>
+<li>Have installed all relevant <a href="quickstart/./../getting-started/system-dependencies.html">system</a> dependencies</li>
+<li>Have installed all relevant <a href="quickstart/./../getting-started/application-dependencies.html">application</a> dependencies</li>
+<li>Have already created a Fuel project according to <a href="quickstart/./../getting-started/fuel-indexer-project.html">the recommended project structure</a></li>
+<li>Have installed the <a href="http://localhost:3000/plugins/forc-index.html"><code>forc index</code></a> plugin via <a href="http://localhost:3000/getting-started/application-dependencies/fuelup.html"><code>fuelup</code></a></li>
+</ul>
+</blockquote>
+<h2 id="what-well-do"><a class="header" href="#what-well-do">What we'll do</a></h2>
+<p>In this Quickstart we're going to write a simple Sway 🌴 smart contract, then
+build and deploy and index that saves events from this contract into a database.</p>
+<ul>
+<li><a href="quickstart/index.html#write-a-sway-smart-contract">Writing a contract</a></li>
+<li><a href="quickstart/index.html#create-and-deploy-an-index">Create and deploy an index</a>
+<ul>
+<li><a href="quickstart/index.html#1.-initialize-a-new-index-project">Initializing an index</a></li>
+<li><a href="quickstart/index.html#2.-graphql-data-models">GraphQL data models</a></li>
+<li><a href="quickstart/index.html#3.-update-index-manifest">Update index manifest</a></li>
+<li><a href="quickstart/index.html#4.-write-your-index-code">Write your index code</a></li>
+<li><a href="quickstart/index.html#5.-compile-the-index">Compile the index</a></li>
+<li><a href="quickstart/index.html#6.-start-the-index-service-&amp;-deploy-your-index">Start the index service &amp; deploy your
+index</a></li>
+</ul>
+</li>
+</ul>
+<h2 id="what-youll-need"><a class="header" href="#what-youll-need">What you'll need</a></h2>
+<p>For this Quickstart we'll need a few components that include Docker, Postgres,
+and the Fuel Indexer service. In order to see which components you have
+installed already, simply use the <code>forc index check</code> command, which will check
+for these executables in your <code>$PATH</code>.</p>
+<pre><code class="language-text">➜  forc index check
+
+❌ Could not connect to indexers service: error sending request for url (http://127.0.0.1:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
+
++--------+-------------------------+----------------------------------------------------------------------------+
+| Status |       Component        |                                  Details                                   |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/rashad/.fuelup/bin/fuel-indexer'          |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ⛔️   | fuel-indexer service   |  Failed to detect a locally running fuel-indexer service at Port(29987).   |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | psql                   |  Found 'psql' at '/usr/local/bin/psql'                                     |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | sqlite                 |  Found 'sqlite' at '/usr/bin/sqlite3'                                      |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | fuel-core              |  Found 'fuel-core' at '/Users/rashad/.fuelup/bin/fuel-core'                |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | docker                 |  Found 'docker' at '/usr/local/bin/docker'                                 |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | fuelup                 |  Found 'fuelup' at '/Users/rashad/.fuelup/bin/fuelup'                      |
++--------+------------------------+----------------------------------------------------------------------------+
+</code></pre>
+<hr />
+<h3 id="writing-a-contract"><a class="header" href="#writing-a-contract">Writing a contract</a></h3>
+<p><code>cd contracts/ &amp;&amp; forc new greeting</code></p>
+<p>Write a &quot;greeting&quot; type of Sway smart contract.</p>
+<pre><code class="language-sway">// src/main.sw
+contract;
+
+use std::logging::log;
+
+struct Person {
+    name: str[32],
+}
+
+struct Greeting {
+    id: u64,
+    greeting: str[32],
+    person: Person,
+}
+
+abi Greet {
+    fn new_greeting(id: u64, greeting: str[32], person_name: str[32]);
+}
+
+impl Greet for Contract {
+    fn new_greeting(id: u64, greeting: str[32], person_name: str[32]) {
+        log(Greeting{ id, greeting, person: Person{ name: person_name }});
+    }
+}
+
+</code></pre>
+<blockquote>
+<p>Compile your smart contract with <a href="https://fuellabs.github.io/sway/v0.31.2/forc/commands/forc_build.html"><code>forc build</code></a>, which will build the ABI JSON asset required by your index.</p>
+</blockquote>
+<h2 id="create-and-deploy-an-index"><a class="header" href="#create-and-deploy-an-index">Create and deploy an index</a></h2>
+<p>This consists of a few small parts:</p>
+<ol>
+<li>Initializing a new index project.</li>
+<li>Defining the structure of your data models and queries via GraphQL schema.</li>
+<li>Specifying an index <em>manifest</em>: a YAML file used to configure your index at compile-time and run-time.</li>
+<li>Writing the actual code to index events.</li>
+<li>Compiling your new index code to a WebAssembly binary.</li>
+<li>Kicking off a local indexer service and deploying your newly created index</li>
+</ol>
+<blockquote>
+<p>Below we're using the <code>forc index</code> plugin provided by <a href="https://fuellabs.github.io/sway/v0.31.1/forc/plugins/index.html"><code>forc</code></a>.</p>
+</blockquote>
+<h3 id="1-initialize-a-new-index-project"><a class="header" href="#1-initialize-a-new-index-project">1. Initialize a new index project</a></h3>
+<pre><code class="language-bash">➜ mkdir indexer
+
+➜ cd indexer/ &amp;&amp; forc index new hello-index
+
+➜ cd hello-index
+
+➜ hello-index tree .
+.
+├── Cargo.toml
+├── hello_index.manifest.yaml
+├── schema
+│   └── hello_index.schema.graphql
+└── src
+    └── lib.rs
+
+2 directories, 4 files
+</code></pre>
+<h3 id="2-graphql-data-models"><a class="header" href="#2-graphql-data-models">2. GraphQL data models</a></h3>
+<p>If you open up <code>hello-index/schema/hello_index.schema.graphql</code></p>
+<pre><code class="language-graphql">schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    greeting: Greeting
+    greeter: Greeter
+}
+
+# Calling this `Greeter` so as to not clash with `Person` in the contract
+type Greeter {
+    id: ID!
+    name: Charfield!
+    first_seen: UInt8!
+    last_seen: UInt8!
+}
+
+# Calling this `Salutation` so as to not clash with `Greeting` in the contract
+type Salutation {
+    id: ID!
+    message_hash: Bytes32!
+    message: Charfield!
+    greeter: Greeter!
+    first_seen: UInt8!
+    last_seen: UInt8!
+}
+</code></pre>
+<h3 id="3-update-index-manifest"><a class="header" href="#3-update-index-manifest">3. Update index manifest</a></h3>
+<p>If you open up <code>hello-index/hello_index.manifest.yaml</code></p>
+<pre><code class="language-yaml">namespace: fuel_examples
+identifier: hello_index
+# ABI files are _not_ required. However, in this example, since we already wrote
+# and compiled our smart contract, we'll include it's ABI JSON output here.
+abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
+start_block: 1
+graphql_schema: examples/hello-world/schema/hello_world.schema.graphql
+module:
+  wasm: we don't have one of these yet
+</code></pre>
+<blockquote>
+<p>Note that we haven't added a <code>module</code> parameter to our manifest yet because we haven't actually built a WASM module yet.</p>
+</blockquote>
+<h3 id="4-write-your-index-code"><a class="header" href="#4-write-your-index-code">4. Write your index code</a></h3>
+<p>If you open up your index library at <code>hello-index/src/lib.rs</code></p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>//! A &quot;Hello World&quot; type of program for the Fuel Indexer service.
+//!
+//! Build this example's WASM module using the following command. Note that a
+//! wasm32-unknown-unknown target will be required.
+//!
+//! ```bash
+//! cargo build -p hello-index --release --target wasm32-unknown-unknown
+//! ```
+//!
+//! Start a local test Fuel node
+//!
+//! ```bash
+//! cargo run --bin fuel-node
+//! ```
+//!
+//! With your database backend set up, now start your fuel-indexer binary using the
+//! assets from this example:
+//!
+//! ```bash
+//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello_index.manifest.yaml
+//! ```
+//!
+//! Now trigger an event.
+//!
+//! ```bash
+//! cargo run --bin hello-bin
+//! ```
+
+extern crate alloc;
+use fuel_indexer_macros::indexer;
+use fuel_indexer_plugin::prelude::*;
+
+#[indexer(manifest = &quot;examples/hello-world/hello_index.manifest.yaml&quot;)]
+mod hello_world_index {
+
+    fn index_logged_greeting(event: Greeting, block: BlockData) {
+        // Since all events require a u64 ID field, let's derive an ID using the
+        // name of the person in the Greeting
+        let greeter_id = first8_bytes_to_u64(&amp;event.person.name.to_string());
+
+        // Here we 'get or create' a Salutation based on the ID of the event
+        // emitted in the LogData receipt of our smart contract
+        let greeting = match Salutation::load(event.id) {
+            Some(mut g) =&gt; {
+                // If we found an event, let's use block height as a proxy for time
+                g.last_seen = block.height;
+                g
+            }
+            None =&gt; {
+                // If we did not already have this Saluation stored in the database. Here we
+                // show how you can use the Charfield type to store strings with length &lt;= 255
+                let message =
+                    format!(&quot;{} 👋, my name is {}&quot;, &amp;event.greeting, &amp;event.person.name);
+
+                Salutation {
+                    id: event.id,
+                    message_hash: first32_bytes_to_bytes32(&amp;message),
+                    message,
+                    greeter: greeter_id,
+                    first_seen: block.height,
+                    last_seen: block.height,
+                }
+            }
+        };
+
+        // Here we do the same with Greeter that we did for Saluation -- if we have an event
+        // already saved in the database, load it and update it. If we do not have this Greeter
+        // in the database then create one
+        let greeter = match Greeter::load(greeter_id) {
+            Some(mut g) =&gt; {
+                g.last_seen = block.height;
+                g
+            }
+            None =&gt; Greeter {
+                id: greeter_id,
+                first_seen: block.height,
+                name: event.person.name.to_string(),
+                last_seen: block.height,
+            },
+        };
+
+        // Both entity saves will occur in the same transaction
+        greeting.save();
+        greeter.save();
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h3 id="5-compile-the-index"><a class="header" href="#5-compile-the-index">5. Compile the index</a></h3>
+<pre><code class="language-bash">cd indexer/hello-index
+
+cargo build --release --target wasm32-unknown-unknown
+</code></pre>
+<blockquote>
+<p>IMPORTANT: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash">here</a>.</p>
+<p>IMPORTANT: Be sure to add your new WASM module to your index manifest as shown below.</p>
+</blockquote>
+<pre><code class="language-yaml">namespace: fuel_examples
+identifier: hello_index
+abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
+start_block: 1
+graphql_schema: examples/hello-world/schema/hello_world.schema.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/release/hello_index.wasm
+</code></pre>
+<h3 id="6-start-the-service--deploy-your-index"><a class="header" href="#6-start-the-service--deploy-your-index">6. Start the service &amp; deploy your index</a></h3>
+<blockquote>
+<p>IMPORTANT: You should already have Postgres running by now.</p>
+</blockquote>
+<pre><code class="language-bash"># Go back to the repository root
+➜ cd fuel-indexer/
+
+# Start a local fuel node
+➜  cargo run --bin fuel-node
+
+# Start a local indexer service
+➜  forc index start --background 2&gt;/dev/null
+
+# Deploy your index to the local service using test authentication
+➜  forc index deploy --manifest hello_index.manifest.yaml
+</code></pre>
+<p>If successful, your output should resemble:</p>
+<pre><code class="language-text">➜  forc index deploy --manifest forc_index.manifest.yaml
+
+🚀 Deploying index at hello_index.manifest.yaml to 'http://127.0.0.1:29987/api/index/fuel/hello_index'
+{
+  &quot;assets&quot;: [
+    {
+      &quot;digest&quot;: &quot;d797e33a3d3bbc4d93c7ec09980c220b1243e0ffcd9107b6e13b61cb7704d5ec&quot;,
+      &quot;id&quot;: 1,
+      &quot;index_id&quot;: 1,
+      &quot;version&quot;: 1
+    },
+    {
+      &quot;digest&quot;: &quot;c5af6d278e29efd47a0493de73509bf4329ca58e47d337d0cc368e0a1f110cb9&quot;,
+      &quot;id&quot;: 1,
+      &quot;index_id&quot;: 1,
+      &quot;version&quot;: 1
+    },
+    {
+      &quot;digest&quot;: &quot;b32879df38991e7b4f19ed02e394e2d31396cf1fa5ba14429e2af50dfca18cc7&quot;,
+      &quot;id&quot;: 1,
+      &quot;index_id&quot;: 1,
+      &quot;version&quot;: 1
+    }
+  ],
+  &quot;success&quot;: &quot;true&quot;
+}
+
+✅ Successfully deployed index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/fuel/hello_index
+</code></pre>
+<h2 id="generating-test-data"><a class="header" href="#generating-test-data">Generating test data</a></h2>
+<p>Now that we've successfully deployed our index, let's make a few calls to our Sway contract in order to produce a few events, and index some data.</p>
+<pre><code class="language-bash">
+# Go back to the repository root
+➜ cd fuel-indexer/
+
+# Run the test data generator for this example
+➜ cargo run --bin hello-bin
+</code></pre>
+<blockquote>
+<p>One contract call will be made, and one event will be emitted to be indexed.
+You can continue running this command to generate more data.</p>
+</blockquote>
+<hr />
+<h2 id="querying-for-indexed-events"><a class="header" href="#querying-for-indexed-events">Querying for indexed events</a></h2>
+<p>After you've successfully completed all six of the aforementioned steps, you can trigger some test events simply by calling the <code>new_greeting()</code> method of your Sway contract. This will produce blocks, transactions, and receipts, which will be emitted by your local Fuel node. These events will be picked up by the indexer and subsequently indexed according to the index that you've deployed. Once you have a few indexed events, you can query the indexer for the data that you wish to receive.</p>
+<h3 id="query-for-all-records-of-a-type"><a class="header" href="#query-for-all-records-of-a-type">Query for all records of a type</a></h3>
+<pre><code class="language-sh">➜ curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples \
+   -H 'content-type: application/json' \
+   -d '{&quot;query&quot;: &quot;query { greeter { id name first_seen last_seen }}&quot;, &quot;params&quot;: &quot;b&quot;}' \
+| json_pp
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100   364  100   287  100    77   6153   1650 --:--:-- --:--:-- --:--:--  9100
+[
+   {
+      &quot;first_seen&quot; : 4,
+      &quot;id&quot; : 2314885811371338051,
+      &quot;last_seen&quot; : 4,
+      &quot;name&quot; : &quot;Ciara&quot;
+   },
+   {
+      &quot;first_seen&quot; : 6,
+      &quot;id&quot; : 2314885532299390017,
+      &quot;last_seen&quot; : 6,
+      &quot;name&quot; : &quot;Alex&quot;
+   },
+   {
+      &quot;first_seen&quot; : 8,
+      &quot;id&quot; : 7957705993296504916,
+      &quot;last_seen&quot; : 8,
+      &quot;name&quot; : &quot;Thompson&quot;
+   },
+   {
+      &quot;first_seen&quot; : 10,
+      &quot;id&quot; : 2314885530822735425,
+      &quot;last_seen&quot; : 10,
+      &quot;name&quot; : &quot;Ava&quot;
+   }
+]
+</code></pre>
+<h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
+<ul>
+<li><a href="examples/./hello-world.html">Hello World</a>
+<ul>
+<li>A &quot;Hello World&quot; type of program for the Fuel Indexer service.</li>
+</ul>
+</li>
+<li><a href="examples/./block-explorer.html">Block Explorer</a>
+<ul>
+<li>An extremely basic block explorer implementation that shows how blocks, transactions, contracts, and accounts can be persisted into the database.</li>
+</ul>
+</li>
+</ul>
+<h1 id="hello-world"><a class="header" href="#hello-world">Hello World</a></h1>
+<p>A &quot;Hello World&quot; type of program for the Fuel Indexer service.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>//! A rudimentary block explorer implementation demonstrating how blocks, transactions,
+//! contracts, and accounts can be persisted into the database.
+//!
+//! Build this example's WASM module using the following command. Note that a
+//! wasm32-unknown-unknown target will be required.
+//!
+//! ```bash
+//! cargo build -p hello-index --release --target wasm32-unknown-unknown
+//! ```
+//!
+//! Start a local test Fuel node
+//!
+//! ```bash
+//! cargo run --bin fuel-node
+//! ```
+//!
+//! With your database backend set up, now start your fuel-indexer binary using the
+//! assets from this example:
+//!
+//! ```bash
+//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello_index.manifest.yaml
+//! ```
+//!
+//! Now trigger an event.
+//!
+//! ```bash
+//! cargo run --bin hello-bin
+//! ```
+
+extern crate alloc;
+use fuel_indexer_macros::indexer;
+use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
+
+// A utility function used to convert an arbitrarily sized string into Bytes32
+// using the first 32 bytes of the String. This might be provided by a standard-ish
+// library in the future.
+fn bytes32(data: &amp;str) -&gt; Bytes32 {
+    let data = sha256_digest(&amp;data);
+    let mut buff = [0u8; 32];
+    buff.copy_from_slice(&amp;data.as_bytes()[..32]);
+    Bytes32::from(buff)
+}
+
+// A utility function used to convert an arbitrarily sized string into u64
+// using the first 8 bytes of the String. This might be provided by a standard-ish
+// library in the future.
+fn u64_id(data: &amp;str) -&gt; u64 {
+    let mut buff = [0u8; 8];
+    buff.copy_from_slice(&amp;data.as_bytes()[..8]);
+    u64::from_le_bytes(buff)
+}
+
+#[indexer(manifest = &quot;examples/hello-world/hello_index.manifest.yaml&quot;)]
+mod hello_world_index {
+    fn index_logged_greeting(event: Greeting, block: BlockData) {
+        // Since all events require a u64 ID field, let's derive an ID using the
+        // name of the person in the Greeting
+        let greeter_id = u64_id(&amp;event.person.name.to_string());
+
+        // Here we 'get or create' a Salutation based on the ID of the event
+        // emitted in the LogData receipt of our smart contract
+        let greeting = match Salutation::load(event.id) {
+            Some(mut g) =&gt; {
+                // If we found an event, let's use block height as a proxy for time
+                g.last_seen = block.height;
+                g
+            }
+            None =&gt; {
+                // If we did not already have this Saluation stored in the database. Here we
+                // show how you can use the Charfield type to store strings with length &lt;= 255
+                let message =
+                    format!(&quot;{} 👋, my name is {}&quot;, &amp;event.greeting, &amp;event.person.name);
+
+                Salutation {
+                    id: event.id,
+                    message_hash: bytes32(&amp;message),
+                    message,
+                    greeter: greeter_id,
+                    first_seen: block.height,
+                    last_seen: block.height,
+                }
+            }
+        };
+
+        // Here we do the same with Greeter that we did for Saluation -- if we have an event
+        // already saved in the database, load it and update it. If we do not have this Greeter
+        // in the database then create one
+        let greeter = match Greeter::load(greeter_id) {
+            Some(mut g) =&gt; {
+                g.last_seen = block.height;
+                g
+            }
+            None =&gt; Greeter {
+                id: greeter_id,
+                first_seen: block.height,
+                name: event.person.name.to_string(),
+                last_seen: block.height,
+            },
+        };
+
+        // Both entity saves will occur in the same transaction
+        greeting.save();
+        greeter.save();
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h1 id="block-explorer"><a class="header" href="#block-explorer">Block Explorer</a></h1>
+<p>A rudimentary block explorer backend implementation demonstrating how to leverage basic Fuel indexer abstractions in order to build a cool dApp backend.</p>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>//! A rudimentary block explorer implementation demonstrating how blocks, transactions,
+//! contracts, and accounts can be persisted into the database.
+//!
+//! Build this example's WASM module using the following command. Note that a
+//! wasm32-unknown-unknown target will be required.
+//!
+//! ```bash
+//! cargo build -p explorer-index --release --target wasm32-unknown-unknown
+//! ```
+//!
+//! Use the fuel-indexer testing components to start your Fuel node and web API
+//!
+//! ```bash
+//! bash scripts/utils/start_test_components.bash
+//! ```
+//!
+//! With your database backend set up, now start your fuel-indexer binary using the
+//! assets from this example:
+//!
+//! ```bash
+//! cargo run --bin fuel-indexer -- --manifest examples/block-explorer/manifest.yaml
+//! ```
+
+extern crate alloc;
+use fuel_indexer_macros::indexer;
+use fuel_indexer_plugin::prelude::*;
+use std::collections::HashSet;
+
+// We'll pass our manifest to our #[indexer] attribute. This manifest contains
+// all of the relevant configuration parameters in regard to how our index will
+// work. In the fuel-indexer repository, we use relative paths (starting from the
+// fuel-indexer root) but if you're building an index outside of the fuel-indexer
+// project you'll want to use full/absolute paths.
+#[indexer(manifest = &quot;examples/block-explorer/explorer_index.manifest.yaml&quot;)]
+mod explorer_index {
+
+    // When specifying args to your handler functions, you can either use types defined
+    // in your ABI JSON file, or you can use native Fuel types. These native Fuel types
+    // include various `Receipt`s, as well as more comprehensive data, in the form of
+    // blocks `BlockData` and transactions `TransactionData`. A list of native Fuel
+    // types can be found at:
+    //
+    //  https://github.com/FuelLabs/fuel-indexer/blob/master/fuel-indexer-schema/src/types/fuel.rs#L28
+    fn index_explorer_data(block_data: BlockData) {
+        let mut block_gas_limit = 0;
+
+        // Convert the deserialized block `BlockData` struct that we get from our Fuel node, into
+        // a block entity `Block` that we can persist to the database. The `Block` type below is
+        // defined in our schema/explorer.graphql and represents the type that we will
+        // save to our database.
+        //
+        // Note: There is no miner/producer address for blocks in this example; the producer field
+        // was removed from the `Block` struct as part of fuel-core v0.12.
+        let block = Block {
+            id: block_data.id,
+            height: block_data.height,
+            timestamp: block_data.time,
+            gas_limit: block_gas_limit,
+        };
+
+        // Now that we've created the object for the database, let's save it.
+        block.save();
+
+        // Keep track of some Receipt data involved in this transaction.
+        let mut accounts = HashSet::new();
+        let mut contracts = HashSet::new();
+
+        for tx in block_data.transactions.iter() {
+            let mut tx_amount = 0;
+            let mut tokens_transferred = Vec::new();
+
+            // `Transaction::Script`, `Transaction::Create`, and `Transaction::Mint`
+            // are unused but demonstrate properties like gas, inputs,
+            // outputs, script_data, and other pieces of metadata. You can access
+            // properties that have the corresponding transaction `Field` traits
+            // implemented; examples below.
+            match &amp;tx.transaction {
+                #[allow(unused)]
+                Transaction::Script(t) =&gt; {
+                    Logger::info(&quot;Inside a script transaction. (&gt;^‿^)&gt;&quot;);
+
+                    let gas_limit = t.gas_limit();
+                    let gas_price = t.gas_price();
+                    let maturity = t.maturity();
+                    let script = t.script();
+                    let script_data = t.script_data();
+                    let receipts_root = t.receipts_root();
+                    let inputs = t.inputs();
+                    let outputs = t.outputs();
+                    let witnesses = t.witnesses();
+
+                    let json = &amp;tx.transaction.to_json();
+                    block_gas_limit += gas_limit;
+                }
+                #[allow(unused)]
+                Transaction::Create(t) =&gt; {
+                    Logger::info(&quot;Inside a create transaction. &lt;(^.^)&gt;&quot;);
+
+                    let gas_limit = t.gas_limit();
+                    let gas_price = t.gas_price();
+                    let maturity = t.maturity();
+                    let salt = t.salt();
+                    let bytecode_length = t.bytecode_length();
+                    let bytecode_witness_index = t.bytecode_witness_index();
+                    let inputs = t.inputs();
+                    let outputs = t.outputs();
+                    let witnesses = t.witnesses();
+                    let storage_slots = t.storage_slots();
+                    block_gas_limit += gas_limit;
+                }
+                #[allow(unused)]
+                Transaction::Mint(t) =&gt; {
+                    Logger::info(&quot;Inside a mint transaction. &lt;(^‿^&lt;)&quot;);
+
+                    let tx_pointer = t.tx_pointer();
+                    let outputs = t.outputs();
+                }
+            }
+
+            for receipt in &amp;tx.receipts {
+                // You can handle each receipt in a transaction `TransactionData` as you like.
+                //
+                // Below demonstrates how you can use parts of a receipt `Receipt` in order
+                // to persist entities defined in your GraphQL schema, to the database.
+                match receipt {
+                    #[allow(unused)]
+                    Receipt::Call { id, .. } =&gt; {
+                        contracts.insert(Contract {
+                            id: *id,
+                            last_seen: 0,
+                        });
+                    }
+                    #[allow(unused)]
+                    Receipt::ReturnData { id, .. } =&gt; {
+                        contracts.insert(Contract {
+                            id: *id,
+                            last_seen: 0,
+                        });
+                    }
+                    #[allow(unused)]
+                    Receipt::Transfer {
+                        id,
+                        to,
+                        asset_id,
+                        amount,
+                        ..
+                    } =&gt; {
+                        contracts.insert(Contract {
+                            id: *id,
+                            last_seen: 0,
+                        });
+
+                        let transfer = Transfer {
+                            id: bytes32_from_inputs(
+                                id,
+                                [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
+                            ),
+                            contract_id: *id,
+                            receiver: *to,
+                            amount: *amount,
+                            asset_id: *asset_id,
+                        };
+
+                        transfer.save();
+                        tokens_transferred.push(asset_id.to_string());
+                    }
+                    #[allow(unused)]
+                    Receipt::TransferOut {
+                        id,
+                        to,
+                        amount,
+                        asset_id,
+                        ..
+                    } =&gt; {
+                        contracts.insert(Contract {
+                            id: *id,
+                            last_seen: 0,
+                        });
+
+                        accounts.insert(Account {
+                            id: *to,
+                            last_seen: 0,
+                        });
+
+                        tx_amount += amount;
+                        let transfer_out = TransferOut {
+                            id: bytes32_from_inputs(
+                                id,
+                                [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
+                            ),
+                            contract_id: *id,
+                            receiver: *to,
+                            amount: *amount,
+                            asset_id: *asset_id,
+                        };
+
+                        transfer_out.save();
+                    }
+                    #[allow(unused)]
+                    Receipt::Log { id, rb, .. } =&gt; {
+                        contracts.insert(Contract {
+                            id: *id,
+                            last_seen: 0,
+                        });
+                        let log = Log {
+                            id: bytes32_from_inputs(id, u64::to_le_bytes(*rb).to_vec()),
+                            contract_id: *id,
+                            rb: *rb,
+                        };
+
+                        log.save();
+                    }
+                    #[allow(unused)]
+                    Receipt::LogData { id, .. } =&gt; {
+                        contracts.insert(Contract {
+                            id: *id,
+                            last_seen: 0,
+                        });
+
+                        Logger::info(&quot;LogData types are unused in this example. (&gt;'')&gt;&quot;);
+                    }
+                    #[allow(unused)]
+                    Receipt::ScriptResult { result, gas_used } =&gt; {
+                        let result: u64 = match result {
+                            ScriptExecutionResult::Success =&gt; 1,
+                            ScriptExecutionResult::Revert =&gt; 2,
+                            ScriptExecutionResult::Panic =&gt; 3,
+                            ScriptExecutionResult::GenericFailure(_) =&gt; 4,
+                        };
+                        let r = ScriptResult {
+                            id: bytes32_from_inputs(
+                                &amp;[0u8; 32],
+                                u64::to_be_bytes(result).to_vec(),
+                            ),
+                            result,
+                            gas_used: *gas_used,
+                        };
+                        r.save();
+                    }
+                    #[allow(unused)]
+                    Receipt::MessageOut {
+                        sender,
+                        recipient,
+                        amount,
+                        ..
+                    } =&gt; {
+                        tx_amount += amount;
+                        accounts.insert(Account {
+                            id: *sender,
+                            last_seen: 0,
+                        });
+                        accounts.insert(Account {
+                            id: *recipient,
+                            last_seen: 0,
+                        });
+
+                        Logger::info(&quot;LogData types are unused in this example. (&gt;'')&gt;&quot;);
+                    }
+                    _ =&gt; {
+                        Logger::info(&quot;This type is not handled yet.&quot;);
+                    }
+                }
+            }
+
+            // Persist the transaction to the database via the `Tx` object defined in the GraphQL schema.
+            let tx_entity = Tx {
+                block: block.id,
+                timestamp: block.timestamp,
+                id: tx.id,
+                value: tx_amount,
+                status: tx.status.clone().into(),
+                tokens_transferred: Json(
+                    serde_json::to_value(tokens_transferred)
+                        .unwrap()
+                        .to_string(),
+                ),
+            };
+
+            tx_entity.save();
+        }
+
+        // Save all of our accounts
+        for account in accounts.iter() {
+            account.save();
+        }
+
+        // Save all of our contracts
+        for contract in contracts.iter() {
+            contract.save();
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Once blocks have been added to the database by the indexer, you can query for them by using a query similar to the following:</p>
+<pre><code class="language-sh">curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples \
+   -H 'content-type: application/json' \
+   -d '{&quot;query&quot;: &quot;query { block { id height timestamp }}&quot;, &quot;params&quot;: &quot;b&quot;}' \
+| json_pp
+</code></pre>
+<pre><code class="language-json">[
+   {
+      &quot;height&quot; : 1,
+      &quot;id&quot; : &quot;f169a30cfcbf1eebd97a07b19de98e4b38a4367b03d1819943be41744339d38a&quot;,
+      &quot;timestamp&quot; : 1668710162
+   },
+   {
+      &quot;height&quot; : 2,
+      &quot;id&quot; : &quot;a8c554758f78fe73054405d38099f5ad21a90c05206b5c6137424985c8fd10c7&quot;,
+      &quot;timestamp&quot; : 1668710163
+   },
+   {
+      &quot;height&quot; : 3,
+      &quot;id&quot; : &quot;850ab156ddd9ac9502768f779936710fd3d792e9ea79bc0e4082de96450b5174&quot;,
+      &quot;timestamp&quot; : 1668710312
+   },
+   {
+      &quot;height&quot; : 4,
+      &quot;id&quot; : &quot;19e19807c6988164b916a6877fe049d403d55a07324fa883cb7fa5cdb33438e2&quot;,
+      &quot;timestamp&quot; : 1668710313
+   },
+   {
+      &quot;height&quot; : 5,
+      &quot;id&quot; : &quot;363af43cfd2a6d8af166ee46c15276b24b130fc6a89ce7b3c8737d29d6d0e1bb&quot;,
+      &quot;timestamp&quot; : 1668710314
+   }
+]
+</code></pre>
+<h1 id="fuel-indexer-plugins"><a class="header" href="#fuel-indexer-plugins">Fuel Indexer Plugins</a></h1>
+<ul>
+<li><a href="plugins/./forc-index.html"><code>forc index</code></a>
+<ul>
+<li>A <a href="https://fuellabs.github.io/sway/v0.31.3/introduction/forc_project.html">Forc</a> plugin used to interact with a Fuel Indexer service.</li>
+</ul>
+</li>
+</ul>
+<h1 id="forc-index"><a class="header" href="#forc-index">forc-index</a></h1>
+<p>A <code>forc</code> plugin for basic Fuel Indexer interaction.</p>
+<h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
+<h3 id="forc-index-init"><a class="header" href="#forc-index-init"><code>forc index init</code></a></h3>
+<p>Create a new index project at the provided path. If no path is provided the current working directory will be used.</p>
+<pre><code class="language-bash">forc index init --namespace fuel
+</code></pre>
+<h3 id="forc-index-new"><a class="header" href="#forc-index-new"><code>forc index new</code></a></h3>
+<p>Create new index project at the provided path.</p>
+<pre><code class="language-bash">forc index new --namespace fuel --path /home/fuel/projects
+</code></pre>
+<h3 id="forc-index-start"><a class="header" href="#forc-index-start"><code>forc index start</code></a></h3>
+<p>Start a local Fuel Indexer service.</p>
+<pre><code class="language-bash">forc index start --background
+</code></pre>
+<h3 id="forc-index-deploy"><a class="header" href="#forc-index-deploy"><code>forc index deploy</code></a></h3>
+<p>Deploy a given index project to a particular endpoint</p>
+<pre><code class="language-bash">forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
+</code></pre>
+<h3 id="forc-index-stop"><a class="header" href="#forc-index-stop"><code>forc index stop</code></a></h3>
+<p>Stop a running index</p>
+<pre><code class="language-bash">forc index stop --url https://index.swayswap.io --manifest my_index.manifest.yaml
+</code></pre>
+<h3 id="forc-index-check"><a class="header" href="#forc-index-check"><code>forc index check</code></a></h3>
+<p>Check to see which indexer components you have installed</p>
+<pre><code class="language-bash">forc index check
+</code></pre>
+<h1 id="components"><a class="header" href="#components">Components</a></h1>
+<p>Below is a list of components used by the Fuel indexer. Read through each section to understand how each of these individual components contributes to creating a multi-faceting indexing service.</p>
+<p>Understanding how these components interact is critical to understanding how to get the most out of your Fuel indexer service.</p>
+<ul>
+<li><a href="components/./assets/index.html">Assets</a></li>
+<li><a href="components/./database/index.html">Database</a></li>
+<li><a href="components/./graphql/index.html">GraphQL API</a></li>
+<li><a href="components/./indices/index.html">Indices</a></li>
+</ul>
+<h1 id="assets"><a class="header" href="#assets">Assets</a></h1>
+<p>A Fuel index is constructed of a few assets: a manifest file, a GraphQL schema file, and a WASM module.</p>
+<ul>
+<li><a href="components/assets/./manifest.html">Manifest</a>
+<ul>
+<li>Supplies metadata regarding how a given index should be built and run.</li>
+</ul>
+</li>
+<li><a href="components/assets/./schema.html">Schema</a>
+<ul>
+<li>A GraphQL schema file that defines your index data model via GraphQL types.</li>
+</ul>
+</li>
+<li><a href="components/assets/./module.html">Module</a>
+<ul>
+<li>A compiled WASM binary index that gets registered into a Fuel indexer at runtime.</li>
+</ul>
+</li>
+</ul>
+<h1 id="manifest"><a class="header" href="#manifest">Manifest</a></h1>
+<p>A manifest serves as the YAML configuration file for a given index. A proper manifest has the following structure:</p>
+<pre><code class="language-yaml">namespace: fuel
+identifier: index1
+abi: path/to/my/contract-abi.json
+contract_id: &quot;0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051&quot;
+graphql_schema: path/to/my/schema.graphql
+start_block: 1564
+module:
+  wasm: path/to/my/wasm_module.wasm
+report_metrics: true
+</code></pre>
+<h2 id="namespace"><a class="header" href="#namespace"><code>namespace</code></a></h2>
+<ul>
+<li>Think of the <code>namespace</code> as an organization identifier. If you're familiar with say, <a href="https://stackoverflow.com/questions/6247849/java-package-naming">Java package naming</a>, then think of an index's <code>namespace</code> as being its <em>domain name</em>. The <code>namespace</code> is unique to a given index operator -- i.e., index operators will not be able to support more than one <code>namespace</code> of the same name.</li>
+</ul>
+<h2 id="identifier"><a class="header" href="#identifier"><code>identifier</code></a></h2>
+<ul>
+<li>The <code>identifier</code> field is used to (quite literally) identify the given index. If <code>namespace</code> is the organization/domain name, then think of <code>identifier</code> as the name of an index within that organization/domain.</li>
+<li>As an example, if a provided <code>namespace</code> is <code>&quot;fuel&quot;</code> and a provided <code>identifier</code> is <code>&quot;index1&quot;</code>, then the unique identifier for the given index will be <code>fuel.index1</code>.</li>
+</ul>
+<h2 id="abi"><a class="header" href="#abi"><code>abi</code></a></h2>
+<ul>
+<li>The <code>abi</code> option is used to provide a link to the Sway JSON application binary interface (JSON ABI) that is generated when you build your Sway project. This generated ABI contains all types, type IDs, and logged types used in your Sway contract.</li>
+</ul>
+<h2 id="contract_id"><a class="header" href="#contract_id"><code>contract_id</code></a></h2>
+<ul>
+<li>The <code>contract_id</code> specifies which particular contract you would like your index to subscribe to.</li>
+</ul>
+<h2 id="graphql_schema"><a class="header" href="#graphql_schema"><code>graphql_schema</code></a></h2>
+<ul>
+<li>The <code>graphql_schema</code> field contains the file path that points to the GraphQL schema for the given index. This schema file holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file <a href="components/assets/schema.html">here</a>.</li>
+</ul>
+<blockquote>
+<p>Important: The objects defined in your GraphQL schema are called 'entities'. These entities are what will be eventually be stored in the database.</p>
+</blockquote>
+<h2 id="start_block"><a class="header" href="#start_block"><code>start_block</code></a></h2>
+<ul>
+<li>The particular start block after which you'd like your indexer to start indexing events.</li>
+</ul>
+<h2 id="module"><a class="header" href="#module"><code>module</code></a></h2>
+<ul>
+<li>The <code>module</code> field contains a file path that points to code that will be run as an <em>executor</em> inside of the indexer.</li>
+<li>There are two available options for modules/execution: <code>wasm</code> and <code>native</code>.
+<ul>
+<li>When specifying a <code>wasm</code> module, the provided path must lead to a compiled WASM binary.</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>Important: At this time, <code>wasm</code> is the preferred method of execution.</p>
+</blockquote>
+<h2 id="report_metrics"><a class="header" href="#report_metrics"><code>report_metrics</code></a></h2>
+<ul>
+<li>Whether or not to report Prometheus metrics to the Fuel backend</li>
+</ul>
+<h1 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h1>
+<p>The GraphQL schema is a required component of the Fuel indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the schema.</p>
+<p>In its most basic form, a Fuel indexer GraphQL schema should have a <code>schema</code> definition that contains a defined query root. The rest of the implementation is up to you. Here's an example of a well-formed schema:</p>
+<pre><code class="language-graphql">schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    thing1: FirstThing
+    thing2: SecondThing
+}
+
+type FirstThing {
+    id: ID!
+    value: UInt8!
+}
+
+type SecondThing {
+    id: ID!
+    other_value: UInt8!
+    timestamp: Timestamp!
+}
+</code></pre>
+<p>The types you see above (e.g., <code>ID</code>, <code>UInt8</code>, etc) are Fuel abstractions that were created to more seamlessly integrate with the Fuel VM and are not native to GraphQL. A deeper explanation on these
+types can be found in <a href="components/assets/../database/types.html">the Types section</a>.</p>
+<blockquote>
+<p>Important: It is up to developers to manage their own unique IDs for each type, meaning that a data structure's <code>ID</code> field needs to be manually generated prior to saving it to the database. This generation can be as simple or complex as you want in order to fit your particular situation; the only requirement is that the developer implement their own custom generation. Examples can be found in the <a href="components/assets/../../examples/block-explorer.html">Block Explorer</a> and <a href="components/assets/../../examples/hello-world.html">Hello World</a> sections.</p>
+</blockquote>
+<h1 id="wasm-modules"><a class="header" href="#wasm-modules">WASM Modules</a></h1>
+<ul>
+<li>WebAssembly (WASM) modules are compiled binaries that are registered into a Fuel indexer at runtime. The WASM bytes are read in by the indexer and <em>executors</em> are created which will implement blocking calls the to the WASM runtime.</li>
+</ul>
+<h2 id="usage-1"><a class="header" href="#usage-1">Usage</a></h2>
+<p>In order to compile a WASM module that you've written, you would merely:</p>
+<pre><code class="language-bash">cd /my/index-lib &amp;&amp; cargo build --release
+</code></pre>
+<h2 id="notes-on-wasm"><a class="header" href="#notes-on-wasm">Notes on WASM</a></h2>
+<p>There are a few points that Fuel indexer users should know when using WASM:</p>
+<ol>
+<li>
+<p>WASM modules are only used if the execution mode specified in your manifest file is <code>wasm</code>.</p>
+</li>
+<li>
+<p>Developers should be aware of what things may not work off-the-shelf in a module: file I/O, thread spawning, and anything that depends on system libraries. This is due to the technological limitations of WASM as a whole; more information can be found <a href="https://rustwasm.github.io/docs/book/reference/which-crates-work-with-wasm.html">here</a>.</p>
+</li>
+<li>
+<p>As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due to an errant upstream dependency. For now, a quick workaround requires the use of <code>wasm-snip</code> to remove the errant symbols from the WASM module. More info can be found in the related script <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash">here</a>.</p>
+</li>
+<li>
+<p>Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its <code>clang</code> binary not supporting WASM targets. If encountered, you can install a binary with better support from Homebrew (<code>brew install llvm</code>) and instruct <code>rustc</code> to leverage it by setting the following environment variables:</p>
+</li>
+</ol>
+<ul>
+<li><code>AR=/opt/homebrew/opt/llvm/bin/llvm-ar</code></li>
+<li><code>CC=/opt/homebrew/opt/llvm/bin/clang</code></li>
+</ul>
+<h1 id="database"><a class="header" href="#database">Database</a></h1>
+<p>The Fuel indexer uses <a href="https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile">Postgres</a> as the primary database.</p>
+<blockquote>
+<p>Note: Indexing also supports SQLite. However, we recommend Postgres usage for any type of production service.</p>
+</blockquote>
+<ul>
+<li><a href="components/database/./types.html">Types</a>
+<ul>
+<li>How to use different data types from your Sway contract, all the way to your Postgres table</li>
+</ul>
+</li>
+<li><a href="components/database/./foreign-keys.html">Foreign Keys</a>
+<ul>
+<li>How foreign keys are handled in GraphQL schema, Postgres, and SQLite</li>
+</ul>
+</li>
+<li><a href="components/database/./directives.html">Directives</a>
+<ul>
+<li>How GraphQL schema directives are translated into data-layer constraints</li>
+</ul>
+</li>
+<li><a href="components/database/./ids.html">⚠️ IDs</a>
+<ul>
+<li>Explains some conventions surrounding the usage of <code>ID</code> types</li>
+</ul>
+</li>
+</ul>
+<h1 id="types"><a class="header" href="#types">Types</a></h1>
+<p>Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing <a href="https://www.postgresql.org/docs/14/datatype.html">Postgres 14</a> data types.</p>
+<table><thead><tr><th>Sway Type</th><th>GraphQL Schema Type</th><th>Postgres Type</th></tr></thead><tbody>
+<tr><td>u64</td><td>ID</td><td>bigint primary key</td></tr>
+<tr><td>b256</td><td>Address</td><td>varchar(64)</td></tr>
+<tr><td>str[4]</td><td>Bytes4</td><td>varchar(16)</td></tr>
+<tr><td>str[8]</td><td>Bytes8</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>Bytes32</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>AssetId</td><td>varchar(64)</td></tr>
+<tr><td>b256</td><td>ContractId</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>Salt</td><td>varchar(64)</td></tr>
+<tr><td>u32</td><td>UInt4</td><td>integer</td></tr>
+<tr><td>u64</td><td>UInt8</td><td>bigint</td></tr>
+<tr><td>i64</td><td>Timestamp</td><td>timestamp</td></tr>
+<tr><td>str[]</td><td>Blob</td><td>bytes</td></tr>
+<tr><td>str[32]</td><td>MessageId</td><td>varchar(64)</td></tr>
+<tr><td>bool</td><td>Boolean</td><td>bool</td></tr>
+<tr><td></td><td>Json</td><td>json</td></tr>
+<tr><td></td><td>Charfield</td><td>varchar(255)</td></tr>
+</tbody></table>
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<p>Let's define an <code>Event</code> struct in a Sway contract:</p>
+<pre><code class="language-sway">struct Event {
+    id: u64,
+    address: Address,
+    block_height: u64,
+}
+</code></pre>
+<p>The corresponding GraphQL schema to mirror this <code>Event</code> struct would resemble:</p>
+<pre><code class="language-graphql">type Event {
+    id: ID!
+    account: Address!
+    block_height: UInt8!
+}
+</code></pre>
+<p>And finally, this GraphQL schema will generate the following Postgres schema:</p>
+<pre><code class="language-text">                                           Table &quot;schema.event&quot;
+    Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description
+--------------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id           |    bigint   |           | not null |         | plain        |             |              |
+ block_height |    bigint   |           | not null |         | plain    |             |              |
+ address      | varchar(64) |           | not null |         | plain    |             |              |
+ object       |    bytea    |           | not null |         | extended |             |              |
+Indexes:
+    &quot;event_pkey&quot; PRIMARY KEY, btree (id)
+Access method: heap
+</code></pre>
+<h1 id="id-types"><a class="header" href="#id-types">ID Types</a></h1>
+<p>There are a few important things related to the use of IDs.</p>
+<blockquote>
+<p><strong>Every GraphQL type defined in your schema file is required to have an id field.</strong></p>
+<ul>
+<li>This field must be called <code>id</code></li>
+<li>The type of this <code>id</code> field must by a <code>u64</code>
+<ul>
+<li>You typically want to use the <code>ID</code> type for these <code>id</code> fields</li>
+</ul>
+</li>
+</ul>
+<p><strong>Why must every field have an ID?</strong></p>
+<p>Since the Fuel Indexer uses WASM runtimes to index events, an FFI is needed to call in and out of the runtime. When these calls out of the runtime are made, a pointer is passed back to the indexer service to indicate where the <code>id</code> of the type/object/entity being saved is.</p>
+<p><strong>Is this liable to change in the future?</strong></p>
+<p>Yes, ideally we'd like ID's to be of <em>any</em> type, and we plan to work towards this in the future. 👍</p>
+</blockquote>
+<h1 id="foreign-keys"><a class="header" href="#foreign-keys">Foreign Keys</a></h1>
+<ul>
+<li>The Fuel indexer service supports foreign key constraints and relationships using a combination of GraphQL schema and a database (whether Postgres or SQLite).</li>
+<li>There are two types of uses for foreign keys - <em>implicit</em> and <em>explicit</em>.</li>
+</ul>
+<blockquote>
+<p>IMPORTANT:</p>
+<p>Implicit foreign keys do not require a <code>@join</code> directive. When using implicit foreign key references, merely add the referenced object as a field type (shown below). A lookup will automagically be done to add a foreign key constraint using this object's' <code>id</code> field.</p>
+<p>Note that implicit foreign key relationships <em>only</em> use the <code>id</code> field on the referenced table. If you plan to use implicit foreign keys, the object being referenced <em>must</em> have an <code>id</code> field.</p>
+<p>In contrast, explicit foreign keys <em>do</em> require a <code>@join</code> directive. Explicit foreign key references work similarly to implicit foreign keys; however, when using explicit foreign key references, you must add a <code>@join</code> directive after your object type. This <code>@join</code> directive includes the field in your foreign object that you would like to reference (shown below).</p>
+</blockquote>
+<ul>
+<li>To demonstrate how the indexer uses GraphQL schema to resolve foreign key relationships, let's look at the following schema:</li>
+</ul>
+<h2 id="usage-2"><a class="header" href="#usage-2">Usage</a></h2>
+<h3 id="implicit-foreign-keys"><a class="header" href="#implicit-foreign-keys">Implicit foreign keys</a></h3>
+<pre><code class="language-graphql">schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    book: Book
+    library: Library
+}
+
+type Book {
+    id: ID!
+    name: Bytes8!
+}
+
+type Library {
+    id: ID!
+    book: Book!
+}
+</code></pre>
+<h4 id="implicit-foreign-key-breakdown"><a class="header" href="#implicit-foreign-key-breakdown">Implicit foreign key breakdown</a></h4>
+<ul>
+<li>Given the above schema, two entities will be created: a <code>Book</code> entity, and a <code>Library</code> entity.</li>
+<li>As you can see, we add the <code>Book</code> entity as an attribute on the <code>Library</code> entity, thus conveying that we want a one-to-many or one-to-one relationship between <code>Library</code> and <code>Book</code>.
+<ul>
+<li>This means that for a given <code>Library</code>, we may also fetch one or many <code>Book</code> entities.</li>
+<li>This also means that the column <code>library.book</code> will be an integer type that references <code>book.id</code></li>
+</ul>
+</li>
+</ul>
+<h3 id="explicit-foreign-keys"><a class="header" href="#explicit-foreign-keys">Explicit foreign keys</a></h3>
+<pre><code class="language-graphql">schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    book: Book
+    library: Library
+}
+
+type Book {
+    id: ID!
+    name: Bytes8! @unique
+}
+
+type Library {
+    id: ID!
+    book: Book! @join(on:name)
+}
+</code></pre>
+<h4 id="explicit-foreign-key-breakdown"><a class="header" href="#explicit-foreign-key-breakdown">Explicit foreign key breakdown</a></h4>
+<ul>
+<li>For the most part, this works the same way as implicit foreign key usage</li>
+<li>However, as you can see, instead of implicitly using <code>book.id</code> as the reference column for our <code>Book</code> object, we're instead explicitly specifying that we want <code>book.name</code> to serve as our foreign key.
+<ul>
+<li>Also note that since we're using <code>book.name</code> in our foreign key constraint, that column is required to be unique -- via the <code>@unique</code> directive</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>Important:</p>
+<ol>
+<li>At the moment, <a href="https://www.sqlite.org/omitted.html">due to some SQLite quirks</a>, the Fuel indexer SQLite support only offers foreign key <em>relationships</em>, not foreign key <em>constraints</em>. We are very much open to changing this in the future.</li>
+</ol>
+</blockquote>
+<h1 id="graphql"><a class="header" href="#graphql">GraphQL</a></h1>
+<ul>
+<li><a href="components/graphql/./api-server.html">GraphQL API Server</a></li>
+<li><a href="components/graphql/./directives.html">Directives</a></li>
+<li><a href="components/graphql/./../assets/schema.md.html">Schema</a></li>
+<li><a href="components/graphql/./../database/types.html">Types</a></li>
+</ul>
+<h1 id="graphql-schema-1"><a class="header" href="#graphql-schema-1">GraphQL Schema</a></h1>
+<p>The GraphQL schema is a required component of the Fuel indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the schema.</p>
+<p>In its most basic form, a Fuel indexer GraphQL schema should have a <code>schema</code> definition that contains a defined query root. The rest of the implementation is up to you. Here's an example of a well-formed schema:</p>
+<pre><code class="language-graphql">schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    thing1: FirstThing
+    thing2: SecondThing
+}
+
+type FirstThing {
+    id: ID!
+    value: UInt8!
+}
+
+type SecondThing {
+    id: ID!
+    other_value: UInt8!
+    timestamp: Timestamp!
+}
+</code></pre>
+<p>The types you see above (e.g., <code>ID</code>, <code>UInt8</code>, etc) are Fuel abstractions that were created to more seamlessly integrate with the Fuel VM and are not native to GraphQL. A deeper explanation on these
+types can be found in <a href="components/assets/../database/types.html">the Types section</a>.</p>
+<blockquote>
+<p>Important: It is up to developers to manage their own unique IDs for each type, meaning that a data structure's <code>ID</code> field needs to be manually generated prior to saving it to the database. This generation can be as simple or complex as you want in order to fit your particular situation; the only requirement is that the developer implement their own custom generation. Examples can be found in the <a href="components/assets/../../examples/block-explorer.html">Block Explorer</a> and <a href="components/assets/../../examples/hello-world.html">Hello World</a> sections.</p>
+</blockquote>
+<h1 id="graphql-api-server"><a class="header" href="#graphql-api-server">GraphQL API Server</a></h1>
+<ul>
+<li>The <code>fuel-indexer-api-server</code> crate of the Fuel indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the database.</li>
+<li>Note that the main <code>fuel-indexer</code> binary of the indexer project also contains a queryable GraphQL API endpoint.</li>
+</ul>
+<blockquote>
+<p>The <code>fuel-indexer-api-server</code> crate offers a <em>standalone</em> GraphQL API endpoint, whereas the GraphQL endpoint offered in <code>fuel-indexer</code> is bundled with other Fuel indexer functionality (e.g., execution, handling, data-layer contruction, etc).</p>
+</blockquote>
+<h2 id="usage-3"><a class="header" href="#usage-3">Usage</a></h2>
+<p>To run the standalone Fuel indexer GraphQL API server using a configuration file:</p>
+<pre><code class="language-bash">cargo run --bin fuel-indexer-api-server -- --config config.yaml
+</code></pre>
+<p>Where <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">the default service configuration file</a>.</p>
+<h1 id="types-1"><a class="header" href="#types-1">Types</a></h1>
+<p>Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing <a href="https://www.postgresql.org/docs/14/datatype.html">Postgres 14</a> data types.</p>
+<table><thead><tr><th>Sway Type</th><th>GraphQL Schema Type</th><th>Postgres Type</th></tr></thead><tbody>
+<tr><td>u64</td><td>ID</td><td>bigint primary key</td></tr>
+<tr><td>b256</td><td>Address</td><td>varchar(64)</td></tr>
+<tr><td>str[4]</td><td>Bytes4</td><td>varchar(16)</td></tr>
+<tr><td>str[8]</td><td>Bytes8</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>Bytes32</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>AssetId</td><td>varchar(64)</td></tr>
+<tr><td>b256</td><td>ContractId</td><td>varchar(64)</td></tr>
+<tr><td>str[32]</td><td>Salt</td><td>varchar(64)</td></tr>
+<tr><td>u32</td><td>UInt4</td><td>integer</td></tr>
+<tr><td>u64</td><td>UInt8</td><td>bigint</td></tr>
+<tr><td>i64</td><td>Timestamp</td><td>timestamp</td></tr>
+<tr><td>str[]</td><td>Blob</td><td>bytes</td></tr>
+<tr><td>str[32]</td><td>MessageId</td><td>varchar(64)</td></tr>
+<tr><td>bool</td><td>Boolean</td><td>bool</td></tr>
+<tr><td></td><td>Json</td><td>json</td></tr>
+<tr><td></td><td>Charfield</td><td>varchar(255)</td></tr>
+</tbody></table>
+<h2 id="example-1"><a class="header" href="#example-1">Example</a></h2>
+<p>Let's define an <code>Event</code> struct in a Sway contract:</p>
+<pre><code class="language-sway">struct Event {
+    id: u64,
+    address: Address,
+    block_height: u64,
+}
+</code></pre>
+<p>The corresponding GraphQL schema to mirror this <code>Event</code> struct would resemble:</p>
+<pre><code class="language-graphql">type Event {
+    id: ID!
+    account: Address!
+    block_height: UInt8!
+}
+</code></pre>
+<p>And finally, this GraphQL schema will generate the following Postgres schema:</p>
+<pre><code class="language-text">                                           Table &quot;schema.event&quot;
+    Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description
+--------------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
+ id           |    bigint   |           | not null |         | plain        |             |              |
+ block_height |    bigint   |           | not null |         | plain    |             |              |
+ address      | varchar(64) |           | not null |         | plain    |             |              |
+ object       |    bytea    |           | not null |         | extended |             |              |
+Indexes:
+    &quot;event_pkey&quot; PRIMARY KEY, btree (id)
+Access method: heap
+</code></pre>
+<h1 id="directives"><a class="header" href="#directives">Directives</a></h1>
+<blockquote>
+<p>Per GraphQL: A directive is an identifier preceded by a @ character, optionally followed by a list of named arguments, which can appear after almost any form of syntax in the GraphQL query or schema languages.</p>
+</blockquote>
+<ul>
+<li>
+<p>As of this writing, the list of supported Fuel GraphQL schema directives includes:</p>
+<ul>
+<li><code>@indexed</code></li>
+<li><code>@unique</code></li>
+<li><code>@join</code></li>
+</ul>
+</li>
+</ul>
+<p>Using our <code>Library</code> and <code>Book</code> example from the previous <a href="components/graphql/../database/foreign-keys.html">Foreign Keys</a> section -- given the following schema:</p>
+<h2 id="indexed"><a class="header" href="#indexed"><code>@indexed</code></a></h2>
+<p>The <code>@indexed</code> directive adds an index to the underlying database column for the indicated field of that type. Generally, an index is a data structure that allows you to quickly locate data without having to search each row in a database table.</p>
+<pre><code class="language-graphql">schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    book: Book
+    library: Library
+}
+
+type Book {
+    id: ID!
+    name: Bytes8! @indexed
+}
+
+type Library {
+    id: ID!
+    book: Book!
+}
+</code></pre>
+<p>In this example, a single <code>BTREE INDEX</code> constraint will be created on the <code>book</code> table's <code>name</code> column, which allows for faster lookups on that field.</p>
+<blockquote>
+<p>Important: At the moment, index constraint support is limited to <code>BTREE</code> in Postgres with <code>ON DELETE</code>, and <code>ON UPDATE</code> actions not being supported. Note that <code>@indexed</code> directives are also available using SQLite. Finally, multi-column indices are <em>not</em> supported at this time.</p>
+</blockquote>
+<h2 id="unique"><a class="header" href="#unique"><code>@unique</code></a></h2>
+<p>The <code>@unique</code> directive adds a <code>UNIQUE</code> database constraint to the underlying database column for the indicated field of that type. A constraint specifies a rule for the data in a table and can be used to limit the type of data that can be placed in the table. In the case of a column with a <code>UNIQUE</code> constraint, all values in the column must be different.</p>
+<pre><code class="language-graphql">schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    book: Book
+    library: Library
+}
+
+type Book {
+    id: ID!
+    name: Bytes8! @unique
+}
+
+type Library {
+    id: ID!
+    book: Book!
+}
+</code></pre>
+<p>A <code>UNIQUE</code> constraint will be created on the <code>book</code> table's <code>name</code> column, ensuring that no books can share the same name.</p>
+<blockquote>
+<p>Important: When using explict or implicit foreign keys, it is required that the reference column name in your foreign key relationship be unique. <code>ID</code> types are by default unique, but all other types will have to be explicitly specified as being unique via the <code>@unique</code> directive.</p>
+</blockquote>
+<h2 id="join"><a class="header" href="#join"><code>@join</code></a></h2>
+<p>The <code>@join</code> directive is used to relate a field in one type to others by referencing fields in another type. You can think of it as a link between two tables in your database. The field in the referenced type is called a <em>foreign key</em> and it is <strong>required</strong> to be unique.</p>
+<pre><code class="language-graphql">schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    book: Book
+    library: Library
+}
+
+type Book {
+    id: ID!
+    name: Bytes8! @unique
+}
+
+type Library {
+    id: ID!
+    book: Book! @join(on:name)
+}
+</code></pre>
+<p>A foreign key constraint will be created on <code>library.book</code> that references <code>book.name</code>, which relates the <code>Book</code>s in a <code>Library</code> to the underlying <code>Book</code> table.</p>
+<h1 id="indices"><a class="header" href="#indices">Indices</a></h1>
+<p>Indices are the one of the core building blocks of the Fuel indexer service. Indices allow index operators and dApp authors to index specific blockchain events into a database.</p>
+<p>A given index is constructed of a few assets: a manifest file, a GraphQL schema file, and a WASM module. Read more about this in the <a href="components/indices/./../assets/index.html">Assets</a> section.</p>
+<ul>
+<li><a href="components/indices/./registration.html">Registering Indices</a>
+<ul>
+<li>How to register a new index with a Fuel indexer service</li>
+</ul>
+</li>
+</ul>
+<h1 id="index-registration"><a class="header" href="#index-registration">Index Registration</a></h1>
+<ul>
+<li>The Fuel indexer service allows users to upload new indices at runtime, with absolutely no downtime required to start using your new index.</li>
+<li>Meaning, as soon as users upload new assets to the service, those assets are immediately registered, and a new executor is created using the new assets. 
+<ul>
+<li>This provides the benefit of no service downtime, and allows users to immediately get started using their new index.</li>
+</ul>
+</li>
+</ul>
+<h2 id="usage-4"><a class="header" href="#usage-4">Usage</a></h2>
+<p>We encourage users to use the <a href="components/indices/./../../plugins/forc-index.html"><code>forc index</code></a> plugin for most (if not all) Fuel Indexer interaction.</p>
+<h3 id="with-forc-index"><a class="header" href="#with-forc-index">With <code>forc index</code></a></h3>
+<p>To upload assets using <code>forc index</code> you'd simply use</p>
+<pre><code class="language-bash">forc index deploy --manifest my_index.manifest.yaml --url http://127.0.0.1:29987
+</code></pre>
+<h3 id="with-curl"><a class="header" href="#with-curl">With <code>curL</code></a></h3>
+<ul>
+<li>An example of registering a new index via the command line:</li>
+</ul>
+<pre><code class="language-bash">curl -v http://127.0.0.1:29987/api/index/fuel_indexer_test/index1 \
+    -F &quot;manifest=@my_index_manifest.yaml&quot; \
+    -F &quot;wasm=@my_index_module.wasm&quot; \
+    -F &quot;schema=@my_index_schema.graphql&quot; \
+    -H 'Content-type: multipart/form-data' -H &quot;Authorization: foo&quot; | json_pp
+</code></pre>
+<blockquote>
+<p>In the example upload request above:</p>
+<ul>
+<li><code>fuel_indexer_test</code> is the name of our <code>namespace</code></li>
+<li><code>index1</code> is the <code>identifier</code> of our index</li>
+</ul>
+</blockquote>
+<h1 id="indexing"><a class="header" href="#indexing">Indexing</a></h1>
+<ul>
+<li><a href="indexing/./blocks-and-transactions.html">Blocks and Transactions</a>
+<ul>
+<li>Learn how to index blocks and transactions</li>
+</ul>
+</li>
+<li><a href="indexing/./receipts.html">Receipts</a>
+<ul>
+<li>Learn how to index specific outputs from the FuelVM</li>
+</ul>
+</li>
+</ul>
+<h1 id="blocks-and-transactions"><a class="header" href="#blocks-and-transactions">Blocks and Transactions</a></h1>
+<p>You can index use the <code>BlockData</code> and <code>TransactionData</code> data structures to index important information about the Fuel network for your dApp.</p>
+<h2 id="blockdata"><a class="header" href="#blockdata"><code>BlockData</code></a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct BlockData {
+    pub height: u64,
+    pub id: Bytes32,
+    pub producer: Option&lt;Bytes32&gt;,
+    pub time: i64,
+    pub transactions: Vec&lt;TransactionData&gt;,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The <code>BlockData</code> struct is how blocks are represented in the Fuel indexer. It contains metadata such as the ID, height, and time, as well as a list of the transactions it contains (represented by <code>TransactionData</code>). It also contains the public key hash of the block producer, if present.</p>
+<h2 id="transactiondata"><a class="header" href="#transactiondata"><code>TransactionData</code></a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct TransactionData {
+    pub transaction: Transaction,
+    pub status: TransactionStatus,
+    pub receipts: Vec&lt;Receipt&gt;,
+    pub id: TxId,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The <code>TransactionData</code> struct contains important information about a transaction in the Fuel network. The <code>id</code> field is the transaction hash, which is a 32-byte string. The <code>receipts</code> field contains a list of <code>Receipts</code>, which are generated by a Fuel node during the execution of a Sway smart contract; you can find more information in the <a href="indexing/./receipts.html">Receipts</a> section.</p>
+<h3 id="transaction"><a class="header" href="#transaction"><code>Transaction</code></a></h3>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub enum Transaction {
+    Script(Script),
+    Create(Create),
+    Mint(Mint),
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p><code>Transaction</code> refers to the Fuel transaction entity and can be one of three distinct types: <code>Script</code>, <code>Create</code>, or <code>Mint</code>. Explaining the differences between each of the types is out of scope for the Fuel indexer; however, you can find information about the <code>Transaction</code> type in the <a href="https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/tx_format/transaction.md">Fuel specifications</a>.</p>
+<h3 id="transactionstatus"><a class="header" href="#transactionstatus"><code>TransactionStatus</code></a></h3>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub enum TransactionStatus {
+    Failure {
+        block_id: String,
+        time: DateTime&lt;Utc&gt;,
+        reason: String,
+    },
+    SqueezedOut {
+        reason: String,
+    },
+    Submitted {
+        submitted_at: DateTime&lt;Utc&gt;,
+    },
+    Success {
+        block_id: String,
+        time: DateTime&lt;Utc&gt;,
+    },
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p><code>TransactionStatus</code> refers to the status of a <code>Transaction</code> in the Fuel network.</p>
+<h1 id="receipts"><a class="header" href="#receipts">Receipts</a></h1>
+<p>When a Sway contract is deployed and called on a Fuel node, receipts may be generated during its execution. You can think of these receipts as informative objects that are emitted when certain things happen, e.g. transfers, messages, etc. By building <a href="indexing/indices/index.html">indices</a> for receipts, you can create mappings to store this data, allowing your application to answer queries about the contract.</p>
+<p>The Fuel indexer currently supports the following receipt types:</p>
+<ul>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L69">Log</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L79">LogData</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L114">MessageOut</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L91">Transfer</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L100">TransferOut</a></li>
+<li><a href="https://github.com/FuelLabs/fuel-tx/blob/master/src/receipt.rs#L109">ScriptResult</a></li>
+</ul>
+<p>Below we'll discuss each of these receipts and how you can leverage them to get the most out of your dApp.</p>
+<h2 id="log"><a class="header" href="#log">Log</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::ContractId;
+pub struct Log {
+    pub contract_id: ContractId,
+    pub ra: u64,
+    pub rb: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>Log</code> receipt is generated when calling <code>log()</code> on a non-reference types in a Sway contracts.
+<ul>
+<li>Specifically <code>bool</code>, <code>u8</code>, <code>u16</code>, <code>u32</code>, and <code>u64</code>.</li>
+</ul>
+</li>
+<li>The <code>ra</code> field includes the value being logged while <code>rb</code> may include a non-zero value representing a unique ID for the <code>log</code> instance.</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#log-receipt">Read more about <code>Log</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="logdata"><a class="header" href="#logdata">LogData</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::ContractId;
+pub struct LogData {
+    pub contract_id: ContractId,
+    pub data: Vec&lt;u8&gt;,
+    pub rb: u64,
+    pub len: u64,
+    pub ptr: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>LogData</code> receipt is generated when calling <code>log()</code> in a Sway contract on a reference type; this includes all types <em>except</em> non-reference types.</li>
+<li>The <code>data</code> field will include the logged value as a hexadecimal.
+<ul>
+<li>The <code>rb</code> field will contain a unique ID that can be used to look up the logged data type.</li>
+</ul>
+</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#logdata-receipt">Read more about <code>LogData</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="messageout"><a class="header" href="#messageout">MessageOut</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::{MessageId, Bytes32, Address};
+pub struct MessageOut {
+    pub message_id: MessageId,
+    pub sender: Address,
+    pub recipient: Address,
+    pub amount: u64,
+    pub nonce: Bytes32,
+    pub len: u64,
+    pub digest: Bytes32,
+    pub data: Vec&lt;u8&gt;,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>MessageOut</code> receipt is generated as a result of the <code>send_message()</code> Sway method in which a message is sent to a recipient address along with a certain amount of coins.</li>
+<li>The <code>data</code> field currently supports only a vector of non-reference types rather than something like a struct.</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#messageout-receipt">Read more about <code>MessageOut</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="transfer"><a class="header" href="#transfer">Transfer</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::{ContractId, AssetId};
+pub struct Transfer {
+    pub contract_id: ContractId,
+    pub to: ContractId,
+    pub amount: u64,
+    pub asset_id: AssetId,
+    pub pc: u64,
+    pub is: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>Transfer</code> receipt is generated when coins are transferred to a contract as part of a Sway contract.</li>
+<li>The <code>asset_id</code> field contains the asset ID of the transferred coins, as the FuelVM has built-in support for working with multiple assets.
+<ul>
+<li>The <code>pc</code> and <code>is</code> fields aren't currently used for anything, but are included for completeness.</li>
+</ul>
+</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#transfer-receipt">Read more about <code>Transfer</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="transferout"><a class="header" href="#transferout">TransferOut</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use fuel_types::{ContractId, AssetId, Address};
+pub struct TransferOut {
+    pub contract_id: ContractId,
+    pub to: Address,
+    pub amount: u64,
+    pub asset_id: AssetId,
+    pub pc: u64,
+    pub is: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>TransferOut</code> receipt is generated when coins are transferred to an address rather than a contract.</li>
+<li>Every other field of the receipt works the same way as it does in the <code>Transfer</code> receipt.</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#transferout-receipt">Read more about <code>TransferOut</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h2 id="scriptresult"><a class="header" href="#scriptresult">ScriptResult</a></h2>
+<pre><pre class="playground"><code class="language-rust">
+<span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>pub struct ScriptResult {
+    pub result: u64,
+    pub gas_used: u64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<ul>
+<li>A <code>ScriptResult</code> receipt is generated when a contract call resolves; that is, it's generated as a result of the <code>RET</code>, <code>RETD</code>, and <code>RVRT</code> instructions.</li>
+<li>The <code>result</code> field will contain a <code>0</code> for success, and a non-zero value otherwise.</li>
+<li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/specs/protocol/abi.md#scriptresult-receipt">Read more about <code>ScriptResult</code> in the Fuel protocol ABI spec</a></li>
+</ul>
+<h1 id="indexer-configuration"><a class="header" href="#indexer-configuration">Indexer Configuration</a></h1>
+<ul>
+<li>Below you will find a list of CLI configuration options that can be used to configure either the Fuel indexer service, the standalone Fuel indexer GraphQL API service, or both. </li>
+<li>For those who prefer using a configuration file, you can checkout the <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">default service configuration file</a>, which also shows the default values used for these configuration options.</li>
+</ul>
+<h2 id="usage-5"><a class="header" href="#usage-5">Usage</a></h2>
+<h3 id="using-the-fuel-indexer-binary"><a class="header" href="#using-the-fuel-indexer-binary">Using the <code>fuel-indexer</code> binary</a></h3>
+<p><code>./fuel-indexer [options]</code></p>
+<h3 id="using-the-fuel-indexer-api-server-binary"><a class="header" href="#using-the-fuel-indexer-api-server-binary">Using the <code>fuel-indexer-api-server</code> binary</a></h3>
+<p><code>./fuel-indexer-api-server [options]</code></p>
+<h3 id="options"><a class="header" href="#options">Options</a></h3>
+<p><code>-c</code> <code>--config</code></p>
+<ul>
+<li>Path to the configuration file.</li>
+</ul>
+<p><code>-m</code> <code>--manifest</code></p>
+<ul>
+<li>Path to manifest file from which initial indices will be loaded</li>
+</ul>
+<blockquote>
+<p>Fuel node: The node running the Fuel client implementation.</p>
+</blockquote>
+<p><code>--fuel-node-host</code> <FUEL-NODE-HOST></p>
+<ul>
+<li>IP of the Fuel node</li>
+</ul>
+<p><code>--fuel-node-port</code> <FUEL-NODE-PORT></p>
+<ul>
+<li>Port of the Fuel node</li>
+</ul>
+<blockquote>
+<p>GraphQL API: The enpoint at which GraphQL queries will be processed. This is context dependent. If ran
+using the <code>fuel-indexer</code> binary, these options apply to the GraphQL service run in that binary. If ran using
+the <code>fuel-indexer-api-server</code> binary, these options will apply to that service.</p>
+</blockquote>
+<p><code>--graphql-api-host</code> <GRAPHQL-API-HOST></p>
+<ul>
+<li>IP at which to bind the GraphQL server</li>
+</ul>
+<p><code>--graphql-api-port</code> <GRAPHQL-API-PORT></p>
+<ul>
+<li>
+<p>Port at which to bind the GraphQL server</p>
+</li>
+<li>
+<p><code>--run-migrations</code> <RUN-MIGRATIONS></p>
+</li>
+<li>
+<p>Whether to run the migrations on the GraphQL API's connected database</p>
+</li>
+</ul>
+<blockquote>
+<p>Postgres: Standard Postgres connection options.</p>
+</blockquote>
+<p><code>--postgres-host</code> <POSTGRES-HOST></p>
+<ul>
+<li>Postgres host</li>
+</ul>
+<p><code>--postgres-port</code> <POSTGRES-PORT></p>
+<ul>
+<li>Postgres port</li>
+</ul>
+<p><code>--postgres-username</code> <POSTGRES-USERNAME></p>
+<ul>
+<li>Postgres username</li>
+</ul>
+<p><code>--postgres-password</code> <POSTGRES-PASSWORD></p>
+<ul>
+<li>Postgres password (redacted from logging)</li>
+</ul>
+<p><code>--postgres-database</code> <POSTGRES-DATABASE></p>
+<ul>
+<li>Postgres database</li>
+</ul>
+<blockquote>
+<p>SQLite: An alternative database implementation using standard SQLite connection options</p>
+</blockquote>
+<p><code>--sqlite-database</code> <SQLITE-DATABASE></p>
+<ul>
+<li>Path to SQLite database</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>
