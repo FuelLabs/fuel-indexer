@@ -271,7 +271,7 @@ jobs:
       - name: Cargo e2e tests
         run: bash packages/fuel-indexer-tests/scripts/e2e.bash
       - name: Stop testing components
-        run: bash scripts/utils/kill_test_components.bash
+        run: kill -9 $(lsof -ti:4000)
 
   publish-docker-image:
     needs:
