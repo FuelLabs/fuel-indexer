@@ -25,16 +25,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let wallet_path = opts.wallet_path.unwrap_or_else(|| {
         Path::new(&manifest_dir)
-            .join("..")
-            .join("..")
             .join("assets")
             .join("test-chain-config.json")
     });
 
     let contract_bin_path = opts.contract_bin_path.unwrap_or_else(|| {
         Path::new(&manifest_dir)
-            .join("..")
-            .join("..")
             .join("contracts")
             .join("fuel-indexer-test")
             .join("out")

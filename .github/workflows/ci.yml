@@ -189,6 +189,10 @@ jobs:
             args: --locked --workspace
           - command: test
             args: --locked --all-targets --no-default-features --workspace
+          - command: test
+            args: --locked --all-targets --features postgres --workspace
+          - command: test
+            args: --locked --all-targets --features sqlite --workspace
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -249,26 +253,25 @@ jobs:
       - run: cargo install sqlx-cli
       - run: bash scripts/run_migrations.bash
 
-      - name: Build fuel-indexer-test-web
+      - name: Build fuel-node
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: -p fuel-indexer-test-web --locked --release
+          args: -p fuel-node --locked
         env:
           RUSTFLAGS: '-D warnings'
 
-      - name: Install wasm-snip
-        run: cargo install wasm-snip
-      - name: Build updated WASM test module
-        run: bash scripts/utils/build_test_wasm_module.bash
       - name: Start test web components
-        run: bash scripts/utils/start_test_components.bash
+        run: |
+          CARGO_MANIFEST_DIR=$PWD/packages/fuel-indexer-tests/ target/debug/fuel-node \
+            --wallet-path packages/fuel-indexer-tests/assets/test-chain-config.json \
+            --contract-bin-path packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
 
       - uses: actions-rs/cargo@v1
       - name: Cargo e2e tests
         run: bash packages/fuel-indexer-tests/scripts/e2e.bash
       - name: Stop testing components
-        run: bash scripts/utils/kill_test_components.bash
+        run: kill -9 $(lsof -ti:4000)
 
   publish-docker-image:
     needs:
