@@ -1,7 +1,7 @@
 # Indexer Configuration
 
-- Below you will find a list of CLI configuration options that can be used to configure either the Fuel indexer service, the standalone Fuel indexer GraphQL API service, or both. 
-- For those who prefer using a configuration file, you can checkout the [default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml), which also shows the default values used for these configuration options.
+- Below you will find a list of CLI configuration options that can be used to configure either the Fuel indexer service, the standalone Fuel indexer GraphQL API service, or both.
+- For those who prefer to use a configuration file, you can check out the [default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml), which also shows the default values used for these configuration options.
 
 ## Usage
 
@@ -33,9 +33,7 @@
 
 - Port of the Fuel node
 
-> GraphQL API: The enpoint at which GraphQL queries will be processed. This is context dependent. If ran
-using the `fuel-indexer` binary, these options apply to the GraphQL service run in that binary. If ran using
-the `fuel-indexer-api-server` binary, these options will apply to that service.
+> GraphQL API: The endpoint at which GraphQL queries will be processed. This is context dependent. If using the `fuel-indexer` binary, these options apply to the GraphQL service run in that binary. If using the `fuel-indexer-api-server` binary, these options will apply to that service.
 
 `--graphql-api-host` <GRAPHQL-API-HOST>
 

@@ -10,6 +10,7 @@
     - [`fuelup`](./getting-started/application-dependencies/fuelup.md)
     - [`sqlx`](./getting-started/application-dependencies/sqlx.md)
     - [`wasm-snip`](./getting-started/application-dependencies/wasm-snip.md)
+  - [Configuration](./getting-started/configuration.md)
   - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
 - [Quickstart](./quickstart/index.md)
 - [Examples](./examples/index.md)
@@ -36,4 +37,3 @@
 - [What Can I Index?](./indexing/index.md)
   - [Blocks and Transactions](./indexing/blocks-and-transactions.md)
   - [Receipts](./indexing/receipts.md)
-- [Configuration](./getting-started/configuration.md)
