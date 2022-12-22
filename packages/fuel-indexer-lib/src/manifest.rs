@@ -1,7 +1,10 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
-use std::{fs::File, io::Read};
+use std::{
+    fs::File,
+    io::{Read, Write},
+    path::{Path, PathBuf},
+};
 use thiserror::Error;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -24,7 +27,7 @@ pub enum ManifestError {
     YamlError(#[from] serde_yaml::Error),
     #[error("Native module bytes not supported.")]
     NativeModuleError,
-    #[error("Native module bytes not supported.")]
+    #[error("File IO error: {0:?}.")]
     FileError(#[from] std::io::Error),
 }
 
@@ -52,9 +55,7 @@ impl Manifest {
     }
 
     pub fn from_file(path: &Path) -> ManifestResult<Self> {
-        let mut file = File::open(path).unwrap_or_else(|_| {
-            panic!("Manifest at '{}' does not exist", path.display())
-        });
+        let mut file = File::open(path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
         Self::from_str(&content)
@@ -64,11 +65,8 @@ impl Manifest {
         Ok(serde_yaml::from_slice(s)?)
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        serde_yaml::to_string(&self)
-            .expect("Failed converting manifest to bytes.")
-            .as_bytes()
-            .to_vec()
+    pub fn to_bytes(&self) -> ManifestResult<Vec<u8>> {
+        Ok(serde_yaml::to_string(&self)?.as_bytes().to_vec())
     }
 
     pub fn graphql_schema(&self) -> ManifestResult<String> {
@@ -101,6 +99,12 @@ impl Manifest {
             }
             Module::Native => unimplemented!(),
         }
+    }
+
+    pub fn write_to(&self, path: &PathBuf) -> ManifestResult<()> {
+        let mut file = File::create(path)?;
+        file.write_all(&self.to_bytes()?)?;
+        Ok(())
     }
 }
 

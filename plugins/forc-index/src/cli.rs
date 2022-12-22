@@ -1,7 +1,8 @@
 pub(crate) use crate::commands::{
-    check::Command as CheckCommand, deploy::Command as DeployCommand,
-    init::Command as InitCommand, new::Command as NewCommand,
-    start::Command as StartCommand, stop::Command as StopCommand,
+    build::Command as BuildCommand, check::Command as CheckCommand,
+    deploy::Command as DeployCommand, init::Command as InitCommand,
+    new::Command as NewCommand, start::Command as StartCommand,
+    stop::Command as StopCommand,
 };
 use clap::{Parser, Subcommand};
 use forc_tracing::{init_tracing_subscriber, TracingSubscriberOptions};
@@ -22,6 +23,7 @@ enum ForcIndex {
     Start(StartCommand),
     Check(CheckCommand),
     Stop(StopCommand),
+    Build(BuildCommand),
 }
 
 pub async fn run_cli() -> Result<(), anyhow::Error> {
@@ -39,5 +41,6 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::Start(command) => crate::commands::start::exec(command),
         ForcIndex::Check(command) => crate::commands::check::exec(command),
         ForcIndex::Stop(command) => crate::commands::stop::exec(command),
+        ForcIndex::Build(command) => crate::commands::build::exec(command),
     }
 }

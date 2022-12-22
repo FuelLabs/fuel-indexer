@@ -37,7 +37,9 @@ fn print_welcome_message() {
 `forc index deploy`
     Deploy your index
 `forc index stop`
-    Stop a running index"#;
+    Stop a running index
+`forc index build
+    Build your index"#;
 
     let ascii_tag = r#"
 ███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 
@@ -108,7 +110,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     // Write index Cargo manifest
     let namespace = command
         .namespace
-        .unwrap_or_else(|| defaults::DEFAULT_NAMESPACE.into());
+        .unwrap_or_else(|| defaults::INDEX_NAMESPACE.into());
     fs::write(
         Path::new(&project_dir).join(defaults::CARGO_MANIFEST_FILE_NAME),
         default_toml,
@@ -150,13 +152,17 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     .unwrap();
 
     // Write cargo config with WASM target
-    fs::create_dir_all(Path::new(&project_dir).join(defaults::CARGO_CONFIG_DIR_NAME))?;
-    let _ = fs::write(
-        Path::new(&project_dir)
-            .join(defaults::CARGO_CONFIG_DIR_NAME)
-            .join(defaults::CARGO_CONFIG_FILENAME),
-        defaults::default_cargo_config(),
-    );
+    if !command.native {
+        fs::create_dir_all(
+            Path::new(&project_dir).join(defaults::CARGO_CONFIG_DIR_NAME),
+        )?;
+        let _ = fs::write(
+            Path::new(&project_dir)
+                .join(defaults::CARGO_CONFIG_DIR_NAME)
+                .join(defaults::CARGO_CONFIG_FILENAME),
+            defaults::default_cargo_config(),
+        );
+    }
 
     debug!("\n✅ nSuccessfully created index {project_name}");
 
