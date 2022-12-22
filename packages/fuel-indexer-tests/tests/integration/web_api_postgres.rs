@@ -100,7 +100,6 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() {
-    let _ = indexer_service_postgres().await;
     let app = api_server_app_postgres().await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
