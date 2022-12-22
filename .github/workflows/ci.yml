@@ -249,11 +249,11 @@ jobs:
       - run: cargo install sqlx-cli
       - run: bash scripts/run_migrations.bash
 
-      - name: Build fuel-indexer and fuel-indexer-test-web
+      - name: Build fuel-indexer-test-web
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: -p fuel-indexer -p fuel-indexer-test-web --locked --release
+          args: -p fuel-indexer-test-web --locked --release
         env:
           RUSTFLAGS: '-D warnings'
 
