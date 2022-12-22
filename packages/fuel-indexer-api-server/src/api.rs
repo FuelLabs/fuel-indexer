@@ -100,7 +100,7 @@ impl IntoResponse for ApiError {
 pub struct GraphQlApi;
 
 impl GraphQlApi {
-    pub async fn build_router(
+    pub async fn build(
         config: IndexerConfig,
         pool: IndexerConnectionPool,
         tx: Option<Sender<ServiceRequest>>,
@@ -153,13 +153,23 @@ impl GraphQlApi {
         Ok(app)
     }
 
-    pub async fn run(
+    pub async fn run(config: IndexerConfig, app: Router) -> ApiResult<()> {
+        let listen_on: SocketAddr = config.graphql_api.into();
+
+        axum::Server::bind(&listen_on)
+            .serve(app.into_make_service())
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn build_and_run(
         config: IndexerConfig,
         pool: IndexerConnectionPool,
         tx: Option<Sender<ServiceRequest>>,
     ) -> ApiResult<()> {
         let listen_on: SocketAddr = config.graphql_api.clone().into();
-        let app = GraphQlApi::build_router(config, pool, tx).await?;
+        let app = GraphQlApi::build(config, pool, tx).await?;
 
         axum::Server::bind(&listen_on)
             .serve(app.into_make_service())

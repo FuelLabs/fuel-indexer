@@ -8,7 +8,7 @@ use fuel_indexer_tests::fixtures::{
 use tokio::task::spawn;
 
 #[tokio::test]
-#[cfg(all(feature = "e2e", feature = "postgres", feature = "metrics"))]
+#[cfg(all(feature = "postgres"))]
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
     let _ = indexer_service_postgres().await;
     let app = api_server_app_postgres().await;
@@ -40,7 +40,7 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
 }
 
 #[tokio::test]
-#[cfg(all(feature = "e2e", feature = "postgres", feature = "metrics"))]
+#[cfg(all(feature = "postgres"))]
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
     let _ = indexer_service_postgres().await;

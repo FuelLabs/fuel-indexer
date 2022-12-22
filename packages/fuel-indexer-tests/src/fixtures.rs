@@ -214,7 +214,7 @@ pub async fn api_server_app_postgres() -> Router {
         .await
         .expect("Failed to create connection pool");
 
-    GraphQlApi::build_router(config, pool, None).await.unwrap()
+    GraphQlApi::build(config, pool, None).await.unwrap()
 }
 
 pub async fn api_server_app_sqlite() -> Router {
@@ -235,7 +235,7 @@ pub async fn api_server_app_sqlite() -> Router {
         .await
         .expect("Failed to create connection pool");
 
-    GraphQlApi::build_router(config, pool, None).await.unwrap()
+    GraphQlApi::build(config, pool, None).await.unwrap()
 }
 
 pub async fn indexer_service_postgres() -> IndexerService {
