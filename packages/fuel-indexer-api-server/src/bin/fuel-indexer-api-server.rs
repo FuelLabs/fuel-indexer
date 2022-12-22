@@ -30,7 +30,7 @@ pub async fn main() -> Result<()> {
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
-    let _ = GraphQlApi::run(config.clone(), pool, None).await;
+    let _ = GraphQlApi::build_and_run(config.clone(), pool, None).await;
 
     Ok(())
 }

@@ -1,10 +1,30 @@
+use fuel_indexer_api_server::api::GraphQlApi;
+use fuel_indexer_lib::config::GraphQLConfig;
 use fuel_indexer_postgres as postgres;
-use fuel_indexer_tests::fixtures::{http_client, postgres_connection_pool};
+use fuel_indexer_tests::fixtures::{
+    api_server_app_postgres, http_client, indexer_service_postgres,
+    postgres_connection_pool,
+};
+use tokio::task::spawn;
 
 #[tokio::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "postgres"))]
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
+    let _ = indexer_service_postgres().await;
+    let app = api_server_app_postgres().await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+
     let client = http_client();
+    let _ = client
+        .get("http://127.0.0.1:29987/api/health")
+        .send()
+        .await
+        .unwrap();
+
     let resp = client
         .get("http://127.0.0.1:29987/api/metrics")
         .send()
@@ -14,19 +34,34 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
         .await
         .unwrap();
 
+    server_handle.abort();
+
     assert_eq!(resp.split('\n').count(), 190);
 }
 
 #[tokio::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "postgres"))]
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
+    let _ = indexer_service_postgres().await;
+    let app = api_server_app_postgres().await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+
     let pool = postgres_connection_pool().await;
     let mut conn = pool.acquire().await.unwrap();
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into());
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into());
 
     let client = http_client();
+    let _ = client
+        .get("http://127.0.0.1:29987/api/health")
+        .send()
+        .await
+        .unwrap();
 
     let resp = client
         .get("http://127.0.0.1:29987/api/metrics")
