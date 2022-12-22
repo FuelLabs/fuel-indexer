@@ -70,7 +70,7 @@ pub async fn main() -> Result<()> {
     let service_handle = tokio::spawn(service.run());
 
     if cfg!(feature = "api-server") {
-        let _ = tokio::join!(service_handle, GraphQlApi::run(config, pool, tx));
+        let _ = tokio::join!(service_handle, GraphQlApi::build_and_run(config, pool, tx));
     } else {
         service_handle.await?;
     };
