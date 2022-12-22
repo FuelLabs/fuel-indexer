@@ -1,25 +1,20 @@
 #!/bin/bash
 
-# NOTE: There's 2 categories of tests on the indexer (so far): end-to-end (e2e) tests,
-# and non-end-to-end tests. E2E tests are some of the most comprehensive tests
-# we have, in that they test the integration between _all_ indexer components -
-# database, Fuel node, transactions, executors, etc.
-#
-# E2E tests when run with default `cargo test` produce inconsistent/flaky functionality, even
-# when run with `--test-threads 1`. This e2e.bash file was created in order to test each of
-# these e2e tests in isolation - with no other tests running, for consistent results.
-#
-# Again, this is limited to _only_ e2e tests - all other tests work fine using
-# default `cargo test` behavior.
-#
-# Running each test solely - in isolation takes about 3 mins longer than running
-# the tests together.
+# NOTE: There's 2 categories of tests on the indexer (so far): end-to-end
+# (e2e) tests, and non-end-to-end tests. E2E tests are some of the most
+# comprehensive tests we have, in that they test the integration between
+# _all_ indexer components - database, Fuel node, transactions, executors,
+# etc. E2E tests when run with default `cargo test` produce inconsistent/flaky
+# functionality, even when run with `--test-threads 1`. This e2e.bash file was
+# created in order to test each of these e2e tests in isolation - with no other
+# tests running, for consistent results.  Again, this is limited to _only_ e2e
+# tests - all other tests work fine using default `cargo test` behavior. Running
+# each test solely - in isolation takes about 3 mins longer than running the
+# tests together.
 
 cargomodules=(
     packages/fuel-indexer-tests/tests/e2e/indexing_postgres.rs
     packages/fuel-indexer-tests/tests/e2e/indexing_sqlite.rs
-    packages/fuel-indexer-tests/tests/e2e/metrics_postgres.rs
-    packages/fuel-indexer-tests/tests/e2e/metrics_sqlite.rs
 )
 
 for module in "${cargomodules[@]}"

@@ -2757,30 +2757,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuel-indexer-test-web"
-version = "0.0.0"
-dependencies = [
- "actix-web",
- "anyhow",
- "async-std",
- "clap",
- "fuel-indexer-lib",
- "fuel-indexer-tests",
- "fuel-tx",
- "fuel-types",
- "fuels 0.32.2",
- "fuels-abigen-macro 0.32.2",
- "fuels-core 0.32.2",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tracing",
- "tracing-subscriber 0.2.25",
-]
-
-[[package]]
 name = "fuel-indexer-tests"
 version = "0.0.0"
 dependencies = [
@@ -2870,6 +2846,18 @@ dependencies = [
  "lazy_static",
  "once_cell",
  "prometheus-client",
+]
+
+[[package]]
+name = "fuel-node"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "fuel-indexer-tests",
+ "fuel-types",
+ "fuels 0.32.2",
+ "fuels-abigen-macro 0.32.2",
+ "tokio",
 ]
 
 [[package]]
@@ -7311,6 +7299,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "584aaf7a1ecf4d383bbe1a25eeab0cbb8ff96acc6796707ff65cde48f4632f15"
 dependencies = [
  "wast",
+]
+
+[[package]]
+name = "web-api"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "fuel-indexer-tests",
+ "fuel-types",
+ "fuels 0.32.2",
+ "tokio",
 ]
 
 [[package]]

@@ -3,9 +3,9 @@
 resolver = "2"
 members = [
    "examples/block-explorer/explorer-index",
+   "examples/hello-world-native/hello-index-native",
    "examples/hello-world/hello-bin",
    "examples/hello-world/hello-index",
-   "examples/hello-world-native/hello-index-native",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-database",
    "packages/fuel-indexer-database/database-types",
@@ -17,9 +17,10 @@ members = [
    "packages/fuel-indexer-plugin",
    "packages/fuel-indexer-schema",
    "packages/fuel-indexer-tests",
+   "packages/fuel-indexer-tests/components/fuel-node",
    "packages/fuel-indexer-tests/components/indices/fuel-indexer-test",
    "packages/fuel-indexer-tests/components/indices/simple-wasm/simple-wasm",
-   "packages/fuel-indexer-tests/components/web",
+   "packages/fuel-indexer-tests/components/web-api",
    "packages/fuel-indexer-types",
    "packages/fuel-indexer",
    "plugins/forc-index",
