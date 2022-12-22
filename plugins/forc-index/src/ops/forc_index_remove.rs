@@ -1,4 +1,4 @@
-use crate::cli::StopCommand;
+use crate::cli::RemoveCommand;
 use fuel_indexer_lib::manifest::Manifest;
 use reqwest::{
     blocking::Client,
@@ -8,7 +8,7 @@ use reqwest::{
 use serde_json::{to_string_pretty, value::Value, Map};
 use tracing::{error, info};
 
-pub fn init(command: StopCommand) -> anyhow::Result<()> {
+pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
     let manifest: Manifest = Manifest::from_file(command.manifest.as_path())?;
 
     let target = format!(
@@ -23,7 +23,7 @@ pub fn init(command: StopCommand) -> anyhow::Result<()> {
     );
 
     info!(
-        "\n🛑 Stopping index '{}.{}' at {}",
+        "\n🛑 Removing index '{}.{}' at {}",
         &manifest.namespace, &manifest.identifier, &target
     );
 
@@ -31,7 +31,7 @@ pub fn init(command: StopCommand) -> anyhow::Result<()> {
         .delete(&target)
         .headers(headers)
         .send()
-        .expect("Failed to deploy index.");
+        .expect("Failed to remove index.");
 
     if res.status() != StatusCode::OK {
         error!(
@@ -49,7 +49,7 @@ pub fn init(command: StopCommand) -> anyhow::Result<()> {
     println!("\n{}", to_string_pretty(&res_json)?);
 
     info!(
-        "\n✅ Successfully stopped index '{}.{}' at {} \n",
+        "\n✅ Successfully removed index '{}.{}' at {} \n",
         &manifest.namespace, &manifest.identifier, &target
     );
 

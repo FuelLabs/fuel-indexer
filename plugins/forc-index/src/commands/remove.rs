@@ -1,13 +1,13 @@
-use crate::{ops::forc_index_stop, utils::defaults};
+use crate::{ops::forc_index_remove, utils::defaults};
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Stop a running index.
+/// Stop and remove a running index.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// URL at which index is deployed
-    #[clap(long, default_value = defaults::DEFAULT_INDEXER_URL, help = "URL at which to upload index assets.")]
+    #[clap(long, default_value = defaults::INDEXER_SERVICE_URL, help = "URL at which to upload index assets.")]
     pub url: String,
 
     /// Path of the index manifest to be parsed
@@ -20,6 +20,6 @@ pub struct Command {
 }
 
 pub fn exec(command: Command) -> Result<()> {
-    forc_index_stop::init(command)?;
+    forc_index_remove::init(command)?;
     Ok(())
 }

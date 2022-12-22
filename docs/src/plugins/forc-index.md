@@ -36,12 +36,12 @@ Deploy a given index project to a particular endpoint
 forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
 ```
 
-### `forc index stop`
+### `forc index remove`
 
-Stop a running index
+Stop and remove a running index
 
 ```bash
-forc index stop --url https://index.swayswap.io --manifest my_index.manifest.yaml
+forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
 ```
 
 ### `forc index check`
