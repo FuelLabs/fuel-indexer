@@ -1,9 +1,9 @@
-use crate::{ops::forc_index_stop, utils::defaults};
+use crate::{ops::forc_index_remove, utils::defaults};
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Stop a running index.
+/// Stop and remove a running index.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// URL at which index is deployed
@@ -20,6 +20,6 @@ pub struct Command {
 }
 
 pub fn exec(command: Command) -> Result<()> {
-    forc_index_stop::init(command)?;
+    forc_index_remove::init(command)?;
     Ok(())
 }
