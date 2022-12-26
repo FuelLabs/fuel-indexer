@@ -10,7 +10,7 @@ We'll describe these three different implementations below.
 
 ## Compiling arbitrary indices
 
-For info on how to use indexer tooling to compile arbitrary indices, checkout our [Quickstart](./../quickstart/index.md)
+For info on how to use indexer tooling to compile arbitrary indices, check out our [Quickstart](./../quickstart/index.md)
 
 ## As a standalone service
 

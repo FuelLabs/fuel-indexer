@@ -3,6 +3,7 @@
 A cursory explanation on how to get up and running with an index in 5 minutes
 
 > This Quickstart will assume that you've:
+>
 > - Read over [Getting Started](./../getting-started/index.md)
 > - Have installed all relevant [system](./../getting-started/system-dependencies.md) dependencies
 > - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies
@@ -14,15 +15,14 @@ A cursory explanation on how to get up and running with an index in 5 minutes
 In this Quickstart we're going to write a simple Sway 🌴 smart contract, then
 build and deploy and index that saves events from this contract into a database.
 
-- [Writing a contract](#write-a-sway-smart-contract)
+- [Writing a contract](#writing-a-contract)
 - [Create and deploy an index](#create-and-deploy-an-index)
-  - [Initializing an index](#1.-initialize-a-new-index-project)
-  - [GraphQL data models](#2.-graphql-data-models)
-  - [Update index manifest](#3.-update-index-manifest)
-  - [Write your index code](#4.-write-your-index-code)
-  - [Compile the index](#5.-compile-the-index)
-  - [Start the index service & deploy your
-      index](#6.-start-the-index-service-&-deploy-your-index)
+  - [Initializing an index](#1-initialize-a-new-index-project)
+  - [GraphQL data models](#2-graphql-data-models)
+  - [Update index manifest](#3-update-index-manifest)
+  - [Write your index code](#4-write-your-index-code)
+  - [Compile the index](#5-compile-the-index)
+  - [Start the index service & deploy your index](#6-start-the-service--deploy-your-index)
 
 ## What you'll need
 
