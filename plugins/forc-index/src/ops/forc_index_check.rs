@@ -120,6 +120,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let fuel_core = "fuel-core";
     let docker = "docker";
     let fuelup = "fuelup";
+    let wasm_snip = "wasm-snip";
 
     match Client::new().get(&target).send() {
         Ok(res) => {
@@ -156,6 +157,8 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let (service_emoji, service_msg) = find_indexer_service_info(&command);
     let (docker_emoji, _docker_path, docker_msg) = find_executable_with_msg(docker);
     let (fuelup_emoji, _fuelup_path, fuelup_msg) = find_executable_with_msg(fuelup);
+    let (wasm_snip_emoji, _wasm_snip_path, wasm_snip_msg) =
+        find_executable_with_msg(wasm_snip);
 
     let details_header = center_align("Details", 76);
     let check_header = center_align("Component", 20);
@@ -167,6 +170,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let fuel_core_header = rightpad_whitespace(fuel_core, 20);
     let docker_header = rightpad_whitespace(docker, 20);
     let fuelup_header = rightpad_whitespace(fuelup, 20);
+    let wasm_snip_header = rightpad_whitespace(wasm_snip, 20);
 
     let stdout = format!(
         r#"
@@ -186,6 +190,8 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
 |  {docker_emoji}  | {docker_header}   |{docker_msg}|
 +--------+------------------------+----------------------------------------------------------------------------+
 |  {fuelup_emoji}  | {fuelup_header}   |{fuelup_msg}|
++--------+------------------------+----------------------------------------------------------------------------+
+|  {wasm_snip_emoji}  | {wasm_snip_header}   |{wasm_snip_msg}|
 +--------+------------------------+----------------------------------------------------------------------------+
 "#
     );

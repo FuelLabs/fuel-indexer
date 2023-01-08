@@ -7,7 +7,8 @@
 
 set -x
 
-db_type="${1}"
+db_arg="${1}"
+db_type=${db_arg:=postgres}
 
 if [ $db_type == "postgres" ]; then
     dropdb postgres

@@ -36,7 +36,7 @@ for these executables in your `$PATH`.
 
 ❌ Could not connect to indexers service: error sending request for url (http://127.0.0.1:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
 
-+--------+-------------------------+----------------------------------------------------------------------------+
++--------+------------------------+----------------------------------------------------------------------------+
 | Status |       Component        |                                  Details                                   |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/rashad/.fuelup/bin/fuel-indexer'          |
@@ -52,6 +52,8 @@ for these executables in your `$PATH`.
 |   ✅   | docker                 |  Found 'docker' at '/usr/local/bin/docker'                                 |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ✅   | fuelup                 |  Found 'fuelup' at '/Users/rashad/.fuelup/bin/fuelup'                      |
++--------+------------------------+----------------------------------------------------------------------------+
+|   ✅   | wasm-snip              |  Found 'wasm-snip' at '/Users/rashad/.cargo/bin/wasm-snip'                 |
 +--------+------------------------+----------------------------------------------------------------------------+
 ```
 
@@ -167,13 +169,16 @@ If you open up `hello-index/hello_index.manifest.yaml`
 ```yaml
 namespace: fuel_examples
 identifier: hello_index
+contract_id: ~
 # ABI files are _not_ required. However, in this example, since we already wrote
-# and compiled our smart contract, we'll include it's ABI JSON output here.
+# and compiled our smart contract, we'll include it's ABI JSON output here.. Note
+# that we are using assets located in the examples directory of the fuel-indexer 
+# repository
 abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
 start_block: 1
-graphql_schema: examples/hello-world/schema/hello_world.schema.graphql
+graphql_schema: examples/hello-world/schema/hello_index.schema.graphql
 module:
-  wasm: we don't have one of these yet
+  wasm: ~
 ```
 
 > Note that we haven't added a `module` parameter to our manifest yet because we haven't actually built a WASM module yet.
@@ -276,7 +281,7 @@ mod hello_world_index {
 ```bash
 cd indexer/hello-index
 
-cargo build --release --target wasm32-unknown-unknown
+forc index build --manifest hello_index.manifest.yaml
 ```
 
 > IMPORTANT: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash).

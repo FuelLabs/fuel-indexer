@@ -127,7 +127,7 @@ impl FtColumn {
                 FtColumn::MessageId(message_id)
             }
             ColumnType::Charfield => {
-                let s = String::from_utf8_lossy(&bytes[..size]).trim().to_string();
+                let s = String::from_utf8_lossy(&bytes[..size]).to_string();
 
                 assert!(
                     s.len() <= MAX_CHARFIELD_LENGTH,

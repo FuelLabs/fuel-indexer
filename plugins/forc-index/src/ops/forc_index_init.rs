@@ -33,13 +33,19 @@ fn print_welcome_message() {
 
     let plugin_msg = r#"Take a quick tour.
 `forc index check`
-    List indexer components
-`forc index deploy`
-    Deploy your index
-`forc index stop`
-    Stop a running index
+    List indexer components.
+`forc index new`
+    Create a new index.
+`forc index init`
+    Create a new index in an existing directory.
+`forc index start`
+    Start a local indexer service.
 `forc index build
-    Build your index"#;
+    Build your index.
+`forc index deploy`
+    Deploy your index.
+`forc index stop`
+    Stop a running index."#;
 
     let ascii_tag = r#"
 ███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 
@@ -108,9 +114,6 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     };
 
     // Write index Cargo manifest
-    let namespace = command
-        .namespace
-        .unwrap_or_else(|| defaults::INDEX_NAMESPACE.into());
     fs::write(
         Path::new(&project_dir).join(defaults::CARGO_MANIFEST_FILE_NAME),
         default_toml,
@@ -122,7 +125,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     fs::write(
         Path::new(&project_dir).join(&manifest_filename),
         defaults::default_index_manifest(
-            &namespace,
+            &command.namespace,
             &project_name,
             fs::canonicalize(Path::new(&project_dir))?.to_str().unwrap(),
         ),

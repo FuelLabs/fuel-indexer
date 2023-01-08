@@ -2,7 +2,6 @@ use fuel_indexer_lib::defaults;
 
 pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
 pub const INDEX_LIB_FILENAME: &str = "lib.rs";
-pub const INDEX_NAMESPACE: &str = "fuel";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
 pub const INDEXER_SERVICE_URL: &str = "http://127.0.0.1:29987";
@@ -66,10 +65,12 @@ pub fn default_index_manifest(
     format!(
         r#"namespace: {namespace}
 identifier: {index_name}
-# abi: /path/to/your/contract-abi.json
+abi: ~
+start_block: ~
+contract_id: ~
 graphql_schema: {project_path}/schema/{index_name}.schema.graphql
 module:
-  wasm: /path/to/your/index_wasm_module.wasm
+  wasm: ~
 "#
     )
 }
@@ -90,13 +91,14 @@ pub mod {index_name}_index_mod {{
     fn {index_name}_handler(block_data: BlockData) {{
         Logger::info("Processing a block. (>'.')>");
 
-        let block = Block{{ id: first8_bytes_to_u64(block.id), height: block.height }};
+        let block_id = first8_bytes_to_u64(block_data.id);
+        let block = Block{{ id: block_id, height: block_data.height }};
         block.save();
 
-        for transaction in block.transactions.iter() {{
+        for transaction in block_data.transactions.iter() {{
             Logger::info("Handling a transaction (>'.')>");
 
-            let tx = Tx{{ id: first8_bytes_to_u64(tx.id), block: block.id }};
+            let tx = Tx{{ id: first8_bytes_to_u64(transaction.id), block: block_id }};
             tx.save();
         }}
     }}
