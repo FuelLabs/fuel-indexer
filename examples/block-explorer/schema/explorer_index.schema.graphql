@@ -12,7 +12,7 @@ type QueryRoot {
 # https://ethereum.org/en/developers/docs/data-and-analytics/block-explorers/
 
 type Block {
-    id: Bytes32! @unique
+    id: ID!
     height: UInt8!
     producer: Bytes32!
     timestamp: Int8!
@@ -20,7 +20,7 @@ type Block {
 }
 
 type Tx {
-    id: Bytes32! @unique
+    id: ID!
     block: Block!
     timestamp: Int8!
     status: Json!
@@ -39,7 +39,7 @@ type Contract {
 }
 
 type Transfer {
-    id: Bytes32! @unique
+    id: ID!
     contract_id: Contract!
     # `to` is a reserved SQL keyword
     receiver: ContractId! @indexed
@@ -48,7 +48,7 @@ type Transfer {
 }
 
 type TransferOut {
-    id: Bytes32! @unique
+    id: ID!
     contract_id: Contract!
     # `to` is a reserved SQL keyword
     receiver: Account!
@@ -57,13 +57,13 @@ type TransferOut {
 }
 
 type ScriptResult {
-    id: Bytes32! @unique
+    id: ID!
     result: UInt8!
     gas_used: UInt8!
 }
 
 type Log {
-    id: Bytes32! @unique
+    id: ID!
     contract_id: ContractId!
     rb: UInt8!
 }

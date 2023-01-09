@@ -1,6 +1,8 @@
 namespace: fuel_examples
 identifier: explorer_index
-# abi: No abi for this example
+abi: ~
+start_block: ~
+contract_id: ~
 graphql_schema: examples/block-explorer/schema/explorer_index.schema.graphql
 module:
   wasm: packages/fuel-indexer-tests/assets/explorer_index.wasm

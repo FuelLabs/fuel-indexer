@@ -51,7 +51,7 @@ mod explorer_index {
         let producer = block_data.producer.unwrap_or(Bytes32::zeroed());
 
         let block = Block {
-            id: block_data.id,
+            id: first8_bytes_to_u64(block_data.id),
             height: block_data.height,
             producer,
             timestamp: block_data.time,
@@ -151,10 +151,10 @@ mod explorer_index {
                         });
 
                         let transfer = Transfer {
-                            id: bytes32_from_inputs(
+                            id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
                                 [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
-                            ),
+                            )),
                             contract_id: *id,
                             receiver: *to,
                             amount: *amount,
@@ -184,10 +184,10 @@ mod explorer_index {
 
                         tx_amount += amount;
                         let transfer_out = TransferOut {
-                            id: bytes32_from_inputs(
+                            id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
                                 [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
-                            ),
+                            )),
                             contract_id: *id,
                             receiver: *to,
                             amount: *amount,
@@ -203,7 +203,10 @@ mod explorer_index {
                             last_seen: 0,
                         });
                         let log = Log {
-                            id: bytes32_from_inputs(id, u64::to_le_bytes(*rb).to_vec()),
+                            id: first8_bytes_to_u64(bytes32_from_inputs(
+                                id,
+                                u64::to_le_bytes(*rb).to_vec(),
+                            )),
                             contract_id: *id,
                             rb: *rb,
                         };
@@ -228,10 +231,10 @@ mod explorer_index {
                             ScriptExecutionResult::GenericFailure(_) => 4,
                         };
                         let r = ScriptResult {
-                            id: bytes32_from_inputs(
+                            id: first8_bytes_to_u64(bytes32_from_inputs(
                                 &[0u8; 32],
                                 u64::to_be_bytes(result).to_vec(),
-                            ),
+                            )),
                             result,
                             gas_used: *gas_used,
                         };
@@ -266,7 +269,7 @@ mod explorer_index {
             let tx_entity = Tx {
                 block: block.id,
                 timestamp: block.timestamp,
-                id: tx.id,
+                id: first8_bytes_to_u64(tx.id),
                 value: tx_amount,
                 status: tx.status.clone().into(),
                 tokens_transferred: Json(

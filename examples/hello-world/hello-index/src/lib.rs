@@ -36,7 +36,9 @@ mod hello_world_index {
     fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the
         // name of the person in the Greeting
-        let greeter_id = first8_bytes_to_u64(&event.person.name.to_string());
+        let greeter_name = trim_sized_ascii_string(&event.person.name);
+        let greeting = trim_sized_ascii_string(&event.greeting);
+        let greeter_id = first8_bytes_to_u64(&greeter_name);
 
         // Here we 'get or create' a Salutation based on the ID of the event
         // emitted in the LogData receipt of our smart contract
@@ -49,8 +51,7 @@ mod hello_world_index {
             None => {
                 // If we did not already have this Saluation stored in the database. Here we
                 // show how you can use the Charfield type to store strings with length <= 255
-                let message =
-                    format!("{} 👋, my name is {}", &event.greeting, &event.person.name);
+                let message = format!("{} 👋, my name is {}", &greeting, &greeter_name);
 
                 Salutation {
                     id: event.id,
@@ -74,7 +75,7 @@ mod hello_world_index {
             None => Greeter {
                 id: greeter_id,
                 first_seen: block.height,
-                name: event.person.name.to_string(),
+                name: greeter_name,
                 last_seen: block.height,
             },
         };

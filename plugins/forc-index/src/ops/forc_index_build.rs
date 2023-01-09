@@ -173,7 +173,26 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             .join(profile_dir)
             .join(&binary_name);
 
-        manifest.module = Module::Wasm(artifact_path.as_path().display().to_string());
+        let wasm_path = artifact_path.as_path().display().to_string();
+        manifest.module = Module::Wasm(wasm_path.clone());
+
+        let status = Command::new("wasm-snip")
+            .arg(&wasm_path)
+            .arg("-o")
+            .arg(&wasm_path)
+            .arg("-p")
+            .arg("__wbindgen")
+            .spawn()
+            .unwrap_or_else(|e| panic!("❌ Failed to spawn wasm-snip process: {}", e))
+            .wait()
+            .unwrap_or_else(|e| panic!("❌ Failed to finish wasm-snip process: {}", e));
+
+        if !status.success() {
+            anyhow::bail!(
+                "❌ Failed to execute wasm-snip: (Code: {:?})",
+                status.code()
+            )
+        }
 
         manifest.write_to(&index_manifest_path)?;
     }

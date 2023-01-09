@@ -19,18 +19,24 @@ pub struct Args {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")?;
-
     let opts = Args::from_args();
 
     let wallet_path = opts.wallet_path.unwrap_or_else(|| {
+        let manifest_dir =
+            std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not found.");
         Path::new(&manifest_dir)
+            .join("..")
+            .join("..")
             .join("assets")
             .join("test-chain-config.json")
     });
 
     let contract_bin_path = opts.contract_bin_path.unwrap_or_else(|| {
+        let manifest_dir =
+            std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not found.");
         Path::new(&manifest_dir)
+            .join("..")
+            .join("..")
             .join("contracts")
             .join("fuel-indexer-test")
             .join("out")

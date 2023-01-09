@@ -160,6 +160,8 @@ pub struct FuelNodeHealthResponse {
 }
 
 pub mod index_utils {
+    use fuel_indexer_types::SizedAsciiString;
+
     use super::{sha256_digest, Bytes32};
 
     pub fn u64_id(d: &[u8; 8]) -> u64 {
@@ -188,5 +190,14 @@ pub mod index_utils {
     pub fn bytes32_from_inputs(id: &[u8; 32], inputs: Vec<u8>) -> Bytes32 {
         let inputs = [id.to_vec(), inputs].concat();
         first32_bytes_to_bytes32(&inputs)
+    }
+
+    pub fn trim_sized_ascii_string<const LEN: usize>(
+        s: &SizedAsciiString<LEN>,
+    ) -> String {
+        let mut s = s.to_string();
+        let n = s.trim_end_matches(' ').len();
+        s.truncate(n);
+        s
     }
 }
