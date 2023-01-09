@@ -300,7 +300,7 @@ fn process_fn_items(
     let contract_conditional = match &manifest.contract_id {
         Some(contract_id) => {
             quote! {
-                if id != ContractId::from(#contract_id) {
+                if id.to_vec() != #contract_id.as_bytes() {
                     continue;
                 }
             }
@@ -569,12 +569,10 @@ fn process_fn_items(
 
                             }
                             Receipt::ScriptResult { result, gas_used } => {
-                                #contract_conditional
                                 let data = abi::ScriptResult{ result: u64::from(result), gas_used };
                                 decoder.decode_scriptresult(data);
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
-                                #contract_conditional
                                 let payload = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
                                 decoder.decode_messageout(payload);
                             }

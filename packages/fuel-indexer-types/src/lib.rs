@@ -9,6 +9,7 @@ pub use fuel_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
 };
 pub use fuels_core::types::{Bits256, SizedAsciiString};
+pub use fuels_types::bech32::{Bech32Address, Bech32ContractId};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
