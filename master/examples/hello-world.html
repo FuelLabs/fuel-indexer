@@ -172,8 +172,7 @@
 <pre><pre class="playground"><code class="language-rust">
 <span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>//! A rudimentary block explorer implementation demonstrating how blocks, transactions,
-//! contracts, and accounts can be persisted into the database.
+</span>//! A &quot;Hello World&quot; type of program for the Fuel Indexer service.
 //!
 //! Build this example's WASM module using the following command. Note that a
 //! wasm32-unknown-unknown target will be required.
@@ -203,33 +202,17 @@
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::{types::Bytes32, utils::sha256_digest};
-
-// A utility function used to convert an arbitrarily sized string into Bytes32
-// using the first 32 bytes of the String. This might be provided by a standard-ish
-// library in the future.
-fn bytes32(data: &amp;str) -&gt; Bytes32 {
-    let data = sha256_digest(&amp;data);
-    let mut buff = [0u8; 32];
-    buff.copy_from_slice(&amp;data.as_bytes()[..32]);
-    Bytes32::from(buff)
-}
-
-// A utility function used to convert an arbitrarily sized string into u64
-// using the first 8 bytes of the String. This might be provided by a standard-ish
-// library in the future.
-fn u64_id(data: &amp;str) -&gt; u64 {
-    let mut buff = [0u8; 8];
-    buff.copy_from_slice(&amp;data.as_bytes()[..8]);
-    u64::from_le_bytes(buff)
-}
+use fuel_indexer_plugin::prelude::*;
 
 #[indexer(manifest = &quot;examples/hello-world/hello_index.manifest.yaml&quot;)]
 mod hello_world_index {
+
     fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the
         // name of the person in the Greeting
-        let greeter_id = u64_id(&amp;event.person.name.to_string());
+        let greeter_name = trim_sized_ascii_string(&amp;event.person.name);
+        let greeting = trim_sized_ascii_string(&amp;event.greeting);
+        let greeter_id = first8_bytes_to_u64(&amp;greeter_name);
 
         // Here we 'get or create' a Salutation based on the ID of the event
         // emitted in the LogData receipt of our smart contract
@@ -242,12 +225,11 @@ mod hello_world_index {
             None =&gt; {
                 // If we did not already have this Saluation stored in the database. Here we
                 // show how you can use the Charfield type to store strings with length &lt;= 255
-                let message =
-                    format!(&quot;{} 👋, my name is {}&quot;, &amp;event.greeting, &amp;event.person.name);
+                let message = format!(&quot;{} 👋, my name is {}&quot;, &amp;greeting, &amp;greeter_name);
 
                 Salutation {
                     id: event.id,
-                    message_hash: bytes32(&amp;message),
+                    message_hash: first32_bytes_to_bytes32(&amp;message),
                     message,
                     greeter: greeter_id,
                     first_seen: block.height,
@@ -267,7 +249,7 @@ mod hello_world_index {
             None =&gt; Greeter {
                 id: greeter_id,
                 first_seen: block.height,
-                name: event.person.name.to_string(),
+                name: greeter_name,
                 last_seen: block.height,
             },
         };
@@ -277,6 +259,7 @@ mod hello_world_index {
         greeter.save();
     }
 }
+
 <span class="boring">}
 </span></code></pre></pre>
 
