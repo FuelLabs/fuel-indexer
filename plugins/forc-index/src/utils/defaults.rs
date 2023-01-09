@@ -71,6 +71,7 @@ contract_id: ~
 graphql_schema: {project_path}/schema/{index_name}.schema.graphql
 module:
   wasm: ~
+report_metrics: true
 "#
     )
 }

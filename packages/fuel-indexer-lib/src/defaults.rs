@@ -11,7 +11,7 @@ pub const POSTGRES_HOST: &str = "127.0.0.1";
 pub const POSTGRES_PORT: &str = "5432";
 pub const POSTGRES_PASSWORD: &str = "";
 
-pub const DATABASE_CONNECTION_RETRY_ATTEMPTS: usize = 5;
+pub const INDEX_FAILED_CALLS: usize = 10;
 
 pub const SQLITE_DATABASE: &str = "sqlite.db";
 pub const SQLITE_IDLE_TIMEOUT_SECS: u64 = 2;

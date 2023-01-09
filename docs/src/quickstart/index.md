@@ -176,6 +176,7 @@ contract_id: ~
 # repository
 abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
 start_block: 1
+report_metrics: true
 graphql_schema: examples/hello-world/schema/hello_index.schema.graphql
 module:
   wasm: ~

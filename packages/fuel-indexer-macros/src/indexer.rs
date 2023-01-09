@@ -300,7 +300,10 @@ fn process_fn_items(
     let contract_conditional = match &manifest.contract_id {
         Some(contract_id) => {
             quote! {
-                if id != ContractId::from(#contract_id) {
+                let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
+                let receipt_contract_id = Bech32ContractId::from(id);
+                if receipt_contract_id != manifest_contract_id {
+                    Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                     continue;
                 }
             }
@@ -538,8 +541,9 @@ fn process_fn_items(
                     let mut return_types = Vec::new();
 
                     for receipt in tx.receipts {
+
                         match receipt {
-                            Receipt::Call { param1, id, ..} => {
+                            Receipt::Call { param1, to: id, .. } => {
                                 #contract_conditional
                                 return_types.push(param1);
                             }
@@ -569,12 +573,10 @@ fn process_fn_items(
 
                             }
                             Receipt::ScriptResult { result, gas_used } => {
-                                #contract_conditional
                                 let data = abi::ScriptResult{ result: u64::from(result), gas_used };
                                 decoder.decode_scriptresult(data);
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
-                                #contract_conditional
                                 let payload = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
                                 decoder.decode_messageout(payload);
                             }
