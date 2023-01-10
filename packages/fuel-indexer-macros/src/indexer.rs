@@ -537,16 +537,22 @@ fn process_fn_items(
 
                     let mut return_types = Vec::new();
 
+                    // Track callee contract IDs from Call receipts
+                    let mut callees = HashSet::new();
+
                     for receipt in tx.receipts {
                         match receipt {
-                            Receipt::Call { param1, id, ..} => {
+                            Receipt::Call { param1, id, to, ..} => {
                                 #contract_conditional
                                 return_types.push(param1);
+                                callees.insert(to);
                             }
                             Receipt::ReturnData { data, id, .. } => {
                                 #contract_conditional
-                                let selector = return_types.pop().expect("No return type available. <('-'<)");
-                                decoder.decode_return_type(selector, data);
+                                if callees.contains(&id) {
+                                    let selector = return_types.pop().expect("No return type available. <('-'<)");
+                                    decoder.decode_return_type(selector, data);
+                                }
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 #contract_conditional
