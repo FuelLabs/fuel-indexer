@@ -19,6 +19,7 @@ fuel-tx = { version = "0.23", features = ["serde", "alloc"] }
 fuel-types = { version = "0.5", features = ["serde", "alloc"] }
 fuels-core = "0.30"
 graphql-parser = "0.3"
+hex = "0.4"
 itertools = { version = "0.10", optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 sha2 = "0.9"

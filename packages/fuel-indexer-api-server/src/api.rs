@@ -77,7 +77,7 @@ impl From<StatusCode> for ApiError {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let generic_err_msg = "Inernal server error.".to_string();
+        let generic_err_msg = "Internal server error.".to_string();
         // NOTE: Free to add more specific messaging/handing here as needed
         #[allow(clippy::match_single_binding)]
         let (status, err_msg) = match self {
@@ -120,32 +120,27 @@ impl GraphQlApi {
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()));
 
-        let asset_route = Router::new()
+        let index_routes = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager))
-            .layer(Extension(pool.clone()));
-
-        let stop_index_route = Router::new()
+            .layer(Extension(pool.clone()))
             .route("/:namespace/:identifier", delete(stop_index))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(tx))
             .layer(Extension(pool.clone()));
 
-        let health_route = Router::new()
+        let root_routes = Router::new()
             .route("/health", get(health_check))
             .layer(Extension(config))
             .layer(Extension(pool))
-            .layer(Extension(start_time));
-
-        let metrics_route = Router::new().route("/metrics", get(metrics));
+            .layer(Extension(start_time))
+            .route("/metrics", get(metrics));
 
         let api_routes = Router::new()
-            .nest("/", health_route)
-            .nest("/", metrics_route)
-            .nest("/index", asset_route)
-            .nest("/index", stop_index_route)
+            .nest("/", root_routes)
+            .nest("/index", index_routes)
             .nest("/graph", graph_route);
 
         let app = Router::new().nest("/api", api_routes);
