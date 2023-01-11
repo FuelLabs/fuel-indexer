@@ -42,7 +42,7 @@ mod hello_world_index {
 
         // Here we 'get or create' a Salutation based on the ID of the event
         // emitted in the LogData receipt of our smart contract
-        let greeting = match Salutation::load(event.id) {
+        let salutation = match Salutation::load(event.id) {
             Some(mut g) => {
                 // If we found an event, let's use block height as a proxy for time
                 g.last_seen = block.height;
@@ -77,11 +77,15 @@ mod hello_world_index {
                 first_seen: block.height,
                 name: greeter_name,
                 last_seen: block.height,
+
+                // Here we show an example of an arbtrarily sized Blob type. These Blob types
+                // support data up to 10485760 bytes in length
+                visits: vec![1u8, 2, 3, 4, 5, 6, 7, 8],
             },
         };
 
         // Both entity saves will occur in the same transaction
-        greeting.save();
+        salutation.save();
         greeter.save();
     }
 }

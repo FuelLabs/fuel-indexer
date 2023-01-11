@@ -17,6 +17,8 @@ pub use fuel_indexer_lib::{
     utils::ServiceRequest,
 };
 use fuel_indexer_schema::FtColumn;
+pub use std::collections::HashMap;
+pub use std::collections::HashSet;
 pub use tokio;
 pub use tokio::sync::mpsc::channel;
 pub use tracing::{debug, error, info, trace, warn};

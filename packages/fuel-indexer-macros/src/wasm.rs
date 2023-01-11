@@ -36,7 +36,6 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         use fuel_indexer_plugin::prelude::*;
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels_core::{abi_decoder::ABIDecoder, Parameterize, StringToken, Tokenizable};
-        use std::collections::HashMap;
         use std::str::FromStr;
 
         type B256 = [u8; 32];

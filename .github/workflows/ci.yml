@@ -30,16 +30,12 @@ jobs:
       - cancel-previous-runs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        run: rustup default stable
       - uses: Swatinem/rust-cache@v1
       - name: Install Cargo.toml linter
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: cargo-toml-lint
-          version: '0.1'
+        run: cargo install --version 0.1.1 cargo-toml-lint
       - name: Run Cargo.toml linter
         run: git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
 
@@ -66,11 +62,11 @@ jobs:
       - cancel-previous-runs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - uses: actions/checkout@v3
+      - name: Set minimal profile
+        run: rustup set profile minimal
+      - name: Install toolchain
+        run: rustup default stable
       - uses: Swatinem/rust-cache@v1
       - name: mdbook build
         uses: peaceiris/actions-mdbook@v1
@@ -107,25 +103,16 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          # `cargo-udeps` requires nightly to run
-          toolchain: nightly
-          default: true
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        run: rustup default nightly
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
       - run: bash scripts/run_migrations.bash
       - name: Install cargo-udeps
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-udeps
+        run: cargo install cargo-udeps
       - name: Check Unused Deps
-        uses: actions-rs/cargo@v1
-        with:
-          command: udeps
-          args: --locked --all-targets --all-features
+        run: cargo udeps --locked --all-targets --all-features
 
   cargo-build-wasm-example:
     needs:
@@ -143,18 +130,15 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        name: Cargo Build WASM Example
-        with:
-          command: build
-          args: -p fuel-indexer-test --release --target wasm32-unknown-unknown
+      - uses: actions/checkout@v3
+      - name: Set minimal profile
+        run: rustup set profile minimal
+      - name: Install toolchain
+        run: rustup default stable
+      - name: Install WASM target
+        run: rustup target add wasm32-unknown-unknown
+      - name: Build WASM example
+        run: cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown
 
   cargo-verifications:
     runs-on: ubuntu-latest
@@ -177,39 +161,28 @@ jobs:
       matrix:
         package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
         include:
-          - command: fmt
-            args: --all --verbose -- --check
-          - command: clippy
-            args: --all-features --all-targets
-          - command: check
-            args: --all-features --locked --workspace --all-targets
-          - command: build
-            args: --locked --workspace --all-features --all-targets
-          - command: test
-            args: --locked --workspace
-          - command: test
-            args: --locked --all-targets --no-default-features --workspace
-          - command: test
-            args: --locked --all-targets --features postgres --workspace
-          - command: test
-            args: --locked --all-targets --features sqlite --workspace
+          - command: fmt --all --verbose -- --check
+          - command: clippy --all-features --all-targets
+          - command: check --all-features --locked --workspace --all-targets
+          - command: build --locked --workspace --all-features --all-targets
+          - command: test --locked --workspace
+          - command: test --locked --all-targets --no-default-features --workspace
+          - command: test --locked --all-targets --features postgres --workspace
+          - command: test --locked --all-targets --features sqlite --workspace
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
     continue-on-error: ${{ matrix.skip-error || false }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - uses: actions/checkout@v3
+      - name: Set minimal profile
+        run: rustup set profile minimal
+      - name: Install toolchain
+        run: rustup default stable
       - run: cargo install sqlx-cli
       - run: bash scripts/run_migrations.bash
-      - name: ${{ matrix.command }} ${{ matrix.args }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: ${{ matrix.command }}
-          args: ${{ matrix.args }}
+      - name: ${{ matrix.command }} 
+        run: cargo ${{ matrix.command }}
       - name: Notify if Job Fails
         uses: ravsamhq/notify-slack-action@v1
         if: always() && github.ref == 'refs/heads/master'
@@ -243,21 +216,19 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+      - uses: actions/checkout@v3
+      - name: Set minimal profile
+        run: rustup set profile minimal
+      - name: Install toolchain
+        run: rustup default stable
+      - name: Install WASM target
+        run: rustup target add wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
       - run: bash scripts/run_migrations.bash
 
       - name: Build fuel-node
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -p fuel-node --locked
+        run: cargo build -p fuel-node --locked
         env:
           RUSTFLAGS: '-D warnings'
 
@@ -267,7 +238,6 @@ jobs:
             --wallet-path packages/fuel-indexer-tests/assets/test-chain-config.json \
             --contract-bin-path packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
 
-      - uses: actions-rs/cargo@v1
       - name: Cargo e2e tests
         run: bash packages/fuel-indexer-tests/scripts/e2e.bash
       - name: Stop testing components
@@ -387,19 +357,13 @@ jobs:
         run: |
           ci/macos-install-packages.sh
 
+      - name: Set minimal profile
+        run: rustup set profile minimal
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: ${{ matrix.job.target }}
-          override: true
-
+        run: rustup override set stable-${{ matrix.job.target }}
+      
       - name: Install cross
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: cross
-          cache-key: '${{ matrix.job.target }}'
+        run: cargo install cross --target ${{ matrix.job.target }}
 
       - name: Build fuel-indexer
         run: |
@@ -551,13 +515,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+        run: rustup override set stable
       - name: Verify tag version
         run: |
           curl -sSLf "https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64" -L -o dasel && chmod +x dasel
@@ -575,12 +536,10 @@ jobs:
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-types/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer/Cargo.toml
 
+      - name: Install toolchain
+        run: rustup default stable
       - name: Install WASM target
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+        run: rustup target add wasm32-unknown-unknown
 
       - name: Publish crates
         uses: katyo/publish-crates@v1

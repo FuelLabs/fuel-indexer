@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 
 lazy_static! {
     static ref COPY_TYPES: HashSet<&'static str> =
-        HashSet::from(["Json", "Charfield", "Identity"]);
+        HashSet::from(["Json", "Charfield", "Identity", "Blob"]);
 }
 
 fn process_type<'a>(

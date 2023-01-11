@@ -22,6 +22,7 @@ pub type UInt8 = u64;
 pub type Timestamp = u64;
 pub type Charfield = String;
 pub type Boolean = bool;
+pub type Blob = Vec<u8>;
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Json(pub String);

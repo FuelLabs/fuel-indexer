@@ -20,6 +20,7 @@ Below is a mapping of GraphQL schema types to their Postgres equivalents, refere
 | bool | Boolean | bool |
 |  | Json | json |
 |  | Charfield | varchar(255) |
+|  | Blob | varchar(10485760) |
 
 ## Example
 

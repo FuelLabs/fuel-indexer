@@ -22,6 +22,7 @@ lazy_static! {
         "Log",
         "LogData",
         "MessageOut",
+        "Return",
         "ScriptResult",
         "Transfer",
         "TransferOut",
@@ -29,12 +30,13 @@ lazy_static! {
     static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["Vec"]);
     static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from(["()"]);
     static ref FUEL_PRIMITIVE_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
-        "Transfer",
         "Log",
         "LogData",
-        "ScriptResult",
-        "TransferOut",
         "MessageOut",
+        "Return",
+        "ScriptResult",
+        "Transfer",
+        "TransferOut",
     ]);
     static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
@@ -109,20 +111,21 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
     } else {
         // TODO: decode all the types
         match ty.type_field.as_str() {
+            "b256" => quote! { B256 },
             "bool" => quote! { bool },
-            "u8" => quote! { u8 },
             "u16" => quote! { u16 },
             "u32" => quote! { u32 },
             "u64" => quote! { u64 },
-            "b256" => quote! { B256 },
-            "Log" => quote! { abi::Log },
-            "Identity" => quote! { abi::Identity },
+            "u8" => quote! { u8 },
             "BlockData" => quote! { BlockData },
+            "Identity" => quote! { abi::Identity },
+            "Log" => quote! { abi::Log },
             "LogData" => quote! { abi::LogData },
+            "MessageOut" => quote! { abi::MessageOut },
+            "Return" => quote! { abi::Return },
+            "ScriptResult" => quote! { abi::ScriptResult },
             "Transfer" => quote! { abi::Transfer },
             "TransferOut" => quote! { abi::TransferOut },
-            "ScriptResult" => quote! { abi::ScriptResult },
-            "MessageOut" => quote! { abi::MessageOut },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!(
@@ -283,6 +286,7 @@ fn process_fn_items(
     let mut transferout_decoder = quote! {};
     let mut scriptresult_decoder = quote! {};
     let mut messageout_decoder = quote! {};
+    let mut return_decoder = quote! {};
 
     let mut blockdata_decoding = quote! {};
 
@@ -392,14 +396,6 @@ fn process_fn_items(
                                                 blockdata_decoder =
                                                     quote! { self.#name.push(data); };
                                             }
-                                            "Transfer" => {
-                                                transfer_decoder =
-                                                    quote! { self.#name.push(data); };
-                                            }
-                                            "TransferOut" => {
-                                                transferout_decoder =
-                                                    quote! { self.#name.push(data); };
-                                            }
                                             "Log" => {
                                                 log_decoder =
                                                     quote! { self.#name.push(data); };
@@ -409,12 +405,24 @@ fn process_fn_items(
                                                     *ty_id, &ty, &name,
                                                 ));
                                             }
+                                            "MessageOut" => {
+                                                messageout_decoder =
+                                                    quote! { self.#name.push(data); };
+                                            }
+                                            "Return" => {
+                                                return_decoder =
+                                                    quote! { self.#name.push(data); };
+                                            }
                                             "ScriptResult" => {
                                                 scriptresult_decoder =
                                                     quote! { self.#name.push(data); };
                                             }
-                                            "MessageOut" => {
-                                                messageout_decoder =
+                                            "Transfer" => {
+                                                transfer_decoder =
+                                                    quote! { self.#name.push(data); };
+                                            }
+                                            "TransferOut" => {
+                                                transferout_decoder =
                                                     quote! { self.#name.push(data); };
                                             }
                                             _ => todo!(),
@@ -521,6 +529,10 @@ fn process_fn_items(
                 #messageout_decoder
             }
 
+            pub fn decode_return(&mut self, data: abi::Return) {
+                #return_decoder
+            }
+
             pub #asyncness fn dispatch(&self) {
                 #(#abi_dispatchers)*
             }
@@ -539,28 +551,15 @@ fn process_fn_items(
                 for tx in block.transactions {
 
                     let mut return_types = Vec::new();
+                    let mut callees = HashSet::new();
 
                     for receipt in tx.receipts {
 
                         match receipt {
-                            Receipt::Call { param1, to: id, .. } => {
+                            Receipt::Call { param1, to: id, ..} => {
                                 #contract_conditional
                                 return_types.push(param1);
-                            }
-                            Receipt::ReturnData { data, id, .. } => {
-                                #contract_conditional
-                                let selector = return_types.pop().expect("No return type available. <('-'<)");
-                                decoder.decode_return_type(selector, data);
-                            }
-                            Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
-                                #contract_conditional
-                                let data = abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is };
-                                decoder.decode_transfer(data);
-                            }
-                            Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
-                                #contract_conditional
-                                let data = abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
-                                decoder.decode_transferout(data);
+                                callees.insert(id);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
                                 #contract_conditional
@@ -572,13 +571,37 @@ fn process_fn_items(
                                 decoder.decode_logdata(rb, data);
 
                             }
-                            Receipt::ScriptResult { result, gas_used } => {
-                                let data = abi::ScriptResult{ result: u64::from(result), gas_used };
-                                decoder.decode_scriptresult(data);
+                            Receipt::Return { id, val, pc, is } => {
+                                #contract_conditional
+                                if callees.contains(&id) {
+                                    let data = abi::Return{ contract_id: id, val, pc, is };
+                                    decoder.decode_return(data);
+                                }
+                            }
+                            Receipt::ReturnData { data, id, .. } => {
+                                #contract_conditional
+                                if callees.contains(&id) {
+                                    let selector = return_types.pop().expect("No return type available. <('-'<)");
+                                    decoder.decode_return_type(selector, data);
+                                }
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
                                 let payload = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
                                 decoder.decode_messageout(payload);
+                            }
+                            Receipt::ScriptResult { result, gas_used } => {
+                                let data = abi::ScriptResult{ result: u64::from(result), gas_used };
+                                decoder.decode_scriptresult(data);
+                            }
+                            Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
+                                #contract_conditional
+                                let data = abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is };
+                                decoder.decode_transfer(data);
+                            }
+                            Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
+                                #contract_conditional
+                                let data = abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
+                                decoder.decode_transferout(data);
                             }
                             _ => {
                                 Logger::info("This type is not handled yet. (>'.')>");

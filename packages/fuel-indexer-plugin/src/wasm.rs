@@ -9,6 +9,11 @@ use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 
+pub use hex;
+pub use hex::FromHex;
+pub use std::collections::HashMap;
+pub use std::collections::HashSet;
+
 extern "C" {
     // TODO: error codes? or just panic and let the runtime handle it?
     fn ff_get_object(type_id: i64, ptr: *const u8, len: *mut u8) -> *mut u8;

@@ -262,7 +262,7 @@ impl SchemaBuilder {
             column_position: fragments.len() as i32,
             // FIXME: Magic strings here
             column_name: "object".to_string(),
-            column_type: "Blob".to_string(),
+            column_type: "Object".to_string(),
             graphql_type: "__".into(),
             nullable: false,
             unique: false,
