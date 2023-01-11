@@ -1,4 +1,8 @@
-use crate::{cli::DeployCommand, utils::extract_manifest_fields};
+use crate::{
+    cli::{BuildCommand, DeployCommand},
+    commands::build,
+    utils::extract_manifest_fields,
+};
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{
     blocking::{multipart::Form, Client},
@@ -15,7 +19,30 @@ use std::{
 use tracing::{error, info};
 
 pub fn init(command: DeployCommand) -> anyhow::Result<()> {
-    let mut manifest_file = fs::File::open(&command.manifest)?;
+    let DeployCommand {
+        url,
+        manifest,
+        auth,
+        target,
+        release,
+        profile,
+        verbose,
+        locked,
+        native,
+    } = command;
+
+    let _ = build::exec(BuildCommand {
+        manifest: manifest.clone(),
+        target,
+        release,
+        profile,
+        verbose,
+        locked,
+        native,
+    })?;
+
+    let manifest_path = Path::new(&manifest);
+    let mut manifest_file = fs::File::open(manifest_path)?;
     let mut manifest_contents = String::new();
     manifest_file.read_to_string(&mut manifest_contents)?;
     let manifest: serde_yaml::Value = serde_yaml::from_str(&manifest_contents)?;
@@ -28,22 +55,22 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     manifest_reader.read_to_end(&mut manifest_buff)?;
 
     let form = Form::new()
-        .file("manifest", Path::new(&command.manifest))?
+        .file("manifest", manifest_path)?
         .file("schema", Path::new(&graphql_schema))?
         .file("wasm", Path::new(&module_path))?;
 
-    let target = format!("{}/api/index/{}/{}", &command.url, &namespace, &identifier);
+    let target = format!("{}/api/index/{}/{}", &url, &namespace, &identifier);
 
     info!(
         "Deploying index at {} to {}",
-        command.manifest.display(),
+        manifest_path.display(),
         target
     );
 
     let mut headers = HeaderMap::new();
     headers.insert(
         AUTHORIZATION,
-        command.auth.unwrap_or_else(|| "fuel".into()).parse()?,
+        auth.unwrap_or_else(|| "fuel".into()).parse()?,
     );
 
     let pb = ProgressBar::new_spinner();
