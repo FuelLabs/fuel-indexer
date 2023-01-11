@@ -22,6 +22,7 @@ lazy_static! {
         "Log",
         "LogData",
         "MessageOut",
+        "Return",
         "ScriptResult",
         "Transfer",
         "TransferOut",
@@ -35,6 +36,7 @@ lazy_static! {
         "ScriptResult",
         "TransferOut",
         "MessageOut",
+        "Return",
     ]);
     static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
@@ -123,6 +125,7 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "TransferOut" => quote! { abi::TransferOut },
             "ScriptResult" => quote! { abi::ScriptResult },
             "MessageOut" => quote! { abi::MessageOut },
+            "Return" => quote! { abi::Return },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!(
@@ -283,6 +286,7 @@ fn process_fn_items(
     let mut transferout_decoder = quote! {};
     let mut scriptresult_decoder = quote! {};
     let mut messageout_decoder = quote! {};
+    let mut return_decoder = quote! {};
 
     let mut blockdata_decoding = quote! {};
 
@@ -414,6 +418,10 @@ fn process_fn_items(
                                                 messageout_decoder =
                                                     quote! { self.#name.push(data); };
                                             }
+                                            "Return" => {
+                                                return_decoder =
+                                                    quote! { self.#name.push(data); };
+                                            }
                                             _ => todo!(),
                                         }
                                     } else {
@@ -518,6 +526,10 @@ fn process_fn_items(
                 #messageout_decoder
             }
 
+            pub fn decode_return(&mut self, data: abi::Return) {
+                #return_decoder
+            }
+
             pub #asyncness fn dispatch(&self) {
                 #(#abi_dispatchers)*
             }
@@ -552,6 +564,13 @@ fn process_fn_items(
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
                                     decoder.decode_return_type(selector, data);
+                                }
+                            }
+                            Receipt::Return { id, val, pc, is } => {
+                                #contract_conditional
+                                if callees.contains(&id) {
+                                    let data = abi::Return{ contract_id: id, val, pc, is };
+                                    decoder.decode_return(data);
                                 }
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
