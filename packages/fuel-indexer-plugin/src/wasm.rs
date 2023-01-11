@@ -11,6 +11,8 @@ use fuel_indexer_types::ffi::{
 
 pub use hex;
 pub use hex::FromHex;
+pub use std::collections::HashMap;
+pub use std::collections::HashSet;
 
 extern "C" {
     // TODO: error codes? or just panic and let the runtime handle it?

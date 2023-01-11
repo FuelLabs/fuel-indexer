@@ -130,6 +130,19 @@ impl NativeFuelType for MessageOut {
     }
 }
 
+pub struct Return {
+    pub contract_id: ContractId,
+    pub val: u64,
+    pub pc: u64,
+    pub is: u64,
+}
+
+impl NativeFuelType for Return {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Return") as usize
+    }
+}
+
 const IDENTITY_LEN: usize = 33;
 
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/386
