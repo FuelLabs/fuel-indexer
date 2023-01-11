@@ -51,7 +51,10 @@ pub(crate) async fn query_graph(
     match manager.read().await.load_schema(&name).await {
         Ok(schema) => match run_query(query, schema, &pool).await {
             Ok(response) => Ok(axum::Json(response)),
-            Err(e) => Err(e),
+            Err(e) => {
+                error!("query_graph error: {}", e);
+                Err(e)
+            }
         },
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
             "The graph '{}' was not found.",

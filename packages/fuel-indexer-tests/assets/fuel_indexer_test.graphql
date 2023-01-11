@@ -16,6 +16,7 @@ type QueryRoot {
     log: Log
     scriptresult: ScriptResult
     messageout: MessageOut
+
 }
 
 type PingEntity {
@@ -78,6 +79,7 @@ type ScriptResult {
     id: Bytes32! @unique
     result: UInt8!
     gas_used: UInt8!
+    blob: Blob!
 }
 
 type MessageOut {

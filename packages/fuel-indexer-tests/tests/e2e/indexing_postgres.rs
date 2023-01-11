@@ -357,9 +357,18 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 
     let result: i64 = row.get(1);
     let gas_used: i64 = row.get(2);
+    let data: String = row.get(3);
+
+    let expected = hex::decode(&data)
+        .unwrap()
+        .into_iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>()
+        .join(",");
 
     assert!((0..=1).contains(&result));
     assert!(gas_used > 0);
+    assert_eq!(expected, "1,1,1,1,1".to_string());
 }
 
 #[actix_web::test]
