@@ -14,9 +14,7 @@ use fuel_gql_client::client::{
 use fuel_indexer_database::{queries, types::IndexAssetType, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::FuelNodeConfig,
-    defaults::{
-        DATABASE_CONNECTION_RETRY_ATTEMPTS, DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR,
-    },
+    defaults::{DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR, INDEX_FAILED_CALLS},
     utils::ServiceRequest,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
@@ -261,7 +259,7 @@ fn run_executor<T: 'static + Executor + Send + Sync>(
                 error!("Indexer executor failed {e:?}, retrying.");
                 sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERR)).await;
                 retry_count += 1;
-                if retry_count < DATABASE_CONNECTION_RETRY_ATTEMPTS {
+                if retry_count < INDEX_FAILED_CALLS {
                     continue;
                 } else {
                     error!("Indexer failed after retries, giving up.");

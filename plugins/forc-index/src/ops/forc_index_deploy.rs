@@ -31,7 +31,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         native,
     } = command;
 
-    let _ = build::exec(BuildCommand {
+    build::exec(BuildCommand {
         manifest: manifest.clone(),
         target,
         release,
