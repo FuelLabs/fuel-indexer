@@ -1,6 +1,6 @@
 [package]
 name = "forc-index"
-version = "0.1.12"
+version = "0.1.13"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Fuel Labs <contact@fuel.sh>"]
