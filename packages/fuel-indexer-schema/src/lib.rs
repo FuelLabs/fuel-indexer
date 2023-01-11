@@ -2,8 +2,8 @@ extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, Identity, Json, MessageId,
-    Salt,
+    Address, AssetId, Blob, Bytes32, Bytes4, Bytes8, ContractId, Identity, Json,
+    MessageId, Salt,
 };
 use serde::{Deserialize, Serialize};
 
@@ -37,6 +37,7 @@ pub enum FtColumn {
     Charfield(String),
     Identity(Identity),
     Boolean(bool),
+    Blob(Blob),
 }
 
 impl FtColumn {
@@ -112,9 +113,7 @@ impl FtColumn {
                 );
                 FtColumn::Timestamp(int8)
             }
-            ColumnType::Blob => {
-                panic!("Blob not supported for FtColumn.");
-            }
+            ColumnType::Blob => FtColumn::Blob(bytes[..size].to_vec()),
             ColumnType::ForeignKey => {
                 panic!("ForeignKey not supported for FtColumn.");
             }
@@ -145,6 +144,9 @@ impl FtColumn {
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
                 FtColumn::Boolean(value != 0)
+            }
+            ColumnType::Object => {
+                panic!("Object not supported for FtColumn.");
             }
         }
     }
@@ -205,6 +207,9 @@ impl FtColumn {
             },
             FtColumn::Boolean(value) => {
                 format!("{}", value)
+            }
+            FtColumn::Blob(value) => {
+                format!("'{}'", hex::encode(value))
             }
         }
     }

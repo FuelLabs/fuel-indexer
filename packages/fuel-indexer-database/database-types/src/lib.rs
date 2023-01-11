@@ -108,7 +108,8 @@ impl NewColumn {
             ColumnType::UInt4 => "integer",
             ColumnType::UInt8 => "bigint",
             ColumnType::Timestamp => "timestamp",
-            ColumnType::Blob => "bytea",
+            ColumnType::Object => "bytea",
+            ColumnType::Blob => "varchar(10485760)",
             ColumnType::ForeignKey => {
                 panic!("ForeignKey ColumnType is a reference type only.")
             }
@@ -152,6 +153,7 @@ pub enum ColumnType {
     Charfield = 17,
     Identity = 18,
     Boolean = 19,
+    Object = 20,
 }
 
 impl From<ColumnType> for i32 {
@@ -177,6 +179,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Charfield => 17,
             ColumnType::Identity => 18,
             ColumnType::Boolean => 19,
+            ColumnType::Object => 20,
         }
     }
 }
@@ -210,6 +213,7 @@ impl From<i32> for ColumnType {
             17 => ColumnType::Charfield,
             18 => ColumnType::Identity,
             19 => ColumnType::Boolean,
+            20 => ColumnType::Object,
             _ => panic!("Invalid column type."),
         }
     }
@@ -238,6 +242,7 @@ impl From<&str> for ColumnType {
             "Charfield" => ColumnType::Charfield,
             "Identity" => ColumnType::Identity,
             "Boolean" => ColumnType::Boolean,
+            "Object" => ColumnType::Object,
             _ => panic!("Invalid column type: '{}'", name),
         }
     }

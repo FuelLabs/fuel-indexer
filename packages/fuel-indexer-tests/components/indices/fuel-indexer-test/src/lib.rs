@@ -137,6 +137,7 @@ mod fuel_indexer_test {
             id: derive_id([0u8; 32], u64::to_be_bytes(result).to_vec()),
             result,
             gas_used,
+            blob: vec![1u8, 1, 1, 1, 1],
         };
 
         entity.save();
