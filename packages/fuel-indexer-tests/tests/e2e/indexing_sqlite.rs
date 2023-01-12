@@ -476,3 +476,58 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_sqlite() {
     assert!(block_height >= 1);
     assert!(time >= 1);
 }
+
+// #[actix_web::test]
+// #[cfg(all(feature = "e2e", feature = "sqlite"))]
+// async fn test_index_not_triggered_when_start_block_not_met_sqlite() {
+//     let pool = sqlite_connection_pool().await;
+//     let mut srvc = indexer_service_sqlite().await;
+
+//     let contract = connect_to_deployed_contract().await.unwrap();
+//     let app = test::init_service(app(contract)).await;
+//     let req = test::TestRequest::get().uri("/block_height").to_request();
+//     let res = test::call_and_read_body(&app, req).await;
+//     let block_height = String::from_utf8(res.to_vec())
+//         .unwrap()
+//         .parse::<u64>()
+//         .unwrap();
+
+//     let mut manifest: Manifest =
+//         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+//     manifest.start_block = Some(block_height + 100);
+
+//     update_test_manifest_asset_paths(&mut manifest);
+
+//     srvc.register_index_from_manifest(manifest)
+//         .await
+//         .expect("Failed to initialize indexer.");
+
+//     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+//     let mut conn = pool.acquire().await.unwrap();
+//     let pre_check = sqlx::query(&format!(
+//         "SELECT * FROM fuel_indexer_test.block where height = '{}'",
+//         block_height + 1,
+//     ))
+//     .fetch_optional(&mut conn)
+//     .await
+//     .unwrap();
+
+//     assert!(pre_check.is_none());
+
+//     let req = test::TestRequest::post().uri("/ping").to_request();
+//     let _ = app.call(req).await;
+
+//     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+//     let post_check = sqlx::query(&format!(
+//         "SELECT * FROM fuel_indexer_test.block where height = '{}'",
+//         block_height + 1,
+//     ))
+//     .fetch_optional(&mut conn)
+//     .await
+//     .unwrap();
+
+//     assert!(post_check.is_none());
+// }
