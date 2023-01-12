@@ -511,11 +511,9 @@ async fn test_index_respects_start_block_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-
     let mut conn = pool.acquire().await.unwrap();
     let pre_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test.block where height = '{}'",
+        "SELECT * FROM fuel_indexer_test.block where height = {}",
         block_height + 1,
     ))
     .fetch_optional(&mut conn)
@@ -530,7 +528,7 @@ async fn test_index_respects_start_block_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let first_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test.block where height = '{}'",
+        "SELECT * FROM fuel_indexer_test.block where height = {}",
         block_height + 1,
     ))
     .fetch_optional(&mut conn)
@@ -545,7 +543,7 @@ async fn test_index_respects_start_block_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let final_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test.block where height = '{}'",
+        "SELECT * FROM fuel_indexer_test.block where height = {}",
         block_height + 2,
     ))
     .fetch_optional(&mut conn)
