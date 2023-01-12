@@ -321,7 +321,7 @@ impl IndexerService {
         let schema_bytes = schema.as_bytes().to_vec();
 
         self.manager
-            .new_schema(&manifest.namespace, &schema)
+            .new_schema(&manifest.namespace, &schema, &mut conn)
             .await?;
 
         let (handle, module_bytes) = create_wasm_executor(
@@ -400,7 +400,7 @@ impl IndexerService {
         let _schema_bytes = schema.as_bytes().to_vec();
 
         self.manager
-            .new_schema(&manifest.namespace, &schema)
+            .new_schema(&manifest.namespace, &schema, &mut conn)
             .await?;
 
         let uid = manifest.uid();
