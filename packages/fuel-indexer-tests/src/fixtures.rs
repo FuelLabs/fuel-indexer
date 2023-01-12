@@ -339,7 +339,7 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
-    use fuels::prelude::CallParameters;
+    use fuels::prelude::{CallParameters, Provider};
     use std::path::Path;
 
     async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
@@ -491,6 +491,13 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_get_block_height() -> impl Responder {
+        let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
+        let block_height = provider.latest_block_height().await.unwrap();
+
+        HttpResponse::Ok().body(block_height.to_string())
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest,
     }
@@ -525,6 +532,10 @@ pub mod test_web {
             .route("/messageout", web::post().to(fuel_indexer_test_messageout))
             .route("/callreturn", web::post().to(fuel_indexer_test_callreturn))
             .route("/multiarg", web::post().to(fuel_indexer_test_multiargs))
+            .route(
+                "/block_height",
+                web::get().to(fuel_indexer_test_get_block_height),
+            )
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {
