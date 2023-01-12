@@ -479,7 +479,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_sqlite() {
 
 // #[actix_web::test]
 // #[cfg(all(feature = "e2e", feature = "sqlite"))]
-// async fn test_index_not_triggered_when_start_block_not_met_sqlite() {
+// async fn test_index_respects_start_block_sqlite() {
 //     let pool = sqlite_connection_pool().await;
 //     let mut srvc = indexer_service_sqlite().await;
 
@@ -495,7 +495,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_sqlite() {
 //     let mut manifest: Manifest =
 //         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
-//     manifest.start_block = Some(block_height + 100);
+//     manifest.start_block = Some(block_height + 2);
 
 //     update_test_manifest_asset_paths(&mut manifest);
 
@@ -521,7 +521,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_sqlite() {
 
 //     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-//     let post_check = sqlx::query(&format!(
+//     let first_check = sqlx::query(&format!(
 //         "SELECT * FROM fuel_indexer_test.block where height = '{}'",
 //         block_height + 1,
 //     ))
@@ -529,5 +529,29 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_sqlite() {
 //     .await
 //     .unwrap();
 
-//     assert!(post_check.is_none());
+//     assert!(first_check.is_none());
+
+//     let req = test::TestRequest::post().uri("/ping").to_request();
+//     let _ = app.call(req).await;
+
+//     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+//     let final_check = sqlx::query(&format!(
+//         "SELECT * FROM fuel_indexer_test.block where height = '{}'",
+//         block_height + 2,
+//     ))
+//     .fetch_optional(&mut conn)
+//     .await
+//     .unwrap();
+
+//     assert!(final_check.is_some());
+
+//     let row = final_check.unwrap();
+
+//     let id: String = row.get(0);
+//     let height: i64 = row.get(1);
+//     let timestamp: i64 = row.get(2);
+
+//     assert_eq!(height, (block_height + 2) as i64);
+//     assert!(timestamp > 0);
 // }
