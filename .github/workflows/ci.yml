@@ -363,7 +363,7 @@ jobs:
         run: rustup override set stable-${{ matrix.job.target }}
       
       - name: Install cross
-        run: cargo install cross --target ${{ matrix.job.target }}
+        run: cargo install cross
 
       - name: Build fuel-indexer
         run: |
