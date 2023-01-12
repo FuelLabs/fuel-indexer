@@ -16,12 +16,17 @@ use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
 };
-use hyper::Error as HyperError;
+use hyper::{Method, Error as HyperError};
 use serde_json::json;
 use std::{net::SocketAddr, time::Instant};
 use thiserror::Error;
 use tokio::sync::mpsc::{error::SendError, Sender};
-use tracing::error;
+use tower_http::{
+    cors::{Any, CorsLayer},
+    trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
+    LatencyUnit,
+};
+use tracing::{Level, error};
 
 pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
@@ -143,7 +148,23 @@ impl GraphQlApi {
             .nest("/index", index_routes)
             .nest("/graph", graph_route);
 
-        let app = Router::new().nest("/api", api_routes);
+        let app = Router::new()
+            .nest("/api", api_routes)
+            .layer(
+                TraceLayer::new_for_http()
+                    .make_span_with(DefaultMakeSpan::new().include_headers(true))
+                    .on_request(DefaultOnRequest::new().level(Level::INFO))
+                    .on_response(
+                        DefaultOnResponse::new()
+                            .level(Level::INFO)
+                            .latency_unit(LatencyUnit::Micros),
+                    ),
+            )
+            .layer(
+                CorsLayer::new()
+                    .allow_methods(vec![Method::GET, Method::POST])
+                    .allow_origin(Any {}),
+            );
 
         Ok(app)
     }
