@@ -346,7 +346,7 @@ impl CreateStatement for ColumnIndex {
             DbType::Sqlite => {
                 let _ = write!(
                     frag,
-                    "INDEX {} ON {}({});",
+                    "INDEX IF NOT EXISTS {} ON {}({});",
                     self.name(),
                     self.table_name,
                     self.column_name
