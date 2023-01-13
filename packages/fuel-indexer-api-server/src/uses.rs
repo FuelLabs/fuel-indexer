@@ -219,7 +219,11 @@ pub(crate) async fn register_index_assets(
                             schema_manager
                                 .write()
                                 .await
-                                .new_schema(&namespace, &String::from_utf8_lossy(&data))
+                                .new_schema(
+                                    &namespace,
+                                    &String::from_utf8_lossy(&data),
+                                    &mut conn,
+                                )
                                 .await?;
 
                             result

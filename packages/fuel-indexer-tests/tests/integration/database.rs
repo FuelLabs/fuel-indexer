@@ -69,6 +69,11 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
 
     let manager = SchemaManager::new(pool.clone());
 
+    let mut conn = pool
+        .acquire()
+        .await
+        .expect("Failed to acquire indexer connection");
+
     let manifest = Manifest::from_str(SIMPLE_WASM_MANIFEST).unwrap();
 
     // SchemaManager.build calls inject_native_entities_into_schema so since we're using
@@ -76,19 +81,11 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
     let schema = inject_native_entities_into_schema(SIMPLE_WASM_GRAPHQL_SCHEMA);
 
     let result = manager
-        .new_schema("test_namespace", SIMPLE_WASM_GRAPHQL_SCHEMA)
+        .new_schema("test_namespace", SIMPLE_WASM_GRAPHQL_SCHEMA, &mut conn)
         .await;
     assert!(result.is_ok());
 
-    let pool = IndexerConnectionPool::connect(database_url)
-        .await
-        .expect("Connection pool error");
-
     let version = schema_version(&schema);
-    let mut conn = pool
-        .acquire()
-        .await
-        .expect("Failed to acquire indexer connection");
     let results = queries::columns_get_schema(&mut conn, "test_namespace", &version)
         .await
         .expect("Metadata query failed");

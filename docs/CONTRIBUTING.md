@@ -113,22 +113,40 @@ This is a rough outline of what a contributor's workflow looks like:
   ⚠️ **DO NOT submit PRs that do not have an associated issue** ⚠️
 - Create a Git branch from where you want to base your work.
   - Most work is usually branched off of `master`
+  - Give your branch a name related to the work you're doing
 - Write code, add test cases, and commit your work.
 - Run tests and make sure all tests pass.
+- Your commit message should be formatted as `[commit type]: [short commit blurb]`
+  - Examples:
+    - If you fixed a bug, your message is `fix: sqlite database locking issue`
+    - If you added new functionality, your message would be `enhancement: i add
+        something super cool`
+    - If you just did a chore your message is: `chore: i did somthing not fun`
+  - Keeping commit messages short and consistent helps users parse release
+        notes
 - Push up your branch to Github then (on the right hand side of the Github UI):
-  Assign yourself as the owner of the PR
-  Add any and all necessary labels to your PR
-  Link the issue your PR solves, to your PR
+  - Assign yourself as the owner of the PR
+  - Add any and all necessary labels to your PR
+  - Link the issue your PR solves, to your PR
 - If you are part of the FuelLabs Github org, please open a PR from the repository itself.
 - Otherwise, push your changes to a branch in your fork of the repository and submit a pull request.
-    Make sure mention the issue, which is created at step 1, in the commit message.
+  - Make sure mention the issue, which is created at step 1, in the commit message.
 - Your PR will be reviewed and some changes may be requested.
-    Once you've made changes, your PR must be re-reviewed and approved.
-    If the PR becomes out of date, you can use GitHub's 'update branch' button.
-    If there are conflicts, you can merge and resolve them locally. Then push to your PR branch.
-        Any changes to the branch will require a re-review.
+  - Once you've made changes, your PR must be re-reviewed and approved.
+  - If the PR becomes out of date, you can use GitHub's 'update branch' button.
+  - If there are conflicts, you can merge and resolve them locally. Then push to your PR branch.
+    - Any changes to the branch will require a re-review.
 - Our CI (Github Actions) automatically tests all authorized pull requests.
 - Use Github to merge the PR once approved.
+
+### Commit categories
+- `bug`: If fixing broken functionality
+- `enhancement`: If adding new functionality
+- `chore`: If finishing valuable work (that's no fun!)
+- `testing`: If only updating/writing tests
+- `docs`: If just updating docs
+- `feat`: If adding a non-trivial new feature
+- There will be categories not covered in this doc - use your best judgement!
 
 Thanks for your contributions!
 
@@ -136,4 +154,4 @@ Thanks for your contributions!
 
 For beginners, we have prepared many suitable tasks for you. Checkout our [Good First Issues](https://github.com/FuelLabs/fuel-indexer/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) for a list.
 
-If you are planning something big, for example, relates to multiple components or changes current behaviors, make sure to open an issue to discuss with us before continuing.
+If you are planning something that relates to multiple components or changes current behaviors, make sure to open an issue to discuss with us before continuing.

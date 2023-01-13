@@ -567,11 +567,11 @@ mod tests {
         assert_eq!(indices.len(), 2);
         assert_eq!(
             indices[0].create_statement(),
-            "CREATE INDEX payer_account_idx ON payer(account);".to_string()
+            "CREATE INDEX IF NOT EXISTS payer_account_idx ON payer(account);".to_string()
         );
         assert_eq!(
             indices[1].create_statement(),
-            "CREATE INDEX payee_hash_idx ON payee(hash);".to_string()
+            "CREATE INDEX IF NOT EXISTS payee_hash_idx ON payee(hash);".to_string()
         );
     }
 
