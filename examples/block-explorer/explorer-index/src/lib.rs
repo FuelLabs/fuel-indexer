@@ -54,6 +54,7 @@ mod explorer_index {
             id: first8_bytes_to_u64(block_data.id),
             height: block_data.height,
             producer,
+            hash: block_data.id,
             timestamp: block_data.time,
             gas_limit: block_gas_limit,
         };
@@ -268,6 +269,7 @@ mod explorer_index {
             // Persist the transaction to the database via the `Tx` object defined in the GraphQL schema.
             let tx_entity = Tx {
                 block: block.id,
+                hash: tx.id,
                 timestamp: block.timestamp,
                 id: first8_bytes_to_u64(tx.id),
                 value: tx_amount,
