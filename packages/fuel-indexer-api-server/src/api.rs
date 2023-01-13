@@ -16,7 +16,7 @@ use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
 };
-use hyper::{Method, Error as HyperError};
+use hyper::{Error as HyperError, Method};
 use serde_json::json;
 use std::{net::SocketAddr, time::Instant};
 use thiserror::Error;
@@ -26,7 +26,7 @@ use tower_http::{
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
-use tracing::{Level, error};
+use tracing::{error, Level};
 
 pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
