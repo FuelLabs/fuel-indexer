@@ -122,8 +122,7 @@ This is a rough outline of what a contributor's workflow looks like:
     - If you added new functionality, your message would be `enhancement: i add
         something super cool`
     - If you just did a chore your message is: `chore: i did somthing not fun`
-    - So on and so forth
-    - Keeping commit messages short and consistent helps users parse release
+  - Keeping commit messages short and consistent helps users parse release
         notes
 - Push up your branch to Github then (on the right hand side of the Github UI):
   - Assign yourself as the owner of the PR
@@ -155,4 +154,4 @@ Thanks for your contributions!
 
 For beginners, we have prepared many suitable tasks for you. Checkout our [Good First Issues](https://github.com/FuelLabs/fuel-indexer/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) for a list.
 
-If you are planning something big, for example, relates to multiple components or changes current behaviors, make sure to open an issue to discuss with us before continuing.
+If you are planning something that relates to multiple components or changes current behaviors, make sure to open an issue to discuss with us before continuing.
