@@ -61,15 +61,29 @@ fn process_field<'a>(
     let ident = format_ident! {"{}", name};
 
     // Type may be nullable, so let's grab the actual column type
-    let (_, column_type) = get_column_type(typ.clone());
+    let (is_nullable, column_type) = get_column_type(typ.clone());
 
-    let extractor = quote! {
-        let item = vec.pop().expect("Missing item in row");
-        let #ident = match item {
-            FtColumn::#column_type(t) => t,
-            _ => panic!("Invalid column type {:?}", item),
-        };
-
+    let extractor = if is_nullable {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_type(t) => t,
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    } else {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_type(t) => match t {
+                    Some(inner_type) => { inner_type },
+                    None => {
+                        panic!("Non-nullable type is returning a None value.")
+                    }
+                },
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
     };
 
     (typ, ident, extractor)
@@ -95,13 +109,23 @@ fn process_fk_field<'a>(
     let typ = process_type(types, &field_type, false);
     let ident = format_ident! {"{}", field_name.to_lowercase()};
 
+    let (_, column_type) = get_column_type(typ.clone());
+
+    // TODO: We should make a formal decision as to whether we'll allow
+    // foreign keys to be null or if they can never be null, thus requiring
+    // that the reference field be non-nullable as well. As it stands right
+    // now, the code assumes that foreign keys cannot be null. -- deekerno
     let extractor = quote! {
         let item = vec.pop().expect("Missing item in row.");
         let #ident = match item {
-            FtColumn::#typ(t) => t,
+            FtColumn::#column_type(t) => match t {
+                Some(inner_type) => { inner_type },
+                None => {
+                    panic!("Non-nullable type is returning a None value.")
+                }
+            },
             _ => panic!("Invalid column type: {:?}.", item),
         };
-
     };
 
     (typ, ident, extractor)
@@ -149,14 +173,12 @@ fn process_type_def<'a>(
                     column_type_name_str = column_type_name.to_string();
                 }
 
-                processed.insert(column_type_name_str);
+                processed.insert(column_type_name_str.clone());
 
-                let decoder = quote! { FtColumn::#column_type_name(self.#field_name), };
-
-                let full_field_name = if is_nullable {
-                    quote! { Some(#field_name) }
+                let decoder = if is_nullable {
+                    quote! { FtColumn::#column_type_name(self.#field_name), }
                 } else {
-                    quote! { #field_name }
+                    quote! { FtColumn::#column_type_name(Some(self.#field_name.clone())), }
                 };
 
                 block = quote! {
@@ -172,7 +194,7 @@ fn process_type_def<'a>(
 
                 construction = quote! {
                     #construction
-                    #field_name: #full_field_name,
+                    #field_name,
                 };
 
                 flattened = quote! {
