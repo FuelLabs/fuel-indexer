@@ -115,7 +115,7 @@ impl GraphQlApi {
         let config = config.clone();
         let start_time = Arc::new(Instant::now());
 
-        if config.graphql_api.run_migrations.is_some() {
+        if config.graphql_api.run_migrations {
             let mut c = pool.acquire().await?;
             queries::run_migration(&mut c).await?;
         }

@@ -6,7 +6,7 @@ use clap::Parser;
 #[derive(Debug, Parser)]
 pub struct Command {
     /// URL at which to find indexer service.
-    #[clap(long, default_value = defaults::INDEXER_SERVICE_URL, help = "URL at which to find indexer service.")]
+    #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which to find indexer service.")]
     pub url: String,
 
     /// Port at which to detect indexer service API is running.

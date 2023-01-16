@@ -52,67 +52,127 @@ pub fn env_or_default(var: EnvVar, default: String) -> String {
 #[derive(Debug, Parser, Clone)]
 #[clap(
     name = "Indexer Service",
-    about = "Standalone binary for the fuel indexer service",
+    about = "Standalone binary for the fuel indexer service.",
     version
 )]
 pub struct IndexerArgs {
-    #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
+    /// Log level passed to the Fuel Indexer service.
+    #[clap(long, default_value = "info", value_parser(["info", "debug", "error", "warn"]), help = "Log level passed to the Fuel Indexer service.")]
+    pub log_level: String,
+
+    /// Indexer service config file.
+    #[clap(short, long, parse(from_os_str), help = "Indexer service config file.")]
     pub config: Option<PathBuf>,
-    #[clap(short, long, parse(from_os_str), help = "Indexer service config file")]
+
+    /// Index config file.
+    #[clap(short, long, parse(from_os_str), help = "Index config file.")]
     pub manifest: Option<PathBuf>,
+
+    /// Host of the running Fuel node.
     #[clap(
         long,
-        help = "Listening IP of the running Fuel node.",
+        help = "Host of the running Fuel node.",
         default_value = defaults::FUEL_NODE_HOST
     )]
     pub fuel_node_host: String,
+
+    /// Listening port of the running Fuel node.
     #[clap(
         long,
         help = "Listening port of the running Fuel node.",
         default_value = defaults::FUEL_NODE_PORT
     )]
     pub fuel_node_port: String,
-    #[clap(long, help = "GraphQL API IP.", default_value = defaults::GRAPHQL_API_HOST)]
+
+    /// GraphQL API host.
+    #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
     pub graphql_api_host: String,
+
+    /// GraphQL API port.
     #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
     pub graphql_api_port: String,
+
+    /// Database type.
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres", "sqlite"]))]
     pub database: String,
-    #[clap(long, help = "Sqlite database.", default_value = defaults::SQLITE_DATABASE)]
+
+    /// Path to SQLite database.
+    #[clap(long, help = "Path to SQLite database.", default_value = defaults::SQLITE_DATABASE)]
     pub sqlite_database: String,
+
+    /// Postgres username.
     #[clap(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
+
+    /// Postgres database.
     #[clap(long, help = "Postgres database.")]
     pub postgres_database: Option<String>,
+
+    /// Postgres password.
     #[clap(long, help = "Postgres password.")]
     pub postgres_password: Option<String>,
+
+    /// Postgres host.
     #[clap(long, help = "Postgres host.")]
     pub postgres_host: Option<String>,
+
+    /// Postgres port.
     #[clap(long, help = "Postgres port.")]
     pub postgres_port: Option<String>,
-    #[clap(long, help = "Run database migrations for the GraphQL API service.")]
-    pub run_migrations: Option<bool>,
-    #[clap(long, help = "Use Prometheus metrics reporting.")]
-    pub metrics: Option<bool>,
+
+    /// Run database migrations before starting service.
+    #[clap(
+        long,
+        default_value = "true",
+        help = "Run database migrations before starting service."
+    )]
+    pub run_migrations: bool,
+
+    /// Use Prometheus metrics reporting.
+    #[clap(
+        long,
+        default_value = "true",
+        help = "Use Prometheus metrics reporting."
+    )]
+    pub metrics: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
-#[clap(name = "Indexer API Service", about = "Fuel indexer GraphQL API")]
+#[clap(
+    name = "Indexer API Service",
+    about = "Fuel indexer GraphQL API",
+    version
+)]
 pub struct ApiServerArgs {
-    #[clap(short, long, help = "API Server config.")]
+    /// API server config file.
+    #[clap(short, long, help = "API server config file.")]
     pub config: Option<PathBuf>,
-    #[clap(long, help = "GraphQL API IP.", default_value = defaults::GRAPHQL_API_HOST)]
+
+    /// GraphQL API host.
+    #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
     pub graphql_api_host: String,
+
+    /// GraphQL API port.
     #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
     pub graphql_api_port: String,
+
+    /// Postgres username.
     #[clap(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
+
+    /// Postgres database.
     #[clap(long, help = "Postgres database.")]
     pub postgres_database: Option<String>,
+
+    /// Postgres password.
     #[clap(long, help = "Postgres password.")]
     pub postgres_password: Option<String>,
+
+    /// Postgres host.
     #[clap(long, help = "Postgres host.")]
     pub postgres_host: Option<String>,
+
+    /// Postgres port.
     #[clap(long, help = "Postgres port.")]
     pub postgres_port: Option<String>,
 }
@@ -203,7 +263,7 @@ impl IndexerConfig {
                 port: args.graphql_api_port,
                 run_migrations: args.run_migrations,
             },
-            metrics: args.metrics.unwrap_or(false),
+            metrics: args.metrics,
         };
 
         config.inject_opt_env_vars();
@@ -254,7 +314,7 @@ impl IndexerConfig {
 
             if let Some(graphql_run_migrations) = graphql_run_migrations {
                 config.graphql_api.run_migrations =
-                    Some(graphql_run_migrations.as_bool().unwrap());
+                    graphql_run_migrations.as_bool().unwrap();
             }
         }
 

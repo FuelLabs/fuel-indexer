@@ -20,7 +20,7 @@ use tracing::{error, info};
 
 pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let DeployCommand {
-        url,
+        host,
         manifest,
         auth,
         target,
@@ -59,7 +59,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .file("schema", Path::new(&graphql_schema))?
         .file("wasm", Path::new(&module_path))?;
 
-    let target = format!("{}/api/index/{}/{}", &url, &namespace, &identifier);
+    let target = format!("{}/api/index/{}/{}", &host, &namespace, &identifier);
 
     info!(
         "Deploying index at {} to {}",

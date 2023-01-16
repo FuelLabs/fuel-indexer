@@ -20,7 +20,7 @@ enum ForcIndex {
     Init(InitCommand),
     New(NewCommand),
     Deploy(DeployCommand),
-    Start(StartCommand),
+    Start(Box<StartCommand>),
     Check(CheckCommand),
     Remove(RemoveCommand),
     Build(BuildCommand),
