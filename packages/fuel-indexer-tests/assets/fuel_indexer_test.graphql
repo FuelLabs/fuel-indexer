@@ -16,7 +16,7 @@ type QueryRoot {
     log: Log
     scriptresult: ScriptResult
     messageout: MessageOut
-
+    optionentity: OptionEntity
 }
 
 type PingEntity {
@@ -83,7 +83,6 @@ type ScriptResult {
 }
 
 type MessageOut {
-    # TODO: https://github.com/FuelLabs/fuel-indexer/issues/298
     id: MessageId! @unique
     sender: Address!
     recipient: Address!
@@ -91,4 +90,11 @@ type MessageOut {
     nonce: Bytes32!
     len: UInt8!
     digest: Bytes32!
+}
+
+type OptionEntity {
+    id: ID! @unique
+    int_required: UInt8!
+    int_optional_some: UInt8
+    addr_optional_none: Address
 }

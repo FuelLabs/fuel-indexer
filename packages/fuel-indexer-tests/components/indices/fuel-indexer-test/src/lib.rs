@@ -224,4 +224,17 @@ mod fuel_indexer_test {
 
         pi.save();
     }
+
+    fn fuel_indexer_test_optional_schema_fields(ping: Ping) {
+        Logger::info("fuel_indexer_test_optional_schema_fields handling Ping event and setting optional fields.");
+
+        let entity = OptionEntity {
+            id: ping.id,
+            int_required: 100,
+            int_optional_some: Some(999),
+            addr_optional_none: None,
+        };
+
+        entity.save();
+    }
 }
