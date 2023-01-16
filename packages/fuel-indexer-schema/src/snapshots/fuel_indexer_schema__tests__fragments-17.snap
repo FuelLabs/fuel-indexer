@@ -1,7 +1,0 @@
----
-source: fuel-indexer-schema/src/lib.rs
-assertion_line: 237
-expression: Identity.query_fragment()
----
-"'001212121212121212121212121212121212121212121212121212121212121212'"
-

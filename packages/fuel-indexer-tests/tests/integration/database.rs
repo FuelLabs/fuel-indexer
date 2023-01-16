@@ -117,8 +117,8 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
 
     let object_id = 4;
     let columns = vec![
-        FtColumn::ID(object_id),
-        FtColumn::Address(Address::from([0x04; 32])),
+        FtColumn::ID(Some(object_id)),
+        FtColumn::Address(Some(Address::from([0x04; 32]))),
     ];
     let bytes = vec![0u8, 1u8, 2u8, 3u8];
     db.start_transaction()
