@@ -93,6 +93,7 @@ fn process_fk_field<'a>(
     obj: &ObjectType<'a, String>,
     field: &Field<'a, String>,
     types_map: &HashMap<String, String>,
+    is_nullable: bool,
 ) -> (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
@@ -105,26 +106,32 @@ fn process_fk_field<'a>(
     } = get_join_directive_info(field, obj, types_map);
 
     let field_type: Type<'a, String> = Type::NamedType(reference_field_type_name);
-    let typ = process_type(types, &field_type, false);
+    let typ = process_type(types, &field_type, is_nullable);
     let ident = format_ident! {"{}", field_name.to_lowercase()};
 
     let (_, column_type) = get_column_type(typ.clone());
 
-    // TODO: We should make a formal decision as to whether we'll allow
-    // foreign keys to be null or if they can never be null, thus requiring
-    // that the reference field be non-nullable as well. As it stands right
-    // now, the code assumes that foreign keys cannot be null. -- deekerno
-    let extractor = quote! {
-        let item = vec.pop().expect("Missing item in row.");
-        let #ident = match item {
-            FtColumn::#column_type(t) => match t {
-                Some(inner_type) => { inner_type },
-                None => {
-                    panic!("Non-nullable type is returning a None value.")
-                }
-            },
-            _ => panic!("Invalid column type: {:?}.", item),
-        };
+    let extractor = if is_nullable {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_type(t) => t,
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    } else {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_type(t) => match t {
+                    Some(inner_type) => { inner_type },
+                    None => {
+                        panic!("Non-nullable type is returning a None value.")
+                    }
+                },
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
     };
 
     (typ, ident, extractor)
@@ -167,7 +174,7 @@ fn process_type_def<'a>(
                     && !primitives.contains(&column_type_name_str)
                 {
                     (type_name, field_name, ext) =
-                        process_fk_field(types, obj, field, types_map);
+                        process_fk_field(types, obj, field, types_map, is_nullable);
                     column_type_name = type_name.clone();
                     column_type_name_str = column_type_name.to_string();
                 }
