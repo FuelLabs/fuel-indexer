@@ -1,6 +1,5 @@
-use crate::database::Database;
 use crate::ffi;
-use crate::{IndexerError, IndexerResult, Manifest};
+use crate::{database::Database, IndexerError, IndexerResult, Manifest};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_indexer_schema::utils::serialize;
@@ -17,8 +16,287 @@ use wasmer::{
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_universal::Universal;
 
+use async_std::{fs::File, io::ReadExt};
+use chrono::{TimeZone, Utc};
+use fuel_gql_client::client::{
+    types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
+    FuelClient, PageDirection, PaginatedResult, PaginationRequest,
+};
+use fuel_indexer_lib::{
+    config::FuelNodeConfig,
+    defaults::{
+        DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR, INDEX_FAILED_CALLS,
+        MAX_EMPTY_BLOCK_REQUESTS,
+    },
+};
+use fuel_indexer_types::{
+    abi::TransactionData,
+    tx::{TransactionStatus, TxId},
+    Bytes32,
+};
+use std::marker::{Send, Sync};
+use std::str::FromStr;
+use tokio::{
+    task::JoinHandle,
+    time::{sleep, Duration},
+};
+use tracing::{debug, info};
+
 fn compiler() -> Cranelift {
     Cranelift::default()
+}
+
+pub async fn create_wasm_executor(
+    fuel_node: &FuelNodeConfig,
+    db_url: &String,
+    manifest: &Manifest,
+    module_bytes: Vec<u8>,
+) -> IndexerResult<(JoinHandle<()>, Vec<u8>)> {
+    // If the task creation is via the bootstrap manifest
+
+    if module_bytes.is_empty() {
+        match &manifest.module {
+            crate::Module::Wasm(ref module) => {
+                let mut bytes = Vec::<u8>::new();
+                let mut file = File::open(module).await?;
+                file.read_to_end(&mut bytes).await?;
+
+                let executor = WasmIndexExecutor::new(
+                    db_url.to_string(),
+                    manifest.to_owned(),
+                    bytes.clone(),
+                )
+                .await?;
+                let handle = tokio::spawn(run_executor(
+                    &fuel_node.to_string(),
+                    executor,
+                    manifest.start_block,
+                ));
+
+                Ok((handle, bytes))
+            }
+            crate::Module::Native => Err(IndexerError::NativeExecutionInstantiationError),
+        }
+        // If the task creation is via index asset registry
+    } else {
+        let executor = WasmIndexExecutor::new(
+            db_url.into(),
+            manifest.to_owned(),
+            module_bytes.clone(),
+        )
+        .await?;
+        let handle = tokio::spawn(run_executor(
+            &fuel_node.to_string(),
+            executor,
+            manifest.start_block,
+        ));
+
+        Ok((handle, module_bytes))
+    }
+}
+
+pub async fn create_native_executor<
+    T: Future<Output = IndexerResult<()>> + Send + 'static,
+>(
+    db_url: &str,
+    fuel_node: &FuelNodeConfig,
+    manifest: Manifest,
+    handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
+) -> IndexerResult<JoinHandle<()>> {
+    let start_block = manifest.start_block;
+    let executor = NativeIndexExecutor::new(db_url, manifest, handle_events).await?;
+    let handle =
+        tokio::spawn(run_executor(&fuel_node.to_string(), executor, start_block));
+    Ok(handle)
+}
+
+pub fn run_executor<T: 'static + Executor + Send + Sync>(
+    fuel_node_addr: &str,
+    mut executor: T,
+    start_block: Option<u64>,
+) -> impl Future<Output = ()> {
+    let start_block_value = start_block.unwrap_or(1);
+    let mut next_cursor = if start_block_value > 1 {
+        let decremented = start_block_value - 1;
+        Some(decremented.to_string())
+    } else {
+        None
+    };
+
+    info!("Subscribing to Fuel node at {}", fuel_node_addr);
+
+    let client = FuelClient::from_str(fuel_node_addr).unwrap_or_else(|e| {
+        panic!(
+            "Unable to connect to Fuel node at '{}': {}",
+            fuel_node_addr, e
+        )
+    });
+
+    async move {
+        let mut retry_count = 0;
+        let mut empty_block_reqs = 0;
+
+        loop {
+            debug!("Fetching paginated results from {:?}", next_cursor);
+
+            let PaginatedResult {
+                cursor, results, ..
+            } = client
+                .blocks(PaginationRequest {
+                    cursor: next_cursor.clone(),
+                    results: 10,
+                    direction: PageDirection::Forward,
+                })
+                .await
+                .unwrap_or_else(|e| {
+                    error!("Failed to retrieve blocks: {}", e);
+                    PaginatedResult {
+                        cursor: None,
+                        results: vec![],
+                        has_next_page: false,
+                        has_previous_page: false,
+                    }
+                });
+
+            debug!("Processing {} results", results.len());
+
+            let mut block_info = Vec::new();
+            for block in results.into_iter().rev() {
+                let producer = block.block_producer().map(|pk| pk.hash());
+
+                // NOTE: for now assuming we have a single contract instance,
+                // we'll need to watch contract creation events here in
+                // case an indexer would be interested in processing it.
+                let mut transactions = Vec::new();
+
+                for trans in block.transactions {
+                    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/288
+                    match client.transaction(&trans.id.to_string()).await {
+                        Ok(result) => {
+                            if let Some(TransactionResponse {
+                                transaction,
+                                status,
+                            }) = result
+                            {
+                                let receipts = match client
+                                    .receipts(&trans.id.to_string())
+                                    .await
+                                {
+                                    Ok(r) => r,
+                                    Err(e) => {
+                                        error!(
+                                            "Client communication error fetching receipts: {:?}",
+                                            e
+                                        );
+                                        vec![]
+                                    }
+                                };
+
+                                // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
+                                let status = match status {
+                                    GqlTransactionStatus::Success {
+                                        block_id,
+                                        time,
+                                        ..
+                                    } => TransactionStatus::Success {
+                                        block_id,
+                                        time: Utc
+                                            .timestamp_opt(time.to_unix(), 0)
+                                            .single()
+                                            .expect(
+                                                "Failed to parse transaction timestamp",
+                                            ),
+                                    },
+                                    GqlTransactionStatus::Failure {
+                                        block_id,
+                                        time,
+                                        reason,
+                                        ..
+                                    } => TransactionStatus::Failure {
+                                        block_id,
+                                        time: Utc
+                                            .timestamp_opt(time.to_unix(), 0)
+                                            .single()
+                                            .expect(
+                                                "Failed to parse transaction timestamp",
+                                            ),
+                                        reason,
+                                    },
+                                    GqlTransactionStatus::Submitted { submitted_at } => {
+                                        TransactionStatus::Submitted {
+                                            submitted_at: Utc
+                                                .timestamp_opt(submitted_at.to_unix(), 0)
+                                                .single()
+                                                .expect(
+                                                    "Failed to parse transaction timestamp"
+                                                ),
+                                        }
+                                    }
+                                    GqlTransactionStatus::SqueezedOut { reason } => {
+                                        TransactionStatus::SqueezedOut { reason }
+                                    }
+                                };
+
+                                let tx_data = TransactionData {
+                                    receipts,
+                                    status,
+                                    transaction,
+                                    id: TxId::from(trans.id),
+                                };
+                                transactions.push(tx_data);
+                            }
+                        }
+                        Err(e) => {
+                            error!(
+                                "Client communication error fetching transactions: {:?}",
+                                e
+                            )
+                        }
+                    };
+                }
+
+                let block = BlockData {
+                    height: block.header.height.0,
+                    id: Bytes32::from(block.id),
+                    producer,
+                    time: block.header.time.0.to_unix(),
+                    transactions,
+                };
+
+                block_info.push(block);
+            }
+
+            let result = executor.handle_events(block_info).await;
+
+            if let Err(e) = result {
+                error!("Indexer executor failed {e:?}, retrying.");
+                sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERR)).await;
+                retry_count += 1;
+                if retry_count < INDEX_FAILED_CALLS {
+                    continue;
+                } else {
+                    error!("Indexer failed after retries, giving up. <('.')>");
+                    break;
+                }
+            }
+
+            if cursor.is_none() {
+                info!("No new blocks to process, sleeping.");
+                sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
+
+                empty_block_reqs += 1;
+
+                if empty_block_reqs == MAX_EMPTY_BLOCK_REQUESTS {
+                    error!("No blocks being produced, giving up. <('.')>");
+                    break;
+                }
+            } else {
+                next_cursor = cursor;
+            }
+
+            retry_count = 0;
+        }
+    }
 }
 
 #[async_trait]
@@ -58,6 +336,7 @@ impl IndexEnv {
     }
 }
 
+// TODO: Use mutex
 unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Sync
     for NativeIndexExecutor<F>
 {

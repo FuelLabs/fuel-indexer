@@ -2564,6 +2564,7 @@ dependencies = [
  "hyper",
  "hyper-rustls 0.23.1",
  "itertools",
+ "lazy_static",
  "prometheus",
  "rand 0.8.5",
  "serde",
