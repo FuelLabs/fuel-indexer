@@ -16,6 +16,7 @@ pub mod utils;
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 const MAX_CHARFIELD_LENGTH: usize = 255;
+const NULL_VALUE: &str = "NULL";
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
@@ -157,138 +158,84 @@ impl FtColumn {
                 if let Some(val) = value {
                     format!("{}", val)
                 } else {
-                    panic!("ID schema field is required and cannot be None")
+                    panic!("Schema fields of type ID cannot be nullable")
                 }
             }
-            FtColumn::Address(value) => {
-                if let Some(val) = value {
-                    format!("'{:x}'", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::AssetId(value) => {
-                if let Some(val) = value {
-                    format!("'{:x}'", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Bytes4(value) => {
-                if let Some(val) = value {
-                    format!("'{:x}'", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Bytes8(value) => {
-                if let Some(val) = value {
-                    format!("'{:x}'", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Bytes32(value) => {
-                if let Some(val) = value {
-                    format!("'{:x}'", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::ContractId(value) => {
-                if let Some(val) = value {
-                    format!("'{:x}'", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Int4(value) => {
-                if let Some(val) = value {
-                    format!("{}", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Int8(value) => {
-                if let Some(val) = value {
-                    format!("{}", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::UInt4(value) => {
-                if let Some(val) = value {
-                    format!("{}", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::UInt8(value) => {
-                if let Some(val) = value {
-                    format!("{}", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Timestamp(value) => {
-                if let Some(val) = value {
-                    format!("{}", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Salt(value) => {
-                if let Some(val) = value {
-                    format!("'{:x}'", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Json(value) => {
-                if let Some(val) = value {
-                    format!("'{}'", val.0)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::MessageId(value) => {
-                if let Some(val) = value {
-                    format!("'{:x}'", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Charfield(value) => {
-                if let Some(val) = value {
-                    format!("'{}'", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Identity(value) => {
-                if let Some(val) = value {
-                    match val {
-                        Identity::Address(v) => format!("'00{:x}'", v),
-                        Identity::ContractId(v) => format!("'01{:x}'", v),
-                    }
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Boolean(value) => {
-                if let Some(val) = value {
-                    format!("{}", val)
-                } else {
-                    String::from("NULL")
-                }
-            }
-            FtColumn::Blob(value) => {
-                if let Some(val) = value {
-                    format!("'{}'", hex::encode(val))
-                } else {
-                    String::from("NULL")
-                }
-            }
+            FtColumn::Address(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::AssetId(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Bytes4(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Bytes8(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Bytes32(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::ContractId(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Int4(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Int8(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::UInt4(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::UInt8(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Timestamp(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Salt(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Json(value) => match value {
+                Some(val) => format!("'{}'", val.0),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::MessageId(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Charfield(value) => match value {
+                Some(val) => format!("'{}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Identity(value) => match value {
+                Some(val) => match val {
+                    Identity::Address(v) => format!("'00{:x}'", v),
+                    Identity::ContractId(v) => format!("'01{:x}'", v),
+                },
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Boolean(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Blob(value) => match value {
+                Some(val) => format!("'{}'", hex::encode(val)),
+                None => String::from(NULL_VALUE),
+            },
         }
     }
 }
@@ -386,7 +333,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "ID schema field is required and cannot be None")]
+    #[should_panic(expected = "Schema fields of type ID cannot be nullable")]
     fn test_panic_on_none_id_fragment() {
         use super::*;
 

@@ -60,7 +60,6 @@ fn process_field<'a>(
     let typ = process_type(types, field_type, true);
     let ident = format_ident! {"{}", name};
 
-    // Type may be nullable, so let's grab the actual column type
     let (is_nullable, column_type) = get_column_type(typ.clone());
 
     let extractor = if is_nullable {
