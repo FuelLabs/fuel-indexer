@@ -128,9 +128,11 @@ By now we have a brand new index that will index some blocks and transactions, b
 
 #### 2.3.1 Starting an indexer service
 
-- To start an indexer service, we'll be spinning up Postgres, and Fuel indexer containers via docker compose. Our indexer service will be connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the docker compose file below, and spinning everything up with `docker compose up`.
+- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via docker compose. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the docker compose file below, and spinning everything up with `docker compose up`.
 
 > IMPORTANT: Ensure that any local Postgres instance that is running on port `5432` is stopped.
+>
+> You can open up a `docker-compose.yaml` file in the same directory as your index project, and paste the YAML content below to this file.
 
 ```text
 version: "3.9"
@@ -163,7 +165,7 @@ services:
 
 #### 2.3.2 Deploying your index to your service
 
-With our database, and indexer service containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
+With our database and indexer service containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
 
 ```bash
 ➜  cd hello-index
@@ -245,3 +247,7 @@ With our index deployed, after a few seconds, we should be able to query for new
    },
 ]
 ```
+
+### Finsihed 🥳
+
+Congrats, you just created, built, and deployed your first index on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
