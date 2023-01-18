@@ -18,14 +18,14 @@ Postgres docker image](https://hub.docker.com/_/postgres) via the following comm
 
 ## 2. Using the `forc-index` plugin
 
-- The primary means of interfacing with the Fuel indexer **for development** is the [`forc-index` CLI tool](https://crates.io/crates/forc-index).
+- The primary means of interfacing with the Fuel indexer **for index development** is the [`forc-index` CLI tool](https://crates.io/crates/forc-index).
 - `forc-index` is a [`forc`](https://github.com/FuelLabs/sway/tree/master/forc) plugin specifically for the Fuel indexer service.
 - For convenience, the `forc-index` binary is already included with `fuelup`.
   - [`fuelup` setup instructions](https://github.com/FuelLabs/fuelup)
 
 > IMPORTANT: `fuelup` also contains the `fuel-indexer` binary. This is the binary that runs the Fuel indexer service.
 
-If your `forc-index` and `fuel-indexer` binaries were successfully installed via `fuelup`, your `PATH` should contian:
+If your `forc-index` and `fuel-indexer` binaries were successfully installed via `fuelup`, your `PATH` should contain:
 
 ```text
 ➜  which forc-index
@@ -112,7 +112,7 @@ Take a quick tour.
     Create a new index in an existing directory.
 `forc index start`
     Start a local indexer service.
-`forc index build
+`forc index build`
     Build your index.
 `forc index deploy`
     Deploy your index.
@@ -120,7 +120,7 @@ Take a quick tour.
     Stop a running index.
 ```
 
-> IMPORTANT: If you want more details on how this index works, checkout or [Block Explorer index example](https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html).
+> IMPORTANT: If you want more details on how this index works, checkout our [block explorer index example](https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html).
 
 ### 2.3 Deploying our index
 
@@ -128,7 +128,7 @@ By now we have a brand new index that will index some blocks and transactions, b
 
 #### 2.3.1 Starting an indexer service
 
-- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via docker compose. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the docker compose file below, and spinning everything up with `docker compose up`.
+- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via docker compose. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker compose` file below, and spinning everything up with `docker compose up`.
 
 > IMPORTANT: Ensure that any local Postgres instance that is running on port `5432` is stopped.
 >
@@ -174,7 +174,7 @@ With our database and indexer service containers up and running, we'll deploy th
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
-Deploying index at tina.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
+Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
 ▹▸▹▹▹ 🚀 Deploying...
 {
   "assets": [
