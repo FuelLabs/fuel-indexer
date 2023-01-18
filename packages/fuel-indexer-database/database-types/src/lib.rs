@@ -1,7 +1,8 @@
 use crate::directives::IndexMethod;
 use serde::{Deserialize, Serialize};
+use std::string::ToString;
 use std::{fmt, fmt::Write};
-use strum::{AsRefStr, EnumString};
+use strum::{AsRefStr, Display, EnumString};
 
 pub mod directives;
 
@@ -291,7 +292,7 @@ impl RegisteredIndex {
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Clone, Default)]
+#[derive(Eq, PartialEq, Debug, Clone, Default, EnumString, Display)]
 pub enum DbType {
     #[default]
     Postgres,
@@ -350,7 +351,7 @@ impl CreateStatement for ColumnIndex {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
+#[derive(Debug, Clone, Copy, Default, Display, EnumString, AsRefStr)]
 pub enum OnDelete {
     #[default]
     #[strum(serialize = "NO ACTION")]
@@ -361,7 +362,7 @@ pub enum OnDelete {
     SetNull,
 }
 
-#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
+#[derive(Debug, Clone, Copy, Default, Display, EnumString, AsRefStr)]
 pub enum OnUpdate {
     #[default]
     #[strum(serialize = "NO ACTION")]
@@ -444,5 +445,65 @@ impl IdCol {
 
     pub fn to_uppercase_string() -> String {
         "ID".to_string()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct UserQueryElement {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct UserQuery {
+    pub elements: Vec<UserQueryElement>,
+    pub joins: Vec<String>,
+    pub namespace_identifier: String,
+    pub top_entity: String,
+}
+
+impl UserQuery {
+    pub fn to_sql(&self) -> String {
+        let db_type = DbType::Postgres;
+        match db_type {
+            DbType::Postgres => {
+                let mut s = Vec::new();
+                let mut peekable_elements = self.elements.iter().peekable();
+
+                while let Some(e) = peekable_elements.next() {
+                    match e.value.as_str() {
+                        "JSON_OPEN" => s.push(format!("'{}', json_build_object(", e.key)),
+                        "JSON_CLOSE" => {
+                            s.push(")".to_string());
+                            if let Some(el) = peekable_elements.peek() {
+                                if el.value != *"JSON_CLOSE" {
+                                    s.push(",".to_string());
+                                }
+                            }
+                        }
+                        _ => {
+                            s.push(format!("'{}', {}", e.key, e.value));
+                            if let Some(el) = peekable_elements.peek() {
+                                if el.value != *"JSON_CLOSE" {
+                                    s.push(",".to_string());
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let parsed_elements = s.join("");
+
+                let query_string = format!(
+                    "SELECT json_build_object({}) FROM {}.{} {}",
+                    parsed_elements,
+                    self.namespace_identifier,
+                    self.top_entity,
+                    self.joins.join(" ")
+                );
+
+                query_string
+            }
+        }
     }
 }

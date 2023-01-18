@@ -17,6 +17,12 @@ type QueryRoot {
     scriptresult: ScriptResult
     messageout: MessageOut
     optionentity: OptionEntity
+    person: Person
+    book: Book
+    library: Library
+    city: City
+    country: Country
+    sportsteam: SportsTeam
 }
 
 type PingEntity {
@@ -42,7 +48,6 @@ type Block {
     height: UInt8!
     timestamp: Int8!
 }
-
 
 type Tx {
     id: ID!
@@ -104,4 +109,38 @@ type TupleEntity {
     complex_a: Charfield!
     complex_b: UInt8!
     simple_a: Charfield!
+}
+
+type City {
+    id: ID!
+    name: Charfield!
+}
+
+type Library {
+    id: ID!
+    name: Charfield!
+    city: City!
+}
+
+type Book {
+    id: ID!
+    title: Charfield!
+    library: Library!
+}
+
+type Person {
+    id: ID!
+    name: Charfield!
+    book: Book!
+}
+
+type Country {
+    id: ID!
+    name: Charfield! @unique
+}
+
+type SportsTeam {
+    id: ID!
+    name: Charfield!
+    country: Country! @join(on:name)
 }

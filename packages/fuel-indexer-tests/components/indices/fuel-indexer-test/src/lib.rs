@@ -214,11 +214,11 @@ mod fuel_indexer_test {
         pi.save();
     }
 
-    fn fuel_indexer_test_optional_schema_fields(ping: Ping) {
-        Logger::info("fuel_indexer_test_optional_schema_fields handling Ping event and setting optional fields.");
+    fn fuel_indexer_test_optional_schema_fields(optional: NullableFieldStruct) {
+        Logger::info("fuel_indexer_test_optional_schema_fields handling NullableFieldStruct event and setting optional fields.");
 
         let entity = OptionEntity {
-            id: ping.id,
+            id: optional.id,
             int_required: 100,
             int_optional_some: Some(999),
             addr_optional_none: None,
@@ -240,5 +240,63 @@ mod fuel_indexer_test {
             simple_a: logdata_entity.data.2.to_string(),
         };
         entity.save();
+    }
+
+    fn fuel_indexer_test_deeply_nested_schema_fields(
+        deeply_nested: DeeplyNestedQueryStruct,
+    ) {
+        Logger::info("fuel_indexer_test_deeply_nested_schema_fields handling DeeplyNestedQueryTestStruct event.");
+
+        let city = City {
+            id: deeply_nested.id,
+            name: "Fuel City".to_string(),
+        };
+
+        city.save();
+
+        let library = Library {
+            id: deeply_nested.id,
+            name: "Fuel Labs Library".to_string(),
+            city: city.id,
+        };
+
+        library.save();
+
+        let book = Book {
+            id: deeply_nested.id,
+            title: "Fuel Indexer".to_string(),
+            library: library.id,
+        };
+
+        book.save();
+
+        let person = Person {
+            id: deeply_nested.id,
+            name: "Lil Ind X".to_string(),
+            book: book.id,
+        };
+
+        person.save();
+    }
+
+    fn fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields(
+        explicit: ExplicitQueryStruct,
+    ) {
+        Logger::info("fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields handling ExplicitQueryTestStruct event.");
+
+        let country = Country {
+            id: explicit.id,
+            name: "Republic of Indexia".to_string(),
+        };
+
+        country.save();
+
+        let team = SportsTeam {
+            id: explicit.id,
+            name: "The Indexers".to_string(),
+            country: country.name,
+        };
+
+        team.save();
     }
 }

@@ -1,6 +1,6 @@
 use crate::db::tables::Schema;
+use crate::sql_types::{UserQuery, UserQueryElement};
 use graphql_parser::query as gql;
-use itertools::Itertools;
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -252,7 +252,7 @@ impl Operation {
         }
     }
 
-    pub fn as_sql(&self, jsonify: bool) -> Vec<String> {
+    pub fn parse(&self, schema: &Schema) -> Vec<UserQuery> {
         let Operation {
             namespace,
             identifier,
@@ -261,42 +261,115 @@ impl Operation {
         } = self;
         let mut queries = Vec::new();
 
-        // TODO: nested queries, joins, etc....
+        // TODO: Add filters
         for selection in selections.get_selections() {
-            if let Selection::Field(name, filters, selections) = selection {
-                let columns: Vec<_> = selections
-                    .get_selections()
-                    .into_iter()
-                    .filter_map(|f| {
-                        if let Selection::Field(name, ..) = f {
-                            Some(name)
-                        } else {
-                            None
-                        }
-                    })
-                    .collect();
+            let mut elements: Vec<UserQueryElement> = Vec::new();
+            let mut entities: Vec<String> = Vec::new();
+            let mut joins: Vec<String> = Vec::new();
+            let mut entity_stack: Vec<String> = Vec::new();
 
-                let column_text = columns.join(", ");
+            if let Selection::Field(entity_name, _filters, selections) = selection {
+                let mut queue: Vec<Selection> = Vec::new();
 
-                let namespace = format!("{namespace}_{identifier}");
-                let mut query = format!(
-                    "SELECT {} FROM {}.{}",
-                    column_text,
-                    namespace,
-                    name.to_lowercase()
+                entities.append(
+                    &mut vec![entity_name.clone(); selections.selections.len()]
+                        .drain(..)
+                        .rev()
+                        .collect::<Vec<String>>(),
+                );
+                queue.append(
+                    &mut selections
+                        .get_selections()
+                        .drain(..)
+                        .rev()
+                        .collect::<Vec<Selection>>(),
                 );
 
-                if !filters.is_empty() {
-                    let filter_text: String = filters
-                        .iter()
-                        .map(|f| Filter::as_sql(f, jsonify))
-                        .join(" AND ");
-                    query.push_str(format!(" WHERE {filter_text}").as_str());
+                let mut tracker = entities.len();
+
+                while let Some(current) = queue.pop() {
+                    let entity_name = entities.pop().unwrap();
+
+                    if let Some(current_level) = entity_stack.last() {
+                        if entities.len() < tracker && current_level != &entity_name {
+                            let _ = entity_stack.pop();
+                            elements.push(UserQueryElement {
+                                key: "JSON_CLOSE".to_string(),
+                                value: "JSON_CLOSE".to_string(),
+                            });
+                        }
+                    }
+
+                    tracker = entities.len();
+
+                    if let Selection::Field(field_name, _f, subselections) = current {
+                        if subselections.selections.is_empty() {
+                            elements.push(UserQueryElement {
+                                key: field_name.clone(),
+                                value: format!(
+                                    "{namespace}_{identifier}.{entity_name}.{field_name}"
+                                ),
+                            });
+                        } else {
+                            if let Some(field_to_foreign_key) =
+                                schema.foreign_keys.get(&entity_name.to_lowercase())
+                            {
+                                if let Some(foreign_key) =
+                                    field_to_foreign_key.get(&field_name.to_lowercase())
+                                {
+                                    let reference_table =
+                                        format!("{namespace}_{identifier}.{field_name}");
+                                    let referencing_key =
+                                        format!("{namespace}_{identifier}.{entity_name}.{field_name}");
+                                    let primary_key =
+                                        format!("{namespace}_{identifier}.{field_name}.{foreign_key}");
+                                    let join = format!(
+                                        "INNER JOIN {reference_table} ON {referencing_key} = {primary_key}");
+                                    joins.push(join);
+
+                                    entity_stack.push(field_name.clone());
+                                }
+                            }
+
+                            entities.append(&mut vec![
+                                field_name.clone();
+                                subselections.selections.len()
+                            ]);
+
+                            queue.append(&mut subselections.get_selections());
+
+                            elements.push(UserQueryElement {
+                                key: field_name,
+                                value: "JSON_OPEN".to_string(),
+                            });
+                        }
+                    }
                 }
 
-                if jsonify {
-                    query = format!("SELECT row_to_json(x) as row from ({query}) x");
+                if !entity_stack.is_empty() {
+                    elements.append(&mut vec![
+                        UserQueryElement {
+                            key: "JSON_CLOSE".to_string(),
+                            value: "JSON_CLOSE".to_string()
+                        };
+                        entity_stack.len()
+                    ]);
                 }
+
+                let query = UserQuery {
+                    elements,
+                    joins,
+                    namespace_identifier: format!("{namespace}_{identifier}"),
+                    top_entity: entity_name,
+                };
+
+                // if !filters.is_empty() {
+                //     let filter_text: String = filters
+                //         .iter()
+                //         .map(|f| Filter::as_sql(f, jsonify))
+                //         .join(" AND ");
+                //     query.push_str(format!(" WHERE {filter_text}").as_str());
+                // }
 
                 queries.push(query)
             }
@@ -312,11 +385,17 @@ pub struct GraphqlQuery {
 }
 
 impl GraphqlQuery {
-    pub fn as_sql(&self, jsonify: bool) -> Vec<String> {
+    pub fn as_sql(&self, schema: &Schema, _jsonify: bool) -> Vec<String> {
         let mut queries = Vec::new();
 
         for op in &self.operations {
-            queries.extend(op.as_sql(jsonify));
+            let user_queries = op.parse(schema);
+            queries.extend(
+                user_queries
+                    .into_iter()
+                    .map(|q| q.to_sql())
+                    .collect::<Vec<String>>(),
+            )
         }
 
         queries

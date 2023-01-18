@@ -268,7 +268,7 @@ jobs:
           target: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
-      - run: bash scripts/run_migrations.bash
+      - run: bash scripts/utils/refresh_test_db.bash postgres
 
       - name: Build fuel-node
         uses: actions-rs/cargo@v1

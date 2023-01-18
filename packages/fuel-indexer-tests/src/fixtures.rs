@@ -453,7 +453,35 @@ pub mod test_web {
         let _ = state
             .contract
             .methods()
-            .trigger_ping()
+            .trigger_optional()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_deeply_nested_schema_fields(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_deeply_nested()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_explicit()
             .tx_params(tx_params())
             .call()
             .await
@@ -523,6 +551,16 @@ pub mod test_web {
                 web::get().to(fuel_indexer_test_get_block_height),
             )
             .route("/tuples", web::post().to(fuel_indexer_test_tuple))
+            .route(
+                "/deeply_nested",
+                web::post().to(fuel_indexer_test_deeply_nested_schema_fields),
+            )
+            .route(
+                "/explicit",
+                web::post().to(
+                    fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields,
+                ),
+            )
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

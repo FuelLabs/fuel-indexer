@@ -1,0 +1,1 @@
+DROP TABLE graph_registry_foreign_keys;

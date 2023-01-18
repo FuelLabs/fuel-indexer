@@ -154,7 +154,7 @@ impl SchemaBuilder {
             queries::execute_query(conn, query).await?;
         }
 
-        for fk in foreign_keys {
+        for fk in &foreign_keys {
             queries::execute_query(conn, fk.create_statement()).await?;
         }
 
@@ -164,6 +164,14 @@ impl SchemaBuilder {
 
         queries::type_id_insert(conn, type_ids).await?;
         queries::new_column_insert(conn, columns).await?;
+        queries::foreign_key_insert(
+            conn,
+            &namespace,
+            &version,
+            &identifier,
+            foreign_keys,
+        )
+        .await?;
 
         Ok(Schema {
             version,
@@ -172,6 +180,7 @@ impl SchemaBuilder {
             query,
             types,
             fields,
+            foreign_keys: HashMap::new(),
         })
     }
 
@@ -348,6 +357,7 @@ pub struct Schema {
     pub query: String,
     pub types: HashSet<String>,
     pub fields: HashMap<String, HashMap<String, String>>,
+    pub foreign_keys: HashMap<String, HashMap<String, String>>,
 }
 
 impl Schema {
@@ -367,8 +377,18 @@ impl Schema {
         )
         .await?;
 
+        let foreign_keys = queries::foreign_key_list_by_name(
+            &mut conn,
+            &root.schema_name,
+            &root.version,
+            identifier,
+        )
+        .await?;
+
         let mut types = HashSet::new();
         let mut fields = HashMap::new();
+        let mut schema_foreign_keys: HashMap<String, HashMap<String, String>> =
+            HashMap::new();
 
         types.insert(root.query.clone());
         fields.insert(
@@ -391,6 +411,22 @@ impl Schema {
             );
         }
 
+        for fk in foreign_keys {
+            match schema_foreign_keys.get_mut(&fk.table_name) {
+                Some(field_foreign_keys) => {
+                    field_foreign_keys
+                        .insert(fk.reference_table_name, fk.reference_column_name);
+                }
+                None => {
+                    let field_foreign_keys = HashMap::from([(
+                        fk.reference_table_name,
+                        fk.reference_column_name,
+                    )]);
+                    schema_foreign_keys.insert(fk.table_name, field_foreign_keys);
+                }
+            }
+        }
+
         Ok(Schema {
             version: root.version,
             namespace: root.schema_name,
@@ -398,6 +434,7 @@ impl Schema {
             query: root.query,
             types,
             fields,
+            foreign_keys: schema_foreign_keys,
         })
     }
 

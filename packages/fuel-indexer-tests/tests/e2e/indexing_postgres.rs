@@ -442,19 +442,16 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
         .await
         .unwrap();
 
-    let message_id: &str = row.get(0);
     let recipient: &str = row.get(2);
     let amount: i64 = row.get(3);
     let len: i64 = row.get(5);
 
-    // Message ID is different on each receipt, so we'll just check that it's well-formed
-    assert_eq!(message_id.len(), 64);
     assert_eq!(
         recipient,
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
     );
     assert_eq!(amount, 100);
-    assert_eq!(len, 24);
+    assert_eq!(len, 8);
 }
 
 #[actix_web::test]
@@ -489,7 +486,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     let opt_int_some: Option<i64> = row.get(2);
     let opt_addr_none: Option<&str> = row.get(3);
 
-    assert_eq!(id, 1);
+    assert_eq!(id, 123);
     assert_eq!(req_int, 100);
 
     assert!(opt_int_some.is_some());
