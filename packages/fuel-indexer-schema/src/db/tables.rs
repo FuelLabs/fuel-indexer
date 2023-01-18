@@ -454,6 +454,60 @@ mod tests {
     }
 
     #[test]
+    fn test_schema_builder_for_basic_postgres_schema_with_optional_types_returns_proper_create_sql(
+    ) {
+        let graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+
+        type QueryRoot {
+            thing1: Thing1
+            thing2: Thing2
+        }
+
+        type Thing1 {
+            id: ID!
+            account: Address
+        }
+
+        type Thing2 {
+            id: ID!
+            account: Address
+            hash: Bytes32
+        }
+    "#;
+
+        let create_schema: &str = "CREATE SCHEMA IF NOT EXISTS test_namespace";
+        let create_thing1_schmea: &str = concat!(
+            "CREATE TABLE IF NOT EXISTS\n",
+            " test_namespace.thing1 (\n",
+            " id bigint primary key not null,\n",
+            "account varchar(64),\n",
+            "object bytea not null",
+            "\n)"
+        );
+        let create_thing2_schema: &str = concat!(
+            "CREATE TABLE IF NOT EXISTS\n",
+            " test_namespace.thing2 (\n",
+            " id bigint primary key not null,\n",
+            "account varchar(64),\n",
+            "hash varchar(64),\n",
+            "object bytea not null\n",
+            ")"
+        );
+
+        let sb =
+            SchemaBuilder::new("test_namespace", "a_version_string", DbType::Postgres);
+
+        let SchemaBuilder { statements, .. } = sb.build(graphql_schema);
+
+        assert_eq!(statements[0], create_schema);
+        assert_eq!(statements[1], create_thing1_schmea);
+        assert_eq!(statements[2], create_thing2_schema);
+    }
+
+    #[test]
     fn test_schema_builder_for_postgres_indices_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
         schema {
