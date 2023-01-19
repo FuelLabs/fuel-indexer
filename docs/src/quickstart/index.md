@@ -279,6 +279,6 @@ curl -X POST http://0.0.0.0:29987/api/graph/my_project \
 ]
 ```
 
-### Finsihed 🥳
+### Finished! 🥳
 
 Congrats, you just created, built, and deployed your first index on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
