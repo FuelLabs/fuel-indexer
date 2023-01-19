@@ -1,39 +1,62 @@
 # Quickstart
 
-In this Quickstart tutorial we'll go over:
+In this tutorial you will:
 
-1. How to bootstrap an environment for use with a Fuel indexer.
-2. How to use the `forc index` plugin to create, build, and deploy indicies.
-3. How to query our newly created indices for data using GraphQL.
+1. Bootstrap your development environment.
+2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-2` testnet.
+3. Query the indexer service for indexed data using GraphQL.
 
 > IMPORTANT: Docker is a prerequisite for using this Quickstart. If Docker is not installed on your machine, please review the Docker installation instructions [here](https://docs.docker.com/engine/install/).
 
 ## 1. Setting up your environment
 
-As a user of the Fuel indexer, you shouldn't require _too many_ dependencies. The indexer binaries available via `fuelup` are precompiled with all required dependencies, and optimized for size.
+In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a Postgres database backend. We will also use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` binary that we'll use to develop our index.
 
-In this Quickstart, we'll only be using Postgres. Further, instead of going through the
-drudgery of installing Postgres on your local machine, we'll just use [the `latest`
-Postgres docker image](https://hub.docker.com/_/postgres) via the following command: `docker pull postgres`.
+### 1.1 Install `fuelup`
+
+```bash
+curl \
+  --proto '=https' \
+  --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+```
+
+> If for whatever reason, you require a more specifc `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
+
+### 1.2 Pull Docker images
+
+We will use the `latest` Postgres image.
+
+```bash
+docker pull postgres:latest
+```
+
+And we will also use the `latest` Fuel indexer image.
+
+```bash
+docker pull ghcr.io/fuellabs/fuel-indexer:latest
+```
 
 ## 2. Using the `forc-index` plugin
 
 - The primary means of interfacing with the Fuel indexer **for index development** is the [`forc-index` CLI tool](https://crates.io/crates/forc-index).
-- `forc-index` is a [`forc`](https://github.com/FuelLabs/sway/tree/master/forc) plugin specifically for the Fuel indexer service.
-- For convenience, the `forc-index` binary is already included with `fuelup`.
-  - [`fuelup` setup instructions](https://github.com/FuelLabs/fuelup)
+- `forc-index` is a [`forc`](https://github.com/FuelLabs/sway/tree/master/forc) plugin specifically created to interface with the Fuel indexer service.
+- Since we already installed `fuelup` in a previous step [1.1], we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
 
-> IMPORTANT: `fuelup` also contains the `fuel-indexer` binary. This is the binary that runs the Fuel indexer service.
-
-If your `forc-index` and `fuel-indexer` binaries were successfully installed via `fuelup`, your `PATH` should contain:
+```bash
+which forc index
+```
 
 ```text
-➜  which forc-index
-
 /Users/me/.fuelup/bin/forc-index
+```
 
-➜  which fuel-indexer
+> IMPORTANT: `fuelup` will install several binaries from the Fuel ecosystem and add them into your path, including the `fuel-indexer` binary. The `fuel-indexer` binary is the primary binary that users can use to spin up a Fuel indexer service.
 
+```bash
+which fuel-indexer
+```
+
+```text
 /Users/me/.fuelup/bin/fuel-indexer
 ```
 
@@ -41,12 +64,13 @@ If your `forc-index` and `fuel-indexer` binaries were successfully installed via
 
 Once the `forc-index` plugin is installed, let's go ahead and see what indexer components we have installed.
 
-> IMPORTANT: Many of these components are required for development work (e.g., `fuel-core`, `psql`) but some are even
-> required for non-development usage as well (e.g., `wasm-snip`, `fuelup`)
+> Many of these components are required for development work (e.g., `fuel-core`, `psql`) but some are even required for non-development usage as well (e.g., `wasm-snip`, `fuelup`).
+
+```bash
+forc index check
+```
 
 ```text
-➜  forc index check
-
 ❌ Could not connect to indexers service: error sending request for url (http://127.0.0.1:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
 
 +--------+------------------------+----------------------------------------------------------------------------+
@@ -72,11 +96,15 @@ Once the `forc-index` plugin is installed, let's go ahead and see what indexer c
 
 ### 2.2 Creating a new index
 
-Once we're sure we have the right components installed (shown above 👆🏽) we'll create a new index.
+Now that we have our development environment setup, the next step is to create an index.
 
 ```bash
-➜  forc index new hello-index --namespace my_project
+forc index new hello-index --namespace my_project && cd hello-index
+```
 
+> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name, or company name. Your index project might contain one or many indices all under the same `namespace`.
+
+```text
 forc index new hello-index --namespace my_project
 
 ███████╗██╗   ██╗███████╗██╗         ██╗███╗   ██╗██████╗ ███████╗██╗  ██╗███████╗██████╗
@@ -116,7 +144,7 @@ Take a quick tour.
     Build your index.
 `forc index deploy`
     Deploy your index.
-`forc index stop`
+`forc index remove`
     Stop a running index.
 ```
 
@@ -132,7 +160,7 @@ By now we have a brand new index that will index some blocks and transactions, b
 
 > IMPORTANT: Ensure that any local Postgres instance that is running on port `5432` is stopped.
 >
-> You can open up a `docker-compose.yaml` file in the same directory as your index project, and paste the YAML content below to this file.
+> You can open up a `docker-compose.yaml` file in the same directory as your index manifest, and paste the YAML content below to this `docker-compose.yaml` file.
 
 ```text
 version: "3.9"
@@ -163,14 +191,12 @@ services:
       - postgres
 ```
 
-#### 2.3.2 Deploying your index to your service
+#### 2.3.2 Deploying your index to your Fuel indexer service
 
-With our database and indexer service containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
+With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
 
-```bash
-➜  cd hello-index
-
-➜  forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+```text
+forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
@@ -206,11 +232,16 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
 
 With our index deployed, after a few seconds, we should be able to query for newly indexed data.
 
+Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
+
 ```bash
-➜ curl -X POST http://0.0.0.0:29987/api/graph/my_project \
+curl -X POST http://0.0.0.0:29987/api/graph/my_project \
    -H 'content-type: application/json' \
    -d '{"query": "query { tx { id hash status block }}", "params": "b"}' \
 | json_pp
+```
+
+```text
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100   364  100   287  100    77   6153   1650 --:--:-- --:--:-- --:--:--  9100

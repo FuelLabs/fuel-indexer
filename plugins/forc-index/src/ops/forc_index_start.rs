@@ -73,7 +73,7 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
 
                 for (flag, value) in postgres_optionals.iter() {
                     if let Some(v) = value {
-                        cmd.arg(flag).arg(&v);
+                        cmd.arg(flag).arg(v);
                     }
                 }
             }

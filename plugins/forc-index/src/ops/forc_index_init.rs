@@ -44,7 +44,7 @@ fn print_welcome_message() {
     Build your index.
 `forc index deploy`
     Deploy your index.
-`forc index stop`
+`forc index remove`
     Stop a running index."#;
 
     let ascii_tag = r#"
