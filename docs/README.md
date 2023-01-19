@@ -9,29 +9,29 @@
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
-- [Documentation](#documentation)
-- [Setup](#setup)
-  - [Installing Rust](#installing-rust)
+- [For **Users**]()
+  - [Dependencies]()
+    - [`fuelup`](#fuelup)
+    - [`docker`]()
+  - [Quickstart](#quickstart)
+  - [`forc index`](#forc-index)
+- [For **Contributors**]()
   - [`fuelup`](#fuelup)
-  - [Database](#database)
+  - [Installing Rust](#installing-rust)
+  - [Clone the repository]()
+  - [Install dependencies]()
     - [PostgreSQL](#postgresql)
     - [SQLite](#sqlite)
     - [SQLx](#sqlx)
-  - [Fuel Node](#fuel-node)
-  - [`forc index`](#forc-index)
-  - [Creating an Index](#creating-an-index)
-    - [Schema](#schema)
-    - [Manifest](#manifest)
-  - [Compiling an Index](#compiling-an-index)
-  - [Deploying an Index](#deploying-an-index)
-  - [Querying an Index](#querying-an-index)
-- [Building from Source](#building-from-source)
-  - [Clone repository](#clone-repository)
   - [Run migrations](#run-migrations)
   - [Start the service](#start-the-service)
   - [Run tests](#run-tests)
-- [Quickstart](#quickstart)
+- [Read the book](#documentation)
 
+
+
+
+<!-- 
 ## Documentation
 
 Full documentation can be found in the [Fuel indexer book](https://fuellabs.github.io/fuel-indexer).
@@ -330,7 +330,7 @@ identifier: hello_index
 contract_id: ~
 # ABI files are _not_ required. However, in this example, since we already wrote
 # and compiled our smart contract, we'll include it's ABI JSON output here.. Note
-# that we are using assets located in the examples directory of the fuel-indexer 
+# that we are using assets located in the examples directory of the fuel-indexer
 # repository
 abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
 start_block: 1
@@ -567,4 +567,4 @@ After you've successfully completed all six of the aforementioned steps, you can
       "name" : "Ava"
    }
 ]
-```
+``` -->
