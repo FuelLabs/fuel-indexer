@@ -1,6 +1,6 @@
 # System Requirements
 
-There are a few system requirements related to compilation, tooling, and SQL backends that you'll need to get started with a Fuel indexer.
+There are a few system requirements related to compilation, tooling, and SQL backends that you'll need to be able to contribute to the Fuel indexer.
 
 ## Ubuntu/Debian
 
