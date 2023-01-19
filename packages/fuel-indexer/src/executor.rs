@@ -6,6 +6,7 @@ use fuel_indexer_schema::utils::serialize;
 use fuel_indexer_types::abi::BlockData;
 use futures::Future;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use thiserror::Error;
 use tokio::task::spawn_blocking;
 use tracing::error;
@@ -51,9 +52,10 @@ pub async fn create_wasm_executor(
     db_url: &String,
     manifest: &Manifest,
     module_bytes: Vec<u8>,
-) -> IndexerResult<(JoinHandle<()>, Vec<u8>)> {
+) -> IndexerResult<(JoinHandle<()>, Vec<u8>, Arc<AtomicBool>)> {
     // If the task creation is via the bootstrap manifest
 
+    let killer = Arc::new(AtomicBool::new(false));
     if module_bytes.is_empty() {
         match &manifest.module {
             crate::Module::Wasm(ref module) => {
@@ -71,9 +73,10 @@ pub async fn create_wasm_executor(
                     &fuel_node.to_string(),
                     executor,
                     manifest.start_block,
+                    killer.clone(),
                 ));
 
-                Ok((handle, bytes))
+                Ok((handle, bytes, killer))
             }
             crate::Module::Native => Err(IndexerError::NativeExecutionInstantiationError),
         }
@@ -89,9 +92,10 @@ pub async fn create_wasm_executor(
             &fuel_node.to_string(),
             executor,
             manifest.start_block,
+            killer.clone(),
         ));
 
-        Ok((handle, module_bytes))
+        Ok((handle, module_bytes, killer))
     }
 }
 
@@ -105,8 +109,12 @@ pub async fn create_native_executor<
 ) -> IndexerResult<JoinHandle<()>> {
     let start_block = manifest.start_block;
     let executor = NativeIndexExecutor::new(db_url, manifest, handle_events).await?;
-    let handle =
-        tokio::spawn(run_executor(&fuel_node.to_string(), executor, start_block));
+    let handle = tokio::spawn(run_executor(
+        &fuel_node.to_string(),
+        executor,
+        start_block,
+        Arc::new(AtomicBool::new(false)),
+    ));
     Ok(handle)
 }
 
@@ -114,6 +122,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     fuel_node_addr: &str,
     mut executor: T,
     start_block: Option<u64>,
+    kill_switch: Arc<AtomicBool>,
 ) -> impl Future<Output = ()> {
     let start_block_value = start_block.unwrap_or(1);
     let mut next_cursor = if start_block_value > 1 {
@@ -292,6 +301,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
             } else {
                 next_cursor = cursor;
+            }
+
+            if kill_switch.load(Ordering::SeqCst) {
+                break;
             }
 
             retry_count = 0;

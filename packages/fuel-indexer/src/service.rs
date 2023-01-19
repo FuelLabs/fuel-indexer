@@ -13,12 +13,13 @@ use futures::{
 };
 use std::collections::HashMap;
 use std::marker::Send;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     sync::mpsc::Receiver,
     task::JoinHandle,
     time::{sleep, Duration},
 };
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 pub struct IndexerService {
     config: IndexerConfig,
@@ -27,6 +28,7 @@ pub struct IndexerService {
     database_url: String,
     handles: HashMap<String, JoinHandle<()>>,
     rx: Option<Receiver<ServiceRequest>>,
+    killers: HashMap<String, Arc<AtomicBool>>,
 }
 
 impl IndexerService {
@@ -45,6 +47,7 @@ impl IndexerService {
             manager,
             database_url,
             handles: HashMap::default(),
+            killers: HashMap::default(),
             rx,
         })
     }
@@ -65,7 +68,7 @@ impl IndexerService {
             .new_schema(&manifest.namespace, &schema, &mut conn)
             .await?;
 
-        let (handle, module_bytes) = create_wasm_executor(
+        let (handle, module_bytes, killer) = create_wasm_executor(
             &self.config.fuel_node.clone(),
             &database_url,
             &manifest,
@@ -99,6 +102,7 @@ impl IndexerService {
 
         info!("Registered Index({})", &manifest.uid());
         self.handles.insert(manifest.uid(), handle);
+        self.killers.insert(manifest.uid(), killer);
 
         Ok(())
     }
@@ -110,17 +114,17 @@ impl IndexerService {
             let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
             let manifest = Manifest::from_slice(&assets.manifest.bytes)?;
 
-            let handle = create_wasm_executor(
+            let (handle, _module_bytes, killer) = create_wasm_executor(
                 &self.config.fuel_node,
                 &self.config.database.to_string(),
                 &manifest,
                 assets.wasm.bytes,
             )
-            .await?
-            .0;
+            .await?;
 
             info!("Registered Index({})", manifest.uid());
             self.handles.insert(manifest.uid(), handle);
+            self.killers.insert(manifest.uid(), killer);
         }
 
         Ok(())
@@ -154,7 +158,9 @@ impl IndexerService {
         .await?;
 
         info!("Registered NativeIndex({})", uid);
-        self.handles.insert(uid, handle);
+
+        self.handles.insert(uid.clone(), handle);
+        self.killers.insert(uid, Arc::new(AtomicBool::new(false)));
         Ok(())
     }
 
@@ -164,6 +170,7 @@ impl IndexerService {
             rx,
             pool,
             config,
+            killers,
             ..
         } = self;
 
@@ -176,6 +183,7 @@ impl IndexerService {
             config.clone(),
             pool.clone(),
             futs.clone(),
+            killers,
         ))
         .await
         .unwrap();
@@ -191,6 +199,7 @@ async fn create_service_task(
     config: IndexerConfig,
     pool: IndexerConnectionPool,
     futs: Arc<Mutex<FuturesUnordered<JoinHandle<()>>>>,
+    mut killers: HashMap<String, Arc<AtomicBool>>,
 ) {
     if let Some(mut rx) = rx {
         loop {
@@ -220,7 +229,7 @@ async fn create_service_task(
                                     serde_yaml::from_slice(&assets.manifest.bytes)
                                         .expect("Failed to deserialize manifest");
 
-                                let handle = create_wasm_executor(
+                                let (handle, _module_bytes, killer) = create_wasm_executor(
                                     &config.fuel_node,
                                     &config.database.to_string(),
                                     &manifest,
@@ -229,10 +238,10 @@ async fn create_service_task(
                                 .await
                                 .expect(
                                     "Failed to spawn executor from index asset registry",
-                                )
-                                .0;
+                                );
 
                                 futs.push(handle);
+                                killers.insert(manifest.uid(), killer);
                             }
                             Err(e) => {
                                 error!(
@@ -245,10 +254,13 @@ async fn create_service_task(
                         }
                     }
                     ServiceRequest::IndexStop(request) => {
-                        let _uid =
-                            format!("{}.{}", request.namespace, request.identifier);
+                        let uid = format!("{}.{}", request.namespace, request.identifier);
 
-                        // TODO: re-integrate stop logic here
+                        if let Some(killer) = killers.remove(&uid) {
+                            killer.store(true, Ordering::SeqCst);
+                        } else {
+                            warn!("Stop Indexer: No indexer with the name Index({uid})");
+                        }
                     }
                 },
                 Err(e) => {
