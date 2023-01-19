@@ -9,17 +9,15 @@
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
-- [For **Users**]()
+- [**For Users**]()
   - [Dependencies]()
     - [`fuelup`](#fuelup)
     - [`docker`]()
   - [Quickstart](#quickstart)
-  - [`forc index`](#forc-index)
-- [For **Contributors**]()
+  - [Plugin](#forc-index)
+- [**For Contributors**]()
   - [`fuelup`](#fuelup)
-  - [Installing Rust](#installing-rust)
-  - [Clone the repository]()
-  - [Install dependencies]()
+  - [Dependencies]()
     - [PostgreSQL](#postgresql)
     - [SQLite](#sqlite)
     - [SQLx](#sqlx)
@@ -28,9 +26,6 @@ The Fuel indexer is a standalone service that can be used to index various compo
   - [Run tests](#run-tests)
 - [Read the book](#documentation)
 
-
-
-
 <!-- 
 ## Documentation
 
@@ -38,7 +33,7 @@ Full documentation can be found in the [Fuel indexer book](https://fuellabs.gith
 
 ## Setup
 
-### Installing Rust
+### Dependencies
 
 The Fuel indexer is built in Rust and also uses `cargo`. The easiest way to get both is to use `rustup`, Rust's toolchain installer. Installing Rust using `rustup` will also install `cargo`.
 
