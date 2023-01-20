@@ -10,7 +10,7 @@
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
 - [**For Users**]()
-  - [Dependencies]()
+  - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
     - [`docker`]()
   - [Quickstart](#quickstart)
@@ -26,7 +26,18 @@ The Fuel indexer is a standalone service that can be used to index various compo
   - [Run tests](#run-tests)
 - [Read the book](#documentation)
 
-<!-- 
+## Dependencies
+
+### `fuelup`
+
+- [Docker](https://docs.docker.com/engine/install/)
+
+### `docker`
+
+- We use to docker in order to produce reproducible environments for components that might have in and of themselves a heavy set of dependencies (e.g., Postgres).
+- Docker can be downloaded [here](https://docs.docker.com/engine/install/).
+
+<!--
 ## Documentation
 
 Full documentation can be found in the [Fuel indexer book](https://fuellabs.github.io/fuel-indexer).
