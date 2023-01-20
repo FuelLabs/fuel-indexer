@@ -33,8 +33,11 @@ The Fuel indexer is a standalone service that can be used to index various compo
   - [Building from source](#building-from-source)
   - [Run migrations](#run-migrations)
   - [Start the service](#start-the-service)
-  - [Run tests](#run-tests)
-- [Read the book](#documentation)
+  - [Testing](#testing)
+    - [Default tests](#default-tests)
+    - [End-to-end tests](#end-to-end-tests)
+    - [`trybuild` tests](#trybuild-tests)
+- [Read the book](#read-the-book)
 
 # For Users
 
@@ -487,139 +490,38 @@ DATABASE_URL=postgres://postgres@localhost sqlx migrate run
 cargo run --bin fuel-indexer
 ```
 
-## Tests
+## Testing
 
-### Run tests
+Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use `--features postgres`, and for a SQLite backend use `--features sqlite`.
+
+Further, the indexer uses end-to-end (E2E) tests. In order to trigger these end-to-end tests, you'll want to use the `e2e` features flag: `--features e2e`.
+
+> All end-to-end tests also require either a `postgres` or a `sqlite` feature flag as well. For example, to run the end-to-end tests with a Posgres backend, use `--features e2e,postgres`.
+
+### Default tests
 
 ```bash
 cargo test --locked --workspace --all-targets
 ```
 
-###
-
-<!--
-## Documentation
-
-Full documentation can be found in the [Fuel indexer book](https://fuellabs.github.io/fuel-indexer).
-
-## Setup
-
-### Dependencies
-
-The Fuel indexer is built in Rust and also uses `cargo`. The easiest way to get both is to use `rustup`, Rust's toolchain installer. Installing Rust using `rustup` will also install `cargo`.
-
-On Linux and macOS systems, this is done as follows:
+### End-to-end tests
 
 ```bash
-curl https://sh.rustup.rs -sSf | sh
+cargo test --locked --workspace --all-targets --features e2e,postgres
 ```
-
-It will download a script, and start the installation. If everything goes well, you’ll see this appear:
-
-```text
-Rust is installed now. Great!
-```
-
-On Windows, download and run [rustup-init.exe](https://win.rustup.rs/). It will start the installation in a console and present the above message on success.
-
-After this, you can use the rustup command to also install beta or nightly channels for Rust and Cargo.
-
-For other installation options and information, visit the [install](https://www.rust-lang.org/tools/install) page of the Rust website.
-
-Alternatively, you can [build Cargo from source.](https://github.com/rust-lang/cargo#compiling-from-source)
-
-### `fuelup`
-
-We recommend that you use the Fuel indexer through [`forc`, the Fuel orchestrator](https://fuellabs.github.io/sway/master/forc/index.html). You can get `forc` (and other Fuel components) by way of [`fuelup`, the Fuel toolchain manager](https://fuellabs.github.io/fuelup/latest). Install `fuelup` by running the following command, which downloads and runs the installation script.
 
 ```bash
-curl --proto '=https' --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+cargo test --locked --workspace --all-targets --features e2e,sqlite
 ```
 
-### Database
+### `trybuild` tests
 
-At this time, the Fuel indexer requires the use of a database. We currently support two database options: PostgreSQL and SQLite. PostgreSQL is a database solution with a complex feature set and requires a database server. SQLite is an embedded database solution with a simpler set of features and can be setup and moved to different systems.
-
-#### PostgreSQL
-
-> Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.
-
-On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add PostgreSQL to your system by running `brew install postgresql`. You can then start the service through `brew services start postgresql`. You'll need to create a database for your index data, which you can do by running `createdb [DATABASE_NAME]`. You may also need to create the `postgres` role; you can do so by running `createuser -s postgres`.
-
-For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new `postgres` user account; you can switch to that account by running `sudo -i -u postgres`. After you have switched accounts, you may need to create a `postgres` database role by running `createuser --interactive`. You will be asked a few questions; the name of the role should be `postgres` and you should elect for the new role to be a superuser. Finally, you can create a database by running `createdb [DATABASE_NAME]`.
-
-In either case, your PostgreSQL database should now be accessible at `postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]`.
-
-##### SQLite
-
-On macOS systems, you can install SQLite through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add SQLite to your system by running `brew install sqlite`. You can create a database by running `sqlite3 [DATABASE_FILE_PATH]`.
-
-For Linux-based systems, you should first install SQLite according to the instructions for your distribution. Once installed, you can create a database by running `sqlite3 [DATABASE_FILE_PATH]`.
-
-In either case, your SQLite database is now accessible at `sqlite://[DATABASE_FILE_PATH]`.
-
-##### SQLx
-
-After setting up your database, you should install `sqlx-cli` in order to run migrations for your indexer service; you can do so by running `cargo install sqlx-cli --features postgres,sqlite`. Once installed, you can run the migrations by running the following command after changing `DATABASE_URL` to match your setup. For example:
-
-```sh
-DATABASE_URL=sqlite://indexer_database.db bash scripts/run_migrations.bash
-```
-
-### Fuel Node
-
-As mentioned before, the Fuel indexer indexes data from the Fuel blockchain; thus, the indexer needs to connect to a Fuel node in order to process, transform, and save blockchain data. Once `fuelup` has been installed, you can run a Fuel node locally by running `fuel-core run`.
-
-### `forc index`
-
-You can find all the available Fuel indexer commands by running `forc index`.
-
-```text
-❯ forc index
-Fuel Index Orchestrator
-
-USAGE:
-    forc-index <SUBCOMMAND>
-
-OPTIONS:
-    -h, --help       Print help information
-    -V, --version    Print version information
-
-SUBCOMMANDS:
-    build     Build an index
-    check     Get status checks on all indexer components
-    deploy    Deploy an index asset bundle to a remote or locally running indexer server
-    help      Print this message or the help of the given subcommand(s)
-    init      Create a new indexer project in the current directory
-    new       Create a new indexer project in a new directory
-    remove    Stop and remove a running index
-    start     Start a local indexer service
-```
-
-## Building from Source
-
-### Clone repository
+For tests related to the meta-programming used in the Fuel indexer, we use `trybuild`.
 
 ```bash
-git clone git@github.com:FuelLabs/fuel-indexer.git
+RUSTFLAGS='-D warnings' cargo test -p fuel-indexer-macros --locked
 ```
 
-### Run migrations
+## Read the book
 
-```bash
-DATABASE_URL=postgres://postgres@localhost bash scripts/run_migrations.bash
-```
-
-### Start the service
-
-```bash
-cargo run --bin fuel-indexer
-```
-
-### Run tests
-
-```txt
-cargo test --locked --workspace --all-features --all-targets
-```
-
-``` -->
+For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
