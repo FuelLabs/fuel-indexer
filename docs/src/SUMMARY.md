@@ -3,7 +3,7 @@
 
 [The Fuel Indexer](./the-fuel-indexer.md)
 
-- [Quickstart](./quickstart/index.md)
+[Quickstart](./quickstart/index.md)
 
 # User Guide
 
