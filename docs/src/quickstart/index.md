@@ -1,39 +1,76 @@
 # Quickstart
 
-A cursory explanation on how to get up and running with an index in 5 minutes
+In this tutorial you will:
 
-> This Quickstart will assume that you've:
->
-> - Read over [Getting Started](./../getting-started/index.md)
-> - Have installed all relevant [system](./../getting-started/system-dependencies.md) dependencies
-> - Have installed all relevant [application](./../getting-started/application-dependencies.md) dependencies
-> - Have already created a Fuel project according to [the recommended project structure](./../getting-started/fuel-indexer-project.md)
-> - Have installed the [`forc index`](http://localhost:3000/plugins/forc-index.html) plugin via [`fuelup`](http://localhost:3000/getting-started/application-dependencies/fuelup.html)
+1. Bootstrap your development environment.
+2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-2` testnet.
+3. Query the indexer service for indexed data using GraphQL.
 
-## What we'll do
+> IMPORTANT: Docker is a prerequisite for using this Quickstart. If Docker is not installed on your machine, please review the Docker installation instructions [here](https://docs.docker.com/engine/install/).
 
-In this Quickstart we're going to write a simple Sway 🌴 smart contract, then
-build and deploy and index that saves events from this contract into a database.
+## 1. Setting up your environment
 
-- [Writing a contract](#writing-a-contract)
-- [Create and deploy an index](#create-and-deploy-an-index)
-  - [Initializing an index](#1-initialize-a-new-index-project)
-  - [GraphQL data models](#2-graphql-data-models)
-  - [Update index manifest](#3-update-index-manifest)
-  - [Write your index code](#4-write-your-index-code)
-  - [Compile the index](#5-compile-the-index)
-  - [Start the index service & deploy your index](#6-start-the-service--deploy-your-index)
+In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a Postgres database backend. We will also use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` binary that we'll use to develop our index.
 
-## What you'll need
+### 1.1 Install `fuelup`
 
-For this Quickstart we'll need a few components that include Docker, Postgres,
-and the Fuel Indexer service. In order to see which components you have
-installed already, simply use the `forc index check` command, which will check
-for these executables in your `$PATH`.
+```bash
+curl \
+  --proto '=https' \
+  --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+```
+
+> If for whatever reason, you require a more specifc `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
+
+### 1.2 Pull Docker images
+
+We will use the `latest` Postgres image.
+
+```bash
+docker pull postgres:latest
+```
+
+And we will also use the `latest` Fuel indexer image.
+
+```bash
+docker pull ghcr.io/fuellabs/fuel-indexer:latest
+```
+
+## 2. Using the `forc-index` plugin
+
+- The primary means of interfacing with the Fuel indexer **for index development** is the [`forc-index` CLI tool](https://crates.io/crates/forc-index).
+- `forc-index` is a [`forc`](https://github.com/FuelLabs/sway/tree/master/forc) plugin specifically created to interface with the Fuel indexer service.
+- Since we already installed `fuelup` in a previous step [1.1], we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
+
+```bash
+which forc index
+```
 
 ```text
-➜  forc index check
+/Users/me/.fuelup/bin/forc-index
+```
 
+> IMPORTANT: `fuelup` will install several binaries from the Fuel ecosystem and add them into your path, including the `fuel-indexer` binary. The `fuel-indexer` binary is the primary binary that users can use to spin up a Fuel indexer service.
+
+```bash
+which fuel-indexer
+```
+
+```text
+/Users/me/.fuelup/bin/fuel-indexer
+```
+
+### 2.1 Components check
+
+Once the `forc-index` plugin is installed, let's go ahead and see what indexer components we have installed.
+
+> Many of these components are required for development work (e.g., `fuel-core`, `psql`) but some are even required for non-development usage as well (e.g., `wasm-snip`, `fuelup`).
+
+```bash
+forc index check
+```
+
+```text
 ❌ Could not connect to indexers service: error sending request for url (http://127.0.0.1:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
 
 +--------+------------------------+----------------------------------------------------------------------------+
@@ -57,289 +94,130 @@ for these executables in your `$PATH`.
 +--------+------------------------+----------------------------------------------------------------------------+
 ```
 
-----
+### 2.2 Creating a new index
 
-### Writing a contract
-
-`cd contracts/ && forc new greeting`
-
-Write a "greeting" type of Sway smart contract.
-
-```sway
-// src/main.sw
-contract;
-
-use std::logging::log;
-
-struct Person {
-    name: str[32],
-}
-
-struct Greeting {
-    id: u64,
-    greeting: str[32],
-    person: Person,
-}
-
-abi Greet {
-    fn new_greeting(id: u64, greeting: str[32], person_name: str[32]);
-}
-
-impl Greet for Contract {
-    fn new_greeting(id: u64, greeting: str[32], person_name: str[32]) {
-        log(Greeting{ id, greeting, person: Person{ name: person_name }});
-    }
-}
-
-```
-
-> Compile your smart contract with [`forc build`](https://fuellabs.github.io/sway/v0.31.2/forc/commands/forc_build.html), which will build the ABI JSON asset required by your index.
-
-## Create and deploy an index
-
-This consists of a few small parts:
-
-1. Initializing a new index project.
-2. Defining the structure of your data models and queries via GraphQL schema.
-3. Specifying an index _manifest_: a YAML file used to configure your index at compile-time and run-time.
-4. Writing the actual code to index events.
-5. Compiling your new index code to a WebAssembly binary.
-6. Kicking off a local indexer service and deploying your newly created index
-
-> Below we're using the `forc index` plugin provided by [`forc`](https://fuellabs.github.io/sway/v0.31.1/forc/plugins/index.html).
-
-### 1. Initialize a new index project
+Now that we have our development environment setup, the next step is to create an index.
 
 ```bash
-➜ mkdir indexer
-
-➜ cd indexer/ && forc index new hello-index
-
-➜ cd hello-index
-
-➜ hello-index tree .
-.
-├── Cargo.toml
-├── hello_index.manifest.yaml
-├── schema
-│   └── hello_index.schema.graphql
-└── src
-    └── lib.rs
-
-2 directories, 4 files
+forc index new hello-index --namespace my_project && cd hello-index
 ```
 
-### 2. GraphQL data models
-
-If you open up `hello-index/schema/hello_index.schema.graphql`
-
-```graphql
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    greeting: Greeting
-    greeter: Greeter
-}
-
-# Calling this `Greeter` so as to not clash with `Person` in the contract
-type Greeter {
-    id: ID!
-    name: Charfield!
-    first_seen: UInt8!
-    last_seen: UInt8!
-}
-
-# Calling this `Salutation` so as to not clash with `Greeting` in the contract
-type Salutation {
-    id: ID!
-    message_hash: Bytes32!
-    message: Charfield!
-    greeter: Greeter!
-    first_seen: UInt8!
-    last_seen: UInt8!
-}
-```
-
-### 3. Update index manifest
-
-If you open up `hello-index/hello_index.manifest.yaml`
-
-```yaml
-namespace: fuel_examples
-identifier: hello_index
-contract_id: ~
-# ABI files are _not_ required. However, in this example, since we already wrote
-# and compiled our smart contract, we'll include it's ABI JSON output here.. Note
-# that we are using assets located in the examples directory of the fuel-indexer 
-# repository
-abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
-start_block: 1
-report_metrics: true
-graphql_schema: examples/hello-world/schema/hello_index.schema.graphql
-module:
-  wasm: ~
-```
-
-> Note that we haven't added a `module` parameter to our manifest yet because we haven't actually built a WASM module yet.
-
-### 4. Write your index code
-
-If you open up your index library at `hello-index/src/lib.rs`
-
-```rust
-//! A "Hello World" type of program for the Fuel Indexer service.
-//!
-//! Build this example's WASM module using the following command. Note that a
-//! wasm32-unknown-unknown target will be required.
-//!
-//! ```bash
-//! cargo build -p hello-index --release --target wasm32-unknown-unknown
-//! ```
-//!
-//! Start a local test Fuel node
-//!
-//! ```bash
-//! cargo run --bin fuel-node
-//! ```
-//!
-//! With your database backend set up, now start your fuel-indexer binary using the
-//! assets from this example:
-//!
-//! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello_index.manifest.yaml
-//! ```
-//!
-//! Now trigger an event.
-//!
-//! ```bash
-//! cargo run --bin hello-bin
-//! ```
-
-extern crate alloc;
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
-
-#[indexer(manifest = "examples/hello-world/hello_index.manifest.yaml")]
-mod hello_world_index {
-
-    fn index_logged_greeting(event: Greeting, block: BlockData) {
-        // Since all events require a u64 ID field, let's derive an ID using the
-        // name of the person in the Greeting
-        let greeter_id = first8_bytes_to_u64(&event.person.name.to_string());
-
-        // Here we 'get or create' a Salutation based on the ID of the event
-        // emitted in the LogData receipt of our smart contract
-        let greeting = match Salutation::load(event.id) {
-            Some(mut g) => {
-                // If we found an event, let's use block height as a proxy for time
-                g.last_seen = block.height;
-                g
-            }
-            None => {
-                // If we did not already have this Saluation stored in the database. Here we
-                // show how you can use the Charfield type to store strings with length <= 255
-                let message =
-                    format!("{} 👋, my name is {}", &event.greeting, &event.person.name);
-
-                Salutation {
-                    id: event.id,
-                    message_hash: first32_bytes_to_bytes32(&message),
-                    message,
-                    greeter: greeter_id,
-                    first_seen: block.height,
-                    last_seen: block.height,
-                }
-            }
-        };
-
-        // Here we do the same with Greeter that we did for Saluation -- if we have an event
-        // already saved in the database, load it and update it. If we do not have this Greeter
-        // in the database then create one
-        let greeter = match Greeter::load(greeter_id) {
-            Some(mut g) => {
-                g.last_seen = block.height;
-                g
-            }
-            None => Greeter {
-                id: greeter_id,
-                first_seen: block.height,
-                name: event.person.name.to_string(),
-                last_seen: block.height,
-            },
-        };
-
-        // Both entity saves will occur in the same transaction
-        greeting.save();
-        greeter.save();
-    }
-}
-```
-
-### 5. Compile the index
-
-```bash
-cd indexer/hello-index
-
-forc index build --manifest hello_index.manifest.yaml
-```
-
-> IMPORTANT: As of this writing, there is a small bug in newly built Fuel indexer WASM modules that produces a WASM runtime error due an errant upstream dependency. For now, a quick workaround requires using `wasm-snip` to remove the errant symbols from the WASM module. More info can be found in the related script [here](https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/stripper.bash).
->
->
-> IMPORTANT: Be sure to add your new WASM module to your index manifest as shown below.
-
-```yaml
-namespace: fuel_examples
-identifier: hello_index
-abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
-start_block: 1
-graphql_schema: examples/hello-world/schema/hello_world.schema.graphql
-module:
-  wasm: target/wasm32-unknown-unknown/release/hello_index.wasm
-```
-
-### 6. Start the service & deploy your index
-
-> IMPORTANT: You should already have Postgres running by now.
-
-```bash
-# Go back to the repository root
-➜ cd fuel-indexer/
-
-# Start a local fuel node
-➜  cargo run --bin fuel-node
-
-# Start a local indexer service
-➜  forc index start --background 2>/dev/null
-
-# Deploy your index to the local service using test authentication
-➜  forc index deploy --manifest hello_index.manifest.yaml
-```
-
-If successful, your output should resemble:
+> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name, or company name. Your index project might contain one or many indices all under the same `namespace`.
 
 ```text
-➜  forc index deploy --manifest forc_index.manifest.yaml
+forc index new hello-index --namespace my_project
 
-🚀 Deploying index at hello_index.manifest.yaml to 'http://127.0.0.1:29987/api/index/fuel/hello_index'
+███████╗██╗   ██╗███████╗██╗         ██╗███╗   ██╗██████╗ ███████╗██╗  ██╗███████╗██████╗
+██╔════╝██║   ██║██╔════╝██║         ██║████╗  ██║██╔══██╗██╔════╝╚██╗██╔╝██╔════╝██╔══██╗
+█████╗  ██║   ██║█████╗  ██║         ██║██╔██╗ ██║██║  ██║█████╗   ╚███╔╝ █████╗  ██████╔╝
+██╔══╝  ██║   ██║██╔══╝  ██║         ██║██║╚██╗██║██║  ██║██╔══╝   ██╔██╗ ██╔══╝  ██╔══██╗
+██║     ╚██████╔╝███████╗███████╗    ██║██║ ╚████║██████╔╝███████╗██╔╝ ██╗███████╗██║  ██║
+╚═╝      ╚═════╝ ╚══════╝╚══════╝    ╚═╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+
+An easy-to-use, flexible indexing service built to go fast. 🚗💨
+
+----
+
+Read the Docs:
+- Fuel Indexer: https://github.com/FuelLabs/fuel-indexer
+- Fuel Indexer Book: https://fuellabs.github.io/fuel-indexer/latest
+- Sway Book: https://fuellabs.github.io/sway/latest
+- Rust SDK Book: https://fuellabs.github.io/fuels-rs/latest
+
+Join the Community:
+- Follow us @SwayLang: https://twitter.com/fuellabs_
+- Ask questions in dev-chat on Discord: https://discord.com/invite/xfpK4Pe
+
+Report Bugs:
+- Fuel Indexer Issues: https://github.com/FuelLabs/fuel-indexer/issues/new
+
+Take a quick tour.
+`forc index check`
+    List indexer components.
+`forc index new`
+    Create a new index.
+`forc index init`
+    Create a new index in an existing directory.
+`forc index start`
+    Start a local indexer service.
+`forc index build`
+    Build your index.
+`forc index deploy`
+    Deploy your index.
+`forc index remove`
+    Stop a running index.
+```
+
+> IMPORTANT: If you want more details on how this index works, checkout our [block explorer index example](https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html).
+
+### 2.3 Deploying our index
+
+By now we have a brand new index that will index some blocks and transactions, but now we need to build and deploy it in order to see it in action.
+
+#### 2.3.1 Starting an indexer service
+
+- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via docker compose. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker compose` file below, and spinning everything up with `docker compose up`.
+
+> IMPORTANT: Ensure that any local Postgres instance that is running on port `5432` is stopped.
+>
+> You can open up a `docker-compose.yaml` file in the same directory as your index manifest, and paste the YAML content below to this `docker-compose.yaml` file.
+
+```text
+version: "3.9"
+services:
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    volumes:
+      - .:/usr/local/postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - PGUSER=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-U", "postgres", "-d", "postgres"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+  fuel-indexer:
+    image: ghcr.io/fuellabs/fuel-indexer:latest
+    command: bash -c "sleep 2 && ./fuel-indexer --fuel-node-host node-beta-2.fuel.network --fuel-node-port 80 --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
+    ports:
+      - "29987:29987"
+    volumes:
+      - .:/usr/local/fuel-indexer
+    depends_on:
+      - postgres
+```
+
+#### 2.3.2 Deploying your index to your Fuel indexer service
+
+With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
+
+```text
+forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
+▪▪▪▪▪ ✅ Build succeeded.
+
+Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
+▹▸▹▹▹ 🚀 Deploying...
 {
   "assets": [
     {
-      "digest": "d797e33a3d3bbc4d93c7ec09980c220b1243e0ffcd9107b6e13b61cb7704d5ec",
+      "digest": "79e74d6a7b68a35aeb9aa2dd7f6083dae5fdba5b6a2f199529b6c49624d1e27b",
       "id": 1,
       "index_id": 1,
       "version": 1
     },
     {
-      "digest": "c5af6d278e29efd47a0493de73509bf4329ca58e47d337d0cc368e0a1f110cb9",
+      "digest": "4415628d9ea79b3c3f1e6f02b1af3416c4d0b261b75abe3cc81b77b7902549c5",
       "id": 1,
       "index_id": 1,
       "version": 1
     },
     {
-      "digest": "b32879df38991e7b4f19ed02e394e2d31396cf1fa5ba14429e2af50dfca18cc7",
+      "digest": "e901eba95ce8b4d1c159c5d66f24276dc911e87dbff55fb2c10d8b371528eacc",
       "id": 1,
       "index_id": 1,
       "version": 1
@@ -347,66 +225,60 @@ If successful, your output should resemble:
   ],
   "success": "true"
 }
-
-✅ Successfully deployed index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/fuel/hello_index
+▪▪▪▪▪ ✅ Successfully deployed index.
 ```
 
-## Generating test data
+## 3. Querying for data
 
-Now that we've successfully deployed our index, let's make a few calls to our Sway contract in order to produce a few events, and index some data.
+With our index deployed, after a few seconds, we should be able to query for newly indexed data.
+
+Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```bash
-
-# Go back to the repository root
-➜ cd fuel-indexer/
-
-# Run the test data generator for this example
-➜ cargo run --bin hello-bin
+curl -X POST http://0.0.0.0:29987/api/graph/my_project \
+   -H 'content-type: application/json' \
+   -d '{"query": "query { tx { id hash status block }}", "params": "b"}' \
+| json_pp
 ```
 
-> One contract call will be made, and one event will be emitted to be indexed.
-You can continue running this command to generate more data.
-
-----
-
-## Querying for indexed events
-
-After you've successfully completed all six of the aforementioned steps, you can trigger some test events simply by calling the `new_greeting()` method of your Sway contract. This will produce blocks, transactions, and receipts, which will be emitted by your local Fuel node. These events will be picked up by the indexer and subsequently indexed according to the index that you've deployed. Once you have a few indexed events, you can query the indexer for the data that you wish to receive.
-
-### Query for all records of a type
-
-```sh
-➜ curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples \
-   -H 'content-type: application/json' \
-   -d '{"query": "query { greeter { id name first_seen last_seen }}", "params": "b"}' \
-| json_pp
+```text
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100   364  100   287  100    77   6153   1650 --:--:-- --:--:-- --:--:--  9100
 [
    {
-      "first_seen" : 4,
-      "id" : 2314885811371338051,
-      "last_seen" : 4,
-      "name" : "Ciara"
+      "block" : 7017844286925529648,
+      "hash" : "fb93ce9519866676813584eca79afe2d98466b3e2c8b787503b76b0b4718a565",
+      "id" : 7292230935510476086,
+      "status" : {
+         "block" : "0x8c34daaa2c58629cb98fa66d4f5ce0c0850d24e655ed6006b22204dac42fd918",
+         "status" : "success",
+         "time" : "2022-11-10 14:35:58 UTC"
+      }
    },
    {
-      "first_seen" : 6,
-      "id" : 2314885532299390017,
-      "last_seen" : 6,
-      "name" : "Alex"
+      "block" : 3473793069188998756,
+      "hash" : "5ea2577727aaadc331d5ae1ffcbc11ec4c2ba503410f8edfb22fc0a72a1d01eb",
+      "id" : 4136050720295695667,
+      "status" : {
+         "block" : "0x2b892dd6574e4a803f90c85754d6c8e154ec5f7dd91a25ce962820dce12f15e5",
+         "status" : "success",
+         "time" : "2022-11-10 13:35:58 UTC"
+      }
    },
    {
-      "first_seen" : 8,
-      "id" : 7957705993296504916,
-      "last_seen" : 8,
-      "name" : "Thompson"
+      "block" : 7221293542007912803,
+      "hash" : "d2f638c26a313c681d75db2edfbc8081dbf5ecced87a41ec4199d221251b0578",
+      "id" : 4049687577184449589,
+      "status" : {
+         "block" : "0xa0812af8738da14f7db2f00a53341492aa339f8d88e118820e78a500b11e3560",
+         "status" : "success",
+         "time" : "2022-11-10 12:35:58 UTC"
+      }
    },
-   {
-      "first_seen" : 10,
-      "id" : 2314885530822735425,
-      "last_seen" : 10,
-      "name" : "Ava"
-   }
 ]
 ```
+
+### Finished! 🥳
+
+Congrats, you just created, built, and deployed your first index on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
