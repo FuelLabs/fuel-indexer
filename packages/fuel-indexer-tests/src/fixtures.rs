@@ -491,6 +491,20 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_optional_schema_fields(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_ping()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
     async fn fuel_indexer_test_get_block_height() -> impl Responder {
         let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
         let block_height = provider.latest_block_height().await.unwrap();
@@ -532,6 +546,10 @@ pub mod test_web {
             .route("/messageout", web::post().to(fuel_indexer_test_messageout))
             .route("/callreturn", web::post().to(fuel_indexer_test_callreturn))
             .route("/multiarg", web::post().to(fuel_indexer_test_multiargs))
+            .route(
+                "/optionals",
+                web::post().to(fuel_indexer_test_optional_schema_fields),
+            )
             .route(
                 "/block_height",
                 web::get().to(fuel_indexer_test_get_block_height),

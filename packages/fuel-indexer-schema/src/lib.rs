@@ -16,28 +16,29 @@ pub mod utils;
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 const MAX_CHARFIELD_LENGTH: usize = 255;
+const NULL_VALUE: &str = "NULL";
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
-    ID(u64),
-    Address(Address),
-    AssetId(AssetId),
-    Bytes4(Bytes4),
-    Bytes8(Bytes8),
-    Bytes32(Bytes32),
-    ContractId(ContractId),
-    Int4(i32),
-    Int8(i64),
-    UInt4(u32),
-    UInt8(u64),
-    Timestamp(i64),
-    Salt(Salt),
-    Json(Json),
-    MessageId(MessageId),
-    Charfield(String),
-    Identity(Identity),
-    Boolean(bool),
-    Blob(Blob),
+    ID(Option<u64>),
+    Address(Option<Address>),
+    AssetId(Option<AssetId>),
+    Bytes4(Option<Bytes4>),
+    Bytes8(Option<Bytes8>),
+    Bytes32(Option<Bytes32>),
+    ContractId(Option<ContractId>),
+    Int4(Option<i32>),
+    Int8(Option<i64>),
+    UInt4(Option<u32>),
+    UInt8(Option<u64>),
+    Timestamp(Option<i64>),
+    Salt(Option<Salt>),
+    Json(Option<Json>),
+    MessageId(Option<MessageId>),
+    Charfield(Option<String>),
+    Identity(Option<Identity>),
+    Boolean(Option<bool>),
+    Blob(Option<Blob>),
 }
 
 impl FtColumn {
@@ -47,83 +48,83 @@ impl FtColumn {
                 let ident = u64::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
-                FtColumn::ID(ident)
+                FtColumn::ID(Some(ident))
             }
             ColumnType::Address => {
                 let address =
                     Address::try_from(&bytes[..size]).expect("Invalid slice length");
-                FtColumn::Address(address)
+                FtColumn::Address(Some(address))
             }
             ColumnType::AssetId => {
                 let asset_id =
                     AssetId::try_from(&bytes[..size]).expect("Invalid slice length");
-                FtColumn::AssetId(asset_id)
+                FtColumn::AssetId(Some(asset_id))
             }
             ColumnType::Bytes4 => {
                 let bytes =
                     Bytes4::try_from(&bytes[..size]).expect("Invalid slice length");
-                FtColumn::Bytes4(bytes)
+                FtColumn::Bytes4(Some(bytes))
             }
             ColumnType::Bytes8 => {
                 let bytes =
                     Bytes8::try_from(&bytes[..size]).expect("Invalid slice length");
-                FtColumn::Bytes8(bytes)
+                FtColumn::Bytes8(Some(bytes))
             }
             ColumnType::Bytes32 => {
                 let bytes =
                     Bytes32::try_from(&bytes[..size]).expect("Invalid slice length");
-                FtColumn::Bytes32(bytes)
+                FtColumn::Bytes32(Some(bytes))
             }
             ColumnType::ContractId => {
                 let contract_id =
                     ContractId::try_from(&bytes[..size]).expect("Invalid slice length");
-                FtColumn::ContractId(contract_id)
+                FtColumn::ContractId(Some(contract_id))
             }
             ColumnType::Salt => {
                 let salt = Salt::try_from(&bytes[..size]).expect("Invalid slice length");
-                FtColumn::Salt(salt)
+                FtColumn::Salt(Some(salt))
             }
             ColumnType::Int4 => {
                 let int4 = i32::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
-                FtColumn::Int4(int4)
+                FtColumn::Int4(Some(int4))
             }
             ColumnType::Int8 => {
                 let int8 = i64::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
-                FtColumn::Int8(int8)
+                FtColumn::Int8(Some(int8))
             }
             ColumnType::UInt4 => {
                 let int4 = u32::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
-                FtColumn::UInt4(int4)
+                FtColumn::UInt4(Some(int4))
             }
             ColumnType::UInt8 => {
                 let int8 = u64::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
-                FtColumn::UInt8(int8)
+                FtColumn::UInt8(Some(int8))
             }
             ColumnType::Timestamp => {
                 let int8 = i64::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
-                FtColumn::Timestamp(int8)
+                FtColumn::Timestamp(Some(int8))
             }
-            ColumnType::Blob => FtColumn::Blob(bytes[..size].to_vec()),
+            ColumnType::Blob => FtColumn::Blob(Some(bytes[..size].to_vec())),
             ColumnType::ForeignKey => {
                 panic!("ForeignKey not supported for FtColumn.");
             }
-            ColumnType::Json => {
-                FtColumn::Json(Json(String::from_utf8_lossy(&bytes[..size]).to_string()))
-            }
+            ColumnType::Json => FtColumn::Json(Some(Json(
+                String::from_utf8_lossy(&bytes[..size]).to_string(),
+            ))),
             ColumnType::MessageId => {
                 let message_id =
                     MessageId::try_from(&bytes[..size]).expect("Invalid slice length");
-                FtColumn::MessageId(message_id)
+                FtColumn::MessageId(Some(message_id))
             }
             ColumnType::Charfield => {
                 let s = String::from_utf8_lossy(&bytes[..size]).to_string();
@@ -132,18 +133,18 @@ impl FtColumn {
                     s.len() <= MAX_CHARFIELD_LENGTH,
                     "Charfield exceeds max length."
                 );
-                FtColumn::Charfield(s)
+                FtColumn::Charfield(Some(s))
             }
             ColumnType::Identity => {
                 let identity =
                     Identity::try_from(&bytes[..size]).expect("Invalid slice length");
-                FtColumn::Identity(identity)
+                FtColumn::Identity(Some(identity))
             }
             ColumnType::Boolean => {
                 let value = u8::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
-                FtColumn::Boolean(value != 0)
+                FtColumn::Boolean(Some(value != 0))
             }
             ColumnType::Object => {
                 panic!("Object not supported for FtColumn.");
@@ -154,94 +155,124 @@ impl FtColumn {
     pub fn query_fragment(&self) -> String {
         match self {
             FtColumn::ID(value) => {
-                format!("{}", value)
+                if let Some(val) = value {
+                    format!("{}", val)
+                } else {
+                    panic!("Schema fields of type ID cannot be nullable")
+                }
             }
-            FtColumn::Address(value) => {
-                format!("'{:x}'", value)
-            }
-            FtColumn::AssetId(value) => {
-                format!("'{:x}'", value)
-            }
-            FtColumn::Bytes4(value) => {
-                format!("'{:x}'", value)
-            }
-            FtColumn::Bytes8(value) => {
-                format!("'{:x}'", value)
-            }
-            FtColumn::Bytes32(value) => {
-                format!("'{:x}'", value)
-            }
-            FtColumn::ContractId(value) => {
-                format!("'{:x}'", value)
-            }
-            FtColumn::Int4(value) => {
-                format!("{}", value)
-            }
-            FtColumn::Int8(value) => {
-                format!("{}", value)
-            }
-            FtColumn::UInt4(value) => {
-                format!("{}", value)
-            }
-            FtColumn::UInt8(value) => {
-                format!("{}", value)
-            }
-            FtColumn::Timestamp(value) => {
-                format!("{}", value)
-            }
-            FtColumn::Salt(value) => {
-                format!("'{:x}'", value)
-            }
-            FtColumn::Json(value) => {
-                format!("'{}'", value.0)
-            }
-            FtColumn::MessageId(value) => {
-                format!("'{:x}'", value)
-            }
-            FtColumn::Charfield(value) => {
-                format!("'{}'", value)
-            }
-            FtColumn::Identity(value) => match value {
-                Identity::Address(v) => format!("'00{:x}'", v),
-                Identity::ContractId(v) => format!("'01{:x}'", v),
+            FtColumn::Address(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
             },
-            FtColumn::Boolean(value) => {
-                format!("{}", value)
-            }
-            FtColumn::Blob(value) => {
-                format!("'{}'", hex::encode(value))
-            }
+            FtColumn::AssetId(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Bytes4(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Bytes8(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Bytes32(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::ContractId(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Int4(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Int8(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::UInt4(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::UInt8(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Timestamp(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Salt(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Json(value) => match value {
+                Some(val) => format!("'{}'", val.0),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::MessageId(value) => match value {
+                Some(val) => format!("'{:x}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Charfield(value) => match value {
+                Some(val) => format!("'{}'", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Identity(value) => match value {
+                Some(val) => match val {
+                    Identity::Address(v) => format!("'00{:x}'", v),
+                    Identity::ContractId(v) => format!("'01{:x}'", v),
+                },
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Boolean(value) => match value {
+                Some(val) => format!("{}", val),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Blob(value) => match value {
+                Some(val) => format!("'{}'", hex::encode(val)),
+                None => String::from(NULL_VALUE),
+            },
         }
     }
 }
 
 mod tests {
     #[test]
-    fn test_fragments() {
+    fn test_fragments_some_types() {
         use super::*;
 
-        let id = FtColumn::ID(123456);
-        let addr = FtColumn::Address(Address::try_from([0x12; 32]).expect("Bad bytes"));
+        let id = FtColumn::ID(Some(123456));
+        let addr =
+            FtColumn::Address(Some(Address::try_from([0x12; 32]).expect("Bad bytes")));
         let asset_id =
-            FtColumn::AssetId(AssetId::try_from([0xA5; 32]).expect("Bad bytes"));
-        let bytes4 = FtColumn::Bytes4(Bytes4::try_from([0xF0; 4]).expect("Bad bytes"));
-        let bytes8 = FtColumn::Bytes8(Bytes8::try_from([0x9D; 8]).expect("Bad bytes"));
+            FtColumn::AssetId(Some(AssetId::try_from([0xA5; 32]).expect("Bad bytes")));
+        let bytes4 =
+            FtColumn::Bytes4(Some(Bytes4::try_from([0xF0; 4]).expect("Bad bytes")));
+        let bytes8 =
+            FtColumn::Bytes8(Some(Bytes8::try_from([0x9D; 8]).expect("Bad bytes")));
         let bytes32 =
-            FtColumn::Bytes32(Bytes32::try_from([0xEE; 32]).expect("Bad bytes"));
-        let contractid =
-            FtColumn::ContractId(ContractId::try_from([0x78; 32]).expect("Bad bytes"));
-        let int4 = FtColumn::Int4(i32::from_le_bytes([0x78; 4]));
-        let int8 = FtColumn::Int8(i64::from_le_bytes([0x78; 8]));
-        let uint4 = FtColumn::UInt4(u32::from_le_bytes([0x78; 4]));
-        let uint8 = FtColumn::UInt8(u64::from_le_bytes([0x78; 8]));
-        let int64 = FtColumn::Timestamp(i64::from_le_bytes([0x78; 8]));
-        let salt = FtColumn::Salt(Salt::try_from([0x31; 32]).expect("Bad bytes"));
-        let message_id =
-            FtColumn::MessageId(MessageId::try_from([0x0F; 32]).expect("Bad bytes"));
-        let charfield = FtColumn::Charfield(String::from("hello world"));
-        let json = FtColumn::Json(Json(r#"{"hello":"world"}"#.to_string()));
-        let identity =
-            FtColumn::Identity(Identity::Address(Address::try_from([0x12; 32]).unwrap()));
+            FtColumn::Bytes32(Some(Bytes32::try_from([0xEE; 32]).expect("Bad bytes")));
+        let contractid = FtColumn::ContractId(Some(
+            ContractId::try_from([0x78; 32]).expect("Bad bytes"),
+        ));
+        let int4 = FtColumn::Int4(Some(i32::from_le_bytes([0x78; 4])));
+        let int8 = FtColumn::Int8(Some(i64::from_le_bytes([0x78; 8])));
+        let uint4 = FtColumn::UInt4(Some(u32::from_le_bytes([0x78; 4])));
+        let uint8 = FtColumn::UInt8(Some(u64::from_le_bytes([0x78; 8])));
+        let int64 = FtColumn::Timestamp(Some(i64::from_le_bytes([0x78; 8])));
+        let salt = FtColumn::Salt(Some(Salt::try_from([0x31; 32]).expect("Bad bytes")));
+        let message_id = FtColumn::MessageId(Some(
+            MessageId::try_from([0x0F; 32]).expect("Bad bytes"),
+        ));
+        let charfield = FtColumn::Charfield(Some(String::from("hello world")));
+        let json = FtColumn::Json(Some(Json(r#"{"hello":"world"}"#.to_string())));
+        let identity = FtColumn::Identity(Some(Identity::Address(
+            Address::try_from([0x12; 32]).unwrap(),
+        )));
 
         insta::assert_yaml_snapshot!(id.query_fragment());
         insta::assert_yaml_snapshot!(addr.query_fragment());
@@ -260,5 +291,54 @@ mod tests {
         insta::assert_yaml_snapshot!(charfield.query_fragment());
         insta::assert_yaml_snapshot!(json.query_fragment());
         insta::assert_yaml_snapshot!(identity.query_fragment());
+    }
+
+    #[test]
+    fn test_fragments_none_types() {
+        use super::*;
+
+        let addr_none = FtColumn::Address(None);
+        let asset_id_none = FtColumn::AssetId(None);
+        let bytes4_none = FtColumn::Bytes4(None);
+        let bytes8_none = FtColumn::Bytes8(None);
+        let bytes32_none = FtColumn::Bytes32(None);
+        let contractid_none = FtColumn::ContractId(None);
+        let int4_none = FtColumn::Int4(None);
+        let int8_none = FtColumn::Int8(None);
+        let uint4_none = FtColumn::UInt4(None);
+        let uint8_none = FtColumn::UInt8(None);
+        let int64_none = FtColumn::Timestamp(None);
+        let salt_none = FtColumn::Salt(None);
+        let message_id_none = FtColumn::MessageId(None);
+        let charfield_none = FtColumn::Charfield(None);
+        let json_none = FtColumn::Json(None);
+        let identity_none = FtColumn::Identity(None);
+
+        insta::assert_yaml_snapshot!(addr_none.query_fragment());
+        insta::assert_yaml_snapshot!(asset_id_none.query_fragment());
+        insta::assert_yaml_snapshot!(bytes4_none.query_fragment());
+        insta::assert_yaml_snapshot!(bytes8_none.query_fragment());
+        insta::assert_yaml_snapshot!(bytes32_none.query_fragment());
+        insta::assert_yaml_snapshot!(contractid_none.query_fragment());
+        insta::assert_yaml_snapshot!(salt_none.query_fragment());
+        insta::assert_yaml_snapshot!(int4_none.query_fragment());
+        insta::assert_yaml_snapshot!(int8_none.query_fragment());
+        insta::assert_yaml_snapshot!(uint4_none.query_fragment());
+        insta::assert_yaml_snapshot!(uint8_none.query_fragment());
+        insta::assert_yaml_snapshot!(int64_none.query_fragment());
+        insta::assert_yaml_snapshot!(message_id_none.query_fragment());
+        insta::assert_yaml_snapshot!(charfield_none.query_fragment());
+        insta::assert_yaml_snapshot!(json_none.query_fragment());
+        insta::assert_yaml_snapshot!(identity_none.query_fragment());
+    }
+
+    #[test]
+    #[should_panic(expected = "Schema fields of type ID cannot be nullable")]
+    fn test_panic_on_none_id_fragment() {
+        use super::*;
+
+        let id_none = FtColumn::ID(None);
+
+        insta::assert_yaml_snapshot!(id_none.query_fragment());
     }
 }
