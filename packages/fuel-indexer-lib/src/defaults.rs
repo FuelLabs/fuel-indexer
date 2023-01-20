@@ -16,7 +16,7 @@ pub const INDEX_FAILED_CALLS: usize = 10;
 pub const SQLITE_DATABASE: &str = "sqlite.db";
 pub const SQLITE_IDLE_TIMEOUT_SECS: u64 = 2;
 
-pub const GRAPHQL_API_RUN_MIGRATIONS: Option<bool> = None;
+pub const GRAPHQL_API_RUN_MIGRATIONS: bool = false;
 
 pub const SERVICE_REQUEST_CHANNEL_SIZE: usize = 100;
 pub const IDLE_SERVICE_WAIT_SECS: u64 = 3;

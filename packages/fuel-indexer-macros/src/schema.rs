@@ -10,6 +10,7 @@ use graphql_parser::schema::{
     Definition, Document, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
 };
 use lazy_static::lazy_static;
+use proc_macro2::{TokenStream, TokenTree};
 use quote::{format_ident, quote};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
@@ -59,13 +60,29 @@ fn process_field<'a>(
     let typ = process_type(types, field_type, true);
     let ident = format_ident! {"{}", name};
 
-    let extractor = quote! {
-        let item = vec.pop().expect("Missing item in row");
-        let #ident = match item {
-            FtColumn::#typ(t) => t,
-            _ => panic!("Invalid column type {:?}", item),
-        };
+    let (is_nullable, column_type) = get_column_type(typ.clone());
 
+    let extractor = if is_nullable {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_type(t) => t,
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    } else {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_type(t) => match t {
+                    Some(inner_type) => { inner_type },
+                    None => {
+                        panic!("Non-nullable type is returning a None value.")
+                    }
+                },
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
     };
 
     (typ, ident, extractor)
@@ -76,6 +93,7 @@ fn process_fk_field<'a>(
     obj: &ObjectType<'a, String>,
     field: &Field<'a, String>,
     types_map: &HashMap<String, String>,
+    is_nullable: bool,
 ) -> (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
@@ -88,16 +106,32 @@ fn process_fk_field<'a>(
     } = get_join_directive_info(field, obj, types_map);
 
     let field_type: Type<'a, String> = Type::NamedType(reference_field_type_name);
-    let typ = process_type(types, &field_type, false);
+    let typ = process_type(types, &field_type, is_nullable);
     let ident = format_ident! {"{}", field_name.to_lowercase()};
 
-    let extractor = quote! {
-        let item = vec.pop().expect("Missing item in row.");
-        let #ident = match item {
-            FtColumn::#typ(t) => t,
-            _ => panic!("Invalid column type: {:?}.", item),
-        };
+    let (_, column_type) = get_column_type(typ.clone());
 
+    let extractor = if is_nullable {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_type(t) => t,
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    } else {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_type(t) => match t {
+                    Some(inner_type) => { inner_type },
+                    None => {
+                        panic!("Non-nullable type is returning a None value.")
+                    }
+                },
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
     };
 
     (typ, ident, extractor)
@@ -131,21 +165,26 @@ fn process_type_def<'a>(
                 let (mut type_name, mut field_name, mut ext) =
                     process_field(types, field);
 
-                let type_name_str = type_name.to_string();
+                let (is_nullable, mut column_type_name) =
+                    get_column_type(type_name.clone());
 
-                if processed.contains(&type_name_str)
-                    && !primitives.contains(&type_name_str)
+                let mut column_type_name_str = column_type_name.to_string();
+
+                if processed.contains(&column_type_name_str)
+                    && !primitives.contains(&column_type_name_str)
                 {
                     (type_name, field_name, ext) =
-                        process_fk_field(types, obj, field, types_map);
+                        process_fk_field(types, obj, field, types_map, is_nullable);
+                    column_type_name = type_name.clone();
+                    column_type_name_str = column_type_name.to_string();
                 }
 
-                processed.insert(type_name_str.clone());
+                processed.insert(column_type_name_str.clone());
 
-                let decoder = if COPY_TYPES.contains(type_name_str.as_str()) {
-                    quote! { FtColumn::#type_name(self.#field_name.clone()), }
+                let decoder = if is_nullable {
+                    quote! { FtColumn::#column_type_name(self.#field_name), }
                 } else {
-                    quote! { FtColumn::#type_name(self.#field_name), }
+                    quote! { FtColumn::#column_type_name(Some(self.#field_name.clone())), }
                 };
 
                 block = quote! {
@@ -402,4 +441,27 @@ pub(crate) fn process_graphql_schema(
         }
     }
     output
+}
+
+// Note: This may have to change once we support list types -- deekerno
+fn get_column_type(typ: TokenStream) -> (bool, TokenStream) {
+    let mut is_option_type = false;
+    let tokens: TokenStream = typ
+        .into_iter()
+        .filter(|token| {
+            if let TokenTree::Ident(ident) = token {
+                let is_option_token = ident.to_string() == "Option";
+                if is_option_token {
+                    is_option_type = true;
+                    return false;
+                }
+
+                // Keep ident tokens that are not "Option"
+                return true;
+            }
+            false
+        })
+        .collect::<TokenStream>();
+
+    (is_option_type, tokens)
 }
