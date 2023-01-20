@@ -1,0 +1,6 @@
+---
+source: packages/fuel-indexer-schema/src/lib.rs
+expression: bytes32_none.query_fragment()
+---
+"NULL"
+

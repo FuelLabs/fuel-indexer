@@ -446,6 +446,48 @@ async fn test_can_trigger_and_index_messageout_event_sqlite() {
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "sqlite"))]
+async fn test_can_index_event_with_optional_fields_sqlite() {
+    let pool = sqlite_connection_pool().await;
+    let mut srvc = indexer_service_sqlite().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/optionals").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let mut conn = pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM optionentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let id: i64 = row.get(0);
+    let req_int: i64 = row.get(1);
+    let opt_int_some: Option<i64> = row.get(2);
+    let opt_addr_none: Option<&str> = row.get(3);
+
+    assert_eq!(id, 1);
+    assert_eq!(req_int, 100);
+
+    assert!(opt_int_some.is_some());
+    let opt_int = opt_int_some.unwrap();
+    assert_eq!(opt_int, 999);
+
+    assert!(opt_addr_none.is_none());
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "sqlite"))]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called_sqlite() {
     let pool = sqlite_connection_pool().await;
     let mut srvc = indexer_service_sqlite().await;

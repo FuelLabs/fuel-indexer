@@ -4,10 +4,31 @@ use std::process::Command;
 use tracing::info;
 
 pub fn init(command: StartCommand) -> anyhow::Result<()> {
+    let StartCommand {
+        log_level,
+        bin,
+        background,
+        config,
+        fuel_node_host,
+        fuel_node_port,
+        graphql_api_host,
+        graphql_api_port,
+        database,
+        sqlite_database,
+        postgres_user,
+        postgres_password,
+        postgres_database,
+        postgres_host,
+        postgres_port,
+        run_migrations,
+        metrics,
+        ..
+    } = command;
+
     // If the user has a binary path they'd prefer to use, they can specify
     // it, else just use whichever indexer is in the path - whether that be
-    // ia fuelup or some other means.
-    let mut cmd = Command::new(&command.bin.unwrap_or_else(|| {
+    // in fuelup or some other means.
+    let mut cmd = Command::new(&bin.unwrap_or_else(|| {
         PathBuf::from(
             String::from_utf8_lossy(
                 &Command::new("which")
@@ -21,8 +42,47 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
         )
     }));
 
-    if let Some(c) = &command.config {
+    if let Some(c) = &config {
         cmd.arg("--config").arg(c);
+    } else {
+        // Options that have default values
+        cmd.arg("--fuel-node-host").arg(&fuel_node_host);
+        cmd.arg("--fuel-node-port").arg(&fuel_node_port);
+        cmd.arg("--graphql-api-host").arg(&graphql_api_host);
+        cmd.arg("--graphql-api-port").arg(&graphql_api_port);
+        cmd.arg("--log-level").arg(&log_level);
+
+        // Bool options
+        let options = vec![("--run-migrations", run_migrations), ("--metrics", metrics)];
+        for (opt, value) in options.iter() {
+            if *value {
+                cmd.arg(opt).arg("true");
+            }
+        }
+
+        match database.as_ref() {
+            "postgres" => {
+                // Postgres optional values
+                let postgres_optionals = vec![
+                    ("--postgres-user", postgres_user),
+                    ("--postgres-password", postgres_password),
+                    ("--postgres-host", postgres_host),
+                    ("--postgres-port", postgres_port),
+                    ("--postgres-database", postgres_database),
+                ];
+
+                for (flag, value) in postgres_optionals.iter() {
+                    if let Some(v) = value {
+                        cmd.arg(flag).arg(v);
+                    }
+                }
+            }
+            "sqlite" => {
+                cmd.arg("--database").arg(&database);
+                cmd.arg("--sqlite-database").arg(&sqlite_database);
+            }
+            _ => unreachable!(),
+        }
     }
 
     let mut proc = cmd
@@ -32,7 +92,7 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
     // Starting the service in the background allows the user to
     // go and and continue interacting with the service (e.g., forc index deploy)
     // without having to switch terminals
-    if !command.background {
+    if !background {
         let ecode = proc
             .wait()
             .expect("❌ Failed to wait on fuel-indexer process.");

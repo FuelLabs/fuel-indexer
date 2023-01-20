@@ -2,6 +2,7 @@
 
 [The Fuel Indexer](./the-fuel-indexer.md)
 
+- [Quickstart](./quickstart/index.md)
 - [Getting Started](./getting-started/index.md)
   - [Installing Rust](./getting-started/installing-rust.md)
   - [System dependencies](./getting-started/system-dependencies.md)
@@ -12,7 +13,6 @@
     - [`wasm-snip`](./getting-started/application-dependencies/wasm-snip.md)
   - [Configuration](./getting-started/configuration.md)
   - [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
-- [Quickstart](./quickstart/index.md)
 - [Examples](./examples/index.md)
   - [Hello World](./examples/hello-world.md)
   - [Block Explorer](./examples/block-explorer.md)

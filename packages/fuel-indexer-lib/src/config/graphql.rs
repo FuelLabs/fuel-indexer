@@ -17,7 +17,7 @@ pub struct GraphQLConfig {
     #[serde(default)]
     pub port: String,
     #[serde(default)]
-    pub run_migrations: Option<bool>,
+    pub run_migrations: bool,
 }
 
 impl std::string::ToString for GraphQLConfig {
