@@ -50,7 +50,7 @@ which forc index
 /Users/me/.fuelup/bin/forc-index
 ```
 
-> IMPORTANT: `fuelup` will install several binaries from the Fuel ecosystem and add them into your path, including the `fuel-indexer` binary. The `fuel-indexer` binary is the primary binary that users can use to spin up a Fuel indexer service.
+> IMPORTANT: `fuelup` will install several binaries from the Fuel ecosystem and add them into your `PATH`, including the `fuel-indexer` binary. The `fuel-indexer` binary is the primary binary that users can use to spin up a Fuel indexer service.
 
 ```bash
 which fuel-indexer
