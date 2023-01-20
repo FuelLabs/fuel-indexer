@@ -301,6 +301,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
             } else {
                 next_cursor = cursor;
+                empty_block_reqs = 0;
             }
 
             if kill_switch.load(Ordering::SeqCst) {
