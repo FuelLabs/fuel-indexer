@@ -1,33 +1,19 @@
 use crate::{
-    Database, Executor, IndexerConfig, IndexerError, IndexerResult, Manifest, Module,
-    NativeIndexExecutor, WasmIndexExecutor,
+    executor::{create_native_executor, create_wasm_executor},
+    Database, IndexerConfig, IndexerResult, Manifest,
 };
-use async_std::{
-    sync::{Arc, Mutex},
-    {fs::File, io::ReadExt},
-};
-use chrono::{TimeZone, Utc};
-use fuel_gql_client::client::{
-    types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
-    FuelClient, PageDirection, PaginatedResult, PaginationRequest,
-};
+use async_std::sync::{Arc, Mutex};
 use fuel_indexer_database::{queries, types::IndexAssetType, IndexerConnectionPool};
-use fuel_indexer_lib::{
-    config::FuelNodeConfig,
-    defaults::{DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR, INDEX_FAILED_CALLS},
-    utils::ServiceRequest,
-};
+use fuel_indexer_lib::{defaults, utils::ServiceRequest};
 use fuel_indexer_schema::db::manager::SchemaManager;
-use fuel_indexer_types::{
-    abi::{BlockData, TransactionData},
-    tx::{TransactionStatus, TxId},
-    Bytes32,
+use fuel_indexer_types::abi::BlockData;
+use futures::{
+    stream::{FuturesUnordered, StreamExt},
+    Future,
 };
-use futures::Future;
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::marker::{Send, Sync};
-use std::str::FromStr;
+use std::marker::Send;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tokio::{
     sync::mpsc::Receiver,
     task::JoinHandle,
@@ -35,257 +21,14 @@ use tokio::{
 };
 use tracing::{debug, error, info, warn};
 
-async fn create_wasm_executor(
-    fuel_node: &FuelNodeConfig,
-    db_url: &String,
-    manifest: &Manifest,
-    module_bytes: Option<Vec<u8>>,
-) -> IndexerResult<(JoinHandle<()>, Option<Vec<u8>>)> {
-    // If the task creation is via index asset registry
-    if module_bytes.is_none() {
-        match &manifest.module {
-            Module::Wasm(ref module) => {
-                let mut bytes = Vec::<u8>::new();
-                let mut file = File::open(module).await?;
-                file.read_to_end(&mut bytes).await?;
-
-                let executor = WasmIndexExecutor::new(
-                    db_url.to_string(),
-                    manifest.to_owned(),
-                    bytes.clone(),
-                )
-                .await?;
-                let handle = tokio::spawn(run_executor(
-                    &fuel_node.to_string(),
-                    executor,
-                    manifest.start_block,
-                ));
-
-                Ok((handle, Some(bytes)))
-            }
-            Module::Native => Err(IndexerError::NativeExecutionInstantiationError),
-        }
-    // If the task creation is via the bootstrap manifest
-    } else {
-        let executor = WasmIndexExecutor::new(
-            db_url.into(),
-            manifest.to_owned(),
-            module_bytes.clone().unwrap(),
-        )
-        .await?;
-        let handle = tokio::spawn(run_executor(
-            &fuel_node.to_string(),
-            executor,
-            manifest.start_block,
-        ));
-
-        Ok((handle, module_bytes))
-    }
-}
-
-async fn create_native_executor<
-    T: Future<Output = IndexerResult<()>> + Send + 'static,
->(
-    db_url: &str,
-    fuel_node: &FuelNodeConfig,
-    manifest: Manifest,
-    handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
-) -> IndexerResult<JoinHandle<()>> {
-    let start_block = manifest.start_block;
-    let executor = NativeIndexExecutor::new(db_url, manifest, handle_events).await?;
-    let handle =
-        tokio::spawn(run_executor(&fuel_node.to_string(), executor, start_block));
-    Ok(handle)
-}
-
-fn run_executor<T: 'static + Executor + Send + Sync>(
-    fuel_node_addr: &str,
-    mut executor: T,
-    start_block: Option<u64>,
-) -> impl Future<Output = ()> {
-    let start_block_value = start_block.unwrap_or(1);
-    let mut next_cursor = if start_block_value > 1 {
-        let decremented = start_block_value - 1;
-        Some(decremented.to_string())
-    } else {
-        None
-    };
-
-    info!("Subscribing to Fuel node at {}", fuel_node_addr);
-
-    let client = FuelClient::from_str(fuel_node_addr).unwrap_or_else(|e| {
-        panic!(
-            "Unable to connect to Fuel node at '{}': {}",
-            fuel_node_addr, e
-        )
-    });
-
-    async move {
-        let mut retry_count = 0;
-
-        loop {
-            debug!("Fetching paginated results from {:?}", next_cursor);
-
-            let PaginatedResult {
-                cursor, results, ..
-            } = client
-                .blocks(PaginationRequest {
-                    cursor: next_cursor.clone(),
-                    results: 10,
-                    direction: PageDirection::Forward,
-                })
-                .await
-                .unwrap_or_else(|e| {
-                    error!("Failed to retrieve blocks: {}", e);
-                    PaginatedResult {
-                        cursor: None,
-                        results: vec![],
-                        has_next_page: false,
-                        has_previous_page: false,
-                    }
-                });
-
-            debug!("Processing {} results", results.len());
-
-            let mut block_info = Vec::new();
-            for block in results.into_iter().rev() {
-                let producer = block.block_producer().map(|pk| pk.hash());
-
-                // NOTE: for now assuming we have a single contract instance,
-                // we'll need to watch contract creation events here in
-                // case an indexer would be interested in processing it.
-                let mut transactions = Vec::new();
-
-                for trans in block.transactions {
-                    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/288
-                    match client.transaction(&trans.id.to_string()).await {
-                        Ok(result) => {
-                            if let Some(TransactionResponse {
-                                transaction,
-                                status,
-                            }) = result
-                            {
-                                let receipts = match client
-                                    .receipts(&trans.id.to_string())
-                                    .await
-                                {
-                                    Ok(r) => r,
-                                    Err(e) => {
-                                        error!(
-                                            "Client communication error fetching receipts: {:?}",
-                                            e
-                                        );
-                                        vec![]
-                                    }
-                                };
-
-                                // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
-                                let status = match status {
-                                    GqlTransactionStatus::Success {
-                                        block_id,
-                                        time,
-                                        ..
-                                    } => TransactionStatus::Success {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .expect(
-                                                "Failed to parse transaction timestamp",
-                                            ),
-                                    },
-                                    GqlTransactionStatus::Failure {
-                                        block_id,
-                                        time,
-                                        reason,
-                                        ..
-                                    } => TransactionStatus::Failure {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .expect(
-                                                "Failed to parse transaction timestamp",
-                                            ),
-                                        reason,
-                                    },
-                                    GqlTransactionStatus::Submitted { submitted_at } => {
-                                        TransactionStatus::Submitted {
-                                            submitted_at: Utc
-                                                .timestamp_opt(submitted_at.to_unix(), 0)
-                                                .single()
-                                                .expect(
-                                                    "Failed to parse transaction timestamp"
-                                                ),
-                                        }
-                                    }
-                                    GqlTransactionStatus::SqueezedOut { reason } => {
-                                        TransactionStatus::SqueezedOut { reason }
-                                    }
-                                };
-
-                                let tx_data = TransactionData {
-                                    receipts,
-                                    status,
-                                    transaction,
-                                    id: TxId::from(trans.id),
-                                };
-                                transactions.push(tx_data);
-                            }
-                        }
-                        Err(e) => {
-                            error!(
-                                "Client communication error fetching transactions: {:?}",
-                                e
-                            )
-                        }
-                    };
-                }
-
-                let block = BlockData {
-                    height: block.header.height.0,
-                    id: Bytes32::from(block.id),
-                    producer,
-                    time: block.header.time.0.to_unix(),
-                    transactions,
-                };
-
-                block_info.push(block);
-            }
-
-            let result = executor.handle_events(block_info).await;
-
-            if let Err(e) = result {
-                error!("Indexer executor failed {e:?}, retrying.");
-                sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERR)).await;
-                retry_count += 1;
-                if retry_count < INDEX_FAILED_CALLS {
-                    continue;
-                } else {
-                    error!("Indexer failed after retries, giving up.");
-                    break;
-                }
-            }
-
-            if cursor.is_none() {
-                info!("No new blocks to process, sleeping.");
-                sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
-            } else {
-                next_cursor = cursor;
-            }
-
-            retry_count = 0;
-        }
-    }
-}
-
 pub struct IndexerService {
     config: IndexerConfig,
-    rx: Option<Receiver<ServiceRequest>>,
     pool: IndexerConnectionPool,
     manager: SchemaManager,
     database_url: String,
-    handles: RefCell<HashMap<String, JoinHandle<()>>>,
+    handles: HashMap<String, JoinHandle<()>>,
+    rx: Option<Receiver<ServiceRequest>>,
+    killers: HashMap<String, Arc<AtomicBool>>,
 }
 
 impl IndexerService {
@@ -300,11 +43,12 @@ impl IndexerService {
 
         Ok(IndexerService {
             config,
-            rx,
             pool,
             manager,
             database_url,
-            handles: RefCell::new(HashMap::default()),
+            handles: HashMap::default(),
+            killers: HashMap::default(),
+            rx,
         })
     }
 
@@ -324,16 +68,16 @@ impl IndexerService {
             .new_schema(&manifest.namespace, &schema, &mut conn)
             .await?;
 
-        let (handle, module_bytes) = create_wasm_executor(
+        let (handle, module_bytes, killer) = create_wasm_executor(
             &self.config.fuel_node.clone(),
             &database_url,
             &manifest,
-            None,
+            vec![],
         )
         .await?;
 
         let mut items = vec![
-            (IndexAssetType::Wasm, module_bytes.unwrap()),
+            (IndexAssetType::Wasm, module_bytes),
             (IndexAssetType::Manifest, manifest.to_bytes()?),
             (IndexAssetType::Schema, schema_bytes),
         ];
@@ -357,7 +101,8 @@ impl IndexerService {
         }
 
         info!("Registered Index({})", &manifest.uid());
-        self.handles.borrow_mut().insert(manifest.uid(), handle);
+        self.handles.insert(manifest.uid(), handle);
+        self.killers.insert(manifest.uid(), killer);
 
         Ok(())
     }
@@ -369,17 +114,17 @@ impl IndexerService {
             let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
             let manifest = Manifest::from_slice(&assets.manifest.bytes)?;
 
-            let handle = create_wasm_executor(
+            let (handle, _module_bytes, killer) = create_wasm_executor(
                 &self.config.fuel_node,
                 &self.config.database.to_string(),
                 &manifest,
-                Some(assets.wasm.bytes),
+                assets.wasm.bytes,
             )
-            .await?
-            .0;
+            .await?;
 
             info!("Registered Index({})", manifest.uid());
-            self.handles.borrow_mut().insert(manifest.uid(), handle);
+            self.handles.insert(manifest.uid(), handle);
+            self.killers.insert(manifest.uid(), killer);
         }
 
         Ok(())
@@ -413,21 +158,56 @@ impl IndexerService {
         .await?;
 
         info!("Registered NativeIndex({})", uid);
-        self.handles.borrow_mut().insert(uid, handle);
+
+        self.handles.insert(uid.clone(), handle);
+        self.killers.insert(uid, Arc::new(AtomicBool::new(false)));
         Ok(())
     }
 
     pub async fn run(self) {
         let IndexerService {
-            handles, mut rx, ..
+            handles,
+            rx,
+            pool,
+            config,
+            killers,
+            ..
         } = self;
 
-        if let Some(ref mut rx) = rx {
-            while let Some(service_request) = rx.recv().await {
-                match service_request {
+        let futs = Arc::new(Mutex::new(FuturesUnordered::from_iter(
+            handles.into_values(),
+        )));
+
+        tokio::spawn(create_service_task(
+            rx,
+            config.clone(),
+            pool.clone(),
+            futs.clone(),
+            killers,
+        ))
+        .await
+        .unwrap();
+
+        while let Some(fut) = futs.lock().await.next().await {
+            info!("Retired a future {fut:?}");
+        }
+    }
+}
+
+async fn create_service_task(
+    rx: Option<Receiver<ServiceRequest>>,
+    config: IndexerConfig,
+    pool: IndexerConnectionPool,
+    futs: Arc<Mutex<FuturesUnordered<JoinHandle<()>>>>,
+    mut killers: HashMap<String, Arc<AtomicBool>>,
+) {
+    if let Some(mut rx) = rx {
+        loop {
+            let futs = futs.lock().await;
+            match rx.try_recv() {
+                Ok(service_request) => match service_request {
                     ServiceRequest::AssetReload(request) => {
-                        let mut conn = self
-                            .pool
+                        let mut conn = pool
                             .acquire()
                             .await
                             .expect("Failed to acquire connection from pool");
@@ -449,26 +229,19 @@ impl IndexerService {
                                     serde_yaml::from_slice(&assets.manifest.bytes)
                                         .expect("Failed to deserialize manifest");
 
-                                {
-                                    let handle = create_wasm_executor(
-                                        &self.config.fuel_node,
-                                        &self.config.database.to_string(),
-                                        &manifest,
-                                        Some(assets.wasm.bytes),
-                                    )
-                                    .await
-                                    .expect(
-                                        "Failed to spawn executor from index asset registry",
-                                    )
-                                    .0;
+                                let (handle, _module_bytes, killer) = create_wasm_executor(
+                                    &config.fuel_node,
+                                    &config.database.to_string(),
+                                    &manifest,
+                                    assets.wasm.bytes,
+                                )
+                                .await
+                                .expect(
+                                    "Failed to spawn executor from index asset registry",
+                                );
 
-                                    if let Some(old_handle) = handles
-                                        .borrow_mut()
-                                        .insert(manifest.uid(), handle)
-                                    {
-                                        old_handle.abort();
-                                    };
-                                }
+                                futs.push(handle);
+                                killers.insert(manifest.uid(), killer);
                             }
                             Err(e) => {
                                 error!(
@@ -480,16 +253,19 @@ impl IndexerService {
                             }
                         }
                     }
-
                     ServiceRequest::IndexStop(request) => {
                         let uid = format!("{}.{}", request.namespace, request.identifier);
-                        if let Some(handle) = handles.borrow_mut().remove(&uid) {
-                            handle.abort();
-                            info!("Stopped Index({}).", &uid);
+
+                        if let Some(killer) = killers.remove(&uid) {
+                            killer.store(true, Ordering::SeqCst);
                         } else {
-                            warn!("Index({}) does not exist.", &uid);
+                            warn!("Stop Indexer: No indexer with the name Index({uid})");
                         }
                     }
+                },
+                Err(e) => {
+                    debug!("No service request to handle: {e:?}");
+                    sleep(Duration::from_secs(defaults::IDLE_SERVICE_WAIT_SECS)).await;
                 }
             }
         }
