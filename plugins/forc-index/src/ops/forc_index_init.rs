@@ -40,11 +40,11 @@ fn print_welcome_message() {
     Create a new index in an existing directory.
 `forc index start`
     Start a local indexer service.
-`forc index build
+`forc index build`
     Build your index.
 `forc index deploy`
     Deploy your index.
-`forc index stop`
+`forc index remove`
     Stop a running index."#;
 
     let ascii_tag = r#"
