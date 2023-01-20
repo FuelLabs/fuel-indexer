@@ -9,7 +9,7 @@
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
-- [**For Users**]()
+- [**For Users**](#for-users)
   - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
     - [`docker`](#docker)
@@ -24,9 +24,10 @@ The Fuel indexer is a standalone service that can be used to index various compo
   - [Schema](#schema)
   - [Modules](#modules)
     - [WASM module notes](#notes-on-wasm-modules)
-- [**For Contributors**]()
-  - [`fuelup`](#fuelup)
+- [**For Contributors**](#for-contributors)
   - [Dependencies](#dev-dependencies)
+    - [`fuelup`](#fuelup)
+    - [`docker`](#docker)
     - [PostgreSQL](#postgresql)
     - [SQLite](#sqlite)
     - [SQLx](#sqlx)
@@ -37,9 +38,12 @@ The Fuel indexer is a standalone service that can be used to index various compo
     - [Default tests](#default-tests)
     - [End-to-end tests](#end-to-end-tests)
     - [`trybuild` tests](#trybuild-tests)
+  - [Contributing](#contributing)
 - [Read the book](#read-the-book)
 
 # For Users
+
+Users of the Fuel indexer project are ____ looking to write backends for their dApps.
 
 ## Dependencies
 
@@ -435,6 +439,8 @@ There are a few points that Fuel indexer users should know when using WASM:
 
 # For Contributors
 
+Contributors of the Fuel indexer project are devs looking to help  backends for their dApps.
+
 ## Dev Dependencies
 
 ### Database
@@ -522,6 +528,10 @@ For tests related to the meta-programming used in the Fuel indexer, we use `tryb
 RUSTFLAGS='-D warnings' cargo test -p fuel-indexer-macros --locked
 ```
 
-## Read the book
+## Contributing
 
-For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
+If you're interested in contributing PRs to make the Fuel indexer a better project, feel free to read [our contributors document](./CONTRIBUTING.md).
+
+# Read the book
+
+Whether you're a user or a contributor, for more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
