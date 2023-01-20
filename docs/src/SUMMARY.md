@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD025 -->
 # Summary
 
 [The Fuel Indexer](./the-fuel-indexer.md)
@@ -8,10 +9,10 @@
 
 - [Installation](./getting-started/installation.md)
 - [Configuration](./getting-started/configuration.md)
-- [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)!
-  - [Manifest](./components/assets/manifest.md)!
-  - [Schema](./components/assets/schema.md)!
-  - [Module](components/assets/module.md)!
+- [A Fuel Indexer Project](./getting-started/fuel-indexer-project.md)
+  - [Manifest](./components/assets/manifest.md)
+  - [Schema](./components/assets/schema.md)
+  - [Module](components/assets/module.md)
 - [What Can I Index?](./indexing/index.md)
   - [Blocks and Transactions](./indexing/blocks-and-transactions.md)
   - [Receipts](./indexing/receipts.md)
