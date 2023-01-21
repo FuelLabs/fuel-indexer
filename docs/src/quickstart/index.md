@@ -195,8 +195,12 @@ services:
 
 With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
 
+```bash
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+```
+
 ```text
-forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
