@@ -43,7 +43,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
 
 # For Users
 
-Users of the Fuel indexer project are ____ looking to write backends for their dApps.
+Users of the Fuel indexer project include dApp developers looking to write flexible data-based backends for their dApp frontends, as well as index operators who are interested in managing one or many indexer projects for dApp developers.
 
 ## Dependencies
 
