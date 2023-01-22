@@ -1,5 +1,5 @@
 use crate::{
-    executor::{create_native_executor, create_wasm_executor},
+    executor::{ExecutorSource, NativeIndexExecutor, WasmIndexExecutor},
     Database, IndexerConfig, IndexerResult, Manifest,
 };
 use async_std::sync::{Arc, Mutex};
@@ -68,16 +68,16 @@ impl IndexerService {
             .new_schema(&manifest.namespace, &schema, &mut conn)
             .await?;
 
-        let (handle, module_bytes, killer) = create_wasm_executor(
+        let (handle, exec_source, killer) = WasmIndexExecutor::create(
             &self.config.fuel_node.clone(),
             &database_url,
             &manifest,
-            vec![],
+            ExecutorSource::Manifest,
         )
         .await?;
 
         let mut items = vec![
-            (IndexAssetType::Wasm, module_bytes),
+            (IndexAssetType::Wasm, exec_source.to_vec()),
             (IndexAssetType::Manifest, manifest.to_bytes()?),
             (IndexAssetType::Schema, schema_bytes),
         ];
@@ -88,6 +88,7 @@ impl IndexerService {
                 asset_type,
                 index.uid()
             );
+
             {
                 queries::register_index_asset(
                     &mut conn,
@@ -114,11 +115,11 @@ impl IndexerService {
             let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
             let manifest = Manifest::from_slice(&assets.manifest.bytes)?;
 
-            let (handle, _module_bytes, killer) = create_wasm_executor(
+            let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                 &self.config.fuel_node,
                 &self.config.database.to_string(),
                 &manifest,
-                assets.wasm.bytes,
+                ExecutorSource::Registry(assets.wasm.bytes),
             )
             .await?;
 
@@ -149,7 +150,7 @@ impl IndexerService {
             .await?;
 
         let uid = manifest.uid();
-        let handle = create_native_executor(
+        let (handle, _module_bytes, killer) = NativeIndexExecutor::<T>::create(
             &self.database_url,
             &self.config.fuel_node,
             manifest,
@@ -160,7 +161,7 @@ impl IndexerService {
         info!("Registered NativeIndex({})", uid);
 
         self.handles.insert(uid.clone(), handle);
-        self.killers.insert(uid, Arc::new(AtomicBool::new(false)));
+        self.killers.insert(uid, killer);
         Ok(())
     }
 
@@ -229,11 +230,11 @@ async fn create_service_task(
                                     serde_yaml::from_slice(&assets.manifest.bytes)
                                         .expect("Failed to deserialize manifest");
 
-                                let (handle, _module_bytes, killer) = create_wasm_executor(
+                                let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                                     &config.fuel_node,
                                     &config.database.to_string(),
                                     &manifest,
-                                    assets.wasm.bytes,
+                                    ExecutorSource::Registry(assets.wasm.bytes),
                                 )
                                 .await
                                 .expect(

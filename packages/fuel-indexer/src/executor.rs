@@ -47,75 +47,28 @@ fn compiler() -> Cranelift {
     Cranelift::default()
 }
 
-pub async fn create_wasm_executor(
-    fuel_node: &FuelNodeConfig,
-    db_url: &String,
-    manifest: &Manifest,
-    module_bytes: Vec<u8>,
-) -> IndexerResult<(JoinHandle<()>, Vec<u8>, Arc<AtomicBool>)> {
-    // If the task creation is via the bootstrap manifest
+#[derive(Debug, Clone)]
+pub enum ExecutorSource {
+    Manifest,
+    Registry(Vec<u8>),
+}
 
-    let killer = Arc::new(AtomicBool::new(false));
-    if module_bytes.is_empty() {
-        match &manifest.module {
-            crate::Module::Wasm(ref module) => {
-                let mut bytes = Vec::<u8>::new();
-                let mut file = File::open(module).await?;
-                file.read_to_end(&mut bytes).await?;
-
-                let executor = WasmIndexExecutor::new(
-                    db_url.to_string(),
-                    manifest.to_owned(),
-                    bytes.clone(),
-                )
-                .await?;
-                let handle = tokio::spawn(run_executor(
-                    &fuel_node.to_string(),
-                    executor,
-                    manifest.start_block,
-                    killer.clone(),
-                ));
-
-                Ok((handle, bytes, killer))
-            }
-            crate::Module::Native => Err(IndexerError::NativeExecutionInstantiationError),
+impl AsRef<[u8]> for ExecutorSource {
+    fn as_ref(&self) -> &[u8] {
+        match self {
+            ExecutorSource::Manifest => &[],
+            ExecutorSource::Registry(b) => &b,
         }
-        // If the task creation is via index asset registry
-    } else {
-        let executor = WasmIndexExecutor::new(
-            db_url.into(),
-            manifest.to_owned(),
-            module_bytes.clone(),
-        )
-        .await?;
-        let handle = tokio::spawn(run_executor(
-            &fuel_node.to_string(),
-            executor,
-            manifest.start_block,
-            killer.clone(),
-        ));
-
-        Ok((handle, module_bytes, killer))
     }
 }
 
-pub async fn create_native_executor<
-    T: Future<Output = IndexerResult<()>> + Send + 'static,
->(
-    db_url: &str,
-    fuel_node: &FuelNodeConfig,
-    manifest: Manifest,
-    handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
-) -> IndexerResult<JoinHandle<()>> {
-    let start_block = manifest.start_block;
-    let executor = NativeIndexExecutor::new(db_url, manifest, handle_events).await?;
-    let handle = tokio::spawn(run_executor(
-        &fuel_node.to_string(),
-        executor,
-        start_block,
-        Arc::new(AtomicBool::new(false)),
-    ));
-    Ok(handle)
+impl ExecutorSource {
+    pub fn to_vec(self) -> Vec<u8> {
+        match self {
+            ExecutorSource::Manifest => vec![],
+            ExecutorSource::Registry(bytes) => bytes,
+        }
+    }
 }
 
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
@@ -387,6 +340,24 @@ where
             handle_events_fn,
         })
     }
+
+    pub async fn create<T: Future<Output = IndexerResult<()>> + Send + 'static>(
+        db_url: &str,
+        fuel_node: &FuelNodeConfig,
+        manifest: Manifest,
+        handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
+    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
+        let start_block = manifest.start_block;
+        let executor = NativeIndexExecutor::new(db_url, manifest, handle_events).await?;
+        let kill_switch = Arc::new(AtomicBool::new(false));
+        let handle = tokio::spawn(run_executor(
+            &fuel_node.to_string(),
+            executor,
+            start_block,
+            kill_switch.clone(),
+        ));
+        Ok((handle, ExecutorSource::Manifest, kill_switch))
+    }
 }
 
 #[async_trait]
@@ -460,6 +431,55 @@ impl WasmIndexExecutor {
         let manifest = Manifest::from_file(manifest_path)?;
         let bytes = manifest.module_bytes()?;
         Self::new(db_conn, manifest, bytes).await
+    }
+
+    pub async fn create(
+        fuel_node: &FuelNodeConfig,
+        db_url: &str,
+        manifest: &Manifest,
+        exec_source: ExecutorSource,
+    ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
+        let killer = Arc::new(AtomicBool::new(false));
+        match &exec_source {
+            ExecutorSource::Manifest => match &manifest.module {
+                crate::Module::Wasm(ref module) => {
+                    let mut bytes = Vec::<u8>::new();
+                    let mut file = File::open(module).await?;
+                    file.read_to_end(&mut bytes).await?;
+
+                    let executor = WasmIndexExecutor::new(
+                        db_url.to_string(),
+                        manifest.to_owned(),
+                        bytes.clone(),
+                    )
+                    .await?;
+                    let handle = tokio::spawn(run_executor(
+                        &fuel_node.to_string(),
+                        executor,
+                        manifest.start_block,
+                        killer.clone(),
+                    ));
+
+                    Ok((handle, ExecutorSource::Registry(bytes), killer))
+                }
+                crate::Module::Native => {
+                    Err(IndexerError::NativeExecutionInstantiationError)
+                }
+            },
+            ExecutorSource::Registry(bytes) => {
+                let executor =
+                    WasmIndexExecutor::new(db_url.into(), manifest.to_owned(), bytes)
+                        .await?;
+                let handle = tokio::spawn(run_executor(
+                    &fuel_node.to_string(),
+                    executor,
+                    manifest.start_block,
+                    killer.clone(),
+                ));
+
+                Ok((handle, exec_source, killer))
+            }
+        }
     }
 }
 

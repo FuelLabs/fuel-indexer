@@ -450,7 +450,7 @@ fn get_column_type(typ: TokenStream) -> (bool, TokenStream) {
         .into_iter()
         .filter(|token| {
             if let TokenTree::Ident(ident) = token {
-                let is_option_token = ident.to_string() == "Option";
+                let is_option_token = *ident == "Option";
                 if is_option_token {
                     is_option_type = true;
                     return false;
