@@ -32,6 +32,7 @@ fn print_welcome_message() {
     );
 
     let plugin_msg = r#"Take a quick tour.
+
 `forc index check`
     List indexer components.
 `forc index new`

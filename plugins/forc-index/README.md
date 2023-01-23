@@ -17,7 +17,7 @@ forc index init --namespace fuel
 Create new index project at the provided path.
 
 ```bash
-forc index new --namespace fuel --path /home/fuel/projects
+forc index new --namespace my_org_name
 ```
 
 ### `forc index start`
@@ -36,18 +36,26 @@ Deploy a given index project to a particular endpoint
 forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
 ```
 
-### `forc index stop`
+### `forc index remove`
 
-Stop a running index
+Kill a running indexer
 
 ```bash
-forc index stop --url https://index.swayswap.io --manifest my_index.manifest.yaml
+forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
 ```
 
 ### `forc index check`
 
-Check to see which indexer components you have installed
+Check to see which indexer components you have installed.
 
 ```bash
 forc index check
+```
+
+### `forc index build`
+
+Build the index in the current directory.
+
+```bash
+forc index build --verbose
 ```

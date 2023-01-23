@@ -14,25 +14,23 @@ In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service
 
 ### 1.1 Install `fuelup`
 
+To Install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.
+
 ```bash
 curl \
   --proto '=https' \
   --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
 ```
 
-> If for whatever reason, you require a more specifc `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
+> If you require a non-default `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
 
 ### 1.2 Pull Docker images
 
-We will use the `latest` Postgres image.
+We will use the `latest` Postgres and Fuel indexer images.
 
 ```bash
 docker pull postgres:latest
-```
 
-And we will also use the `latest` Fuel indexer image.
-
-```bash
 docker pull ghcr.io/fuellabs/fuel-indexer:latest
 ```
 
@@ -50,7 +48,7 @@ which forc index
 /Users/me/.fuelup/bin/forc-index
 ```
 
-> IMPORTANT: `fuelup` will install several binaries from the Fuel ecosystem and add them into your path, including the `fuel-indexer` binary. The `fuel-indexer` binary is the primary binary that users can use to spin up a Fuel indexer service.
+> IMPORTANT: `fuelup` will install several binaries from the Fuel ecosystem and add them into your `PATH`, including the `fuel-indexer` binary. The `fuel-indexer` binary is the primary binary that users can use to spin up a Fuel indexer service.
 
 ```bash
 which fuel-indexer
@@ -60,7 +58,7 @@ which fuel-indexer
 /Users/me/.fuelup/bin/fuel-indexer
 ```
 
-### 2.1 Components check
+### 2.1 Check for components
 
 Once the `forc-index` plugin is installed, let's go ahead and see what indexer components we have installed.
 
@@ -96,13 +94,13 @@ forc index check
 
 ### 2.2 Creating a new index
 
-Now that we have our development environment setup, the next step is to create an index.
+Now that we have our development environment set up, the next step is to create an index.
 
 ```bash
 forc index new hello-index --namespace my_project && cd hello-index
 ```
 
-> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name, or company name. Your index project might contain one or many indices all under the same `namespace`.
+> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your index project might contain one or many indices all under the same `namespace`.
 
 ```text
 forc index new hello-index --namespace my_project
@@ -156,7 +154,7 @@ By now we have a brand new index that will index some blocks and transactions, b
 
 #### 2.3.1 Starting an indexer service
 
-- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via docker compose. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker compose` file below, and spinning everything up with `docker compose up`.
+- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via `docker compose`. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker compose` file below, and spinning everything up with `docker compose up`.
 
 > IMPORTANT: Ensure that any local Postgres instance that is running on port `5432` is stopped.
 >
@@ -195,8 +193,12 @@ services:
 
 With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
 
-```text
+```bash
 forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+```
+
+```text
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
@@ -250,31 +252,16 @@ curl -X POST http://0.0.0.0:29987/api/graph/my_project \
       "block" : 7017844286925529648,
       "hash" : "fb93ce9519866676813584eca79afe2d98466b3e2c8b787503b76b0b4718a565",
       "id" : 7292230935510476086,
-      "status" : {
-         "block" : "0x8c34daaa2c58629cb98fa66d4f5ce0c0850d24e655ed6006b22204dac42fd918",
-         "status" : "success",
-         "time" : "2022-11-10 14:35:58 UTC"
-      }
    },
    {
       "block" : 3473793069188998756,
       "hash" : "5ea2577727aaadc331d5ae1ffcbc11ec4c2ba503410f8edfb22fc0a72a1d01eb",
       "id" : 4136050720295695667,
-      "status" : {
-         "block" : "0x2b892dd6574e4a803f90c85754d6c8e154ec5f7dd91a25ce962820dce12f15e5",
-         "status" : "success",
-         "time" : "2022-11-10 13:35:58 UTC"
-      }
    },
    {
       "block" : 7221293542007912803,
       "hash" : "d2f638c26a313c681d75db2edfbc8081dbf5ecced87a41ec4199d221251b0578",
       "id" : 4049687577184449589,
-      "status" : {
-         "block" : "0xa0812af8738da14f7db2f00a53341492aa339f8d88e118820e78a500b11e3560",
-         "status" : "success",
-         "time" : "2022-11-10 12:35:58 UTC"
-      }
    },
 ]
 ```
