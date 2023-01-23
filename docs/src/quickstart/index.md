@@ -198,7 +198,7 @@ forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:2998
 ```
 
 ```text
-forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
