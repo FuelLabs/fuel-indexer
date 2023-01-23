@@ -164,7 +164,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
         .await
         .unwrap();
 
-    let id: String = row.get(0);
+    let id: i64 = row.get(0);
     let height: i64 = row.get(1);
     let timestamp: i64 = row.get(2);
 
@@ -172,7 +172,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test.tx WHERE block = '{}'",
+        "SELECT * FROM fuel_indexer_test.tx WHERE block = {}",
         id
     ))
     .fetch_all(&mut conn)
@@ -596,7 +596,7 @@ async fn test_index_respects_start_block_postgres() {
 
     let row = final_check.unwrap();
 
-    let id: String = row.get(0);
+    let id: i64 = row.get(0);
     let height: i64 = row.get(1);
     let timestamp: i64 = row.get(2);
 

@@ -6,4 +6,4 @@ contract_id: ~
 report_metrics: true
 graphql_schema: examples/block-explorer/schema/explorer_index.schema.graphql
 module:
-  wasm: packages/fuel-indexer-tests/assets/explorer_index.wasm
+  wasm: target/wasm32-unknown-unknown/release/explorer_index.wasm
