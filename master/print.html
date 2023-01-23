@@ -187,19 +187,19 @@
 <h2 id="1-setting-up-your-environment"><a class="header" href="#1-setting-up-your-environment">1. Setting up your environment</a></h2>
 <p>In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a Postgres database backend. We will also use Fuel's toolchain manager <a href="https://github.com/FuelLabs/fuelup"><code>fuelup</code></a> in order to install the <code>forc-index</code> binary that we'll use to develop our index.</p>
 <h3 id="11-install-fuelup"><a class="header" href="#11-install-fuelup">1.1 Install <code>fuelup</code></a></h3>
+<p>To Install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.</p>
 <pre><code class="language-bash">curl \
   --proto '=https' \
   --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
 </code></pre>
 <blockquote>
-<p>If for whatever reason, you require a more specifc <code>fuelup</code> installation, please <a href="https://github.com/FuelLabs/fuelup">read the <code>fuelup</code> installation docs.</a></p>
+<p>If you require a non-default <code>fuelup</code> installation, please <a href="https://github.com/FuelLabs/fuelup">read the <code>fuelup</code> installation docs.</a></p>
 </blockquote>
 <h3 id="12-pull-docker-images"><a class="header" href="#12-pull-docker-images">1.2 Pull Docker images</a></h3>
-<p>We will use the <code>latest</code> Postgres image.</p>
+<p>We will use the <code>latest</code> Postgres and Fuel indexer images.</p>
 <pre><code class="language-bash">docker pull postgres:latest
-</code></pre>
-<p>And we will also use the <code>latest</code> Fuel indexer image.</p>
-<pre><code class="language-bash">docker pull ghcr.io/fuellabs/fuel-indexer:latest
+
+docker pull ghcr.io/fuellabs/fuel-indexer:latest
 </code></pre>
 <h2 id="2-using-the-forc-index-plugin"><a class="header" href="#2-using-the-forc-index-plugin">2. Using the <code>forc-index</code> plugin</a></h2>
 <ul>
@@ -212,13 +212,13 @@
 <pre><code class="language-text">/Users/me/.fuelup/bin/forc-index
 </code></pre>
 <blockquote>
-<p>IMPORTANT: <code>fuelup</code> will install several binaries from the Fuel ecosystem and add them into your path, including the <code>fuel-indexer</code> binary. The <code>fuel-indexer</code> binary is the primary binary that users can use to spin up a Fuel indexer service.</p>
+<p>IMPORTANT: <code>fuelup</code> will install several binaries from the Fuel ecosystem and add them into your <code>PATH</code>, including the <code>fuel-indexer</code> binary. The <code>fuel-indexer</code> binary is the primary binary that users can use to spin up a Fuel indexer service.</p>
 </blockquote>
 <pre><code class="language-bash">which fuel-indexer
 </code></pre>
 <pre><code class="language-text">/Users/me/.fuelup/bin/fuel-indexer
 </code></pre>
-<h3 id="21-components-check"><a class="header" href="#21-components-check">2.1 Components check</a></h3>
+<h3 id="21-check-for-components"><a class="header" href="#21-check-for-components">2.1 Check for components</a></h3>
 <p>Once the <code>forc-index</code> plugin is installed, let's go ahead and see what indexer components we have installed.</p>
 <blockquote>
 <p>Many of these components are required for development work (e.g., <code>fuel-core</code>, <code>psql</code>) but some are even required for non-development usage as well (e.g., <code>wasm-snip</code>, <code>fuelup</code>).</p>
@@ -248,11 +248,11 @@
 +--------+------------------------+----------------------------------------------------------------------------+
 </code></pre>
 <h3 id="22-creating-a-new-index"><a class="header" href="#22-creating-a-new-index">2.2 Creating a new index</a></h3>
-<p>Now that we have our development environment setup, the next step is to create an index.</p>
+<p>Now that we have our development environment set up, the next step is to create an index.</p>
 <pre><code class="language-bash">forc index new hello-index --namespace my_project &amp;&amp; cd hello-index
 </code></pre>
 <blockquote>
-<p>The <code>namespace</code> of your project is a required option. You can think of a <code>namespace</code> as your organization name, or company name. Your index project might contain one or many indices all under the same <code>namespace</code>.</p>
+<p>The <code>namespace</code> of your project is a required option. You can think of a <code>namespace</code> as your organization name or company name. Your index project might contain one or many indices all under the same <code>namespace</code>.</p>
 </blockquote>
 <pre><code class="language-text">forc index new hello-index --namespace my_project
 
@@ -303,7 +303,7 @@ Take a quick tour.
 <p>By now we have a brand new index that will index some blocks and transactions, but now we need to build and deploy it in order to see it in action.</p>
 <h4 id="231-starting-an-indexer-service"><a class="header" href="#231-starting-an-indexer-service">2.3.1 Starting an indexer service</a></h4>
 <ul>
-<li>To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via docker compose. Our indexer service will connect to Fuel's <code>beta-2</code> network so that we can index blocks and transactions from an <em>actual</em> Fuel node. We'll use the <code>docker compose</code> file below, and spinning everything up with <code>docker compose up</code>.</li>
+<li>To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via <code>docker compose</code>. Our indexer service will connect to Fuel's <code>beta-2</code> network so that we can index blocks and transactions from an <em>actual</em> Fuel node. We'll use the <code>docker compose</code> file below, and spinning everything up with <code>docker compose up</code>.</li>
 </ul>
 <blockquote>
 <p>IMPORTANT: Ensure that any local Postgres instance that is running on port <code>5432</code> is stopped.</p>
@@ -338,7 +338,9 @@ services:
 </code></pre>
 <h4 id="232-deploying-your-index-to-your-fuel-indexer-service"><a class="header" href="#232-deploying-your-index-to-your-fuel-indexer-service">2.3.2 Deploying your index to your Fuel indexer service</a></h4>
 <p>With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:</p>
-<pre><code class="language-text">forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+<pre><code class="language-bash">forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+</code></pre>
+<pre><code class="language-text">forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
@@ -385,31 +387,16 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
       &quot;block&quot; : 7017844286925529648,
       &quot;hash&quot; : &quot;fb93ce9519866676813584eca79afe2d98466b3e2c8b787503b76b0b4718a565&quot;,
       &quot;id&quot; : 7292230935510476086,
-      &quot;status&quot; : {
-         &quot;block&quot; : &quot;0x8c34daaa2c58629cb98fa66d4f5ce0c0850d24e655ed6006b22204dac42fd918&quot;,
-         &quot;status&quot; : &quot;success&quot;,
-         &quot;time&quot; : &quot;2022-11-10 14:35:58 UTC&quot;
-      }
    },
    {
       &quot;block&quot; : 3473793069188998756,
       &quot;hash&quot; : &quot;5ea2577727aaadc331d5ae1ffcbc11ec4c2ba503410f8edfb22fc0a72a1d01eb&quot;,
       &quot;id&quot; : 4136050720295695667,
-      &quot;status&quot; : {
-         &quot;block&quot; : &quot;0x2b892dd6574e4a803f90c85754d6c8e154ec5f7dd91a25ce962820dce12f15e5&quot;,
-         &quot;status&quot; : &quot;success&quot;,
-         &quot;time&quot; : &quot;2022-11-10 13:35:58 UTC&quot;
-      }
    },
    {
       &quot;block&quot; : 7221293542007912803,
       &quot;hash&quot; : &quot;d2f638c26a313c681d75db2edfbc8081dbf5ecced87a41ec4199d221251b0578&quot;,
       &quot;id&quot; : 4049687577184449589,
-      &quot;status&quot; : {
-         &quot;block&quot; : &quot;0xa0812af8738da14f7db2f00a53341492aa339f8d88e118820e78a500b11e3560&quot;,
-         &quot;status&quot; : &quot;success&quot;,
-         &quot;time&quot; : &quot;2022-11-10 12:35:58 UTC&quot;
-      }
    },
 ]
 </code></pre>
