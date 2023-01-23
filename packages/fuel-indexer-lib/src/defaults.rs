@@ -19,9 +19,11 @@ pub const SQLITE_IDLE_TIMEOUT_SECS: u64 = 2;
 pub const GRAPHQL_API_RUN_MIGRATIONS: bool = false;
 
 pub const SERVICE_REQUEST_CHANNEL_SIZE: usize = 100;
+pub const IDLE_SERVICE_WAIT_SECS: u64 = 3;
 
 pub const MAX_DATABASE_CONNECTION_ATTEMPTS: usize = 5;
 pub const INITIAL_RETRY_DELAY_SECS: u64 = 2;
+pub const MAX_EMPTY_BLOCK_REQUESTS: usize = 10;
 
 pub const DELAY_FOR_SERVICE_ERR: u64 = 5;
 pub const DELAY_FOR_EMPTY_PAGE: u64 = 1;

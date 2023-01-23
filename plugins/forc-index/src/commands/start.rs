@@ -19,9 +19,8 @@ pub struct Command {
     #[clap(long, help = "Whether to run the Fuel Indexer in the background.")]
     pub background: bool,
 
-    // The following options are taken from fuel_indexer_lib::config::IndexerArgs as 
+    // The following options are taken from fuel_indexer_lib::config::IndexerArgs as
     // we should pass all valid start options to the service
-    
     /// Path to the config file used to start the Fuel Indexer.
     #[clap(long, help = "Path to the config file used to start the Fuel Indexer.")]
     pub config: Option<PathBuf>,

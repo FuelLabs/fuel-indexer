@@ -19,7 +19,7 @@ pub struct Database {
     pub tables: HashMap<i64, String>,
 }
 
-// Hmm, TODO Mutecks instedddD
+// TODO: Use mutex
 unsafe impl Sync for Database {}
 unsafe impl Send for Database {}
 
