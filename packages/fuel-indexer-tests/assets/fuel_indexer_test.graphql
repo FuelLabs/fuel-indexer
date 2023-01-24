@@ -98,3 +98,10 @@ type OptionEntity {
     int_optional_some: UInt8
     addr_optional_none: Address
 }
+
+type TupleEntity {
+    id: ID!
+    complex_a: Charfield!
+    complex_b: UInt8!
+    simple_a: Charfield!
+}

@@ -42,6 +42,10 @@ lazy_static! {
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
 }
 
+fn is_tuple_type(typ: &TypeDeclaration) -> bool {
+    typ.type_field.as_str().starts_with("(_")
+}
+
 fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
     match abi_path {
         Some(abi) => {
@@ -85,6 +89,10 @@ fn rust_name_str(ty: &str) -> Ident {
 
 fn rust_name(ty: &TypeDeclaration) -> Ident {
     if ty.components.is_some() {
+        if is_tuple_type(ty) {
+            proc_macro_error::abort_call_site!("Cannot derive rust_name of tuple type.");
+        }
+
         let ty = ty
             .type_field
             .split(' ')
@@ -111,6 +119,7 @@ fn rust_type(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
     } else {
         // TODO: decode all the types
         match ty.type_field.as_str() {
+            "()" => quote! {},
             "b256" => quote! { B256 },
             "bool" => quote! { bool },
             "u16" => quote! { u16 },
@@ -204,6 +213,7 @@ fn process_fn_items(
     let mut logged_types = Vec::new();
 
     let mut type_map = HashMap::new();
+    let mut tuple_map = HashMap::new();
     let mut type_ids = FUEL_PRIMITIVES
         .iter()
         .map(|x| {
@@ -230,6 +240,14 @@ fn process_fn_items(
 
         for typ in parsed.types {
             if IGNORED_ABI_JSON_TYPES.contains(typ.type_field.as_str()) {
+                continue;
+            }
+
+            // `rust_name` and `rust_type` cannot be derived from a tuple itself, but can be
+            // derived from tuple components that are not themselves tuples. So we just don't
+            // process tuple as a normal type -- we just hold on to it.
+            if is_tuple_type(&typ) {
+                tuple_map.insert(typ.type_id, typ.clone());
                 continue;
             }
 
@@ -384,12 +402,15 @@ fn process_fn_items(
                                         });
 
                                         abi_types.insert(*ty_id);
-                                        // NOTE: this might have to be added back later
+                                        // NOTE: This might have to be added back later
                                         // type_ids.insert(ty.to_string(), *ty_id);
 
-                                        // NOTE: we can't use the generic struct_decoders here because each decoder takes a different
+                                        // NOTE: We can't use the generic struct_decoders here because each decoder takes a different
                                         // data param. The generic struct_decoders all take Vec<u8> as their data param while native
                                         // Fuel types take different data params (e.g., Transfer, BlockData, etc)
+                                        //
+                                        // NOTE: We actually could use the generic struct_decoders here but we would have to pay for an
+                                        // extra serialization/deserialization when matching these receipts to create these structs.
                                         match path_ident_str.as_str() {
                                             "BlockData" => {
                                                 blockdata_decoding = quote! { decoder.decode_blockdata(block.clone()); };
@@ -429,7 +450,7 @@ fn process_fn_items(
                                         }
                                     } else {
                                         proc_macro_error::abort_call_site!(
-                                            "Type with ident '{:?}' not defined in the ABI.",
+                                            "Type with ident '{:?}' is not defined in the ABI.",
                                             path.ident,
                                         )
                                     }

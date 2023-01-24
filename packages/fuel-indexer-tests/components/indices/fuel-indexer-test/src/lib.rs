@@ -226,4 +226,19 @@ mod fuel_indexer_test {
 
         entity.save();
     }
+
+    fn fuel_indexer_test_tuple(
+        event: ComplexTupleStruct,
+        logdata_entity: SimpleTupleStruct,
+    ) {
+        Logger::info("fuel_indexer_test_tuple handling ComplexTupleStruct and SimpleTupleStruct events.");
+        let data: (u32, (u64, bool, (SizedAsciiString<5>, TupleStructItem))) = event.data;
+        let entity = TupleEntity {
+            id: data.1 .0,
+            complex_a: data.1 .2 .0.to_string(),
+            complex_b: data.1 .2 .1.id,
+            simple_a: logdata_entity.data.2.to_string(),
+        };
+        entity.save();
+    }
 }

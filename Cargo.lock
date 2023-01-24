@@ -2833,9 +2833,9 @@ dependencies = [
 
 [[package]]
 name = "fuel-metrics"
-version = "0.14.1"
+version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61077b7459292ddf72dad4a9bbf0f961779a83c6fc228947503c2aea5851d988"
+checksum = "540133c363d3635c912228f625c016b02ed9adc81f04f37c1f2e9c62582cc70a"
 dependencies = [
  "anyhow",
  "axum",
@@ -2959,7 +2959,7 @@ dependencies = [
  "chrono",
  "fuel-chain-config 0.14.1",
  "fuel-core-interfaces 0.14.1",
- "fuel-metrics 0.14.1",
+ "fuel-metrics 0.14.2",
  "futures",
  "parking_lot 0.11.2",
  "thiserror",

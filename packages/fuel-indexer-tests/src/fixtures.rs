@@ -514,6 +514,18 @@ pub mod test_web {
         HttpResponse::Ok().body(block_height.to_string())
     }
 
+    async fn fuel_indexer_test_tuple(state: web::Data<Arc<AppState>>) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_tuple()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest,
     }
@@ -556,6 +568,7 @@ pub mod test_web {
                 "/block_height",
                 web::get().to(fuel_indexer_test_get_block_height),
             )
+            .route("/tuples", web::post().to(fuel_indexer_test_tuple))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

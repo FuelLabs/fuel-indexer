@@ -8,123 +8,32 @@
     },
     {
       "typeId": 1,
-      "type": "b256",
-      "components": null,
+      "type": "(_, _)",
+      "components": [
+        {
+          "name": "__tuple_element",
+          "type": 10,
+          "typeArguments": null
+        },
+        {
+          "name": "__tuple_element",
+          "type": 18,
+          "typeArguments": null
+        }
+      ],
       "typeParameters": null
     },
     {
       "typeId": 2,
-      "type": "bool",
-      "components": null,
-      "typeParameters": null
-    },
-    {
-      "typeId": 3,
-      "type": "enum Identity",
+      "type": "(_, _)",
       "components": [
         {
-          "name": "Address",
-          "type": 5,
+          "name": "__tuple_element",
+          "type": 19,
           "typeArguments": null
         },
         {
-          "name": "ContractId",
-          "type": 6,
-          "typeArguments": null
-        }
-      ],
-      "typeParameters": null
-    },
-    {
-      "typeId": 4,
-      "type": "str[32]",
-      "components": null,
-      "typeParameters": null
-    },
-    {
-      "typeId": 5,
-      "type": "struct Address",
-      "components": [
-        {
-          "name": "value",
-          "type": 1,
-          "typeArguments": null
-        }
-      ],
-      "typeParameters": null
-    },
-    {
-      "typeId": 6,
-      "type": "struct ContractId",
-      "components": [
-        {
-          "name": "value",
-          "type": 1,
-          "typeArguments": null
-        }
-      ],
-      "typeParameters": null
-    },
-    {
-      "typeId": 7,
-      "type": "struct Ping",
-      "components": [
-        {
-          "name": "id",
-          "type": 10,
-          "typeArguments": null
-        },
-        {
-          "name": "value",
-          "type": 10,
-          "typeArguments": null
-        },
-        {
-          "name": "message",
-          "type": 4,
-          "typeArguments": null
-        }
-      ],
-      "typeParameters": null
-    },
-    {
-      "typeId": 8,
-      "type": "struct Pong",
-      "components": [
-        {
-          "name": "id",
-          "type": 10,
-          "typeArguments": null
-        },
-        {
-          "name": "value",
-          "type": 10,
-          "typeArguments": null
-        }
-      ],
-      "typeParameters": null
-    },
-    {
-      "typeId": 9,
-      "type": "struct Pung",
-      "components": [
-        {
-          "name": "id",
-          "type": 10,
-          "typeArguments": null
-        },
-        {
-          "name": "value",
-          "type": 10,
-          "typeArguments": null
-        },
-        {
-          "name": "is_pung",
-          "type": 2,
-          "typeArguments": null
-        },
-        {
-          "name": "pung_from",
+          "name": "__tuple_element",
           "type": 3,
           "typeArguments": null
         }
@@ -132,7 +41,230 @@
       "typeParameters": null
     },
     {
+      "typeId": 3,
+      "type": "(_, _, _)",
+      "components": [
+        {
+          "name": "__tuple_element",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "__tuple_element",
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "__tuple_element",
+          "type": 1,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 4,
+      "type": "(_, _, _)",
+      "components": [
+        {
+          "name": "__tuple_element",
+          "type": 19,
+          "typeArguments": null
+        },
+        {
+          "name": "__tuple_element",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "__tuple_element",
+          "type": 8,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 5,
+      "type": "b256",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 6,
+      "type": "bool",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 7,
+      "type": "enum Identity",
+      "components": [
+        {
+          "name": "Address",
+          "type": 11,
+          "typeArguments": null
+        },
+        {
+          "name": "ContractId",
+          "type": 13,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 8,
+      "type": "str[12]",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 9,
+      "type": "str[32]",
+      "components": null,
+      "typeParameters": null
+    },
+    {
       "typeId": 10,
+      "type": "str[5]",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 11,
+      "type": "struct Address",
+      "components": [
+        {
+          "name": "value",
+          "type": 5,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 12,
+      "type": "struct ComplexTupleStruct",
+      "components": [
+        {
+          "name": "data",
+          "type": 2,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 13,
+      "type": "struct ContractId",
+      "components": [
+        {
+          "name": "value",
+          "type": 5,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 14,
+      "type": "struct Ping",
+      "components": [
+        {
+          "name": "id",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "value",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "message",
+          "type": 9,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 15,
+      "type": "struct Pong",
+      "components": [
+        {
+          "name": "id",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "value",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 16,
+      "type": "struct Pung",
+      "components": [
+        {
+          "name": "id",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "value",
+          "type": 20,
+          "typeArguments": null
+        },
+        {
+          "name": "is_pung",
+          "type": 6,
+          "typeArguments": null
+        },
+        {
+          "name": "pung_from",
+          "type": 7,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 17,
+      "type": "struct SimpleTupleStruct",
+      "components": [
+        {
+          "name": "data",
+          "type": 4,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 18,
+      "type": "struct TupleStructItem",
+      "components": [
+        {
+          "name": "id",
+          "type": 20,
+          "typeArguments": null
+        }
+      ],
+      "typeParameters": null
+    },
+    {
+      "typeId": 19,
+      "type": "u32",
+      "components": null,
+      "typeParameters": null
+    },
+    {
+      "typeId": 20,
       "type": "u64",
       "components": null,
       "typeParameters": null
@@ -144,9 +276,10 @@
       "name": "trigger_callreturn",
       "output": {
         "name": "",
-        "type": 9,
+        "type": 16,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     },
     {
       "inputs": [],
@@ -155,7 +288,8 @@
         "name": "",
         "type": 0,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     },
     {
       "inputs": [],
@@ -164,7 +298,8 @@
         "name": "",
         "type": 0,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     },
     {
       "inputs": [],
@@ -173,34 +308,38 @@
         "name": "",
         "type": 0,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     },
     {
       "inputs": [],
       "name": "trigger_multiargs",
       "output": {
         "name": "",
-        "type": 7,
+        "type": 14,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     },
     {
       "inputs": [],
       "name": "trigger_ping",
       "output": {
         "name": "",
-        "type": 7,
+        "type": 14,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     },
     {
       "inputs": [],
       "name": "trigger_pong",
       "output": {
         "name": "",
-        "type": 8,
+        "type": 15,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     },
     {
       "inputs": [],
@@ -209,7 +348,8 @@
         "name": "",
         "type": 0,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     },
     {
       "inputs": [],
@@ -218,7 +358,8 @@
         "name": "",
         "type": 0,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     },
     {
       "inputs": [],
@@ -227,7 +368,18 @@
         "name": "",
         "type": 0,
         "typeArguments": null
-      }
+      },
+      "attributes": null
+    },
+    {
+      "inputs": [],
+      "name": "trigger_tuple",
+      "output": {
+        "name": "",
+        "type": 12,
+        "typeArguments": null
+      },
+      "attributes": null
     }
   ],
   "loggedTypes": [
@@ -235,7 +387,7 @@
       "logId": 0,
       "loggedType": {
         "name": "",
-        "type": 10,
+        "type": 20,
         "typeArguments": null
       }
     },
@@ -243,7 +395,7 @@
       "logId": 1,
       "loggedType": {
         "name": "",
-        "type": 9,
+        "type": 16,
         "typeArguments": []
       }
     },
@@ -251,7 +403,7 @@
       "logId": 2,
       "loggedType": {
         "name": "",
-        "type": 9,
+        "type": 16,
         "typeArguments": []
       }
     },
@@ -259,7 +411,7 @@
       "logId": 3,
       "loggedType": {
         "name": "",
-        "type": 8,
+        "type": 15,
         "typeArguments": []
       }
     },
@@ -267,9 +419,19 @@
       "logId": 4,
       "loggedType": {
         "name": "",
-        "type": 10,
+        "type": 20,
         "typeArguments": null
       }
+    },
+    {
+      "logId": 5,
+      "loggedType": {
+        "name": "",
+        "type": 17,
+        "typeArguments": []
+      }
     }
-  ]
+  ],
+  "messagesTypes": [],
+  "configurables": []
 }
