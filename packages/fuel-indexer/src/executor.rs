@@ -57,7 +57,7 @@ impl AsRef<[u8]> for ExecutorSource {
     fn as_ref(&self) -> &[u8] {
         match self {
             ExecutorSource::Manifest => &[],
-            ExecutorSource::Registry(b) => &b,
+            ExecutorSource::Registry(b) => b,
         }
     }
 }

@@ -38,21 +38,21 @@ type PongEntity {
 }
 
 type Block {
-    id: Bytes32! @unique
+    id: ID!
     height: UInt8!
     timestamp: Int8!
 }
 
 
 type Tx {
-    id: Bytes32! @unique
+    id: ID!
     block: Block!
     input_data: Json!
     timestamp: Int8!
 }
 
 type Transfer {
-    id: Bytes32! @unique
+    id: ID!
     contract_id: ContractId!
     # 'to' is a reserved SQL word, so using 'recipient'
     recipient: ContractId!
@@ -61,7 +61,7 @@ type Transfer {
 }
 
 type TransferOut {
-    id: Bytes32! @unique
+    id: ID!
     contract_id: ContractId!
     recipient: Address!
     amount: UInt8!
@@ -69,21 +69,21 @@ type TransferOut {
 }
 
 type Log {
-    id: Bytes32! @unique
+    id: ID!
     contract_id: ContractId!
     ra: UInt8!
     rb: UInt8!
 }
 
 type ScriptResult {
-    id: Bytes32! @unique
+    id: ID!
     result: UInt8!
     gas_used: UInt8!
     blob: Blob!
 }
 
 type MessageOut {
-    id: MessageId! @unique
+    id: ID!
     sender: Address!
     recipient: Address!
     amount: UInt8!
@@ -93,7 +93,7 @@ type MessageOut {
 }
 
 type OptionEntity {
-    id: ID! @unique
+    id: ID!
     int_required: UInt8!
     int_optional_some: UInt8
     addr_optional_none: Address

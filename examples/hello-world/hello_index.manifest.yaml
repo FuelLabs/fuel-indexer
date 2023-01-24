@@ -6,4 +6,4 @@ start_block: 1
 report_metrics: true
 graphql_schema: examples/hello-world/schema/hello_index.schema.graphql
 module:
-  wasm: packages/fuel-indexer-tests/assets/hello_index.wasm
+  wasm: target/wasm32-unknown-unknown/release/hello_index.wasm

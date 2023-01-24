@@ -159,14 +159,14 @@ async fn test_can_trigger_and_index_blocks_and_transactions_sqlite() {
         .await
         .unwrap();
 
-    let id: String = row.get(0);
+    let id: i64 = row.get(0);
     let height: i64 = row.get(1);
     let timestamp: i64 = row.get(2);
 
     assert_eq!(height, 1);
     assert!(timestamp > 0);
 
-    let row = sqlx::query(&format!("SELECT * FROM tx WHERE block = '{}'", id))
+    let row = sqlx::query(&format!("SELECT * FROM tx WHERE block = {}", id))
         .fetch_all(&mut conn)
         .await
         .unwrap();
@@ -588,7 +588,7 @@ async fn test_index_respects_start_block_sqlite() {
 
     let row = final_check.unwrap();
 
-    let id: String = row.get(0);
+    let id: i64 = row.get(0);
     let height: i64 = row.get(1);
     let timestamp: i64 = row.get(2);
 
