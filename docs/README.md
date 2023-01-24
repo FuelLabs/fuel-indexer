@@ -455,23 +455,29 @@ In either case, your SQLite database is now accessible at `sqlite://[DATABASE_FI
 
 - After setting up your database, you should install `sqlx-cli` in order to run migrations for your indexer service.
 - You can do so by running `cargo install sqlx-cli --features postgres,sqlite`.
-- Once installed, you can run the migrations by running the following command after changing `DATABASE_URL` to match your setup. For example:
-
-```sh
-DATABASE_URL=sqlite://indexer_database.db bash scripts/run_migrations.bash
-```
+- Once installed, you can run the migrations by running the following command after changing `DATABASE_URL` to match your setup.
 
 ## Building from Source
 
 ### Clone repository
 
 ```bash
-git clone git@github.com:FuelLabs/fuel-indexer.git
+git clone git@github.com:FuelLabs/fuel-indexer.git && cd fuel-indexer/
 ```
 
 ### Run migrations
 
-```bash
+#### SQLite migrations
+
+```sh
+cd packages/fuel-indexer-database/sqlite
+sqlx create --database-url sqlite://test.db
+DATABASE_URL=sqlite://test.db sqlx migrate run
+```
+
+#### Postgres migrations
+
+```sh
 cd packages/fuel-indexer-database/postgres
 DATABASE_URL=postgres://postgres@localhost sqlx migrate run
 ```
@@ -481,6 +487,8 @@ DATABASE_URL=postgres://postgres@localhost sqlx migrate run
 ```bash
 cargo run --bin fuel-indexer
 ```
+
+> If no configuration file or other options are passed, the service will default to a `postgres://postgres@localhost` database connection.
 
 ## Testing
 
