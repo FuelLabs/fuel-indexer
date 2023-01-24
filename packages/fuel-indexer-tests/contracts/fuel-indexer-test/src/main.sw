@@ -9,6 +9,7 @@ use std::{
     message::send_message,
     revert::revert,
     token::transfer,
+    bytes::Bytes,
 };
 
 pub struct Pong {
@@ -29,6 +30,18 @@ pub struct Pung {
     pung_from: Identity,
 }
 
+pub struct TupleStructItem {
+    id: u64
+}
+
+pub struct ComplexTupleStruct {
+    data: (u32, (u64, bool, (str[5], TupleStructItem))),
+}
+
+pub struct SimpleTupleStruct {
+    data: (u32, u64, str[12]),
+}
+
 abi FuelIndexer {
     fn trigger_multiargs() -> Ping;
     fn trigger_callreturn() -> Pung;
@@ -40,6 +53,7 @@ abi FuelIndexer {
     fn trigger_scriptresult();
     fn trigger_transferout();
     fn trigger_messageout();
+    fn trigger_tuple() -> ComplexTupleStruct;
 }
 
 impl FuelIndexer for Contract {
@@ -112,11 +126,16 @@ impl FuelIndexer for Contract {
     }
 
     fn trigger_messageout() {
-        let mut v: Vec<u64> = Vec::new();
-        v.push(1);
-        v.push(2);
-        v.push(3);
+        let mut b = Bytes::new();
+        b.push(1u8);
+        b.push(2u8);
+        b.push(3u8);
         const RECEIVER = 0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96;
-        send_message(RECEIVER, v, 100);
+        send_message(RECEIVER, b, 100);
+    }
+
+    fn trigger_tuple() -> ComplexTupleStruct {
+        log(SimpleTupleStruct { data: (4u32, 5u64, "hello world!")});
+        ComplexTupleStruct{ data: (1u32, (5u64, true, ("abcde", TupleStructItem { id: 54321 })))}
     }
 }

@@ -595,3 +595,40 @@ async fn test_index_respects_start_block_sqlite() {
     assert_eq!(height, (block_height + 2) as i64);
     assert!(timestamp > 0);
 }
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "sqlite"))]
+async fn test_can_trigger_and_index_tuple_events_sqlite() {
+    let pool = sqlite_connection_pool().await;
+    let mut srv = indexer_service_sqlite().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srv.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/tuples").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let mut conn = pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM tupleentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let _id: i64 = row.get(0);
+    let complex_a: &str = row.get(1);
+    let complex_b: i64 = row.get(2);
+    let simple_a: &str = row.get(3);
+
+    assert_eq!(complex_a, "abcde");
+    assert_eq!(complex_b, 54321);
+    assert_eq!(simple_a, "hello world!");
+}

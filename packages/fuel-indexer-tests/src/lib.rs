@@ -41,7 +41,7 @@ pub mod utils {
     // This is already done in the #[indexer] attribute, but since these tests test
     // modules that have already been compiled, we need to do this manually here.
     //
-    // Doing this allows us to use the root of the relative root of the the fuel-indexer/
+    // Doing this allows us to use the relative root of the the fuel-indexer/
     // repo for all test asset paths (i.e., we can simply reference all asset paths in
     // in manifest files relative from 'fuel-indexer')
     pub fn update_test_manifest_asset_paths(manifest: &mut Manifest) {
