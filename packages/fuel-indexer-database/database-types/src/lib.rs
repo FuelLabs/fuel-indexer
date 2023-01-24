@@ -1,7 +1,7 @@
 use crate::directives::IndexMethod;
 use serde::{Deserialize, Serialize};
 use std::{fmt, fmt::Write};
-use strum::{AsRefStr, EnumString};
+use strum::{AsRefStr, Display, EnumString};
 
 pub mod directives;
 
@@ -288,7 +288,7 @@ impl RegisteredIndex {
     }
 }
 
-#[derive(Eq, PartialEq, Debug, Clone, Default)]
+#[derive(Eq, PartialEq, Debug, Clone, Default, EnumString, Display)]
 pub enum DbType {
     #[default]
     Postgres,
@@ -358,7 +358,7 @@ impl CreateStatement for ColumnIndex {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
+#[derive(Debug, Clone, Copy, Default, Display, EnumString, AsRefStr)]
 pub enum OnDelete {
     #[default]
     #[strum(serialize = "NO ACTION")]
@@ -369,7 +369,7 @@ pub enum OnDelete {
     SetNull,
 }
 
-#[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
+#[derive(Debug, Clone, Copy, Default, Display, EnumString, AsRefStr)]
 pub enum OnUpdate {
     #[default]
     #[strum(serialize = "NO ACTION")]
