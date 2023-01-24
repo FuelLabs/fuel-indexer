@@ -1,6 +1,6 @@
 [package]
 name = "fuel-indexer-api-server"
-version = "0.1.13"
+version = "0.2.0"
 edition = "2021"
 license = "BUSL-1.1"
 repository = "https://github.com/FuelLabs/fuel-indexer"
@@ -10,11 +10,11 @@ description = "Fuel Indexer API Server"
 anyhow = "1.0"
 async-std = "1"
 axum = { version = "0.5", features = ["multipart"] }
-fuel-indexer-database = { version = "0.1", path = "../fuel-indexer-database" }
-fuel-indexer-database-types = { version = "0.1", path = "../fuel-indexer-database/database-types" }
-fuel-indexer-lib = { version = "0.1", path = "../fuel-indexer-lib" }
-fuel-indexer-metrics = { version = "0.1", path = "../fuel-indexer-metrics", optional = true }
-fuel-indexer-schema = { version = "0.1", path = "../fuel-indexer-schema", features = ["db-models"] }
+fuel-indexer-database = { version = "0.2", path = "../fuel-indexer-database" }
+fuel-indexer-database-types = { version = "0.2", path = "../fuel-indexer-database/database-types" }
+fuel-indexer-lib = { version = "0.2", path = "../fuel-indexer-lib" }
+fuel-indexer-metrics = { version = "0.2", path = "../fuel-indexer-metrics", optional = true }
+fuel-indexer-schema = { version = "0.2", path = "../fuel-indexer-schema", features = ["db-models"] }
 http = "0.2"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}
 hyper-rustls = { version = "0.23", features = ["http2"] }
