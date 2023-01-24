@@ -38,3 +38,18 @@ CREATE TABLE IF NOT EXISTS graph_registry_root_columns (
         FOREIGN KEY(root_id)
             REFERENCES graph_registry_graph_root(id)
 );
+
+CREATE TABLE IF NOT EXISTS graph_registry_foreign_keys (
+    id bigserial primary key,
+    schema_version varchar(512) not null,
+    schema_name varchar(32) not null,
+    table_name varchar(32) not null,
+    column_name varchar(32) not null,
+    reference_table_name varchar(32) not null,
+    reference_column_name varchar(32) not null,
+    reference_column_type varchar(32) not null,
+    db_type varchar(32) not null,
+    namespace varchar(32) not null,
+    on_delete varchar(32) not null,
+    on_update varchar(32) not null
+);
