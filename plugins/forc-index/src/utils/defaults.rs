@@ -121,11 +121,13 @@ type QueryRoot {
 type Block {
     id: ID!
     height: UInt8!
+    hash: Bytes32! @unique
 }
 
 type Tx {
     id: ID!
     block: Block!
+    hash: Bytes32! @unique
 }
 
 "#

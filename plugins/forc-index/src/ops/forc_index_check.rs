@@ -5,7 +5,8 @@ use std::process::Command;
 use tracing::error;
 
 const MESSAGE_PADDING: usize = 64;
-const EMOJI_PADDING: usize = 3;
+const SUCCESS_EMOJI_PADDING: usize = 3;
+const FAIL_EMOJI_PADDING: usize = 6;
 const HEADER_PADDING: usize = 20;
 
 fn center_align(s: &str, n: usize) -> String {
@@ -35,13 +36,16 @@ fn find_executable(exec_name: &str) -> (String, Option<String>) {
         Ok(o) => {
             let path = String::from_utf8_lossy(&o.stdout)
                 .strip_suffix('\n')
-                .map(|x| x.to_string());
-            (center_align("✅", EMOJI_PADDING), path)
+                .map(|x| x.to_string())
+                .unwrap_or_else(|| String::new());
+
+            if !path.is_empty() {
+                (center_align("✅", SUCCESS_EMOJI_PADDING), Some(path))
+            } else {
+                (center_align("⛔️", FAIL_EMOJI_PADDING - 2), None)
+            }
         }
-        Err(e) => {
-            error!("Can't locate {}: {}", exec_name, e);
-            (center_align("⛔️", EMOJI_PADDING), None)
-        }
+        Err(_e) => (center_align("⛔️", FAIL_EMOJI_PADDING), None),
     }
 }
 
@@ -78,7 +82,7 @@ fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
                 .strip_suffix('\n')
             {
                 Some(pid) => (
-                    center_align("✅", EMOJI_PADDING),
+                    center_align("✅", SUCCESS_EMOJI_PADDING),
                     rightpad_whitespace(
                         &format!(
                             "Local service found: PID({}) | Port({}).",
@@ -88,7 +92,7 @@ fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
                     ),
                 ),
                 None => (
-                    center_align("⛔️", EMOJI_PADDING + 3),
+                    center_align("⛔️", FAIL_EMOJI_PADDING),
                     rightpad_whitespace(
                         &format!(
                             "Failed to detect service at Port({}).",
@@ -101,19 +105,16 @@ fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
 
             (emoji, msg)
         }
-        Err(e) => {
-            error!("Could not find info for fuel-indexer service:\n'{}'", e);
-            (
-                center_align("⛔️", EMOJI_PADDING + 3),
-                rightpad_whitespace(
-                    &format!(
-                        "Failed to detect service at Port({}).",
-                        cmd.grpahql_api_port
-                    ),
-                    MESSAGE_PADDING,
+        Err(_e) => (
+            center_align("⛔️", FAIL_EMOJI_PADDING),
+            rightpad_whitespace(
+                &format!(
+                    "Failed to detect service at Port({}).",
+                    cmd.grpahql_api_port
                 ),
-            )
-        }
+                MESSAGE_PADDING,
+            ),
+        ),
     };
 
     (emoji, msg)
