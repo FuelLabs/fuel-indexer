@@ -218,27 +218,25 @@ docker pull ghcr.io/fuellabs/fuel-indexer:latest
 </blockquote>
 <pre><code class="language-bash">forc index check
 </code></pre>
-<pre><code class="language-text">❌ Could not connect to indexers service: error sending request for url (http://127.0.0.1:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
-
-+--------+------------------------+----------------------------------------------------------------------------+
-| Status |       Component        |                                  Details                                   |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/rashad/.fuelup/bin/fuel-indexer'          |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ⛔️   | fuel-indexer service   |  Failed to detect a locally running fuel-indexer service at Port(29987).   |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | psql                   |  Found 'psql' at '/usr/local/bin/psql'                                     |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | sqlite                 |  Found 'sqlite' at '/usr/bin/sqlite3'                                      |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuel-core              |  Found 'fuel-core' at '/Users/rashad/.fuelup/bin/fuel-core'                |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | docker                 |  Found 'docker' at '/usr/local/bin/docker'                                 |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuelup                 |  Found 'fuelup' at '/Users/rashad/.fuelup/bin/fuelup'                      |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | wasm-snip              |  Found 'wasm-snip' at '/Users/rashad/.cargo/bin/wasm-snip'                 |
-+--------+------------------------+----------------------------------------------------------------------------+
+<pre><code class="language-text">+--------+------------------------+------------------------------------------------------------------+
+| Status |       Component        |                             Details                              |
++--------+------------------------+------------------------------------------------------------------+
+|   ✅   | fuel-indexer binary    |  /Users/rashad/.fuelup/bin/fuel-indexer                          |
++--------+------------------------+------------------------------------------------------------------+
+|   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).                        |
++--------+------------------------+------------------------------------------------------------------+
+|   ✅   | psql                   |  /usr/local/bin/psql                                             |
++--------+------------------------+------------------------------------------------------------------+
+|   ✅   | sqlite                 |  /usr/bin/sqlite3                                                |
++--------+------------------------+------------------------------------------------------------------+
+|   ✅   | fuel-core              |  /Users/rashad/.fuelup/bin/fuel-core                             |
++--------+------------------------+------------------------------------------------------------------+
+|   ✅   | docker                 |  /usr/local/bin/docker                                           |
++--------+------------------------+------------------------------------------------------------------+
+|   ✅   | fuelup                 |  /Users/rashad/.fuelup/bin/fuelup                                |
++--------+------------------------+------------------------------------------------------------------+
+|   ✅   | wasm-snip              |  /Users/rashad/.cargo/bin/wasm-snip                              |
++--------+------------------------+------------------------------------------------------------------+
 </code></pre>
 <h3 id="22-creating-a-new-index"><a class="header" href="#22-creating-a-new-index">2.2 Creating a new index</a></h3>
 <p>Now that we have our development environment set up, the next step is to create an index.</p>
