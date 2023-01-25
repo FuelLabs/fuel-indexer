@@ -35,6 +35,7 @@ fn generate_schema() -> Schema {
         query: "Query".into(),
         types,
         fields,
+        foreign_keys: HashMap::new(),
     }
 }
 
