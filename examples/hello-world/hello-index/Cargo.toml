@@ -1,5 +1,5 @@
 [package]
-name = "hello-index"
+name = "hello_index"
 version = "0.0.0"
 edition = "2021"
 publish = false

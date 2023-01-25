@@ -6,15 +6,23 @@ use std::path::PathBuf;
 /// Stop and remove a running index.
 #[derive(Debug, Parser)]
 pub struct Command {
-    /// URL at which index is deployed
-    #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which to upload index assets.")]
+    /// URL at which index is deployed.
+    #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which index is deployed.")]
     pub url: String,
 
-    /// Path of the index manifest to be parsed
-    #[clap(long, help = "Path of the index manifest to be parsed.")]
-    pub manifest: PathBuf,
+    /// Path to the manifest of indexer project being deployed.
+    #[clap(
+        short,
+        long,
+        help = "Path to the manifest of indexer project being deployed."
+    )]
+    pub manifest: Option<PathBuf>,
 
-    /// Authentication header value
+    /// Path of index project.
+    #[clap(short, long, help = "Path to the indexer project.")]
+    pub path: Option<PathBuf>,
+
+    /// Authentication header value.
     #[clap(long, help = "Authentication header value.")]
     pub auth: Option<String>,
 }

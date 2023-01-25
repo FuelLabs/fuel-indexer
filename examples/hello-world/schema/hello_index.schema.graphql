@@ -4,7 +4,7 @@ schema {
 
 type QueryRoot {
     greeting: Greeting
-    greeter: Greeter
+    salutation: Salutation
 }
 
 # Calling this `Greeter` so as to not clash with `Person` in the contract

@@ -1,9 +1,0 @@
-namespace: fuel_examples
-identifier: explorer_index
-abi: ~
-start_block: ~
-contract_id: ~
-report_metrics: true
-graphql_schema: examples/block-explorer/schema/explorer_index.schema.graphql
-module:
-  wasm: target/wasm32-unknown-unknown/release/explorer_index.wasm
