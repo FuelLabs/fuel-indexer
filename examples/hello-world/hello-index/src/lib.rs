@@ -30,7 +30,7 @@ extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
-#[indexer(manifest = "examples/hello-world/hello_index.manifest.yaml")]
+#[indexer(manifest = "examples/hello-world/hello-index/hello_index.manifest.yaml")]
 mod hello_world_index {
 
     fn index_logged_greeting(event: Greeting, block: BlockData) {

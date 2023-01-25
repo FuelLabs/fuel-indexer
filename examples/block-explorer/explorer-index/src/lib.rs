@@ -31,7 +31,9 @@ use std::collections::HashSet;
 // work. In the fuel-indexer repository, we use relative paths (starting from the
 // fuel-indexer root) but if you're building an index outside of the fuel-indexer
 // project you'll want to use full/absolute paths.
-#[indexer(manifest = "examples/block-explorer/explorer_index.manifest.yaml")]
+#[indexer(
+    manifest = "examples/block-explorer/explorer-index/explorer_index.manifest.yaml"
+)]
 mod explorer_index {
 
     // When specifying args to your handler functions, you can either use types defined

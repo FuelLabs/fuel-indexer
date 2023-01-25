@@ -73,6 +73,7 @@ impl IndexerService {
             &database_url,
             &manifest,
             ExecutorSource::Manifest,
+            self.config.stop_idle_indexers,
         )
         .await?;
 
@@ -120,6 +121,7 @@ impl IndexerService {
                 &self.config.database.to_string(),
                 &manifest,
                 ExecutorSource::Registry(assets.wasm.bytes),
+                self.config.stop_idle_indexers,
             )
             .await?;
 
@@ -154,6 +156,7 @@ impl IndexerService {
             &self.database_url,
             &self.config.fuel_node,
             manifest,
+            self.config.stop_idle_indexers,
             handle_events,
         )
         .await?;
@@ -235,6 +238,7 @@ async fn create_service_task(
                                     &config.database.to_string(),
                                     &manifest,
                                     ExecutorSource::Registry(assets.wasm.bytes),
+                                    config.stop_idle_indexers,
                                 )
                                 .await
                                 .expect(

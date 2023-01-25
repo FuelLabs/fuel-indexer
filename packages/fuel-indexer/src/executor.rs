@@ -76,6 +76,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     mut executor: T,
     start_block: Option<u64>,
     kill_switch: Arc<AtomicBool>,
+    stop_idle_indexers: bool,
 ) -> impl Future<Output = ()> {
     let start_block_value = start_block.unwrap_or(1);
     let mut next_cursor = if start_block_value > 1 {
@@ -96,7 +97,16 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
     async move {
         let mut retry_count = 0;
-        let mut empty_block_reqs = 0;
+
+        // If we're testing or running on CI, we don't want indexers to run forever. But in production
+        // let the index operators decide if they way to stop idle indexers. Maybe we can eventually
+        // make this MAX_EMPTY_BLOCK_REQUESTS value configurable
+        let max_empty_block_reqs = if stop_idle_indexers {
+            MAX_EMPTY_BLOCK_REQUESTS
+        } else {
+            usize::MAX
+        };
+        let mut num_empty_block_reqs = 0;
 
         loop {
             debug!("Fetching paginated results from {:?}", next_cursor);
@@ -246,15 +256,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 info!("No new blocks to process, sleeping.");
                 sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
 
-                empty_block_reqs += 1;
+                num_empty_block_reqs += 1;
 
-                if empty_block_reqs == MAX_EMPTY_BLOCK_REQUESTS {
+                if num_empty_block_reqs == max_empty_block_reqs {
                     error!("No blocks being produced, giving up. <('.')>");
                     break;
                 }
             } else {
                 next_cursor = cursor;
-                empty_block_reqs = 0;
+                num_empty_block_reqs = 0;
             }
 
             if kill_switch.load(Ordering::SeqCst) {
@@ -345,6 +355,7 @@ where
         db_url: &str,
         fuel_node: &FuelNodeConfig,
         manifest: Manifest,
+        stop_idle_indexers: bool,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let start_block = manifest.start_block;
@@ -355,6 +366,7 @@ where
             executor,
             start_block,
             kill_switch.clone(),
+            stop_idle_indexers,
         ));
         Ok((handle, ExecutorSource::Manifest, kill_switch))
     }
@@ -438,6 +450,7 @@ impl WasmIndexExecutor {
         db_url: &str,
         manifest: &Manifest,
         exec_source: ExecutorSource,
+        stop_idle_indexers: bool,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
         match &exec_source {
@@ -458,6 +471,7 @@ impl WasmIndexExecutor {
                         executor,
                         manifest.start_block,
                         killer.clone(),
+                        stop_idle_indexers,
                     ));
 
                     Ok((handle, ExecutorSource::Registry(bytes), killer))
@@ -475,6 +489,7 @@ impl WasmIndexExecutor {
                     executor,
                     manifest.start_block,
                     killer.clone(),
+                    stop_idle_indexers,
                 ));
 
                 Ok((handle, exec_source, killer))

@@ -1,13 +1,31 @@
-use fuel_indexer_tests::fixtures::{get_contract_id, tx_params};
+use clap::Parser;
+use fuel_indexer_tests::{
+    defaults,
+    fixtures::{get_contract_id_with_host, tx_params},
+};
 use fuels::prelude::SizedAsciiString;
 use fuels_abigen_macro::abigen;
 use rand::{seq::SliceRandom, Rng};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 abigen!(
     Greet,
     "examples/hello-world/contracts/greeting/out/debug/greeting-abi.json"
 );
+
+#[derive(Debug, Parser, Clone)]
+#[clap(
+    name = "hello-world-data",
+    about = "Test program used to generate data for the hello-world example."
+)]
+pub struct Args {
+    #[clap(long, help = "Test wallet filepath")]
+    pub chain_config: Option<PathBuf>,
+    #[clap(long, help = "Contract bin filepath")]
+    pub contract_bin: Option<PathBuf>,
+    #[clap(long, help = "Host at which to bind.")]
+    pub host: Option<String>,
+}
 
 static MAX_BIGINT: u64 = 0x7fffffffffffffff;
 const BYTES32_LEN: usize = 0x20;
@@ -22,6 +40,8 @@ fn rightpad_whitespace(s: &str, n: usize) -> String {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let opts = Args::from_args();
+
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")?;
 
     let names = vec![
@@ -30,26 +50,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let greetings = vec!["Hi", "Ciao", "Hola", "Buenos dias", "Bonjour", "Whatsup"];
 
-    let wallet_path = Path::new(&manifest_dir)
-        .join("..")
-        .join("..")
-        .join("..")
-        .join("packages")
-        .join("fuel-indexer-tests")
-        .join("assets")
-        .join("test-chain-config.json");
+    let chain_config = opts.chain_config.unwrap_or_else(|| {
+        Path::new(&manifest_dir)
+            .join("..")
+            .join("..")
+            .join("..")
+            .join("packages")
+            .join("fuel-indexer-tests")
+            .join("assets")
+            .join("test-chain-config.json")
+    });
 
-    let contract_bin_path = Path::new(&manifest_dir)
-        .join("..")
-        .join("contracts")
-        .join("greeting")
-        .join("out")
-        .join("debug")
-        .join("greeting.bin");
+    let contract_bin = opts.contract_bin.unwrap_or_else(|| {
+        Path::new(&manifest_dir)
+            .join("..")
+            .join("contracts")
+            .join("greeting")
+            .join("out")
+            .join("debug")
+            .join("greeting.bin")
+    });
 
-    let (wallet, contract_id) = get_contract_id(
-        wallet_path.as_os_str().to_str().unwrap(),
-        contract_bin_path.as_os_str().to_str().unwrap(),
+    let host = opts
+        .host
+        .unwrap_or_else(|| defaults::FUEL_NODE_ADDR.to_string());
+    println!("Using Fuel node at {}", host);
+
+    let (wallet, contract_id) = get_contract_id_with_host(
+        chain_config.as_os_str().to_str().unwrap(),
+        contract_bin.as_os_str().to_str().unwrap(),
+        host,
     )
     .await?;
 
