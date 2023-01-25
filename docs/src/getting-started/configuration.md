@@ -74,3 +74,7 @@
 `--sqlite-database` <SQLITE-DATABASE>
 
 - Path to SQLite database
+
+`--stop_idle_indexers`
+
+- Stop indexers that have seen some number of consecutive empty block requests from the associated Fuel node.

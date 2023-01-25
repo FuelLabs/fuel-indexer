@@ -712,7 +712,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     let path = local_repository_root()
         .map(|x| Path::new(&x).join(&manifest))
         .unwrap_or_else(|| PathBuf::from(&manifest));
-
+    // let path = PathBuf::from(&manifest);
     let manifest = Manifest::from_file(&path).expect("Could not parse manifest.");
 
     let Manifest {

@@ -1,10 +1,12 @@
-use crate::{cli::BuildCommand, utils::defaults};
-use anyhow::Context;
+use crate::{
+    cli::BuildCommand,
+    utils::{defaults, project_dir_info},
+};
 use fuel_indexer_lib::manifest::{Manifest, Module};
 use indicatif::{ProgressBar, ProgressStyle};
 use serde::Deserialize;
 use std::{
-    fs::{canonicalize, File},
+    fs::File,
     io::{Read, Write},
     process::{Command, Stdio},
     time::Duration,
@@ -38,19 +40,20 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let BuildCommand {
         target,
         native,
+        path,
         verbose,
         profile,
         release,
         locked,
         manifest,
+        output_dir_root,
     } = command;
 
-    let currdir = std::env::current_dir()
-        .context("❌ Failed to get current directory for forc index init.")?;
-    let currdir = canonicalize(&currdir)?;
+    let (root_dir, manifest, _index_name) =
+        project_dir_info(path.as_ref(), manifest.as_ref())?;
 
     // Must be in the directory of the index being built
-    let cargo_manifest_path = currdir.join(defaults::CARGO_MANIFEST_FILE_NAME);
+    let cargo_manifest_path = root_dir.join(defaults::CARGO_MANIFEST_FILE_NAME);
     if !cargo_manifest_path.exists() {
         anyhow::bail!(
             "❌ `forc index build` must be run from inside the directory of the index being built. Cargo manifest file expected at '{:?}'",
@@ -58,19 +61,21 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         );
     }
 
-    let mut file = File::open(cargo_manifest_path)?;
+    let mut file = File::open(&cargo_manifest_path)?;
     let mut content = String::new();
     file.read_to_string(&mut content)?;
     let config: Config = toml::from_str(&content)?;
 
-    let index_manifest_path = currdir.join(manifest);
+    let index_manifest_path = root_dir.join(manifest);
     let mut manifest = Manifest::from_file(&index_manifest_path)?;
 
     // Construct our build command
     //
     // https://doc.rust-lang.org/cargo/commands/cargo-build.html
     let mut cmd = Command::new("cargo");
-    cmd.arg("build");
+    cmd.arg("build")
+        .arg("--manifest-path")
+        .arg(&cargo_manifest_path);
 
     let optional_opts = [(target.clone(), "--target"), (profile, "--profile")];
     let bool_opts = [
@@ -165,21 +170,23 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
 
     // Write the build artifact to the index manifest
     if !native {
-        let binary_name = format!("{}.wasm", config.package.name);
-        let profile_dir = if release { "release" } else { "debug" };
-        let artifact_path = currdir
+        let binary = format!("{}.wasm", config.package.name);
+        let profile = if release { "release" } else { "debug" };
+        let output_dir_root = output_dir_root.unwrap_or(root_dir);
+        let artifact = output_dir_root
             .join("target")
             .join(&target.unwrap_or_else(|| defaults::INDEX_TARGET.into()))
-            .join(profile_dir)
-            .join(&binary_name);
+            .join(profile)
+            .join(&binary);
 
-        let wasm_path = artifact_path.as_path().display().to_string();
-        manifest.module = Module::Wasm(wasm_path.clone());
+        let wasm = artifact.as_path().display().to_string();
+
+        manifest.module = Module::Wasm(wasm.clone());
 
         let status = Command::new("wasm-snip")
-            .arg(&wasm_path)
+            .arg(&wasm)
             .arg("-o")
-            .arg(&wasm_path)
+            .arg(&wasm)
             .arg("-p")
             .arg("__wbindgen")
             .spawn()

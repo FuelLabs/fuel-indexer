@@ -12,16 +12,18 @@ abigen!(
 #[clap(name = "Indexer test web api", about = "Test")]
 pub struct Args {
     #[clap(long, help = "Test wallet filepath")]
-    pub wallet_path: Option<PathBuf>,
+    pub chain_config: Option<PathBuf>,
     #[clap(long, help = "Contract bin filepath")]
-    pub contract_bin_path: Option<PathBuf>,
+    pub contract_bin: Option<PathBuf>,
+    #[clap(long, help = "Host at which to bind.")]
+    pub host: Option<String>,
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts = Args::from_args();
 
-    let wallet_path = opts.wallet_path.unwrap_or_else(|| {
+    let chain_config = opts.chain_config.unwrap_or_else(|| {
         let manifest_dir =
             std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not found.");
         Path::new(&manifest_dir)
@@ -31,7 +33,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .join("test-chain-config.json")
     });
 
-    let contract_bin_path = opts.contract_bin_path.unwrap_or_else(|| {
+    let contract_bin = opts.contract_bin.unwrap_or_else(|| {
         let manifest_dir =
             std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not found.");
         Path::new(&manifest_dir)
@@ -44,9 +46,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .join("fuel-indexer-test.bin")
     });
 
+    let host = opts.host.unwrap_or(defaults::FUEL_NODE_ADDR.to_string());
+
     let _contract_id = setup_test_fuel_node(
-        wallet_path.as_os_str().to_str().unwrap(),
-        contract_bin_path.as_os_str().to_str().unwrap(),
+        chain_config.as_os_str().to_str().unwrap(),
+        contract_bin.as_os_str().to_str().unwrap(),
+        host,
     )
     .await?;
     std::thread::sleep(defaults::SLEEP);

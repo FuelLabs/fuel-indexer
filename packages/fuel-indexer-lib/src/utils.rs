@@ -20,6 +20,8 @@ const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
 // If we can successfully find the local project root, then we're in the repository,
 // and should prefix all relative asset paths with the project root. If we can't find
 // the project root, then it's assumed we're not in a local repository, thus no prefix.
+//
+// This is specifically required for the trybuild test suite.
 pub fn local_repository_root() -> Option<String> {
     let curr_filepath = canonicalize(file!()).unwrap();
     let mut curr_dir = Path::new(&curr_filepath);

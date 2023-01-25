@@ -121,11 +121,13 @@ type QueryRoot {
 type Block {
     id: ID!
     height: UInt8!
+    hash: Bytes32! @unique
 }
 
 type Tx {
     id: ID!
     block: Block!
+    hash: Bytes32! @unique
 }
 
 "#
@@ -137,4 +139,8 @@ pub fn default_cargo_config() -> String {
 target = "wasm32-unknown-unknown"
 "#
     .to_string()
+}
+
+pub fn manifest_name(index_name: &str) -> String {
+    format!("{}.manifest.yaml", index_name)
 }

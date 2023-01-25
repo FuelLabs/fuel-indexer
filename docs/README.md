@@ -238,7 +238,7 @@ services:
       retries: 5
       start_period: 80s
   fuel-indexer:
-    image: ghcr.io/fuellabs/fuel-indexer:latest
+    image: ghcr.io/fuellabs/fuel-indexer:v0.2.0
     command: bash -c "sleep 2 && ./fuel-indexer --fuel-node-host node-beta-2.fuel.network --fuel-node-port 80 --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
     ports:
       - "29987:29987"

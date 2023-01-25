@@ -96,6 +96,7 @@ pub fn tx_params() -> TxParameters {
 pub async fn setup_test_fuel_node(
     wallet_path: &str,
     contract_bin_path: &str,
+    host: String,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => {
@@ -126,7 +127,7 @@ pub async fn setup_test_fuel_node(
 
     let config = Config {
         utxo_validation: false,
-        addr: defaults::FUEL_NODE_ADDR.parse().unwrap(),
+        addr: host.parse().unwrap(),
         ..Config::local_node()
     };
 
@@ -156,6 +157,19 @@ pub async fn get_contract_id(
     wallet_path: &str,
     contract_bin_path: &str,
 ) -> Result<(WalletUnlocked, Bech32ContractId), Box<dyn std::error::Error>> {
+    get_contract_id_with_host(
+        wallet_path,
+        contract_bin_path,
+        defaults::FUEL_NODE_ADDR.to_string(),
+    )
+    .await
+}
+
+pub async fn get_contract_id_with_host(
+    wallet_path: &str,
+    contract_bin_path: &str,
+    host: String,
+) -> Result<(WalletUnlocked, Bech32ContractId), Box<dyn std::error::Error>> {
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => {
             EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
@@ -172,7 +186,7 @@ pub async fn get_contract_id(
         WalletUnlocked::load_keystore(wallet_path, defaults::WALLET_PASSWORD, None)
             .unwrap();
 
-    let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
+    let provider = Provider::connect(&host).await.unwrap();
 
     wallet.set_provider(provider.clone());
 
@@ -208,6 +222,7 @@ pub async fn api_server_app_postgres() -> Router {
         },
         graphql_api: GraphQLConfig::default(),
         metrics: true,
+        stop_idle_indexers: true,
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -229,6 +244,7 @@ pub async fn api_server_app_sqlite() -> Router {
         },
         graphql_api: GraphQLConfig::default(),
         metrics: true,
+        stop_idle_indexers: true,
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -254,6 +270,7 @@ pub async fn indexer_service_postgres() -> IndexerService {
         },
         graphql_api: GraphQLConfig::default(),
         metrics: false,
+        stop_idle_indexers: true,
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -275,6 +292,7 @@ pub async fn indexer_service_sqlite() -> IndexerService {
         },
         graphql_api: GraphQLConfig::default(),
         metrics: false,
+        stop_idle_indexers: true,
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
