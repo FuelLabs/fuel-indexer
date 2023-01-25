@@ -81,6 +81,38 @@ pub async fn schema_exists(
     }
 }
 
+pub async fn foreign_key_insert(
+    conn: &mut IndexerConnection,
+    schema_name: &str,
+    schema_version: &str,
+    foreign_keys: Vec<ForeignKey>,
+) -> sqlx::Result<usize> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::foreign_key_insert(c, schema_name, schema_version, foreign_keys)
+                .await
+        }
+        IndexerConnection::Sqlite(ref mut c) => {
+            sqlite::foreign_key_insert(c, schema_name, schema_version, foreign_keys).await
+        }
+    }
+}
+
+pub async fn foreign_key_list_by_name(
+    conn: &mut IndexerConnection,
+    schema_name: &str,
+    schema_version: &str,
+) -> sqlx::Result<Vec<ForeignKey>> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::foreign_key_list_by_name(c, schema_name, schema_version).await
+        }
+        IndexerConnection::Sqlite(ref mut c) => {
+            sqlite::foreign_key_list_by_name(c, schema_name, schema_version).await
+        }
+    }
+}
+
 pub async fn new_column_insert(
     conn: &mut IndexerConnection,
     cols: Vec<NewColumn>,

@@ -1,6 +1,7 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, types::JsonValue, Row, Sqlite};
+use std::str::FromStr;
 use tracing::info;
 
 #[cfg(feature = "metrics")]
@@ -240,6 +241,78 @@ pub async fn schema_exists(
         .num
         .expect("num field should be present in versions query results")
         > 0)
+}
+
+pub async fn foreign_key_insert(
+    conn: &mut PoolConnection<Sqlite>,
+    schema_name: &str,
+    schema_version: &str,
+    foreign_keys: Vec<ForeignKey>,
+) -> sqlx::Result<usize> {
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_foreign_keys (schema_version, schema_name, table_name, column_name, reference_table_name, reference_column_name, reference_column_type, db_type, namespace, on_delete, on_update)");
+
+    builder.push_values(foreign_keys.into_iter(), |mut b, foreign_key| {
+        b.push_bind(schema_version)
+            .push_bind(schema_name)
+            .push_bind(foreign_key.table_name)
+            .push_bind(foreign_key.column_name)
+            .push_bind(foreign_key.reference_table_name)
+            .push_bind(foreign_key.reference_column_name)
+            .push_bind(foreign_key.reference_column_type)
+            .push_bind(foreign_key.db_type.to_string())
+            .push_bind(foreign_key.namespace)
+            .push_bind(foreign_key.on_delete.to_string())
+            .push_bind(foreign_key.on_update.to_string());
+    });
+
+    let query = builder.build();
+
+    let result = query.execute(conn).await?;
+
+    Ok(result.rows_affected() as usize)
+}
+
+pub async fn foreign_key_list_by_name(
+    conn: &mut PoolConnection<Sqlite>,
+    schema_name: &str,
+    schema_version: &str,
+) -> sqlx::Result<Vec<ForeignKey>> {
+    let query = format!("SELECT table_name, column_name, reference_table_name, reference_column_name, reference_column_type, namespace, db_type, on_delete, on_update FROM graph_registry_foreign_keys WHERE schema_version = '{}' AND schema_name = '{}'", schema_version, schema_name);
+
+    let rows = sqlx::query(&query).fetch_all(conn).await?;
+
+    let mut foreign_keys = Vec::new();
+
+    for row in rows {
+        let table_name = row.get(0);
+        let column_name = row.get(1);
+        let reference_table_name = row.get(2);
+        let reference_column_name = row.get(3);
+        let reference_column_type = row.get(4);
+        let namespace = row.get(5);
+        let raw_db_type = row.get(6);
+        let raw_on_delete = row.get(7);
+        let raw_on_update = row.get(8);
+
+        let fk = ForeignKey {
+            table_name,
+            column_name,
+            reference_table_name,
+            reference_column_name,
+            reference_column_type,
+            namespace,
+            db_type: DbType::from_str(raw_db_type)
+                .expect("foreign_key_list_by_name: Could not convert string to DbType"),
+            on_delete: OnDelete::from_str(raw_on_delete)
+                .expect("foreign_key_list_by_name: Could not convert string to OnDelete"),
+            on_update: OnUpdate::from_str(raw_on_update)
+                .expect("foreign_key_list_by_name: Could not convert string to OnUpdate"),
+        };
+
+        foreign_keys.push(fk);
+    }
+
+    Ok(foreign_keys)
 }
 
 pub async fn new_column_insert(
