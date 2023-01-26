@@ -1,26 +1,26 @@
 # Types
 
-Below is a mapping of GraphQL schema types to their Postgres equivalents, referencing [Postgres 14](https://www.postgresql.org/docs/14/datatype.html) data types.
+Below is a mapping of GraphQL schema types to their database equivalents.
 
-| Sway Type | GraphQL Schema Type | Postgres Type |
+| Sway Type | GraphQL Schema Type | Postgres Type | SQLite Type |
 |------|----------|----------|
-| u64 | ID | bigint primary key |
-| b256 | Address | varchar(64) |
-| str[4] | Bytes4 | varchar(16) |
-| str[8] | Bytes8 | varchar(64) |
-| str[32] | Bytes32 | varchar(64) |
-| str[32] | AssetId | varchar(64) |
-| b256 | ContractId | varchar(64) |
-| str[32] | Salt | varchar(64) |
-| u32 | UInt4 | integer |
-| u64 | UInt8 | bigint |
-| i64 | Timestamp | timestamp |
-| str[] | Blob | bytes |
-| str[32] | MessageId | varchar(64) |
+| u64 | ID | bigint primary key | bigint |
+| b256 | Address | varchar(64) | text |
+| str[4] | Bytes4 | varchar(16) | text |
+| str[8] | Bytes8 | varchar(64) | text |
+| str[32] | Bytes32 | varchar(64) | text |
+| str[32] | AssetId | varchar(64) | text |
+| b256 | ContractId | varchar(64) | text |
+| str[32] | Salt | varchar(64) | text |
+| u32 | UInt4 | integer | integer |
+| u64 | UInt8 | bigint | integer |
+| i64 | Timestamp | timestamp | text |
+| str[] | Blob | bytes | text |
+| str[32] | MessageId | varchar(64) | text |
 | bool | Boolean | bool |
-|  | Json | json |
-|  | Charfield | varchar(255) |
-|  | Blob | varchar(10485760) |
+|  | Json | json | text |
+|  | Charfield | varchar(255) | text |
+|  | Blob | varchar(10485760) | text |
 
 ## Example
 
