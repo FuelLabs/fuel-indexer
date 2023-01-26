@@ -1,4 +1,4 @@
-# Installation
+# Dependencies
 
 To run the Fuel indexer, you'll need to install a few dependencies on your system:
 

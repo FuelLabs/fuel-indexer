@@ -1,4 +1,4 @@
-# Configuration
+# Starting the Fuel Indexer
 
 When using [`forc index`](../forc-index/index.md), there are a variety of command-line flags that you can use to configure the Fuel indexer service and API server.
 
