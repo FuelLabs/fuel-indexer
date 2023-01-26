@@ -22,15 +22,15 @@ lazy_static! {
         HashSet::from(["Json", "Charfield", "Identity", "Blob"]);
 }
 
-fn process_type<'a>(
+fn process_type(
     types: &HashSet<String>,
-    typ: &Type<'a, String>,
+    typ: &Type<String>,
     nullable: bool,
 ) -> proc_macro2::TokenStream {
     match typ {
         Type::NamedType(t) => {
             if !types.contains(t) {
-                panic!("Type '{}' is undefined.", t);
+                panic!("Type '{t}' is undefined.",);
             }
 
             let id = format_ident! {"{}", t };
@@ -46,9 +46,9 @@ fn process_type<'a>(
     }
 }
 
-fn process_field<'a>(
+fn process_field(
     types: &HashSet<String>,
-    field: &Field<'a, String>,
+    field: &Field<String>,
 ) -> (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
@@ -138,11 +138,11 @@ fn process_fk_field<'a>(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn process_type_def<'a>(
+fn process_type_def(
     query_root: &str,
     namespace: &str,
     types: &HashSet<String>,
-    typ: &TypeDefinition<'a, String>,
+    typ: &TypeDefinition<String>,
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
     types_map: &HashMap<String, String>,
@@ -296,16 +296,16 @@ fn process_type_def<'a>(
                 })
             }
         }
-        obj => panic!("Unexpected type: {:?}", obj),
+        obj => panic!("Unexpected type: {obj:?}"),
     }
 }
 
 #[allow(clippy::too_many_arguments)]
-fn process_definition<'a>(
+fn process_definition(
     query_root: &str,
     namespace: &str,
     types: &HashSet<String>,
-    definition: &Definition<'a, String>,
+    definition: &Definition<String>,
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
     types_map: &HashMap<String, String>,
@@ -318,12 +318,12 @@ fn process_definition<'a>(
         ),
         Definition::SchemaDefinition(_def) => None,
         def => {
-            panic!("Unhandled definition type: {:?}", def);
+            panic!("Unhandled definition type: {def:?}");
         }
     }
 }
 
-fn get_query_root<'a>(types: &HashSet<String>, ast: &Document<'a, String>) -> String {
+fn get_query_root(types: &HashSet<String>, ast: &Document<String>) -> String {
     let schema = ast.definitions.iter().find_map(|def| {
         if let Definition::SchemaDefinition(d) = def {
             Some(d)

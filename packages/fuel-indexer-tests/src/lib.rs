@@ -58,7 +58,7 @@ pub mod utils {
             manifest_dir
                 .join("..")
                 .join("..")
-                .join(&manifest.abi.clone().unwrap())
+                .join(manifest.abi.clone().unwrap())
                 .into_os_string()
                 .to_str()
                 .unwrap()
@@ -68,7 +68,7 @@ pub mod utils {
             manifest_dir
                 .join("..")
                 .join("..")
-                .join(&manifest.module.path())
+                .join(manifest.module.path())
                 .into_os_string()
                 .to_str()
                 .unwrap()

@@ -52,9 +52,9 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     // Must be in the directory of the index being built
     let cargo_manifest_path = currdir.join(defaults::CARGO_MANIFEST_FILE_NAME);
     if !cargo_manifest_path.exists() {
+        let manifest_path = cargo_manifest_path.into_os_string();
         anyhow::bail!(
-            "❌ `forc index build` must be run from inside the directory of the index being built. Cargo manifest file expected at '{:?}'",
-            cargo_manifest_path.into_os_string()
+            "❌ `forc index build` must be run from inside the directory of the index being built. Cargo manifest file expected at '{manifest_path:?}'",
         );
     }
 
@@ -107,11 +107,11 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
                     }
                 }
                 Err(e) => {
-                    anyhow::bail!("❌ Failed to get ExitStatus of build: {}.", e);
+                    anyhow::bail!("❌ Failed to get ExitStatus of build: {e}.",);
                 }
             },
             Err(e) => {
-                anyhow::bail!(format!("❌ Build failed: {}", e));
+                anyhow::bail!(format!("❌ Build failed: {e}",));
             }
         }
     } else {
@@ -149,16 +149,13 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
                     }
                     Err(e) => {
                         pb.finish_with_message("❌ Build failed.");
-                        anyhow::bail!(
-                            "❌ Failed to determine process exit status: {}.",
-                            e
-                        );
+                        anyhow::bail!("❌ Failed to determine process exit status: {e}.",);
                     }
                 }
             }
             Err(e) => {
                 pb.finish_with_message("❌ Build failed.");
-                anyhow::bail!(format!("❌ Error: {}", e));
+                anyhow::bail!(format!("❌ Error: {e}",));
             }
         }
     }
@@ -169,9 +166,9 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         let profile_dir = if release { "release" } else { "debug" };
         let artifact_path = currdir
             .join("target")
-            .join(&target.unwrap_or_else(|| defaults::INDEX_TARGET.into()))
+            .join(target.unwrap_or_else(|| defaults::INDEX_TARGET.into()))
             .join(profile_dir)
-            .join(&binary_name);
+            .join(binary_name);
 
         let wasm_path = artifact_path.as_path().display().to_string();
         manifest.module = Module::Wasm(wasm_path.clone());
@@ -183,15 +180,13 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             .arg("-p")
             .arg("__wbindgen")
             .spawn()
-            .unwrap_or_else(|e| panic!("❌ Failed to spawn wasm-snip process: {}", e))
+            .unwrap_or_else(|e| panic!("❌ Failed to spawn wasm-snip process: {e}",))
             .wait()
-            .unwrap_or_else(|e| panic!("❌ Failed to finish wasm-snip process: {}", e));
+            .unwrap_or_else(|e| panic!("❌ Failed to finish wasm-snip process: {e}",));
 
         if !status.success() {
-            anyhow::bail!(
-                "❌ Failed to execute wasm-snip: (Code: {:?})",
-                status.code()
-            )
+            let code = status.code();
+            anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
         }
 
         manifest.write_to(&index_manifest_path)?;

@@ -10,18 +10,18 @@ const FAIL_EMOJI_PADDING: usize = 6;
 const HEADER_PADDING: usize = 20;
 
 fn center_align(s: &str, n: usize) -> String {
-    format!("{: ^width$}", s, width = n)
+    format!("{s: ^n$}")
 }
 
 fn rightpad_whitespace(s: &str, n: usize) -> String {
-    format!("{:0width$}", s, width = n)
+    format!("{s:0n$}")
 }
 
 fn format_exec_msg(exec_name: &str, path: Option<String>) -> String {
-    if path.is_some() {
-        rightpad_whitespace(&format!("{}", path.unwrap()), MESSAGE_PADDING)
+    if let Some(path) = path {
+        rightpad_whitespace(&path, MESSAGE_PADDING)
     } else {
-        rightpad_whitespace(&format!("Can't locate {}", exec_name), MESSAGE_PADDING)
+        rightpad_whitespace(&format!("Can't locate {exec_name}"), MESSAGE_PADDING)
     }
 }
 
@@ -37,7 +37,7 @@ fn find_executable(exec_name: &str) -> (String, Option<String>) {
             let path = String::from_utf8_lossy(&o.stdout)
                 .strip_suffix('\n')
                 .map(|x| x.to_string())
-                .unwrap_or_else(|| String::new());
+                .unwrap_or_else(String::new);
 
             if !path.is_empty() {
                 (center_align("✅", SUCCESS_EMOJI_PADDING), Some(path))
@@ -208,7 +208,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
 "#
     );
 
-    println!("{}", stdout);
+    println!("{stdout}");
 
     Ok(())
 }

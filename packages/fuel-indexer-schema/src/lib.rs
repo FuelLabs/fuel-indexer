@@ -156,84 +156,90 @@ impl FtColumn {
         match self {
             FtColumn::ID(value) => {
                 if let Some(val) = value {
-                    format!("{}", val)
+                    format!("{val}")
                 } else {
                     panic!("Schema fields of type ID cannot be nullable")
                 }
             }
             FtColumn::Address(value) => match value {
-                Some(val) => format!("'{:x}'", val),
+                Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::AssetId(value) => match value {
-                Some(val) => format!("'{:x}'", val),
+                Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Bytes4(value) => match value {
-                Some(val) => format!("'{:x}'", val),
+                Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Bytes8(value) => match value {
-                Some(val) => format!("'{:x}'", val),
+                Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Bytes32(value) => match value {
-                Some(val) => format!("'{:x}'", val),
+                Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::ContractId(value) => match value {
-                Some(val) => format!("'{:x}'", val),
+                Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Int4(value) => match value {
-                Some(val) => format!("{}", val),
+                Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Int8(value) => match value {
-                Some(val) => format!("{}", val),
+                Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::UInt4(value) => match value {
-                Some(val) => format!("{}", val),
+                Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::UInt8(value) => match value {
-                Some(val) => format!("{}", val),
+                Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Timestamp(value) => match value {
-                Some(val) => format!("{}", val),
+                Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Salt(value) => match value {
-                Some(val) => format!("'{:x}'", val),
+                Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Json(value) => match value {
-                Some(val) => format!("'{}'", val.0),
+                Some(val) => {
+                    let x = &val.0;
+                    format!("'{x}'")
+                }
                 None => String::from(NULL_VALUE),
             },
             FtColumn::MessageId(value) => match value {
-                Some(val) => format!("'{:x}'", val),
+                Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Charfield(value) => match value {
-                Some(val) => format!("'{}'", val),
+                Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Identity(value) => match value {
                 Some(val) => match val {
-                    Identity::Address(v) => format!("'00{:x}'", v),
-                    Identity::ContractId(v) => format!("'01{:x}'", v),
+                    Identity::Address(v) => format!("'00{v:x}'",),
+                    Identity::ContractId(v) => format!("'01{v:x}'",),
                 },
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Boolean(value) => match value {
-                Some(val) => format!("{}", val),
+                Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Blob(value) => match value {
-                Some(val) => format!("'{}'", hex::encode(val)),
+                Some(val) => {
+                    let x = hex::encode(val);
+                    format!("'{x}'")
+                }
                 None => String::from(NULL_VALUE),
             },
         }
