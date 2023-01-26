@@ -77,7 +77,7 @@ fn test_query_builder_generates_proper_sql() {
     let q = query.expect("It's ok here").build();
     assert!(q.is_ok());
     let q = q.expect("It's ok");
-    let sql = q.as_sql(true);
+    let sql = q.as_sql(&schema, true);
 
     assert_eq!(
         vec![
@@ -88,7 +88,7 @@ fn test_query_builder_generates_proper_sql() {
         sql
     );
 
-    let sql = q.as_sql(false);
+    let sql = q.as_sql(&schema, false);
 
     assert_eq!(
         vec![

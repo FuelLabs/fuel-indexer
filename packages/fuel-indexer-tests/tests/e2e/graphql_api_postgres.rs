@@ -154,7 +154,9 @@ async fn test_can_return_query_response_with_nested_implicit_foreign_key_fields_
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test")
         .header(CONTENT_TYPE, "application/json".to_owned())
-        .body(r#"{"query": "query { tx { id input_data timestamp block { id height timestamp }}}", "params": "b"}"#)
+        .body(
+            r#"{"query": "query { tx { id timestamp block { height }}}", "params": "b"}"#,
+        )
         .send()
         .await
         .unwrap();

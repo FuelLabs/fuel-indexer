@@ -245,7 +245,7 @@ impl Operation {
         }
     }
 
-    pub fn as_sql(&self, jsonify: bool) -> Vec<String> {
+    pub fn as_sql(&self, schema: &Schema, jsonify: bool) -> Vec<String> {
         let Operation {
             namespace,
             selections,
@@ -255,13 +255,71 @@ impl Operation {
 
         // TODO: nested queries, joins, etc....
         for selection in selections.get_selections() {
-            if let Selection::Field(name, filters, selections) = selection {
+            if let Selection::Field(entity_name, filters, selections) = selection {
+                let mut joins: Vec<String> = Vec::new();
+                let mut nested_queries: Vec<String> = Vec::new();
                 let columns: Vec<_> = selections
                     .get_selections()
                     .into_iter()
                     .filter_map(|f| {
-                        if let Selection::Field(name, ..) = f {
-                            Some(name)
+                        if let Selection::Field(field_name, _filters, sels, ..) = f {
+                            if !sels.selections.is_empty() {
+                                if let Some(field_to_foreign_key) =
+                                    schema.foreign_keys.get(&entity_name.to_lowercase())
+                                {
+                                    if let Some(foreign_key) = field_to_foreign_key
+                                        .get(&field_name.to_lowercase())
+                                    {
+                                        let reference_table =
+                                            format!("{}.{}", namespace, field_name);
+                                        let referencing_key = format!(
+                                            "{}.{}.{}",
+                                            namespace, entity_name, field_name
+                                        );
+                                        let primary_key = format!(
+                                            "{}.{}.{}",
+                                            namespace, field_name, foreign_key
+                                        );
+                                        let join = format!(
+                                            "INNER JOIN {} ON {} = {}",
+                                            reference_table, referencing_key, primary_key
+                                        );
+                                        joins.push(join);
+
+                                        let mut nested_columns: Vec<_> = sels
+                                            .selections
+                                            .into_iter()
+                                            .filter_map(|s| {
+                                                if let Selection::Field(
+                                                    nested_field_name,
+                                                    _,
+                                                    _,
+                                                ) = s
+                                                {
+                                                    Some(
+                                                        [
+                                                            field_name.clone(),
+                                                            nested_field_name,
+                                                        ]
+                                                        .join("."),
+                                                    )
+                                                } else {
+                                                    None
+                                                }
+                                            })
+                                            .collect();
+
+                                        nested_queries.append(&mut nested_columns);
+
+                                        // Don't return referencing column from outer entity
+                                        return None;
+                                    }
+                                }
+                            }
+                            Some(
+                                [entity_name.clone().to_lowercase(), field_name]
+                                    .join("."),
+                            )
                         } else {
                             None
                         }
@@ -271,10 +329,12 @@ impl Operation {
                 let column_text = columns.join(", ");
 
                 let mut query = format!(
-                    "SELECT {} FROM {}.{}",
+                    "SELECT {}, {} FROM {}.{} {}",
                     column_text,
+                    nested_queries.join(", "),
                     namespace,
-                    name.to_lowercase()
+                    entity_name.to_lowercase(),
+                    joins.join(" ")
                 );
 
                 if !filters.is_empty() {
@@ -303,11 +363,11 @@ pub struct GraphqlQuery {
 }
 
 impl GraphqlQuery {
-    pub fn as_sql(&self, jsonify: bool) -> Vec<String> {
+    pub fn as_sql(&self, schema: &Schema, jsonify: bool) -> Vec<String> {
         let mut queries = Vec::new();
 
         for op in &self.operations {
-            queries.extend(op.as_sql(jsonify));
+            queries.extend(op.as_sql(schema, jsonify));
         }
 
         queries
