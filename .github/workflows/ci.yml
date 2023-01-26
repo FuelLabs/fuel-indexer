@@ -211,7 +211,7 @@ jobs:
           command: ${{ matrix.command }}
           args: ${{ matrix.args }}
       - name: Notify if Job Fails
-        uses: ravsamhq/notify-slack-action@v1
+        uses: ravsamhq/notify-slack-action@v2
         if: always() && github.ref == 'refs/heads/master'
         with:
           status: ${{ job.status }}
@@ -499,7 +499,7 @@ jobs:
           asset_content_type: application/gzip
 
       - name: Notify if Job Fails
-        uses: ravsamhq/notify-slack-action@v1
+        uses: ravsamhq/notify-slack-action@v2
         # need to find a work-around to be able to run this action on mac
         if: always() && (github.ref == 'refs/heads/master' || github.ref_type == 'tag') && matrix.job.os != 'macos-latest'
         with:
@@ -526,7 +526,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack On Failure
-        uses: ravsamhq/notify-slack-action@v1
+        uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -583,7 +583,7 @@ jobs:
           registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       - name: Notify Slack On Failure
-        uses: ravsamhq/notify-slack-action@v1
+        uses: ravsamhq/notify-slack-action@v2
         if: always()
         with:
           status: ${{ job.status }}
