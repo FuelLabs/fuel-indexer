@@ -27,6 +27,6 @@ type SecondThing {
 ```
 
 The types you see above (e.g., `ID`, `UInt8`, etc) are Fuel abstractions that were created to more seamlessly integrate with the Fuel VM and are not native to GraphQL. A deeper explanation on these
-types can be found in [the Types section](../database/types.md).
+types can be found in [the Types section](../../data-types/types.md).
 
-> Important: It is up to developers to manage their own unique IDs for each type, meaning that a data structure's `ID` field needs to be manually generated prior to saving it to the database. This generation can be as simple or complex as you want in order to fit your particular situation; the only requirement is that the developer implement their own custom generation. Examples can be found in the [Block Explorer](../../examples/block-explorer.md) and [Hello World](../../examples/hello-world.md) sections.
+> Important: It is up to developers to manage their own unique IDs for each type, meaning that a data structure's `ID` field needs to be manually generated prior to saving it to the database. This generation can be as simple or complex as you want in order to fit your particular situation; the only requirement is that the developer implement their own custom generation. Examples can be found in the [Block Explorer](../../../examples/block-explorer.md) and [Hello World](../../../examples/hello-world.md) sections.

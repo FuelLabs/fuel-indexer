@@ -8,7 +8,5 @@ The Fuel indexer uses [Postgres](https://github.com/docker-library/postgres/blob
   - How to use different data types from your Sway contract, all the way to your Postgres table
 - [Foreign Keys](./foreign-keys.md)
   - How foreign keys are handled in GraphQL schema, Postgres, and SQLite
-- [Directives](./directives.md)
-  - How GraphQL schema directives are translated into data-layer constraints
 - [⚠️ IDs](./ids.md)
   - Explains some conventions surrounding the usage of `ID` types
