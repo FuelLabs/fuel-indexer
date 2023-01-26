@@ -59,7 +59,7 @@ Users of the Fuel indexer project include dApp developers looking to write flexi
 
 ### `postgresSQL` and `SQLite`
 
-- We use PostgresSQL and SQLite to manage out database in the following quickstart.
+- We use PostgresSQL and SQLite to manage our database in the following quickstart.
 - Postgres can be downloaded [here](https://www.postgresql.org/download/)
 - SQLite can be downloaded [here](https://www.sqlite.org/download.html)
 
