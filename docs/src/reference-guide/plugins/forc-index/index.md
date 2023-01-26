@@ -1,13 +1,26 @@
 # forc index
 
-`forc index` is the recommended method for interacting with the Fuel indexer. After you have installed `fuelup`, you can run the `forc index help` command in your terminal to view the available commands.
+`forc index` is the recommended method for end users to interact with the Fuel indexer. After you have installed `fuelup`, you can run the `forc index help` command in your terminal to view the available commands.
 
-The following sections provide in-depth information on the different commands available.
+```text
+forc index help
+```
 
-- [`forc index init`](./init.md) - create a new index project in the current working directory
-- [`forc index new <directory>`](./new.md) - create a new index project at the provided path
-- [`forc index check`](./check.md) - check which indexer components are installed
-- [`forc index build`](./build.md) - build an index
-- [`forc index start`](./start.md) - start a local Fuel indexer service
-- [`forc index deploy`](./deploy.md) - deploy a given index to a particular endpoint
-- [`forc index remove`](./remove.md) - stop and remove a running index
+```text
+USAGE:
+    forc-index <SUBCOMMAND>
+
+OPTIONS:
+    -h, --help       Print help information
+    -V, --version    Print version information
+
+SUBCOMMANDS:
+    build     Build an index
+    check     Get status checks on all indexer components
+    deploy    Deploy an index asset bundle to a remote or locally running indexer server
+    help      Print this message or the help of the given subcommand(s)
+    init      Create a new indexer project in the current directory
+    new       Create a new indexer project in a new directory
+    remove    Stop and remove a running index
+    start     Start a local indexer service
+```
