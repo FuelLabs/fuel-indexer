@@ -36,8 +36,8 @@
 - [A Fuel Indexer Project](./reference-guide/components/fuel-indexer-project.md)
   - [Manifest](./reference-guide/components/assets/manifest.md)
   - [Schema](./reference-guide/components/assets/schema.md)
-  - [Module](./reference-guide/components/assets/module.md) -- add blurb about rustup add target
-- [Data Types](./reference-guide/data-types/types.md) -- add SQLite column to table
+  - [Module](./reference-guide/components/assets/module.md)
+- [Data Types](./reference-guide/data-types/types.md)
 - [Database](./reference-guide/components/database/foreign-keys.md)
   - [Foreign Keys](./reference-guide/components/database/foreign-keys.md)
   - [ID Types](./reference-guide/components/database/ids.md)
