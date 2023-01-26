@@ -4,7 +4,7 @@ You can index use the `BlockData` and `TransactionData` data structures to index
 
 ## `BlockData`
 
-```rust
+```rust,ignore
 pub struct BlockData {
     pub height: u64,
     pub id: Bytes32,
@@ -18,7 +18,7 @@ The `BlockData` struct is how blocks are represented in the Fuel indexer. It con
 
 ## `TransactionData`
 
-```rust
+```rust,ignore
 pub struct TransactionData {
     pub transaction: Transaction,
     pub status: TransactionStatus,
@@ -31,7 +31,7 @@ The `TransactionData` struct contains important information about a transaction 
 
 ### `Transaction`
 
-```rust
+```rust,ignore
 pub enum Transaction {
     Script(Script),
     Create(Create),
@@ -41,7 +41,7 @@ pub enum Transaction {
 
 `Transaction` refers to the Fuel transaction entity and can be one of three distinct types: `Script`, `Create`, or `Mint`. Explaining the differences between each of the types is out of scope for the Fuel indexer; however, you can find information about the `Transaction` type in the [Fuel specifications](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/tx_format/transaction.md).
 
-```c++
+```c++,ignore
 enum TransactionType : uint8 {
     Script = 0,
     Create = 1,
@@ -79,7 +79,7 @@ When deserializing a transaction, the reverse is done. If there are insufficient
 
 #### TransactionScript
 
-```c++
+```c++,ignore
 enum ReceiptType : uint8 {
     Call = 0,
     Return = 1,
@@ -184,7 +184,7 @@ Transaction is invalid if:
 
 ### `TransactionStatus`
 
-```rust
+```rust,ignore
 pub enum TransactionStatus {
     Failure {
         block_id: String,
