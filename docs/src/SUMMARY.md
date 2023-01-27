@@ -3,7 +3,7 @@
 
 [The Fuel Indexer](./the-fuel-indexer.md)
 
-[Quickstart](./quickstart/index.md) -- auto-includes quickstart section from README.md
+[Quickstart](./quickstart/index.md)
 
 # Getting Started
 
@@ -57,5 +57,5 @@
 # For Contributors
 
 - [Environment Setup](./for-contributors/index.md)
-- [Contributing Standards](./for-contributors/contributing-standards.md) -- auto-includes CONTRIBUTING.md
-- [Release Schedule](./for-contributors/release-schedule.md) -- auto-includes RELEASE_SCHEDULE.md
+- [Contributing Standards](./for-contributors/contributing-standards.md)
+- [Release Schedule](./for-contributors/release-schedule.md)
