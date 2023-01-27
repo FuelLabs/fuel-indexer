@@ -1,4 +1,5 @@
-# Fuel Indexer
+<!-- markdownlint-disable MD033 -->
+# 🗃 Fuel Indexer
 
 ![Fuel Logo](./img/fuel.png)
 
@@ -7,10 +8,12 @@ The Fuel indexer is a standalone service that can be used to index various compo
 By using a combination of Fuel-flavored GraphQL schema, a SQL backend, and indices written in Rust, users of the Fuel indexer can get started creating production-ready backends for their dApps, meant to go fast 🚗💨.
 
 Feel free to check out [Quickstart](./quickstart/index.md) for those wanting to build dApp backends right away. And for those willing to contribute to the Fuel indexer project, please feel free to read [our contributor guidelines](https://github.com/FuelLabs/fuel-indexer/blob/master/docs/CONTRIBUTING.md) and the [For Contributors](for-contributors/index.md) section of the book.
+<!-- KEEP THIS IN CASE WE WANT TO MAKE DIAGRAM CHANGES [![fo](https://mermaid.ink/img/pako:eNp9kWFrwjAQhv_KcZ8U9A-UIajZhrDBZkUYjR9uzamFNqlpAhbrf1-6TFCY5r6EN-9zb7g7YW4UY4I7S_UeVkJqCGeavXguYW4sb2A8nnTrd0gdOe5gNvh9WmjFR7bD6J9l12JEXvuOn2-wamtuOhADQY6-qeE_Zn7DwMU-_VhEPi12msrmTuIjGp56fskHz437L1pkF2EThefsy3h7-_-tsTkUvQKK69K03aNQqa8LR1ixrahQYbSnPkOi23PFEpNwVbwlXzqJUp-DlbwzaatzTJz1PEJfqzBqUVBYShXF8w9dz4xz?type=png)](https://mermaid.live/edit#pako:eNp9kWFrwjAQhv_KcZ8U9A-UIajZhrDBZkUYjR9uzamFNqlpAhbrf1-6TFCY5r6EN-9zb7g7YW4UY4I7S_UeVkJqCGeavXguYW4sb2A8nnTrd0gdOe5gNvh9WmjFR7bD6J9l12JEXvuOn2-wamtuOhADQY6-qeE_Zn7DwMU-_VhEPi12msrmTuIjGp56fskHz437L1pkF2EThefsy3h7-_-tsTkUvQKK69K03aNQqa8LR1ixrahQYbSnPkOi23PFEpNwVbwlXzqJUp-DlbwzaatzTJz1PEJfqzBqUVBYShXF8w9dz4xz) -->
 
 ## Architecture
 
-![Fuel Indexer Architecture Diagram](../img/fuel_indexer_flow.svg)
+<!-- Using an <img> so we can size it -->
+<img src="https://i.imgur.com/8K14p9h.png" alt="diagram" width="500"/>
 
 The Fuel indexer is meant to run alongside a Fuel node and a database. Generally, the typical flow of information through the indexer is as follows:
 

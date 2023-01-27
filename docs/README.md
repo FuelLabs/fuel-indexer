@@ -1,6 +1,7 @@
+# 🗃 Fuel Indexer
+<!-- markdownlint-disable MD033 -->
+<!-- markdownlint-disable MD025 -->
 ![Fuel Logo](./src/img/fuel.png "Fuel Logo")
-
-# Fuel Indexer
 
 [![build](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/fuel-indexer?label=latest)](https://crates.io/crates/fuel-indexer)
@@ -9,10 +10,14 @@
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
+<!-- Using an <img> so we can size it -->
+<img src="https://i.imgur.com/8K14p9h.png" alt="diagram" width="500"/>
+
 - [**For Users**](#for-users)
   - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
     - [`docker`](#docker)
+    - [`wasm`](#wasm)
   - [Quickstart](#quickstart)
   - [`forc index` Plugin](#forc-index-plugin)
     - [`check`](#forc-index-check)
@@ -57,6 +62,21 @@ Users of the Fuel indexer project include dApp developers looking to write flexi
 - We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. Postgres).
 - Docker can be downloaded [here](https://docs.docker.com/engine/install/).
 
+### `wasm`
+
+Two additonal cargo components will be required to build your indexers: `wasm-snip` and the `wasm32-unknown-unknown` target.
+- To install `wasm-snip`:
+
+```bash
+cargo install wasm-snip
+```
+
+To install the `wasm32-unknown-unknown` target via `rustup`:
+
+```bash
+rustup target add wasm32-unknown-unknown
+```
+
 ## Quickstart
 
 In this tutorial you will:
@@ -65,7 +85,16 @@ In this tutorial you will:
 2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-2` testnet.
 3. Query the indexer service for indexed data using GraphQL.
 
-> IMPORTANT: Docker is a prerequisite for using this Quickstart. If Docker is not installed on your machine, please review the Docker installation instructions [here](https://docs.docker.com/engine/install/).
+> IMPORTANT: Docker is a prerequisite for using this Quickstart. 
+>
+> If Docker is not installed on your machine, please review the Docker installation instructions [here](https://docs.docker.com/engine/install/).
+>
+> Note that Docker is not required to use the Fuel indexer. We merely recommend
+> using Docker for the Quickstart so that users don't have to install several heavy
+> system dependencies related to SQL backends.
+>
+> If you prefer to _not_ use Docker, then please refer to the [Environment Setup for contributors](./../for-contributors/index.html#database), and
+> find the "Database" section for more information.
 
 ## 1. Setting up your environment
 
@@ -100,7 +129,7 @@ docker pull ghcr.io/fuellabs/fuel-indexer:latest
 - Since we already installed `fuelup` in a previous step [1.1], we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
 
 ```bash
-which forc index
+which forc-index
 ```
 
 ```text
@@ -211,11 +240,11 @@ By now we have a brand new index that will index some blocks and transactions, b
 
 #### 2.3.1 Starting an indexer service
 
-- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via `docker compose`. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker compose` file below, and spinning everything up with `docker compose up`.
+- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via `docker compose`. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker-compose.yaml` file below, and spinning everything up with `docker compose up`.
 
 > IMPORTANT: Ensure that any local Postgres instance that is running on port `5432` is stopped.
->
-> You can open up a `docker-compose.yaml` file in the same directory as your index manifest, and paste the YAML content below to this `docker-compose.yaml` file.
+
+You can open up a `docker-compose.yaml` file in the same directory as your index manifest, and paste the YAML content below to this `docker-compose.yaml` file.
 
 ```text
 version: "3.9"
@@ -236,7 +265,7 @@ services:
       retries: 5
       start_period: 80s
   fuel-indexer:
-    image: ghcr.io/fuellabs/fuel-indexer:v0.2.0
+    image: ghcr.io/fuellabs/fuel-indexer:latest
     command: bash -c "sleep 2 && ./fuel-indexer --fuel-node-host node-beta-2.fuel.network --fuel-node-port 80 --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
     ports:
       - "29987:29987"
@@ -246,16 +275,22 @@ services:
       - postgres
 ```
 
-#### 2.3.2 Deploying your index to your Fuel indexer service
-
-With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
+Then run `docker compose up` to spin up Postgres and Fuel indexer containers:
 
 ```bash
-forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+docker compose up
+```
+
+#### 2.3.2 Deploying your index to your Fuel indexer service
+
+With our database and Fuel indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
+
+```bash
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ```
 
 ```text
-forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 

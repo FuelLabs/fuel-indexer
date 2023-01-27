@@ -4,8 +4,8 @@ resolver = "2"
 members = [
    "examples/block-explorer/explorer-index",
    "examples/hello-world-native/hello-index-native",
-   "examples/hello-world/hello-bin",
    "examples/hello-world/hello-index",
+   "examples/hello-world/hello-world-data",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-database",
    "packages/fuel-indexer-database/database-types",

@@ -1,17 +1,26 @@
 use crate::{ops::forc_index_deploy, utils::defaults};
 use anyhow::Result;
 use clap::Parser;
+use std::path::PathBuf;
 
 /// Deploy an index asset bundle to a remote or locally running indexer server.
 #[derive(Debug, Parser)]
 pub struct Command {
-    /// URL at which to upload index assets
-    #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which to upload index assets.")]
+    /// URL at which to deploy indexer assets
+    #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which to deploy indexer assets.")]
     pub url: String,
 
-    /// Path of the index manifest to upload
-    #[clap(short, long, help = "Path of the index manifest to upload.")]
-    pub manifest: String,
+    /// Path to the manifest of indexer project being deployed.
+    #[clap(
+        short,
+        long,
+        help = "Path to the manifest of indexer project being deployed."
+    )]
+    pub manifest: Option<String>,
+
+    /// Path of index project.
+    #[clap(short, long, help = "Path to the indexer project.")]
+    pub path: Option<PathBuf>,
 
     /// Authentication header value
     #[clap(long, help = "Authentication header value.")]
@@ -45,6 +54,13 @@ pub struct Command {
     /// Building for native execution.
     #[clap(long, help = "Building for native execution.")]
     pub native: bool,
+
+    /// Path with which to prefix asset filepaths in the index manifest.
+    #[clap(
+        long,
+        help = "Path with which to prefix asset filepaths in the index manifest."
+    )]
+    pub output_dir_root: Option<PathBuf>,
 }
 
 pub fn exec(command: Command) -> Result<()> {

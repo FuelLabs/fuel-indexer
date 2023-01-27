@@ -3,14 +3,14 @@
 
 [The Fuel Indexer](./the-fuel-indexer.md)
 
-[Quickstart](./quickstart/index.md) -- auto-includes quickstart section from README.md
+[Quickstart](./quickstart/index.md)
 
 # Getting Started
 
 - [Dependencies](./getting-started/dependencies/fuelup.md)
   - [`fuelup`](./getting-started/dependencies/fuelup.md)
   - [Database](./getting-started/dependencies/database.md)
-  - [`wasm-snip`](./getting-started/dependencies/wasm-snip.md)
+  - [WASM](./getting-started/dependencies/wasm.md)
   - [Docker](./getting-started/dependencies/docker.md)
 - [Starting the Fuel Indexer](./getting-started/starting-the-fuel-indexer.md)
 
@@ -38,13 +38,13 @@
   - [Schema](./reference-guide/components/assets/schema.md)
   - [Module](./reference-guide/components/assets/module.md)
 - [Data Types](./reference-guide/data-types/types.md)
-- [Database](./reference-guide/components/database/foreign-keys.md)
-  - [Foreign Keys](./reference-guide/components/database/foreign-keys.md)
-  - [ID Types](./reference-guide/components/database/ids.md)
 - [GraphQL](./reference-guide/components/graphql/schema.md)
   - [Schema](./reference-guide/components/graphql/schema.md)
   - [Directives](./reference-guide/components/graphql/directives.md)
   - [API Server](./reference-guide/components/graphql/api-server.md)
+- [Database](./reference-guide/components/database/foreign-keys.md)
+  - [Foreign Keys](./reference-guide/components/database/foreign-keys.md)
+  - [ID Types](./reference-guide/components/database/ids.md)
 - [forc index](./reference-guide/plugins/forc-index/index.md)
   - [init](./reference-guide/plugins/forc-index/init.md)
   - [new](./reference-guide/plugins/forc-index/new.md)
@@ -57,5 +57,5 @@
 # For Contributors
 
 - [Environment Setup](./for-contributors/index.md)
-- [Contributing Standards](./for-contributors/contributing-standards.md) -- auto-includes CONTRIBUTING.md
-- [Release Schedule](./for-contributors/release-schedule.md) -- auto-includes RELEASE_SCHEDULE.md
+- [Contributing Standards](./for-contributors/contributing-standards.md)
+- [Release Schedule](./for-contributors/release-schedule.md)

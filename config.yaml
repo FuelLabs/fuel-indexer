@@ -34,3 +34,4 @@
 #     path: database/sqlite/sqlite.db
 #
 # metrics: true
+# stop_idle_indexers: true

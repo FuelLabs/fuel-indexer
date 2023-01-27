@@ -1,6 +1,6 @@
 # Starting the Fuel Indexer
 
-When using the `fuel-indexer` command, there are a variety of command-line flags that you can use to configure the Fuel indexer service.
+## Using CLI options
 
 ```text
 USAGE:
@@ -29,8 +29,8 @@ OPTIONS:
             Print help information
 
         --log-level <LOG_LEVEL>
-            Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
-            debug, error, warn]
+            Log level passed to the Fuel Indexer service. [default: info]
+                [possible values: info, debug, error, warn]
 
     -m, --manifest <MANIFEST>
             Index config file.
@@ -63,7 +63,7 @@ OPTIONS:
             Print version information
 ```
 
-You can also use a configuration file as seen below.
+## Using a configuration file
 
 ```yaml
 ## The following is an example Fuel indexer configuration file.

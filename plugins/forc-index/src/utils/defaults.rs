@@ -160,3 +160,7 @@ target = "wasm32-unknown-unknown"
 "#
     .to_string()
 }
+
+pub fn manifest_name(index_name: &str) -> String {
+    format!("{index_name}.manifest.yaml")
+}
