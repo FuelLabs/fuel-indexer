@@ -100,7 +100,7 @@ docker pull ghcr.io/fuellabs/fuel-indexer:latest
 - Since we already installed `fuelup` in a previous step [1.1], we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
 
 ```bash
-which forc index
+which forc-index
 ```
 
 ```text
@@ -236,7 +236,7 @@ services:
       retries: 5
       start_period: 80s
   fuel-indexer:
-    image: ghcr.io/fuellabs/fuel-indexer:v0.2.0
+    image: ghcr.io/fuellabs/fuel-indexer:latest
     command: bash -c "sleep 2 && ./fuel-indexer --fuel-node-host node-beta-2.fuel.network --fuel-node-port 80 --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
     ports:
       - "29987:29987"
@@ -251,11 +251,11 @@ services:
 With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
 
 ```bash
-forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ```
 
 ```text
-forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 

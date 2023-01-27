@@ -28,7 +28,7 @@ services:
     depends_on:
       - postgres
   fuel-indexer:
-    image: ghcr.io/fuellabs/fuel-indexer:v0.2.0
+    image: ghcr.io/fuellabs/fuel-indexer:latest
     command: bash -c "sleep 2 && ./fuel-indexer --fuel-node-host fuel-node --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
     ports:
       - "29987:29987"
