@@ -17,7 +17,7 @@ const BYTES32_LEN: usize = 0x20;
 // size with whitespace. We can always trim any whitespace before saving to the
 // database.
 fn rightpad_whitespace(s: &str, n: usize) -> String {
-    format!("{:0width$}", s, width = n)
+    format!("{s:0n$}")
 }
 
 #[tokio::main]
@@ -57,7 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut rng = rand::thread_rng();
 
-    let id = rng.gen_range(0..MAX_BIGINT) as u64;
+    let id = rng.gen_range(0..MAX_BIGINT);
     let greeting = SizedAsciiString::<BYTES32_LEN>::new(rightpad_whitespace(
         greetings.choose(&mut rand::thread_rng()).unwrap(),
         BYTES32_LEN,

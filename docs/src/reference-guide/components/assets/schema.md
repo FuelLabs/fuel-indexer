@@ -1,0 +1,1 @@
+{{#include ../graphql/schema.md}}

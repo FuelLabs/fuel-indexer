@@ -38,7 +38,7 @@ impl SchemaBuilder {
         let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
             Ok(ast) => ast,
             Err(e) => {
-                panic!("Error parsing graphql schema {:?}", e)
+                panic!("Error parsing graphql schema {e:?}",)
             }
         };
         let (primitives, _) = build_schema_objects_set(&base_ast);
@@ -60,7 +60,7 @@ impl SchemaBuilder {
 
         let ast = match parse_schema::<String>(schema) {
             Ok(ast) => ast,
-            Err(e) => panic!("Error parsing graphql schema {:?}", e),
+            Err(e) => panic!("Error parsing graphql schema {e:?}",),
         };
 
         let query = ast
@@ -162,7 +162,7 @@ impl SchemaBuilder {
         })
     }
 
-    fn process_type<'a>(&self, field_type: &Type<'a, String>) -> (ColumnType, bool) {
+    fn process_type(&self, field_type: &Type<String>) -> (ColumnType, bool) {
         match field_type {
             Type::NamedType(t) => {
                 if !self.primitives.contains(t.as_str()) {
@@ -274,13 +274,13 @@ impl SchemaBuilder {
         fragments.join(",\n")
     }
 
-    fn generate_table_sql<'a>(
+    fn generate_table_sql(
         &mut self,
         root: &str,
-        typ: &TypeDefinition<'a, String>,
+        typ: &TypeDefinition<String>,
         types_map: &HashMap<String, String>,
     ) {
-        fn map_fields(fields: &[Field<'_, String>]) -> HashMap<String, String> {
+        fn map_fields(fields: &[Field<String>]) -> HashMap<String, String> {
             fields
                 .iter()
                 .map(|f| (f.name.to_string(), f.field_type.to_string()))
@@ -306,10 +306,8 @@ impl SchemaBuilder {
 
                 let sql_table = self.db_type.table_name(&self.namespace, &table_name);
 
-                let create = format!(
-                    "CREATE TABLE IF NOT EXISTS\n {} (\n {}\n)",
-                    sql_table, columns,
-                );
+                let create =
+                    format!("CREATE TABLE IF NOT EXISTS\n {sql_table} (\n {columns}\n)",);
 
                 self.statements.push(create);
                 self.type_ids.push(TypeId {
@@ -320,7 +318,7 @@ impl SchemaBuilder {
                     table_name,
                 });
             }
-            o => panic!("Got a non-object type: '{:?}'", o),
+            o => panic!("Got a non-object type: '{o:?}'"),
         }
     }
 }

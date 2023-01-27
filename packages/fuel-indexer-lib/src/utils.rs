@@ -85,7 +85,7 @@ pub fn is_opt_env_var(key: &str) -> bool {
 }
 
 pub fn derive_socket_addr(host: &String, port: &String) -> SocketAddr {
-    let host = format!("{}:{}", host, port);
+    let host = format!("{host}:{port}");
     SocketAddr::from_str(&host).unwrap_or_else(|e| {
             warn!(
                 "Failed to parse '{}' as a SocketAddr due to '{}'. Retrying using ToSocketAddrs.",
@@ -184,12 +184,12 @@ pub mod index_utils {
 
     pub fn u64_id_from_inputs(id: &[u8; 32], inputs: Vec<u8>) -> u64 {
         let inputs = [id.to_vec(), inputs].concat();
-        first8_bytes_to_u64(&inputs)
+        first8_bytes_to_u64(inputs)
     }
 
     pub fn bytes32_from_inputs(id: &[u8; 32], inputs: Vec<u8>) -> Bytes32 {
         let inputs = [id.to_vec(), inputs].concat();
-        first32_bytes_to_bytes32(&inputs)
+        first32_bytes_to_bytes32(inputs)
     }
 
     pub fn trim_sized_ascii_string<const LEN: usize>(

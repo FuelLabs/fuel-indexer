@@ -31,7 +31,7 @@ pub struct Json(pub String);
 pub fn type_id(namespace: &str, type_name: &str) -> i64 {
     let mut bytes = [0u8; 8];
     bytes.copy_from_slice(
-        &Sha256::digest(format!("{}:{}", namespace, type_name).as_bytes())[..8],
+        &Sha256::digest(format!("{namespace}:{type_name}").as_bytes())[..8],
     );
     i64::from_le_bytes(bytes)
 }

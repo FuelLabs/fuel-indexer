@@ -58,8 +58,8 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 
     let pool = postgres_connection_pool().await;
     let mut conn = pool.acquire().await.unwrap();
-    let _ = postgres::execute_query(&mut conn, "SELECT 1;".into());
-    let _ = postgres::execute_query(&mut conn, "SELECT 1;".into());
+    let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
+    let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
 
     let client = http_client();
     let _ = client

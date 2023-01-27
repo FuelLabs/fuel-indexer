@@ -211,7 +211,7 @@ jobs:
           command: ${{ matrix.command }}
           args: ${{ matrix.args }}
       - name: Notify if Job Fails
-        uses: ravsamhq/notify-slack-action@v1
+        uses: ravsamhq/notify-slack-action@v2
         if: always() && github.ref == 'refs/heads/master'
         with:
           status: ${{ job.status }}
@@ -276,18 +276,12 @@ jobs:
   publish-docker-image:
     needs:
       - cancel-previous-runs
-    if: github.event_name == 'release' || github.event.action == 'published'
+    if: github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
-      # This is a way to make this job run after publish-crates even if it's skipped on master or pr branches
-      # https://stackoverflow.com/a/69252812/680811
-      - name: fail if any dependent jobs failed
-        if: ${{ contains(needs.*.result, 'failure') }}
-        run: exit 1
-
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -326,7 +320,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Notify if Job Fails
-        uses: ravsamhq/notify-slack-action@v1
+        uses: ravsamhq/notify-slack-action@v2
         if: always() && (github.ref == 'refs/heads/master' || github.ref_type == 'tag')
         with:
           status: ${{ job.status }}
@@ -505,7 +499,7 @@ jobs:
           asset_content_type: application/gzip
 
       - name: Notify if Job Fails
-        uses: ravsamhq/notify-slack-action@v1
+        uses: ravsamhq/notify-slack-action@v2
         # need to find a work-around to be able to run this action on mac
         if: always() && (github.ref == 'refs/heads/master' || github.ref_type == 'tag') && matrix.job.os != 'macos-latest'
         with:
@@ -532,7 +526,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Slack On Failure
-        uses: ravsamhq/notify-slack-action@v1
+        uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -589,7 +583,7 @@ jobs:
           registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
 
       - name: Notify Slack On Failure
-        uses: ravsamhq/notify-slack-action@v1
+        uses: ravsamhq/notify-slack-action@v2
         if: always()
         with:
           status: ${{ job.status }}

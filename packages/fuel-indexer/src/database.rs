@@ -86,7 +86,7 @@ impl Database {
 
     fn get_query(&self, table: &str, object_id: u64) -> String {
         let sql_table = self.pool.database_type().table_name(&self.namespace, table);
-        format!("SELECT object from {} where id = {}", sql_table, object_id)
+        format!("SELECT object from {sql_table} where id = {object_id}")
     }
 
     pub async fn put_object(
