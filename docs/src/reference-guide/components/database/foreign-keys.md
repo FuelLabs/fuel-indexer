@@ -40,10 +40,7 @@ type Library {
 
 #### Implicit foreign key breakdown
 
-- Given the above schema, two entities will be created: a `Book` entity, and a `Library` entity.
-- As you can see, we add the `Book` entity as an attribute on the `Library` entity, thus conveying that we want a one-to-many or one-to-one relationship between `Library` and `Book`.
-  - This means that for a given `Library`, we may also fetch one or many `Book` entities.
-  - This also means that the column `library.book` will be an integer type that references `book.id`
+Given the above schema, two entities will be created: a `Book` entity, and a `Library` entity. As you can see, we add the `Book` entity as an attribute on the `Library` entity, thus conveying that we want a one-to-many or one-to-one relationship between `Library` and `Book`. This means that for a given `Library`, we may also fetch one or many `Book` entities. It also means that the column `library.book` will be an integer type that references `book.id`.
 
 ### Explicit foreign keys
 
@@ -70,9 +67,7 @@ type Library {
 
 #### Explicit foreign key breakdown
 
-- For the most part, this works the same way as implicit foreign key usage
-- However, as you can see, instead of implicitly using `book.id` as the reference column for our `Book` object, we're instead explicitly specifying that we want `book.name` to serve as our foreign key.
-  - Also note that since we're using `book.name` in our foreign key constraint, that column is required to be unique -- via the `@unique` directive
+For the most part, this works the same way as implicit foreign key usage. However, as you can see, instead of implicitly using `book.id` as the reference column for our `Book` object, we're instead explicitly specifying that we want `book.name` to serve as our foreign key. Also, please note that since we're using `book.name` in our foreign key constraint, that column is required to be unique (via the `@unique` directive).
 
 > Important:
 >
