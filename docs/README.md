@@ -67,7 +67,16 @@ In this tutorial you will:
 2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-2` testnet.
 3. Query the indexer service for indexed data using GraphQL.
 
-> IMPORTANT: Docker is a prerequisite for using this Quickstart. If Docker is not installed on your machine, please review the Docker installation instructions [here](https://docs.docker.com/engine/install/).
+> IMPORTANT: Docker is a prerequisite for using this Quickstart. 
+>
+> If Docker is not installed on your machine, please review the Docker installation instructions [here](https://docs.docker.com/engine/install/).
+>
+> Note that Docker is not required to use the Fuel indexer. We merely recommend
+> using Docker for the Quickstart so that users don't have to install several heavy
+> system dependencies related to SQL backends.
+>
+> If you prefer to _not_ use Docker, then please refer to the [Environment Setup for contributors](./../for-contributors/index.html#database), and
+> find the "Database" section for more information.
 
 ## 1. Setting up your environment
 
