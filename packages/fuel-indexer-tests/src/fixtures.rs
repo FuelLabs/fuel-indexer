@@ -76,7 +76,7 @@ pub async fn postgres_connection() -> PoolConnection<Postgres> {
 }
 
 pub fn test_sqlite_db_path() -> String {
-    format!("sqlite://{}/test.db", WORKSPACE_ROOT)
+    format!("sqlite://{WORKSPACE_ROOT}/test.db",)
 }
 
 pub fn http_client() -> reqwest::Client {
@@ -341,7 +341,7 @@ pub async fn connect_to_deployed_contract(
     .await
     .unwrap();
 
-    println!("Using contract at {}", contract_id);
+    println!("Using contract at {contract_id}",);
 
     let contract = FuelIndexerTest::new(contract_id, wallet.clone());
 

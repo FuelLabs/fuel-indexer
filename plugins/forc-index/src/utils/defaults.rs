@@ -142,5 +142,5 @@ target = "wasm32-unknown-unknown"
 }
 
 pub fn manifest_name(index_name: &str) -> String {
-    format!("{}.manifest.yaml", index_name)
+    format!("{index_name}.manifest.yaml")
 }

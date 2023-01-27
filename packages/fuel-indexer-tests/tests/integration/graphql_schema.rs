@@ -115,6 +115,6 @@ fn test_query_builder_generates_proper_sql() {
     assert!(query.is_ok());
     match query.expect("It's ok here").build() {
         Err(GraphqlError::UnrecognizedType(_)) => (),
-        o => panic!("Should have gotten Unrecognized type, got {:?}", o),
+        o => panic!("Should have gotten Unrecognized type, got {o:?}",),
     }
 }

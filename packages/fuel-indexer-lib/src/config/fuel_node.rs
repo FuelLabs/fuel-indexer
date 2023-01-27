@@ -22,7 +22,7 @@ impl FuelNodeConfig {
         let base = Uri::from(self);
         format!("{}{}", base, "health")
             .parse()
-            .unwrap_or_else(|e| panic!("Failed to build health Uri: {}", e))
+            .unwrap_or_else(|e| panic!("Failed to build health Uri: {e}"))
     }
 }
 
@@ -44,7 +44,7 @@ impl From<FuelNodeConfig> for Uri {
     fn from(config: FuelNodeConfig) -> Self {
         let uri = derive_http_url(&config.host, &config.port);
         uri.parse().unwrap_or_else(|e| {
-            panic!("Failed to parse Uri from FuelNodeConfig {:?}: {}", uri, e)
+            panic!("Failed to parse Uri from FuelNodeConfig {uri:?}: {e}")
         })
     }
 }

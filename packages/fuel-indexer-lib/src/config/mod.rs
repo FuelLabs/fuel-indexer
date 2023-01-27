@@ -190,7 +190,7 @@ fn derive_http_url(host: &String, port: &String) -> String {
         _ => "http",
     };
 
-    format!("{}://{}:{}", protocol, host, port)
+    format!("{protocol}://{host}:{port}")
 }
 
 pub trait MutConfig {

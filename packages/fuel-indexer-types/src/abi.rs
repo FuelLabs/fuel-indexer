@@ -161,14 +161,12 @@ impl Tokenizable for Identity {
                     Ok(Identity::ContractId(ContractId::from_token(token)?))
                 }
                 (_, _, _) => Err(SDKError::InstantiationError(format!(
-                    "Could not construct Identity from enum_selector. Received: {:?}",
-                    enum_selector
+                    "Could not construct Identity from enum_selector. Received: {enum_selector:?}",
                 ))),
             }
         } else {
             Err(SDKError::InstantiationError(format!(
-                "Could not construct Identity from token. Received: {:?}",
-                token
+                "Could not construct Identity from token. Received: {token:?}",
             )))
         }
     }

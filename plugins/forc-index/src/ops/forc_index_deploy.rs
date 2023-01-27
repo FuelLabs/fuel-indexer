@@ -61,8 +61,8 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let form = Form::new()
         .file("manifest", &manifest_path)?
-        .file("schema", &graphql_schema)?
-        .file("wasm", &module_path)?;
+        .file("schema", graphql_schema)?
+        .file("wasm", module_path)?;
 
     let target = format!("{}/api/index/{}/{}", &url, &namespace, &identifier);
 

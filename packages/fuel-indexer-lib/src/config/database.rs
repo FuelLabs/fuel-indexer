@@ -71,13 +71,10 @@ impl std::string::ToString for DatabaseConfig {
                 port,
                 database,
             } => {
-                format!(
-                    "postgres://{}:{}@{}:{}/{}",
-                    user, password, host, port, database
-                )
+                format!("postgres://{user}:{password}@{host}:{port}/{database}")
             }
             DatabaseConfig::Sqlite { path } => {
-                format!("sqlite://{}", path)
+                format!("sqlite://{path}")
             }
         }
     }

@@ -2,7 +2,7 @@
 
 A rudimentary block explorer backend implementation demonstrating how to leverage basic Fuel indexer abstractions in order to build a cool dApp backend.
 
-```rust
+```rust,ignore
 //! A rudimentary block explorer implementation demonstrating how blocks, transactions,
 //! contracts, and accounts can be persisted into the database.
 //!
