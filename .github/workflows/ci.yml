@@ -55,9 +55,10 @@ jobs:
         uses: actions/checkout@v3
       - id: set-members
         run: |
-          curl -sSLf "$DASEL_VERSION" -L -o dasel && chmod +x dasel
-          mv ./dasel /usr/local/bin/dasel
-          members=$(echo "[$(cat Cargo.toml | dasel -r toml -w json 'workspace.members' | grep -i 'packages/fuel-indexer' | grep -v 'components*')]" |  jq -r ".[]" | xargs -I '{}' dasel -f {}/Cargo.toml 'package.name' | jq -R '[.]' | jq -s -c 'add')
+          members=$(["fuel-indexer-api-server","fuel-indexer-database","fuel-indexer-database-types",
+          "fuel-indexer-postgres","fuel-indexer-sqlite","fuel-indexer-lib","fuel-indexer-macros",
+          "fuel-indexer-metrics","fuel-indexer-plugin","fuel-indexer-schema","fuel-indexer-tests",
+          "fuel-indexer-types","fuel-indexer"])
 
   mdbook-build:
     needs:
