@@ -1,4 +1,5 @@
-# Fuel Indexer
+<!-- markdownlint-disable MD033 -->
+# 🗃 Fuel Indexer
 
 ![Fuel Logo](./img/fuel.png)
 
@@ -11,7 +12,8 @@ Feel free to check out [Quickstart](./quickstart/index.md) for those wanting to 
 
 ## Architecture
 
-![diagram](https://i.imgur.com/8K14p9h.png)
+<!-- Using an <img> so we can size it -->
+<img src="https://i.imgur.com/8K14p9h.png" alt="diagram" width="500"/>
 
 The Fuel indexer is meant to run alongside a Fuel node and a database. Generally, the typical flow of information through the indexer is as follows:
 

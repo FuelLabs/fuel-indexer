@@ -1,6 +1,7 @@
+# 🗃 Fuel Indexer
+<!-- markdownlint-disable MD033 -->
+<!-- markdownlint-disable MD025 -->
 ![Fuel Logo](./src/img/fuel.png "Fuel Logo")
-
-# Fuel Indexer
 
 [![build](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/fuel-indexer?label=latest)](https://crates.io/crates/fuel-indexer)
@@ -9,7 +10,8 @@
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
-![diagram](https://i.imgur.com/8K14p9h.png)
+<!-- Using an <img> so we can size it -->
+<img src="https://i.imgur.com/8K14p9h.png" alt="diagram" width="500"/>
 
 - [**For Users**](#for-users)
   - [Dependencies](#dependencies)
