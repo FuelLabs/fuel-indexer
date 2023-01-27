@@ -11,7 +11,7 @@
 >
 > In contrast, explicit foreign keys _do_ require a `@join` directive. Explicit foreign key references work similarly to implicit foreign keys; however, when using explicit foreign key references, you must add a `@join` directive after your object type. This `@join` directive includes the field in your foreign object that you would like to reference (shown below).
 
-- To demonstrate how the indexer uses GraphQL schema to resolve foreign key relationships, let's look at the following schema:
+Let's learn how to use each foreign key type by looking at some GraphQL schema examples.
 
 ## Usage
 
