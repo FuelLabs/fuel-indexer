@@ -13,6 +13,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
   - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
     - [`docker`](#docker)
+    - [`wasm`](#wasm)
   - [Quickstart](#quickstart)
   - [`forc index` Plugin](#forc-index-plugin)
     - [`check`](#forc-index-check)
@@ -57,20 +58,14 @@ Users of the Fuel indexer project include dApp developers looking to write flexi
 - We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. Postgres).
 - Docker can be downloaded [here](https://docs.docker.com/engine/install/).
 
-### `postgresSQL` and `SQLite`
-
-- We use PostgresSQL and SQLite to manage our database in the following quickstart.
-- Postgres can be downloaded [here](https://www.postgresql.org/download/)
-- SQLite can be downloaded [here](https://www.sqlite.org/download.html)
-
 ### `wasm`
 
-- Two additonal rust-based components required are wasm-snip and wasm32.
-- Run the following command to install wasm-snip:
+Two additonal cargo components will be required to build your indexers: `wasm-snip` and the `wasm32-unknown-unknown` target.
+- To install `wasm-snip`:
 ```bash
 cargo install wasm-snip
 ```
-- Run the following command to install wasm32:
+To install the `wasm32-unknown-unknown` target via `rustup`:
 ```bash
 rustup target add wasm32-unknown-unknown
 ```
@@ -166,8 +161,6 @@ forc index check
 |   ✅   | wasm-snip              |  /Users/rashad/.cargo/bin/wasm-snip                              |
 +--------+------------------------+------------------------------------------------------------------+
 ```
-
-If there are any missing components please install them in the [Dependencies](#dependencies) section. 
 
 ### 2.2 Creating a new index
 
