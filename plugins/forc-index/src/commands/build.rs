@@ -1,13 +1,18 @@
 use crate::ops::forc_index_build;
 use anyhow::Result;
 use clap::Parser;
+use std::path::PathBuf;
 
 /// Build an index.
 #[derive(Debug, Parser)]
 pub struct Command {
-    /// Path of index manifest being built.
-    #[clap(short, long, help = "Path of index manifest being built.")]
-    pub manifest: String,
+    /// Manifest file name of indexer being built.
+    #[clap(short, long, help = "Manifest file name of indexer being built.")]
+    pub manifest: Option<String>,
+
+    /// Path of index project.
+    #[clap(short, long, help = "Path to the indexer project.")]
+    pub path: Option<PathBuf>,
 
     /// Target at which to compile.
     #[clap(long, help = "Target at which to compile.")]
@@ -36,6 +41,13 @@ pub struct Command {
     /// Building for native execution.
     #[clap(long, help = "Building for native execution.")]
     pub native: bool,
+
+    /// Path with which to prefix asset filepaths in the index manifest.
+    #[clap(
+        long,
+        help = "Path with which to prefix asset filepaths in the index manifest."
+    )]
+    pub output_dir_root: Option<PathBuf>,
 }
 
 pub fn exec(command: Command) -> Result<()> {

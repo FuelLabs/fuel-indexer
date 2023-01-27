@@ -17,6 +17,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
   - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
     - [`docker`](#docker)
+    - [`wasm`](#wasm)
   - [Quickstart](#quickstart)
   - [`forc index` Plugin](#forc-index-plugin)
     - [`check`](#forc-index-check)
@@ -60,6 +61,21 @@ Users of the Fuel indexer project include dApp developers looking to write flexi
 
 - We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. Postgres).
 - Docker can be downloaded [here](https://docs.docker.com/engine/install/).
+
+### `wasm`
+
+Two additonal cargo components will be required to build your indexers: `wasm-snip` and the `wasm32-unknown-unknown` target.
+- To install `wasm-snip`:
+
+```bash
+cargo install wasm-snip
+```
+
+To install the `wasm32-unknown-unknown` target via `rustup`:
+
+```bash
+rustup target add wasm32-unknown-unknown
+```
 
 ## Quickstart
 
@@ -113,7 +129,7 @@ docker pull ghcr.io/fuellabs/fuel-indexer:latest
 - Since we already installed `fuelup` in a previous step [1.1], we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
 
 ```bash
-which forc index
+which forc-index
 ```
 
 ```text
@@ -224,11 +240,11 @@ By now we have a brand new index that will index some blocks and transactions, b
 
 #### 2.3.1 Starting an indexer service
 
-- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via `docker compose`. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker compose` file below, and spinning everything up with `docker compose up`.
+- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via `docker compose`. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker-compose.yaml` file below, and spinning everything up with `docker compose up`.
 
 > IMPORTANT: Ensure that any local Postgres instance that is running on port `5432` is stopped.
->
-> You can open up a `docker-compose.yaml` file in the same directory as your index manifest, and paste the YAML content below to this `docker-compose.yaml` file.
+
+You can open up a `docker-compose.yaml` file in the same directory as your index manifest, and paste the YAML content below to this `docker-compose.yaml` file.
 
 ```text
 version: "3.9"
@@ -259,16 +275,22 @@ services:
       - postgres
 ```
 
+Then run `docker compose up` to spin up Postgres and Fuel indexer containers:
+
+```bash
+docker compose up
+```
+
 #### 2.3.2 Deploying your index to your Fuel indexer service
 
 With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
 
 ```bash
-forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ```
 
 ```text
-forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 

@@ -1,0 +1,38 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    volumes:
+      - .:/usr/local/postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - PGUSER=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready", "-U", "postgres", "-d", "postgres"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+  fuel-node:
+    build:
+      context: ./../../
+      dockerfile: ./ci/Dockerfile.fuel-node
+    image: fuel-indexer/local:fuel-node
+    command: bash -c "./fuel-node --host 0.0.0.0:4000 --contract-bin fuel-indexer-test.bin --chain-config test-chain-config.json"
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/usr/local/fuel-node
+    depends_on:
+      - postgres
+  fuel-indexer:
+    image: ghcr.io/fuellabs/fuel-indexer:latest
+    command: bash -c "sleep 2 && ./fuel-indexer --fuel-node-host fuel-node --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
+    ports:
+      - "29987:29987"
+    volumes:
+      - .:/usr/local/fuel-indexer
+    depends_on:
+      - fuel-node
