@@ -2,7 +2,7 @@
 
 A "Hello World" type of program for the Fuel Indexer service.
 
-```rust
+```rust,ignore
 //! A "Hello World" type of program for the Fuel Indexer service.
 //!
 //! Build this example's WASM module using the following command. Note that a

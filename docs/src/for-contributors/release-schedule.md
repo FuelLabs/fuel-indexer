@@ -1,0 +1,1 @@
+{{#include ../../RELEASE_SCHEDULE.md}}
