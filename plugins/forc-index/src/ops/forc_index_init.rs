@@ -122,7 +122,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     .unwrap();
 
     // Write index manifest
-    let manifest_filename = format!("{}.manifest.yaml", project_name);
+    let manifest_filename = format!("{project_name}.manifest.yaml",);
     fs::write(
         Path::new(&project_dir).join(&manifest_filename),
         defaults::default_index_manifest(
