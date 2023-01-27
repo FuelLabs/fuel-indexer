@@ -9,7 +9,7 @@
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
-[![](https://mermaid.ink/img/pako:eNp9kVFrwjAUhf_K5T450D9QxkCNDmEDXUUYjQ_X5lYLbdKlCVis_33pOkFBTV7CyfnuCScnTI1ijHBvqTrAWkgNYY2TuecCpsbyFkajt3bzCbEjxy1MBn9XC634yPal90-Sa7FH3ruJqw9YNxXXLYiBIEc7qvmfmd4wcLGPl4uej_O9pqJ-kPiMfu3wL_7xXLt7ySK5CNtemCXfxtvb52fGppB3CiiuCtO0zzKlvt44xJJtSbkKzZ66DInuwCVLjMJRcUa-cBKlPgcreWfiRqcYOet5iL5SoWmRU_iTEqMslMDnX4sTjJ4?type=png)](https://mermaid.live/edit#pako:eNp9kVFrwjAUhf_K5T450D9QxkCNDmEDXUUYjQ_X5lYLbdKlCVis_33pOkFBTV7CyfnuCScnTI1ijHBvqTrAWkgNYY2TuecCpsbyFkajt3bzCbEjxy1MBn9XC634yPal90-Sa7FH3ruJqw9YNxXXLYiBIEc7qvmfmd4wcLGPl4uej_O9pqJ-kPiMfu3wL_7xXLt7ySK5CNtemCXfxtvb52fGppB3CiiuCtO0zzKlvt44xJJtSbkKzZ66DInuwCVLjMJRcUa-cBKlPgcreWfiRqcYOet5iL5SoWmRU_iTEqMslMDnX4sTjJ4)
+![diagram](https://i.imgur.com/8K14p9h.png)
 
 - [**For Users**](#for-users)
   - [Dependencies](#dependencies)

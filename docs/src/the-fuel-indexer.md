@@ -10,7 +10,7 @@ Feel free to check out [Quickstart](./quickstart/index.md) for those wanting to 
 
 ## Architecture
 
-[![](https://mermaid.ink/img/pako:eNp9kVFrwjAUhf_K5T450D9QxkCNDmEDXUUYjQ_X5lYLbdKlCVis_33pOkFBTV7CyfnuCScnTI1ijHBvqTrAWkgNYY2TuecCpsbyFkajt3bzCbEjxy1MBn9XC634yPal90-Sa7FH3ruJqw9YNxXXLYiBIEc7qvmfmd4wcLGPl4uej_O9pqJ-kPiMfu3wL_7xXLt7ySK5CNtemCXfxtvb52fGppB3CiiuCtO0zzKlvt44xJJtSbkKzZ66DInuwCVLjMJRcUa-cBKlPgcreWfiRqcYOet5iL5SoWmRU_iTEqMslMDnX4sTjJ4?type=png)](https://mermaid.live/edit#pako:eNp9kVFrwjAUhf_K5T450D9QxkCNDmEDXUUYjQ_X5lYLbdKlCVis_33pOkFBTV7CyfnuCScnTI1ijHBvqTrAWkgNYY2TuecCpsbyFkajt3bzCbEjxy1MBn9XC634yPal90-Sa7FH3ruJqw9YNxXXLYiBIEc7qvmfmd4wcLGPl4uej_O9pqJ-kPiMfu3wL_7xXLt7ySK5CNtemCXfxtvb52fGppB3CiiuCtO0zzKlvt44xJJtSbkKzZ66DInuwCVLjMJRcUa-cBKlPgcreWfiRqcYOet5iL5SoWmRU_iTEqMslMDnX4sTjJ4)
+![diagram](https://i.imgur.com/8K14p9h.png)
 
 The Fuel indexer is meant to run alongside a Fuel node and a database. Generally, the typical flow of information through the indexer is as follows:
 
