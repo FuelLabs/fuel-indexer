@@ -186,7 +186,7 @@ impl From<ColumnType> for i32 {
 
 impl fmt::Display for ColumnType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+        write!(f, "{self:?}")
     }
 }
 
@@ -243,7 +243,7 @@ impl From<&str> for ColumnType {
             "Identity" => ColumnType::Identity,
             "Boolean" => ColumnType::Boolean,
             "Object" => ColumnType::Object,
-            _ => panic!("Invalid column type: '{}'", name),
+            _ => panic!("Invalid column type: '{name}'"),
         }
     }
 }
@@ -298,7 +298,7 @@ pub enum DbType {
 impl DbType {
     pub fn table_name(&self, namespace: &str, table_name: &str) -> String {
         match self {
-            DbType::Postgres => format!("{}.{}", namespace, table_name),
+            DbType::Postgres => format!("{namespace}.{table_name}"),
             DbType::Sqlite => table_name.to_string(),
         }
     }

@@ -335,9 +335,7 @@ pub async fn register_index(
         return Ok(index);
     }
 
-    let query = format!(
-        r#"INSERT INTO index_registry (namespace, identifier) VALUES ('{}', '{}') RETURNING *"#,
-        namespace, identifier,
+    let query = format!("INSERT INTO index_registry (namespace, identifier) VALUES ('{namespace}', '{identifier}') RETURNING *",
     );
 
     let row = sqlx::QueryBuilder::new(query)
@@ -558,8 +556,7 @@ pub async fn index_id_for(
     METRICS.db.postgres.index_id_for_calls.inc();
 
     let query = format!(
-        "SELECT id FROM index_registry WHERE namespace = '{}' AND identifier = '{}'",
-        namespace, identifier
+        "SELECT id FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}'",
     );
 
     let row = sqlx::query(&query).fetch_one(conn).await?;
@@ -608,34 +605,25 @@ pub async fn remove_index(
 
     execute_query(
         conn,
-        format!(
-            "DELETE FROM index_asset_registry_wasm WHERE index_id = {}",
-            index_id
-        ),
+        format!("DELETE FROM index_asset_registry_wasm WHERE index_id = {index_id}",),
     )
     .await?;
 
     execute_query(
         conn,
-        format!(
-            "DELETE FROM index_asset_registry_manifest WHERE index_id = {}",
-            index_id
-        ),
+        format!("DELETE FROM index_asset_registry_manifest WHERE index_id = {index_id}",),
     )
     .await?;
 
     execute_query(
         conn,
-        format!(
-            "DELETE FROM index_asset_registry_schema WHERE index_id = {}",
-            index_id
-        ),
+        format!("DELETE FROM index_asset_registry_schema WHERE index_id = {index_id}",),
     )
     .await?;
 
     execute_query(
         conn,
-        format!("DELETE FROM index_registry WHERE id = {}", index_id),
+        format!("DELETE FROM index_registry WHERE id = {index_id}",),
     )
     .await?;
 

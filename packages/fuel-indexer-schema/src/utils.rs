@@ -35,7 +35,7 @@ pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
 pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
     match bincode::deserialize(bytes) {
         Ok(obj) => Ok(obj),
-        Err(e) => Err(format!("Bincode serde error {:?}", e)),
+        Err(e) => Err(format!("Bincode serde error {e:?}")),
     }
 }
 
@@ -112,29 +112,23 @@ pub fn get_join_directive_info<'a>(
         );
         let (_, ref_field_name) = arguments.pop().unwrap();
 
-        let field_id = format!("{}.{}", field_type_name, ref_field_name);
+        let field_id = format!("{field_type_name}.{ref_field_name}");
 
         let ref_field_type_name = types_map
             .get(&field_id)
             .unwrap_or_else(|| {
-                panic!(
-                    "Foreign key field '{}' is not defined in the schema.",
-                    field_id
-                )
+                panic!("Foreign key field '{field_id}' is not defined in the schema.",)
             })
             .to_owned();
 
         (ref_field_name.to_string(), ref_field_type_name)
     } else {
         let ref_field_name = sql_types::IdCol::to_lowercase_string();
-        let field_id = format!("{}.{}", field_type_name, ref_field_name);
+        let field_id = format!("{field_type_name}.{ref_field_name}");
         let mut ref_field_type_name = types_map
             .get(&field_id)
             .unwrap_or_else(|| {
-                panic!(
-                    "Foreign key field '{}' is not defined in the schema.",
-                    field_id
-                )
+                panic!("Foreign key field '{field_id}' is not defined in the schema.",)
             })
             .to_owned();
 
@@ -171,11 +165,13 @@ pub fn build_schema_fields_and_types_map(
                 TypeDefinition::Object(obj) => {
                     for field in &obj.fields {
                         let field_type = field.field_type.to_string().replace('!', "");
-                        let field_id = format!("{}.{}", obj.name, field.name);
+                        let obj_name = &obj.name;
+                        let field_name = &field.name;
+                        let field_id = format!("{obj_name}.{field_name}");
                         types_map.insert(field_id, field_type);
                     }
                 }
-                o => panic!("Got a non-object type: '{:?}'", o),
+                o => panic!("Got a non-object type: '{o:?}'"),
             }
         }
     }
@@ -263,7 +259,7 @@ type Contract {
         let ast = match parse_schema::<String>(schema) {
             Ok(ast) => ast,
             Err(e) => {
-                panic!("Error parsing graphql schema {:?}", e)
+                panic!("Error parsing graphql schema {e:?}")
             }
         };
 
@@ -319,7 +315,7 @@ type Auditor {
         let ast = match parse_schema::<String>(schema) {
             Ok(ast) => ast,
             Err(e) => {
-                panic!("Error parsing graphql schema {:?}", e)
+                panic!("Error parsing graphql schema {e:?}")
             }
         };
 
