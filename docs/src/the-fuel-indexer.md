@@ -10,7 +10,7 @@ Feel free to check out [Quickstart](./quickstart/index.md) for those wanting to 
 
 ## Architecture
 
-![Fuel Indexer Architecture Diagram](../img/fuel_indexer_flow.svg)
+![Fuel Indexer Architecture Diagram](./img/fuel_indexer_flow.svg)
 
 The Fuel indexer is meant to run alongside a Fuel node and a database. Generally, the typical flow of information through the indexer is as follows:
 
