@@ -9,7 +9,8 @@ git clone git@github.com:FuelLabs/fuel-indexer.git
 ## Run migrations
 
 ```bash
-DATABASE_URL=postgres://postgres@localhost bash scripts/run_migrations.bash
+cd packages/fuel-indexer-database/postgres
+DATABASE_URL=postgres://postgres@localhost sqlx migrate run
 ```
 
 ## Start the service

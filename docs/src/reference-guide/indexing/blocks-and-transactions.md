@@ -122,11 +122,13 @@ Transaction is invalid if:
 - `scriptLength * 4 != len(script)`
 - `scriptDataLength != len(scriptData)`
 
-> **Note:** when signing a transaction, `receiptsRoot` is set to zero.
+> IMPORTANT:
 >
-> **Note:** when verifying a predicate, `receiptsRoot` is initialized to zero.
+> When signing a transaction, `receiptsRoot` is set to zero.
 >
-> **Note:** when executing a script, `receiptsRoot` is initialized to zero.
+> When verifying a predicate, `receiptsRoot` is initialized to zero.
+>
+> When executing a script, `receiptsRoot` is initialized to zero.
 
 The receipts root `receiptsRoot` is the root of the [binary Merkle tree](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/cryptographic_primitives.md#binary-merkle-tree) of receipts. If there are no receipts, its value is set to the root of the empty tree, i.e. `0xe3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
 

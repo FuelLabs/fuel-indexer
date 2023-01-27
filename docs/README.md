@@ -1,6 +1,7 @@
+# 🗃 Fuel Indexer
+<!-- markdownlint-disable MD033 -->
+<!-- markdownlint-disable MD025 -->
 ![Fuel Logo](./src/img/fuel.png "Fuel Logo")
-
-# Fuel Indexer
 
 [![build](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/fuel-indexer?label=latest)](https://crates.io/crates/fuel-indexer)
@@ -8,6 +9,9 @@
 [![discord](https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xfpK4Pe)
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
+
+<!-- Using an <img> so we can size it -->
+<img src="https://i.imgur.com/8K14p9h.png" alt="diagram" width="500"/>
 
 - [**For Users**](#for-users)
   - [Dependencies](#dependencies)
@@ -81,7 +85,16 @@ In this tutorial you will:
 2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-2` testnet.
 3. Query the indexer service for indexed data using GraphQL.
 
-> IMPORTANT: Docker is a prerequisite for using this Quickstart. If Docker is not installed on your machine, please review the Docker installation instructions [here](https://docs.docker.com/engine/install/).
+> IMPORTANT: Docker is a prerequisite for using this Quickstart. 
+>
+> If Docker is not installed on your machine, please review the Docker installation instructions [here](https://docs.docker.com/engine/install/).
+>
+> Note that Docker is not required to use the Fuel indexer. We merely recommend
+> using Docker for the Quickstart so that users don't have to install several heavy
+> system dependencies related to SQL backends.
+>
+> If you prefer to _not_ use Docker, then please refer to the [Environment Setup for contributors](./../for-contributors/index.html#database), and
+> find the "Database" section for more information.
 
 ## 1. Setting up your environment
 
@@ -270,7 +283,7 @@ docker compose up
 
 #### 2.3.2 Deploying your index to your Fuel indexer service
 
-With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
+With our database and Fuel indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
 
 ```bash
 forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
