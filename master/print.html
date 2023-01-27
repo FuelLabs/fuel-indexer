@@ -203,7 +203,7 @@ docker pull ghcr.io/fuellabs/fuel-indexer:latest
 <li><code>forc-index</code> is a <a href="https://github.com/FuelLabs/sway/tree/master/forc"><code>forc</code></a> plugin specifically created to interface with the Fuel indexer service.</li>
 <li>Since we already installed <code>fuelup</code> in a previous step [1.1], we should be able to check that our <code>forc-index</code> binary was successfully installed and added to our <code>PATH</code>.</li>
 </ul>
-<pre><code class="language-bash">which forc index
+<pre><code class="language-bash">which forc-index
 </code></pre>
 <pre><code class="language-text">/Users/me/.fuelup/bin/forc-index
 </code></pre>
@@ -321,7 +321,7 @@ services:
       retries: 5
       start_period: 80s
   fuel-indexer:
-    image: ghcr.io/fuellabs/fuel-indexer:v0.2.0
+    image: ghcr.io/fuellabs/fuel-indexer:latest
     command: bash -c &quot;sleep 2 &amp;&amp; ./fuel-indexer --fuel-node-host node-beta-2.fuel.network --fuel-node-port 80 --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0&quot;
     ports:
       - &quot;29987:29987&quot;
@@ -335,9 +335,9 @@ services:
 </code></pre>
 <h4 id="232-deploying-your-index-to-your-fuel-indexer-service"><a class="header" href="#232-deploying-your-index-to-your-fuel-indexer-service">2.3.2 Deploying your index to your Fuel indexer service</a></h4>
 <p>With our database and Fuel indexer indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:</p>
-<pre><code class="language-bash">forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+<pre><code class="language-bash">forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 </code></pre>
-<pre><code class="language-text">forc-index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+<pre><code class="language-text">forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
