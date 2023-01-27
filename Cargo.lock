@@ -2016,7 +2016,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "explorer-index"
+name = "explorer_index"
 version = "0.0.0"
 dependencies = [
  "fuel-indexer-macros",
@@ -3683,9 +3683,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "hello-bin"
+name = "hello-index-native"
 version = "0.0.0"
 dependencies = [
+ "async-trait",
+ "fuel-indexer",
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels 0.30.0",
+ "fuels-core 0.30.0",
+ "fuels-types 0.30.0",
+ "getrandom 0.2.8",
+ "instant",
+ "serde",
+]
+
+[[package]]
+name = "hello-world-data"
+version = "0.0.0"
+dependencies = [
+ "clap",
  "fuel-indexer-lib",
  "fuel-indexer-tests",
  "fuel-tx",
@@ -3699,31 +3718,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "hello-index"
+name = "hello_index"
 version = "0.0.0"
 dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core 0.30.0",
- "fuels-types 0.30.0",
- "getrandom 0.2.8",
- "instant",
- "serde",
-]
-
-[[package]]
-name = "hello-index-native"
-version = "0.0.0"
-dependencies = [
- "async-trait",
- "fuel-indexer",
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuel-tx",
- "fuels 0.30.0",
  "fuels-core 0.30.0",
  "fuels-types 0.30.0",
  "getrandom 0.2.8",

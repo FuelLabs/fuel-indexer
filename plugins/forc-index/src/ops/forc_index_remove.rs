@@ -1,4 +1,4 @@
-use crate::cli::RemoveCommand;
+use crate::{cli::RemoveCommand, utils::project_dir_info};
 use fuel_indexer_lib::manifest::Manifest;
 use reqwest::{
     blocking::Client,
@@ -9,7 +9,12 @@ use serde_json::{to_string_pretty, value::Value, Map};
 use tracing::{error, info};
 
 pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
-    let manifest: Manifest = Manifest::from_file(command.manifest.as_path())?;
+    let RemoveCommand { path, manifest, .. } = command;
+
+    let (_root_dir, manifest_path, _index_name) =
+        project_dir_info(path.as_ref(), manifest.as_ref())?;
+
+    let manifest: Manifest = Manifest::from_file(manifest_path.as_path())?;
 
     let target = format!(
         "{}/api/index/{}/{}",

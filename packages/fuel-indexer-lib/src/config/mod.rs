@@ -135,6 +135,13 @@ pub struct IndexerArgs {
         help = "Use Prometheus metrics reporting."
     )]
     pub metrics: bool,
+
+    /// Prevent indexers from running without handling any blocks.
+    #[clap(
+        long,
+        help = "Prevent indexers from running without handling any blocks."
+    )]
+    pub stop_idle_indexers: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -205,6 +212,7 @@ pub struct IndexerConfig {
     #[serde(default)]
     pub database: DatabaseConfig,
     pub metrics: bool,
+    pub stop_idle_indexers: bool,
 }
 
 impl IndexerConfig {
@@ -264,6 +272,7 @@ impl IndexerConfig {
                 run_migrations: args.run_migrations,
             },
             metrics: args.metrics,
+            stop_idle_indexers: args.stop_idle_indexers,
         };
 
         config.inject_opt_env_vars();
