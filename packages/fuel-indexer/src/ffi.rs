@@ -86,12 +86,12 @@ fn log_data(env: &IndexEnv, ptr: u32, len: u32, log_level: u32) {
     let log_string = get_string(mem, ptr, len).expect("Log string could not be fetched.");
 
     match log_level {
-        LOG_LEVEL_ERROR => error!("{}", log_string),
-        LOG_LEVEL_WARN => warn!("{}", log_string),
-        LOG_LEVEL_INFO => info!("{}", log_string),
-        LOG_LEVEL_DEBUG => debug!("{}", log_string),
-        LOG_LEVEL_TRACE => trace!("{}", log_string),
-        l => panic!("Invalid log level: {}", l),
+        LOG_LEVEL_ERROR => error!("{log_string}",),
+        LOG_LEVEL_WARN => warn!("{log_string}",),
+        LOG_LEVEL_INFO => info!("{log_string}",),
+        LOG_LEVEL_DEBUG => debug!("{log_string}",),
+        LOG_LEVEL_TRACE => trace!("{log_string}",),
+        l => panic!("Invalid log level: {l}"),
     }
 }
 
@@ -166,6 +166,7 @@ pub(crate) struct WasmArg<'a> {
 }
 
 impl<'a> WasmArg<'a> {
+    #[allow(clippy::result_large_err)]
     pub fn new(instance: &Instance, bytes: Vec<u8>) -> IndexerResult<WasmArg> {
         let alloc_fn = instance
             .exports

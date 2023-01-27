@@ -74,7 +74,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_s
         .unwrap();
 
     let pung_from: String = pung_row.get(3);
-    let from_buff = <[u8; 33]>::from_hex(&pung_from).unwrap();
+    let from_buff = <[u8; 33]>::from_hex(pung_from).unwrap();
 
     let contract_buff = <[u8; 32]>::from_hex(
         "322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
@@ -117,7 +117,7 @@ async fn test_can_trigger_and_index_callreturn_sqlite() {
     let value: i64 = row.get(1);
     let is_pung: bool = row.get(2);
     let pung_from: String = row.get(3);
-    let from_buff = <[u8; 33]>::from_hex(&pung_from).unwrap();
+    let from_buff = <[u8; 33]>::from_hex(pung_from).unwrap();
 
     let addr_buff = <[u8; 32]>::from_hex(
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
@@ -166,7 +166,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_sqlite() {
     assert_eq!(height, 1);
     assert!(timestamp > 0);
 
-    let row = sqlx::query(&format!("SELECT * FROM tx WHERE block = {}", id))
+    let row = sqlx::query(&format!("SELECT * FROM tx WHERE block = {id}",))
         .fetch_all(&mut conn)
         .await
         .unwrap();
@@ -305,7 +305,7 @@ async fn test_can_trigger_and_index_logdata_event_sqlite() {
     let value: i64 = row.get(1);
     let is_pung: bool = row.get(2);
     let pung_from: String = row.get(3);
-    let from_buff = <[u8; 33]>::from_hex(&pung_from).unwrap();
+    let from_buff = <[u8; 33]>::from_hex(pung_from).unwrap();
 
     let addr_buff = <[u8; 32]>::from_hex(
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
@@ -351,7 +351,7 @@ async fn test_can_trigger_and_index_scriptresult_event_sqlite() {
     let gas_used: i64 = row.get(2);
     let data: String = row.get(3);
 
-    let expected = hex::decode(&data)
+    let expected = hex::decode(data)
         .unwrap()
         .into_iter()
         .map(|x| x.to_string())

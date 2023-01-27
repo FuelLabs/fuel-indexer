@@ -66,7 +66,7 @@ impl IndexerConnectionPool {
                 let pool = attempt_database_connection(|| {
                     sqlx::postgres::PgPoolOptions::new().connect_with(
                         PgConnectOptions::from_str(database_url).unwrap_or_else(|e| {
-                            panic!("Could not derive PgConnectOptions: {}", e)
+                            panic!("Could not derive PgConnectOptions: {e}",)
                         }),
                     )
                 })
@@ -83,7 +83,7 @@ impl IndexerConnectionPool {
                         .connect_with(
                             SqliteConnectOptions::from_str(database_url)
                                 .unwrap_or_else(|e| {
-                                    panic!("Could not derive SqliteConnectOptions: {}", e)
+                                    panic!("Could not derive SqliteConnectOptions: {e}",)
                                 })
                                 .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal)
                                 .foreign_keys(true)

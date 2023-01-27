@@ -101,14 +101,13 @@ impl Selections {
                                     val.as_i64().expect("Failed to parse value as i64")
                                 )
                             }
-                            gql::Value::Float(val) => format!("{}", val),
+                            gql::Value::Float(val) => format!("{val}",),
                             gql::Value::String(val) => val.to_string(),
-                            gql::Value::Boolean(val) => format!("{}", val),
+                            gql::Value::Boolean(val) => format!("{val}",),
                             gql::Value::Null => String::from("NULL"),
                             o => {
                                 return Err(GraphqlError::UnsupportedValueType(format!(
-                                    "{:#?}",
-                                    o
+                                    "{o:#?}",
                                 )))
                             }
                         };
@@ -283,7 +282,7 @@ impl Operation {
                         .iter()
                         .map(|f| Filter::as_sql(f, jsonify))
                         .join(" AND ");
-                    query.push_str(format!(" WHERE {}", filter_text).as_str());
+                    query.push_str(format!(" WHERE {filter_text}").as_str());
                 }
 
                 if jsonify {

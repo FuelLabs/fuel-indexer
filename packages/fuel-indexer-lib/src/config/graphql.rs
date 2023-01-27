@@ -30,10 +30,7 @@ impl From<GraphQLConfig> for Uri {
     fn from(config: GraphQLConfig) -> Self {
         let uri = derive_http_url(&config.host, &config.port);
         uri.parse().unwrap_or_else(|e| {
-            panic!(
-                "Failed to derive Uri from GraphQL config: {:?}: {}",
-                config, e,
-            )
+            panic!("Failed to derive Uri from GraphQL config: {config:?}: {e}",)
         })
     }
 }
@@ -52,7 +49,7 @@ impl From<GraphQLConfig> for SocketAddr {
     fn from(cfg: GraphQLConfig) -> SocketAddr {
         format!("{}:{}", cfg.host, cfg.port)
             .parse()
-            .unwrap_or_else(|e| panic!("Failed to parse GraphQL host.: {}", e))
+            .unwrap_or_else(|e| panic!("Failed to parse GraphQL host.: {e}"))
     }
 }
 

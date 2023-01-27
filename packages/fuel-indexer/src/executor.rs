@@ -85,13 +85,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         None
     };
 
-    info!("Subscribing to Fuel node at {}", fuel_node_addr);
+    info!("Subscribing to Fuel node at {fuel_node_addr}");
 
     let client = FuelClient::from_str(fuel_node_addr).unwrap_or_else(|e| {
-        panic!(
-            "Unable to connect to Fuel node at '{}': {}",
-            fuel_node_addr, e
-        )
+        panic!("Unable to connect to Fuel node at '{fuel_node_addr}': {e}",)
     });
 
     async move {
@@ -99,7 +96,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         let mut empty_block_reqs = 0;
 
         loop {
-            debug!("Fetching paginated results from {:?}", next_cursor);
+            debug!("Fetching paginated results from {next_cursor:?}",);
 
             let PaginatedResult {
                 cursor, results, ..
@@ -111,7 +108,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 })
                 .await
                 .unwrap_or_else(|e| {
-                    error!("Failed to retrieve blocks: {}", e);
+                    error!("Failed to retrieve blocks: {e}",);
                     PaginatedResult {
                         cursor: None,
                         results: vec![],
@@ -147,8 +144,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                     Ok(r) => r,
                                     Err(e) => {
                                         error!(
-                                            "Client communication error fetching receipts: {:?}",
-                                            e
+                                            "Client communication error fetching receipts: {e:?}",
                                         );
                                         vec![]
                                     }
@@ -210,8 +206,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         }
                         Err(e) => {
                             error!(
-                                "Client communication error fetching transactions: {:?}",
-                                e
+                                "Client communication error fetching transactions: {e:?}",
                             )
                         }
                     };
