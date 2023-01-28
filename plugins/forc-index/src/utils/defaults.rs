@@ -63,16 +63,36 @@ pub fn default_index_manifest(
     project_path: &str,
 ) -> String {
     format!(
-        r#"namespace: {namespace}
+        r#"# A namespace is a logical grouping of declared names. Think of the namespace 
+# as an organization identifier
+namespace: {namespace}
+
+# The identifier field is used to identify the given index.
 identifier: {index_name}
+
+# The abi option is used to provide a link to the Sway JSON ABI that is generated when you 
+# build your project.
 abi: ~
+
+# The particular start block after which you'd like your indexer to start indexing events.
 start_block: ~
+
+# The contract_id specifies which particular contract you would like your index to subscribe to.
 contract_id: ~
+
+# The graphql_schema field contains the file path that points to the GraphQL schema for the 
+# given index.
 graphql_schema: {project_path}/schema/{index_name}.schema.graphql
+
+# The module field contains a file path that points to code that will be run as an executor inside 
+# of the indexer.
+# Important: At this time, wasm is the preferred method of execution.
 module:
-  wasm: ~
-report_metrics: true
-"#
+    wasm: ~
+
+# The report_metrics field contains boolean whether or not to report Prometheus  metrics to the 
+# Fuel backend
+report_metrics: true"#
     )
 }
 
