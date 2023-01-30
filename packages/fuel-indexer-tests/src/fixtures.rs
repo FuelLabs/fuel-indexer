@@ -73,16 +73,12 @@ pub fn tx_params() -> TxParameters {
     TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
 }
 
-pub async fn setup_test_fuel_node(
-    wallet_path: &str,
-    contract_bin_path: &str,
-    host: String,
-) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn setup_test_fuel_node() -> Result<(), ()> {
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => {
             EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
         }
-        None => EnvFilter::new("info"),
+        None => EnvFilter::new("error"),
     };
 
     let _ = tracing_subscriber::fmt::Subscriber::builder()
@@ -90,11 +86,27 @@ pub async fn setup_test_fuel_node(
         .with_env_filter(filter)
         .try_init();
 
-    let mut wallet =
-        WalletUnlocked::load_keystore(wallet_path, defaults::WALLET_PASSWORD, None)
-            .unwrap();
+    let wallet_path = Path::new(WORKSPACE_ROOT)
+        .join("assets")
+        .join("test-chain-config.json");
 
-    let _compiled = Contract::load_contract(contract_bin_path, &None).unwrap();
+    let contract_bin_path = Path::new(WORKSPACE_ROOT)
+        .join("contracts")
+        .join("fuel-indexer-test")
+        .join("out")
+        .join("debug")
+        .join("fuel-indexer-test.bin");
+
+    let mut wallet = WalletUnlocked::load_keystore(
+        wallet_path.as_os_str().to_str().unwrap(),
+        defaults::WALLET_PASSWORD,
+        None,
+    )
+    .unwrap();
+
+    let _compiled =
+        Contract::load_contract(contract_bin_path.as_os_str().to_str().unwrap(), &None)
+            .unwrap();
 
     let number_of_coins = defaults::COIN_AMOUNT;
     let asset_id = AssetId::zeroed();
@@ -107,7 +119,7 @@ pub async fn setup_test_fuel_node(
 
     let config = Config {
         utxo_validation: false,
-        addr: host.parse().unwrap(),
+        addr: defaults::FUEL_NODE_ADDR.parse().unwrap(),
         ..Config::local_node()
     };
 
@@ -118,7 +130,7 @@ pub async fn setup_test_fuel_node(
     wallet.set_provider(provider.clone());
 
     let contract_id = Contract::deploy(
-        contract_bin_path,
+        contract_bin_path.as_os_str().to_str().unwrap(),
         &wallet,
         tx_params(),
         StorageConfiguration::default(),
@@ -130,7 +142,7 @@ pub async fn setup_test_fuel_node(
 
     println!("Contract deployed at: {}", &contract_id);
 
-    Ok(contract_id)
+    Ok(())
 }
 
 pub async fn get_contract_id(
