@@ -2842,18 +2842,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuel-node"
-version = "0.0.0"
-dependencies = [
- "clap",
- "fuel-indexer-tests",
- "fuel-types",
- "fuels 0.32.2",
- "fuels-abigen-macro 0.32.2",
- "tokio",
-]
-
-[[package]]
 name = "fuel-poa-coordinator"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
