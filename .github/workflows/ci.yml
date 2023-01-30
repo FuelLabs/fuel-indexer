@@ -256,13 +256,13 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features e2e,postgres e2e -- --test-threads=1
+          args: --features e2e,postgres e2e --locked -- --test-threads=1
 
       - name: Test E2E (SQLite)
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --features e2e,sqlite e2e -- --test-threads=1
+          args: --features e2e,sqlite e2e --locked -- --test-threads=1
 
   check-forc-index:
     if: github.event_name != 'release' && github.event.action != 'published'
