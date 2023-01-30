@@ -7,7 +7,7 @@ use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
         connect_to_deployed_contract, indexer_service_postgres, postgres_connection,
-        postgres_connection_pool, test_web::app,
+        postgres_connection_pool, setup_test_fuel_node, test_web::app,
     },
     utils::update_test_manifest_asset_paths,
 };
@@ -24,6 +24,8 @@ use tokio::time::{sleep, Duration};
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
 {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -41,6 +43,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let block_row = sqlx::query(
@@ -96,6 +99,8 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_callreturn_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -113,6 +118,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row =
@@ -142,7 +148,19 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
+    let mut conn = pool.acquire().await.unwrap();
+    let result = sqlx::query("DELETE FROM fuel_indexer_test.tx")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+    let result = sqlx::query("DELETE FROM fuel_indexer_test.block")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -157,6 +175,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let app = test::init_service(app(contract)).await;
     let req = test::TestRequest::post().uri("/block").to_request();
     let _ = app.call(req).await;
+    fuel_node_handle.abort();
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
@@ -187,6 +206,8 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_ping_event_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -204,6 +225,7 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row =
@@ -222,6 +244,8 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transfer_event_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -239,6 +263,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transfer LIMIT 1")
@@ -256,6 +281,8 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -274,6 +301,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.log WHERE ra = 8675309 LIMIT 1",
@@ -290,6 +318,8 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -307,6 +337,7 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row =
@@ -336,6 +367,8 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -353,6 +386,8 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
     let mut conn = pool.acquire().await.unwrap();
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.scriptresult LIMIT 1")
@@ -379,6 +414,8 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -396,6 +433,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferout LIMIT 1")
@@ -418,6 +456,8 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -435,6 +475,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageout LIMIT 1")
@@ -459,6 +500,8 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_index_event_with_optional_fields_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -476,6 +519,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query(
@@ -485,15 +529,14 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     .await
     .unwrap();
 
-    let id: i64 = row.get(0);
     let req_int: i64 = row.get(1);
     let opt_int_some: Option<i64> = row.get(2);
     let opt_addr_none: Option<&str> = row.get(3);
 
     assert_eq!(id, 8675309);
     assert_eq!(req_int, 100);
-
     assert!(opt_int_some.is_some());
+
     let opt_int = opt_int_some.unwrap();
     assert_eq!(opt_int, 999);
 
@@ -503,6 +546,8 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -520,6 +565,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row =
@@ -537,7 +583,20 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_respects_start_block_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
+    let mut conn = pool.acquire().await.unwrap();
+
+    let result = sqlx::query("DELETE FROM fuel_indexer_test.tx")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+    let result = sqlx::query("DELETE FROM fuel_indexer_test.block")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
     let mut srvc = indexer_service_postgres().await;
 
     let contract = connect_to_deployed_contract().await.unwrap();
@@ -560,7 +619,6 @@ async fn test_index_respects_start_block_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let mut conn = pool.acquire().await.unwrap();
     let pre_check = sqlx::query(&format!(
         "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
         block_height + 1,
@@ -590,6 +648,7 @@ async fn test_index_respects_start_block_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let final_check = sqlx::query(&format!(
         "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
@@ -614,6 +673,8 @@ async fn test_index_respects_start_block_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_test_fuel_node());
+
     let pool = postgres_connection_pool().await;
     let mut srv = indexer_service_postgres().await;
     let mut manifest: Manifest =
@@ -631,6 +692,7 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.tupleentity LIMIT 1")
