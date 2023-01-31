@@ -35,7 +35,7 @@ pub mod utils {
 
     use super::WORKSPACE_ROOT;
     use fuel_indexer_lib::manifest::{Manifest, Module};
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     // NOTE: This is a hack to update the `manifest` with the proper absolute paths.
     // This is already done in the #[indexer] attribute, but since these tests test
@@ -74,5 +74,20 @@ pub mod utils {
                 .unwrap()
                 .to_string(),
         );
+    }
+
+    pub fn get_test_chain_config_path() -> PathBuf {
+        Path::new(WORKSPACE_ROOT)
+            .join("assets")
+            .join("test-chain-config.json")
+    }
+
+    pub fn get_test_contract_bin_path() -> PathBuf {
+        Path::new(WORKSPACE_ROOT)
+            .join("contracts")
+            .join("fuel-indexer-test")
+            .join("out")
+            .join("debug")
+            .join("fuel-indexer-test.bin")
     }
 }
