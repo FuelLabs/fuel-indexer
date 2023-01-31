@@ -17,7 +17,7 @@ use fuels::{
 };
 use sqlx::{
     pool::{Pool, PoolConnection},
-    Postgres, Sqlite,
+    Postgres,
 };
 use std::path::Path;
 use tracing_subscriber::filter::EnvFilter;
@@ -40,21 +40,6 @@ pub async fn postgres_connection_pool() -> Pool<Postgres> {
         .unwrap()
     {
         IndexerConnectionPool::Postgres(p) => p,
-        _ => panic!("Expected Postgres connection."),
-    }
-}
-
-pub async fn sqlite_connection_pool() -> Pool<Sqlite> {
-    let config = DatabaseConfig::Sqlite {
-        path: test_sqlite_db_path(),
-    };
-
-    match IndexerConnectionPool::connect(&config.to_string())
-        .await
-        .unwrap()
-    {
-        IndexerConnectionPool::Sqlite(p) => p,
-        _ => panic!("Expected Sqlite connection."),
     }
 }
 
@@ -71,12 +56,7 @@ pub async fn postgres_connection() -> PoolConnection<Postgres> {
         .unwrap()
     {
         IndexerConnectionPool::Postgres(p) => p.acquire().await.unwrap(),
-        _ => panic!("Expected Postgres connection."),
     }
-}
-
-pub fn test_sqlite_db_path() -> String {
-    format!("sqlite://{WORKSPACE_ROOT}/test.db",)
 }
 
 pub fn http_client() -> reqwest::Client {
@@ -232,28 +212,6 @@ pub async fn api_server_app_postgres() -> Router {
     GraphQlApi::build(config, pool, None).await.unwrap()
 }
 
-pub async fn api_server_app_sqlite() -> Router {
-    let config = IndexerConfig {
-        fuel_node: FuelNodeConfig::from(
-            defaults::FUEL_NODE_ADDR
-                .parse::<std::net::SocketAddr>()
-                .unwrap(),
-        ),
-        database: DatabaseConfig::Sqlite {
-            path: test_sqlite_db_path(),
-        },
-        graphql_api: GraphQLConfig::default(),
-        metrics: true,
-        stop_idle_indexers: true,
-    };
-
-    let pool = IndexerConnectionPool::connect(&config.database.to_string())
-        .await
-        .expect("Failed to create connection pool");
-
-    GraphQlApi::build(config, pool, None).await.unwrap()
-}
-
 pub async fn indexer_service_postgres() -> IndexerService {
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::from(
@@ -267,28 +225,6 @@ pub async fn indexer_service_postgres() -> IndexerService {
             host: "127.0.0.1".into(),
             port: "5432".into(),
             database: "postgres".to_string(),
-        },
-        graphql_api: GraphQLConfig::default(),
-        metrics: false,
-        stop_idle_indexers: true,
-    };
-
-    let pool = IndexerConnectionPool::connect(&config.database.to_string())
-        .await
-        .expect("Failed to create connection pool");
-
-    IndexerService::new(config, pool, None).await.unwrap()
-}
-
-pub async fn indexer_service_sqlite() -> IndexerService {
-    let config = IndexerConfig {
-        fuel_node: FuelNodeConfig::from(
-            defaults::FUEL_NODE_ADDR
-                .parse::<std::net::SocketAddr>()
-                .unwrap(),
-        ),
-        database: DatabaseConfig::Sqlite {
-            path: test_sqlite_db_path(),
         },
         graphql_api: GraphQLConfig::default(),
         metrics: false,

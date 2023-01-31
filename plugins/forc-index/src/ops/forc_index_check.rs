@@ -49,28 +49,6 @@ fn find_executable(exec_name: &str) -> (String, Option<String>) {
     }
 }
 
-fn find_executable_with_fallback(
-    exec_name: &str,
-    fallback_exec_name: &str,
-) -> (String, Option<String>) {
-    let (emoji, path) = find_executable(exec_name);
-    if path.is_some() {
-        (emoji, path)
-    } else {
-        let (emoji, path) = find_executable(fallback_exec_name);
-        (emoji, path)
-    }
-}
-
-fn find_executable_with_fallback_msg(
-    exec_name: &str,
-    fallback_exec_name: &str,
-) -> (String, Option<String>, String) {
-    let (emoji, path) = find_executable_with_fallback(exec_name, fallback_exec_name);
-    let p = path.clone();
-    (emoji, path, format_exec_msg(exec_name, p))
-}
-
 fn find_indexer_service_info(cmd: &CheckCommand) -> (String, String) {
     let (emoji, msg) = match Command::new("lsof")
         .arg(&format!("-ti:{}", cmd.grpahql_api_port))
@@ -124,8 +102,6 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let target = format!("{}/api/health", command.url);
 
     let psql = "psql";
-    let sqlite = "sqlite";
-    let sqlite3 = "sqlite3";
     let fuel_indexer = "fuel-indexer";
     let fuel_core = "fuel-core";
     let docker = "docker";
@@ -160,8 +136,6 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let (indexer_emoji, _indexer_path, indexer_msg) =
         find_executable_with_msg(fuel_indexer);
     let (psql_emoji, _psql_path, psql_msg) = find_executable_with_msg(psql);
-    let (sqlite_emoji, _sqlite_path, sqlite_msg) =
-        find_executable_with_fallback_msg(sqlite, sqlite3);
     let (fuel_core_emoji, _fuelcore_path, fuel_core_msg) =
         find_executable_with_msg(fuel_core);
     let (service_emoji, service_msg) = find_indexer_service_info(&command);
@@ -178,7 +152,6 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let binary_header = rightpad_whitespace("fuel-indexer binary", HEADER_PADDING);
     let service_header = rightpad_whitespace("fuel-indexer service", HEADER_PADDING);
     let psql_header = rightpad_whitespace(psql, HEADER_PADDING);
-    let sqlite_header = rightpad_whitespace(sqlite, HEADER_PADDING);
     let fuel_core_header = rightpad_whitespace(fuel_core, HEADER_PADDING);
     let docker_header = rightpad_whitespace(docker, HEADER_PADDING);
     let fuelup_header = rightpad_whitespace(fuelup, HEADER_PADDING);
@@ -194,8 +167,6 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
 | {service_emoji} | {service_header}   |  {service_msg}|
 +--------+------------------------+------------------------------------------------------------------+
 |  {psql_emoji}  | {psql_header}   |  {psql_msg}|
-+--------+------------------------+------------------------------------------------------------------+
-|  {sqlite_emoji}  | {sqlite_header}   |  {sqlite_msg}|
 +--------+------------------------+------------------------------------------------------------------+
 |  {fuel_core_emoji}  | {fuel_core_header}   |  {fuel_core_msg}|
 +--------+------------------------+------------------------------------------------------------------+

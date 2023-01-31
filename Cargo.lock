@@ -2555,7 +2555,6 @@ dependencies = [
  "fuel-indexer-metrics",
  "fuel-indexer-postgres",
  "fuel-indexer-schema",
- "fuel-indexer-sqlite",
  "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
@@ -2616,7 +2615,6 @@ dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "fuel-indexer-postgres",
- "fuel-indexer-sqlite",
  "sqlx",
  "strum 0.24.1",
  "thiserror",
@@ -2723,7 +2721,6 @@ dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "fuel-indexer-postgres",
- "fuel-indexer-sqlite",
  "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
@@ -2737,17 +2734,6 @@ dependencies = [
  "sqlx",
  "strum 0.24.1",
  "thiserror",
-]
-
-[[package]]
-name = "fuel-indexer-sqlite"
-version = "0.2.2"
-dependencies = [
- "fuel-indexer-database-types",
- "fuel-indexer-lib",
- "fuel-indexer-metrics",
- "sqlx",
- "tracing",
 ]
 
 [[package]]
@@ -2779,7 +2765,6 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-postgres",
  "fuel-indexer-schema",
- "fuel-indexer-sqlite",
  "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",

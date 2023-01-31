@@ -29,9 +29,6 @@
 #     password:
 #     host: 127.0.0.1
 #     port: 5432
-
-#   sqlite:
-#     path: database/sqlite/sqlite.db
 #
 # metrics: true
 # stop_idle_indexers: true

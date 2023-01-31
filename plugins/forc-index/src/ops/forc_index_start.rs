@@ -14,7 +14,6 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
         graphql_api_host,
         graphql_api_port,
         database,
-        sqlite_database,
         postgres_user,
         postgres_password,
         postgres_database,
@@ -76,10 +75,6 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
                         cmd.arg(flag).arg(v);
                     }
                 }
-            }
-            "sqlite" => {
-                cmd.arg("--database").arg(&database);
-                cmd.arg("--sqlite-database").arg(&sqlite_database);
             }
             _ => unreachable!(),
         }

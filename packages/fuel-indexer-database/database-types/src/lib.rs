@@ -292,14 +292,12 @@ impl RegisteredIndex {
 pub enum DbType {
     #[default]
     Postgres,
-    Sqlite,
 }
 
 impl DbType {
     pub fn table_name(&self, namespace: &str, table_name: &str) -> String {
         match self {
             DbType::Postgres => format!("{namespace}.{table_name}"),
-            DbType::Sqlite => table_name.to_string(),
         }
     }
 }
@@ -340,15 +338,6 @@ impl CreateStatement for ColumnIndex {
                     self.namespace,
                     self.table_name,
                     self.method.as_ref(),
-                    self.column_name
-                );
-            }
-            DbType::Sqlite => {
-                let _ = write!(
-                    frag,
-                    "INDEX IF NOT EXISTS {} ON {}({});",
-                    self.name(),
-                    self.table_name,
                     self.column_name
                 );
             }
@@ -437,26 +426,6 @@ impl CreateStatement for ForeignKey {
                     self.reference_column_name,
                     self.on_delete.as_ref(),
                     self.on_update.as_ref()
-                )
-            }
-            DbType::Sqlite => {
-                fn schema_type_to_sqlite_type(t: &str) -> String {
-                    match t {
-                        "ID" => "BIGINT".to_string(),
-                        "UInt8" | "Int8" | "Int4" | "UInt4" => "INTEGER".to_string(),
-                        _ => "TEXT".to_string(),
-                    }
-                }
-
-                format!(
-                    "ALTER TABLE {} DROP COLUMN {}; ALTER TABLE {} ADD COLUMN {} {} REFERENCES {}({});",
-                    self.table_name,
-                    self.column_name,
-                    self.table_name,
-                    self.column_name,
-                    schema_type_to_sqlite_type(&self.reference_column_type),
-                    self.reference_table_name,
-                    self.reference_column_name,
                 )
             }
         }

@@ -13,7 +13,6 @@ fuel-indexer-database = { version = "0.2", path = "../fuel-indexer-database", op
 fuel-indexer-database-types = { version = "0.2", path = "../fuel-indexer-database/database-types" }
 fuel-indexer-lib = { version = "0.2", path = "../fuel-indexer-lib" }
 fuel-indexer-postgres = { version = "0.2", path = "../fuel-indexer-database/postgres", optional = true }
-fuel-indexer-sqlite = { version = "0.2", path = "../fuel-indexer-database/sqlite", optional = true }
 fuel-indexer-types = { version = "0.2", path = "../fuel-indexer-types" }
 fuel-tx = { version = "0.23", features = ["serde", "alloc"] }
 fuel-types = { version = "0.5", features = ["serde", "alloc"] }
@@ -37,7 +36,6 @@ db-models = [
     "itertools",
     "thiserror",
     "fuel-indexer-postgres",
-    "fuel-indexer-sqlite",
     "fuel-indexer-database",
 ]
 

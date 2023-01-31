@@ -10,9 +10,6 @@ use serde::Deserialize;
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DatabaseConfig {
-    Sqlite {
-        path: String,
-    },
     Postgres {
         user: String,
         password: String,
@@ -51,11 +48,6 @@ impl MutConfig for DatabaseConfig {
                     *database = std::env::var(trim_opt_env_key(database))?;
                 }
             }
-            DatabaseConfig::Sqlite { path } => {
-                if is_opt_env_var(path) {
-                    *path = std::env::var(trim_opt_env_key(path))?;
-                }
-            }
         }
         Ok(())
     }
@@ -72,9 +64,6 @@ impl std::string::ToString for DatabaseConfig {
                 database,
             } => {
                 format!("postgres://{user}:{password}@{host}:{port}/{database}")
-            }
-            DatabaseConfig::Sqlite { path } => {
-                format!("sqlite://{path}")
             }
         }
     }
@@ -98,9 +87,6 @@ impl std::fmt::Debug for DatabaseConfig {
                     .field("port", &port)
                     .field("database", &database)
                     .finish();
-            }
-            DatabaseConfig::Sqlite { path } => {
-                let _ = f.debug_struct("SqliteConfig").field("path", &path).finish();
             }
         }
 
