@@ -19,7 +19,7 @@ use sqlx::{
     pool::{Pool, PoolConnection},
     Postgres,
 };
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use tracing_subscriber::filter::EnvFilter;
 
 abigen!(
@@ -73,7 +73,10 @@ pub fn tx_params() -> TxParameters {
     TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
 }
 
-pub async fn setup_test_fuel_node() -> Result<(), ()> {
+pub async fn setup_test_fuel_node(
+    wallet_path: PathBuf,
+    contract_bin_path: Option<PathBuf>,
+) -> Result<(), ()> {
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => {
             EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
@@ -86,27 +89,12 @@ pub async fn setup_test_fuel_node() -> Result<(), ()> {
         .with_env_filter(filter)
         .try_init();
 
-    let wallet_path = Path::new(WORKSPACE_ROOT)
-        .join("assets")
-        .join("test-chain-config.json");
-
-    let contract_bin_path = Path::new(WORKSPACE_ROOT)
-        .join("contracts")
-        .join("fuel-indexer-test")
-        .join("out")
-        .join("debug")
-        .join("fuel-indexer-test.bin");
-
     let mut wallet = WalletUnlocked::load_keystore(
         wallet_path.as_os_str().to_str().unwrap(),
         defaults::WALLET_PASSWORD,
         None,
     )
     .unwrap();
-
-    let _compiled =
-        Contract::load_contract(contract_bin_path.as_os_str().to_str().unwrap(), &None)
-            .unwrap();
 
     let number_of_coins = defaults::COIN_AMOUNT;
     let asset_id = AssetId::zeroed();
@@ -129,18 +117,26 @@ pub async fn setup_test_fuel_node() -> Result<(), ()> {
 
     wallet.set_provider(provider.clone());
 
-    let contract_id = Contract::deploy(
-        contract_bin_path.as_os_str().to_str().unwrap(),
-        &wallet,
-        tx_params(),
-        StorageConfiguration::default(),
-    )
-    .await
-    .unwrap();
+    if let Some(contract_bin_path) = contract_bin_path {
+        let _compiled = Contract::load_contract(
+            contract_bin_path.as_os_str().to_str().unwrap(),
+            &None,
+        )
+        .unwrap();
 
-    let contract_id = contract_id.to_string();
+        let contract_id = Contract::deploy(
+            contract_bin_path.as_os_str().to_str().unwrap(),
+            &wallet,
+            tx_params(),
+            StorageConfiguration::default(),
+        )
+        .await
+        .unwrap();
 
-    println!("Contract deployed at: {}", &contract_id);
+        let contract_id = contract_id.to_string();
+
+        println!("Contract deployed at: {}", &contract_id);
+    }
 
     Ok(())
 }
