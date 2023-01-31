@@ -4172,6 +4172,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "hello-world-test-node"
+version = "0.0.0"
+dependencies = [
+ "clap",
+ "fuel-indexer-tests",
+ "tokio",
+]
+
+[[package]]
 name = "hello_index"
 version = "0.0.0"
 dependencies = [

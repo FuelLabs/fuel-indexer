@@ -1,0 +1,10 @@
+[package]
+name = "hello-world-test-node"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+clap = { version = "3.1", features = ["cargo", "derive", "env"] }
+fuel-indexer-tests = { version = "0.0.0", path = "./../../../packages/fuel-indexer-tests" }
+tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
