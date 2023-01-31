@@ -4,7 +4,7 @@ use serde_json::{to_string_pretty, value::Value, Map};
 use std::process::Command;
 use tracing::error;
 
-const MESSAGE_PADDING: usize = 64;
+const MESSAGE_PADDING: usize = 55;
 const SUCCESS_EMOJI_PADDING: usize = 3;
 const FAIL_EMOJI_PADDING: usize = 6;
 const HEADER_PADDING: usize = 20;
@@ -107,6 +107,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let docker = "docker";
     let fuelup = "fuelup";
     let wasm_snip = "wasm-snip";
+    let forc_pg = "forc-postgres";
 
     match Client::new().get(&target).send() {
         Ok(res) => {
@@ -141,6 +142,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let (service_emoji, service_msg) = find_indexer_service_info(&command);
     let (docker_emoji, _docker_path, docker_msg) = find_executable_with_msg(docker);
     let (fuelup_emoji, _fuelup_path, fuelup_msg) = find_executable_with_msg(fuelup);
+    let (forc_pg_emoji, _forc_pg_path, forc_pg_msg) = find_executable_with_msg(fuelup);
     let (wasm_snip_emoji, _wasm_snip_path, wasm_snip_msg) =
         find_executable_with_msg(wasm_snip);
 
@@ -156,26 +158,29 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let docker_header = rightpad_whitespace(docker, HEADER_PADDING);
     let fuelup_header = rightpad_whitespace(fuelup, HEADER_PADDING);
     let wasm_snip_header = rightpad_whitespace(wasm_snip, HEADER_PADDING);
+    let forc_pg_header = rightpad_whitespace(forc_pg, HEADER_PADDING);
 
     let stdout = format!(
         r#"
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
 | {status_headers} |  {check_header}  |{details_header}|
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
 |  {indexer_emoji}  | {binary_header}   |  {indexer_msg}|
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
 | {service_emoji} | {service_header}   |  {service_msg}|
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
 |  {psql_emoji}  | {psql_header}   |  {psql_msg}|
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
 |  {fuel_core_emoji}  | {fuel_core_header}   |  {fuel_core_msg}|
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
 |  {docker_emoji}  | {docker_header}   |  {docker_msg}|
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
 |  {fuelup_emoji}  | {fuelup_header}   |  {fuelup_msg}|
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
 |  {wasm_snip_emoji}  | {wasm_snip_header}   |  {wasm_snip_msg}|
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
+|  {forc_pg_emoji}  | {forc_pg_header}   |  {forc_pg_msg}|
++--------+------------------------+---------------------------------------------------------+
 "#
     );
 
