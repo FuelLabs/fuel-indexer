@@ -4,16 +4,12 @@
 
 ## Usage
 
-### Spin up containers
+### Spin up the test Fuel node
 
-Spin up containers for the Postgres indexer service backend, the indexer service, and a test Fuel node.
-
-> If the `fuel-indexer/local:fuel-node` image is not local and has to be built, this might take a second. If you have the `fuel-indexer/local:fuel-node` image locally, you need not pass the `--build` flag to the command below.
->
-> IMPORTANT: Ensure that any local Postgres instance on port 5432 is stopped.
+A small `hello-world-test-node` package is provided to spin up a short-lived Fuel node.
 
 ```bash
-docker compose up --build
+cargo run --bin hello-world-test-node
 ```
 
 ### Deploy the indexer
