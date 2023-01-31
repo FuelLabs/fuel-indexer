@@ -9,13 +9,13 @@ A "Hello World" type of program for the Fuel Indexer service.
 //! wasm32-unknown-unknown target will be required.
 //!
 //! ```bash
-//! cargo build -p hello-index --release --target wasm32-unknown-unknown
+//! cargo build -p hello_index --release --target wasm32-unknown-unknown
 //! ```
 //!
 //! Start a local test Fuel node
 //!
 //! ```bash
-//! cargo run --bin fuel-node
+//! fuel-core run --chain packages/fuel-indexer-tests/assets/test-chain-config.json
 //! ```
 //!
 //! With your database backend set up, now start your fuel-indexer binary using the
@@ -28,7 +28,7 @@ A "Hello World" type of program for the Fuel Indexer service.
 //! Now trigger an event.
 //!
 //! ```bash
-//! cargo run --bin hello-bin
+//! cargo run --bin hello-world-data
 //! ```
 
 extern crate alloc;
