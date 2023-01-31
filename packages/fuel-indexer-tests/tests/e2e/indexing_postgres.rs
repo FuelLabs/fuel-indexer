@@ -43,11 +43,12 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let block_row =
-        sqlx::query("SELECT * FROM fuel_indexer_test.block ORDER BY height DESC LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
+    let block_row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.block ORDER BY height DESC LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
 
     let height: i64 = block_row.get(1);
     let timestamp: i64 = block_row.get(2);
@@ -55,7 +56,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     assert!(timestamp > 0);
 
     let ping_row =
-        sqlx::query("SELECT * FROM fuel_indexer_test.pingentity WHERE id = 12345")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pingentity WHERE id = 12345")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -64,7 +65,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     assert_eq!(ping_value, 12345);
 
     let pong_row =
-        sqlx::query("SELECT * FROM fuel_indexer_test.pongentity WHERE id = 45678")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pongentity WHERE id = 45678")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -73,7 +74,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     assert_eq!(pong_value, 45678);
 
     let pung_row =
-        sqlx::query("SELECT * FROM fuel_indexer_test.pungentity WHERE id = 123")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 123")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -114,10 +115,11 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.pungentity WHERE id = 3")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 3")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     let value: i64 = row.get(1);
     let is_pung: bool = row.get(2);
@@ -159,10 +161,11 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.block WHERE height = 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.block WHERE height = 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     let id: i64 = row.get(0);
     let height: i64 = row.get(1);
@@ -172,7 +175,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test.tx WHERE block = {id}",
+        "SELECT * FROM fuel_indexer_test_index1.tx WHERE block = {id}",
     ))
     .fetch_all(&mut conn)
     .await
@@ -203,10 +206,11 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.pingentity WHERE id = 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pingentity WHERE id = 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     let id: i64 = row.get(0);
     let value: i64 = row.get(1);
@@ -237,7 +241,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.transfer LIMIT 1")
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transfer LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();
@@ -271,11 +275,12 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test.log WHERE ra = 8675309 LIMIT 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.log WHERE ra = 8675309 LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
 
     let ra: i64 = row.get(2);
 
@@ -304,10 +309,11 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.pungentity WHERE id = 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     let value: i64 = row.get(1);
     let is_pung: bool = row.get(2);
@@ -349,7 +355,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     let mut conn = pool.acquire().await.unwrap();
 
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.scriptresult LIMIT 1")
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.scriptresult LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();
@@ -392,7 +398,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.transferout LIMIT 1")
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferout LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();
@@ -431,7 +437,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.messageout LIMIT 1")
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageout LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();
@@ -473,7 +479,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.optionentity LIMIT 1")
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.optionentity LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();
@@ -515,10 +521,11 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.indexmetadataentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.indexmetadataentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
     let block_height: i64 = row.get(0);
     let time: i64 = row.get(1);
 
@@ -554,7 +561,7 @@ async fn test_index_respects_start_block_postgres() {
 
     let mut conn = pool.acquire().await.unwrap();
     let pre_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
         block_height + 1,
     ))
     .fetch_optional(&mut conn)
@@ -569,7 +576,7 @@ async fn test_index_respects_start_block_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let first_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
         block_height + 1,
     ))
     .fetch_optional(&mut conn)
@@ -584,7 +591,7 @@ async fn test_index_respects_start_block_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let final_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
         block_height + 2,
     ))
     .fetch_optional(&mut conn)
@@ -625,7 +632,7 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test.tupleentity LIMIT 1")
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.tupleentity LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();

@@ -232,14 +232,21 @@ impl Fragment {
 #[derive(Debug)]
 pub struct Operation {
     namespace: String,
+    identifier: String,
     _name: String,
     selections: Selections,
 }
 
 impl Operation {
-    pub fn new(namespace: String, name: String, selections: Selections) -> Operation {
+    pub fn new(
+        namespace: String,
+        identifier: String,
+        name: String,
+        selections: Selections,
+    ) -> Operation {
         Operation {
             namespace,
+            identifier,
             _name: name,
             selections,
         }
@@ -248,6 +255,7 @@ impl Operation {
     pub fn as_sql(&self, jsonify: bool) -> Vec<String> {
         let Operation {
             namespace,
+            identifier,
             selections,
             ..
         } = self;
@@ -270,6 +278,7 @@ impl Operation {
 
                 let column_text = columns.join(", ");
 
+                let namespace = format!("{namespace}_{identifier}");
                 let mut query = format!(
                     "SELECT {} FROM {}.{}",
                     column_text,
@@ -346,6 +355,7 @@ impl<'a> GraphqlQueryBuilder<'a> {
 
                 Ok(Operation::new(
                     self.schema.namespace.clone(),
+                    self.schema.identifier.clone(),
                     "Unnamed".into(),
                     selections,
                 ))
@@ -369,6 +379,7 @@ impl<'a> GraphqlQueryBuilder<'a> {
 
                 Ok(Operation::new(
                     self.schema.namespace.clone(),
+                    self.schema.identifier.clone(),
                     name,
                     selections,
                 ))

@@ -718,6 +718,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     let Manifest {
         abi,
         namespace,
+        identifier,
         graphql_schema,
         ..
     } = manifest.clone();
@@ -733,8 +734,12 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     };
 
     // NOTE: https://nickb.dev/blog/cargo-workspace-and-the-feature-unification-pitfall/
-    let graphql_tokens =
-        process_graphql_schema(namespace, schema_string, manifest.is_native());
+    let graphql_tokens = process_graphql_schema(
+        namespace,
+        identifier,
+        schema_string,
+        manifest.is_native(),
+    );
 
     let output = if is_native {
         let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);

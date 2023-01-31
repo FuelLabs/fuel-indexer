@@ -24,6 +24,7 @@ pub struct SchemaBuilder {
     foreign_keys: Vec<ForeignKey>,
     indices: Vec<ColumnIndex>,
     namespace: String,
+    identifier: String,
     version: String,
     schema: String,
     types: HashSet<String>,
@@ -34,7 +35,12 @@ pub struct SchemaBuilder {
 }
 
 impl SchemaBuilder {
-    pub fn new(namespace: &str, version: &str, db_type: DbType) -> SchemaBuilder {
+    pub fn new(
+        namespace: &str,
+        identifier: &str,
+        version: &str,
+        db_type: DbType,
+    ) -> SchemaBuilder {
         let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
             Ok(ast) => ast,
             Err(e) => {
@@ -46,6 +52,7 @@ impl SchemaBuilder {
         SchemaBuilder {
             db_type,
             namespace: namespace.to_string(),
+            identifier: identifier.to_string(),
             version: version.to_string(),
             primitives,
             ..Default::default()
@@ -54,7 +61,10 @@ impl SchemaBuilder {
 
     pub fn build(mut self, schema: &str) -> Self {
         if DbType::Postgres == self.db_type {
-            let create = format!("CREATE SCHEMA IF NOT EXISTS {}", self.namespace);
+            let create = format!(
+                "CREATE SCHEMA IF NOT EXISTS {}_{}",
+                self.namespace, self.identifier
+            );
             self.statements.push(create);
         }
 
@@ -106,6 +116,7 @@ impl SchemaBuilder {
             foreign_keys,
             indices,
             namespace,
+            identifier,
             types,
             fields,
             query,
@@ -118,12 +129,13 @@ impl SchemaBuilder {
         let new_root = NewGraphRoot {
             version: version.clone(),
             schema_name: namespace.clone(),
+            schema_identifier: identifier.clone(),
             query: query.clone(),
             schema,
         };
         queries::new_graph_root(conn, new_root).await?;
 
-        let latest = queries::graph_root_latest(conn, &namespace).await?;
+        let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
 
         let field_defs = query_fields.get(&query).expect("No query root.");
 
@@ -156,6 +168,7 @@ impl SchemaBuilder {
         Ok(Schema {
             version,
             namespace,
+            identifier,
             query,
             types,
             fields,
@@ -203,7 +216,7 @@ impl SchemaBuilder {
 
                 let fk = ForeignKey::new(
                     self.db_type.clone(),
-                    self.namespace.clone(),
+                    self.namespace(),
                     table_name.to_string(),
                     field.name.clone(),
                     field_type_table_name(field),
@@ -246,7 +259,7 @@ impl SchemaBuilder {
                 self.indices.push(ColumnIndex {
                     db_type: self.db_type.clone(),
                     table_name: table_name.to_string(),
-                    namespace: self.namespace.to_string(),
+                    namespace: self.namespace(),
                     method,
                     unique,
                     column_name,
@@ -272,6 +285,10 @@ impl SchemaBuilder {
         self.columns.push(object_column);
 
         fragments.join(",\n")
+    }
+
+    fn namespace(&self) -> String {
+        format!("{}_{}", self.namespace, self.identifier)
     }
 
     fn generate_table_sql(
@@ -304,7 +321,7 @@ impl SchemaBuilder {
                 let columns =
                     self.generate_columns(o, type_id, &o.fields, &table_name, types_map);
 
-                let sql_table = self.db_type.table_name(&self.namespace, &table_name);
+                let sql_table = self.db_type.table_name(&self.namespace(), &table_name);
 
                 let create =
                     format!("CREATE TABLE IF NOT EXISTS\n {sql_table} (\n {columns}\n)",);
@@ -314,6 +331,7 @@ impl SchemaBuilder {
                     id: type_id,
                     schema_version: self.version.to_string(),
                     schema_name: self.namespace.to_string(),
+                    schema_identifier: self.identifier.to_string(),
                     graphql_name: o.name.to_string(),
                     table_name,
                 });
@@ -326,6 +344,7 @@ impl SchemaBuilder {
 pub struct Schema {
     pub version: String,
     pub namespace: String,
+    pub identifier: String,
     pub query: String,
     pub types: HashSet<String>,
     pub fields: HashMap<String, HashMap<String, String>>,
@@ -334,14 +353,19 @@ pub struct Schema {
 impl Schema {
     pub async fn load_from_db(
         pool: &IndexerConnectionPool,
-        name: &str,
+        namespace: &str,
+        identifier: &str,
     ) -> sqlx::Result<Self> {
         let mut conn = pool.acquire().await?;
-        let root = queries::graph_root_latest(&mut conn, name).await?;
+        let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
         let root_cols = queries::root_columns_list_by_id(&mut conn, root.id).await?;
-        let typeids =
-            queries::type_id_list_by_name(&mut conn, &root.schema_name, &root.version)
-                .await?;
+        let typeids = queries::type_id_list_by_name(
+            &mut conn,
+            &root.schema_name,
+            &root.version,
+            identifier,
+        )
+        .await?;
 
         let mut types = HashSet::new();
         let mut fields = HashMap::new();
@@ -370,6 +394,7 @@ impl Schema {
         Ok(Schema {
             version: root.version,
             namespace: root.schema_name,
+            identifier: root.schema_identifier,
             query: root.query,
             types,
             fields,
@@ -422,10 +447,10 @@ mod tests {
         }
     "#;
 
-        let create_schema: &str = "CREATE SCHEMA IF NOT EXISTS test_namespace";
+        let create_schema: &str = "CREATE SCHEMA IF NOT EXISTS test_namespace_index1";
         let create_thing1_schmea: &str = concat!(
             "CREATE TABLE IF NOT EXISTS\n",
-            " test_namespace.thing1 (\n",
+            " test_namespace_index1.thing1 (\n",
             " id bigint primary key not null,\n",
             "account varchar(64) not null,\n",
             "object bytea not null",
@@ -433,7 +458,7 @@ mod tests {
         );
         let create_thing2_schema: &str = concat!(
             "CREATE TABLE IF NOT EXISTS\n",
-            " test_namespace.thing2 (\n",
+            " test_namespace_index1.thing2 (\n",
             " id bigint primary key not null,\n",
             "account varchar(64) not null,\n",
             "hash varchar(64) not null,\n",
@@ -441,8 +466,12 @@ mod tests {
             ")"
         );
 
-        let sb =
-            SchemaBuilder::new("test_namespace", "a_version_string", DbType::Postgres);
+        let sb = SchemaBuilder::new(
+            "test_namespace",
+            "index1",
+            "a_version_string",
+            DbType::Postgres,
+        );
 
         let SchemaBuilder { statements, .. } = sb.build(graphql_schema);
 
@@ -476,10 +505,10 @@ mod tests {
         }
     "#;
 
-        let create_schema: &str = "CREATE SCHEMA IF NOT EXISTS test_namespace";
+        let create_schema: &str = "CREATE SCHEMA IF NOT EXISTS test_namespace_index1";
         let create_thing1_schmea: &str = concat!(
             "CREATE TABLE IF NOT EXISTS\n",
-            " test_namespace.thing1 (\n",
+            " test_namespace_index1.thing1 (\n",
             " id bigint primary key not null,\n",
             "account varchar(64),\n",
             "object bytea not null",
@@ -487,7 +516,7 @@ mod tests {
         );
         let create_thing2_schema: &str = concat!(
             "CREATE TABLE IF NOT EXISTS\n",
-            " test_namespace.thing2 (\n",
+            " test_namespace_index1.thing2 (\n",
             " id bigint primary key not null,\n",
             "account varchar(64),\n",
             "hash varchar(64),\n",
@@ -495,8 +524,12 @@ mod tests {
             ")"
         );
 
-        let sb =
-            SchemaBuilder::new("test_namespace", "a_version_string", DbType::Postgres);
+        let sb = SchemaBuilder::new(
+            "test_namespace",
+            "index1",
+            "a_version_string",
+            DbType::Postgres,
+        );
 
         let SchemaBuilder { statements, .. } = sb.build(graphql_schema);
 
@@ -529,19 +562,19 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1", DbType::Postgres);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres);
 
         let SchemaBuilder { indices, .. } = sb.build(graphql_schema);
 
         assert_eq!(indices.len(), 2);
         assert_eq!(
             indices[0].create_statement(),
-            "CREATE INDEX payer_account_idx ON namespace.payer USING btree (account);"
+            "CREATE INDEX payer_account_idx ON namespace_index1.payer USING btree (account);"
                 .to_string()
         );
         assert_eq!(
             indices[1].create_statement(),
-            "CREATE INDEX payee_hash_idx ON namespace.payee USING btree (hash);"
+            "CREATE INDEX payee_hash_idx ON namespace_index1.payee USING btree (hash);"
                 .to_string()
         );
     }
@@ -579,13 +612,13 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1", DbType::Postgres);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres);
 
         let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
 
         assert_eq!(foreign_keys.len(), 2);
-        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.lender ADD CONSTRAINT fk_lender_borrower__borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
-        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.auditor ADD CONSTRAINT fk_auditor_borrower__borrower_id FOREIGN KEY (borrower) REFERENCES namespace.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace_index1.lender ADD CONSTRAINT fk_lender_borrower__borrower_id FOREIGN KEY (borrower) REFERENCES namespace_index1.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace_index1.auditor ADD CONSTRAINT fk_auditor_borrower__borrower_id FOREIGN KEY (borrower) REFERENCES namespace_index1.borrower(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
     }
 
     #[test]
@@ -612,7 +645,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1", DbType::Sqlite);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Sqlite);
 
         let SchemaBuilder { indices, .. } = sb.build(graphql_schema);
 
@@ -660,7 +693,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1", DbType::Sqlite);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Sqlite);
 
         let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
 
@@ -700,13 +733,13 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1", DbType::Postgres);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres);
 
         let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
 
         assert_eq!(foreign_keys.len(), 2);
-        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.lender ADD CONSTRAINT fk_lender_borrower__borrower_account FOREIGN KEY (borrower) REFERENCES namespace.borrower(account) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
-        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.auditor ADD CONSTRAINT fk_auditor_borrower__borrower_account FOREIGN KEY (borrower) REFERENCES namespace.borrower(account) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace_index1.lender ADD CONSTRAINT fk_lender_borrower__borrower_account FOREIGN KEY (borrower) REFERENCES namespace_index1.borrower(account) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace_index1.auditor ADD CONSTRAINT fk_auditor_borrower__borrower_account FOREIGN KEY (borrower) REFERENCES namespace_index1.borrower(account) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
     }
 
     #[test]
@@ -740,7 +773,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1", DbType::Sqlite);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Sqlite);
 
         let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
 
@@ -773,13 +806,13 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1", DbType::Postgres);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres);
 
         let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
 
         assert_eq!(foreign_keys.len(), 2);
-        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace.message ADD CONSTRAINT fk_message_sender__account_id FOREIGN KEY (sender) REFERENCES namespace.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
-        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace.message ADD CONSTRAINT fk_message_receiver__account_id FOREIGN KEY (receiver) REFERENCES namespace.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace_index1.message ADD CONSTRAINT fk_message_sender__account_id FOREIGN KEY (sender) REFERENCES namespace_index1.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace_index1.message ADD CONSTRAINT fk_message_receiver__account_id FOREIGN KEY (receiver) REFERENCES namespace_index1.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
     }
     #[test]
     fn test_schema_builder_for_sqlite_creates_fk_with_proper_column_names() {
@@ -805,7 +838,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "v1", DbType::Sqlite);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Sqlite);
 
         let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
 

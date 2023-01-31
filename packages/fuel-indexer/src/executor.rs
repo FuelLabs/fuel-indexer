@@ -408,6 +408,7 @@ impl WasmIndexExecutor {
 
         let mut env = IndexEnv::new(db_conn).await?;
         let exports = ffi::get_exports(&env, &store);
+
         import_object.register("env", exports);
 
         let instance = Instance::new(&module, &import_object)?;

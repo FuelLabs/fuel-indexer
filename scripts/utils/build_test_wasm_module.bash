@@ -18,13 +18,13 @@ bash scripts/stripper.bash simple_wasm.wasm
 cp simple_wasm.wasm packages/fuel-indexer-tests/assets/
 rm -fv simple_wasm.wasm
 
-cargo build -p explorer-index --release --target wasm32-unknown-unknown
+cargo build -p explorer_index --release --target wasm32-unknown-unknown
 bash scripts/stripper.bash explorer_index.wasm
 cp explorer_index.wasm target/wasm32-unknown-unknown/release/
 rm -fv explorer_index.wasm
 
 
-cargo build -p hello-index --release --target wasm32-unknown-unknown
+cargo build -p hello_index --release --target wasm32-unknown-unknown
 bash scripts/stripper.bash hello_index.wasm
 rm -fv hello_index.wasm
 

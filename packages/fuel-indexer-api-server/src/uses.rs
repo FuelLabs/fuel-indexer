@@ -43,12 +43,17 @@ pub struct Query {
 }
 
 pub(crate) async fn query_graph(
-    Path(name): Path<String>,
+    Path((namespace, identifier)): Path<(String, String)>,
     Json(query): Json<Query>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
 ) -> ApiResult<axum::Json<Value>> {
-    match manager.read().await.load_schema(&name).await {
+    match manager
+        .read()
+        .await
+        .load_schema(&namespace, &identifier)
+        .await
+    {
         Ok(schema) => match run_query(query, schema, &pool).await {
             Ok(response) => Ok(axum::Json(response)),
             Err(e) => {
@@ -57,7 +62,7 @@ pub(crate) async fn query_graph(
             }
         },
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
-            "The graph '{name}' was not found.",
+            "The graph '{namespace}' was not found.",
         )))),
     }
 }
@@ -220,6 +225,7 @@ pub(crate) async fn register_index_assets(
                                 .await
                                 .new_schema(
                                     &namespace,
+                                    &identifier,
                                     &String::from_utf8_lossy(&data),
                                     &mut conn,
                                 )

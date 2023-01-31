@@ -369,6 +369,7 @@ fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
 
 pub(crate) fn process_graphql_schema(
     namespace: String,
+    identifier: String,
     schema_path: String,
     is_native: bool,
 ) -> proc_macro2::TokenStream {
@@ -411,11 +412,13 @@ pub(crate) fn process_graphql_schema(
     types.extend(primitives.clone());
 
     let namespace_tokens = const_item("NAMESPACE", &namespace);
-    let version = const_item("VERSION", &schema_version(&text));
+    let identifer_tokens = const_item("IDENTIFIER", &identifier);
+    let version_tokens = const_item("VERSION", &schema_version(&text));
 
     let mut output = quote! {
         #namespace_tokens
-        #version
+        #identifer_tokens
+        #version_tokens
     };
 
     let query_root = get_query_root(&types, &ast);

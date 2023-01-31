@@ -81,7 +81,12 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
     let schema = inject_native_entities_into_schema(SIMPLE_WASM_GRAPHQL_SCHEMA);
 
     let result = manager
-        .new_schema("test_namespace", SIMPLE_WASM_GRAPHQL_SCHEMA, &mut conn)
+        .new_schema(
+            "test_namespace",
+            "index1",
+            SIMPLE_WASM_GRAPHQL_SCHEMA,
+            &mut conn,
+        )
         .await;
     assert!(result.is_ok());
 

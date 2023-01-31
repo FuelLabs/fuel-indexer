@@ -32,6 +32,7 @@ fn generate_schema() -> Schema {
     Schema {
         version: "".into(),
         namespace: "test_namespace".to_string(),
+        identifier: "index1".to_string(),
         query: "Query".into(),
         types,
         fields,

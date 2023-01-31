@@ -50,6 +50,25 @@ pub(crate) fn get_namespace(instance: &Instance) -> Result<String, FFIError> {
     Ok(namespace)
 }
 
+pub(crate) fn get_identifier(instance: &Instance) -> Result<String, FFIError> {
+    let exports = &instance.exports;
+    let memory = exports.get_memory("memory")?;
+
+    let ptr = exports.get_function("get_identifier_ptr")?.call(&[])?[0]
+        .i32()
+        .ok_or_else(|| FFIError::None("get_identifier".to_string()))?
+        as u32;
+
+    let len = exports.get_function("get_identifier_len")?.call(&[])?[0]
+        .i32()
+        .ok_or_else(|| FFIError::None("get_identifier".to_string()))?
+        as u32;
+
+    let identifier = get_string(memory, ptr, len)?;
+
+    Ok(identifier)
+}
+
 pub(crate) fn get_version(instance: &Instance) -> Result<String, FFIError> {
     let exports = &instance.exports;
     let memory = exports.get_memory("memory")?;
@@ -62,9 +81,9 @@ pub(crate) fn get_version(instance: &Instance) -> Result<String, FFIError> {
         .i32()
         .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
 
-    let namespace = get_string(memory, ptr, len)?;
+    let version = get_string(memory, ptr, len)?;
 
-    Ok(namespace)
+    Ok(version)
 }
 
 fn get_string(mem: &Memory, ptr: u32, len: u32) -> Result<String, FFIError> {
