@@ -554,6 +554,8 @@ jobs:
         run: |
           curl -sSLf "https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64" -L -o dasel && chmod +x dasel
           mv ./dasel /usr/local/bin/dasel
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} bin/fuel-indexer/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} bin/fuel-indexer-api-server/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-api-server/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/database-types/Cargo.toml
