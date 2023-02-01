@@ -2599,14 +2599,11 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
- "axum",
  "bincode",
  "cfg-if 1.0.0",
  "chrono",
- "clap 3.2.23",
  "fuel-crypto",
  "fuel-gql-client 0.15.1",
- "fuel-indexer-api-server",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2632,7 +2629,6 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
- "tracing-subscriber 0.2.25",
  "wasmer",
  "wasmer-compiler-cranelift",
  "wasmer-engine-universal",
@@ -2663,7 +2659,6 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
- "tracing-subscriber 0.2.25",
 ]
 
 [[package]]
@@ -7467,7 +7462,6 @@ dependencies = [
 name = "web-api"
 version = "0.0.0"
 dependencies = [
- "clap 3.2.23",
  "fuel-indexer-tests",
  "fuel-types",
  "fuels 0.32.2",
