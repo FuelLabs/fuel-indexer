@@ -13,8 +13,7 @@
 # tests together.
 
 cargomodules=(
-    # packages/fuel-indexer-tests/tests/e2e/indexing_postgres.rs
-    packages/fuel-indexer-tests/tests/e2e/indexing_sqlite.rs
+    packages/fuel-indexer-tests/tests/e2e/indexing_postgres.rs
 )
 
 for module in "${cargomodules[@]}"

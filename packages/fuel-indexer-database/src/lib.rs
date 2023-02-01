@@ -1,7 +1,5 @@
 pub use fuel_indexer_database_types::DbType;
-use fuel_indexer_lib::{
-    utils::{attempt_database_connection, ServiceStatus},
-};
+use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
 use fuel_indexer_postgres as postgres;
 use sqlx::{pool::PoolConnection, postgres::PgConnectOptions, Error as SqlxError};
 use std::{cmp::Ordering, str::FromStr};

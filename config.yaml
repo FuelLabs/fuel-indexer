@@ -19,8 +19,7 @@
 #   port: 29987
 #   run_migrations: false
 
-## Database configuration options. Use either the Postgres
-## configuration or the SQLite configuration, but not both
+## Database configuration options.
 #
 # database:
 #   postgres:

@@ -1,6 +1,6 @@
 # Foreign Keys
 
-- The Fuel indexer service supports foreign key constraints and relationships using a combination of GraphQL schema and a database (whether Postgres or SQLite).
+- The Fuel indexer service supports foreign key constraints and relationships using a combination of GraphQL schema and a database.
 - There are two types of uses for foreign keys - _implicit_ and _explicit_.
 
 > IMPORTANT:
@@ -68,7 +68,3 @@ type Library {
 #### Explicit foreign key breakdown
 
 For the most part, this works the same way as implicit foreign key usage. However, as you can see, instead of implicitly using `book.id` as the reference column for our `Book` object, we're instead explicitly specifying that we want `book.name` to serve as our foreign key. Also, please note that since we're using `book.name` in our foreign key constraint, that column is required to be unique (via the `@unique` directive).
-
-> Important:
->
-> 1. At the moment, [due to some SQLite quirks](https://www.sqlite.org/omitted.html), the Fuel indexer SQLite support only offers foreign key _relationships_, not foreign key _constraints_. We are very much open to changing this in the future.

@@ -37,7 +37,7 @@ type Library {
 
 In this example, a single `BTREE INDEX` constraint will be created on the `book` table's `name` column, which allows for faster lookups on that field.
 
-> Important: At the moment, index constraint support is limited to `BTREE` in Postgres with `ON DELETE`, and `ON UPDATE` actions not being supported. Note that `@indexed` directives are also available using SQLite. Finally, multi-column indices are _not_ supported at this time.
+> Important: At the moment, index constraint support is limited to `BTREE` in Postgres with `ON DELETE`, and `ON UPDATE` actions not being supported.
 
 ## `@unique`
 
