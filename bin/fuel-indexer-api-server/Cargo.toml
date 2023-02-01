@@ -18,4 +18,3 @@ fuel-indexer-database = { version = "0.2", path = "../../packages/fuel-indexer-d
 fuel-indexer-lib = { version = "0.2", path = "../../packages/fuel-indexer-lib" }
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }

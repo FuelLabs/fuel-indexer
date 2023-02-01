@@ -2677,7 +2677,6 @@ dependencies = [
  "fuel-indexer-lib",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.16",
 ]
 
 [[package]]
@@ -2692,7 +2691,6 @@ dependencies = [
  "fuel-indexer-lib",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.16",
 ]
 
 [[package]]
@@ -2732,6 +2730,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "tracing-subscriber 0.3.16",
 ]
 
 [[package]]
