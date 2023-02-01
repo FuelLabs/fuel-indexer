@@ -8,7 +8,7 @@ pub use crate::{
     },
     defaults,
 };
-pub use clap::Parser;
+pub use clap::{Args, Parser};
 use serde::Deserialize;
 use std::fs::File;
 use std::io::Error;
@@ -57,19 +57,24 @@ pub fn env_or_default(var: EnvVar, default: String) -> String {
 )]
 pub struct IndexerArgs {
     /// Log level passed to the Fuel Indexer service.
-    #[clap(long, default_value = "info", value_parser(["info", "debug", "error", "warn"]), help = "Log level passed to the Fuel Indexer service.")]
+    #[arg(long, default_value = "info", value_parser(["info", "debug", "error", "warn"]), help = "Log level passed to the Fuel Indexer service.")]
     pub log_level: String,
 
     /// Indexer service config file.
-    #[clap(short, long, parse(from_os_str), help = "Indexer service config file.")]
+    #[arg(
+        short,
+        long,
+        value_name = "FILE",
+        help = "Indexer service config file."
+    )]
     pub config: Option<PathBuf>,
 
     /// Index config file.
-    #[clap(short, long, parse(from_os_str), help = "Index config file.")]
+    #[arg(short, long, value_name = "FILE", help = "Index config file.")]
     pub manifest: Option<PathBuf>,
 
     /// Host of the running Fuel node.
-    #[clap(
+    #[arg(
         long,
         help = "Host of the running Fuel node.",
         default_value = defaults::FUEL_NODE_HOST
@@ -77,7 +82,7 @@ pub struct IndexerArgs {
     pub fuel_node_host: String,
 
     /// Listening port of the running Fuel node.
-    #[clap(
+    #[arg(
         long,
         help = "Listening port of the running Fuel node.",
         default_value = defaults::FUEL_NODE_PORT
@@ -85,11 +90,11 @@ pub struct IndexerArgs {
     pub fuel_node_port: String,
 
     /// GraphQL API host.
-    #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
+    #[arg(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
     pub graphql_api_host: String,
 
     /// GraphQL API port.
-    #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
+    #[arg(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
     pub graphql_api_port: String,
 
     /// Database type.
@@ -97,27 +102,27 @@ pub struct IndexerArgs {
     pub database: String,
 
     /// Postgres username.
-    #[clap(long, help = "Postgres username.")]
+    #[arg(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
 
     /// Postgres database.
-    #[clap(long, help = "Postgres database.")]
+    #[arg(long, help = "Postgres database.")]
     pub postgres_database: Option<String>,
 
     /// Postgres password.
-    #[clap(long, help = "Postgres password.")]
+    #[arg(long, help = "Postgres password.")]
     pub postgres_password: Option<String>,
 
     /// Postgres host.
-    #[clap(long, help = "Postgres host.")]
+    #[arg(long, help = "Postgres host.")]
     pub postgres_host: Option<String>,
 
     /// Postgres port.
-    #[clap(long, help = "Postgres port.")]
+    #[arg(long, help = "Postgres port.")]
     pub postgres_port: Option<String>,
 
     /// Run database migrations before starting service.
-    #[clap(
+    #[arg(
         long,
         default_value = "true",
         help = "Run database migrations before starting service."
@@ -125,7 +130,7 @@ pub struct IndexerArgs {
     pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.
-    #[clap(
+    #[arg(
         long,
         default_value = "true",
         help = "Use Prometheus metrics reporting."
@@ -133,7 +138,7 @@ pub struct IndexerArgs {
     pub metrics: bool,
 
     /// Prevent indexers from running without handling any blocks.
-    #[clap(
+    #[arg(
         long,
         help = "Prevent indexers from running without handling any blocks."
     )]
@@ -142,42 +147,62 @@ pub struct IndexerArgs {
 
 #[derive(Debug, Parser, Clone)]
 #[clap(
-    name = "Indexer API Service",
+    name = "Fuel Indexer API Server",
     about = "Fuel indexer GraphQL API",
     version
 )]
 pub struct ApiServerArgs {
     /// API server config file.
-    #[clap(short, long, help = "API server config file.")]
+    #[arg(short, long, help = "API server config file.")]
     pub config: Option<PathBuf>,
 
     /// GraphQL API host.
-    #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
+    #[arg(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
     pub graphql_api_host: String,
 
     /// GraphQL API port.
-    #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
+    #[arg(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
     pub graphql_api_port: String,
 
+    /// Database type.
+    #[arg(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
+    pub database: String,
+
     /// Postgres username.
-    #[clap(long, help = "Postgres username.")]
+    #[arg(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
 
     /// Postgres database.
-    #[clap(long, help = "Postgres database.")]
+    #[arg(long, help = "Postgres database.")]
     pub postgres_database: Option<String>,
 
     /// Postgres password.
-    #[clap(long, help = "Postgres password.")]
+    #[arg(long, help = "Postgres password.")]
     pub postgres_password: Option<String>,
 
     /// Postgres host.
-    #[clap(long, help = "Postgres host.")]
+    #[arg(long, help = "Postgres host.")]
     pub postgres_host: Option<String>,
 
     /// Postgres port.
-    #[clap(long, help = "Postgres port.")]
+    #[arg(long, help = "Postgres port.")]
     pub postgres_port: Option<String>,
+
+    /// Run database migrations before starting service.
+    #[arg(
+        long,
+        default_value = "false",
+        help = "Run database migrations before starting service."
+    )]
+    pub run_migrations: bool,
+
+    /// Use Prometheus metrics reporting.
+    #[arg(
+        long,
+        default_value = "true",
+        help = "Use Prometheus metrics reporting."
+    )]
+    pub metrics: bool,
 }
 
 fn derive_http_url(host: &String, port: &String) -> String {
@@ -209,6 +234,128 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
     pub metrics: bool,
     pub stop_idle_indexers: bool,
+}
+
+impl From<IndexerArgs> for IndexerConfig {
+    fn from(args: IndexerArgs) -> Self {
+        let database = match args.database.as_str() {
+            "postgres" => DatabaseConfig::Postgres {
+                user: args.postgres_user.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresUser,
+                        defaults::POSTGRES_USER.to_string(),
+                    )
+                }),
+                password: args.postgres_password.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresPassword,
+                        defaults::POSTGRES_PASSWORD.to_string(),
+                    )
+                }),
+                host: args.postgres_host.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresHost,
+                        defaults::POSTGRES_HOST.to_string(),
+                    )
+                }),
+                port: args.postgres_port.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresPort,
+                        defaults::POSTGRES_PORT.to_string(),
+                    )
+                }),
+                database: args.postgres_database.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresDatabase,
+                        defaults::POSTGRES_DATABASE.to_string(),
+                    )
+                }),
+            },
+            _ => {
+                panic!("Unrecognized database type in options.");
+            }
+        };
+
+        let mut config = IndexerConfig {
+            database,
+            fuel_node: FuelNodeConfig {
+                host: args.fuel_node_host,
+                port: args.fuel_node_port,
+            },
+            graphql_api: GraphQLConfig {
+                host: args.graphql_api_host,
+                port: args.graphql_api_port,
+                run_migrations: args.run_migrations,
+            },
+            metrics: args.metrics,
+            stop_idle_indexers: args.stop_idle_indexers,
+        };
+
+        config.inject_opt_env_vars();
+
+        config
+    }
+}
+
+impl From<ApiServerArgs> for IndexerConfig {
+    fn from(args: ApiServerArgs) -> Self {
+        let database = match args.database.as_str() {
+            "postgres" => DatabaseConfig::Postgres {
+                user: args.postgres_user.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresUser,
+                        defaults::POSTGRES_USER.to_string(),
+                    )
+                }),
+                password: args.postgres_password.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresPassword,
+                        defaults::POSTGRES_PASSWORD.to_string(),
+                    )
+                }),
+                host: args.postgres_host.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresHost,
+                        defaults::POSTGRES_HOST.to_string(),
+                    )
+                }),
+                port: args.postgres_port.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresPort,
+                        defaults::POSTGRES_PORT.to_string(),
+                    )
+                }),
+                database: args.postgres_database.unwrap_or_else(|| {
+                    env_or_default(
+                        EnvVar::PostgresDatabase,
+                        defaults::POSTGRES_DATABASE.to_string(),
+                    )
+                }),
+            },
+            _ => {
+                panic!("Unrecognized database type in options.");
+            }
+        };
+
+        let mut config = IndexerConfig {
+            database,
+            fuel_node: FuelNodeConfig {
+                host: defaults::FUEL_NODE_HOST.to_string(),
+                port: defaults::FUEL_NODE_PORT.to_string(),
+            },
+            graphql_api: GraphQLConfig {
+                host: args.graphql_api_host,
+                port: args.graphql_api_port,
+                run_migrations: args.run_migrations,
+            },
+            metrics: args.metrics,
+            stop_idle_indexers: false,
+        };
+
+        config.inject_opt_env_vars();
+
+        config
+    }
 }
 
 impl IndexerConfig {
