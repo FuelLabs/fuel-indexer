@@ -145,7 +145,6 @@
                 <div id="content" class="content">
                     <main>
                         <!-- markdownlint-disable MD041 -->
-<h2 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h2>
 <p>In this tutorial you will:</p>
 <ol>
 <li>Bootstrap your development environment.</li>
@@ -162,7 +161,7 @@ system dependencies related to SQL backends.</p>
 find the &quot;Database&quot; section for more information.</p>
 </blockquote>
 <h2 id="1-setting-up-your-environment"><a class="header" href="#1-setting-up-your-environment">1. Setting up your environment</a></h2>
-<p>In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a Postgres database backend. We will also use Fuel's toolchain manager <a href="https://github.com/FuelLabs/fuelup"><code>fuelup</code></a> in order to install the <code>forc-index</code> binary that we'll use to develop our index.</p>
+<p>In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a PostgreSQL database backend. We will also use Fuel's toolchain manager <a href="https://github.com/FuelLabs/fuelup"><code>fuelup</code></a> in order to install the <code>forc-index</code> binary that we'll use to develop our index.</p>
 <h3 id="11-install-fuelup"><a class="header" href="#11-install-fuelup">1.1 Install <code>fuelup</code></a></h3>
 <p>To Install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.</p>
 <pre><code class="language-bash">curl \
@@ -173,7 +172,7 @@ find the &quot;Database&quot; section for more information.</p>
 <p>If you require a non-default <code>fuelup</code> installation, please <a href="https://github.com/FuelLabs/fuelup">read the <code>fuelup</code> installation docs.</a></p>
 </blockquote>
 <h3 id="12-pull-docker-images"><a class="header" href="#12-pull-docker-images">1.2 Pull Docker images</a></h3>
-<p>We will use the <code>latest</code> Postgres and Fuel indexer images.</p>
+<p>We will use the <code>latest</code> PostgreSQL and Fuel indexer images.</p>
 <pre><code class="language-bash">docker pull postgres:latest
 
 docker pull ghcr.io/fuellabs/fuel-indexer:latest
@@ -210,8 +209,6 @@ docker pull ghcr.io/fuellabs/fuel-indexer:latest
 |   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).                        |
 +--------+------------------------+------------------------------------------------------------------+
 |   ✅   | psql                   |  /usr/local/bin/psql                                             |
-+--------+------------------------+------------------------------------------------------------------+
-|   ✅   | sqlite                 |  /usr/bin/sqlite3                                                |
 +--------+------------------------+------------------------------------------------------------------+
 |   ✅   | fuel-core              |  /Users/rashad/.fuelup/bin/fuel-core                             |
 +--------+------------------------+------------------------------------------------------------------+
@@ -278,10 +275,10 @@ Take a quick tour.
 <p>By now we have a brand new index that will index some blocks and transactions, but now we need to build and deploy it in order to see it in action.</p>
 <h4 id="231-starting-an-indexer-service"><a class="header" href="#231-starting-an-indexer-service">2.3.1 Starting an indexer service</a></h4>
 <ul>
-<li>To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via <code>docker compose</code>. Our indexer service will connect to Fuel's <code>beta-2</code> network so that we can index blocks and transactions from an <em>actual</em> Fuel node. We'll use the <code>docker-compose.yaml</code> file below, and spinning everything up with <code>docker compose up</code>.</li>
+<li>To start an indexer service, we'll be spinning up PostgreSQL and Fuel indexer containers via <code>docker compose</code>. Our indexer service will connect to Fuel's <code>beta-2</code> network so that we can index blocks and transactions from an <em>actual</em> Fuel node. We'll use the <code>docker-compose.yaml</code> file below, and spinning everything up with <code>docker compose up</code>.</li>
 </ul>
 <blockquote>
-<p>IMPORTANT: Ensure that any local Postgres instance that is running on port <code>5432</code> is stopped.</p>
+<p>IMPORTANT: Ensure that any local PostgreSQL instance that is running on port <code>5432</code> is stopped.</p>
 </blockquote>
 <p>You can open up a <code>docker-compose.yaml</code> file in the same directory as your index manifest, and paste the YAML content below to this <code>docker-compose.yaml</code> file.</p>
 <pre><code class="language-text">version: &quot;3.9&quot;
@@ -311,7 +308,7 @@ services:
     depends_on:
       - postgres
 </code></pre>
-<p>Then run <code>docker compose up</code> to spin up Postgres and Fuel indexer containers:</p>
+<p>Then run <code>docker compose up</code> to spin up PostgreSQL and Fuel indexer containers:</p>
 <pre><code class="language-bash">docker compose up
 </code></pre>
 <h4 id="232-deploying-your-index-to-your-fuel-indexer-service"><a class="header" href="#232-deploying-your-index-to-your-fuel-indexer-service">2.3.2 Deploying your index to your Fuel indexer service</a></h4>
@@ -380,6 +377,7 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
 </code></pre>
 <h3 id="finished-"><a class="header" href="#finished-">Finished! 🥳</a></h3>
 <p>Congrats, you just created, built, and deployed your first index on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you <a href="https://fuellabs.github.io/fuel-indexer/master/"><strong>read the book</strong></a>.</p>
+<h2 id="forc-index-plugin"><a class="header" href="#forc-index-plugin"><code>forc-index</code> Plugin</a></h2>
 
                     </main>
 

@@ -154,7 +154,6 @@
 <li><a href="#database">Database</a>
 <ul>
 <li><a href="#postgresql">PostgreSQL</a></li>
-<li><a href="#sqlite">SQLite</a></li>
 </ul>
 </li>
 <li><a href="#sqlx">SQLx</a></li>
@@ -183,7 +182,7 @@
 <li>Docker can be downloaded <a href="https://docs.docker.com/engine/install/">here</a>.</li>
 </ul>
 <h3 id="database"><a class="header" href="#database">Database</a></h3>
-<p>At this time, the Fuel indexer requires the use of a database. We currently support two database options: PostgreSQL and SQLite. PostgreSQL is a database solution with a complex feature set and requires a database server. SQLite is an embedded database solution with a simpler set of features and can be setup and moved to different systems.</p>
+<p>At this time, the Fuel indexer requires the use of a database. We currently support a single database option: Postgres. PostgreSQL is a database solution with a complex feature set and requires a database server.</p>
 <h4 id="postgresql"><a class="header" href="#postgresql">PostgreSQL</a></h4>
 <blockquote>
 <p>Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.</p>
@@ -191,14 +190,10 @@
 <p>On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add PostgreSQL to your system by running <code>brew install postgresql</code>. You can then start the service through <code>brew services start postgresql</code>. You'll need to create a database for your index data, which you can do by running <code>createdb [DATABASE_NAME]</code>. You may also need to create the <code>postgres</code> role; you can do so by running <code>createuser -s postgres</code>.</p>
 <p>For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new <code>postgres</code> user account; you can switch to that account by running <code>sudo -i -u postgres</code>. After you have switched accounts, you may need to create a <code>postgres</code> database role by running <code>createuser --interactive</code>. You will be asked a few questions; the name of the role should be <code>postgres</code> and you should elect for the new role to be a superuser. Finally, you can create a database by running <code>createdb [DATABASE_NAME]</code>.</p>
 <p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]</code>.</p>
-<h4 id="sqlite"><a class="header" href="#sqlite">SQLite</a></h4>
-<p>On macOS systems, you can install SQLite through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add SQLite to your system by running <code>brew install sqlite</code>. You can create a database by running <code>sqlite3 [DATABASE_FILE_PATH]</code>.</p>
-<p>For Linux-based systems, you should first install SQLite according to the instructions for your distribution. Once installed, you can create a database by running <code>sqlite3 [DATABASE_FILE_PATH]</code>.</p>
-<p>In either case, your SQLite database is now accessible at <code>sqlite://[DATABASE_FILE_PATH]</code>.</p>
 <h3 id="sqlx"><a class="header" href="#sqlx">SQLx</a></h3>
 <ul>
 <li>After setting up your database, you should install <code>sqlx-cli</code> in order to run migrations for your indexer service.</li>
-<li>You can do so by running <code>cargo install sqlx-cli --features postgres,sqlite</code>.</li>
+<li>You can do so by running <code>cargo install sqlx-cli --features postgres</code>.</li>
 <li>Once installed, you can run the migrations by running the following command after changing <code>DATABASE_URL</code> to match your setup.</li>
 </ul>
 <h2 id="building-from-source"><a class="header" href="#building-from-source">Building from Source</a></h2>
@@ -206,11 +201,6 @@
 <pre><code class="language-bash">git clone git@github.com:FuelLabs/fuel-indexer.git &amp;&amp; cd fuel-indexer/
 </code></pre>
 <h3 id="run-migrations"><a class="header" href="#run-migrations">Run migrations</a></h3>
-<h4 id="sqlite-migrations"><a class="header" href="#sqlite-migrations">SQLite migrations</a></h4>
-<pre><code class="language-sh">cd packages/fuel-indexer-database/sqlite
-sqlx create --database-url sqlite://test.db
-DATABASE_URL=sqlite://test.db sqlx migrate run
-</code></pre>
 <h4 id="postgres-migrations"><a class="header" href="#postgres-migrations">Postgres migrations</a></h4>
 <pre><code class="language-sh">cd packages/fuel-indexer-database/postgres
 DATABASE_URL=postgres://postgres@localhost sqlx migrate run
@@ -222,18 +212,16 @@ DATABASE_URL=postgres://postgres@localhost sqlx migrate run
 <p>If no configuration file or other options are passed, the service will default to a <code>postgres://postgres@localhost</code> database connection.</p>
 </blockquote>
 <h2 id="testing"><a class="header" href="#testing">Testing</a></h2>
-<p>Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use <code>--features postgres</code>, and for a SQLite backend use <code>--features sqlite</code>.</p>
+<p>Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use <code>--features postgres</code>.</p>
 <p>Further, the indexer uses end-to-end (E2E) tests. In order to trigger these end-to-end tests, you'll want to use the <code>e2e</code> features flag: <code>--features e2e</code>.</p>
 <blockquote>
-<p>All end-to-end tests also require either a <code>postgres</code> or a <code>sqlite</code> feature flag as well. For example, to run the end-to-end tests with a Posgres backend, use <code>--features e2e,postgres</code>.</p>
+<p>All end-to-end tests also require the use of a database feature. For example, to run the end-to-end tests with a Posgres backend, use <code>--features e2e,postgres</code>.</p>
 </blockquote>
 <h3 id="default-tests"><a class="header" href="#default-tests">Default tests</a></h3>
 <pre><code class="language-bash">cargo test --locked --workspace --all-targets
 </code></pre>
 <h3 id="end-to-end-tests"><a class="header" href="#end-to-end-tests">End-to-end tests</a></h3>
 <pre><code class="language-bash">cargo test --locked --workspace --all-targets --features e2e,postgres
-</code></pre>
-<pre><code class="language-bash">cargo test --locked --workspace --all-targets --features e2e,sqlite
 </code></pre>
 <h3 id="trybuild-tests"><a class="header" href="#trybuild-tests"><code>trybuild</code> tests</a></h3>
 <p>For tests related to the meta-programming used in the Fuel indexer, we use <code>trybuild</code>.</p>

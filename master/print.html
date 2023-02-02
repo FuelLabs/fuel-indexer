@@ -164,7 +164,6 @@
 <li>A dApp queries for blockchain data by using the indexer's GraphQL API endpoint, which fetches the desired information from the corresponding index in the database and returns it to the user.</li>
 </ol>
 <div style="break-before: page; page-break-before: always;"></div><!-- markdownlint-disable MD041 -->
-<h2 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h2>
 <p>In this tutorial you will:</p>
 <ol>
 <li>Bootstrap your development environment.</li>
@@ -181,7 +180,7 @@ system dependencies related to SQL backends.</p>
 find the &quot;Database&quot; section for more information.</p>
 </blockquote>
 <h2 id="1-setting-up-your-environment"><a class="header" href="#1-setting-up-your-environment">1. Setting up your environment</a></h2>
-<p>In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a Postgres database backend. We will also use Fuel's toolchain manager <a href="https://github.com/FuelLabs/fuelup"><code>fuelup</code></a> in order to install the <code>forc-index</code> binary that we'll use to develop our index.</p>
+<p>In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a PostgreSQL database backend. We will also use Fuel's toolchain manager <a href="https://github.com/FuelLabs/fuelup"><code>fuelup</code></a> in order to install the <code>forc-index</code> binary that we'll use to develop our index.</p>
 <h3 id="11-install-fuelup"><a class="header" href="#11-install-fuelup">1.1 Install <code>fuelup</code></a></h3>
 <p>To Install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.</p>
 <pre><code class="language-bash">curl \
@@ -192,7 +191,7 @@ find the &quot;Database&quot; section for more information.</p>
 <p>If you require a non-default <code>fuelup</code> installation, please <a href="https://github.com/FuelLabs/fuelup">read the <code>fuelup</code> installation docs.</a></p>
 </blockquote>
 <h3 id="12-pull-docker-images"><a class="header" href="#12-pull-docker-images">1.2 Pull Docker images</a></h3>
-<p>We will use the <code>latest</code> Postgres and Fuel indexer images.</p>
+<p>We will use the <code>latest</code> PostgreSQL and Fuel indexer images.</p>
 <pre><code class="language-bash">docker pull postgres:latest
 
 docker pull ghcr.io/fuellabs/fuel-indexer:latest
@@ -229,8 +228,6 @@ docker pull ghcr.io/fuellabs/fuel-indexer:latest
 |   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).                        |
 +--------+------------------------+------------------------------------------------------------------+
 |   ✅   | psql                   |  /usr/local/bin/psql                                             |
-+--------+------------------------+------------------------------------------------------------------+
-|   ✅   | sqlite                 |  /usr/bin/sqlite3                                                |
 +--------+------------------------+------------------------------------------------------------------+
 |   ✅   | fuel-core              |  /Users/rashad/.fuelup/bin/fuel-core                             |
 +--------+------------------------+------------------------------------------------------------------+
@@ -297,10 +294,10 @@ Take a quick tour.
 <p>By now we have a brand new index that will index some blocks and transactions, but now we need to build and deploy it in order to see it in action.</p>
 <h4 id="231-starting-an-indexer-service"><a class="header" href="#231-starting-an-indexer-service">2.3.1 Starting an indexer service</a></h4>
 <ul>
-<li>To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via <code>docker compose</code>. Our indexer service will connect to Fuel's <code>beta-2</code> network so that we can index blocks and transactions from an <em>actual</em> Fuel node. We'll use the <code>docker-compose.yaml</code> file below, and spinning everything up with <code>docker compose up</code>.</li>
+<li>To start an indexer service, we'll be spinning up PostgreSQL and Fuel indexer containers via <code>docker compose</code>. Our indexer service will connect to Fuel's <code>beta-2</code> network so that we can index blocks and transactions from an <em>actual</em> Fuel node. We'll use the <code>docker-compose.yaml</code> file below, and spinning everything up with <code>docker compose up</code>.</li>
 </ul>
 <blockquote>
-<p>IMPORTANT: Ensure that any local Postgres instance that is running on port <code>5432</code> is stopped.</p>
+<p>IMPORTANT: Ensure that any local PostgreSQL instance that is running on port <code>5432</code> is stopped.</p>
 </blockquote>
 <p>You can open up a <code>docker-compose.yaml</code> file in the same directory as your index manifest, and paste the YAML content below to this <code>docker-compose.yaml</code> file.</p>
 <pre><code class="language-text">version: &quot;3.9&quot;
@@ -330,7 +327,7 @@ services:
     depends_on:
       - postgres
 </code></pre>
-<p>Then run <code>docker compose up</code> to spin up Postgres and Fuel indexer containers:</p>
+<p>Then run <code>docker compose up</code> to spin up PostgreSQL and Fuel indexer containers:</p>
 <pre><code class="language-bash">docker compose up
 </code></pre>
 <h4 id="232-deploying-your-index-to-your-fuel-indexer-service"><a class="header" href="#232-deploying-your-index-to-your-fuel-indexer-service">2.3.2 Deploying your index to your Fuel indexer service</a></h4>
@@ -399,6 +396,7 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
 </code></pre>
 <h3 id="finished-"><a class="header" href="#finished-">Finished! 🥳</a></h3>
 <p>Congrats, you just created, built, and deployed your first index on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you <a href="https://fuellabs.github.io/fuel-indexer/master/"><strong>read the book</strong></a>.</p>
+<h2 id="forc-index-plugin"><a class="header" href="#forc-index-plugin"><code>forc-index</code> Plugin</a></h2>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="fuelup"><a class="header" href="#fuelup"><code>fuelup</code></a></h1>
 <p>We strongly recommend that you use the Fuel indexer through <a href="https://fuellabs.github.io/sway/master/forc/index.html"><code>forc</code>, the Fuel orchestrator</a>. You can get <code>forc</code> (and other Fuel components) by way of <a href="https://fuellabs.github.io/fuelup/latest"><code>fuelup</code>, the Fuel toolchain manager</a>. Install <code>fuelup</code> by running the following command, which downloads and runs the installation script.</p>
 <pre><code class="language-bash">curl \
@@ -416,7 +414,7 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
 </code></pre>
 <p>After <code>fuelup</code> has been installed, the <code>forc index</code> command and <code>fuel-indexer</code> binaries will be available on your system.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="database"><a class="header" href="#database">Database</a></h1>
-<p>At this time, the Fuel indexer requires the use of a database. We currently support two database options: PostgreSQL and SQLite. PostgreSQL is a database solution with a complex feature set and requires a database server. SQLite is an embedded database solution with a simpler set of features and can be setup and moved to different systems.</p>
+<p>At this time, the Fuel indexer requires the use of a database. We currently support a single database option: PostgresSQL. PostgreSQL is a database solution with a complex feature set and requires a database server.</p>
 <h2 id="postgresql"><a class="header" href="#postgresql">PostgreSQL</a></h2>
 <blockquote>
 <p>Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.</p>
@@ -426,12 +424,6 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
 <h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
 <p>For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new <code>postgres</code> user account; you can switch to that account by running <code>sudo -i -u postgres</code>. After you have switched accounts, you may need to create a <code>postgres</code> database role by running <code>createuser --interactive</code>. You will be asked a few questions; the name of the role should be <code>postgres</code> and you should elect for the new role to be a superuser. Finally, you can create a database by running <code>createdb [DATABASE_NAME]</code>.</p>
 <p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]</code>.</p>
-<h2 id="sqlite"><a class="header" href="#sqlite">SQLite</a></h2>
-<h3 id="macos-1"><a class="header" href="#macos-1">macOS</a></h3>
-<p>On macOS systems, you can install SQLite through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add SQLite to your system by running <code>brew install sqlite</code>. You can create a database by running <code>sqlite3 [DATABASE_FILE_PATH]</code>.</p>
-<h3 id="linux-1"><a class="header" href="#linux-1">Linux</a></h3>
-<p>For Linux-based systems, you should first install SQLite according to the instructions for your distribution. Once installed, you can create a database by running <code>sqlite3 [DATABASE_FILE_PATH]</code>.</p>
-<p>In either case, your SQLite database is now accessible at <code>sqlite://[DATABASE_FILE_PATH]</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="wasm"><a class="header" href="#wasm">WASM</a></h1>
 <p>Two additonal cargo components will be required to build your indexers: <code>wasm-snip</code> and the <code>wasm32-unknown-unknown</code> target.</p>
 <blockquote>
@@ -457,7 +449,7 @@ OPTIONS:
             Indexer service config file.
 
         --database &lt;DATABASE&gt;
-            Database type. [default: postgres] [possible values: postgres, sqlite]
+            Database type. [default: postgres] [possible values: postgres]
 
         --fuel-node-host &lt;FUEL_NODE_HOST&gt;
             Host of the running Fuel node. [default: 127.0.0.1]
@@ -502,9 +494,6 @@ OPTIONS:
         --run-migrations &lt;run-migrations&gt;
             Run database migrations before starting service. [default: true]
 
-        --sqlite-database &lt;SQLITE_DATABASE&gt;
-            Path to SQLite database. [default: sqlite.db]
-
     -V, --version
             Print version information
 </code></pre>
@@ -527,8 +516,7 @@ graphql_api:
     port: 29987
     run_migrations: false
 
-## Database configuration options. Use either the Postgres
-## configuration or the SQLite configuration, but not both
+## Database configuration options.
 
 database:
     postgres:
@@ -537,9 +525,6 @@ database:
         password:
         host: 127.0.0.1
         port: 5432
-
-    sqlite:
-        path: database/sqlite/sqlite.db
 
 metrics: true
 </code></pre>
@@ -1610,26 +1595,25 @@ types can be found in <a href="reference-guide/components/assets/../../data-type
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="types"><a class="header" href="#types">Types</a></h1>
 <p>Below is a mapping of GraphQL schema types to their database equivalents.</p>
-<div class="table-wrapper"><table><thead><tr><th>Sway Type</th><th>GraphQL Schema Type</th><th>Postgres Type</th><th>SQLite Type</th></tr></thead><tbody>
-<tr><td>u64</td><td>ID</td><td>bigint primary key</td><td>bigint</td></tr>
-<tr><td>b256</td><td>Address</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>str[4]</td><td>Bytes4</td><td>varchar(16)</td><td>text</td></tr>
-<tr><td>str[8]</td><td>Bytes8</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>str[32]</td><td>Bytes32</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>str[32]</td><td>AssetId</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>b256</td><td>ContractId</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>str[32]</td><td>Salt</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>u32</td><td>UInt4</td><td>integer</td><td>integer</td></tr>
-<tr><td>u64</td><td>UInt8</td><td>bigint</td><td>integer</td></tr>
-<tr><td>i64</td><td>Timestamp</td><td>timestamp</td><td>text</td></tr>
-<tr><td>str[]</td><td>Blob</td><td>bytes</td><td>text</td></tr>
-<tr><td>str[32]</td><td>MessageId</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>bool</td><td>Boolean</td><td>bool</td><td>text</td></tr>
-<tr><td></td><td>Json</td><td>json</td><td>text</td></tr>
-<tr><td></td><td>Charfield</td><td>varchar(255)</td><td>text</td></tr>
-<tr><td></td><td>Blob</td><td>varchar(10485760)</td><td>text</td></tr>
-</tbody></table>
-</div>
+<p>| Sway Type | GraphQL Schema Type | Postgres Type |
+|------|----------|----------|----------|
+| u64 | ID | bigint primary key |
+| b256 | Address | varchar(64) |
+| str[4] | Bytes4 | varchar(16) |
+| str[8] | Bytes8 | varchar(64) |
+| str[32] | Bytes32 | varchar(64) |
+| str[32] | AssetId | varchar(64) |
+| b256 | ContractId | varchar(64) |
+| str[32] | Salt | varchar(64) |
+| u32 | UInt4 | integer |
+| u64 | UInt8 | bigint |
+| i64 | Timestamp | timestamp |
+| str[] | Blob | bytes |
+| str[32] | MessageId | varchar(64) |
+| bool | Boolean | bool |
+|  | Json | json |
+|  | Charfield | varchar(255) |
+|  | Blob | varchar(10485760) |</p>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <p>Let's define an <code>Event</code> struct in a Sway contract:</p>
 <pre><code class="language-sway">struct Event {
@@ -1751,7 +1735,7 @@ type Library {
 </code></pre>
 <p>In this example, a single <code>BTREE INDEX</code> constraint will be created on the <code>book</code> table's <code>name</code> column, which allows for faster lookups on that field.</p>
 <blockquote>
-<p>Important: At the moment, index constraint support is limited to <code>BTREE</code> in Postgres with <code>ON DELETE</code>, and <code>ON UPDATE</code> actions not being supported. Note that <code>@indexed</code> directives are also available using SQLite. Finally, multi-column indices are <em>not</em> supported at this time.</p>
+<p>Important: At the moment, index constraint support is limited to <code>BTREE</code> in Postgres with <code>ON DELETE</code>, and <code>ON UPDATE</code> actions not being supported.</p>
 </blockquote>
 <h2 id="unique"><a class="header" href="#unique"><code>@unique</code></a></h2>
 <p>The <code>@unique</code> directive adds a <code>UNIQUE</code> database constraint to the underlying database column for the indicated field of that type. A constraint specifies a rule for the data in a table and can be used to limit the type of data that can be placed in the table. In the case of a column with a <code>UNIQUE</code> constraint, all values in the column must be different.</p>
@@ -1822,7 +1806,7 @@ OPTIONS:
             Indexer service config file.
 
         --database &lt;DATABASE&gt;
-            Database type. [default: postgres] [possible values: postgres, sqlite]
+            Database type. [default: postgres] [possible values: postgres]
 
         --fuel-node-host &lt;FUEL_NODE_HOST&gt;
             Host of the running Fuel node. [default: 127.0.0.1]
@@ -1867,15 +1851,12 @@ OPTIONS:
         --run-migrations &lt;run-migrations&gt;
             Run database migrations before starting service. [default: true]
 
-        --sqlite-database &lt;SQLITE_DATABASE&gt;
-            Path to SQLite database. [default: sqlite.db]
-
     -V, --version
             Print version information
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="foreign-keys"><a class="header" href="#foreign-keys">Foreign Keys</a></h1>
 <ul>
-<li>The Fuel indexer service supports foreign key constraints and relationships using a combination of GraphQL schema and a database (whether Postgres or SQLite).</li>
+<li>The Fuel indexer service supports foreign key constraints and relationships using a combination of GraphQL schema and a database.</li>
 <li>There are two types of uses for foreign keys - <em>implicit</em> and <em>explicit</em>.</li>
 </ul>
 <blockquote>
@@ -1930,15 +1911,9 @@ type Library {
 </code></pre>
 <h4 id="explicit-foreign-key-breakdown"><a class="header" href="#explicit-foreign-key-breakdown">Explicit foreign key breakdown</a></h4>
 <p>For the most part, this works the same way as implicit foreign key usage. However, as you can see, instead of implicitly using <code>book.id</code> as the reference column for our <code>Book</code> object, we're instead explicitly specifying that we want <code>book.name</code> to serve as our foreign key. Also, please note that since we're using <code>book.name</code> in our foreign key constraint, that column is required to be unique (via the <code>@unique</code> directive).</p>
-<blockquote>
-<p>Important:</p>
-<ol>
-<li>At the moment, <a href="https://www.sqlite.org/omitted.html">due to some SQLite quirks</a>, the Fuel indexer SQLite support only offers foreign key <em>relationships</em>, not foreign key <em>constraints</em>. We are very much open to changing this in the future.</li>
-</ol>
-</blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="foreign-keys-1"><a class="header" href="#foreign-keys-1">Foreign Keys</a></h1>
 <ul>
-<li>The Fuel indexer service supports foreign key constraints and relationships using a combination of GraphQL schema and a database (whether Postgres or SQLite).</li>
+<li>The Fuel indexer service supports foreign key constraints and relationships using a combination of GraphQL schema and a database.</li>
 <li>There are two types of uses for foreign keys - <em>implicit</em> and <em>explicit</em>.</li>
 </ul>
 <blockquote>
@@ -1993,12 +1968,6 @@ type Library {
 </code></pre>
 <h4 id="explicit-foreign-key-breakdown-1"><a class="header" href="#explicit-foreign-key-breakdown-1">Explicit foreign key breakdown</a></h4>
 <p>For the most part, this works the same way as implicit foreign key usage. However, as you can see, instead of implicitly using <code>book.id</code> as the reference column for our <code>Book</code> object, we're instead explicitly specifying that we want <code>book.name</code> to serve as our foreign key. Also, please note that since we're using <code>book.name</code> in our foreign key constraint, that column is required to be unique (via the <code>@unique</code> directive).</p>
-<blockquote>
-<p>Important:</p>
-<ol>
-<li>At the moment, <a href="https://www.sqlite.org/omitted.html">due to some SQLite quirks</a>, the Fuel indexer SQLite support only offers foreign key <em>relationships</em>, not foreign key <em>constraints</em>. We are very much open to changing this in the future.</li>
-</ol>
-</blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="id-types"><a class="header" href="#id-types">ID Types</a></h1>
 <p>There are a few important things related to the use of IDs.</p>
 <blockquote>
@@ -2092,21 +2061,19 @@ OPTIONS:
 +--------+------------------------+----------------------------------------------------------------------------+
 | Status |       Component        |                                  Details                                   |
 +--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/me/.fuelup/bin/fuel-indexer'          |
+|   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/me/.fuelup/bin/fuel-indexer'              |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ⛔️   | fuel-indexer service   |  Failed to detect a locally running fuel-indexer service at Port(29987).   |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ✅   | psql                   |  Found 'psql' at '/usr/local/bin/psql'                                     |
 +--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | sqlite                 |  Found 'sqlite' at '/usr/bin/sqlite3'                                      |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuel-core              |  Found 'fuel-core' at '/Users/me/.fuelup/bin/fuel-core'                |
+|   ✅   | fuel-core              |  Found 'fuel-core' at '/Users/me/.fuelup/bin/fuel-core'                    |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ✅   | docker                 |  Found 'docker' at '/usr/local/bin/docker'                                 |
 +--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuelup                 |  Found 'fuelup' at '/Users/me/.fuelup/bin/fuelup'                      |
+|   ✅   | fuelup                 |  Found 'fuelup' at '/Users/me/.fuelup/bin/fuelup'                          |
 +--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | wasm-snip              |  Found 'wasm-snip' at '/Users/me/.cargo/bin/wasm-snip'                 |
+|   ✅   | wasm-snip              |  Found 'wasm-snip' at '/Users/me/.cargo/bin/wasm-snip'                     |
 +--------+------------------------+----------------------------------------------------------------------------+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-build"><a class="header" href="#forc-index-build"><code>forc index build</code></a></h1>
@@ -2179,7 +2146,6 @@ OPTIONS:
 <li><a href="for-contributors/index.html#database">Database</a>
 <ul>
 <li><a href="for-contributors/index.html#postgresql">PostgreSQL</a></li>
-<li><a href="for-contributors/index.html#sqlite">SQLite</a></li>
 </ul>
 </li>
 <li><a href="for-contributors/index.html#sqlx">SQLx</a></li>
@@ -2208,7 +2174,7 @@ OPTIONS:
 <li>Docker can be downloaded <a href="https://docs.docker.com/engine/install/">here</a>.</li>
 </ul>
 <h3 id="database-1"><a class="header" href="#database-1">Database</a></h3>
-<p>At this time, the Fuel indexer requires the use of a database. We currently support two database options: PostgreSQL and SQLite. PostgreSQL is a database solution with a complex feature set and requires a database server. SQLite is an embedded database solution with a simpler set of features and can be setup and moved to different systems.</p>
+<p>At this time, the Fuel indexer requires the use of a database. We currently support a single database option: Postgres. PostgreSQL is a database solution with a complex feature set and requires a database server.</p>
 <h4 id="postgresql-1"><a class="header" href="#postgresql-1">PostgreSQL</a></h4>
 <blockquote>
 <p>Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.</p>
@@ -2216,14 +2182,10 @@ OPTIONS:
 <p>On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add PostgreSQL to your system by running <code>brew install postgresql</code>. You can then start the service through <code>brew services start postgresql</code>. You'll need to create a database for your index data, which you can do by running <code>createdb [DATABASE_NAME]</code>. You may also need to create the <code>postgres</code> role; you can do so by running <code>createuser -s postgres</code>.</p>
 <p>For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new <code>postgres</code> user account; you can switch to that account by running <code>sudo -i -u postgres</code>. After you have switched accounts, you may need to create a <code>postgres</code> database role by running <code>createuser --interactive</code>. You will be asked a few questions; the name of the role should be <code>postgres</code> and you should elect for the new role to be a superuser. Finally, you can create a database by running <code>createdb [DATABASE_NAME]</code>.</p>
 <p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]</code>.</p>
-<h4 id="sqlite-1"><a class="header" href="#sqlite-1">SQLite</a></h4>
-<p>On macOS systems, you can install SQLite through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add SQLite to your system by running <code>brew install sqlite</code>. You can create a database by running <code>sqlite3 [DATABASE_FILE_PATH]</code>.</p>
-<p>For Linux-based systems, you should first install SQLite according to the instructions for your distribution. Once installed, you can create a database by running <code>sqlite3 [DATABASE_FILE_PATH]</code>.</p>
-<p>In either case, your SQLite database is now accessible at <code>sqlite://[DATABASE_FILE_PATH]</code>.</p>
 <h3 id="sqlx"><a class="header" href="#sqlx">SQLx</a></h3>
 <ul>
 <li>After setting up your database, you should install <code>sqlx-cli</code> in order to run migrations for your indexer service.</li>
-<li>You can do so by running <code>cargo install sqlx-cli --features postgres,sqlite</code>.</li>
+<li>You can do so by running <code>cargo install sqlx-cli --features postgres</code>.</li>
 <li>Once installed, you can run the migrations by running the following command after changing <code>DATABASE_URL</code> to match your setup.</li>
 </ul>
 <h2 id="building-from-source"><a class="header" href="#building-from-source">Building from Source</a></h2>
@@ -2231,11 +2193,6 @@ OPTIONS:
 <pre><code class="language-bash">git clone git@github.com:FuelLabs/fuel-indexer.git &amp;&amp; cd fuel-indexer/
 </code></pre>
 <h3 id="run-migrations"><a class="header" href="#run-migrations">Run migrations</a></h3>
-<h4 id="sqlite-migrations"><a class="header" href="#sqlite-migrations">SQLite migrations</a></h4>
-<pre><code class="language-sh">cd packages/fuel-indexer-database/sqlite
-sqlx create --database-url sqlite://test.db
-DATABASE_URL=sqlite://test.db sqlx migrate run
-</code></pre>
 <h4 id="postgres-migrations"><a class="header" href="#postgres-migrations">Postgres migrations</a></h4>
 <pre><code class="language-sh">cd packages/fuel-indexer-database/postgres
 DATABASE_URL=postgres://postgres@localhost sqlx migrate run
@@ -2247,18 +2204,16 @@ DATABASE_URL=postgres://postgres@localhost sqlx migrate run
 <p>If no configuration file or other options are passed, the service will default to a <code>postgres://postgres@localhost</code> database connection.</p>
 </blockquote>
 <h2 id="testing"><a class="header" href="#testing">Testing</a></h2>
-<p>Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use <code>--features postgres</code>, and for a SQLite backend use <code>--features sqlite</code>.</p>
+<p>Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use <code>--features postgres</code>.</p>
 <p>Further, the indexer uses end-to-end (E2E) tests. In order to trigger these end-to-end tests, you'll want to use the <code>e2e</code> features flag: <code>--features e2e</code>.</p>
 <blockquote>
-<p>All end-to-end tests also require either a <code>postgres</code> or a <code>sqlite</code> feature flag as well. For example, to run the end-to-end tests with a Posgres backend, use <code>--features e2e,postgres</code>.</p>
+<p>All end-to-end tests also require the use of a database feature. For example, to run the end-to-end tests with a Posgres backend, use <code>--features e2e,postgres</code>.</p>
 </blockquote>
 <h3 id="default-tests"><a class="header" href="#default-tests">Default tests</a></h3>
 <pre><code class="language-bash">cargo test --locked --workspace --all-targets
 </code></pre>
 <h3 id="end-to-end-tests"><a class="header" href="#end-to-end-tests">End-to-end tests</a></h3>
 <pre><code class="language-bash">cargo test --locked --workspace --all-targets --features e2e,postgres
-</code></pre>
-<pre><code class="language-bash">cargo test --locked --workspace --all-targets --features e2e,sqlite
 </code></pre>
 <h3 id="trybuild-tests"><a class="header" href="#trybuild-tests"><code>trybuild</code> tests</a></h3>
 <p>For tests related to the meta-programming used in the Fuel indexer, we use <code>trybuild</code>.</p>
@@ -2346,7 +2301,7 @@ We may discuss the problem and solution in the issue.
 <ul>
 <li>Examples:
 <ul>
-<li>If you fixed a bug, your message is <code>fix: sqlite database locking issue</code></li>
+<li>If you fixed a bug, your message is <code>fix: database locking issue</code></li>
 <li>If you added new functionality, your message would be <code>enhancement: i add something super cool</code></li>
 <li>If you just did a chore your message is: <code>chore: i did somthing not fun</code></li>
 </ul>

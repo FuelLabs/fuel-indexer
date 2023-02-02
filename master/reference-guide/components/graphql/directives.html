@@ -182,7 +182,7 @@ type Library {
 </code></pre>
 <p>In this example, a single <code>BTREE INDEX</code> constraint will be created on the <code>book</code> table's <code>name</code> column, which allows for faster lookups on that field.</p>
 <blockquote>
-<p>Important: At the moment, index constraint support is limited to <code>BTREE</code> in Postgres with <code>ON DELETE</code>, and <code>ON UPDATE</code> actions not being supported. Note that <code>@indexed</code> directives are also available using SQLite. Finally, multi-column indices are <em>not</em> supported at this time.</p>
+<p>Important: At the moment, index constraint support is limited to <code>BTREE</code> in Postgres with <code>ON DELETE</code>, and <code>ON UPDATE</code> actions not being supported.</p>
 </blockquote>
 <h2 id="unique"><a class="header" href="#unique"><code>@unique</code></a></h2>
 <p>The <code>@unique</code> directive adds a <code>UNIQUE</code> database constraint to the underlying database column for the indicated field of that type. A constraint specifies a rule for the data in a table and can be used to limit the type of data that can be placed in the table. In the case of a column with a <code>UNIQUE</code> constraint, all values in the column must be different.</p>

@@ -145,7 +145,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="database"><a class="header" href="#database">Database</a></h1>
-<p>At this time, the Fuel indexer requires the use of a database. We currently support two database options: PostgreSQL and SQLite. PostgreSQL is a database solution with a complex feature set and requires a database server. SQLite is an embedded database solution with a simpler set of features and can be setup and moved to different systems.</p>
+<p>At this time, the Fuel indexer requires the use of a database. We currently support a single database option: PostgresSQL. PostgreSQL is a database solution with a complex feature set and requires a database server.</p>
 <h2 id="postgresql"><a class="header" href="#postgresql">PostgreSQL</a></h2>
 <blockquote>
 <p>Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.</p>
@@ -155,12 +155,6 @@
 <h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
 <p>For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new <code>postgres</code> user account; you can switch to that account by running <code>sudo -i -u postgres</code>. After you have switched accounts, you may need to create a <code>postgres</code> database role by running <code>createuser --interactive</code>. You will be asked a few questions; the name of the role should be <code>postgres</code> and you should elect for the new role to be a superuser. Finally, you can create a database by running <code>createdb [DATABASE_NAME]</code>.</p>
 <p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]</code>.</p>
-<h2 id="sqlite"><a class="header" href="#sqlite">SQLite</a></h2>
-<h3 id="macos-1"><a class="header" href="#macos-1">macOS</a></h3>
-<p>On macOS systems, you can install SQLite through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add SQLite to your system by running <code>brew install sqlite</code>. You can create a database by running <code>sqlite3 [DATABASE_FILE_PATH]</code>.</p>
-<h3 id="linux-1"><a class="header" href="#linux-1">Linux</a></h3>
-<p>For Linux-based systems, you should first install SQLite according to the instructions for your distribution. Once installed, you can create a database by running <code>sqlite3 [DATABASE_FILE_PATH]</code>.</p>
-<p>In either case, your SQLite database is now accessible at <code>sqlite://[DATABASE_FILE_PATH]</code>.</p>
 
                     </main>
 

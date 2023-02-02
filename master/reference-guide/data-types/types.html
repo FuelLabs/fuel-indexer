@@ -146,26 +146,25 @@
                     <main>
                         <h1 id="types"><a class="header" href="#types">Types</a></h1>
 <p>Below is a mapping of GraphQL schema types to their database equivalents.</p>
-<div class="table-wrapper"><table><thead><tr><th>Sway Type</th><th>GraphQL Schema Type</th><th>Postgres Type</th><th>SQLite Type</th></tr></thead><tbody>
-<tr><td>u64</td><td>ID</td><td>bigint primary key</td><td>bigint</td></tr>
-<tr><td>b256</td><td>Address</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>str[4]</td><td>Bytes4</td><td>varchar(16)</td><td>text</td></tr>
-<tr><td>str[8]</td><td>Bytes8</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>str[32]</td><td>Bytes32</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>str[32]</td><td>AssetId</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>b256</td><td>ContractId</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>str[32]</td><td>Salt</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>u32</td><td>UInt4</td><td>integer</td><td>integer</td></tr>
-<tr><td>u64</td><td>UInt8</td><td>bigint</td><td>integer</td></tr>
-<tr><td>i64</td><td>Timestamp</td><td>timestamp</td><td>text</td></tr>
-<tr><td>str[]</td><td>Blob</td><td>bytes</td><td>text</td></tr>
-<tr><td>str[32]</td><td>MessageId</td><td>varchar(64)</td><td>text</td></tr>
-<tr><td>bool</td><td>Boolean</td><td>bool</td><td>text</td></tr>
-<tr><td></td><td>Json</td><td>json</td><td>text</td></tr>
-<tr><td></td><td>Charfield</td><td>varchar(255)</td><td>text</td></tr>
-<tr><td></td><td>Blob</td><td>varchar(10485760)</td><td>text</td></tr>
-</tbody></table>
-</div>
+<p>| Sway Type | GraphQL Schema Type | Postgres Type |
+|------|----------|----------|----------|
+| u64 | ID | bigint primary key |
+| b256 | Address | varchar(64) |
+| str[4] | Bytes4 | varchar(16) |
+| str[8] | Bytes8 | varchar(64) |
+| str[32] | Bytes32 | varchar(64) |
+| str[32] | AssetId | varchar(64) |
+| b256 | ContractId | varchar(64) |
+| str[32] | Salt | varchar(64) |
+| u32 | UInt4 | integer |
+| u64 | UInt8 | bigint |
+| i64 | Timestamp | timestamp |
+| str[] | Blob | bytes |
+| str[32] | MessageId | varchar(64) |
+| bool | Boolean | bool |
+|  | Json | json |
+|  | Charfield | varchar(255) |
+|  | Blob | varchar(10485760) |</p>
 <h2 id="example"><a class="header" href="#example">Example</a></h2>
 <p>Let's define an <code>Event</code> struct in a Sway contract:</p>
 <pre><code class="language-sway">struct Event {
