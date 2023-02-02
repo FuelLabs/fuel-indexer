@@ -34,7 +34,6 @@ The Fuel indexer is a standalone service that can be used to index various compo
     - [`fuelup`](#fuelup)
     - [`docker`](#docker)
     - [PostgreSQL](#postgresql)
-    - [SQLite](#sqlite)
     - [SQLx](#sqlx)
   - [Building from source](#building-from-source)
   - [Run migrations](#run-migrations)
@@ -59,7 +58,7 @@ Users of the Fuel indexer project include dApp developers looking to write flexi
 
 ### `docker`
 
-- We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. Postgres).
+- We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. PostgreSQL).
 - Docker can be downloaded [here](https://docs.docker.com/engine/install/).
 
 ### `wasm`
@@ -98,7 +97,7 @@ In this tutorial you will:
 
 ## 1. Setting up your environment
 
-In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a Postgres database backend. We will also use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` binary that we'll use to develop our index.
+In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a PostgreSQL database backend. We will also use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` binary that we'll use to develop our index.
 
 ### 1.1 Install `fuelup`
 
@@ -114,7 +113,7 @@ curl \
 
 ### 1.2 Pull Docker images
 
-We will use the `latest` Postgres and Fuel indexer images.
+We will use the `latest` PostgreSQL and Fuel indexer images.
 
 ```bash
 docker pull postgres:latest
@@ -165,8 +164,6 @@ forc index check
 |   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).                        |
 +--------+------------------------+------------------------------------------------------------------+
 |   ✅   | psql                   |  /usr/local/bin/psql                                             |
-+--------+------------------------+------------------------------------------------------------------+
-|   ✅   | sqlite                 |  /usr/bin/sqlite3                                                |
 +--------+------------------------+------------------------------------------------------------------+
 |   ✅   | fuel-core              |  /Users/rashad/.fuelup/bin/fuel-core                             |
 +--------+------------------------+------------------------------------------------------------------+
@@ -240,9 +237,9 @@ By now we have a brand new index that will index some blocks and transactions, b
 
 #### 2.3.1 Starting an indexer service
 
-- To start an indexer service, we'll be spinning up Postgres and Fuel indexer containers via `docker compose`. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker-compose.yaml` file below, and spinning everything up with `docker compose up`.
+- To start an indexer service, we'll be spinning up PostgreSQL and Fuel indexer containers via `docker compose`. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker-compose.yaml` file below, and spinning everything up with `docker compose up`.
 
-> IMPORTANT: Ensure that any local Postgres instance that is running on port `5432` is stopped.
+> IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped.
 
 You can open up a `docker-compose.yaml` file in the same directory as your index manifest, and paste the YAML content below to this `docker-compose.yaml` file.
 
@@ -275,7 +272,7 @@ services:
       - postgres
 ```
 
-Then run `docker compose up` to spin up Postgres and Fuel indexer containers:
+Then run `docker compose up` to spin up PostgreSQL and Fuel indexer containers:
 
 ```bash
 docker compose up
@@ -464,7 +461,7 @@ Contributors of the Fuel indexer project are devs looking to help  backends for 
 
 ### Database
 
-At this time, the Fuel indexer requires the use of a database. We currently support two database options: PostgreSQL and SQLite. PostgreSQL is a database solution with a complex feature set and requires a database server. SQLite is an embedded database solution with a simpler set of features and can be setup and moved to different systems.
+At this time, the Fuel indexer requires the use of a database. We currently support a single database option: PostgreSQL. PostgreSQL is a database solution with a complex feature set and requires a database server.
 
 #### PostgreSQL
 
@@ -476,18 +473,10 @@ For Linux-based systems, the installation process is similar. First, you should 
 
 In either case, your PostgreSQL database should now be accessible at `postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]`.
 
-#### SQLite
-
-On macOS systems, you can install SQLite through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add SQLite to your system by running `brew install sqlite`. You can create a database by running `sqlite3 [DATABASE_FILE_PATH]`.
-
-For Linux-based systems, you should first install SQLite according to the instructions for your distribution. Once installed, you can create a database by running `sqlite3 [DATABASE_FILE_PATH]`.
-
-In either case, your SQLite database is now accessible at `sqlite://[DATABASE_FILE_PATH]`.
-
 ### SQLx
 
 - After setting up your database, you should install `sqlx-cli` in order to run migrations for your indexer service.
-- You can do so by running `cargo install sqlx-cli --features postgres,sqlite`.
+- You can do so by running `cargo install sqlx-cli --features postgres`.
 - Once installed, you can run the migrations by running the following command after changing `DATABASE_URL` to match your setup.
 
 ## Building from Source
@@ -500,15 +489,7 @@ git clone git@github.com:FuelLabs/fuel-indexer.git && cd fuel-indexer/
 
 ### Run migrations
 
-#### SQLite migrations
-
-```sh
-cd packages/fuel-indexer-database/sqlite
-sqlx create --database-url sqlite://test.db
-DATABASE_URL=sqlite://test.db sqlx migrate run
-```
-
-#### Postgres migrations
+#### PostgreSQL migrations
 
 ```sh
 cd packages/fuel-indexer-database/postgres
@@ -525,11 +506,11 @@ cargo run --bin fuel-indexer
 
 ## Testing
 
-Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use `--features postgres`, and for a SQLite backend use `--features sqlite`.
+Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a PostgreSQL backend, use `--features postgres`.
 
 Further, the indexer uses end-to-end (E2E) tests. In order to trigger these end-to-end tests, you'll want to use the `e2e` features flag: `--features e2e`.
 
-> All end-to-end tests also require either a `postgres` or a `sqlite` feature flag as well. For example, to run the end-to-end tests with a Posgres backend, use `--features e2e,postgres`.
+> All end-to-end tests also require the use of a database feature. For example, to run the end-to-end tests with a Posgres backend, use `--features e2e,postgres`.
 
 ### Default tests
 
@@ -541,10 +522,6 @@ cargo test --locked --workspace --all-targets
 
 ```bash
 cargo test --locked --workspace --all-targets --features e2e,postgres
-```
-
-```bash
-cargo test --locked --workspace --all-targets --features e2e,sqlite
 ```
 
 ### `trybuild` tests

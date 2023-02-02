@@ -622,87 +622,6 @@ mod tests {
     }
 
     #[test]
-    fn test_schema_builder_for_sqlite_indices_returns_proper_create_sql() {
-        let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            thing1: Thing1
-            thing2: Thing2
-        }
-
-        type Payer {
-            id: ID!
-            account: Address! @indexed
-        }
-
-        type Payee {
-            id: ID!
-            account: Address!
-            hash: Bytes32! @indexed
-        }
-    "#;
-
-        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Sqlite);
-
-        let SchemaBuilder { indices, .. } = sb.build(graphql_schema);
-
-        assert_eq!(indices.len(), 2);
-        assert_eq!(
-            indices[0].create_statement(),
-            "CREATE INDEX IF NOT EXISTS payer_account_idx ON payer(account);".to_string()
-        );
-        assert_eq!(
-            indices[1].create_statement(),
-            "CREATE INDEX IF NOT EXISTS payee_hash_idx ON payee(hash);".to_string()
-        );
-    }
-
-    #[test]
-    fn test_schema_builder_for_sqlite_foreign_keys_returns_proper_create_sql() {
-        let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
-        type Borrower {
-            id: ID!
-            account: Address! @indexed
-        }
-
-        type Lender {
-            id: ID!
-            account: Address!
-            hash: Bytes32! @indexed
-            borrower: Borrower!
-        }
-
-        type Auditor {
-            id: ID!
-            account: Address!
-            hash: Bytes32! @indexed
-            borrower: Borrower!
-        }
-    "#;
-
-        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Sqlite);
-
-        let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
-
-        assert_eq!(foreign_keys.len(), 2);
-        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE lender DROP COLUMN borrower; ALTER TABLE lender ADD COLUMN borrower INTEGER REFERENCES borrower(id);");
-        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE auditor DROP COLUMN borrower; ALTER TABLE auditor ADD COLUMN borrower INTEGER REFERENCES borrower(id);");
-    }
-
-    #[test]
     fn test_schema_builder_for_postgres_foreign_keys_with_directive_returns_proper_create_sql(
     ) {
         let graphql_schema: &str = r#"
@@ -743,46 +662,6 @@ mod tests {
     }
 
     #[test]
-    fn test_schema_builder_for_sqlite_foreign_keys_with_directive_returns_proper_create_sql(
-    ) {
-        let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
-        type Borrower {
-            account: Address! @indexed
-        }
-
-        type Lender {
-            id: ID!
-            borrower: Borrower! @join(on:account)
-        }
-
-        type Auditor {
-            id: ID!
-            account: Address!
-            hash: Bytes32! @indexed
-            borrower: Borrower! @join(on:account)
-        }
-    "#;
-
-        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Sqlite);
-
-        let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
-
-        assert_eq!(foreign_keys.len(), 2);
-        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE lender DROP COLUMN borrower; ALTER TABLE lender ADD COLUMN borrower TEXT REFERENCES borrower(account);");
-        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE auditor DROP COLUMN borrower; ALTER TABLE auditor ADD COLUMN borrower TEXT REFERENCES borrower(account);");
-    }
-
-    #[test]
     fn test_schema_builder_for_postgres_creates_fk_with_proper_column_names() {
         let graphql_schema: &str = r#"
         schema {
@@ -813,37 +692,5 @@ mod tests {
         assert_eq!(foreign_keys.len(), 2);
         assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace_index1.message ADD CONSTRAINT fk_message_sender__account_id FOREIGN KEY (sender) REFERENCES namespace_index1.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
         assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace_index1.message ADD CONSTRAINT fk_message_receiver__account_id FOREIGN KEY (receiver) REFERENCES namespace_index1.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
-    }
-    #[test]
-    fn test_schema_builder_for_sqlite_creates_fk_with_proper_column_names() {
-        let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            account: Account
-            message: Message
-        }
-
-        type Account {
-            id: ID!
-            account: Address! @indexed
-        }
-
-        type Message {
-            id: ID!
-            sender: Account!
-            receiver: Account!
-        }
-    "#;
-
-        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Sqlite);
-
-        let SchemaBuilder { foreign_keys, .. } = sb.build(graphql_schema);
-
-        assert_eq!(foreign_keys.len(), 2);
-        assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE message DROP COLUMN sender; ALTER TABLE message ADD COLUMN sender INTEGER REFERENCES account(id);".to_string());
-        assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE message DROP COLUMN receiver; ALTER TABLE message ADD COLUMN receiver INTEGER REFERENCES account(id);".to_string());
     }
 }

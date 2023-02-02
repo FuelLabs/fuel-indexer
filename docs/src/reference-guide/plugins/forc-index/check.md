@@ -31,20 +31,18 @@ You can expect the command output to look something like this example in which t
 +--------+------------------------+----------------------------------------------------------------------------+
 | Status |       Component        |                                  Details                                   |
 +--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/me/.fuelup/bin/fuel-indexer'          |
+|   ✅   | fuel-indexer binary    |  Found 'fuel-indexer' at '/Users/me/.fuelup/bin/fuel-indexer'              |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ⛔️   | fuel-indexer service   |  Failed to detect a locally running fuel-indexer service at Port(29987).   |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ✅   | psql                   |  Found 'psql' at '/usr/local/bin/psql'                                     |
 +--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | sqlite                 |  Found 'sqlite' at '/usr/bin/sqlite3'                                      |
-+--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuel-core              |  Found 'fuel-core' at '/Users/me/.fuelup/bin/fuel-core'                |
+|   ✅   | fuel-core              |  Found 'fuel-core' at '/Users/me/.fuelup/bin/fuel-core'                    |
 +--------+------------------------+----------------------------------------------------------------------------+
 |   ✅   | docker                 |  Found 'docker' at '/usr/local/bin/docker'                                 |
 +--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | fuelup                 |  Found 'fuelup' at '/Users/me/.fuelup/bin/fuelup'                      |
+|   ✅   | fuelup                 |  Found 'fuelup' at '/Users/me/.fuelup/bin/fuelup'                          |
 +--------+------------------------+----------------------------------------------------------------------------+
-|   ✅   | wasm-snip              |  Found 'wasm-snip' at '/Users/me/.cargo/bin/wasm-snip'                 |
+|   ✅   | wasm-snip              |  Found 'wasm-snip' at '/Users/me/.cargo/bin/wasm-snip'                     |
 +--------+------------------------+----------------------------------------------------------------------------+
 ```

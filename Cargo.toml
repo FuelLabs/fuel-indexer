@@ -10,7 +10,6 @@ members = [
    "packages/fuel-indexer-database",
    "packages/fuel-indexer-database/database-types",
    "packages/fuel-indexer-database/postgres",
-   "packages/fuel-indexer-database/sqlite",
    "packages/fuel-indexer-lib",
    "packages/fuel-indexer-macros",
    "packages/fuel-indexer-metrics",

@@ -191,8 +191,6 @@ jobs:
             args: --locked --all-targets --no-default-features --workspace
           - command: test
             args: --locked --all-targets --features postgres --workspace
-          - command: test
-            args: --locked --all-targets --features sqlite --workspace
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -560,7 +558,6 @@ jobs:
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/database-types/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/postgres/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/sqlite/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-lib/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-macros/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-metrics/Cargo.toml

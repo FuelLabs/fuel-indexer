@@ -158,7 +158,7 @@ pub async fn graph_root_latest(
     identifier: &str,
 ) -> sqlx::Result<GraphRoot> {
     #[cfg(feature = "metrics")]
-    METRICS.db.sqlite.graph_root_latest_calls.inc();
+    METRICS.db.postgres.graph_root_latest_calls.inc();
 
     let row = sqlx::query(&format!(
         r#"
@@ -194,7 +194,7 @@ pub async fn type_id_list_by_name(
     identifier: &str,
 ) -> sqlx::Result<Vec<TypeId>> {
     #[cfg(feature = "metrics")]
-    METRICS.db.sqlite.type_id_list_by_name_calls.inc();
+    METRICS.db.postgres.type_id_list_by_name_calls.inc();
 
     Ok(sqlx::query(&format!(r#"
         SELECT id, schema_version, schema_name, schema_identifier, graphql_name, table_name 

@@ -93,12 +93,8 @@ pub struct IndexerArgs {
     pub graphql_api_port: String,
 
     /// Database type.
-    #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres", "sqlite"]))]
+    #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
-
-    /// Path to SQLite database.
-    #[clap(long, help = "Path to SQLite database.", default_value = defaults::SQLITE_DATABASE)]
-    pub sqlite_database: String,
 
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
@@ -252,9 +248,6 @@ impl IndexerConfig {
                     )
                 }),
             },
-            "sqlite" => DatabaseConfig::Sqlite {
-                path: args.sqlite_database,
-            },
             _ => {
                 panic!("Unrecognized database type in options.");
             }
@@ -329,11 +322,6 @@ impl IndexerConfig {
 
         if let Some(section) = content.get(database_config_key) {
             let pg_section = section.get("postgres");
-            let sqlite_section = section.get("sqlite");
-
-            if pg_section.is_some() && sqlite_section.is_some() {
-                panic!("'database' section of config file can not contain both postgres and sqlite.");
-            }
 
             if let Some(pg_section) = pg_section {
                 let mut pg_user = defaults::POSTGRES_USER.to_string();
@@ -379,18 +367,6 @@ impl IndexerConfig {
                     port: pg_port,
                     database: pg_db,
                 };
-            }
-
-            if let Some(sqlite_section) = sqlite_section {
-                let mut db_path = defaults::SQLITE_DATABASE.to_string();
-
-                let db_path_value =
-                    sqlite_section.get(&serde_yaml::Value::String("path".into()));
-                if let Some(db_path_value) = db_path_value {
-                    db_path = db_path_value.as_str().unwrap().to_string();
-                }
-
-                config.database = DatabaseConfig::Sqlite { path: db_path };
             }
         }
 
@@ -439,8 +415,7 @@ mod tests {
     #[test]
     fn test_indexer_config_will_supplement_individual_config_vars_in_sections() {
         let config_str = r#"
-        ## Database configuration options. Use either the Postgres
-        ## configuration or the SQLite configuration, but not both
+        ## Database configuration options.
         #
         database:
           postgres:
@@ -472,7 +447,6 @@ mod tests {
 
                 fs::remove_file(tmp_file_path).unwrap();
             }
-            _ => panic!("Incorrect DB type."),
         }
     }
 }

@@ -54,12 +54,8 @@ pub struct Command {
     pub graphql_api_port: String,
 
     /// Database type.
-    #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres", "sqlite"]))]
+    #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
-
-    /// Path to SQLite database.
-    #[clap(long, help = "Path to SQLite database.", default_value = defaults::SQLITE_DATABASE)]
-    pub sqlite_database: String,
 
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]

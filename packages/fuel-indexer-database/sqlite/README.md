@@ -1,1 +1,0 @@
-# fuel-indexer-sqlite

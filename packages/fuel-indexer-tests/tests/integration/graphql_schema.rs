@@ -81,9 +81,9 @@ fn test_query_builder_generates_proper_sql() {
 
     assert_eq!(
         vec![
-            "SELECT row_to_json(x) as row from (SELECT account, hash FROM test_namespace.thing2 WHERE id = 1234) x".to_string(),
-            "SELECT row_to_json(x) as row from (SELECT account, hash, id FROM test_namespace.thing2 WHERE id = 84848) x".to_string(),
-            "SELECT row_to_json(x) as row from (SELECT account FROM test_namespace.thing1 WHERE id = 4321) x".to_string(),
+            "SELECT row_to_json(x) as row from (SELECT account, hash FROM test_namespace_index1.thing2 WHERE id = 1234) x".to_string(),
+            "SELECT row_to_json(x) as row from (SELECT account, hash, id FROM test_namespace_index1.thing2 WHERE id = 84848) x".to_string(),
+            "SELECT row_to_json(x) as row from (SELECT account FROM test_namespace_index1.thing1 WHERE id = 4321) x".to_string(),
         ],
         sql
     );
@@ -92,10 +92,12 @@ fn test_query_builder_generates_proper_sql() {
 
     assert_eq!(
         vec![
-            "SELECT account, hash FROM test_namespace.thing2 WHERE id = 1234".to_string(),
-            "SELECT account, hash, id FROM test_namespace.thing2 WHERE id = 84848"
+            "SELECT account, hash FROM test_namespace_index1.thing2 WHERE id = 1234"
                 .to_string(),
-            "SELECT account FROM test_namespace.thing1 WHERE id = 4321".to_string(),
+            "SELECT account, hash, id FROM test_namespace_index1.thing2 WHERE id = 84848"
+                .to_string(),
+            "SELECT account FROM test_namespace_index1.thing1 WHERE id = 4321"
+                .to_string(),
         ],
         sql
     );
