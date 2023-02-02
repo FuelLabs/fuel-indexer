@@ -1,6 +1,5 @@
 use crate::{types::*, IndexerConnection};
 use fuel_indexer_postgres as postgres;
-use fuel_indexer_sqlite as sqlite;
 use sqlx::types::JsonValue;
 
 pub async fn graph_root_latest(
@@ -11,7 +10,6 @@ pub async fn graph_root_latest(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::graph_root_latest(c, name).await
         }
-        IndexerConnection::Sqlite(ref mut c) => sqlite::graph_root_latest(c, name).await,
     }
 }
 
@@ -21,7 +19,6 @@ pub async fn new_graph_root(
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::new_graph_root(c, root).await,
-        IndexerConnection::Sqlite(ref mut c) => sqlite::new_graph_root(c, root).await,
     }
 }
 
@@ -34,9 +31,6 @@ pub async fn type_id_list_by_name(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::type_id_list_by_name(c, name, version).await
         }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::type_id_list_by_name(c, name, version).await
-        }
     }
 }
 
@@ -47,9 +41,6 @@ pub async fn type_id_latest(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::type_id_latest(c, schema_name).await
-        }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::type_id_latest(c, schema_name).await
         }
     }
 }
@@ -62,7 +53,6 @@ pub async fn type_id_insert(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::type_id_insert(c, type_ids).await
         }
-        IndexerConnection::Sqlite(ref mut c) => sqlite::type_id_insert(c, type_ids).await,
     }
 }
 
@@ -75,9 +65,6 @@ pub async fn schema_exists(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::schema_exists(c, name, version).await
         }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::schema_exists(c, name, version).await
-        }
     }
 }
 
@@ -89,7 +76,6 @@ pub async fn new_column_insert(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::new_column_insert(c, cols).await
         }
-        IndexerConnection::Sqlite(ref mut c) => sqlite::new_column_insert(c, cols).await,
     }
 }
 
@@ -100,9 +86,6 @@ pub async fn list_column_by_id(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::list_column_by_id(c, col_id).await
-        }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::list_column_by_id(c, col_id).await
         }
     }
 }
@@ -116,9 +99,6 @@ pub async fn columns_get_schema(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::columns_get_schema(c, name, version).await
         }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::columns_get_schema(c, name, version).await
-        }
     }
 }
 
@@ -131,7 +111,6 @@ pub async fn put_object(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::put_object(c, query, bytes).await
         }
-        IndexerConnection::Sqlite(ref mut c) => sqlite::put_object(c, query, bytes).await,
     }
 }
 
@@ -141,7 +120,6 @@ pub async fn get_object(
 ) -> sqlx::Result<Vec<u8>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::get_object(c, query).await,
-        IndexerConnection::Sqlite(ref mut c) => sqlite::get_object(c, query).await,
     }
 }
 
@@ -151,7 +129,6 @@ pub async fn run_query(
 ) -> sqlx::Result<JsonValue> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::run_query(c, query).await,
-        IndexerConnection::Sqlite(ref mut c) => sqlite::run_query(c, query).await,
     }
 }
 
@@ -161,7 +138,6 @@ pub async fn execute_query(
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::execute_query(c, query).await,
-        IndexerConnection::Sqlite(ref mut c) => sqlite::execute_query(c, query).await,
     }
 }
 
@@ -172,9 +148,6 @@ pub async fn root_columns_list_by_id(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::root_columns_list_by_id(c, root_id).await
-        }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::root_columns_list_by_id(c, root_id).await
         }
     }
 }
@@ -187,7 +160,6 @@ pub async fn new_root_columns(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::new_root_columns(c, cols).await
         }
-        IndexerConnection::Sqlite(ref mut c) => sqlite::new_root_columns(c, cols).await,
     }
 }
 
@@ -199,9 +171,6 @@ pub async fn index_is_registered(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::index_is_registered(c, namespace, identifier).await
-        }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::index_is_registered(c, namespace, identifier).await
         }
     }
 }
@@ -215,9 +184,6 @@ pub async fn register_index(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::register_index(c, namespace, identifier).await
         }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::register_index(c, namespace, identifier).await
-        }
     }
 }
 
@@ -226,7 +192,6 @@ pub async fn registered_indices(
 ) -> sqlx::Result<Vec<RegisteredIndex>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::registered_indices(c).await,
-        IndexerConnection::Sqlite(ref mut c) => sqlite::registered_indices(c).await,
     }
 }
 
@@ -238,9 +203,6 @@ pub async fn index_asset_version(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::index_asset_version(c, index_id, asset_type).await
-        }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::index_asset_version(c, index_id, asset_type).await
         }
     }
 }
@@ -257,10 +219,6 @@ pub async fn register_index_asset(
             postgres::register_index_asset(c, namespace, identifier, bytes, asset_type)
                 .await
         }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::register_index_asset(c, namespace, identifier, bytes, asset_type)
-                .await
-        }
     }
 }
 
@@ -273,9 +231,6 @@ pub async fn latest_asset_for_index(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::latest_asset_for_index(c, index_id, asset_type).await
         }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::latest_asset_for_index(c, index_id, asset_type).await
-        }
     }
 }
 
@@ -286,9 +241,6 @@ pub async fn latest_assets_for_index(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::latest_assets_for_index(c, index_id).await
-        }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::latest_assets_for_index(c, index_id).await
         }
     }
 }
@@ -303,9 +255,6 @@ pub async fn asset_already_exists(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::asset_already_exists(c, asset_type, bytes, index_id).await
         }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::asset_already_exists(c, asset_type, bytes, index_id).await
-        }
     }
 }
 
@@ -318,37 +267,30 @@ pub async fn index_id_for(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::index_id_for(c, namespace, identifier).await
         }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::index_id_for(c, namespace, identifier).await
-        }
     }
 }
 
 pub async fn start_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::start_transaction(c).await,
-        IndexerConnection::Sqlite(ref mut c) => sqlite::start_transaction(c).await,
     }
 }
 
 pub async fn commit_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::commit_transaction(c).await,
-        IndexerConnection::Sqlite(ref mut c) => sqlite::commit_transaction(c).await,
     }
 }
 
 pub async fn revert_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::revert_transaction(c).await,
-        IndexerConnection::Sqlite(ref mut c) => sqlite::revert_transaction(c).await,
     }
 }
 
 pub async fn run_migration(conn: &mut IndexerConnection) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::run_migration(c).await,
-        IndexerConnection::Sqlite(ref mut c) => sqlite::run_migration(c).await,
     }
 }
 
@@ -360,9 +302,6 @@ pub async fn remove_index(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::remove_index(c, namespace, identifier).await
-        }
-        IndexerConnection::Sqlite(ref mut c) => {
-            sqlite::remove_index(c, namespace, identifier).await
         }
     }
 }

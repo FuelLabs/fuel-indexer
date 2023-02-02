@@ -7,7 +7,6 @@ Thanks for your interest in contributing to the Fuel indexer! Below we've compil
   - [`docker`](#docker)
   - [Database](#database)
     - [PostgreSQL](#postgresql)
-    - [SQLite](#sqlite)
   - [SQLx](#sqlx)
 - [Building from source](#building-from-source)
 - [Run migrations](#run-migrations)
@@ -28,9 +27,10 @@ Thanks for your interest in contributing to the Fuel indexer! Below we've compil
 
 - We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. Postgres).
 - Docker can be downloaded [here](https://docs.docker.com/engine/install/).
+
 ### Database
 
-At this time, the Fuel indexer requires the use of a database. We currently support two database options: PostgreSQL and SQLite. PostgreSQL is a database solution with a complex feature set and requires a database server. SQLite is an embedded database solution with a simpler set of features and can be setup and moved to different systems.
+At this time, the Fuel indexer requires the use of a database. We currently support a single database option: Postgres. PostgreSQL is a database solution with a complex feature set and requires a database server.
 
 #### PostgreSQL
 
@@ -42,18 +42,10 @@ For Linux-based systems, the installation process is similar. First, you should 
 
 In either case, your PostgreSQL database should now be accessible at `postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]`.
 
-#### SQLite
-
-On macOS systems, you can install SQLite through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add SQLite to your system by running `brew install sqlite`. You can create a database by running `sqlite3 [DATABASE_FILE_PATH]`.
-
-For Linux-based systems, you should first install SQLite according to the instructions for your distribution. Once installed, you can create a database by running `sqlite3 [DATABASE_FILE_PATH]`.
-
-In either case, your SQLite database is now accessible at `sqlite://[DATABASE_FILE_PATH]`.
-
 ### SQLx
 
 - After setting up your database, you should install `sqlx-cli` in order to run migrations for your indexer service.
-- You can do so by running `cargo install sqlx-cli --features postgres,sqlite`.
+- You can do so by running `cargo install sqlx-cli --features postgres`.
 - Once installed, you can run the migrations by running the following command after changing `DATABASE_URL` to match your setup.
 
 ## Building from Source
@@ -65,14 +57,6 @@ git clone git@github.com:FuelLabs/fuel-indexer.git && cd fuel-indexer/
 ```
 
 ### Run migrations
-
-#### SQLite migrations
-
-```sh
-cd packages/fuel-indexer-database/sqlite
-sqlx create --database-url sqlite://test.db
-DATABASE_URL=sqlite://test.db sqlx migrate run
-```
 
 #### Postgres migrations
 
@@ -91,11 +75,11 @@ cargo run --bin fuel-indexer
 
 ## Testing
 
-Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use `--features postgres`, and for a SQLite backend use `--features sqlite`.
+Fuel indexer tests are currently broken out by a database feature flag. In order to run tests with a Postgres backend, use `--features postgres`.
 
 Further, the indexer uses end-to-end (E2E) tests. In order to trigger these end-to-end tests, you'll want to use the `e2e` features flag: `--features e2e`.
 
-> All end-to-end tests also require either a `postgres` or a `sqlite` feature flag as well. For example, to run the end-to-end tests with a Posgres backend, use `--features e2e,postgres`.
+> All end-to-end tests also require the use of a database feature. For example, to run the end-to-end tests with a Posgres backend, use `--features e2e,postgres`.
 
 ### Default tests
 
@@ -107,10 +91,6 @@ cargo test --locked --workspace --all-targets
 
 ```bash
 cargo test --locked --workspace --all-targets --features e2e,postgres
-```
-
-```bash
-cargo test --locked --workspace --all-targets --features e2e,sqlite
 ```
 
 ### `trybuild` tests

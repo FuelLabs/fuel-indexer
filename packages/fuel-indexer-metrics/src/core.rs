@@ -1,4 +1,4 @@
-use crate::queries::{PostgreQueries, SqliteQueries};
+use crate::queries::PostgreQueries;
 use prometheus::{self, register_int_counter, IntCounter};
 
 pub trait Metric {
@@ -11,14 +11,12 @@ pub struct Database {
     pub read_ops: IntCounter,
     pub bytes_written: IntCounter,
     pub bytes_read: IntCounter,
-    pub sqlite: SqliteQueries,
     pub postgres: PostgreQueries,
 }
 
 impl Metric for Database {
     fn init() -> Self {
         Self {
-            sqlite: SqliteQueries::init(),
             postgres: PostgreQueries::init(),
             write_ops: register_int_counter!("write_ops", "Count of write operations.")
                 .unwrap(),

@@ -5,7 +5,6 @@ use fuel_indexer_schema::{
     db::manager::SchemaManager,
     utils::{inject_native_entities_into_schema, schema_version},
 };
-use fuel_indexer_tests::fixtures::test_sqlite_db_path;
 use fuel_types::Address;
 use wasmer::{imports, Instance, Module, Store, WasmerEnv};
 use wasmer_compiler_cranelift::Cranelift;
@@ -15,7 +14,6 @@ fn compiler() -> Cranelift {
     Cranelift::default()
 }
 
-// TODO: sqlite and postgres now....
 const SIMPLE_WASM_MANIFEST: &str = include_str!("./../../assets/simple_wasm.yaml");
 const SIMPLE_WASM_GRAPHQL_SCHEMA: &str =
     include_str!("./../../assets/simple_wasm.graphql");
@@ -55,11 +53,6 @@ async fn load_wasm_module(database_url: &str) -> IndexerResult<Instance> {
 async fn test_schema_manager_generates_and_loads_schema_postgres() {
     let database_url = "postgres://postgres:my-secret@127.0.0.1:5432";
     generate_schema_then_load_schema_from_wasm_module(database_url).await;
-}
-
-#[tokio::test]
-async fn test_schema_manager_generates_and_loads_schema_sqlite() {
-    generate_schema_then_load_schema_from_wasm_module(&test_sqlite_db_path()).await;
 }
 
 async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {

@@ -118,7 +118,7 @@ This is a rough outline of what a contributor's workflow looks like:
 - Run tests and make sure all tests pass.
 - Your commit message should be formatted as `[commit type]: [short commit blurb]`
   - Examples:
-    - If you fixed a bug, your message is `fix: sqlite database locking issue`
+    - If you fixed a bug, your message is `fix: database locking issue`
     - If you added new functionality, your message would be `enhancement: i add
         something super cool`
     - If you just did a chore your message is: `chore: i did somthing not fun`

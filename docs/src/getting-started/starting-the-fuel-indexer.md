@@ -11,7 +11,7 @@ OPTIONS:
             Indexer service config file.
 
         --database <DATABASE>
-            Database type. [default: postgres] [possible values: postgres, sqlite]
+            Database type. [default: postgres] [possible values: postgres]
 
         --fuel-node-host <FUEL_NODE_HOST>
             Host of the running Fuel node. [default: 127.0.0.1]
@@ -56,9 +56,6 @@ OPTIONS:
         --run-migrations <run-migrations>
             Run database migrations before starting service. [default: true]
 
-        --sqlite-database <SQLITE_DATABASE>
-            Path to SQLite database. [default: sqlite.db]
-
     -V, --version
             Print version information
 ```
@@ -84,8 +81,7 @@ graphql_api:
     port: 29987
     run_migrations: false
 
-## Database configuration options. Use either the Postgres
-## configuration or the SQLite configuration, but not both
+## Database configuration options.
 
 database:
     postgres:
@@ -94,9 +90,6 @@ database:
         password:
         host: 127.0.0.1
         port: 5432
-
-    sqlite:
-        path: database/sqlite/sqlite.db
 
 metrics: true
 ```
