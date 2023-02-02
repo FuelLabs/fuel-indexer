@@ -22,7 +22,7 @@ hex = "0.4"
 itertools = { version = "0.10", optional = true }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 sha2 = "0.9"
-sqlx = { version = "0.6", optional = true, features = ["postgres", "runtime-tokio-rustls", "sqlite"] }
+sqlx = { version = "0.6", optional = true, features = ["postgres", "runtime-tokio-rustls"] }
 strum = { version = "0.24", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0", optional = true }
 
