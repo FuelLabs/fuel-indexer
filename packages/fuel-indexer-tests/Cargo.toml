@@ -37,9 +37,9 @@ fuel-indexer-schema = { version = "0.2", path = "./../fuel-indexer-schema" }
 fuel-indexer-types = { version = "0.2", path = "./../fuel-indexer-types" }
 fuel-tx = "0.23"
 fuel-types = "0.5"
-fuels = { version = "0.32", features = ["fuel-core-lib"] }
-fuels-abigen-macro = "0.32"
-fuels-core = "0.32"
+fuels = { version = "0.35", features = ["fuel-core-lib"] }
+fuels-macros = "0.35"
+fuels-core = "0.35"
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}

@@ -6,15 +6,16 @@ use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{
     DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
 };
-use fuels::core::parameters::StorageConfiguration;
 use fuels::{
-    fuels_abigen::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
         Contract, Provider, TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
+use fuels_core::parameters::StorageConfiguration;
+use fuels_macros::abigen;
+
 use sqlx::{
     pool::{Pool, PoolConnection},
     Postgres,
@@ -22,10 +23,10 @@ use sqlx::{
 use std::path::Path;
 use tracing_subscriber::filter::EnvFilter;
 
-abigen!(
-    FuelIndexerTest,
-    "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
-);
+abigen!(Contract(
+    name = "FuelIndexerTest",
+    abi = "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
+));
 
 pub async fn postgres_connection_pool() -> Pool<Postgres> {
     let config = DatabaseConfig::Postgres {

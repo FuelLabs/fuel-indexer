@@ -8,6 +8,6 @@ publish = false
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../fuel-indexer-tests" }
 fuel-types = "0.5"
-fuels = { version = "0.32", features = ["fuel-core-lib"] }
-fuels-abigen-macro = "0.32"
+fuels = { version = "0.35", features = ["fuel-core-lib"] }
+fuels-macros = "0.35"
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
