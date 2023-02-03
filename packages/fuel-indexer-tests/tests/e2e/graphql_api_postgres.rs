@@ -7,7 +7,7 @@ use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
         api_server_app_postgres, connect_to_deployed_contract, http_client,
-        indexer_service_postgres, setup_test_fuel_node, test_web::app,
+        indexer_service_postgres, setup_example_test_fuel_node, test_web::app,
     },
     utils::{
         get_test_chain_config_path, get_test_contract_bin_path,
@@ -24,10 +24,8 @@ use tokio::time::{sleep, Duration};
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
     let mut srvc = indexer_service_postgres().await;
     let api_app = api_server_app_postgres().await;
 
@@ -73,10 +71,8 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
     let mut srvc = indexer_service_postgres().await;
     let api_app = api_server_app_postgres().await;
 

@@ -141,6 +141,21 @@ pub async fn setup_test_fuel_node(
     Ok(())
 }
 
+pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
+    let wallet_path = Path::new(WORKSPACE_ROOT)
+        .join("assets")
+        .join("test-chain-config.json");
+
+    let contract_bin_path = Path::new(WORKSPACE_ROOT)
+        .join("contracts")
+        .join("fuel-indexer-test")
+        .join("out")
+        .join("debug")
+        .join("fuel-indexer-test.bin");
+
+    setup_test_fuel_node(wallet_path, Some(contract_bin_path)).await
+}
+
 pub async fn get_contract_id(
     wallet_path: &str,
     contract_bin_path: &str,
