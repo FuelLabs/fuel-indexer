@@ -16,7 +16,7 @@ fuel-indexer-postgres = { version = "0.2", path = "../fuel-indexer-database/post
 fuel-indexer-types = { version = "0.2", path = "../fuel-indexer-types" }
 fuel-tx = { version = "0.23", features = ["serde", "alloc"] }
 fuel-types = { version = "0.5", features = ["serde", "alloc"] }
-fuels-core = "0.30"
+fuels-core = "0.35"
 graphql-parser = "0.3"
 hex = "0.4"
 itertools = { version = "0.10", optional = true }
