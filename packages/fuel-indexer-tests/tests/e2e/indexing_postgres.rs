@@ -7,7 +7,7 @@ use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
         connect_to_deployed_contract, indexer_service_postgres, postgres_connection,
-        postgres_connection_pool, setup_test_fuel_node, test_web::app,
+        postgres_connection_pool, setup_example_test_fuel_node, test_web::app,
     },
     utils::{
         get_test_chain_config_path, get_test_contract_bin_path,
@@ -28,10 +28,7 @@ use tokio::time::{sleep, Duration};
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
 {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -106,10 +103,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_callreturn_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -158,10 +152,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut conn = pool.acquire().await.unwrap();
@@ -219,10 +210,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_ping_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -260,10 +248,7 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transfer_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -300,10 +285,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -340,10 +322,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -392,10 +371,7 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -442,10 +418,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -487,10 +460,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -532,10 +502,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_index_event_with_optional_fields_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -578,10 +545,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -618,10 +582,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_respects_start_block_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut conn = pool.acquire().await.unwrap();
@@ -711,10 +672,7 @@ async fn test_index_respects_start_block_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_test_fuel_node(
-        get_test_chain_config_path(),
-        Some(get_test_contract_bin_path()),
-    ));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
     let mut srv = indexer_service_postgres().await;
