@@ -54,7 +54,7 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test")
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .body(r#"{"query": "query { block { id height timestamp }}", "params": "b"}"#)
         .send()
@@ -103,7 +103,7 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test")
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .body(r#"{"query": "query { optionentity { id int_required int_optional_some addr_optional_none }}", "params": "b"}"#)
         .send()
