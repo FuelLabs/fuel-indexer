@@ -10,7 +10,7 @@ description = "Fuel Indexer Types"
 chrono = { version = "0.4", features = ["serde"] }
 fuel-tx = { version = "0.23", features = ["serde"] }
 fuel-types = "0.5"
-fuels-core = "0.30"
-fuels-types = "0.30"
+fuels-core = "0.35"
+fuels-types = "0.35"
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 sha2 = "0.9"
