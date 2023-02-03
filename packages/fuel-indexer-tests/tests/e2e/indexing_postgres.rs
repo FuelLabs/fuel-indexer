@@ -165,11 +165,11 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 
     let pool = postgres_connection_pool().await;
     let mut conn = pool.acquire().await.unwrap();
-    let result = sqlx::query("DELETE FROM fuel_indexer_test.tx")
+    let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.tx")
         .execute(&mut conn)
         .await
         .unwrap();
-    let result = sqlx::query("DELETE FROM fuel_indexer_test.block")
+    let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.block")
         .execute(&mut conn)
         .await
         .unwrap();
@@ -626,11 +626,11 @@ async fn test_index_respects_start_block_postgres() {
     let pool = postgres_connection_pool().await;
     let mut conn = pool.acquire().await.unwrap();
 
-    let result = sqlx::query("DELETE FROM fuel_indexer_test.tx")
+    let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.tx")
         .execute(&mut conn)
         .await
         .unwrap();
-    let result = sqlx::query("DELETE FROM fuel_indexer_test.block")
+    let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.block")
         .execute(&mut conn)
         .await
         .unwrap();
