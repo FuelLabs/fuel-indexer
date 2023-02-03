@@ -1,8 +1,7 @@
+pub(crate) use crate::commands::run;
 use clap::{Parser, Subcommand};
 use fuel_indexer_lib::config::IndexerArgs;
 use fuel_indexer_lib::utils::bin_utils::init_logging;
-
-pub mod run;
 
 #[derive(Parser, Debug)]
 #[clap(

@@ -1,4 +1,4 @@
-use fuel_indexer_api_server::api::GraphQlApi;
+use crate::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{ApiServerArgs, IndexerConfig};
 use tracing::info;

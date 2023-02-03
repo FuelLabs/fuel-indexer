@@ -2,8 +2,6 @@
 # Use the new resolver to prevent dev-deps and build-deps from enabling debugging or test features in production.
 resolver = "2"
 members = [
-   "bin/fuel-indexer",
-   "bin/fuel-indexer-api-server",
    "examples/block-explorer/explorer-index",
    "examples/hello-world-native/hello-index-native",
    "examples/hello-world/hello-index",

@@ -2599,11 +2599,14 @@ dependencies = [
  "anyhow",
  "async-std",
  "async-trait",
+ "axum",
  "bincode",
  "cfg-if 1.0.0",
  "chrono",
+ "clap 4.1.4",
  "fuel-crypto",
  "fuel-gql-client 0.15.1",
+ "fuel-indexer-api-server",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2629,6 +2632,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tracing",
+ "tracing-subscriber 0.3.16",
  "wasmer",
  "wasmer-compiler-cranelift",
  "wasmer-engine-universal",
@@ -2641,6 +2645,7 @@ dependencies = [
  "anyhow",
  "async-std",
  "axum",
+ "clap 4.1.4",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2659,33 +2664,7 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
-]
-
-[[package]]
-name = "fuel-indexer-api-server-bin"
-version = "0.2.2"
-dependencies = [
- "anyhow",
- "clap 4.1.4",
- "fuel-indexer-api-server",
- "fuel-indexer-database",
- "fuel-indexer-lib",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "fuel-indexer-bin"
-version = "0.2.2"
-dependencies = [
- "anyhow",
- "clap 4.1.4",
- "fuel-indexer",
- "fuel-indexer-api-server",
- "fuel-indexer-database",
- "fuel-indexer-lib",
- "tokio",
- "tracing",
+ "tracing-subscriber 0.3.16",
 ]
 
 [[package]]
