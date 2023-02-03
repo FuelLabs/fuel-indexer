@@ -23,24 +23,24 @@ services:
       timeout: 60s
       retries: 5
       start_period: 80s
-  fuel-node:
+  hello-world-test-node:
     build:
       context: ./../../
-      dockerfile: ./ci/Dockerfile.fuel-node
-    image: fuel-indexer/local:fuel-node
+      dockerfile: ./ci/Dockerfile.hello-world-test-node
+    image: fuel-indexer/local:hello-world-test-node
     command: bash -c "./hello-world-test-node --host 0.0.0.0:4000 --chain-config test-chain-config.json"
     ports:
       - "4000:4000"
     volumes:
-      - .:/usr/local/fuel-node
+      - .:/usr/local/hello-world-test-node
     depends_on:
       - postgres
   fuel-indexer:
     image: ghcr.io/fuellabs/fuel-indexer:latest
-    command: bash -c "sleep 2 && ./fuel-indexer --fuel-node-host fuel-node --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
+    command: bash -c "sleep 2 && ./fuel-indexer --fuel-node-host hello-world-test-node --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
     ports:
       - "29987:29987"
     volumes:
       - .:/usr/local/fuel-indexer
     depends_on:
-      - fuel-node
+      - hello-world-test-node
