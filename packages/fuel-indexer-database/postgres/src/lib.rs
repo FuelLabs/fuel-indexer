@@ -134,12 +134,13 @@ pub async fn new_graph_root(
     METRICS.db.postgres.new_graph_root_calls.inc();
 
     let mut builder = sqlx::QueryBuilder::new(
-        "INSERT INTO graph_registry_graph_root (version, schema_name, query, schema)",
+        "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, query, schema)",
     );
 
     builder.push_values(std::iter::once(root), |mut b, root| {
         b.push_bind(root.version)
             .push_bind(root.schema_name)
+            .push_bind(root.schema_identifier)
             .push_bind(root.query)
             .push_bind(root.schema);
     });
@@ -153,29 +154,71 @@ pub async fn new_graph_root(
 
 pub async fn graph_root_latest(
     conn: &mut PoolConnection<Postgres>,
-    name: &str,
+    namespace: &str,
+    identifier: &str,
 ) -> sqlx::Result<GraphRoot> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.graph_root_latest_calls.inc();
 
-    sqlx::query_as!(
-        GraphRoot,
-        "SELECT * FROM graph_registry_graph_root WHERE schema_name = $1 ORDER BY id DESC LIMIT 1",
-        name
-    )
+    let row = sqlx::query(&format!(
+        r#"
+        SELECT *
+        FROM graph_registry_graph_root
+        WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}'
+        ORDER BY id DESC LIMIT 1"#
+    ))
     .fetch_one(conn)
-    .await
+    .await?;
+
+    let id: i64 = row.get(0);
+    let version: String = row.get(1);
+    let schema_name: String = row.get(2);
+    let query: String = row.get(3);
+    let schema: String = row.get(4);
+    let schema_identifier: String = row.get(5);
+
+    Ok(GraphRoot {
+        id,
+        version,
+        schema_name,
+        query,
+        schema,
+        schema_identifier,
+    })
 }
 
 pub async fn type_id_list_by_name(
     conn: &mut PoolConnection<Postgres>,
-    name: &str,
+    namespace: &str,
     version: &str,
+    identifier: &str,
 ) -> sqlx::Result<Vec<TypeId>> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.type_id_list_by_name_calls.inc();
 
-    sqlx::query_as!(TypeId, "SELECT id, schema_version, schema_name, graphql_name, table_name FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_version = $2", name, version).fetch_all(conn).await
+    Ok(sqlx::query(&format!(r#"
+        SELECT id, schema_version, schema_name, schema_identifier, graphql_name, table_name 
+        FROM graph_registry_type_ids 
+        WHERE schema_name = '{namespace}' AND schema_version = '{version}' AND schema_identifier = '{identifier}'"#
+    ))
+    .fetch_all(conn)
+    .await?.iter().map(|row| {
+        let id: i64 = row.get(0);
+        let schema_version: String = row.get(1);
+        let schema_name: String = row.get(2);
+        let table_name: String = row.get(3);
+        let graphql_name: String = row.get(4);
+        let schema_identifier = row.get(5);
+
+        TypeId{
+            id,
+            schema_identifier,
+            schema_version,
+            schema_name,
+            table_name,
+            graphql_name,
+        }
+    }).collect::<Vec<TypeId>>())
 }
 
 pub async fn type_id_latest(
@@ -203,12 +246,13 @@ pub async fn type_id_insert(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.type_id_insert_calls.inc();
 
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, graphql_name, table_name)");
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name)");
 
     builder.push_values(type_ids.into_iter(), |mut b, tid| {
         b.push_bind(tid.id)
             .push_bind(tid.schema_version)
             .push_bind(tid.schema_name)
+            .push_bind(tid.schema_identifier)
             .push_bind(tid.graphql_name)
             .push_bind(tid.table_name);
     });
@@ -222,19 +266,21 @@ pub async fn type_id_insert(
 
 pub async fn schema_exists(
     conn: &mut PoolConnection<Postgres>,
-    name: &str,
+    namespace: &str,
+    identifier: &str,
     version: &str,
 ) -> sqlx::Result<bool> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.schema_exists_calls.inc();
 
-    let versions = sqlx::query_as!(NumVersions, "SELECT count(*) as num FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_version = $2", name, version).fetch_one(conn).await?;
+    let row = sqlx::query(&format!(r#"
+        SELECT COUNT(*)
+        FROM graph_registry_type_ids
+        WHERE schema_name = '{namespace}'  AND schema_identifier = '{identifier}' AND schema_version = '{version}'
+    "#,)).fetch_one(conn).await?;
 
-    Ok(versions.num.is_some()
-        && versions
-            .num
-            .expect("num field should be present in versions query results")
-            > 0)
+    let num: i64 = row.get(0);
+    Ok(num > 0)
 }
 
 pub async fn new_column_insert(

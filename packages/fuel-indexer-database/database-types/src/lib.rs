@@ -25,6 +25,7 @@ pub struct GraphRoot {
     pub id: i64,
     pub version: String,
     pub schema_name: String,
+    pub schema_identifier: String,
     pub query: String,
     pub schema: String,
 }
@@ -33,6 +34,7 @@ pub struct GraphRoot {
 pub struct NewGraphRoot {
     pub version: String,
     pub schema_name: String,
+    pub schema_identifier: String,
     pub query: String,
     pub schema: String,
 }
@@ -42,6 +44,7 @@ pub struct TypeId {
     pub id: i64,
     pub schema_version: String,
     pub schema_name: String,
+    pub schema_identifier: String,
     pub graphql_name: String,
     pub table_name: String,
 }

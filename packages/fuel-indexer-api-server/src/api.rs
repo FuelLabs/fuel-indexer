@@ -121,7 +121,7 @@ impl GraphQlApi {
         }
 
         let graph_route = Router::new()
-            .route("/:namespace", post(query_graph))
+            .route("/:namespace/:identifier", post(query_graph))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()));
 

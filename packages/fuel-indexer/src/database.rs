@@ -14,6 +14,7 @@ pub struct Database {
     pub pool: IndexerConnectionPool,
     stashed: Option<IndexerConnection>,
     pub namespace: String,
+    pub identifier: String,
     pub version: String,
     pub schema: HashMap<String, Vec<String>>,
     pub tables: HashMap<i64, String>,
@@ -31,6 +32,7 @@ impl Database {
             pool,
             stashed: None,
             namespace: Default::default(),
+            identifier: Default::default(),
             version: Default::default(),
             schema: Default::default(),
             tables: Default::default(),
@@ -69,7 +71,10 @@ impl Database {
         inserts: Vec<String>,
         updates: Vec<String>,
     ) -> String {
-        let sql_table = self.pool.database_type().table_name(&self.namespace, table);
+        let sql_table = self
+            .pool
+            .database_type()
+            .table_name(&self.namespace(), table);
         format!(
             "INSERT INTO {}
                 ({})
@@ -84,8 +89,15 @@ impl Database {
         )
     }
 
+    fn namespace(&self) -> String {
+        format!("{}_{}", self.namespace, self.identifier)
+    }
+
     fn get_query(&self, table: &str, object_id: u64) -> String {
-        let sql_table = self.pool.database_type().table_name(&self.namespace, table);
+        let sql_table = self
+            .pool
+            .database_type()
+            .table_name(&self.namespace(), table);
         format!("SELECT object from {sql_table} where id = {object_id}")
     }
 
@@ -152,6 +164,7 @@ impl Database {
         match manifest.is_native() {
             true => {
                 self.namespace = manifest.namespace.clone();
+                self.identifier = manifest.identifier.clone();
 
                 let mut conn = self.pool.acquire().await?;
                 self.version =
@@ -183,6 +196,7 @@ impl Database {
                 let instance = instance.unwrap();
 
                 self.namespace = ffi::get_namespace(instance)?;
+                self.identifier = ffi::get_identifier(instance)?;
                 self.version = ffi::get_version(instance)?;
 
                 let mut conn = self.pool.acquire().await?;

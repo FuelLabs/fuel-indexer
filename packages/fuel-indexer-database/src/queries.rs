@@ -4,11 +4,12 @@ use sqlx::types::JsonValue;
 
 pub async fn graph_root_latest(
     conn: &mut IndexerConnection,
-    name: &str,
+    namespace: &str,
+    identifier: &str,
 ) -> sqlx::Result<GraphRoot> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::graph_root_latest(c, name).await
+            postgres::graph_root_latest(c, namespace, identifier).await
         }
     }
 }
@@ -26,10 +27,11 @@ pub async fn type_id_list_by_name(
     conn: &mut IndexerConnection,
     name: &str,
     version: &str,
+    identifier: &str,
 ) -> sqlx::Result<Vec<TypeId>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::type_id_list_by_name(c, name, version).await
+            postgres::type_id_list_by_name(c, name, version, identifier).await
         }
     }
 }
@@ -58,12 +60,13 @@ pub async fn type_id_insert(
 
 pub async fn schema_exists(
     conn: &mut IndexerConnection,
-    name: &str,
+    namespace: &str,
+    identifier: &str,
     version: &str,
 ) -> sqlx::Result<bool> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::schema_exists(c, name, version).await
+            postgres::schema_exists(c, namespace, identifier, version).await
         }
     }
 }

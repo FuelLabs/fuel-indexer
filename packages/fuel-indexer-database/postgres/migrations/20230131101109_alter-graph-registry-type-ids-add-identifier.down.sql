@@ -1,0 +1,5 @@
+alter table graph_registry_type_ids drop column schema_identifier;
+alter table graph_registry_graph_root drop column schema_identifier;
+
+alter table graph_registry_graph_root drop constraint graph_registry_graph_root_version_schema_name_schema_identifier_key;
+alter table graph_registry_graph_root add constraint graph_registry_graph_root_version_schema_name_key unique(version, schema_name);
