@@ -57,12 +57,12 @@ pub(crate) async fn query_graph(
         Ok(schema) => match run_query(query, schema, &pool).await {
             Ok(response) => Ok(axum::Json(response)),
             Err(e) => {
-                error!("query_graph error: {e}",);
+                error!("query_graph error: {e}");
                 Err(e)
             }
         },
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
-            "The graph '{namespace}' was not found.",
+            "The graph '{namespace}.{identifier}' was not found."
         )))),
     }
 }
@@ -94,7 +94,7 @@ pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
             ServiceStatus::from(fuel_node_health)
         }
         Err(e) => {
-            error!("Failed to fetch fuel /health status: {e}.",);
+            error!("Failed to fetch fuel /health status: {e}.");
             ServiceStatus::NotOk
         }
     }
@@ -166,7 +166,7 @@ pub(crate) async fn stop_index(
         .await?;
 
         return Ok(Json(json!({
-            "success": "true",
+            "success": "true"
         })));
     }
 
@@ -280,7 +280,7 @@ pub async fn run_query(
             Ok(row)
         }
         Err(e) => {
-            error!("Error querying database: {e}.",);
+            error!("Error querying database: {e}.");
             Err(e.into())
         }
     }

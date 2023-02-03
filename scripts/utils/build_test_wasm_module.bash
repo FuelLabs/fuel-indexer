@@ -1,5 +1,5 @@
 #!/bin/bash
-# 
+#
 # Rebuilds all WASM modules used for testing
 #
 #   Usage: bash scripts/utils/build_test_wasm_module.bash
@@ -23,9 +23,9 @@ bash scripts/stripper.bash explorer_index.wasm
 cp explorer_index.wasm target/wasm32-unknown-unknown/release/
 rm -fv explorer_index.wasm
 
-
 cargo build -p hello_index --release --target wasm32-unknown-unknown
 bash scripts/stripper.bash hello_index.wasm
+cp hello_index.wasm target/wasm32-unknown-unknown/release/
 rm -fv hello_index.wasm
 
 set +ex
