@@ -3,7 +3,7 @@
 Below is a mapping of GraphQL schema types to their database equivalents.
 
 | Sway Type | GraphQL Schema Type | Postgres Type |
-|------|----------|----------|----------|
+|------|----------|----------|
 | u64 | ID | bigint primary key |
 | b256 | Address | varchar(64) |
 | str[4] | Bytes4 | varchar(16) |
