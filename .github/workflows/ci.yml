@@ -50,19 +50,16 @@ jobs:
     steps:
       - name: Check rustc version
         run: |
+          # Check rustc version, verify if updated 
           RUSTC_VERSION=$(rustc --version | awk '{print $2}')
           if [ "$RUSTC_VERSION" != "stable" ]; then
-            echo "Updating Rustc to the latest version: the-latest-version"
+            echo "Updating Rustc to the latest version: stable"
             curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable 
-          fi 
-
-      - name: Verify Rustc installation
-      run: |
-        RUSTC_VERSION=$(rustc --version | awk '{print $2}')
-        if [ "$RUSTC_VERSION" != "stable" ]; then
-          echo "Error: Failed to install the latest Rustc version: $RUSTC_VERSION"
-          exit 1
-        fi
+            RUSTC_VERSION=$(rustc --version | awk '{print $2}')
+            if [ "$RUSTC_VERSION" != "stable" ]; then
+              echo "Error: Failed to install the latest Rustc version: $RUSTC_VERSION"
+              exit 1
+            fi
 
   get-workspace-members:
     needs:
