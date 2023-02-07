@@ -48,7 +48,6 @@ jobs:
       -cancel-previous-runs
     runs-on: ubuntu-latest
     steps:
-      - name: Check Rustc version
       run: |
         RUSTC_VERSION=$(rustc --version | awk '{print $2}')
         if [ "$RUSTC_VERSION" != "stable" ]; then
