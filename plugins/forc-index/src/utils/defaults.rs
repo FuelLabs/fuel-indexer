@@ -63,14 +63,14 @@ pub fn default_index_manifest(
     project_path: &str,
 ) -> String {
     format!(
-        r#"# A namespace is a logical grouping of declared names. Think of the namespace 
+        r#"# A namespace is a logical grouping of declared names. Think of the namespace
 # as an organization identifier
 namespace: {namespace}
 
 # The identifier field is used to identify the given index.
 identifier: {index_name}
 
-# The abi option is used to provide a link to the Sway JSON ABI that is generated when you 
+# The abi option is used to provide a link to the Sway JSON ABI that is generated when you
 # build your project.
 abi: ~
 
@@ -80,17 +80,17 @@ start_block: ~
 # The contract_id specifies which particular contract you would like your index to subscribe to.
 contract_id: ~
 
-# The graphql_schema field contains the file path that points to the GraphQL schema for the 
+# The graphql_schema field contains the file path that points to the GraphQL schema for the
 # given index.
 graphql_schema: {project_path}/schema/{index_name}.schema.graphql
 
-# The module field contains a file path that points to code that will be run as an executor inside 
+# The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
 # Important: At this time, wasm is the preferred method of execution.
 module:
     wasm: ~
 
-# The report_metrics field contains boolean whether or not to report Prometheus  metrics to the 
+# The report_metrics field contains boolean whether or not to report Prometheus  metrics to the
 # Fuel backend
 report_metrics: true"#
     )
@@ -119,7 +119,7 @@ pub mod {index_name}_index_mod {{
         for transaction in block_data.transactions.iter() {{
             Logger::info("Handling a transaction (>'.')>");
 
-            let tx = Tx{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: tx.id }};
+            let tx = Tx{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
             tx.save();
         }}
     }}
