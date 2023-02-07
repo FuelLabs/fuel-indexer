@@ -48,12 +48,13 @@ jobs:
       -cancel-previous-runs
     runs-on: ubuntu-latest
     steps:
-      run: |
-        RUSTC_VERSION=$(rustc --version | awk '{print $2}')
-        if [ "$RUSTC_VERSION" != "stable" ]; then
-          echo "Updating Rustc to the latest version: the-latest-version"
-          curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable 
-        fi 
+      - name: Check rustc version
+        run: |
+          RUSTC_VERSION=$(rustc --version | awk '{print $2}')
+          if [ "$RUSTC_VERSION" != "stable" ]; then
+            echo "Updating Rustc to the latest version: the-latest-version"
+            curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable 
+          fi 
 
   get-workspace-members:
     needs:
