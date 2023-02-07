@@ -45,12 +45,12 @@ jobs:
 
   check-rustc:
     needs:
-      -cancel-previous-runs
+      - cancel-previous-runs
     runs-on: ubuntu-latest
     steps:
       - name: Check rustc version
         run: |
-          # Check rustc version, verify if updated 
+          # Check rustc version, install if not on latest stable
           RUSTC_VERSION=$(rustc --version | awk '{print $2}')
           if [ "$RUSTC_VERSION" != "stable" ]; then
             echo "Updating Rustc to the latest version: stable"
