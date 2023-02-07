@@ -55,11 +55,7 @@ jobs:
           if [ "$RUSTC_VERSION" != "stable" ]; then
             echo "Updating Rustc to the latest version: stable"
             curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable 
-            RUSTC_VERSION=$(rustc --version | awk '{print $2}')
-            if [ "$RUSTC_VERSION" != "stable" ]; then
-              echo "Error: Failed to install the latest Rustc version: $RUSTC_VERSION"
-              exit 1
-            fi
+          fi
 
   get-workspace-members:
     needs:
