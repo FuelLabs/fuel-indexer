@@ -56,6 +56,14 @@ jobs:
             curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable 
           fi 
 
+      - name: Verify Rustc installation
+      run: |
+        RUSTC_VERSION=$(rustc --version | awk '{print $2}')
+        if [ "$RUSTC_VERSION" != "stable" ]; then
+          echo "Error: Failed to install the latest Rustc version: $RUSTC_VERSION"
+          exit 1
+        fi
+
   get-workspace-members:
     needs:
       - cancel-previous-runs
