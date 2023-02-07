@@ -43,6 +43,19 @@ jobs:
       - name: Run Cargo.toml linter
         run: git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
 
+  check-rustc:
+    needs:
+      -cancel-previous-runs
+    runs-on: ubuntu-latest
+    steps:
+      name: Check Rustc version
+      run: |
+        RUSTC_VERSION=$(rustc --version | awk '{print $2}')
+        if [ "$RUSTC_VERSION" != "stable" ]; then
+          echo "Updating Rustc to the latest version: the-latest-version"
+          curl https://sh.rustup.rs -sSf | sh -s -- -y --default-toolchain stable 
+        fi 
+
   get-workspace-members:
     needs:
       - cancel-previous-runs
