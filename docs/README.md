@@ -326,9 +326,9 @@ With our index deployed, after a few seconds, we should be able to query for new
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```bash
-curl -X POST http://0.0.0.0:29987/api/graph/my_project \
+curl -X POST http://0.0.0.0:29987/api/graph/my_project/hello_index \
    -H 'content-type: application/json' \
-   -d '{"query": "query { tx { id hash status block }}", "params": "b"}' \
+   -d '{"query": "query { tx { id hash block }}", "params": "b"}' \
 | json_pp
 ```
 
