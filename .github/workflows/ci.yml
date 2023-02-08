@@ -51,7 +51,7 @@ jobs:
     steps:
       - name: Check rustc version
         run: |
-          # Check rustc version, log message if it doesn't match env 
+          # Check rustc version, log message and exit if it doesnt match env 
           CURRENT_RUSTC_VERSION=$(rustc --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
           if [ "$CURRENT_RUSTC_VERSION" != "$RUSTC_VERSION" ]; then
             echo "Rustc version ($CURRENT_RUSTC_VERSION) does not match the required version ($RUSTC_VERSION)"
