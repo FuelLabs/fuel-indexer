@@ -290,6 +290,39 @@ jobs:
       - name: Stop testing components
         run: kill -9 $(lsof -ti:4000)
 
+  check-forc-index:
+    if: github.event_name != 'release' && github.event.action != 'published'
+    needs:
+      - cancel-previous-runs
+      - cargo-toml-fmt-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: Install wasm-snip
+        run: cargo install wasm-snip
+
+      - name: Build forc index
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: -p forc-index
+
+      - name: Create new index
+        run: |
+          mkdir ../forc_index_test && cd ../forc_index_test && ../fuel-indexer/target/debug/forc-index init --namespace fuel
+
+      - name: Build new index
+        working-directory: ../forc_index_test
+        run: ../fuel-indexer/target/debug/forc-index build
+
   publish-docker-image:
     needs:
       - cancel-previous-runs
