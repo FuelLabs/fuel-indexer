@@ -368,9 +368,9 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
 <h2 id="3-querying-for-data"><a class="header" href="#3-querying-for-data">3. Querying for data</a></h2>
 <p>With our index deployed, after a few seconds, we should be able to query for newly indexed data.</p>
 <p>Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.</p>
-<pre><code class="language-bash">curl -X POST http://0.0.0.0:29987/api/graph/my_project \
+<pre><code class="language-bash">curl -X POST http://0.0.0.0:29987/api/graph/my_project/hello_index \
    -H 'content-type: application/json' \
-   -d '{&quot;query&quot;: &quot;query { tx { id hash status block }}&quot;, &quot;params&quot;: &quot;b&quot;}' \
+   -d '{&quot;query&quot;: &quot;query { tx { id hash block }}&quot;, &quot;params&quot;: &quot;b&quot;}' \
 | json_pp
 </code></pre>
 <pre><code class="language-text">  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
