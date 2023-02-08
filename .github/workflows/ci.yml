@@ -15,7 +15,7 @@ env:
   RUSTFLAGS: -D warnings
   REGISTRY: ghcr.io
   SQLX_OFFLINE: true
-  RUSTC_VERSION: 1.67
+  RUSTC_VERSION: 1.67.0
 
 jobs:
   cancel-previous-runs:
