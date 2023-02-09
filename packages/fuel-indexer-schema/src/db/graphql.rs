@@ -1,5 +1,5 @@
 use crate::db::tables::Schema;
-use crate::sql_types::{QueryElement, QueryFilter, UserQuery};
+use crate::sql_types::{DbType, QueryElement, QueryFilter, UserQuery};
 use graphql_parser::query as gql;
 use std::collections::HashMap;
 use thiserror::Error;
@@ -266,7 +266,7 @@ impl Operation {
             let mut elements: Vec<QueryElement> = Vec::new();
             let mut entities: Vec<String> = Vec::new();
             let mut joins: Vec<String> = Vec::new();
-            let mut entity_stack: Vec<String> = Vec::new();
+            let mut nested_entity_stack: Vec<String> = Vec::new();
 
             if let Selection::Field(entity_name, filters, selections) = selection {
                 let mut queue: Vec<Selection> = Vec::new();
@@ -285,19 +285,21 @@ impl Operation {
                         .collect::<Vec<Selection>>(),
                 );
 
-                let mut tracker = entities.len();
+                let mut last_seen_entities_len = entities.len();
 
                 while let Some(current) = queue.pop() {
                     let entity_name = entities.pop().unwrap();
 
-                    if let Some(current_level) = entity_stack.last() {
-                        if entities.len() < tracker && current_level != &entity_name {
-                            let _ = entity_stack.pop();
+                    if let Some(current_level) = nested_entity_stack.last() {
+                        if entities.len() < last_seen_entities_len
+                            && current_level != &entity_name
+                        {
+                            let _ = nested_entity_stack.pop();
                             elements.push(QueryElement::ObjectClosingBoundary);
                         }
                     }
 
-                    tracker = entities.len();
+                    last_seen_entities_len = entities.len();
 
                     if let Selection::Field(field_name, _f, subselections) = current {
                         if subselections.selections.is_empty() {
@@ -324,7 +326,7 @@ impl Operation {
                                         "INNER JOIN {reference_table} ON {referencing_key} = {primary_key}");
                                     joins.push(join);
 
-                                    entity_stack.push(field_name.clone());
+                                    nested_entity_stack.push(field_name.clone());
                                 }
                             }
 
@@ -342,10 +344,10 @@ impl Operation {
                     }
                 }
 
-                if !entity_stack.is_empty() {
+                if !nested_entity_stack.is_empty() {
                     elements.append(&mut vec![
                         QueryElement::ObjectClosingBoundary;
-                        entity_stack.len()
+                        nested_entity_stack.len()
                     ]);
                 }
 
@@ -390,15 +392,13 @@ impl GraphqlQuery {
         queries
     }
 
-    pub fn as_sql(&self, schema: &Schema, _jsonify: bool) -> Vec<String> {
+    pub fn as_sql(&self, schema: &Schema, db_type: DbType) -> Vec<String> {
         let queries = self.parse(schema);
 
-        let sql_queries = queries
+        queries
             .into_iter()
-            .map(|q| q.to_sql())
-            .collect::<Vec<String>>();
-
-        sql_queries
+            .map(|q| q.to_sql(&db_type))
+            .collect::<Vec<String>>()
     }
 }
 

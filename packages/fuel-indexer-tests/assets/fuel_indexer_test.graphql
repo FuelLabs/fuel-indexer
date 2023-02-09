@@ -17,6 +17,7 @@ type QueryRoot {
     scriptresult: ScriptResult
     messageout: MessageOut
     optionentity: OptionEntity
+    tupleentity: TupleEntity
     person: Person
     book: Book
     library: Library

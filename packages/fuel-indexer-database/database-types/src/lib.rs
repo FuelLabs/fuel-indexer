@@ -473,36 +473,36 @@ pub struct UserQuery {
 }
 
 impl UserQuery {
-    pub fn to_sql(&self) -> String {
-        let db_type = DbType::Postgres;
+    pub fn to_sql(&self, db_type: &DbType) -> String {
         match db_type {
             DbType::Postgres => {
-                let mut s = Vec::new();
                 let mut peekable_elements = self.elements.iter().peekable();
 
+                let mut elements = Vec::new();
                 while let Some(e) = peekable_elements.next() {
                     match e {
                         QueryElement::Field { key, value } => {
-                            s.push(format!("'{}', {}", key, value));
-                            if let Some(el) = peekable_elements.peek() {
-                                match el {
+                            elements.push(format!("'{key}', {value}"));
+                            if let Some(next_element) = peekable_elements.peek() {
+                                match next_element {
                                     QueryElement::Field { .. }
                                     | QueryElement::ObjectOpeningBoundary { .. } => {
-                                        s.push(",".to_string());
+                                        elements.push(",".to_string());
                                     }
                                     _ => {}
                                 }
                             }
                         }
                         QueryElement::ObjectOpeningBoundary { key } => {
-                            s.push(format!("'{}', json_build_object(", key))
+                            elements.push(format!("'{key}', json_build_object("))
                         }
                         QueryElement::ObjectClosingBoundary => {
-                            s.push(")".to_string());
-                            if let Some(el) = peekable_elements.peek() {
-                                if let QueryElement::Field { .. } = el {
-                                    s.push(",".to_string());
-                                }
+                            elements.push(")".to_string());
+
+                            if let Some(QueryElement::Field { .. }) =
+                                peekable_elements.peek()
+                            {
+                                elements.push(",".to_string());
                             }
                         }
                     }
@@ -514,11 +514,11 @@ impl UserQuery {
                     .map(|f| format!("{} {} {}", f.key, f.relation, f.value))
                     .collect();
 
-                let parsed_elements = s.join("");
+                let elements_string = elements.join("");
 
                 let mut query = format!(
                     "SELECT json_build_object({}) FROM {}.{} {}",
-                    parsed_elements,
+                    elements_string,
                     self.namespace_identifier,
                     self.entity_name,
                     self.joins.join(" ")
@@ -526,7 +526,7 @@ impl UserQuery {
 
                 if !filters.is_empty() {
                     let filter_text = filters.join(" AND ");
-                    query = format!("{} WHERE {}", query, filter_text);
+                    query = format!("{query} WHERE {filter_text}");
                 }
 
                 query
