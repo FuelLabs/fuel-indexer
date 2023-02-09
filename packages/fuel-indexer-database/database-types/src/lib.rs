@@ -448,18 +448,28 @@ impl IdCol {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct UserQueryElement {
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum QueryElement {
+    Field { key: String, value: String },
+    ObjectOpeningBoundary { key: String },
+    ObjectClosingBoundary,
+}
+
+// TODO: Adjust filter to allow for more complex filtering
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct QueryFilter {
     pub key: String,
+    pub relation: String,
     pub value: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UserQuery {
-    pub elements: Vec<UserQueryElement>,
+    pub elements: Vec<QueryElement>,
     pub joins: Vec<String>,
     pub namespace_identifier: String,
-    pub top_entity: String,
+    pub entity_name: String,
+    pub filters: Vec<QueryFilter>,
 }
 
 impl UserQuery {
@@ -471,20 +481,26 @@ impl UserQuery {
                 let mut peekable_elements = self.elements.iter().peekable();
 
                 while let Some(e) = peekable_elements.next() {
-                    match e.value.as_str() {
-                        "JSON_OPEN" => s.push(format!("'{}', json_build_object(", e.key)),
-                        "JSON_CLOSE" => {
-                            s.push(")".to_string());
+                    match e {
+                        QueryElement::Field { key, value } => {
+                            s.push(format!("'{}', {}", key, value));
                             if let Some(el) = peekable_elements.peek() {
-                                if el.value != *"JSON_CLOSE" {
-                                    s.push(",".to_string());
+                                match el {
+                                    QueryElement::Field { .. }
+                                    | QueryElement::ObjectOpeningBoundary { .. } => {
+                                        s.push(",".to_string());
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
-                        _ => {
-                            s.push(format!("'{}', {}", e.key, e.value));
+                        QueryElement::ObjectOpeningBoundary { key } => {
+                            s.push(format!("'{}', json_build_object(", key))
+                        }
+                        QueryElement::ObjectClosingBoundary => {
+                            s.push(")".to_string());
                             if let Some(el) = peekable_elements.peek() {
-                                if el.value != *"JSON_CLOSE" {
+                                if let QueryElement::Field { .. } = el {
                                     s.push(",".to_string());
                                 }
                             }
@@ -492,17 +508,28 @@ impl UserQuery {
                     }
                 }
 
+                let filters: Vec<String> = self
+                    .filters
+                    .iter()
+                    .map(|f| format!("{} {} {}", f.key, f.relation, f.value))
+                    .collect();
+
                 let parsed_elements = s.join("");
 
-                let query_string = format!(
+                let mut query = format!(
                     "SELECT json_build_object({}) FROM {}.{} {}",
                     parsed_elements,
                     self.namespace_identifier,
-                    self.top_entity,
+                    self.entity_name,
                     self.joins.join(" ")
                 );
 
-                query_string
+                if !filters.is_empty() {
+                    let filter_text = filters.join(" AND ");
+                    query = format!("{} WHERE {}", query, filter_text);
+                }
+
+                query
             }
         }
     }

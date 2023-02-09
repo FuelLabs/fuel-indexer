@@ -1,5 +1,5 @@
 use crate::db::tables::Schema;
-use crate::sql_types::{UserQuery, UserQueryElement};
+use crate::sql_types::{QueryElement, QueryFilter, UserQuery};
 use graphql_parser::query as gql;
 use std::collections::HashMap;
 use thiserror::Error;
@@ -263,12 +263,12 @@ impl Operation {
 
         // TODO: Add filters
         for selection in selections.get_selections() {
-            let mut elements: Vec<UserQueryElement> = Vec::new();
+            let mut elements: Vec<QueryElement> = Vec::new();
             let mut entities: Vec<String> = Vec::new();
             let mut joins: Vec<String> = Vec::new();
             let mut entity_stack: Vec<String> = Vec::new();
 
-            if let Selection::Field(entity_name, _filters, selections) = selection {
+            if let Selection::Field(entity_name, filters, selections) = selection {
                 let mut queue: Vec<Selection> = Vec::new();
 
                 entities.append(
@@ -293,10 +293,7 @@ impl Operation {
                     if let Some(current_level) = entity_stack.last() {
                         if entities.len() < tracker && current_level != &entity_name {
                             let _ = entity_stack.pop();
-                            elements.push(UserQueryElement {
-                                key: "JSON_CLOSE".to_string(),
-                                value: "JSON_CLOSE".to_string(),
-                            });
+                            elements.push(QueryElement::ObjectClosingBoundary);
                         }
                     }
 
@@ -304,7 +301,7 @@ impl Operation {
 
                     if let Selection::Field(field_name, _f, subselections) = current {
                         if subselections.selections.is_empty() {
-                            elements.push(UserQueryElement {
+                            elements.push(QueryElement::Field {
                                 key: field_name.clone(),
                                 value: format!(
                                     "{namespace}_{identifier}.{entity_name}.{field_name}"
@@ -338,9 +335,8 @@ impl Operation {
 
                             queue.append(&mut subselections.get_selections());
 
-                            elements.push(UserQueryElement {
+                            elements.push(QueryElement::ObjectOpeningBoundary {
                                 key: field_name,
-                                value: "JSON_OPEN".to_string(),
                             });
                         }
                     }
@@ -348,28 +344,27 @@ impl Operation {
 
                 if !entity_stack.is_empty() {
                     elements.append(&mut vec![
-                        UserQueryElement {
-                            key: "JSON_CLOSE".to_string(),
-                            value: "JSON_CLOSE".to_string()
-                        };
+                        QueryElement::ObjectClosingBoundary;
                         entity_stack.len()
                     ]);
                 }
+
+                let filters: Vec<QueryFilter> = filters
+                    .into_iter()
+                    .map(|f| QueryFilter {
+                        key: f.name,
+                        relation: "=".to_string(),
+                        value: f.value,
+                    })
+                    .collect();
 
                 let query = UserQuery {
                     elements,
                     joins,
                     namespace_identifier: format!("{namespace}_{identifier}"),
-                    top_entity: entity_name,
+                    entity_name,
+                    filters,
                 };
-
-                // if !filters.is_empty() {
-                //     let filter_text: String = filters
-                //         .iter()
-                //         .map(|f| Filter::as_sql(f, jsonify))
-                //         .join(" AND ");
-                //     query.push_str(format!(" WHERE {filter_text}").as_str());
-                // }
 
                 queries.push(query)
             }
@@ -385,20 +380,25 @@ pub struct GraphqlQuery {
 }
 
 impl GraphqlQuery {
-    pub fn as_sql(&self, schema: &Schema, _jsonify: bool) -> Vec<String> {
-        let mut queries = Vec::new();
-
-        for op in &self.operations {
-            let user_queries = op.parse(schema);
-            queries.extend(
-                user_queries
-                    .into_iter()
-                    .map(|q| q.to_sql())
-                    .collect::<Vec<String>>(),
-            )
-        }
+    pub fn parse(&self, schema: &Schema) -> Vec<UserQuery> {
+        let queries: Vec<UserQuery> = self
+            .operations
+            .iter()
+            .flat_map(|o| o.parse(schema))
+            .collect::<Vec<UserQuery>>();
 
         queries
+    }
+
+    pub fn as_sql(&self, schema: &Schema, _jsonify: bool) -> Vec<String> {
+        let queries = self.parse(schema);
+
+        let sql_queries = queries
+            .into_iter()
+            .map(|q| q.to_sql())
+            .collect::<Vec<String>>();
+
+        sql_queries
     }
 }
 
