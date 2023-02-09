@@ -1,6 +1,7 @@
 use anyhow::Result;
 use fuel_indexer::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_core::service::{Config, FuelService};
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig, Parser},
     manifest::Manifest,
@@ -54,6 +55,13 @@ pub async fn main() -> Result<()> {
     queries::run_migration(&mut c).await?;
 
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
+
+    let _local_node = if opt.local_fuel_node{
+        let s = FuelService::new_node(Config::local_node()).await.unwrap();
+        Some(s)
+    } else {
+        None
+    };
 
     match opt.manifest.map(|p| {
         info!("Using manifest file located at '{}'", p.display());

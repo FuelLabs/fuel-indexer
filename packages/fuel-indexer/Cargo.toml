@@ -24,6 +24,7 @@ fuel-indexer-metrics = { version = "0.2", path = "../fuel-indexer-metrics", opti
 fuel-indexer-postgres = { version = "0.2", path = "../fuel-indexer-database/postgres" }
 fuel-indexer-schema = { version = "0.2", path = "../fuel-indexer-schema", features = ["db-models"] }
 fuel-indexer-types = { version = "0.2", path = "../fuel-indexer-types" }
+fuel-core = { version = "0.17.0" }
 fuel-tx = "0.23"
 fuel-types = "0.5"
 futures = "0.3"
