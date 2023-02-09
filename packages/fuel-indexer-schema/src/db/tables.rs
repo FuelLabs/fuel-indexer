@@ -164,14 +164,17 @@ impl SchemaBuilder {
 
         queries::type_id_insert(conn, type_ids).await?;
         queries::new_column_insert(conn, columns).await?;
-        queries::foreign_key_insert(
-            conn,
-            &namespace,
-            &version,
-            &identifier,
-            foreign_keys,
-        )
-        .await?;
+
+        if !foreign_keys.is_empty() {
+            queries::foreign_key_insert(
+                conn,
+                &namespace,
+                &version,
+                &identifier,
+                foreign_keys,
+            )
+            .await?;
+        }
 
         Ok(Schema {
             version,
