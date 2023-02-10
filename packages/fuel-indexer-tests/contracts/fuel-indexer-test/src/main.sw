@@ -46,6 +46,7 @@ abi FuelIndexer {
     fn trigger_multiargs() -> Ping;
     fn trigger_callreturn() -> Pung;
     fn trigger_ping() -> Ping;
+    fn trigger_ping_for_optional() -> Ping;
     fn trigger_pong() -> Pong;
     fn trigger_transfer();
     fn trigger_log();
@@ -88,6 +89,17 @@ impl FuelIndexer for Contract {
         };
         p
     }
+
+
+    fn trigger_ping_for_optional() -> Ping {
+        let p = Ping {
+            id: 8675309,
+            value: 123,
+            message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf",
+        };
+        p
+    }
+
 
     fn trigger_pong() -> Pong {
         let p = Pong {
