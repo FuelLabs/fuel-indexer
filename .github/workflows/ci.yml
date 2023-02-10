@@ -145,6 +145,34 @@ jobs:
           command: udeps
           args: --locked --all-targets --all-features
 
+  build-test-wasm-blobs:
+    needs:
+      - cancel-previous-runs
+      - cargo-toml-fmt-check
+      - check-rustc
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v1
+      - uses: actions-rs/cargo@v1
+      - name: Build test WASM blobs
+        run: bash scripts/utils/build_test_wasm_module.bash
+
   cargo-build-wasm-example:
     needs:
       - cancel-previous-runs
@@ -295,6 +323,7 @@ jobs:
     needs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
+      - check-rustc
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
