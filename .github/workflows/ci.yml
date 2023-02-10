@@ -276,6 +276,7 @@ jobs:
       - cancel-previous-runs
       - cargo-build-wasm-example
       - get-workspace-members
+      - build-test-wasm-blobs
     runs-on: ubuntu-latest
     services:
       postgres:

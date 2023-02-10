@@ -10,3 +10,6 @@ docs/book/
 
 # Add this to your global .gitignore but whatever
 .DS_Store
+
+# Don't add test WASM blobs, CI generates them on their own
+*.wasm
