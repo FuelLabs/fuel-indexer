@@ -145,36 +145,6 @@ jobs:
           command: udeps
           args: --locked --all-targets --all-features
 
-  build-test-wasm-blobs:
-    needs:
-      - cancel-previous-runs
-      - cargo-toml-fmt-check
-      - check-rustc
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-      - name: Install wasm-snip
-        run: cargo install wasm-snip
-      - name: Build test WASM blobs
-        run: bash scripts/utils/build_test_wasm_module.bash
-
   cargo-verifications:
     runs-on: ubuntu-latest
     services:
@@ -189,7 +159,6 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     needs:
       - cancel-previous-runs
-      - build-test-wasm-blobs
       - get-workspace-members
     if: github.event_name != 'release' && github.event.action != 'published'
     strategy:
@@ -247,7 +216,6 @@ jobs:
     needs:
       - cancel-previous-runs
       - get-workspace-members
-      - build-test-wasm-blobs
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -272,8 +240,18 @@ jobs:
 
       - name: Install wasm-snip
         run: cargo install wasm-snip
-      - name: Build test WASM blobs
-        run: bash scripts/utils/build_test_wasm_module.bash
+      
+      - name: Build fuel-indexer-test WASM
+        run: |
+          cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown && \
+            bash scripts/stripper.bash fuel_indexer_test.wasm && \
+            cp fuel_indexer_test.wasm packages/fuel-indexer-tests/assets/
+
+      - name: Build simple-wasm WASM
+        run: |
+          cargo build -p simple-wasm --release --target wasm32-unknown-unknown && \
+            bash scripts/stripper.bash simple_wasm.wasm && \
+            cp simple_wasm.wasm packages/fuel-indexer-tests/assets/
 
       - name: Build fuel-node
         uses: actions-rs/cargo@v1
