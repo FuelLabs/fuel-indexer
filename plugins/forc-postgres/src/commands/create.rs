@@ -1,4 +1,4 @@
-use crate::ops::forc_postgres_createdb;
+use crate::{ops::forc_postgres_createdb, pg::PostgresVersion, utils::db_dir_or_default};
 use anyhow::Result;
 use clap::Parser;
 use fuel_indexer_lib::defaults;
@@ -17,7 +17,7 @@ pub struct Command {
     pub user: String,
 
     /// Database password.
-    #[clap(short, long, default_value = defaults::POSTGRES_USER, help = "Database password.")]
+    #[clap(short, long, default_value = defaults::POSTGRES_PASSWORD, help = "Database password.")]
     pub password: String,
 
     /// Port to use.
@@ -32,27 +32,29 @@ pub struct Command {
     #[clap(long, default_value = "plain", value_parser(["plain", "md5", "scram-sha-256"]), help = "Authentication method.")]
     pub auth_method: String,
 
-    /// Do not clean up files and directories on databaase drop.
-    #[clap(
-        long,
-        help = "Do not clean up files and directories on databaase drop."
-    )]
+    /// Do not clean up files and directories on database drop.
+    #[clap(long, help = "Do not clean up files and directories on database drop.")]
     pub persistent: bool,
 
-    /// Duration to wait before terminating process execution pg_ctl start/stop and initdb timeout.
+    /// Duration to wait before terminating process execution for pg_ctl start/stop and initdb.
     #[clap(
         long,
-        help = "Duration to wait before terminating process execution pg_ctl start/stop and initdb timeout."
+        help = "Duration to wait before terminating process execution for pg_ctl start/stop and initdb."
     )]
     pub timeout: Option<u64>,
 
-    /// The directory containing migrations scripts.
-    #[clap(long, help = "The directory containing migrations scripts.")]
+    /// The directory containing migration scripts.
+    #[clap(long, help = "The directory containing migration scripts.")]
     pub migration_dir: Option<PathBuf>,
 
     /// PostgreSQL version to use.
-    #[clap(long, default_value = "v14", value_parser(["v15", "v14", "v13", "v12", "v11", "v10", "v9"]), help = "PostgreSQL version to use.")]
-    pub postgres_version: String,
+    #[clap(
+        long,
+        arg_enum,
+        default_value = "v14",
+        help = "PostgreSQL version to use."
+    )]
+    pub postgres_version: PostgresVersion,
 
     /// Start the PostgreSQL instance after creation.
     #[clap(long, help = "Start the PostgreSQL instance after creation.")]
@@ -64,6 +66,37 @@ pub struct Command {
 }
 
 pub async fn exec(command: Box<Command>) -> Result<()> {
-    forc_postgres_createdb::init(*command).await?;
+    let Command {
+        name,
+        user,
+        password,
+        port,
+        database_dir,
+        auth_method,
+        persistent,
+        timeout,
+        migration_dir,
+        postgres_version,
+        start,
+        config,
+    } = *command;
+
+    let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
+
+    forc_postgres_createdb::init(Command {
+        name,
+        user,
+        password,
+        port,
+        database_dir: Some(database_dir),
+        auth_method,
+        persistent,
+        timeout,
+        migration_dir,
+        postgres_version,
+        start,
+        config,
+    })
+    .await?;
     Ok(())
 }

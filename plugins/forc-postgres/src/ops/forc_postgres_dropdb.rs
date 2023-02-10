@@ -1,7 +1,4 @@
-use crate::{
-    cli::DropDbCommand,
-    utils::{default_indexer_dir, into_postgres_version, load_pg_config},
-};
+use crate::{cli::DropDbCommand, pg::PgEmbedConfig, utils::default_indexer_dir};
 use pg_embed::{pg_fetch::PgFetchSettings, postgres::PgEmbed};
 use std::fs;
 use tracing::info;
@@ -18,15 +15,15 @@ pub async fn init(command: DropDbCommand) -> anyhow::Result<()> {
         remove_persisted,
     } = command;
 
-    let (database_dir, pgconfig) =
-        load_pg_config(database_dir.as_ref(), config.as_ref(), &name)?;
+    let pg_config =
+        PgEmbedConfig::from_file(database_dir.as_ref(), config.as_ref(), &name)?;
 
     let fetch_settings = PgFetchSettings {
-        version: into_postgres_version(&pgconfig.postgres_version),
+        version: pg_config.postgres_version.clone().into(),
         ..Default::default()
     };
 
-    let mut pg = PgEmbed::new(pgconfig.into(), fetch_settings).await?;
+    let mut pg = PgEmbed::new(pg_config.clone().into(), fetch_settings).await?;
 
     let pg_db_uri = pg.full_db_uri(&name);
 
@@ -41,11 +38,16 @@ pub async fn init(command: DropDbCommand) -> anyhow::Result<()> {
                     Ok(_) => {
                         info!("✅ Successfully dropped database at '{pg_db_uri}'.");
                         if remove_persisted {
-                            fs::remove_dir_all(&database_dir)?;
+                            fs::remove_dir_all(pg_config.database_dir.unwrap())?;
                             fs::remove_file(
                                 default_indexer_dir().join(pg_password_filename(&name)),
                             )?;
-                            info!("\n⚠️  Please wait a few seconds before trying to re-create the same database.\n");
+                            info!(
+                                r#"
+⚠️  Please wait at least 30 seconds before trying to re-create the same database.
+The `drop` operation might still be running on the specified port and needs time to finish.
+"#
+                            );
                         }
                     }
                     Err(e) => {

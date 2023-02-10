@@ -1,4 +1,4 @@
-use crate::ops::forc_postgres_stopdb;
+use crate::{ops::forc_postgres_stopdb, utils::db_dir_or_default};
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
@@ -20,6 +20,20 @@ pub struct Command {
 }
 
 pub async fn exec(command: Command) -> Result<()> {
-    forc_postgres_stopdb::init(command).await?;
+    let Command {
+        name,
+        database_dir,
+        config,
+    } = command;
+
+    let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
+
+    forc_postgres_stopdb::init(Command {
+        name,
+        database_dir: Some(database_dir),
+        config,
+    })
+    .await?;
+
     Ok(())
 }

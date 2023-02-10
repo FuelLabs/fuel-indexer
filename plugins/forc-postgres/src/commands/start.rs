@@ -1,4 +1,4 @@
-use crate::ops::forc_postgres_startdb;
+use crate::{ops::forc_postgres_startdb, utils::db_dir_or_default};
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
@@ -20,6 +20,19 @@ pub struct Command {
 }
 
 pub async fn exec(command: Command) -> Result<()> {
-    forc_postgres_startdb::init(command).await?;
+    let Command {
+        name,
+        database_dir,
+        config,
+    } = command;
+
+    let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
+
+    forc_postgres_startdb::init(Command {
+        name,
+        database_dir: Some(database_dir),
+        config,
+    })
+    .await?;
     Ok(())
 }

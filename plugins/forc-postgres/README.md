@@ -1,13 +1,37 @@
-# forc-index
+# forc-postgres
 
-A `forc` plugin for basic Fuel Indexer interaction.
+A `forc` plugin for basic Fuel Indexer PostgreSQL interaction.
 
 ## Commands
 
-### `forc postgres createdb`
+### `forc-postgres create`
 
-Create a new index project at the provided path. If no path is provided the current working directory will be used.
+Create a new database.
 
 ```bash
-forc postgres createdb [name]
+forc-postgres create postgres --persistent
+```
+
+### `forc-postgres start`
+
+Start a previously created database.
+
+```bash
+forc-postgres start postgres
+```
+
+### `forc-postgres stop`
+
+Stop a running database.
+
+```bash
+forc-postgres stop postgres
+```
+
+### `forc-postgres drop`
+
+Drop a stopped database.
+
+```bash
+forc-postgres drop postgres
 ```

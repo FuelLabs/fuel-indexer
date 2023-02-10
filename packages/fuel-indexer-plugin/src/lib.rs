@@ -1,6 +1,5 @@
 #[cfg(feature = "native-execution")]
 pub mod native;
-
 pub mod wasm;
 
 extern crate alloc;

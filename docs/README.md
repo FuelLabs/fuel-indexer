@@ -157,49 +157,74 @@ forc index check
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | forc-postgres          |  /Users/rashad/.fuelup/bin/fuelup                       |
 +--------+------------------------+---------------------------------------------------------+
+|   ✅   | rustc                  |  /Users/rashad/.cargo/bin/rustc                         |
++--------+------------------------+---------------------------------------------------------+
 ```
 
 ### 2.2 Database setup
 
 To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll use the `forc-postgres` plugin that is included in `fuelup`.
 
-> IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stoppe
+> IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped.
 
 ```bash
 forc index postgres create postgres --persistent
 ```
 
-
 ```text
 Downloading, unpacking, and bootstrapping database.
-▸▹▹▹▹ ⏱  Setting up database...                                                                                          🎬 Starting database at 'postgres://postgres:postgres@localhost:5432/postgres'.
-💡 Creating database at 'postgres://postgres:postgres@localhost:5432/postgres'.
-waiting for server to start....2023-02-09 16:11:25.764 EST [86849] LOG:  starting PostgreSQL 14.6 on x86_64-apple-darwin20.6.0, compiled by Apple clang version 12.0.0 (clang-1200.0.32.29), 64-bit
-2023-02-09 16:11:25.766 EST [86849] LOG:  listening on IPv6 address "::1", port 5432
-2023-02-09 16:11:25.766 EST [86849] LOG:  listening on IPv4 address "127.0.0.1", port 5432
-2023-02-09 16:11:25.766 EST [86849] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
-2023-02-09 16:11:25.769 EST [86850] LOG:  database system was shut down at 2023-02-09 16:06:37 EST
-2023-02-09 16:11:25.772 EST [86849] LOG:  database system is ready to accept connections
+▹▸▹▹▹ ⏱  Setting up database...
+                                                                                                                                                                                                                           The files belonging to this database system will be owned by user "rashad".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /Users/rashad/.fuel/indexer/postgres ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... America/New_York
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+Success. You can now start the database server using:
+
+    /Users/rashad/Library/Caches/pg-embed/darwin/amd64/14.6.0/bin/pg_ctl -D /Users/rashad/.fuel/indexer/postgres -l logfile start
+▹▹▸▹▹ ⏱  Setting up database...
+
+💡 Creating database at 'postgres://postgres:postgres@localhost:5432/postgres'.(clang-1200.0.32.29), 64-bit
+2023-02-10 11:30:45.325 EST [30902] LOG:  listening on IPv6 address "::1", port 5432
+2023-02-10 11:30:45.325 EST [30902] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2023-02-10 11:30:45.326 EST [30902] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2023-02-10 11:30:45.328 EST [30903] LOG:  database system was shut down at 2023-02-10 11:30:45 EST
+2023-02-10 11:30:45.331 EST [30902] LOG:  database system is ready to accept connections
  done
 server started
-▹▸▹▹▹ ⏱  Setting up database...                                                                                          2023-02-09 16:11:25.867 EST [86857] ERROR:  database "postgres" already exists
-2023-02-09 16:11:25.867 EST [86857] STATEMENT:  CREATE DATABASE "postgres"
-CREATE DATABASE "postgres"; rows affected: 0, rows returned: 0, elapsed: 368.775µs
+2023-02-10 11:30:45.421 EST [30910] ERROR:  database "postgres" already exists
+2023-02-10 11:30:45.421 EST [30910] STATEMENT:  CREATE DATABASE "postgres"
+CREATE DATABASE "postgres"; rows affected: 0, rows returned: 0, elapsed: 325.683µs
 
 Default database postgres already exists.
 
 
-Writing PgEmbedConfig to "/Users/rashad/.fuel/idx/postgres/postgres-db.json"
-2023-02-09 16:11:25.868 EST [86857] LOG:  could not receive data from client: Connection reset by peer
-▪▪▪▪▪ ⏱  Setting up database...                                                                                          ✅ Successfully created database at 'postgres://postgres:postgres@localhost:5432/postgres'.
-2023-02-09 16:11:25.871 EST [86849] LOG:  received fast shutdown request
-2023-02-09 16:11:25.871 EST [86849] LOG:  aborting any active transactions
-2023-02-09 16:11:25.871 EST [86849] LOG:  background worker "logical replication launcher" (PID 86856) exited with exit code 1
-2023-02-09 16:11:25.872 EST [86851] LOG:  shutting down
-2023-02-09 16:11:25.877 EST [86849] LOG:  database system is shut down
+Writing PgEmbedConfig to "/Users/rashad/.fuel/indexer/postgres/postgres-db.json"
+▪▪▪▪▪ ⏱  Setting up database...
+
+✅ Successfully created database at 'postgres://postgres:postgres@localhost:5432/postgres'.
+2023-02-10 11:30:45.424 EST [30902] LOG:  received fast shutdown request
+2023-02-10 11:30:45.424 EST [30902] LOG:  aborting any active transactions
+2023-02-10 11:30:45.424 EST [30902] LOG:  background worker "logical replication launcher" (PID 30909) exited with exit code 1
+2023-02-10 11:30:45.424 EST [30904] LOG:  shutting down
+2023-02-10 11:30:45.428 EST [30902] LOG:  database system is shut down
 waiting for server to shut down.... done
 server stopped
-
 ```
 
 Then we can start our database with
@@ -302,10 +327,9 @@ By now we have a brand new index that will index some blocks and transactions, b
 #### 2.4.1 Starting an indexer service
 
 ```bash
-fuel-indexer \
+forc index start \
     --fuel-node-host node-beta-2.fuel.network \
-    --fuel-node-port 80 \
-    --postgres-password postgres
+    --fuel-node-port 80
 ```
 
 #### 2.4.2 Deploying your index to your Fuel indexer service

@@ -479,10 +479,12 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.optionentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
 
     let id: i64 = row.get(0);
     let req_int: i64 = row.get(1);

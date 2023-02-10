@@ -1,26 +1,28 @@
 use crate::{
     cli::{CreateDbCommand, StartDbCommand},
     commands::start,
-    utils::{
-        database_dir_or_default, db_config_file_name, into_postgres_version,
-        PgEmbedConfig,
-    },
+    pg::{PgEmbedConfig, PostgresVersion},
+    utils::{db_config_file_name, default_indexer_dir},
 };
 use anyhow::Result;
-use fuel_indexer_lib::config::{DatabaseConfig, IndexerConfig};
+use fuel_indexer_lib::{
+    config::{DatabaseConfig, IndexerConfig},
+    defaults,
+};
 use indicatif::{ProgressBar, ProgressStyle};
 use pg_embed::{pg_fetch::PgFetchSettings, postgres::PgEmbed};
-use std::{fs::File, io::Write, path::Path, time::Duration};
+use std::{fs::File, io::Write, path::PathBuf, time::Duration};
 use tracing::info;
 
-pub const DEFAULT_DATABASE: &str = "postgres";
+fn save_pgembed_config(config: PgEmbedConfig, path: Option<&PathBuf>) -> Result<()> {
+    if let Some(path) = path {
+        let filename = db_config_file_name(&config.name);
+        let path = path.join(filename);
+        info!("\nWriting PgEmbedConfig to {path:?}");
+        let mut file = File::create(path)?;
+        file.write_all(serde_json::to_string(&config)?.as_bytes())?;
+    }
 
-fn save_pgembed_config(config: PgEmbedConfig, path: &Path) -> Result<()> {
-    let filename = db_config_file_name(&config.name);
-    let path = path.join(filename);
-    info!("\nWriting PgEmbedConfig to {path:?}");
-    let mut file = File::create(path)?;
-    file.write_all(serde_json::to_string(&config)?.as_bytes())?;
     Ok(())
 }
 
@@ -70,12 +72,12 @@ impl From<IndexerConfig> for PgEmbedConfig {
                 user,
                 password,
                 port: port.parse::<u16>().expect("Invalid port."),
-                database_dir: None,
+                database_dir: Some(default_indexer_dir()),
                 auth_method: "plain".to_string(),
-                persistent: false,
+                persistent: true,
                 timeout: None,
                 migration_dir: None,
-                postgres_version: "v14".to_string(),
+                postgres_version: PostgresVersion::V14,
             },
         }
     }
@@ -86,21 +88,23 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
         name,
         database_dir,
         migration_dir,
-        postgres_version,
         start,
         config,
         ..
     } = command.clone();
 
-    let database_dir = database_dir_or_default(database_dir.as_ref(), &name);
-    let pgconfig: PgEmbedConfig = command.into();
+    let pg_config: PgEmbedConfig = if config.is_some() {
+        IndexerConfig::from_file(&config.clone().unwrap())?.into()
+    } else {
+        command.into()
+    };
 
     let fetch_settings = PgFetchSettings {
-        version: into_postgres_version(&postgres_version),
+        version: pg_config.postgres_version.clone().into(),
         ..Default::default()
     };
 
-    let mut pg = PgEmbed::new(pgconfig.clone().into(), fetch_settings).await?;
+    let mut pg = PgEmbed::new(pg_config.clone().into(), fetch_settings).await?;
 
     let pg_db_uri = pg.full_db_uri(&name);
 
@@ -120,24 +124,22 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
                 "▪▪▪▪▪",
             ]),
     );
-    pb.set_message("⏱  Setting up database...");
+    pb.set_message("⏱  Setting up database...\n");
 
     pg.setup().await?;
 
-    info!("🎬 Starting database at '{pg_db_uri}'.");
-
     pg.start_db().await?;
 
-    info!("💡 Creating database at '{pg_db_uri}'.");
+    info!("\n💡 Creating database at '{pg_db_uri}'.");
 
-    match pg.create_database(&name).await {
-        Ok(_) => {}
-        Err(e) => {
-            if name == DEFAULT_DATABASE {
-                info!("\nDefault database {DEFAULT_DATABASE} already exists.\n");
-            } else {
-                anyhow::bail!(e);
-            }
+    if let Err(e) = pg.create_database(&name).await {
+        if name == defaults::POSTGRES_DATABASE {
+            info!(
+                "\nDefault database {} already exists.\n",
+                defaults::POSTGRES_DATABASE
+            );
+        } else {
+            anyhow::bail!(e);
         }
     }
 
@@ -145,16 +147,16 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
         pg.migrate(&name).await?;
     }
 
-    save_pgembed_config(pgconfig, &database_dir)?;
+    save_pgembed_config(pg_config, database_dir.as_ref())?;
 
     pb.finish();
 
-    info!("✅ Successfully created database at '{pg_db_uri}'.");
+    info!("\n✅ Successfully created database at '{pg_db_uri}'.");
 
     if start {
         start::exec(StartDbCommand {
             name,
-            database_dir: Some(database_dir),
+            database_dir: Some(database_dir.unwrap()),
             config,
         })
         .await?;

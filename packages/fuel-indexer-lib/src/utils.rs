@@ -1,4 +1,7 @@
-use crate::defaults;
+use crate::{
+    config::{DatabaseConfig, IndexerConfig},
+    defaults,
+};
 use anyhow::Result;
 use fuel_indexer_types::Bytes32;
 use serde::{Deserialize, Serialize};
@@ -9,11 +12,11 @@ use std::{
     future::Future,
     net::{SocketAddr, ToSocketAddrs},
     path::Path,
+    process::Command,
+    thread,
 };
 use tokio::time::{sleep, Duration};
-use tracing::{info, warn};
-
-const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
+use tracing::{error, info, warn};
 
 // Testing assets use relative paths, while production assets will use absolute paths
 //
@@ -40,7 +43,9 @@ pub fn local_repository_root() -> Option<String> {
         }
     }
 
-    if !curr_dir.is_dir() || curr_dir.file_name().unwrap() != ROOT_DIRECTORY_NAME {
+    if !curr_dir.is_dir()
+        || curr_dir.file_name().unwrap() != defaults::ROOT_DIRECTORY_NAME
+    {
         return None;
     }
 
@@ -202,4 +207,141 @@ pub mod index_utils {
         s.truncate(n);
         s
     }
+}
+
+pub fn format_exec_msg(exec_name: &str, path: Option<String>) -> String {
+    if let Some(path) = path {
+        rightpad_whitespace(&path, defaults::MESSAGE_PADDING)
+    } else {
+        rightpad_whitespace(
+            &format!("Can't locate {exec_name}."),
+            defaults::MESSAGE_PADDING,
+        )
+    }
+}
+
+pub fn find_executable_with_msg(exec_name: &str) -> (String, Option<String>, String) {
+    let (emoji, path) = find_executable(exec_name);
+    let p = path.clone();
+    (emoji, path, format_exec_msg(exec_name, p))
+}
+
+pub fn find_executable(exec_name: &str) -> (String, Option<String>) {
+    match Command::new("which").arg(exec_name).output() {
+        Ok(o) => {
+            let path = String::from_utf8_lossy(&o.stdout)
+                .strip_suffix('\n')
+                .map(|x| x.to_string())
+                .unwrap_or_else(String::new);
+
+            if !path.is_empty() {
+                (
+                    center_align("✅", defaults::SUCCESS_EMOJI_PADDING),
+                    Some(path),
+                )
+            } else {
+                (center_align("⛔️", defaults::FAIL_EMOJI_PADDING - 2), None)
+            }
+        }
+        Err(_e) => (center_align("⛔️", defaults::FAIL_EMOJI_PADDING), None),
+    }
+}
+
+pub fn center_align(s: &str, n: usize) -> String {
+    format!("{s: ^n$}")
+}
+
+pub fn rightpad_whitespace(s: &str, n: usize) -> String {
+    format!("{s:0n$}")
+}
+
+
+// NOTE: We aren't using this now but will leave it here, as I think we'll revisit
+pub fn create_forc_postgres_database(config: &IndexerConfig) -> Result<()> {
+    let forc_index = defaults::FORC_INDEX;
+    let DatabaseConfig::Postgres {
+        database,
+        user,
+        password,
+        port,
+        ..
+    } = &config.database;
+
+    let (_emoji, path, _msg) = find_executable_with_msg(defaults::FORC_INDEX);
+    if path.is_none() {
+        anyhow::bail!(
+            r#"It seems the `{forc_index}` plugin cannot be found in your $PATH.
+
+When passing the --native-database flag, `{forc_index}` is required to be in your $PATH so that a database can be setup before starting the indexer service.
+
+The `{forc_index}` plugin should be made available after installing `fuelup`.
+    - For more info on installing fuelup, please see: https://github.com/FuelLabs/fuelup.
+
+Alternatively, try running `forc index check` to see which Fuel indexer components you have installed in this $PATH.
+"#,
+        );
+    }
+
+    let db_url = config.database.to_string();
+    info!("Creating native database at: '{db_url}'");
+    if let Err(e) = Command::new(defaults::FORC_INDEX)
+        .arg("postgres")
+        .arg("create")
+        .arg(database)
+        .arg("--port")
+        .arg(port)
+        .arg("--user")
+        .arg(user)
+        .arg("--password")
+        .arg(password)
+        .arg("--persistent")
+        .spawn()
+    {
+        error!(
+            r#"Could not create database at '{db_url}: {e}. 
+Will still attempt to start database just in case database already existed previously.
+"#
+        );
+    }
+
+    thread::sleep(Duration::from_secs(2));
+
+    info!("Starting native database at: '{db_url}'");
+    let _handle = Command::new(defaults::FORC_INDEX)
+        .arg("postgres")
+        .arg("start")
+        .arg(database)
+        .spawn()?;
+    Ok(())
+}
+
+// IMPORTANT: rustc is required for this functionality.
+//
+// Example output of `rustc -vV`:
+//      rustc 1.67.0 (fc594f156 2023-01-24)
+//      binary: rustc
+//      commit-hash: fc594f15669680fa70d255faec3ca3fb507c3405
+//      commit-date: 2023-01-24
+//      host: x86_64-apple-darwin
+//      release: 1.67.0
+//      LLVM version: 15.0.6
+pub fn host_triple() -> String {
+    let output = Command::new("rustc")
+        .arg("-vV")
+        .output()
+        .expect("Failed to get rustc version output.");
+
+    String::from_utf8_lossy(&output.stdout)
+        .split('\n')
+        .filter_map(|x| {
+            if x.to_lowercase().starts_with("host") {
+                Some(x.to_string())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<String>>()
+        .first()
+        .expect("Failed to determine host triple via rustc.")[6..]
+        .to_owned()
 }
