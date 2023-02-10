@@ -170,38 +170,10 @@ jobs:
           target: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v1
       - uses: actions-rs/cargo@v1
+      - name: Install wasm-snip
+        run: cargo install wasm-snip
       - name: Build test WASM blobs
         run: bash scripts/utils/build_test_wasm_module.bash
-
-  cargo-build-wasm-example:
-    needs:
-      - cancel-previous-runs
-      - cargo-toml-fmt-check
-      - check-rustc
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        name: Cargo Build WASM Example
-        with:
-          command: build
-          args: -p fuel-indexer-test --release --target wasm32-unknown-unknown
 
   cargo-verifications:
     runs-on: ubuntu-latest
@@ -217,7 +189,7 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     needs:
       - cancel-previous-runs
-      - cargo-build-wasm-example
+      - build-test-wasm-blobs
       - get-workspace-members
     if: github.event_name != 'release' && github.event.action != 'published'
     strategy:
@@ -274,7 +246,6 @@ jobs:
     if: github.event_name != 'release' && github.event.action != 'published'
     needs:
       - cancel-previous-runs
-      - cargo-build-wasm-example
       - get-workspace-members
       - build-test-wasm-blobs
     runs-on: ubuntu-latest
