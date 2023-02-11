@@ -28,12 +28,6 @@ OPTIONS:
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
 
-        --fuel-node-host <FUEL_NODE_HOST>
-            Host of the running Fuel node. [default: 127.0.0.1]
-
-        --fuel-node-port <FUEL_NODE_PORT>
-            Listening port of the running Fuel node. [default: 4000]
-
         --graphql-api-host <GRAPHQL_API_HOST>
             GraphQL API host. [default: 127.0.0.1]
 

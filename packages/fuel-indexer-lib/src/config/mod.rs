@@ -197,6 +197,7 @@ pub struct ApiServerArgs {
     pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.
+    /// Note: Metrics are currently unimplemented for the API server.
     #[clap(
         long,
         default_value = "true",
