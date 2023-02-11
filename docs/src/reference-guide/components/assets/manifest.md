@@ -29,7 +29,9 @@ report_metrics: true
 
 ## `contract_id`
 
-- The `contract_id` specifies which particular contract you would like your index to subscribe to.
+- The `contract_id` specifies which particular contract you would like your index to subscribe to. Setting this field to an empty string will index events from any contract that is currently executing on the network.
+
+> Important: Contract IDs are unique to the content of a contract. If you are subscribing to a certain contract and then the contract itself is changed or updated, you will need to change the `contract_id` field of the manifest to the new ID.
 
 ## `graphql_schema`
 
