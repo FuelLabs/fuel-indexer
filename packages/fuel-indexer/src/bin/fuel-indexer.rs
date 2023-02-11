@@ -1,3 +1,6 @@
+#[cfg(feature = "local-node")]
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
 use anyhow::Result;
 use fuel_indexer::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
@@ -8,6 +11,9 @@ use fuel_indexer_lib::{
 };
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
+
+#[cfg(feature = "local-node")]
+use fuel_core::service::{Config, FuelService};
 
 #[cfg(feature = "api-server")]
 use fuel_indexer_api_server::api::GraphQlApi;
@@ -47,6 +53,13 @@ pub async fn main() -> Result<()> {
     } else {
         (None, None)
     };
+
+    #[cfg(feature = "local-node")]
+    {
+        let mut config = Config::local_node();
+        config.addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000);
+        FuelService::new_node(config).await.unwrap();
+    }
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
