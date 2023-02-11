@@ -34,6 +34,3 @@
 
 # # Prevent indexers from running without handling any blocks.
 # stop_idle_indexers: true
-
-# # Create, bootstrap, and start a PostgreSQL database using the supplied database connection options.
-# native_database: false

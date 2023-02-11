@@ -12,10 +12,6 @@ OPTIONS:
     -c, --config <CONFIG>
             Indexer service config file.
 
-        --native-database
-            Create, bootstrap, and start a PostgreSQL database using the supplied database
-            connection options. (This option is unused at this time).
-
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
 

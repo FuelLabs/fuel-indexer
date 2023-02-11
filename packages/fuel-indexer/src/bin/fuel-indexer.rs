@@ -4,7 +4,7 @@ use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig, Parser},
     manifest::Manifest,
-    utils::{ServiceRequest},
+    utils::ServiceRequest,
 };
 use tracing::info;
 use tracing_subscriber::filter::EnvFilter;
