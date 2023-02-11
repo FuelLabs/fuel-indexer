@@ -455,7 +455,7 @@ pub mod test_web {
         let _ = state
             .contract
             .methods()
-            .trigger_ping()
+            .trigger_ping_for_optional()
             .tx_params(tx_params())
             .call()
             .await

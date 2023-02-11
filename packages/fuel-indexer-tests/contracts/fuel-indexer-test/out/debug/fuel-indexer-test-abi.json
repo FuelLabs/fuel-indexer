@@ -333,6 +333,16 @@
     },
     {
       "inputs": [],
+      "name": "trigger_ping_for_optional",
+      "output": {
+        "name": "",
+        "type": 14,
+        "typeArguments": null
+      },
+      "attributes": null
+    },
+    {
+      "inputs": [],
       "name": "trigger_pong",
       "output": {
         "name": "",
