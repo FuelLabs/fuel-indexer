@@ -214,7 +214,7 @@ mod fuel_indexer_test {
         pi.save();
     }
 
-    fn fuel_indexer_test_optional_schema_fields(optional: NullableFieldStruct) {
+    fn fuel_indexer_test_optional_schema_fields(optional: Ping) {
         Logger::info("fuel_indexer_test_optional_schema_fields handling NullableFieldStruct event and setting optional fields.");
 
         let entity = OptionEntity {
@@ -242,9 +242,7 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_deeply_nested_schema_fields(
-        deeply_nested: DeeplyNestedQueryStruct,
-    ) {
+    fn fuel_indexer_test_deeply_nested_schema_fields(deeply_nested: SimpleQueryStruct) {
         Logger::info("fuel_indexer_test_deeply_nested_schema_fields handling DeeplyNestedQueryTestStruct event.");
 
         let city = City {

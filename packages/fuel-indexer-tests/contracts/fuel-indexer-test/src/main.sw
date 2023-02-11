@@ -42,15 +42,11 @@ pub struct SimpleTupleStruct {
     data: (u32, u64, str[12]),
 }
 
-pub struct NullableFieldStruct {
-    id: u64
-}
-
 pub struct ExplicitQueryStruct {
     id: u64
 }
 
-pub struct DeeplyNestedQueryStruct {
+pub struct SimpleQueryStruct {
     id: u64
 }
 
@@ -58,6 +54,7 @@ abi FuelIndexer {
     fn trigger_multiargs() -> Ping;
     fn trigger_callreturn() -> Pung;
     fn trigger_ping() -> Ping;
+    fn trigger_ping_for_optional() -> Ping;
     fn trigger_pong() -> Pong;
     fn trigger_transfer();
     fn trigger_log();
@@ -66,9 +63,8 @@ abi FuelIndexer {
     fn trigger_transferout();
     fn trigger_messageout();
     fn trigger_tuple() -> ComplexTupleStruct;
-    fn trigger_optional() -> NullableFieldStruct;
     fn trigger_explicit() -> ExplicitQueryStruct;
-    fn trigger_deeply_nested() -> DeeplyNestedQueryStruct;
+    fn trigger_deeply_nested() -> SimpleQueryStruct;
 }
 
 impl FuelIndexer for Contract {
@@ -103,6 +99,17 @@ impl FuelIndexer for Contract {
         };
         p
     }
+
+
+    fn trigger_ping_for_optional() -> Ping {
+        let p = Ping {
+            id: 8675309,
+            value: 123,
+            message: "aaaasdfsdfasdfsdfaasdfsdfasdfsdf",
+        };
+        p
+    }
+
 
     fn trigger_pong() -> Pong {
         let p = Pong {
@@ -154,15 +161,11 @@ impl FuelIndexer for Contract {
         ComplexTupleStruct{ data: (1u32, (5u64, true, ("abcde", TupleStructItem { id: 54321 })))}
     }
 
-    fn trigger_optional() -> NullableFieldStruct {
-        NullableFieldStruct { id: 123 }
-    }
-
     fn trigger_explicit() -> ExplicitQueryStruct {
         ExplicitQueryStruct { id: 456 }
     }
 
-    fn trigger_deeply_nested() -> DeeplyNestedQueryStruct {
-        DeeplyNestedQueryStruct { id: 789 }
+    fn trigger_deeply_nested() -> SimpleQueryStruct {
+        SimpleQueryStruct { id: 789 }
     }
 }
