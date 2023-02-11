@@ -20,6 +20,8 @@ use sqlx::{
 };
 use tokio::time::{sleep, Duration};
 
+pub const TEST: &str = "my-test";
+
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
