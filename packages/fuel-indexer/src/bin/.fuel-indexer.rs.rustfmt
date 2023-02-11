@@ -1,6 +1,3 @@
-#[cfg(feature = "local-node")]
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-
 use anyhow::Result;
 use fuel_indexer::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
@@ -47,19 +44,12 @@ pub async fn main() -> Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    let (tx, rx) = if cfg!(feature = "api-server") {
+    let (tx, rx) = if cfg!(feature = "api-server") { 
         let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
         (Some(tx), Some(rx))
     } else {
         (None, None)
     };
-
-    #[cfg(feature = "local-node")]
-    {
-        let mut config = Config::local_node();
-        config.addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000);
-        FuelService::new_node(config).await.unwrap();
-    }
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
@@ -67,6 +57,19 @@ pub async fn main() -> Result<()> {
     queries::run_migration(&mut c).await?;
 
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
+
+    #[cfg(feature = "local-node")]
+    {
+        let _local_node = if opt.local_fuel_node{
+            let s = FuelService::new_node(Config::local_node()).await.unwrap();
+            Some(s)
+        } else {
+            None
+        };
+    
+
+
+                }
 
     match opt.manifest.map(|p| {
         info!("Using manifest file located at '{}'", p.display());
@@ -89,4 +92,8 @@ pub async fn main() -> Result<()> {
     };
 
     Ok(())
+}
+
+fn meaning_of_life() {
+    
 }

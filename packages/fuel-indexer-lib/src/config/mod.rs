@@ -96,10 +96,6 @@ pub struct IndexerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Run a local Fuel node.
-    #[clap(long, help = "Run a local Fuel node.")]
-    pub local_fuel_node: bool,
-
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
