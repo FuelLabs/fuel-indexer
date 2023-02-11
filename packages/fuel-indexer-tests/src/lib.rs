@@ -47,8 +47,10 @@ pub mod utils {
     pub fn update_test_manifest_asset_paths(manifest: &mut Manifest) {
         let manifest_dir = Path::new(WORKSPACE_ROOT);
         manifest.graphql_schema = manifest_dir
-            .join("..")
-            .join("..")
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
             .join(&manifest.graphql_schema)
             .into_os_string()
             .to_str()
@@ -56,8 +58,10 @@ pub mod utils {
             .to_string();
         manifest.abi = Some(
             manifest_dir
-                .join("..")
-                .join("..")
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
                 .join(manifest.abi.clone().unwrap())
                 .into_os_string()
                 .to_str()
@@ -66,8 +70,10 @@ pub mod utils {
         );
         manifest.module = Module::Wasm(
             manifest_dir
-                .join("..")
-                .join("..")
+                .parent()
+                .unwrap()
+                .parent()
+                .unwrap()
                 .join(manifest.module.path())
                 .into_os_string()
                 .to_str()
