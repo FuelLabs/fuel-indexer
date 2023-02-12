@@ -207,7 +207,10 @@
 DATABASE_URL=postgres://postgres@localhost sqlx migrate run
 </code></pre>
 <h3 id="start-the-service"><a class="header" href="#start-the-service">Start the service</a></h3>
-<pre><code class="language-bash">cargo run --bin fuel-indexer
+<pre><code class="language-bash">cargo run --bin fuel-indexer run
+</code></pre>
+<p>You can also start the service with a fresh local node for development purposes:</p>
+<pre><code class="language-bash">cargo run --features local-node --bin fuel-indexer run
 </code></pre>
 <blockquote>
 <p>If no configuration file or other options are passed, the service will default to a <code>postgres://postgres@localhost</code> database connection.</p>

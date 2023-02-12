@@ -443,7 +443,7 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
 <div style="break-before: page; page-break-before: always;"></div><h1 id="starting-the-fuel-indexer"><a class="header" href="#starting-the-fuel-indexer">Starting the Fuel Indexer</a></h1>
 <h2 id="using-cli-options"><a class="header" href="#using-cli-options">Using CLI options</a></h2>
 <pre><code class="language-text">USAGE:
-    fuel-indexer [OPTIONS]
+    fuel-indexer run [OPTIONS]
 
 OPTIONS:
     -c, --config &lt;CONFIG&gt;
@@ -1796,25 +1796,19 @@ type Library {
 </blockquote>
 <h2 id="usage-1"><a class="header" href="#usage-1">Usage</a></h2>
 <p>To run the standalone Fuel indexer GraphQL API server using a configuration file:</p>
-<pre><code class="language-bash">cargo run --bin fuel-indexer-api-server -- --config config.yaml
+<pre><code class="language-bash">fuel-indexer-api-server run --config config.yaml
 </code></pre>
 <p>In the above example, <code>config.yaml</code> is based on <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml">the default service configuration file</a>.</p>
 <h2 id="options"><a class="header" href="#options">Options</a></h2>
 <pre><code class="language-text">USAGE:
-    fuel-indexer-api-server [OPTIONS]
+    fuel-indexer-api-server run [OPTIONS]
 
 OPTIONS:
     -c, --config &lt;CONFIG&gt;
-            Indexer service config file.
+            API server config file.
 
         --database &lt;DATABASE&gt;
             Database type. [default: postgres] [possible values: postgres]
-
-        --fuel-node-host &lt;FUEL_NODE_HOST&gt;
-            Host of the running Fuel node. [default: 127.0.0.1]
-
-        --fuel-node-port &lt;FUEL_NODE_PORT&gt;
-            Listening port of the running Fuel node. [default: 4000]
 
         --graphql-api-host &lt;GRAPHQL_API_HOST&gt;
             GraphQL API host. [default: 127.0.0.1]
@@ -1828,9 +1822,6 @@ OPTIONS:
         --log-level &lt;LOG_LEVEL&gt;
             Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
             debug, error, warn]
-
-    -m, --manifest &lt;MANIFEST&gt;
-            Index config file.
 
         --metrics &lt;metrics&gt;
             Use Prometheus metrics reporting. [default: true]
@@ -2200,7 +2191,10 @@ OPTIONS:
 DATABASE_URL=postgres://postgres@localhost sqlx migrate run
 </code></pre>
 <h3 id="start-the-service"><a class="header" href="#start-the-service">Start the service</a></h3>
-<pre><code class="language-bash">cargo run --bin fuel-indexer
+<pre><code class="language-bash">cargo run --bin fuel-indexer run
+</code></pre>
+<p>You can also start the service with a fresh local node for development purposes:</p>
+<pre><code class="language-bash">cargo run --features local-node --bin fuel-indexer run
 </code></pre>
 <blockquote>
 <p>If no configuration file or other options are passed, the service will default to a <code>postgres://postgres@localhost</code> database connection.</p>
