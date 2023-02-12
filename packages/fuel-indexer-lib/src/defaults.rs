@@ -24,3 +24,14 @@ pub const MAX_EMPTY_BLOCK_REQUESTS: usize = 10;
 
 pub const DELAY_FOR_SERVICE_ERR: u64 = 5;
 pub const DELAY_FOR_EMPTY_PAGE: u64 = 1;
+
+pub const FUEL_HOME_DIR: &str = ".fuel";
+pub const INDEXER_CONFIG_DIR: &str = "indexer";
+
+pub const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
+pub const MESSAGE_PADDING: usize = 55;
+pub const SUCCESS_EMOJI_PADDING: usize = 3;
+pub const FAIL_EMOJI_PADDING: usize = 6;
+pub const HEADER_PADDING: usize = 20;
+
+pub const FORC_INDEX: &str = "forc-index";
