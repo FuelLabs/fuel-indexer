@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::str::FromStr;
 use std::{
+    process::Command,
     fs::canonicalize,
     future::Future,
     net::{SocketAddr, ToSocketAddrs},
@@ -246,4 +247,26 @@ pub mod index_utils {
         s.truncate(n);
         s
     }
+}
+
+// IMPORTANT: rustc is required for this functionality.
+pub fn host_triple() -> String {
+    let output = Command::new("rustc")
+        .arg("-vV")
+        .output()
+        .expect("Failed to get rustc version output.");
+
+    String::from_utf8_lossy(&output.stdout)
+        .split('\n')
+        .filter_map(|x| {
+            if x.to_lowercase().starts_with("host") {
+                Some(x.to_string())
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<String>>()
+        .first()
+        .expect("Failed to determine host triple via rustc.")[6..]
+        .to_owned()
 }
