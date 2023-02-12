@@ -2304,7 +2304,6 @@ version = "0.2.3"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
- "forc-postgres",
  "forc-tracing",
  "forc-util",
  "fuel-indexer-lib",
