@@ -6,6 +6,10 @@ license = "BUSL-1.1"
 repository = "https://github.com/FuelLabs/fuel-indexer"
 description = "Fuel Indexer"
 
+[[bin]]
+name = "fuel-indexer"
+path = "src/bin/main.rs"
+
 [dependencies]
 anyhow = { version = "1.0", default-features = false }
 async-std = "1"
@@ -41,7 +45,7 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 thiserror = "1.0"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "sync", "process"] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.2", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 wasmer = "2.0"
 wasmer-compiler-cranelift = { version = "2.0" }
 wasmer-engine-universal = "2.0"
