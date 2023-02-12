@@ -1,5 +1,3 @@
-
-
 use crate::defaults;
 use anyhow::Result;
 use fuel_indexer_types::Bytes32;
@@ -11,10 +9,11 @@ use std::{
     future::Future,
     net::{SocketAddr, ToSocketAddrs},
     path::Path,
-    process::Command,
 };
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
+
+const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
 
 // Testing assets use relative paths, while production assets will use absolute paths
 //
@@ -41,9 +40,7 @@ pub fn local_repository_root() -> Option<String> {
         }
     }
 
-    if !curr_dir.is_dir()
-        || curr_dir.file_name().unwrap() != defaults::ROOT_DIRECTORY_NAME
-    {
+    if !curr_dir.is_dir() || curr_dir.file_name().unwrap() != ROOT_DIRECTORY_NAME {
         return None;
     }
 
@@ -205,72 +202,4 @@ pub mod index_utils {
         s.truncate(n);
         s
     }
-}
-
-pub fn format_exec_msg(exec_name: &str, path: Option<String>) -> String {
-    if let Some(path) = path {
-        rightpad_whitespace(&path, defaults::MESSAGE_PADDING)
-    } else {
-        rightpad_whitespace(
-            &format!("Can't locate {exec_name}."),
-            defaults::MESSAGE_PADDING,
-        )
-    }
-}
-
-pub fn find_executable_with_msg(exec_name: &str) -> (String, Option<String>, String) {
-    let (emoji, path) = find_executable(exec_name);
-    let p = path.clone();
-    (emoji, path, format_exec_msg(exec_name, p))
-}
-
-pub fn find_executable(exec_name: &str) -> (String, Option<String>) {
-    match Command::new("which").arg(exec_name).output() {
-        Ok(o) => {
-            let path = String::from_utf8_lossy(&o.stdout)
-                .strip_suffix('\n')
-                .map(|x| x.to_string())
-                .unwrap_or_else(String::new);
-
-            if !path.is_empty() {
-                (
-                    center_align("✅", defaults::SUCCESS_EMOJI_PADDING),
-                    Some(path),
-                )
-            } else {
-                (center_align("⛔️", defaults::FAIL_EMOJI_PADDING - 2), None)
-            }
-        }
-        Err(_e) => (center_align("⛔️", defaults::FAIL_EMOJI_PADDING), None),
-    }
-}
-
-pub fn center_align(s: &str, n: usize) -> String {
-    format!("{s: ^n$}")
-}
-
-pub fn rightpad_whitespace(s: &str, n: usize) -> String {
-    format!("{s:0n$}")
-}
-
-// IMPORTANT: rustc is required for this functionality.
-pub fn host_triple() -> String {
-    let output = Command::new("rustc")
-        .arg("-vV")
-        .output()
-        .expect("Failed to get rustc version output.");
-
-    String::from_utf8_lossy(&output.stdout)
-        .split('\n')
-        .filter_map(|x| {
-            if x.to_lowercase().starts_with("host") {
-                Some(x.to_string())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<String>>()
-        .first()
-        .expect("Failed to determine host triple via rustc.")[6..]
-        .to_owned()
 }

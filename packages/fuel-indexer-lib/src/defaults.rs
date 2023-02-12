@@ -9,7 +9,7 @@ pub const POSTGRES_DATABASE: &str = "postgres";
 pub const POSTGRES_USER: &str = "postgres";
 pub const POSTGRES_HOST: &str = "127.0.0.1";
 pub const POSTGRES_PORT: &str = "5432";
-pub const POSTGRES_PASSWORD: &str = "";
+pub const POSTGRES_PASSWORD: &str = "postgres";
 
 pub const INDEX_FAILED_CALLS: usize = 10;
 
