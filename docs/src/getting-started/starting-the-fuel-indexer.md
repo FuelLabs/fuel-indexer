@@ -6,7 +6,7 @@
 Standalone binary for the fuel indexer service.
 
 USAGE:
-    fuel-indexer [OPTIONS]
+    fuel-indexer run [OPTIONS]
 
 OPTIONS:
     -c, --config <CONFIG>

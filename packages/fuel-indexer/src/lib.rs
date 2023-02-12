@@ -1,3 +1,5 @@
+pub mod cli;
+pub(crate) mod commands;
 mod database;
 pub mod executor;
 pub mod ffi;

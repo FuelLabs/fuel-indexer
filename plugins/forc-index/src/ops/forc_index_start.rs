@@ -32,7 +32,7 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
         )
         .strip_suffix('\n')
         .expect("Failed to detect fuel-indexer binary in $PATH."),
-    ));
+    )).arg("run");
 
     if let Some(c) = &config {
         cmd.arg("--config").arg(c);
