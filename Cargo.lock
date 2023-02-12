@@ -2124,6 +2124,7 @@ version = "0.2.3"
 dependencies = [
  "anyhow",
  "clap",
+ "forc-postgres",
  "forc-tracing",
  "forc-util",
  "fuel-indexer-lib",

@@ -1,9 +1,6 @@
-use crate::{
-    cli::InitCommand,
-    utils::{dasherize_to_underscore, defaults},
-};
+use crate::{cli::InitCommand, utils::defaults};
 use anyhow::Context;
-use forc_util::validate_name;
+use forc_util::{kebab_to_snake_case, validate_name};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -101,7 +98,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     };
 
     // Indexer expects underscores not dashes
-    let project_name = dasherize_to_underscore(&project_name);
+    let project_name = kebab_to_snake_case(&project_name);
 
     validate_name(&project_name, "project name")?;
 
