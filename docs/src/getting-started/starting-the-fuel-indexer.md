@@ -4,7 +4,7 @@
 
 ```text
 USAGE:
-    fuel-indexer [OPTIONS]
+    fuel-indexer run [OPTIONS]
 
 OPTIONS:
     -c, --config <CONFIG>

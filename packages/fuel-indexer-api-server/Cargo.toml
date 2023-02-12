@@ -6,10 +6,15 @@ license = "BUSL-1.1"
 repository = "https://github.com/FuelLabs/fuel-indexer"
 description = "Fuel Indexer API Server"
 
+[[bin]]
+name = "fuel-indexer-api-server"
+path = "src/bin/main.rs"
+
 [dependencies]
 anyhow = "1.0"
 async-std = "1"
 axum = { version = "0.5", features = ["multipart"] }
+clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-indexer-database = { version = "0.2", path = "../fuel-indexer-database" }
 fuel-indexer-database-types = { version = "0.2", path = "../fuel-indexer-database/database-types" }
 fuel-indexer-lib = { version = "0.2", path = "../fuel-indexer-lib" }
@@ -28,7 +33,7 @@ tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
 tower = "0.4"
 tower-http = { version = "0.3", features = ["fs", "trace", "cors", "limit"] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.2", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [features]
 default = ["metrics"]
