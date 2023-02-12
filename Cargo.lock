@@ -2258,6 +2258,7 @@ version = "0.2.3"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
+ "forc-postgres",
  "forc-tracing",
  "forc-util",
  "fuel-indexer-lib",
@@ -2274,6 +2275,10 @@ dependencies = [
  "toml",
  "tracing",
 ]
+
+[[package]]
+name = "forc-postgres"
+version = "0.2.3"
 
 [[package]]
 name = "forc-tracing"
