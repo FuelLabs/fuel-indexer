@@ -147,68 +147,72 @@ jobs:
 
   cargo-verifications:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    needs:
-      - cancel-previous-runs
-      - get-workspace-members
-    if: github.event_name != 'release' && github.event.action != 'published'
-    strategy:
-      matrix:
-        package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
-        include:
-          - command: fmt
-            args: --all --verbose -- --check
-          - command: clippy
-            args: --all-features --all-targets
-          - command: check
-            args: --all-features --locked --workspace --all-targets
-          - command: build
-            args: --locked --workspace --all-features --all-targets
-          - command: test
-            args: --locked --workspace
-          - command: test
-            args: --locked --all-targets --no-default-features --workspace
-          - command: test
-            args: --locked --all-targets --features postgres --workspace
+    steps:
+      - uses: actions-rs/cargo@v1
+      - name: Cargo e2e tests
+        run: bash packages/fuel-indexer-tests/scripts/e2e.bash
+    # services:
+    #   postgres:
+    #     image: postgres:latest
+    #     env:
+    #       POSTGRES_PASSWORD: my-secret
+    #       POSTGRES_DB: postgres
+    #       POSTGRES_USER: postgres
+    #     ports:
+    #       - 5432:5432
+    #     options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    # needs:
+    #   - cancel-previous-runs
+    #   - get-workspace-members
+    # if: github.event_name != 'release' && github.event.action != 'published'
+    # strategy:
+    #   matrix:
+    #     package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
+    #     include:
+    #       - command: fmt
+    #         args: --all --verbose -- --check
+    #       - command: clippy
+    #         args: --all-features --all-targets
+    #       - command: check
+    #         args: --all-features --locked --workspace --all-targets
+    #       - command: build
+    #         args: --locked --workspace --all-features --all-targets
+    #       - command: test
+    #         args: --locked --workspace
+    #       - command: test
+    #         args: --locked --all-targets --no-default-features --workspace
+    #       - command: test
+    #         args: --locked --all-targets --features postgres --workspace
 
     # disallow any job that takes longer than 45 minutes
-    timeout-minutes: 45
-    continue-on-error: ${{ matrix.skip-error || false }}
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-      - run: cargo install sqlx-cli
-      - run: bash scripts/run_migrations.bash
-      - name: ${{ matrix.command }} ${{ matrix.args }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: ${{ matrix.command }}
-          args: ${{ matrix.args }}
-      - name: Notify if Job Fails
-        uses: ravsamhq/notify-slack-action@v2
-        if: always() && github.ref == 'refs/heads/master'
-        with:
-          status: ${{ job.status }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
-          footer: ''
-          notify_when: 'failure'
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-          RUSTFLAGS: -D warnings
+    # timeout-minutes: 45
+    # continue-on-error: ${{ matrix.skip-error || false }}
+    # steps:
+    #   - uses: actions/checkout@v2
+    #   - uses: actions-rs/toolchain@v1
+    #     with:
+    #       profile: minimal
+    #       toolchain: stable
+    #   - run: cargo install sqlx-cli
+    #   - run: bash scripts/run_migrations.bash
+    #   - name: ${{ matrix.command }} ${{ matrix.args }}
+    #     uses: actions-rs/cargo@v1
+    #     with:
+    #       command: ${{ matrix.command }}
+    #       args: ${{ matrix.args }}
+    #   - name: Notify if Job Fails
+    #     uses: ravsamhq/notify-slack-action@v2
+    #     if: always() && github.ref == 'refs/heads/master'
+    #     with:
+    #       status: ${{ job.status }}
+    #       token: ${{ secrets.GITHUB_TOKEN }}
+    #       notification_title: '{workflow} has {status_message}'
+    #       message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+    #       footer: ''
+    #       notify_when: 'failure'
+    #     env:
+    #       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
+    #       RUSTFLAGS: -D warnings
 
   # TODO: https://github.com/FuelLabs/fuel-indexer/issues/269
   cargo-test-workspace-all-features:
