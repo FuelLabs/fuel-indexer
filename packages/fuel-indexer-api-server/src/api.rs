@@ -12,7 +12,7 @@ use axum::{
     Error as AxumError, Router,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
-use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
+use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest, defaults};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
 };
@@ -113,6 +113,7 @@ impl GraphQlApi {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();
+        let max_default_body = config.max_default_body;
         let start_time = Arc::new(Instant::now());
 
         if config.graphql_api.run_migrations {
@@ -122,13 +123,11 @@ impl GraphQlApi {
 
         let graph_route = Router::new()
             .route("/:namespace/:identifier", post(query_graph))
-            .layer(DefaultBodyLimit::max(10000))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()));
 
         let index_routes = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
-            .layer(DefaultBodyLimit::max(10000))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager))
@@ -166,7 +165,8 @@ impl GraphQlApi {
                 CorsLayer::new()
                     .allow_methods(vec![Method::GET, Method::POST])
                     .allow_origin(Any {}),
-            );
+            )
+            .layer(DefaultBodyLimit::max(max_default_body));
 
         Ok(app)
     }
