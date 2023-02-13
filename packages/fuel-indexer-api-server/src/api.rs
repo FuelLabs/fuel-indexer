@@ -23,7 +23,6 @@ use thiserror::Error;
 use tokio::sync::mpsc::{error::SendError, Sender};
 use tower_http::{
     cors::{Any, CorsLayer},
-    limit::RequestBodyLimitLayer,
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
