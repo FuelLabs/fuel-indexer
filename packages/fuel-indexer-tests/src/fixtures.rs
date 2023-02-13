@@ -341,7 +341,7 @@ pub mod test_web {
     }
 
     async fn fuel_indexer_test_log(state: web::Data<Arc<AppState>>) -> impl Responder {
-        let _ = state
+        let r = state
             .contract
             .methods()
             .trigger_log()
@@ -349,13 +349,14 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+        println!(">> {r:?}");
         HttpResponse::Ok()
     }
 
     async fn fuel_indexer_test_logdata(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let _ = state
+        let r = state
             .contract
             .methods()
             .trigger_logdata()
@@ -363,6 +364,7 @@ pub mod test_web {
             .call()
             .await
             .unwrap();
+        println!(">> {r:?}");
         HttpResponse::Ok()
     }
 

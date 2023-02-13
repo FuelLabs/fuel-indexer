@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::str::FromStr;
 use std::{
-    process::Command,
     fs::canonicalize,
     future::Future,
     net::{SocketAddr, ToSocketAddrs},
     path::Path,
+    process::Command,
 };
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
