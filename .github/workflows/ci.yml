@@ -304,13 +304,13 @@ jobs:
   #         command: build
   #         args: -p forc-index
 
-      - name: Create new index
-        run: |
-          mkdir ../forc_index_test && cd ../forc_index_test && ../fuel-indexer/target/debug/forc-index init --namespace fuel
+      # - name: Create new index
+      #   run: |
+      #     mkdir ../forc_index_test && cd ../forc_index_test && ../fuel-indexer/target/debug/forc-index init --namespace fuel
 
-      - name: Build new index
-        working-directory: ../forc_index_test
-        run: ../fuel-indexer/target/debug/forc-index build
+      # - name: Build new index
+      #   working-directory: ../forc_index_test
+      #   run: ../fuel-indexer/target/debug/forc-index build
 
   publish-docker-image:
     needs:
