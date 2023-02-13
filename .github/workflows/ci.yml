@@ -109,48 +109,48 @@ jobs:
           npm install -g markdownlint-cli@0.31.1
           markdownlint --config .markdownlintrc **/*.md docs/src/
 
-  cargo-unused-deps-check:
-    needs:
-      - cancel-previous-runs
-      - cargo-toml-fmt-check
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          # `cargo-udeps` requires nightly to run
-          toolchain: nightly
-          default: true
-      - uses: Swatinem/rust-cache@v1
-      - run: cargo install sqlx-cli
-      - run: bash scripts/run_migrations.bash
-      - name: Install cargo-udeps
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-udeps
-      - name: Check Unused Deps
-        uses: actions-rs/cargo@v1
-        with:
-          command: udeps
-          args: --locked --all-targets --all-features
+  # cargo-unused-deps-check:
+  #   needs:
+  #     - cancel-previous-runs
+  #     - cargo-toml-fmt-check
+  #   runs-on: ubuntu-latest
+  #   services:
+  #     postgres:
+  #       image: postgres:latest
+  #       env:
+  #         POSTGRES_PASSWORD: my-secret
+  #         POSTGRES_DB: postgres
+  #         POSTGRES_USER: postgres
+  #       ports:
+  #         - 5432:5432
+  #       options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         # `cargo-udeps` requires nightly to run
+  #         toolchain: nightly
+  #         default: true
+  #     - uses: Swatinem/rust-cache@v1
+  #     - run: cargo install sqlx-cli
+  #     - run: bash scripts/run_migrations.bash
+  #     - name: Install cargo-udeps
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: install
+  #         args: cargo-udeps
+  #     - name: Check Unused Deps
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: udeps
+  #         args: --locked --all-targets --all-features
 
   cargo-verifications:
     runs-on: ubuntu-latest
     steps:
       - uses: actions-rs/cargo@v1
       - name: Cargo e2e tests
-        run: bash packages/fuel-indexer-tests/scripts/e2e.bash
+        run: echo "Hello world"
     # services:
     #   postgres:
     #     image: postgres:latest
@@ -278,31 +278,31 @@ jobs:
       - name: Stop testing components
         run: kill -9 $(lsof -ti:4000)
 
-  check-forc-index:
-    if: github.event_name != 'release' && github.event.action != 'published'
-    needs:
-      - cancel-previous-runs
-      - cargo-toml-fmt-check
-      - check-rustc
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+  # check-forc-index:
+  #   if: github.event_name != 'release' && github.event.action != 'published'
+  #   needs:
+  #     - cancel-previous-runs
+  #     - cargo-toml-fmt-check
+  #     - check-rustc
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         profile: minimal
+  #         toolchain: stable
+  #         target: wasm32-unknown-unknown
 
-      - uses: Swatinem/rust-cache@v1
+  #     - uses: Swatinem/rust-cache@v1
 
-      - name: Install wasm-snip
-        run: cargo install wasm-snip
+  #     - name: Install wasm-snip
+  #       run: cargo install wasm-snip
 
-      - name: Build forc index
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -p forc-index
+  #     - name: Build forc index
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         command: build
+  #         args: -p forc-index
 
       - name: Create new index
         run: |

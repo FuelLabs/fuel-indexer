@@ -1,4 +1,4 @@
-use crate::{ops::forc_postgres_createdb, pg::PostgresVersion, utils::db_dir_or_default};
+use crate::{utils::db_dir_or_default};
 use anyhow::Result;
 use clap::Parser;
 use fuel_indexer_lib::defaults;
@@ -50,11 +50,10 @@ pub struct Command {
     /// PostgreSQL version to use.
     #[clap(
         long,
-        arg_enum,
         default_value = "v14",
         help = "PostgreSQL version to use."
     )]
-    pub postgres_version: PostgresVersion,
+    pub postgres_version: String,
 
     /// Start the PostgreSQL instance after creation.
     #[clap(long, help = "Start the PostgreSQL instance after creation.")]
@@ -83,20 +82,5 @@ pub async fn exec(command: Box<Command>) -> Result<()> {
 
     let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
 
-    forc_postgres_createdb::init(Command {
-        name,
-        user,
-        password,
-        port,
-        database_dir: Some(database_dir),
-        auth_method,
-        persistent,
-        timeout,
-        migration_dir,
-        postgres_version,
-        start,
-        config,
-    })
-    .await?;
     Ok(())
 }

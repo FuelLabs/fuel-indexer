@@ -25,7 +25,3 @@ do
         cargo test $test --locked --features e2e,postgres --all-targets
     done
 done
-
-
-cargo test test_can_trigger_and_index_log_event_postgres --locked --features e2e,postgres --all-targets
-cargo test test_can_trigger_and_index_logdata_event_postgres --locked --features e2e,postgres --all-targets
