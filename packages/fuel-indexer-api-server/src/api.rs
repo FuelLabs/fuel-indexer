@@ -4,7 +4,7 @@ use crate::uses::{
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
-    extract::{Extension, Json},
+    extract::{DefaultBodyLimit, Extension, Json},
     http::StatusCode,
     middleware,
     response::{IntoResponse, Response},
@@ -23,6 +23,7 @@ use thiserror::Error;
 use tokio::sync::mpsc::{error::SendError, Sender};
 use tower_http::{
     cors::{Any, CorsLayer},
+    limit::RequestBodyLimitLayer,
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
@@ -127,6 +128,7 @@ impl GraphQlApi {
 
         let index_routes = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
+            .layer(DefaultBodyLimit::max(10000))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager))
