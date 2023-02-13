@@ -123,6 +123,7 @@ impl GraphQlApi {
 
         let graph_route = Router::new()
             .route("/:namespace/:identifier", post(query_graph))
+            .layer(DefaultBodyLimit::max(10000))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()));
 
