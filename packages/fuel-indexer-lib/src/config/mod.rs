@@ -143,13 +143,6 @@ pub struct IndexerArgs {
         help = "Prevent indexers from running without handling any blocks."
     )]
     pub stop_idle_indexers: bool,
-
-    /// Create, bootstrap, and start a PostgreSQL database using the supplied database connection options. (This option is unused at this time).
-    #[clap(
-        long,
-        help = "Create, bootstrap, and start a PostgreSQL database using the supplied database connection options. (This option is unused at this time)."
-    )]
-    pub native_database: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -242,7 +235,6 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
     pub metrics: bool,
     pub stop_idle_indexers: bool,
-    pub native_database: bool,
 }
 
 impl From<IndexerArgs> for IndexerConfig {
@@ -422,7 +414,6 @@ impl IndexerConfig {
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
-            native_database: args.native_database,
         };
 
         config.inject_opt_env_vars();

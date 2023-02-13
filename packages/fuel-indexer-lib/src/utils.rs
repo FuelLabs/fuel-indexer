@@ -1,7 +1,4 @@
-use crate::{
-    config::{DatabaseConfig, IndexerConfig},
-    defaults,
-};
+use crate::defaults;
 use anyhow::Result;
 use fuel_indexer_types::Bytes32;
 use serde::{Deserialize, Serialize};
@@ -13,10 +10,9 @@ use std::{
     net::{SocketAddr, ToSocketAddrs},
     path::Path,
     process::Command,
-    thread,
 };
 use tokio::time::{sleep, Duration};
-use tracing::{error, info, warn};
+use tracing::{info, warn};
 
 // Testing assets use relative paths, while production assets will use absolute paths
 //
@@ -299,75 +295,7 @@ pub fn rightpad_whitespace(s: &str, n: usize) -> String {
     format!("{s:0n$}")
 }
 
-// NOTE: We aren't using this now but will leave it here, as I think we'll revisit
-pub fn create_forc_postgres_database(config: &IndexerConfig) -> Result<()> {
-    let forc_index = defaults::FORC_INDEX;
-    let DatabaseConfig::Postgres {
-        database,
-        user,
-        password,
-        port,
-        ..
-    } = &config.database;
-
-    let (_emoji, path, _msg) = find_executable_with_msg(defaults::FORC_INDEX);
-    if path.is_none() {
-        anyhow::bail!(
-            r#"It seems the `{forc_index}` plugin cannot be found in your $PATH.
-
-When passing the --native-database flag, `{forc_index}` is required to be in your $PATH so that a database can be setup before starting the indexer service.
-
-The `{forc_index}` plugin should be made available after installing `fuelup`.
-    - For more info on installing fuelup, please see: https://github.com/FuelLabs/fuelup.
-
-Alternatively, try running `forc index check` to see which Fuel indexer components you have installed in this $PATH.
-"#,
-        );
-    }
-
-    let db_url = config.database.to_string();
-    info!("Creating native database at: '{db_url}'");
-    if let Err(e) = Command::new(defaults::FORC_INDEX)
-        .arg("postgres")
-        .arg("create")
-        .arg(database)
-        .arg("--port")
-        .arg(port)
-        .arg("--user")
-        .arg(user)
-        .arg("--password")
-        .arg(password)
-        .arg("--persistent")
-        .spawn()
-    {
-        error!(
-            r#"Could not create database at '{db_url}: {e}. 
-Will still attempt to start database just in case database already existed previously.
-"#
-        );
-    }
-
-    thread::sleep(Duration::from_secs(2));
-
-    info!("Starting native database at: '{db_url}'");
-    let _handle = Command::new(defaults::FORC_INDEX)
-        .arg("postgres")
-        .arg("start")
-        .arg(database)
-        .spawn()?;
-    Ok(())
-}
-
 // IMPORTANT: rustc is required for this functionality.
-//
-// Example output of `rustc -vV`:
-//      rustc 1.67.0 (fc594f156 2023-01-24)
-//      binary: rustc
-//      commit-hash: fc594f15669680fa70d255faec3ca3fb507c3405
-//      commit-date: 2023-01-24
-//      host: x86_64-apple-darwin
-//      release: 1.67.0
-//      LLVM version: 15.0.6
 pub fn host_triple() -> String {
     let output = Command::new("rustc")
         .arg("-vV")
