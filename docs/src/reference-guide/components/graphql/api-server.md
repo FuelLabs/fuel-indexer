@@ -10,7 +10,7 @@
 To run the standalone Fuel indexer GraphQL API server using a configuration file:
 
 ```bash
-cargo run --bin fuel-indexer-api-server -- --config config.yaml
+fuel-indexer-api-server run --config config.yaml
 ```
 
 In the above example, `config.yaml` is based on [the default service configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml).
@@ -19,20 +19,14 @@ In the above example, `config.yaml` is based on [the default service configurati
 
 ```text
 USAGE:
-    fuel-indexer-api-server [OPTIONS]
+    fuel-indexer-api-server run [OPTIONS]
 
 OPTIONS:
     -c, --config <CONFIG>
-            Indexer service config file.
+            API server config file.
 
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
-
-        --fuel-node-host <FUEL_NODE_HOST>
-            Host of the running Fuel node. [default: 127.0.0.1]
-
-        --fuel-node-port <FUEL_NODE_PORT>
-            Listening port of the running Fuel node. [default: 4000]
 
         --graphql-api-host <GRAPHQL_API_HOST>
             GraphQL API host. [default: 127.0.0.1]
@@ -46,9 +40,6 @@ OPTIONS:
         --log-level <LOG_LEVEL>
             Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
             debug, error, warn]
-
-    -m, --manifest <MANIFEST>
-            Index config file.
 
         --metrics <metrics>
             Use Prometheus metrics reporting. [default: true]

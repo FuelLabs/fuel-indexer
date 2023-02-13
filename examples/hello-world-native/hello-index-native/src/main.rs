@@ -15,7 +15,7 @@
 //! Now trigger an event.
 //!
 //! ```bash
-//! cargo run --bin hello-bin
+//! cargo run --bin hello-world-data
 //! ```
 extern crate alloc;
 use fuel_indexer::prelude::*;

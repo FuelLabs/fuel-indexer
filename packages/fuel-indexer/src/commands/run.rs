@@ -1,13 +1,17 @@
-use anyhow::Result;
-use fuel_indexer::IndexerService;
+use crate::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
-    config::{IndexerArgs, IndexerConfig, Parser},
+    config::{IndexerArgs, IndexerConfig},
     manifest::Manifest,
-    utils::{ServiceRequest},
+    utils::ServiceRequest,
 };
 use tracing::info;
-use tracing_subscriber::filter::EnvFilter;
+
+#[cfg(feature = "local-node")]
+use fuel_core::service::{Config, FuelService};
+
+#[cfg(feature = "local-node")]
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 #[cfg(feature = "api-server")]
 use fuel_indexer_api_server::api::GraphQlApi;
@@ -18,25 +22,13 @@ use fuel_indexer_lib::defaults::SERVICE_REQUEST_CHANNEL_SIZE;
 #[cfg(feature = "api-server")]
 use tokio::sync::mpsc::channel;
 
-#[tokio::main]
-pub async fn main() -> Result<()> {
-    let filter = match std::env::var_os("RUST_LOG") {
-        Some(_) => {
-            EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
-        }
-        None => EnvFilter::new("info"),
-    };
+/// Start a local indexer service.
+pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
+    let IndexerArgs { manifest, .. } = args.clone();
 
-    tracing_subscriber::fmt::Subscriber::builder()
-        .with_writer(std::io::stderr)
-        .with_env_filter(filter)
-        .init();
-
-    let opt = IndexerArgs::from_args();
-
-    let config = match &opt.config {
+    let config = match &args.config {
         Some(path) => IndexerConfig::from_file(path)?,
-        None => IndexerConfig::from_opts(opt.clone()),
+        None => IndexerConfig::from(args.clone()),
     };
 
     info!("Configuration: {:?}", config);
@@ -48,14 +40,23 @@ pub async fn main() -> Result<()> {
         (None, None)
     };
 
+    #[cfg(feature = "local-node")]
+    {
+        let mut config = Config::local_node();
+        config.addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000);
+        FuelService::new_node(config).await.unwrap();
+    }
+
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
-    let mut c = pool.acquire().await?;
-    queries::run_migration(&mut c).await?;
+    if config.graphql_api.run_migrations {
+        let mut c = pool.acquire().await?;
+        queries::run_migration(&mut c).await?;
+    }
 
     let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
-    match opt.manifest.map(|p| {
+    match manifest.map(|p| {
         info!("Using manifest file located at '{}'", p.display());
         Manifest::from_file(&p).unwrap()
     }) {
