@@ -241,17 +241,17 @@ jobs:
       - name: Install wasm-snip
         run: cargo install wasm-snip
       
-      - name: Build fuel-indexer-test WASM
-        run: |
-          cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown && \
-            bash scripts/stripper.bash fuel_indexer_test.wasm && \
-            cp fuel_indexer_test.wasm packages/fuel-indexer-tests/assets/
+      # - name: Build fuel-indexer-test WASM
+      #   run: |
+      #     cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown && \
+      #       bash scripts/stripper.bash fuel_indexer_test.wasm && \
+      #       cp fuel_indexer_test.wasm packages/fuel-indexer-tests/assets/
 
-      - name: Build simple-wasm WASM
-        run: |
-          cargo build -p simple-wasm --release --target wasm32-unknown-unknown && \
-            bash scripts/stripper.bash simple_wasm.wasm && \
-            cp simple_wasm.wasm packages/fuel-indexer-tests/assets/
+      # - name: Build simple-wasm WASM
+      #   run: |
+      #     cargo build -p simple-wasm --release --target wasm32-unknown-unknown && \
+      #       bash scripts/stripper.bash simple_wasm.wasm && \
+      #       cp simple_wasm.wasm packages/fuel-indexer-tests/assets/
 
       - name: Build fuel-node
         uses: actions-rs/cargo@v1
@@ -268,7 +268,7 @@ jobs:
             --contract-bin packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
         
       - name: Binary ID
-        run: sha1sum target/wasm32-unknown-unknown/release/fuel_indexer_test.wasm
+        run: sha1sum packages/fuel-indexer-tests/assets/fuel_indexer_test.wasm
 
       - uses: actions-rs/cargo@v1
       - name: Cargo e2e tests
