@@ -14,6 +14,7 @@ pub const POSTGRES_PASSWORD: &str = "";
 pub const INDEX_FAILED_CALLS: usize = 10;
 
 pub const GRAPHQL_API_RUN_MIGRATIONS: bool = false;
+pub const MAX_: u32 = 5242880; // 5MB in bytes
 
 pub const SERVICE_REQUEST_CHANNEL_SIZE: usize = 100;
 pub const IDLE_SERVICE_WAIT_SECS: u64 = 3;

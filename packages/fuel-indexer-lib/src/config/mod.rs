@@ -96,6 +96,10 @@ pub struct IndexerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
+    /// Max body size for the GraphQL API.
+    #[clap(long, help = "Max body size for the GraphQL API", default_value = defaults::MAX_BODY_LIMIT)]
+    pub max_body_limit: u32,
+
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
@@ -209,6 +213,7 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
     pub metrics: bool,
     pub stop_idle_indexers: bool,
+    pub max_default_body: u32,
 }
 
 impl IndexerConfig {
@@ -266,6 +271,7 @@ impl IndexerConfig {
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
+            max_default_body: args.max_body_limit,
         };
 
         config.inject_opt_env_vars();
