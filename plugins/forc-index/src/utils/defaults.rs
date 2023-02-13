@@ -1,4 +1,5 @@
 use fuel_indexer_lib::defaults;
+use std::path::PathBuf;
 
 pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
 pub const INDEX_LIB_FILENAME: &str = "lib.rs";
@@ -59,9 +60,20 @@ serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 
 pub fn default_index_manifest(
     namespace: &str,
+    schema_filename: &str,
     index_name: &str,
-    project_path: &str,
+    project_path: Option<&PathBuf>,
 ) -> String {
+    let schema_path = match project_path {
+        Some(p) => p.join("schema").join(schema_filename),
+        None => {
+            let p = format!("schema/{schema_filename}");
+            PathBuf::from(&p)
+        }
+    };
+
+    let schema_path = schema_path.display();
+
     format!(
         r#"# A namespace is a logical grouping of declared names. Think of the namespace
 # as an organization identifier
@@ -82,7 +94,7 @@ contract_id: ~
 
 # The graphql_schema field contains the file path that points to the GraphQL schema for the
 # given index.
-graphql_schema: {project_path}/schema/{index_name}.schema.graphql
+graphql_schema: {schema_path}
 
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
@@ -99,14 +111,21 @@ report_metrics: true"#
 pub fn default_index_lib(
     index_name: &str,
     manifest_filename: &str,
-    path: &str,
+    project_path: Option<&PathBuf>,
 ) -> String {
+    let manifest_path = match project_path {
+        Some(p) => p.join(manifest_filename),
+        None => PathBuf::from(manifest_filename),
+    };
+
+    let manifest_path = manifest_path.display();
+
     format!(
         r#"extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
-#[indexer(manifest = "{path}/{manifest_filename}")]
+#[indexer(manifest = "{manifest_path}")]
 pub mod {index_name}_index_mod {{
 
     fn {index_name}_handler(block_data: BlockData) {{

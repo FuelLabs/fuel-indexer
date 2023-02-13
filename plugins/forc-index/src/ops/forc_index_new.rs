@@ -8,6 +8,7 @@ pub fn init(command: NewCommand) -> anyhow::Result<()> {
         native,
         namespace,
         path,
+        absolute_paths,
     } = command;
 
     let dir_path = Path::new(&path);
@@ -26,6 +27,7 @@ pub fn init(command: NewCommand) -> anyhow::Result<()> {
         name,
         native,
         namespace,
+        absolute_paths,
         path: Some(dir_path.to_path_buf()),
     });
 
