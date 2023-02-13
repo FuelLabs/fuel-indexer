@@ -1,4 +1,4 @@
-use crate::{utils::db_dir_or_default};
+use crate::{ops::forc_postgres_dropdb, utils::db_dir_or_default};
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
@@ -36,6 +36,13 @@ pub async fn exec(command: Command) -> Result<()> {
 
     let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
 
+    forc_postgres_dropdb::init(Command {
+        name,
+        database_dir: Some(database_dir),
+        config,
+        remove_persisted,
+    })
+    .await?;
 
     Ok(())
 }

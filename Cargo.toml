@@ -23,6 +23,9 @@ members = [
    "packages/fuel-indexer-types",
    "packages/fuel-indexer",
    "plugins/forc-index",
+]
+
+exclude = [
    "plugins/forc-postgres",
 ]
 
