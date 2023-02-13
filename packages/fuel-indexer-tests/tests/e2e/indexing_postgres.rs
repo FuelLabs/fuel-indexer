@@ -533,6 +533,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     .await
     .unwrap();
 
+    let id: i64 = row.get(0);
     let req_int: i64 = row.get(1);
     let opt_int_some: Option<i64> = row.get(2);
     let opt_addr_none: Option<&str> = row.get(3);

@@ -52,9 +52,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let chain_config = opts.chain_config.unwrap_or_else(|| {
         Path::new(&manifest_dir)
-            .join("..")
-            .join("..")
-            .join("..")
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
             .join("packages")
             .join("fuel-indexer-tests")
             .join("assets")
@@ -63,7 +66,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let contract_bin = opts.contract_bin.unwrap_or_else(|| {
         Path::new(&manifest_dir)
-            .join("..")
+            .parent()
+            .unwrap()
             .join("contracts")
             .join("greeting")
             .join("out")
