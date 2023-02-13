@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 
 #[derive(Debug, Parser, Clone)]
 #[clap(
-    name = "hello-world-test-node",
+    name = "hello-world-node",
     about = "Test program used to start up a test Fuel node for the hello-world example."
 )]
 pub struct Args {
@@ -18,9 +18,8 @@ pub struct Args {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let opts = Args::from_args();
 
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")?;
-
     let chain_config = opts.chain_config.unwrap_or_else(|| {
+        let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
         Path::new(&manifest_dir)
             .parent()
             .unwrap()

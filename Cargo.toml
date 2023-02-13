@@ -6,7 +6,7 @@ members = [
    "examples/hello-world-native/hello-index-native",
    "examples/hello-world/hello-index",
    "examples/hello-world/hello-world-data",
-   "examples/hello-world/hello-world-test-node",
+   "examples/hello-world/hello-world-node",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-database",
    "packages/fuel-indexer-database/database-types",

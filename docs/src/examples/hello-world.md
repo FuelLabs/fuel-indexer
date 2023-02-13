@@ -15,7 +15,7 @@ A "Hello World" type of program for the Fuel Indexer service.
 //! Start a local test Fuel node
 //!
 //! ```bash
-//! cargo run --bin hello-world-test-node
+//! cargo run --bin hello-world-node
 //! ```
 //!
 //! With your database backend set up, now start your fuel-indexer binary using the
