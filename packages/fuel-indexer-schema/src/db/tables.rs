@@ -165,17 +165,6 @@ impl SchemaBuilder {
         queries::type_id_insert(conn, type_ids).await?;
         queries::new_column_insert(conn, columns).await?;
 
-        if !foreign_keys.is_empty() {
-            queries::foreign_key_insert(
-                conn,
-                &namespace,
-                &version,
-                &identifier,
-                foreign_keys,
-            )
-            .await?;
-        }
-
         Ok(Schema {
             version,
             namespace,
@@ -380,25 +369,19 @@ impl Schema {
         )
         .await?;
 
-        let foreign_keys = queries::foreign_key_list_by_name(
-            &mut conn,
-            &root.schema_name,
-            &root.version,
-            identifier,
-        )
-        .await?;
-
         let mut types = HashSet::new();
         let mut fields = HashMap::new();
-        let mut schema_foreign_keys: HashMap<String, HashMap<String, String>> =
-            HashMap::new();
+        let mut non_primitives: HashSet<String> = HashSet::new();
 
         types.insert(root.query.clone());
         fields.insert(
             root.query.clone(),
             root_cols
                 .into_iter()
-                .map(|c| (c.column_name, c.graphql_type))
+                .map(|c| {
+                    non_primitives.insert(c.column_name.clone());
+                    (c.column_name, c.graphql_type)
+                })
                 .collect(),
         );
         for tid in typeids {
@@ -414,21 +397,7 @@ impl Schema {
             );
         }
 
-        for fk in foreign_keys {
-            match schema_foreign_keys.get_mut(&fk.table_name) {
-                Some(field_foreign_keys) => {
-                    field_foreign_keys
-                        .insert(fk.reference_table_name, fk.reference_column_name);
-                }
-                None => {
-                    let field_foreign_keys = HashMap::from([(
-                        fk.reference_table_name,
-                        fk.reference_column_name,
-                    )]);
-                    schema_foreign_keys.insert(fk.table_name, field_foreign_keys);
-                }
-            }
-        }
+        let foreign_keys = get_foreign_keys(&root.schema);
 
         Ok(Schema {
             version: root.version,
@@ -437,7 +406,7 @@ impl Schema {
             query: root.query,
             types,
             fields,
-            foreign_keys: schema_foreign_keys,
+            foreign_keys,
         })
     }
 
@@ -457,6 +426,85 @@ impl Schema {
             }
         }
     }
+}
+
+fn get_foreign_keys(schema: &String) -> HashMap<String, HashMap<String, String>> {
+    let mut foreign_keys: HashMap<String, HashMap<String, String>> = HashMap::new();
+
+    let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
+        Ok(ast) => ast,
+        Err(e) => {
+            panic!("Error parsing graphql schema {e:?}",)
+        }
+    };
+    let (primitives, _) = build_schema_objects_set(&base_ast);
+
+    let ast = match parse_schema::<String>(&schema) {
+        Ok(ast) => ast,
+        Err(e) => panic!("Error parsing graphql schema {e:?}",),
+    };
+    let types_map = build_schema_fields_and_types_map(&ast);
+
+    for def in ast.definitions.iter() {
+        if let Definition::TypeDefinition(typ) = def {
+            if let TypeDefinition::Object(o) = typ {
+                if o.name.to_lowercase() == "queryroot".to_string() {
+                    continue;
+                }
+
+                for field in o.fields.iter() {
+                    fn process_type(
+                        field_type: &Type<String>,
+                        primitives: &HashSet<String>,
+                    ) -> (ColumnType, bool) {
+                        match field_type {
+                            Type::NamedType(t) => {
+                                if !primitives.contains(t.as_str()) {
+                                    return (ColumnType::ForeignKey, true);
+                                }
+                                (ColumnType::from(t.as_str()), true)
+                            }
+                            Type::ListType(_) => panic!("List types not supported yet."),
+                            Type::NonNullType(t) => {
+                                let (typ, _) = process_type(t, primitives);
+                                (typ, false)
+                            }
+                        }
+                    }
+
+                    let (typ, _) = process_type(&field.field_type, &primitives);
+
+                    if typ == ColumnType::ForeignKey {
+                        let directives::Join {
+                            reference_field_name,
+                            ..
+                        } = get_join_directive_info(field, o, &types_map);
+
+                        match foreign_keys.get_mut(&o.name.to_lowercase()) {
+                            Some(foreign_keys_for_field) => {
+                                foreign_keys_for_field.insert(
+                                    field_type_table_name(field),
+                                    reference_field_name.clone(),
+                                );
+                            }
+                            None => {
+                                let foreign_keys_for_field = HashMap::from([(
+                                    field_type_table_name(field),
+                                    reference_field_name.clone(),
+                                )]);
+                                foreign_keys.insert(
+                                    o.name.to_lowercase(),
+                                    foreign_keys_for_field,
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    foreign_keys
 }
 
 #[cfg(test)]
