@@ -68,3 +68,11 @@ pub(crate) fn project_dir_info(
     let manifest = root.join(manifest.unwrap_or(&mani_name));
     Ok((root, manifest, name))
 }
+
+pub(crate) fn default_manifest_filename(name: &str) -> String {
+    format!("{name}.manifest.yaml")
+}
+
+pub(crate) fn default_schema_filename(name: &str) -> String {
+    format!("{name}.schema.graphql")
+}

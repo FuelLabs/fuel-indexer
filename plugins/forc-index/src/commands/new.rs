@@ -23,6 +23,10 @@ pub struct Command {
         help = "Whether to initialize an index with native execution enabled."
     )]
     pub native: bool,
+
+    /// Resolve index asset filepaths using absolute paths.
+    #[clap(long, help = "Resolve index asset filepaths using absolute paths.")]
+    pub absolute_paths: bool,
 }
 
 pub fn exec(command: Command) -> Result<()> {
