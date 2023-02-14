@@ -166,6 +166,7 @@ impl GraphQlApi {
                     .allow_methods(vec![Method::GET, Method::POST])
                     .allow_origin(Any {}),
             )
+            .layer(DefaultBodyLimit::disable())
             .layer(DefaultBodyLimit::max(max_body_limit));
 
         Ok(app)

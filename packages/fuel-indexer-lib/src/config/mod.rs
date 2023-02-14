@@ -172,6 +172,10 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
+    /// Max body size for the GraphQL API.
+    #[clap(long, help = "Max body size for the GraphQL API", default_value = defaults::MAX_BODY_LIMIT)]
+    pub max_body_limit: String,
+
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
@@ -357,7 +361,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             },
             metrics: args.metrics,
             stop_idle_indexers: false,
-            max_body_limit: defaults::MAX_BODY_LIMIT.parse::<usize>().unwrap(),
+            max_body_limit: args.max_body_limit.parse::<usize>().unwrap(),
         };
 
         config.inject_opt_env_vars();
