@@ -1,4 +1,10 @@
-use crate::{cli::InitCommand, utils::defaults};
+use crate::{
+    cli::InitCommand,
+    utils::{
+        dasherize_to_underscore, default_manifest_filename, default_schema_filename,
+        defaults,
+    },
+};
 use anyhow::Context;
 use forc_util::{kebab_to_snake_case, validate_name};
 use std::{
@@ -63,7 +69,15 @@ An easy-to-use, flexible indexing service built to go fast. 🚗💨
 }
 
 pub fn init(command: InitCommand) -> anyhow::Result<()> {
-    let project_dir = match &command.path {
+    let InitCommand {
+        name,
+        path,
+        namespace,
+        native,
+        absolute_paths,
+    } = command;
+
+    let project_dir = match &path {
         Some(p) => PathBuf::from(p),
         None => std::env::current_dir()
             .context("❌ Failed to get current directory for forc index init.")?,
@@ -88,7 +102,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         project_dir.canonicalize()?.display()
     );
 
-    let project_name = match command.name {
+    let project_name = match name {
         Some(name) => name,
         None => project_dir
             .file_stem()
@@ -105,7 +119,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     // Make a new directory for the project
     fs::create_dir_all(Path::new(&project_dir).join("src"))?;
 
-    let default_toml = if command.native {
+    let default_toml = if native {
         defaults::default_native_index_cargo_toml(&project_name)
     } else {
         defaults::default_index_cargo_toml(&project_name)
@@ -118,20 +132,27 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     )
     .unwrap();
 
+    let proj_abspath = if absolute_paths {
+        Some(fs::canonicalize(Path::new(&project_dir))?)
+    } else {
+        None
+    };
+
+    let manifest_filename = default_manifest_filename(&project_name);
+    let schema_filename = default_schema_filename(&project_name);
+
     // Write index manifest
-    let manifest_filename = format!("{project_name}.manifest.yaml",);
     fs::write(
         Path::new(&project_dir).join(&manifest_filename),
         defaults::default_index_manifest(
-            &command.namespace,
+            &namespace,
+            &schema_filename,
             &project_name,
-            fs::canonicalize(Path::new(&project_dir))?.to_str().unwrap(),
+            proj_abspath.as_ref(),
         ),
-    )
-    .unwrap();
+    )?;
 
     // Write index schema
-    let schema_filename = format!("{}.schema.graphql", &project_name);
     fs::create_dir_all(Path::new(&project_dir).join("schema"))?;
     fs::write(
         Path::new(&project_dir).join("schema").join(schema_filename),
@@ -147,13 +168,13 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         defaults::default_index_lib(
             &project_name,
             &manifest_filename,
-            fs::canonicalize(Path::new(&project_dir))?.to_str().unwrap(),
+            proj_abspath.as_ref(),
         ),
     )
     .unwrap();
 
     // Write cargo config with WASM target
-    if !command.native {
+    if !native {
         fs::create_dir_all(
             Path::new(&project_dir).join(defaults::CARGO_CONFIG_DIR_NAME),
         )?;
