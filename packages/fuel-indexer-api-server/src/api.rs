@@ -12,7 +12,7 @@ use axum::{
     Error as AxumError, Router,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
-use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest, defaults};
+use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
 };
@@ -113,7 +113,7 @@ impl GraphQlApi {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();
-        let max_default_body = config.max_default_body;
+        let max_body_limit = config.max_body_limit;
         let start_time = Arc::new(Instant::now());
 
         if config.graphql_api.run_migrations {
@@ -166,7 +166,7 @@ impl GraphQlApi {
                     .allow_methods(vec![Method::GET, Method::POST])
                     .allow_origin(Any {}),
             )
-            .layer(DefaultBodyLimit::max(max_default_body));
+            .layer(DefaultBodyLimit::max(max_body_limit));
 
         Ok(app)
     }

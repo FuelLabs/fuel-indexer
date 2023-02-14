@@ -213,7 +213,7 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
     pub metrics: bool,
     pub stop_idle_indexers: bool,
-    pub max_default_body: usize,
+    pub max_body_limit: usize,
 }
 
 impl IndexerConfig {
@@ -271,7 +271,7 @@ impl IndexerConfig {
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
-            max_default_body: args.max_body_limit.parse::<usize>().unwrap_or(1024),
+            max_body_limit: args.max_body_limit.parse::<usize>().unwrap(),
         };
 
         config.inject_opt_env_vars();
