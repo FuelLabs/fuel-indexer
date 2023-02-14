@@ -154,7 +154,7 @@ impl SchemaBuilder {
             queries::execute_query(conn, query).await?;
         }
 
-        for fk in &foreign_keys {
+        for fk in foreign_keys {
             queries::execute_query(conn, fk.create_statement()).await?;
         }
 

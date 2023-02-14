@@ -215,7 +215,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_optional_schema_fields(optional: Ping) {
-        Logger::info("fuel_indexer_test_optional_schema_fields handling NullableFieldStruct event and setting optional fields.");
+        Logger::info("fuel_indexer_test_optional_schema_fields handling Ping event and setting optional fields.");
 
         let entity = OptionEntity {
             id: optional.id,
