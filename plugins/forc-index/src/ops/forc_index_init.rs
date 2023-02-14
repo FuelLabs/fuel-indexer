@@ -1,9 +1,6 @@
 use crate::{
     cli::InitCommand,
-    utils::{
-        dasherize_to_underscore, default_manifest_filename, default_schema_filename,
-        defaults,
-    },
+    utils::{default_manifest_filename, default_schema_filename, defaults},
 };
 use anyhow::Context;
 use forc_util::{kebab_to_snake_case, validate_name};
