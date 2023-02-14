@@ -261,16 +261,25 @@ impl Operation {
         } = self;
         let mut queries = Vec::new();
 
-        // TODO: Add filters
         for selection in selections.get_selections() {
             let mut elements: Vec<QueryElement> = Vec::new();
             let mut entities: Vec<String> = Vec::new();
             let mut joins: Vec<String> = Vec::new();
+
+            // Track what nested entity (if any) that the parse
+            // operation is currently in
             let mut nested_entity_stack: Vec<String> = Vec::new();
 
+            // Selections can have their own set of subselections and so on, so a queue
+            // is created with the first level of selections. In order to track the containing
+            // entity of the selection, an entity list of the same length is created.
             if let Selection::Field(entity_name, filters, selections) = selection {
                 let mut queue: Vec<Selection> = Vec::new();
 
+                // Selections and entities will be popped from their respective vectors
+                // easy access to an element. In order to be compliant with the GraphQL
+                // spec (which says that a query should be resovled top-down), the order
+                // of the elements is reversed prior to insertion in the queues.
                 entities.append(
                     &mut vec![entity_name.clone(); selections.selections.len()]
                         .drain(..)
@@ -290,9 +299,13 @@ impl Operation {
                 while let Some(current) = queue.pop() {
                     let entity_name = entities.pop().unwrap();
 
-                    if let Some(current_level) = nested_entity_stack.last() {
+                    // If a selection was processed without adding additional selections
+                    // to the queue, then check the entity of the selection against the
+                    // current nesting level. If they differ, then the operation has moved
+                    // out of a child entity into a parent entity.
+                    if let Some(current_nesting_level) = nested_entity_stack.last() {
                         if entities.len() < last_seen_entities_len
-                            && current_level != &entity_name
+                            && current_nesting_level != &entity_name
                         {
                             let _ = nested_entity_stack.pop();
                             elements.push(QueryElement::ObjectClosingBoundary);
@@ -310,6 +323,9 @@ impl Operation {
                                 ),
                             });
                         } else {
+                            // If the current entity has a foreign key on the current
+                            // selection, join the foreign table on that primary key
+                            // and set the field as the innermost entity by pushing to the stack.
                             if let Some(field_to_foreign_key) =
                                 schema.foreign_keys.get(&entity_name.to_lowercase())
                             {
@@ -330,6 +346,9 @@ impl Operation {
                                 }
                             }
 
+                            // Add the subselections and entities to the ends of
+                            // their respective vectors so that they are resolved
+                            // immediately after their parent selection.
                             entities.append(&mut vec![
                                 field_name.clone();
                                 subselections.selections.len()
@@ -344,6 +363,9 @@ impl Operation {
                     }
                 }
 
+                // If the query document ends without selections from outer entities,
+                // then append the requisite number of object closing boundaries in
+                // order to properly format the JSON structure for the database query.
                 if !nested_entity_stack.is_empty() {
                     elements.append(&mut vec![
                         QueryElement::ObjectClosingBoundary;
@@ -351,6 +373,7 @@ impl Operation {
                     ]);
                 }
 
+                // TODO: Support advanced filtering operations, e.g. <, >, set membership, etc.
                 let filters: Vec<QueryFilter> = filters
                     .into_iter()
                     .map(|f| QueryFilter {
