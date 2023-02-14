@@ -19,16 +19,17 @@ pub struct Command {
     )]
     pub path: Option<PathBuf>,
 
-    /// Name of the index namespace
+    /// Namespace in which index belongs.
     #[clap(long, help = "Namespace in which index belongs.")]
     pub namespace: String,
 
-    /// Whether to initialize an index with native execution enabled
-    #[clap(
-        long,
-        help = "Whether to initialize an index with native execution enabled."
-    )]
+    /// Initialize an index with native execution enabled.
+    #[clap(long, help = "Initialize an index with native execution enabled.")]
     pub native: bool,
+
+    /// Resolve index asset filepaths using absolute paths.
+    #[clap(long, help = "Resolve index asset filepaths using absolute paths.")]
+    pub absolute_paths: bool,
 }
 
 pub fn exec(command: Command) -> Result<()> {

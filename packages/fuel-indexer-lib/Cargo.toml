@@ -18,3 +18,4 @@ strum = { version = "0.24", default-features = false, features = ["derive"] }
 thiserror = "1.0"
 tokio = { version = "1.8", features = ["time", "rt"] }
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["ansi", "json", "env-filter"] }
