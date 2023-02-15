@@ -777,4 +777,95 @@ mod tests {
         assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace_index1.message ADD CONSTRAINT fk_message_sender__account_id FOREIGN KEY (sender) REFERENCES namespace_index1.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
         assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace_index1.message ADD CONSTRAINT fk_message_receiver__account_id FOREIGN KEY (receiver) REFERENCES namespace_index1.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
     }
+
+    #[test]
+    fn test_get_implicit_foreign_keys_for_schema() {
+        let implicit_fk_graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+
+        type QueryRoot {
+            borrower: Borrower
+            lender: Lender
+            auditor: Auditor
+        }
+
+        type Borrower {
+            id: ID!
+            account: Address! @indexed
+        }
+
+        type Lender {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower!
+        }
+
+        type Auditor {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower!
+        }
+    "#;
+
+        let mut expected = HashMap::new();
+        expected.insert(
+            "lender".to_string(),
+            HashMap::from([("borrower".to_string(), "id".to_string())]),
+        );
+        expected.insert(
+            "auditor".to_string(),
+            HashMap::from([("borrower".to_string(), "id".to_string())]),
+        );
+
+        let implicit_fk_foreign_keys = get_foreign_keys(implicit_fk_graphql_schema);
+        assert_eq!(expected, implicit_fk_foreign_keys);
+    }
+
+    #[test]
+    fn test_get_explicit_foreign_keys_for_schema() {
+        let explicit_fk_graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+
+        type QueryRoot {
+            borrower: Borrower
+            lender: Lender
+            auditor: Auditor
+        }
+
+        type Borrower {
+            account: Address! @indexed
+        }
+
+        type Lender {
+            id: ID!
+            borrower: Borrower! @join(on:account)
+        }
+
+        type Auditor {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower! @join(on:account)
+        }
+    "#;
+
+        let mut expected = HashMap::new();
+        expected.insert(
+            "lender".to_string(),
+            HashMap::from([("borrower".to_string(), "account".to_string())]),
+        );
+        expected.insert(
+            "auditor".to_string(),
+            HashMap::from([("borrower".to_string(), "account".to_string())]),
+        );
+
+        let explicit_fk_foreign_keys = get_foreign_keys(explicit_fk_graphql_schema);
+        assert_eq!(expected, explicit_fk_foreign_keys);
+    }
 }
