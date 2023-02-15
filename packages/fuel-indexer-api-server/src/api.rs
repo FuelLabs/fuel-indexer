@@ -4,7 +4,7 @@ use crate::uses::{
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
-    extract::{DefaultBodyLimit, Extension, Json},
+    extract::{Extension, Json},
     http::StatusCode,
     middleware,
     response::{IntoResponse, Response},
@@ -23,6 +23,7 @@ use thiserror::Error;
 use tokio::sync::mpsc::{error::SendError, Sender};
 use tower_http::{
     cors::{Any, CorsLayer},
+    limit::RequestBodyLimitLayer,
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
@@ -124,7 +125,8 @@ impl GraphQlApi {
         let graph_route = Router::new()
             .route("/:namespace/:identifier", post(query_graph))
             .layer(Extension(schema_manager.clone()))
-            .layer(Extension(pool.clone()));
+            .layer(Extension(pool.clone()))
+            .layer(RequestBodyLimitLayer::new(max_body_limit));
 
         let index_routes = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
@@ -135,7 +137,8 @@ impl GraphQlApi {
             .route("/:namespace/:identifier", delete(stop_index))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(tx))
-            .layer(Extension(pool.clone()));
+            .layer(Extension(pool.clone()))
+            .layer(RequestBodyLimitLayer::new(max_body_limit));
 
         let root_routes = Router::new()
             .route("/health", get(health_check))
@@ -165,9 +168,7 @@ impl GraphQlApi {
                 CorsLayer::new()
                     .allow_methods(vec![Method::GET, Method::POST])
                     .allow_origin(Any {}),
-            )
-            .layer(DefaultBodyLimit::disable())
-            .layer(DefaultBodyLimit::max(max_body_limit));
+            );
 
         Ok(app)
     }
