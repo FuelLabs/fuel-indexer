@@ -474,39 +474,11 @@ pub struct UserQuery {
 
 impl UserQuery {
     pub fn to_sql(&self, db_type: &DbType) -> String {
+        // Different database solutions have unique ways of
+        // constructing JSON-formatted queries and results.
         match db_type {
             DbType::Postgres => {
-                let mut peekable_elements = self.elements.iter().peekable();
-
-                let mut elements = Vec::new();
-                while let Some(e) = peekable_elements.next() {
-                    match e {
-                        QueryElement::Field { key, value } => {
-                            elements.push(format!("'{key}', {value}"));
-                            if let Some(next_element) = peekable_elements.peek() {
-                                match next_element {
-                                    QueryElement::Field { .. }
-                                    | QueryElement::ObjectOpeningBoundary { .. } => {
-                                        elements.push(",".to_string());
-                                    }
-                                    _ => {}
-                                }
-                            }
-                        }
-                        QueryElement::ObjectOpeningBoundary { key } => {
-                            elements.push(format!("'{key}', json_build_object("))
-                        }
-                        QueryElement::ObjectClosingBoundary => {
-                            elements.push(")".to_string());
-
-                            if let Some(QueryElement::Field { .. }) =
-                                peekable_elements.peek()
-                            {
-                                elements.push(",".to_string());
-                            }
-                        }
-                    }
-                }
+                let elements = self.parse_query_elements(db_type);
 
                 let filters: Vec<String> = self
                     .filters
@@ -532,5 +504,57 @@ impl UserQuery {
                 query
             }
         }
+    }
+
+    fn parse_query_elements(&self, db_type: &DbType) -> Vec<String> {
+        let mut peekable_elements = self.elements.iter().peekable();
+
+        let mut elements = Vec::new();
+
+        match db_type {
+            DbType::Postgres => {
+                while let Some(e) = peekable_elements.next() {
+                    match e {
+                        // Set the key for this JSON element to the name of the entity field
+                        // and the value to the corresponding database table so that it can
+                        // be successfully retrieved.
+                        QueryElement::Field { key, value } => {
+                            elements.push(format!("'{key}', {value}"));
+
+                            // If the next element is not a closing boundary, then a comma should
+                            // be added so that the resultant SQL query can be properly constructed.
+                            if let Some(next_element) = peekable_elements.peek() {
+                                match next_element {
+                                    QueryElement::Field { .. }
+                                    | QueryElement::ObjectOpeningBoundary { .. } => {
+                                        elements.push(",".to_string());
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+
+                        // Set a nested JSON object as the value for this entity field.
+                        QueryElement::ObjectOpeningBoundary { key } => {
+                            elements.push(format!("'{key}', json_build_object("))
+                        }
+
+                        QueryElement::ObjectClosingBoundary => {
+                            elements.push(")".to_string());
+
+                            // If the next element is a field to be selected upon, add a
+                            // comma so that the resultant SQL query is properly constructed.
+                            if let Some(QueryElement::Field { .. }) =
+                                peekable_elements.peek()
+                            {
+                                elements.push(",".to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        elements
     }
 }

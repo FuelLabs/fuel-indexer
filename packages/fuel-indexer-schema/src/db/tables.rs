@@ -9,10 +9,10 @@ use fuel_indexer_database::{
     DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_types::type_id;
-use graphql_parser::parse_schema;
 use graphql_parser::schema::{
     Definition, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
 };
+use graphql_parser::{parse_schema, schema::Document};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
@@ -425,21 +425,8 @@ impl Schema {
 }
 
 fn get_foreign_keys(schema: &str) -> HashMap<String, HashMap<String, String>> {
+    let (ast, primitives, types_map) = parse_schema_for_ast_data(schema);
     let mut foreign_keys: HashMap<String, HashMap<String, String>> = HashMap::new();
-
-    let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
-        Ok(ast) => ast,
-        Err(e) => {
-            panic!("Error parsing graphql schema {e:?}",)
-        }
-    };
-    let (primitives, _) = build_schema_objects_set(&base_ast);
-
-    let ast = match parse_schema::<String>(schema) {
-        Ok(ast) => ast,
-        Err(e) => panic!("Error parsing graphql schema {e:?}",),
-    };
-    let types_map = build_schema_fields_and_types_map(&ast);
 
     for def in ast.definitions.iter() {
         if let Definition::TypeDefinition(TypeDefinition::Object(o)) = def {
@@ -448,28 +435,9 @@ fn get_foreign_keys(schema: &str) -> HashMap<String, HashMap<String, String>> {
             }
 
             for field in o.fields.iter() {
-                fn process_type(
-                    field_type: &Type<String>,
-                    primitives: &HashSet<String>,
-                ) -> (ColumnType, bool) {
-                    match field_type {
-                        Type::NamedType(t) => {
-                            if !primitives.contains(t.as_str()) {
-                                return (ColumnType::ForeignKey, true);
-                            }
-                            (ColumnType::from(t.as_str()), true)
-                        }
-                        Type::ListType(_) => panic!("List types not supported yet."),
-                        Type::NonNullType(t) => {
-                            let (typ, _) = process_type(t, primitives);
-                            (typ, false)
-                        }
-                    }
-                }
-
-                let (typ, _) = process_type(&field.field_type, &primitives);
-
-                if typ == ColumnType::ForeignKey {
+                if let ColumnType::ForeignKey =
+                    get_column_type(&field.field_type, &primitives)
+                {
                     let directives::Join {
                         reference_field_name,
                         ..
@@ -497,6 +465,42 @@ fn get_foreign_keys(schema: &str) -> HashMap<String, HashMap<String, String>> {
     }
 
     foreign_keys
+}
+
+fn parse_schema_for_ast_data(
+    schema: &str,
+) -> (Document<String>, HashSet<String>, HashMap<String, String>) {
+    let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
+        Ok(ast) => ast,
+        Err(e) => {
+            panic!("Error parsing graphql schema {e:?}",)
+        }
+    };
+    let (primitives, _) = build_schema_objects_set(&base_ast);
+
+    let ast = match parse_schema::<String>(schema) {
+        Ok(ast) => ast,
+        Err(e) => panic!("Error parsing graphql schema {e:?}",),
+    };
+    let types_map = build_schema_fields_and_types_map(&ast);
+
+    (ast, primitives, types_map)
+}
+
+fn get_column_type(
+    field_type: &Type<String>,
+    primitives: &HashSet<String>,
+) -> ColumnType {
+    match field_type {
+        Type::NamedType(t) => {
+            if !primitives.contains(t.as_str()) {
+                return ColumnType::ForeignKey;
+            }
+            ColumnType::from(t.as_str())
+        }
+        Type::ListType(_) => panic!("List types not supported yet."),
+        Type::NonNullType(t) => get_column_type(t, primitives),
+    }
 }
 
 #[cfg(test)]

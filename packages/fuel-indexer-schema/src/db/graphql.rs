@@ -266,8 +266,6 @@ impl Operation {
             let mut entities: Vec<String> = Vec::new();
             let mut joins: Vec<String> = Vec::new();
 
-            // Track what nested entity (if any) that the parse
-            // operation is currently in
             let mut nested_entity_stack: Vec<String> = Vec::new();
 
             // Selections can have their own set of subselections and so on, so a queue
@@ -332,15 +330,32 @@ impl Operation {
                                 if let Some(foreign_key) =
                                     field_to_foreign_key.get(&field_name.to_lowercase())
                                 {
-                                    let reference_table =
-                                        format!("{namespace}_{identifier}.{field_name}");
+                                    let reference_table = fully_qualified_reference_table(
+                                        namespace,
+                                        identifier,
+                                        &field_name,
+                                    );
                                     let referencing_key =
-                                        format!("{namespace}_{identifier}.{entity_name}.{field_name}");
-                                    let primary_key =
-                                        format!("{namespace}_{identifier}.{field_name}.{foreign_key}");
-                                    let join = format!(
-                                        "INNER JOIN {reference_table} ON {referencing_key} = {primary_key}");
-                                    joins.push(join);
+                                        fully_qualified_referencing_field(
+                                            namespace,
+                                            identifier,
+                                            &entity_name,
+                                            &field_name,
+                                        );
+                                    let primary_key = fully_qualified_primary_key(
+                                        namespace,
+                                        identifier,
+                                        &field_name,
+                                        foreign_key,
+                                    );
+
+                                    joins.push(
+                                        inner_join_reference_table_on_foreign_key(
+                                            &reference_table,
+                                            &referencing_key,
+                                            &primary_key,
+                                        ),
+                                    );
 
                                     nested_entity_stack.push(field_name.clone());
                                 }
@@ -397,6 +412,40 @@ impl Operation {
 
         queries
     }
+}
+
+fn fully_qualified_reference_table(
+    namespace: &str,
+    identifier: &str,
+    field_name: &str,
+) -> String {
+    format!("{namespace}_{identifier}.{field_name}")
+}
+
+fn fully_qualified_referencing_field(
+    namespace: &str,
+    identifier: &str,
+    entity_name: &str,
+    field_name: &str,
+) -> String {
+    format!("{namespace}_{identifier}.{entity_name}.{field_name}")
+}
+
+fn fully_qualified_primary_key(
+    namespace: &str,
+    identifier: &str,
+    field_name: &str,
+    foreign_key: &str,
+) -> String {
+    format!("{namespace}_{identifier}.{field_name}.{foreign_key}")
+}
+
+fn inner_join_reference_table_on_foreign_key(
+    reference_table: &str,
+    referencing_key: &str,
+    primary_key: &str,
+) -> String {
+    format!("INNER JOIN {reference_table} ON {referencing_key} = {primary_key}")
 }
 
 #[derive(Debug)]
