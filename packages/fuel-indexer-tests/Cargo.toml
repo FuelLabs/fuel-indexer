@@ -26,7 +26,7 @@ harness = true
 actix-service = { version = "2", default-features = false }
 actix-web = { version = "4", default-features = false, features = ["macros"] }
 async-std = "1"
-axum = { version = "0.5", features = ["multipart"] }
+axum = { version = "0.6.6", features = ["multipart"] }
 chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { version = "0.2", path = "./../fuel-indexer" }
 fuel-indexer-api-server = { version = "0.2", path = "./../fuel-indexer-api-server" }
@@ -35,11 +35,11 @@ fuel-indexer-lib = { version = "0.2", path = "./../fuel-indexer-lib" }
 fuel-indexer-postgres = { version = "0.2", path = "./../fuel-indexer-database/postgres" }
 fuel-indexer-schema = { version = "0.2", path = "./../fuel-indexer-schema" }
 fuel-indexer-types = { version = "0.2", path = "./../fuel-indexer-types" }
-fuel-tx = "0.23"
-fuel-types = "0.5"
-fuels = { version = "0.35", features = ["fuel-core-lib"] }
-fuels-macros = "0.35"
-fuels-core = "0.35"
+fuel-tx = "0.26.0"
+fuel-types = "0.26.0"
+fuels = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen"}
+fuels-macros = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen" }
+fuels-core = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}
