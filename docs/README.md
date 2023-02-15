@@ -174,7 +174,7 @@ forc index postgres create postgres --persistent
 ```text
 Downloading, unpacking, and bootstrapping database.
 ▹▸▹▹▹ ⏱  Setting up database...
-                                                                                                                                                                                                                           The files belonging to this database system will be owned by user "rashad".
+
 This user must also own the server process.
 
 The database cluster will be initialized with locale "en_US.UTF-8".
@@ -234,7 +234,7 @@ forc index postgres start postgres
 ```
 
 ```text
-Using database directory at "/Users/rashad/.fuel/idx/postgres"
+Using database directory at "/Users/rashad/.fuel/indexer/postgres"
 
 Starting PostgreSQL.
 
@@ -262,7 +262,7 @@ select
 2023-02-09 16:11:37.460 EST [86881] LOG:  could not receive data from client: Connection reset by peer
 ```
 
-> You can `Ctrl+C` to exit the `forc index postgres start postgres` process, and your database should still be running in the background.
+> You can `Ctrl+C` to exit the `forc index postgres start` process, and your database should still be running in the background.
 
 ### 2.3 Creating a new index
 
