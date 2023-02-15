@@ -33,8 +33,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .join("test-chain-config.json")
     });
 
+    let host = if opts.host.is_some() {
+        opts.host
+    } else {
+        Some("127.0.0.1".to_string())
+    };
+
     println!("Spinning up test Fuel node; node will automatically exit in ten minutes.");
-    let server_handle = tokio::spawn(setup_test_fuel_node(chain_config.clone(), None));
+    let server_handle = tokio::spawn(setup_test_fuel_node(chain_config, None, host));
     std::thread::sleep(std::time::Duration::from_secs(600));
 
     server_handle.abort();

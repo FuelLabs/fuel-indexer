@@ -19,6 +19,7 @@ use sqlx::{
     pool::{Pool, PoolConnection},
     Postgres,
 };
+use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use tracing_subscriber::filter::EnvFilter;
 
@@ -76,6 +77,7 @@ pub fn tx_params() -> TxParameters {
 pub async fn setup_test_fuel_node(
     wallet_path: PathBuf,
     contract_bin_path: Option<PathBuf>,
+    host_str: Option<String>,
 ) -> Result<(), ()> {
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => {
@@ -105,9 +107,15 @@ pub async fn setup_test_fuel_node(
         DEFAULT_COIN_AMOUNT,
     );
 
+    let addr = if host_str.is_some() {
+        host_str.unwrap().parse::<SocketAddr>().unwrap()
+    } else {
+        defaults::FUEL_NODE_ADDR.parse::<SocketAddr>().unwrap()
+    };
+
     let config = Config {
         utxo_validation: false,
-        addr: defaults::FUEL_NODE_ADDR.parse().unwrap(),
+        addr,
         ..Config::local_node()
     };
 
@@ -153,7 +161,7 @@ pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
         .join("debug")
         .join("fuel-indexer-test.bin");
 
-    setup_test_fuel_node(wallet_path, Some(contract_bin_path)).await
+    setup_test_fuel_node(wallet_path, Some(contract_bin_path), None).await
 }
 
 pub async fn get_contract_id(
