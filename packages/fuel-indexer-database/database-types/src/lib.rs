@@ -527,7 +527,7 @@ impl UserQuery {
                                 match next_element {
                                     QueryElement::Field { .. }
                                     | QueryElement::ObjectOpeningBoundary { .. } => {
-                                        elements.push(",".to_string());
+                                        elements.push(", ".to_string());
                                     }
                                     _ => {}
                                 }
@@ -547,7 +547,7 @@ impl UserQuery {
                             if let Some(QueryElement::Field { .. }) =
                                 peekable_elements.peek()
                             {
-                                elements.push(",".to_string());
+                                elements.push(", ".to_string());
                             }
                         }
                     }
@@ -556,5 +556,82 @@ impl UserQuery {
         }
 
         elements
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_user_query_parse_query_elements() {
+        let elements = vec![
+            QueryElement::Field {
+                key: "flat_field_key".to_string(),
+                value: "flat_value".to_string(),
+            },
+            QueryElement::ObjectOpeningBoundary {
+                key: "nested_object_key".to_string(),
+            },
+            QueryElement::Field {
+                key: "nested_field_key".to_string(),
+                value: "nested_field_value".to_string(),
+            },
+            QueryElement::ObjectClosingBoundary,
+        ];
+        let uq = UserQuery {
+            elements,
+            joins: Vec::new(),
+            namespace_identifier: "".to_string(),
+            entity_name: "".to_string(),
+            filters: Vec::new(),
+        };
+
+        let expected = vec![
+            "'flat_field_key', flat_value".to_string(),
+            ",".to_string(),
+            "'nested_object_key', json_build_object(".to_string(),
+            "'nested_field_key', nested_field_value".to_string(),
+            ")".to_string(),
+        ];
+
+        assert_eq!(expected, uq.parse_query_elements(&DbType::Postgres));
+    }
+
+    #[test]
+    fn test_user_query_to_sql() {
+        let elements = vec![
+            QueryElement::Field {
+                key: "a".to_string(),
+                value: "n_i.a".to_string(),
+            },
+            QueryElement::ObjectOpeningBoundary {
+                key: "b".to_string(),
+            },
+            QueryElement::Field {
+                key: "b_a".to_string(),
+                value: "n_i.b.a".to_string(),
+            },
+            QueryElement::ObjectClosingBoundary,
+            QueryElement::Field {
+                key: "c".to_string(),
+                value: "n_i.c".to_string(),
+            },
+        ];
+
+        let uq = UserQuery {
+            elements,
+            joins: vec!["INNER JOIN n_i.b ON n_i.a.b = n_i.b.id".to_string()],
+            namespace_identifier: "n_i".to_string(),
+            entity_name: "entity_name".to_string(),
+            filters: vec![QueryFilter {
+                key: "a".to_string(),
+                relation: "=".to_string(),
+                value: "123".to_string(),
+            }],
+        };
+
+        let expected = "SELECT json_build_object('a', n_i.a, 'b', json_build_object('b_a', n_i.b.a), 'c', n_i.c) FROM n_i.entity_name INNER JOIN n_i.b ON n_i.a.b = n_i.b.id WHERE a = 123".to_string();
+        assert_eq!(expected, uq.to_sql(&DbType::Postgres));
     }
 }
