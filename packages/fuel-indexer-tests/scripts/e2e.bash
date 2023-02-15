@@ -22,6 +22,6 @@ do
 
     for test in "${tests[@]}"
     do
-        cargo test $test --workspace --locked --all-features --all-targets
+        cargo test $test --workspace --locked --features e2e,postgres --all-targets
     done
 done

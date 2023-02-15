@@ -11,6 +11,7 @@ description = "Fuel Indexer forc plugin"
 [dependencies]
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
+forc-postgres = { version = "0.2", path = "../forc-postgres" }
 forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.31" }
 fuel-indexer-lib = { version = "0.2", path = "../../packages/fuel-indexer-lib" }

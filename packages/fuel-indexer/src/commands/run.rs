@@ -1,9 +1,9 @@
 use crate::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
-use fuel_indexer_lib::utils::ServiceRequest;
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig},
     manifest::Manifest,
+    utils::ServiceRequest,
 };
 use tracing::info;
 
