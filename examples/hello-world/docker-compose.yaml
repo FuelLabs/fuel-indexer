@@ -38,7 +38,7 @@ services:
   fuel-indexer:
     platform: linux/amd64
     image: ghcr.io/fuellabs/fuel-indexer:latest
-    command: bash -c "sleep 2 && ./fuel-indexer run --fuel-node-host 0.0.0.0 --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
+    command: bash -c "sleep 2 && ./fuel-indexer run --fuel-node-host hello-world-node --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
     ports:
       - "29987:29987"
     volumes:
