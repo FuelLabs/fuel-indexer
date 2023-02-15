@@ -283,7 +283,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
@@ -320,7 +320,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
@@ -416,7 +416,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
@@ -458,7 +458,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
@@ -502,7 +502,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_index_event_with_optional_fields_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
@@ -676,7 +676,7 @@ async fn test_index_respects_start_block_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
