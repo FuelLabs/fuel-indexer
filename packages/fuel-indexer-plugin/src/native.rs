@@ -1,10 +1,10 @@
 extern crate alloc;
 use alloc::vec::Vec;
 pub use anyhow;
-pub use fuel_indexer::prelude::{IndexerError, IndexerResult, IndexerService};
-
-#[cfg(feature = "native-execution")]
-pub use fuel_indexer::prelude::{Arc, Database, Mutex, NativeIndexExecutor};
+pub use fuel_indexer::prelude::{
+    Arc, Database, IndexerError, IndexerResult, IndexerService, Mutex,
+    NativeIndexExecutor,
+};
 
 use async_trait;
 pub use bincode;

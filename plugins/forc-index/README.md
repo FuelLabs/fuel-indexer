@@ -59,3 +59,35 @@ Build the index in the current directory.
 ```bash
 forc index build --verbose
 ```
+
+### `forc index postgres create`
+
+Create a new database.
+
+```bash
+forc index postgres create postgres --persistent
+```
+
+### `forc index postgres start`
+
+Start a previously created database.
+
+```bash
+forc index postgres start postgres
+```
+
+### `forc index postgres stop`
+
+Stop a running database.
+
+```bash
+forc index postgres stop postgres
+```
+
+### `forc index postgres drop`
+
+Drop a stopped database.
+
+```bash
+forc index postgres drop postgres
+```
