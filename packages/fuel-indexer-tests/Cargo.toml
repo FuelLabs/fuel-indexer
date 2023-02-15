@@ -26,7 +26,7 @@ harness = true
 actix-service = { version = "2", default-features = false }
 actix-web = { version = "4", default-features = false, features = ["macros"] }
 async-std = "1"
-axum = { version = "0.6.6", features = ["multipart"] }
+axum = { version = "0.5", features = ["multipart"] }
 chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { version = "0.2", path = "./../fuel-indexer" }
 fuel-indexer-api-server = { version = "0.2", path = "./../fuel-indexer-api-server" }

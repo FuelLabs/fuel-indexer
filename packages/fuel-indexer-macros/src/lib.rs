@@ -1,6 +1,5 @@
 extern crate lazy_static;
 extern crate proc_macro;
-extern crate core;
 
 mod indexer;
 mod native;
