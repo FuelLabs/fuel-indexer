@@ -18,6 +18,7 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
         postgres_port,
         run_migrations,
         metrics,
+        manifest,
         ..
     } = command;
 
@@ -34,6 +35,10 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
 
     let mut cmd = Command::new(&exec);
     cmd.arg("run");
+
+    if let Some(m) = &manifest {
+        cmd.arg("--manifest").arg(m);
+    }
 
     if let Some(c) = &config {
         cmd.arg("--config").arg(c);
