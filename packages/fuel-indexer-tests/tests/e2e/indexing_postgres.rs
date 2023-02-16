@@ -95,38 +95,6 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_trigger_and_index_events_with_multiple_indicies() {
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    for _ in 0..7 {
-        let mut manifest_copy = manifest.clone();
-        srvc.register_index_from_manifest(manifest_copy)
-            .await
-            .expect("Failed to initialize indexer.");
-    }
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("indicies").to_request();
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-
-    let mut conn = pool.acquire().await.unwrap();
-    let block_row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.block ORDER by height DESC LIMIT 1",
-    )
-    .fetch_one(&mut conn)
-    .await
-    .unwrap();
-}
-
-#[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_callreturn_postgres() {
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -678,4 +646,42 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     assert_eq!(complex_a, "abcde");
     assert_eq!(complex_b, 54321);
     assert_eq!(simple_a, "hello world!");
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
+    let pool = postgres_connection_pool().await;
+    let mut srvc = indexer_service_postgres().await;
+
+    for i in 0..7 {
+        let mut manifest: Manifest =
+            serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST)
+                .expect("Bad Yaml File");
+
+        manifest.identifier = format!("index{}", i);
+
+        update_test_manifest_asset_paths(&mut manifest);
+
+        srvc.register_index_from_manifest(manifest)
+            .await
+            .expect("Failed to initialize indexer.");
+    }
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("indicies").to_request();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    for i in 0..7 {
+        let mut conn = pool.acquire().await.unwrap();
+        let table_name = format!("fuel_indexer_test_index{}", i + i);
+        let statement = format!(
+            "SELECT * FROM {}.block ORDER by height DESC LIMIT 1",
+            table_name
+        );
+        let block_row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
+        let height: i64 = block_row.get(1);
+    }
 }
