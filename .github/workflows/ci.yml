@@ -273,12 +273,25 @@ jobs:
       - name: Stop testing components
         run: kill -9 $(lsof -ti:4000)
 
-  check-forc-index:
+  check-is-release-branch:
     if: github.event_name != 'release' && github.event.action != 'published'
     needs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
       - check-rustc
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for Release Branch
+        id: check-is-release-branch
+        run: |
+          if [[ ${{ github.event.ref }} =~ ^refs/heads/v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "is_release_branch=true" >> $GITHUB_OUTPUT
+          fi
+
+  check-forc-index:
+    if: steps.check-is-release-branch.outputs.is_release_branch != 'true'
+    needs:
+      - check-is-release-branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
