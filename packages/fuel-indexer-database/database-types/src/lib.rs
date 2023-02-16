@@ -589,7 +589,7 @@ mod tests {
 
         let expected = vec![
             "'flat_field_key', flat_value".to_string(),
-            ",".to_string(),
+            ", ".to_string(),
             "'nested_object_key', json_build_object(".to_string(),
             "'nested_field_key', nested_field_value".to_string(),
             ")".to_string(),
