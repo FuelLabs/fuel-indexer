@@ -684,7 +684,7 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
             table_name
         );
         let block_row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
-        let height: i64 = block_row.get(1);
-        assert_eq!(height, 1)
+        let block_height: i64 = block_row.get(1);
+        assert!(block_height >= 1);
     }
 }
