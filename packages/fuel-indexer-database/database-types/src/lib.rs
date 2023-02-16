@@ -536,12 +536,14 @@ impl UserQuery {
                         QueryElement::ObjectClosingBoundary => {
                             elements.push(")".to_string());
 
-                            // If the next element is a field to be selected upon, add a
-                            // comma so that the resultant SQL query is properly constructed.
-                            if let Some(QueryElement::Field { .. }) =
-                                peekable_elements.peek()
-                            {
-                                elements.push(", ".to_string());
+                            if let Some(next_element) = peekable_elements.peek() {
+                                match next_element {
+                                    QueryElement::Field { .. }
+                                    | QueryElement::ObjectOpeningBoundary { .. } => {
+                                        elements.push(", ".to_string());
+                                    }
+                                    _ => {}
+                                }
                             }
                         }
                     }
