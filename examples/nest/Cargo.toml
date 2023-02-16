@@ -1,0 +1,18 @@
+[package]
+name = "nest"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fuel-indexer-macros = { version = "0.2", default-features = false }
+fuel-indexer-plugin = { version = "0.2" }
+fuel-indexer-schema = { version = "0.2", default-features = false }
+fuel-tx = "0.23"
+fuels-core = "0.30"
+fuels-types = "0.30"
+getrandom = { version = "0.2", features = ["js"] }
+serde = { version = "1.0", default-features = false, features = ["derive"] }

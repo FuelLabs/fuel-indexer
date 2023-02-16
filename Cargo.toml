@@ -5,6 +5,7 @@ members = [
    "examples/block-explorer/explorer-index",
    "examples/hello-world-native/hello-index-native",
    "examples/hello-world/hello-index",
+   "examples/nest",
    "examples/hello-world/hello-world-data",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-database",

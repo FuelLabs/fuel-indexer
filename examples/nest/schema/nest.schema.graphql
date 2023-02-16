@@ -1,0 +1,57 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    genre: Genre
+    person: Person
+    author: Author
+    city: City
+    library: Library
+    book: Book
+    bookclub: BookClub
+}
+
+type Genre {
+    id: ID!
+    name: Charfield!
+}
+
+type Person {
+    id: ID!
+    name: Charfield!
+}
+
+type City {
+    id: ID!
+    name: Charfield!
+}
+
+type Author {
+    id: ID!
+    name: Charfield!
+    genre: Genre!
+}
+
+type Library {
+    id: ID!
+    name: Charfield!
+    city: City!
+}
+
+type Book {
+    id: ID!
+    name: Charfield!
+    author: Author!
+    library: Library!
+    genre: Genre!
+}
+
+type BookClub {
+    id: ID!
+    book: Book!
+    member: Person!
+}
+
+
+

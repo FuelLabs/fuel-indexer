@@ -1,0 +1,10 @@
+---
+namespace: test
+abi: ~
+identifier: nest
+graphql_schema: examples/nest/schema/nest.schema.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/debug/nest.wasm
+metrics: ~
+contract_id: ~
+start_block: ~
