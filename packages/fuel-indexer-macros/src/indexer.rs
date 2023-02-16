@@ -3,13 +3,13 @@ use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use fuel_abi_types::program_abi::{ProgramABI, TypeDeclaration};
-use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
 use fuels_code_gen::utils::Source;
+use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
 use fuels_core::function_selector::resolve_fn_selector;
 use fuels_types::param_types::ParamType;
 use lazy_static::lazy_static;
 use quote::{format_ident, quote};
-use syn::{FnArg, Ident, Item, ItemMod, parse_macro_input, PatType, Type};
+use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
 
 use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
 use fuel_indexer_types::{abi, type_id};
@@ -195,11 +195,11 @@ fn process_fn_items(
     let is_native = manifest.is_native();
     if indexer_module.content.is_none()
         || indexer_module
-        .content
-        .as_ref()
-        .expect("Could not parse function input contents.")
-        .1
-        .is_empty()
+            .content
+            .as_ref()
+            .expect("Could not parse function input contents.")
+            .1
+            .is_empty()
     {
         proc_macro_error::abort_call_site!(
             "No module body, must specify at least one handler function."
@@ -684,19 +684,20 @@ pub fn get_abi_tokens(
     abi: &String,
     is_native: bool,
 ) -> proc_macro2::TokenStream {
-    match Abigen::generate(vec![AbigenTarget {
-        name: namespace.to_string(),
-        abi: abi.clone(),
-        program_type: ProgramType::Contract,
-    }], !is_native) {
-        Ok(tokens) => {
-            tokens
-        }
+    match Abigen::generate(
+        vec![AbigenTarget {
+            name: namespace.to_string(),
+            abi: abi.clone(),
+            program_type: ProgramType::Contract,
+        }],
+        !is_native,
+    ) {
+        Ok(tokens) => tokens,
         Err(e) => {
             proc_macro_error::abort_call_site!(
-                        "Could not generate tokens for abi: {:?}.",
-                        e
-                    )
+                "Could not generate tokens for abi: {:?}.",
+                e
+            )
         }
     }
 }
