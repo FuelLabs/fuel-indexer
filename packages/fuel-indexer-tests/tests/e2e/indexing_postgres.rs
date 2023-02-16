@@ -654,12 +654,14 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
 
-    for i in 0..7 {
+    for i in 0..3 {
         let mut manifest: Manifest =
             serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST)
                 .expect("Bad Yaml File");
 
-        manifest.identifier = format!("index{}", i);
+        manifest.namespace = format!("fuel_indexer_test_index{}", i + 1);
+        manifest.identifier = format!("index{}", i + 1);
+        println!("manifest: {:?}", manifest);
 
         update_test_manifest_asset_paths(&mut manifest);
 
@@ -674,14 +676,15 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    for i in 0..7 {
+    for i in 0..3 {
         let mut conn = pool.acquire().await.unwrap();
-        let table_name = format!("fuel_indexer_test_index{}", i + i);
+        let table_name = format!("fuel_indexer_test_index{}", i + 1);
         let statement = format!(
             "SELECT * FROM {}.block ORDER by height DESC LIMIT 1",
             table_name
         );
         let block_row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
         let height: i64 = block_row.get(1);
+        assert_eq!(height, 1)
     }
 }
