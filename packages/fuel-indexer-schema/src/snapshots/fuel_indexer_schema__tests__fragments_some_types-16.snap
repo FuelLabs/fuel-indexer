@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: json.query_fragment()
+expression: message_id.query_fragment()
 ---
-"'{\"hello\":\"world\"}'"
+"'0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f'"
 
