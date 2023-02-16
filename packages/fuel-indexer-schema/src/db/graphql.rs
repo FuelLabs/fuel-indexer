@@ -388,7 +388,7 @@ impl Operation {
                     ]);
                 }
 
-                // TODO: Support advanced filtering operations, e.g. <, >, set membership, etc.
+                // TODO: Support filtering operations, e.g. <, >, set membership, etc.
                 let filters: Vec<QueryFilter> = filters
                     .into_iter()
                     .map(|f| QueryFilter {

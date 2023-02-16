@@ -473,6 +473,7 @@ pub struct UserQuery {
 }
 
 impl UserQuery {
+    // TODO: Add proper parsing for filtering
     pub fn to_sql(&self, db_type: &DbType) -> String {
         // Different database solutions have unique ways of
         // constructing JSON-formatted queries and results.
@@ -480,7 +481,7 @@ impl UserQuery {
             DbType::Postgres => {
                 let elements = self.parse_query_elements(db_type);
 
-                let filters: Vec<String> = self
+                let _filters: Vec<String> = self
                     .filters
                     .iter()
                     .map(|f| format!("{} {} {}", f.key, f.relation, f.value))
@@ -488,20 +489,13 @@ impl UserQuery {
 
                 let elements_string = elements.join("");
 
-                let mut query = format!(
+                format!(
                     "SELECT json_build_object({}) FROM {}.{} {}",
                     elements_string,
                     self.namespace_identifier,
                     self.entity_name,
                     self.joins.join(" ")
-                );
-
-                if !filters.is_empty() {
-                    let filter_text = filters.join(" AND ");
-                    query = format!("{query} WHERE {filter_text}");
-                }
-
-                query
+                )
             }
         }
     }
@@ -631,7 +625,7 @@ mod tests {
             }],
         };
 
-        let expected = "SELECT json_build_object('a', n_i.a, 'b', json_build_object('b_a', n_i.b.a), 'c', n_i.c) FROM n_i.entity_name INNER JOIN n_i.b ON n_i.a.b = n_i.b.id WHERE a = 123".to_string();
+        let expected = "SELECT json_build_object('a', n_i.a, 'b', json_build_object('b_a', n_i.b.a), 'c', n_i.c) FROM n_i.entity_name INNER JOIN n_i.b ON n_i.a.b = n_i.b.id".to_string();
         assert_eq!(expected, uq.to_sql(&DbType::Postgres));
     }
 }
