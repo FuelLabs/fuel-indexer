@@ -616,3 +616,163 @@ impl<'a> GraphqlQueryBuilder<'a> {
         Ok(fragments)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    #[test]
+    fn test_operation_parse_into_user_query() {
+        let selections_on_block_field = Selections {
+            _field_type: "Block".to_string(),
+            has_fragments: false,
+            selections: vec![
+                Selection::Field(
+                    "id".to_string(),
+                    Vec::new(),
+                    Selections {
+                        _field_type: "ID!".to_string(),
+                        has_fragments: false,
+                        selections: Vec::new(),
+                    },
+                ),
+                Selection::Field(
+                    "height".to_string(),
+                    Vec::new(),
+                    Selections {
+                        _field_type: "UInt8!".to_string(),
+                        has_fragments: false,
+                        selections: Vec::new(),
+                    },
+                ),
+            ],
+        };
+
+        let selections_on_tx_field = Selections {
+            _field_type: "Tx".to_string(),
+            has_fragments: false,
+            selections: vec![
+                Selection::Field(
+                    "block".to_string(),
+                    Vec::new(),
+                    selections_on_block_field,
+                ),
+                Selection::Field(
+                    "id".to_string(),
+                    Vec::new(),
+                    Selections {
+                        _field_type: "ID!".to_string(),
+                        has_fragments: false,
+                        selections: Vec::new(),
+                    },
+                ),
+                Selection::Field(
+                    "timestamp".to_string(),
+                    Vec::new(),
+                    Selections {
+                        _field_type: "Int8!".to_string(),
+                        has_fragments: false,
+                        selections: Vec::new(),
+                    },
+                ),
+            ],
+        };
+
+        let query_selections = vec![Selection::Field(
+            "tx".to_string(),
+            Vec::new(),
+            selections_on_tx_field,
+        )];
+
+        let operation = Operation {
+            _name: "".to_string(),
+            namespace: "fuel_indexer_test".to_string(),
+            identifier: "test_index".to_string(),
+            selections: Selections {
+                _field_type: "QueryRoot".to_string(),
+                has_fragments: false,
+                selections: query_selections,
+            },
+        };
+
+        let fields = HashMap::from([
+            (
+                "QueryRoot".to_string(),
+                HashMap::from([
+                    ("tx".to_string(), "Tx".to_string()),
+                    ("block".to_string(), "Block".to_string()),
+                ]),
+            ),
+            (
+                "Tx".to_string(),
+                HashMap::from([
+                    ("timestamp".to_string(), "Int8!".to_string()),
+                    ("input_data".to_string(), "Json!".to_string()),
+                    ("id".to_string(), "ID!".to_string()),
+                    ("object".to_string(), "__".to_string()),
+                    ("block".to_string(), "Block".to_string()),
+                ]),
+            ),
+            (
+                "Block".to_string(),
+                HashMap::from([
+                    ("id".to_string(), "ID!".to_string()),
+                    ("height".to_string(), "UInt8!".to_string()),
+                    ("object".to_string(), "__".to_string()),
+                    ("timestamp".to_string(), "Int8!".to_string()),
+                ]),
+            ),
+        ]);
+
+        let foreign_keys = HashMap::from([(
+            "tx".to_string(),
+            HashMap::from([("block".to_string(), "id".to_string())]),
+        )]);
+
+        let schema = Schema {
+            version: "test_version".to_string(),
+            namespace: "fuel_indexer_test".to_string(),
+            identifier: "test_index".to_string(),
+            query: "QueryRoot".to_string(),
+            types: HashSet::from([
+                "Tx".to_string(),
+                "Block".to_string(),
+                "QueryRoot".to_string(),
+            ]),
+            fields,
+            foreign_keys,
+        };
+
+        let expected = vec![UserQuery {
+            elements: vec![
+                QueryElement::ObjectOpeningBoundary {
+                    key: "block".to_string(),
+                },
+                QueryElement::Field {
+                    key: "height".to_string(),
+                    value: "fuel_indexer_test_test_index.block.height".to_string(),
+                },
+                QueryElement::Field {
+                    key: "id".to_string(),
+                    value: "fuel_indexer_test_test_index.block.id".to_string(),
+                },
+                QueryElement::ObjectClosingBoundary,
+                QueryElement::Field {
+                    key: "id".to_string(),
+                    value: "fuel_indexer_test_test_index.tx.id".to_string(),
+                },
+                QueryElement::Field {
+                    key: "timestamp".to_string(),
+                    value: "fuel_indexer_test_test_index.tx.timestamp".to_string(),
+                },
+            ],
+            joins: vec!["INNER JOIN fuel_indexer_test_test_index.block ON fuel_indexer_test_test_index.tx.block = fuel_indexer_test_test_index.block.id".to_string()],
+            namespace_identifier: "fuel_indexer_test_test_index".to_string(),
+            entity_name: "tx".to_string(),
+            filters: Vec::new()
+        }];
+        assert_eq!(expected, operation.parse(&schema));
+    }
+}
