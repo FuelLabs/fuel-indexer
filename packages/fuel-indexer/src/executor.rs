@@ -79,7 +79,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     kill_switch: Arc<AtomicBool>,
     stop_idle_indexers: bool,
 ) -> impl Future<Output = ()> {
-
     // if resumable is true check last process block is greater than start_block
     let start_block_value = start_block.unwrap_or(1);
     let mut next_cursor = if start_block_value > 1 {
@@ -134,96 +133,48 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             let mut block_info = Vec::new();
             for block in results.into_iter().rev() {
+                let resumable = resumable.unwrap_or(false);
+                let last_processed_block = block.header.height.0;
+
+                match (resumable, last_processed_block >= start_block_value) {
+                    (true, true) => {
+                        debug!("Last processed block {} is greater than or equal to start block {}, stopping execution", 
+                            last_processed_block, 
+                            start_block_value
+                        );
+                        process_transactions(&client, &block)
+                            .await
+                            .unwrap_or_else(|e| {
+                                error!("Failed to retrieve transactions: {}", e);
+                                vec![]
+                            });
+                        return;
+                    }
+                    (true, false) => {
+                        debug!("Resumable is true, last processed block {} is less than start block {}, continuing execution", 
+                            last_processed_block, 
+                            start_block_value
+                        );
+                    }
+                    _ => {
+                        debug!("Resumable is false, last processed block {} is less than start block {}, continuing execution", 
+                            last_processed_block, 
+                            start_block_value
+                        );
+                    }
+                }
+
                 let producer = block.block_producer().map(|pk| pk.hash());
 
                 // NOTE: for now assuming we have a single contract instance,
                 // we'll need to watch contract creation events here in
                 // case an indexer would be interested in processing it.
-                let mut transactions = Vec::new();
-
-                for trans in block.transactions {
-                    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/288
-                    match client.transaction(&trans.id.to_string()).await {
-                        Ok(result) => {
-                            if let Some(TransactionResponse {
-                                transaction,
-                                status,
-                            }) = result
-                            {
-                                let receipts = match client
-                                    .receipts(&trans.id.to_string())
-                                    .await
-                                {
-                                    Ok(r) => r,
-                                    Err(e) => {
-                                        error!(
-                                            "Client communication error fetching receipts: {e:?}",
-                                        );
-                                        vec![]
-                                    }
-                                };
-
-                                // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
-                                let status = match status {
-                                    GqlTransactionStatus::Success {
-                                        block_id,
-                                        time,
-                                        ..
-                                    } => TransactionStatus::Success {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .expect(
-                                                "Failed to parse transaction timestamp",
-                                            ),
-                                    },
-                                    GqlTransactionStatus::Failure {
-                                        block_id,
-                                        time,
-                                        reason,
-                                        ..
-                                    } => TransactionStatus::Failure {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .expect(
-                                                "Failed to parse transaction timestamp",
-                                            ),
-                                        reason,
-                                    },
-                                    GqlTransactionStatus::Submitted { submitted_at } => {
-                                        TransactionStatus::Submitted {
-                                            submitted_at: Utc
-                                                .timestamp_opt(submitted_at.to_unix(), 0)
-                                                .single()
-                                                .expect(
-                                                    "Failed to parse transaction timestamp"
-                                                ),
-                                        }
-                                    }
-                                    GqlTransactionStatus::SqueezedOut { reason } => {
-                                        TransactionStatus::SqueezedOut { reason }
-                                    }
-                                };
-
-                                let tx_data = TransactionData {
-                                    receipts,
-                                    status,
-                                    transaction,
-                                    id: TxId::from(trans.id),
-                                };
-                                transactions.push(tx_data);
-                            }
-                        }
-                        Err(e) => {
-                            error!(
-                                "Client communication error fetching transactions: {e:?}",
-                            )
-                        }
-                    };
-                }
+                let transactions = process_transactions(&client, &block)
+                    .await
+                    .unwrap_or_else(|e| {
+                        error!("Failed to retrieve transactions: {e}",);
+                        vec![]
+                    });
 
                 let block = BlockData {
                     height: block.header.height.0,
@@ -272,6 +223,82 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             retry_count = 0;
         }
     }
+}
+
+async fn process_transactions(
+    client: &FuelClient,
+    block: &fuel_gql_client::client::schema::block::Block,
+) -> Result<Vec<TransactionData>, Box<dyn std::error::Error>> {
+    let mut transactions = Vec::new();
+    for trans in block.transactions.iter() {
+        // TODO: https://github.com/FuelLabs/fuel-indexer/issues/288
+        match client.transaction(&trans.id.to_string()).await {
+            Ok(result) => {
+                if let Some(TransactionResponse {
+                    transaction,
+                    status,
+                }) = result
+                {
+                    let receipts = match client.receipts(&trans.id.to_string()).await {
+                        Ok(r) => r,
+                        Err(e) => {
+                            error!("Client communication error fetching receipts: {e:?}",);
+                            vec![]
+                        }
+                    };
+
+                    // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
+                    let status = match status {
+                        GqlTransactionStatus::Success { block_id, time, .. } => {
+                            TransactionStatus::Success {
+                                block_id,
+                                time: Utc
+                                    .timestamp_opt(time.to_unix(), 0)
+                                    .single()
+                                    .expect("Failed to parse transaction timestamp"),
+                            }
+                        }
+                        GqlTransactionStatus::Failure {
+                            block_id,
+                            time,
+                            reason,
+                            ..
+                        } => TransactionStatus::Failure {
+                            block_id,
+                            time: Utc
+                                .timestamp_opt(time.to_unix(), 0)
+                                .single()
+                                .expect("Failed to parse transaction timestamp"),
+                            reason,
+                        },
+                        GqlTransactionStatus::Submitted { submitted_at } => {
+                            TransactionStatus::Submitted {
+                                submitted_at: Utc
+                                    .timestamp_opt(submitted_at.to_unix(), 0)
+                                    .single()
+                                    .expect("Failed to parse transaction timestamp"),
+                            }
+                        }
+                        GqlTransactionStatus::SqueezedOut { reason } => {
+                            TransactionStatus::SqueezedOut { reason }
+                        }
+                    };
+
+                    let tx_data = TransactionData {
+                        receipts,
+                        status,
+                        transaction,
+                        id: TxId::from(trans.id.clone()),
+                    };
+                    transactions.push(tx_data);
+                }
+            }
+            Err(e) => {
+                error!("Client communication error fetching transactions: {e:?}",)
+            }
+        };
+    }
+    Ok(transactions)
 }
 
 #[async_trait]
