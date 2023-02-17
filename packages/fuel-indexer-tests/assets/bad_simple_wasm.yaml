@@ -2,7 +2,5 @@ namespace: test_namespace
 identifier: test_simple_wasm
 abi: packages/fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json
 graphql_schema: schema.graphql
-resumable: false
-start_block: 1
 module:
   wasm: simple_wasm.wasm
