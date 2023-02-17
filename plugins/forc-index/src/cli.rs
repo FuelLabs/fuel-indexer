@@ -5,6 +5,10 @@ pub(crate) use crate::commands::{
     start::Command as StartCommand,
 };
 use clap::{Parser, Subcommand};
+use forc_postgres::{
+    cli::{ForcPostgres, Opt as ForcPostgresOpt},
+    commands as pg_commands,
+};
 use forc_tracing::{init_tracing_subscriber, TracingSubscriberOptions};
 
 #[derive(Debug, Parser)]
@@ -24,6 +28,7 @@ enum ForcIndex {
     Check(CheckCommand),
     Remove(RemoveCommand),
     Build(BuildCommand),
+    Postgres(ForcPostgresOpt),
 }
 
 pub async fn run_cli() -> Result<(), anyhow::Error> {
@@ -42,5 +47,11 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::Check(command) => crate::commands::check::exec(command),
         ForcIndex::Remove(command) => crate::commands::remove::exec(command),
         ForcIndex::Build(command) => crate::commands::build::exec(command),
+        ForcIndex::Postgres(opt) => match opt.command {
+            ForcPostgres::Create(command) => pg_commands::create::exec(command).await,
+            ForcPostgres::Stop(command) => pg_commands::stop::exec(command).await,
+            ForcPostgres::Drop(command) => pg_commands::drop::exec(command).await,
+            ForcPostgres::Start(command) => pg_commands::start::exec(command).await,
+        },
     }
 }

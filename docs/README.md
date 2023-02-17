@@ -58,6 +58,8 @@ Users of the Fuel indexer project include dApp developers looking to write flexi
 
 ### `docker`
 
+> IMPORTANT: Docker is not required to run the Fuel indexer.
+
 - We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. PostgreSQL).
 - Docker can be downloaded [here](https://docs.docker.com/engine/install/).
 
@@ -84,17 +86,6 @@ In this tutorial you will:
 2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-2` testnet.
 3. Query the indexer service for indexed data using GraphQL.
 
-> IMPORTANT: Docker is a prerequisite for using this Quickstart. 
->
-> If Docker is not installed on your machine, please review the Docker installation instructions [here](https://docs.docker.com/engine/install/).
->
-> Note that Docker is not required to use the Fuel indexer. We merely recommend
-> using Docker for the Quickstart so that users don't have to install several heavy
-> system dependencies related to SQL backends.
->
-> If you prefer to _not_ use Docker, then please refer to the [Environment Setup for contributors](./../for-contributors/index.html#database), and
-> find the "Database" section for more information.
-
 ## 1. Setting up your environment
 
 In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a PostgreSQL database backend. We will also use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` binary that we'll use to develop our index.
@@ -111,15 +102,6 @@ curl \
 
 > If you require a non-default `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
 
-### 1.2 Pull Docker images
-
-We will use the `latest` PostgreSQL and Fuel indexer images.
-
-```bash
-docker pull postgres:latest
-
-docker pull ghcr.io/fuellabs/fuel-indexer:latest
-```
 
 ## 2. Using the `forc-index` plugin
 
@@ -156,26 +138,133 @@ forc index check
 ```
 
 ```text
-+--------+------------------------+------------------------------------------------------------------+
-| Status |       Component        |                             Details                              |
-+--------+------------------------+------------------------------------------------------------------+
-|   ✅   | fuel-indexer binary    |  /Users/rashad/.fuelup/bin/fuel-indexer                          |
-+--------+------------------------+------------------------------------------------------------------+
-|   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).                        |
-+--------+------------------------+------------------------------------------------------------------+
-|   ✅   | psql                   |  /usr/local/bin/psql                                             |
-+--------+------------------------+------------------------------------------------------------------+
-|   ✅   | fuel-core              |  /Users/rashad/.fuelup/bin/fuel-core                             |
-+--------+------------------------+------------------------------------------------------------------+
-|   ✅   | docker                 |  /usr/local/bin/docker                                           |
-+--------+------------------------+------------------------------------------------------------------+
-|   ✅   | fuelup                 |  /Users/rashad/.fuelup/bin/fuelup                                |
-+--------+------------------------+------------------------------------------------------------------+
-|   ✅   | wasm-snip              |  /Users/rashad/.cargo/bin/wasm-snip                              |
-+--------+------------------------+------------------------------------------------------------------+
++--------+------------------------+---------------------------------------------------------+
+| Status |       Component        |                         Details                         |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | fuel-indexer binary    |  /Users/rashad/.fuelup/bin/fuel-indexer                 |
++--------+------------------------+---------------------------------------------------------+
+|   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).               |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | psql                   |  /usr/local/bin/psql                                    |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | fuel-core              |  /Users/rashad/.fuelup/bin/fuel-core                    |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | docker                 |  /usr/local/bin/docker                                  |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | fuelup                 |  /Users/rashad/.fuelup/bin/fuelup                       |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | wasm-snip              |  /Users/rashad/.cargo/bin/wasm-snip                     |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | forc-postgres          |  /Users/rashad/.fuelup/bin/fuelup                       |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | rustc                  |  /Users/rashad/.cargo/bin/rustc                         |
++--------+------------------------+---------------------------------------------------------+
 ```
 
-### 2.2 Creating a new index
+### 2.2 Database setup
+
+To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll use the `forc-postgres` plugin that is included in `fuelup`.
+
+> IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped.
+
+```bash
+forc index postgres create postgres --persistent
+```
+
+```text
+Downloading, unpacking, and bootstrapping database.
+▹▸▹▹▹ ⏱  Setting up database...
+
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+fixing permissions on existing directory /Users/rashad/.fuel/indexer/postgres ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... America/New_York
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+Success. You can now start the database server using:
+
+    /Users/rashad/Library/Caches/pg-embed/darwin/amd64/14.6.0/bin/pg_ctl -D /Users/rashad/.fuel/indexer/postgres -l logfile start
+▹▹▸▹▹ ⏱  Setting up database...
+
+💡 Creating database at 'postgres://postgres:postgres@localhost:5432/postgres'.(clang-1200.0.32.29), 64-bit
+2023-02-10 11:30:45.325 EST [30902] LOG:  listening on IPv6 address "::1", port 5432
+2023-02-10 11:30:45.325 EST [30902] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2023-02-10 11:30:45.326 EST [30902] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2023-02-10 11:30:45.328 EST [30903] LOG:  database system was shut down at 2023-02-10 11:30:45 EST
+2023-02-10 11:30:45.331 EST [30902] LOG:  database system is ready to accept connections
+ done
+server started
+2023-02-10 11:30:45.421 EST [30910] ERROR:  database "postgres" already exists
+2023-02-10 11:30:45.421 EST [30910] STATEMENT:  CREATE DATABASE "postgres"
+CREATE DATABASE "postgres"; rows affected: 0, rows returned: 0, elapsed: 325.683µs
+
+Default database postgres already exists.
+
+
+Writing PgEmbedConfig to "/Users/rashad/.fuel/indexer/postgres/postgres-db.json"
+▪▪▪▪▪ ⏱  Setting up database...
+
+✅ Successfully created database at 'postgres://postgres:postgres@localhost:5432/postgres'.
+2023-02-10 11:30:45.424 EST [30902] LOG:  received fast shutdown request
+2023-02-10 11:30:45.424 EST [30902] LOG:  aborting any active transactions
+2023-02-10 11:30:45.424 EST [30902] LOG:  background worker "logical replication launcher" (PID 30909) exited with exit code 1
+2023-02-10 11:30:45.424 EST [30904] LOG:  shutting down
+2023-02-10 11:30:45.428 EST [30902] LOG:  database system is shut down
+waiting for server to shut down.... done
+server stopped
+```
+
+Then we can start our database with
+
+```bash
+forc index postgres start postgres
+```
+
+```text
+Using database directory at "/Users/rashad/.fuel/indexer/postgres"
+
+Starting PostgreSQL.
+
+waiting for server to start....2023-02-09 16:11:37.360 EST [86873] LOG:  starting PostgreSQL 14.6 on x86_64-apple-darwin20.6.0, compiled by Apple clang version 12.0.0 (clang-1200.0.32.29), 64-bit
+2023-02-09 16:11:37.362 EST [86873] LOG:  listening on IPv6 address "::1", port 5432
+2023-02-09 16:11:37.362 EST [86873] LOG:  listening on IPv4 address "127.0.0.1", port 5432
+2023-02-09 16:11:37.362 EST [86873] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
+2023-02-09 16:11:37.365 EST [86874] LOG:  database system was shut down at 2023-02-09 16:11:25 EST
+2023-02-09 16:11:37.368 EST [86873] LOG:  database system is ready to accept connections
+ done
+server started
+select exists(SELECT 1 from …; rows affected: 0, rows returned: 1, elapsed: 2.860ms
+
+select
+  exists(
+    SELECT
+      1
+    from
+      pg_database
+    WHERE
+      datname = $1
+  )
+
+✅ Successfully started database at 'postgres://postgres:postgres@localhost:5432/postgres'.
+2023-02-09 16:11:37.460 EST [86881] LOG:  could not receive data from client: Connection reset by peer
+```
+
+> You can `Ctrl+C` to exit the `forc index postgres start` process, and your database should still be running in the background.
+
+### 2.3 Creating a new index
 
 Now that we have our development environment set up, the next step is to create an index.
 
@@ -231,63 +320,27 @@ Take a quick tour.
 
 > IMPORTANT: If you want more details on how this index works, checkout our [block explorer index example](https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html).
 
-### 2.3 Deploying our index
+### 2.4 Deploying our index
 
 By now we have a brand new index that will index some blocks and transactions, but now we need to build and deploy it in order to see it in action.
 
-#### 2.3.1 Starting an indexer service
-
-- To start an indexer service, we'll be spinning up PostgreSQL and Fuel indexer containers via `docker compose`. Our indexer service will connect to Fuel's `beta-2` network so that we can index blocks and transactions from an _actual_ Fuel node. We'll use the `docker-compose.yaml` file below, and spinning everything up with `docker compose up`.
-
-> IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped.
-
-You can open up a `docker-compose.yaml` file in the same directory as your index manifest, and paste the YAML content below to this `docker-compose.yaml` file.
-
-```text
-version: "3.9"
-services:
-  postgres:
-    image: postgres:latest
-    ports:
-      - "5432:5432"
-    volumes:
-      - .:/usr/local/postgres
-    environment:
-      - POSTGRES_PASSWORD=postgres
-      - PGUSER=postgres
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready", "-U", "postgres", "-d", "postgres"]
-      interval: 30s
-      timeout: 60s
-      retries: 5
-      start_period: 80s
-  fuel-indexer:
-    image: ghcr.io/fuellabs/fuel-indexer:latest
-    command: bash -c "sleep 2 && ./fuel-indexer --fuel-node-host node-beta-2.fuel.network --fuel-node-port 80 --postgres-host postgres --postgres-password postgres --graphql-api-host 0.0.0.0"
-    ports:
-      - "29987:29987"
-    volumes:
-      - .:/usr/local/fuel-indexer
-    depends_on:
-      - postgres
-```
-
-Then run `docker compose up` to spin up PostgreSQL and Fuel indexer containers:
+#### 2.4.1 Starting an indexer service
 
 ```bash
-docker compose up
+forc index start \
+    --fuel-node-host node-beta-2.fuel.network \
+    --fuel-node-port 80
 ```
 
-#### 2.3.2 Deploying your index to your Fuel indexer service
+#### 2.4.2 Deploying your index to your Fuel indexer service
 
 With our database and Fuel indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
 
 ```bash
-forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
+forc index deploy --manifest hello_index.manifest.yaml
 ```
 
 ```text
-forc index deploy --manifest hello_index.manifest.yaml --url http://0.0.0.0:29987
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
@@ -326,7 +379,7 @@ With our index deployed, after a few seconds, we should be able to query for new
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```bash
-curl -X POST http://0.0.0.0:29987/api/graph/my_project/hello_index \
+curl -X POST http://127.0.0.1:29987/api/graph/my_project/hello_index \
    -H 'content-type: application/json' \
    -d '{"query": "query { tx { id hash block }}", "params": "b"}' \
 | json_pp

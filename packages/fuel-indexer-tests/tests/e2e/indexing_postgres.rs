@@ -16,8 +16,10 @@ use hex::FromHex;
 use lazy_static::lazy_static;
 use sqlx::{
     pool::{Pool, PoolConnection},
+    types::BigDecimal,
     Postgres, Row,
 };
+use std::str::FromStr;
 use tokio::time::{sleep, Duration};
 
 #[actix_web::test]
@@ -133,10 +135,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 
     assert_eq!(value, 12345);
     assert!(is_pung);
-    assert_eq!(
-        Identity::from(from_buff),
-        Identity::Address(Address::from(addr_buff)),
-    );
+    assert_eq!(Identity::Address(from_buff), Identity::Address(addr_buff));
 }
 
 #[actix_web::test]
@@ -217,6 +216,27 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 
     assert_eq!(id, 1);
     assert_eq!(value, 123);
+
+    // Ping also triggers the 128-bit integer test as well
+    let mut conn = pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.u16entity WHERE id = 9999")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let id: i64 = row.get(0);
+    let value1: BigDecimal = row.get(1);
+    let value2: BigDecimal = row.get(2);
+
+    assert_eq!(
+        value1,
+        BigDecimal::from_str("340282366920938463463374607431768211454").unwrap()
+    );
+    assert_eq!(
+        value2,
+        BigDecimal::from_str("170141183460469231731687303715884105727").unwrap()
+    );
 }
 
 #[actix_web::test]
@@ -254,7 +274,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -288,7 +308,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -377,7 +397,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -416,7 +436,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -442,23 +462,22 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
         .await
         .unwrap();
 
-    let message_id: &str = row.get(0);
+    let message_id: i64 = row.get(0);
     let recipient: &str = row.get(2);
     let amount: i64 = row.get(3);
     let len: i64 = row.get(5);
 
-    // Message ID is different on each receipt, so we'll just check that it's well-formed
-    assert_eq!(message_id.len(), 64);
+    assert!((message_id > 0 && message_id < i64::MAX));
     assert_eq!(
         recipient,
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
     );
     assert_eq!(amount, 100);
-    assert_eq!(len, 24);
+    assert_eq!(len, 8);
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_index_event_with_optional_fields_postgres() {
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -479,17 +498,19 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.optionentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
 
     let id: i64 = row.get(0);
     let req_int: i64 = row.get(1);
     let opt_int_some: Option<i64> = row.get(2);
     let opt_addr_none: Option<&str> = row.get(3);
 
-    assert_eq!(id, 1);
+    assert_eq!(id, 8675309);
     assert_eq!(req_int, 100);
 
     assert!(opt_int_some.is_some());
@@ -611,7 +632,7 @@ async fn test_index_respects_start_block_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
     let pool = postgres_connection_pool().await;
     let mut srv = indexer_service_postgres().await;

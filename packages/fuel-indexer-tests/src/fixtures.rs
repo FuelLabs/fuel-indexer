@@ -334,6 +334,7 @@ pub mod test_web {
             .trigger_transfer()
             .tx_params(tx_params())
             .call_params(call_params)
+            .expect("Could not set call parameters for contract method")
             .call()
             .await
             .unwrap();
@@ -393,6 +394,7 @@ pub mod test_web {
             .append_variable_outputs(1)
             .tx_params(tx_params())
             .call_params(call_params)
+            .expect("Could not set call parameters for contract method")
             .call()
             .await;
 
@@ -411,6 +413,7 @@ pub mod test_web {
             .append_message_outputs(1)
             .tx_params(tx_params())
             .call_params(call_params)
+            .expect("Could not set call parameters for contract method")
             .call()
             .await
             .unwrap();
@@ -454,7 +457,7 @@ pub mod test_web {
         let _ = state
             .contract
             .methods()
-            .trigger_ping()
+            .trigger_ping_for_optional()
             .tx_params(tx_params())
             .call()
             .await

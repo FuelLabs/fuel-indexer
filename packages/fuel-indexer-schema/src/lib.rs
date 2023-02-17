@@ -3,7 +3,7 @@ use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
     try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes8, ContractId,
-    Identity, Json, MessageId, Salt,
+    Identity, Int16, Int4, Int8, Json, MessageId, Salt, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
 
@@ -20,18 +20,20 @@ const NULL_VALUE: &str = "NULL";
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
-    ID(Option<u64>),
+    ID(Option<UInt8>),
     Address(Option<Address>),
     AssetId(Option<AssetId>),
     Bytes4(Option<Bytes4>),
     Bytes8(Option<Bytes8>),
     Bytes32(Option<Bytes32>),
     ContractId(Option<ContractId>),
-    Int4(Option<i32>),
-    Int8(Option<i64>),
-    UInt4(Option<u32>),
-    UInt8(Option<u64>),
-    Timestamp(Option<i64>),
+    Int4(Option<Int4>),
+    Int8(Option<Int8>),
+    Int16(Option<Int16>),
+    UInt4(Option<UInt4>),
+    UInt8(Option<UInt8>),
+    UInt16(Option<UInt16>),
+    Timestamp(Option<Int8>),
     Salt(Option<Salt>),
     Json(Option<Json>),
     MessageId(Option<MessageId>),
@@ -96,6 +98,12 @@ impl FtColumn {
                 );
                 FtColumn::Int8(Some(int8))
             }
+            ColumnType::Int16 => {
+                let int16 = i128::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
+                FtColumn::Int16(Some(int16))
+            }
             ColumnType::UInt4 => {
                 let int4 = u32::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
@@ -107,6 +115,12 @@ impl FtColumn {
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
                 FtColumn::UInt8(Some(int8))
+            }
+            ColumnType::UInt16 => {
+                let uint16 = u128::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
+                FtColumn::UInt16(Some(uint16))
             }
             ColumnType::Timestamp => {
                 let int8 = i64::from_le_bytes(
@@ -193,11 +207,19 @@ impl FtColumn {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
+            FtColumn::Int16(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
             FtColumn::UInt4(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
             FtColumn::UInt8(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::UInt16(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
@@ -267,8 +289,10 @@ mod tests {
         ));
         let int4 = FtColumn::Int4(Some(i32::from_le_bytes([0x78; 4])));
         let int8 = FtColumn::Int8(Some(i64::from_le_bytes([0x78; 8])));
+        let int16 = FtColumn::Int16(Some(i128::from_le_bytes([0x78; 16])));
         let uint4 = FtColumn::UInt4(Some(u32::from_le_bytes([0x78; 4])));
         let uint8 = FtColumn::UInt8(Some(u64::from_le_bytes([0x78; 8])));
+        let uint16 = FtColumn::UInt16(Some(u128::from_le_bytes([0x78; 16])));
         let int64 = FtColumn::Timestamp(Some(i64::from_le_bytes([0x78; 8])));
         let salt = FtColumn::Salt(Some(Salt::try_from([0x31; 32]).expect("Bad bytes")));
         let message_id = FtColumn::MessageId(Some(
@@ -290,8 +314,10 @@ mod tests {
         insta::assert_yaml_snapshot!(salt.query_fragment());
         insta::assert_yaml_snapshot!(int4.query_fragment());
         insta::assert_yaml_snapshot!(int8.query_fragment());
+        insta::assert_yaml_snapshot!(int16.query_fragment());
         insta::assert_yaml_snapshot!(uint4.query_fragment());
         insta::assert_yaml_snapshot!(uint8.query_fragment());
+        insta::assert_yaml_snapshot!(uint16.query_fragment());
         insta::assert_yaml_snapshot!(int64.query_fragment());
         insta::assert_yaml_snapshot!(message_id.query_fragment());
         insta::assert_yaml_snapshot!(charfield.query_fragment());
@@ -311,8 +337,10 @@ mod tests {
         let contractid_none = FtColumn::ContractId(None);
         let int4_none = FtColumn::Int4(None);
         let int8_none = FtColumn::Int8(None);
+        let int16_none = FtColumn::Int8(None);
         let uint4_none = FtColumn::UInt4(None);
         let uint8_none = FtColumn::UInt8(None);
+        let uint16_none = FtColumn::UInt8(None);
         let int64_none = FtColumn::Timestamp(None);
         let salt_none = FtColumn::Salt(None);
         let message_id_none = FtColumn::MessageId(None);
@@ -329,8 +357,10 @@ mod tests {
         insta::assert_yaml_snapshot!(salt_none.query_fragment());
         insta::assert_yaml_snapshot!(int4_none.query_fragment());
         insta::assert_yaml_snapshot!(int8_none.query_fragment());
+        insta::assert_yaml_snapshot!(int16_none.query_fragment());
         insta::assert_yaml_snapshot!(uint4_none.query_fragment());
         insta::assert_yaml_snapshot!(uint8_none.query_fragment());
+        insta::assert_yaml_snapshot!(uint16_none.query_fragment());
         insta::assert_yaml_snapshot!(int64_none.query_fragment());
         insta::assert_yaml_snapshot!(message_id_none.query_fragment());
         insta::assert_yaml_snapshot!(charfield_none.query_fragment());

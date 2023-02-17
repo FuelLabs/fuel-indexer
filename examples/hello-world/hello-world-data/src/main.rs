@@ -3,15 +3,15 @@ use fuel_indexer_tests::{
     defaults,
     fixtures::{get_contract_id_with_host, tx_params},
 };
-use fuels::prelude::SizedAsciiString;
-use fuels_abigen_macro::abigen;
+use fuels::types::SizedAsciiString;
+use fuels_macros::abigen;
 use rand::{seq::SliceRandom, Rng};
 use std::path::{Path, PathBuf};
 
-abigen!(
-    Greet,
-    "examples/hello-world/contracts/greeting/out/debug/greeting-abi.json"
-);
+abigen!(Contract(
+    name = "Greet",
+    abi = "examples/hello-world/contracts/greeting/out/debug/greeting-abi.json"
+));
 
 #[derive(Debug, Parser, Clone)]
 #[clap(

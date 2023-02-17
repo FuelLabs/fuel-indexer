@@ -5,7 +5,6 @@ edition = "2021"
 publish = false
 
 [dependencies]
-clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../fuel-indexer-tests" }
 fuel-types = "0.26.0"
 fuels = { git = "https://github.com/FuelLabs/fuels-rs" }

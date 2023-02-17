@@ -768,7 +768,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
                     .with_env_filter(filter)
                     .init();
 
-                let opt = IndexerArgs::from_args();
+                let opt = IndexerArgs::parse();
 
                 let config = match &opt.config {
                     Some(path) => IndexerConfig::from_file(path)?,

@@ -17,6 +17,7 @@ type QueryRoot {
     scriptresult: ScriptResult
     messageout: MessageOut
     optionentity: OptionEntity
+    u16entity: U16Entity
 }
 
 type PingEntity {
@@ -30,6 +31,12 @@ type PungEntity {
     value: UInt8!
     is_pung: Boolean!
     pung_from: Identity!
+}
+
+type U16Entity {
+    id: ID!
+    value1: UInt16!
+    value2: Int16!
 }
 
 type PongEntity {

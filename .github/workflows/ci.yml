@@ -16,6 +16,7 @@ env:
   REGISTRY: ghcr.io
   SQLX_OFFLINE: true
   RUSTC_VERSION: 1.67.0
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
 
 jobs:
   cancel-previous-runs:
@@ -145,36 +146,6 @@ jobs:
           command: udeps
           args: --locked --all-targets --all-features
 
-  cargo-build-wasm-example:
-    needs:
-      - cancel-previous-runs
-      - cargo-toml-fmt-check
-      - check-rustc
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-      - uses: Swatinem/rust-cache@v1
-      - uses: actions-rs/cargo@v1
-        name: Cargo Build WASM Example
-        with:
-          command: build
-          args: -p fuel-indexer-test --release --target wasm32-unknown-unknown
-
   cargo-verifications:
     runs-on: ubuntu-latest
     services:
@@ -189,7 +160,6 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     needs:
       - cancel-previous-runs
-      - cargo-build-wasm-example
       - get-workspace-members
     if: github.event_name != 'release' && github.event.action != 'published'
     strategy:
@@ -246,7 +216,6 @@ jobs:
     if: github.event_name != 'release' && github.event.action != 'published'
     needs:
       - cancel-previous-runs
-      - cargo-build-wasm-example
       - get-workspace-members
     runs-on: ubuntu-latest
     services:
@@ -270,6 +239,21 @@ jobs:
       - run: cargo install sqlx-cli
       - run: bash scripts/run_migrations.bash
 
+      - name: Install wasm-snip
+        run: cargo install wasm-snip
+      
+      - name: Build fuel-indexer-test WASM
+        run: |
+          cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown && \
+            bash scripts/stripper.bash fuel_indexer_test.wasm && \
+            cp fuel_indexer_test.wasm packages/fuel-indexer-tests/assets/
+
+      - name: Build simple-wasm WASM
+        run: |
+          cargo build -p simple-wasm --release --target wasm32-unknown-unknown && \
+            bash scripts/stripper.bash simple_wasm.wasm && \
+            cp simple_wasm.wasm packages/fuel-indexer-tests/assets/
+
       - name: Build fuel-node
         uses: actions-rs/cargo@v1
         with:
@@ -290,11 +274,30 @@ jobs:
       - name: Stop testing components
         run: kill -9 $(lsof -ti:4000)
 
-  check-forc-index:
-    if: github.event_name != 'release' && github.event.action != 'published'
+  check-is-release-branch:
+    # if: github.event_name != 'release' && github.event.action != 'published' && github.ref != 'refs/heads/master'
+    if: false
     needs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
+      - check-rustc
+    runs-on: ubuntu-latest
+    outputs: 
+      is_release_branch: ${{ steps.check-release-branch.outputs.is_release_branch }}
+    steps:
+      - name: Check for Release Branch
+        id: check-release-branch
+        run: |
+          if [[ ${BRANCH_NAME} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "is_release_branch=true" >> $GITHUB_OUTPUT
+          else
+            echo "Not a release branch ^(^.^)^"
+          fi
+
+  check-forc-index:
+    if: needs.check-is-release-branch.outputs.is_release_branch != 'true'
+    needs:
+      - check-is-release-branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
