@@ -1,6 +1,6 @@
 [package]
 name = "forc-postgres"
-version = "0.2.2"
+version = "0.3.0"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Fuel Labs <contact@fuel.sh>"]
@@ -21,7 +21,7 @@ path = "src/lib.rs"
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
 forc-tracing = { version = "0.31", default-features = false }
-fuel-indexer-lib = { version = "0.2", path = "../../packages/fuel-indexer-lib" }
+fuel-indexer-lib = { version = "0.3", path = "../../packages/fuel-indexer-lib" }
 home = "0.5"
 indicatif = "0.17"
 pg-embed = { version = "0.7" }
