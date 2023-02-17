@@ -19,7 +19,7 @@ use wasmer_engine_universal::Universal;
 
 use async_std::{fs::File, io::ReadExt};
 use chrono::{TimeZone, Utc};
-use fuel_gql_client::client::{
+use fuel_core_client::client::{
     types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };

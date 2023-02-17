@@ -8,11 +8,11 @@ publish = false
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-indexer-lib = { version = "0.2", path = "../../../packages/fuel-indexer-lib" }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../packages/fuel-indexer-tests" }
-fuel-tx = "0.23"
-fuel-types = "0.5"
-fuels = { version = "0.32", features = ["fuel-core-lib"] }
-fuels-abigen-macro = "0.32"
-fuels-core = { version = "0.32", default-features = false }
+fuel-tx = "0.26.0"
+fuel-types = "0.26.0"
+fuels = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen"}
+fuels-core = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
+fuels-macros = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen" }
 rand = "0.8"
 thiserror = "1.0"
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
