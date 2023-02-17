@@ -79,7 +79,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     kill_switch: Arc<AtomicBool>,
     stop_idle_indexers: bool,
 ) -> impl Future<Output = ()> {
-    // if resumable is true check last process block is greater than start_block
     let start_block_value = start_block.unwrap_or(1);
     let mut next_cursor = if start_block_value > 1 {
         let decremented = start_block_value - 1;
