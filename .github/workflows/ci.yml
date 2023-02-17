@@ -275,7 +275,7 @@ jobs:
         run: kill -9 $(lsof -ti:4000)
 
   check-is-release-branch:
-    if: github.event_name != 'release' && github.event.action != 'published'
+    if: github.event_name != 'release' && github.event.action != 'published' && github.ref != 'refs/heads/master'
     needs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
