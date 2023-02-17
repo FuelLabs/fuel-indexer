@@ -288,7 +288,7 @@ jobs:
         id: check-release-branch
         run: |
           echo "Branch: ${BRANCH_NAME}"
-          if [ ${BRANCH_NAME} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]; then
+          if [[ ${BRANCH_NAME} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "is_release_branch=true" >> $GITHUB_OUTPUT
           else
             echo "Not a release branch ^(^.^)^"
