@@ -13,13 +13,10 @@ RUN apt-get update && \
     git \
     libclang-dev \
     libpq-dev \
+    libssl-dev \
     lld \
     llvm \
     pkg-config \
     tzdata \
     wget \
     && apt-get clean
-
-# https://stackoverflow.com/a/72633324
-RUN wget http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_amd64.deb
-RUN dpkg -i libssl1.1_1.1.1f-1ubuntu2_amd64.deb
