@@ -287,6 +287,7 @@ jobs:
       - name: Check for Release Branch
         id: check-release-branch
         run: |
+          echo "Branch: ${BRANCH_NAME}"
           if [ ${BRANCH_NAME} =~ ^refs/heads/v[0-9]+\.[0-9]+\.[0-9]+$ ]; then
               echo "is_release_branch=true" >> $GITHUB_OUTPUT
           else
