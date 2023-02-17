@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: int64.query_fragment()
+expression: identity_none.query_fragment()
 ---
-"8680820740569200760"
+"NULL"
 
