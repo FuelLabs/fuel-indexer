@@ -16,6 +16,7 @@ env:
   REGISTRY: ghcr.io
   SQLX_OFFLINE: true
   RUSTC_VERSION: 1.67.0
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
 
 jobs:
   cancel-previous-runs:
@@ -258,12 +259,30 @@ jobs:
           command: test
           args: --features e2e,postgres e2e --locked -- --test-threads=1
 
-  check-forc-index:
-    if: github.event_name != 'release' && github.event.action != 'published'
+  check-is-release-branch:
+    # if: github.event_name != 'release' && github.event.action != 'published' && github.ref != 'refs/heads/master'
+    if: false
     needs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
       - check-rustc
+    runs-on: ubuntu-latest
+    outputs: 
+      is_release_branch: ${{ steps.check-release-branch.outputs.is_release_branch }}
+    steps:
+      - name: Check for Release Branch
+        id: check-release-branch
+        run: |
+          if [[ ${BRANCH_NAME} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "is_release_branch=true" >> $GITHUB_OUTPUT
+          else
+            echo "Not a release branch ^(^.^)^"
+          fi
+
+  check-forc-index:
+    if: needs.check-is-release-branch.outputs.is_release_branch != 'true'
+    needs:
+      - check-is-release-branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
