@@ -16,6 +16,7 @@ env:
   REGISTRY: ghcr.io
   SQLX_OFFLINE: true
   RUSTC_VERSION: 1.67.0
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
 
 jobs:
   cancel-previous-runs:
@@ -287,8 +288,8 @@ jobs:
         id: check-release-branch
         run: |
           echo "thing is: "
-          echo "${{ github.ref }}"
-          if [ ${{ github.ref }} =~ ^refs/heads/v[0-9]+\.[0-9]+\.[0-9]+$ ]; then
+          echo "${BRANCH_NAME}"
+          if [ ${BRANCH_NAME} =~ ^refs/heads/v[0-9]+\.[0-9]+\.[0-9]+$ ]; then
               echo "is_release_branch=true" >> $GITHUB_OUTPUT
           else
             echo "Not a release branch."
