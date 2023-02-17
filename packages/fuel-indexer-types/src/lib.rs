@@ -10,7 +10,6 @@ pub use fuel_types::{
 };
 pub use fuels_core::try_from_bytes;
 pub use fuels_types::bech32::{Bech32Address, Bech32ContractId};
-pub use fuels_types::Identity;
 pub use fuels_types::{Bits256, SizedAsciiString};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};

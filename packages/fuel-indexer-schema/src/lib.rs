@@ -248,8 +248,8 @@ impl FtColumn {
             },
             FtColumn::Identity(value) => match value {
                 Some(val) => match val {
-                    Identity::Address(v) => format!("'00{v:x}'",),
-                    Identity::ContractId(v) => format!("'01{v:x}'",),
+                    Identity::Address(v) => format!("'{v:x}'",),
+                    Identity::ContractId(v) => format!("'{v:x}'",),
                 },
                 None => String::from(NULL_VALUE),
             },

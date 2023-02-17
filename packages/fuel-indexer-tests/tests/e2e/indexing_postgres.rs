@@ -86,17 +86,17 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
             .unwrap();
 
     let pung_from: String = pung_row.get(3);
-    let from_buff = <[u8; 33]>::from_hex(pung_from).unwrap();
+    let from_buff = ContractId::from_str(&pung_from).unwrap();
 
-    let contract_buff = <[u8; 32]>::from_hex(
-        "322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    let contract_buff = ContractId::from_str(
+        "0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
     )
     .unwrap();
 
-    // assert_eq!(
-    //     Identity::from(from_buff),
-    //     Identity::ContractId(ContractId::from(contract_buff)),
-    // );
+    assert_eq!(
+        Identity::ContractId(from_buff),
+        Identity::ContractId(contract_buff),
+    );
 }
 
 #[actix_web::test]
@@ -133,19 +133,17 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
     let value: i64 = row.get(1);
     let is_pung: bool = row.get(2);
     let pung_from: String = row.get(3);
-    let from_buff = <[u8; 33]>::from_hex(pung_from).unwrap();
+    println!("{}", &pung_from);
+    let from_buff = Address::from_str(&pung_from).unwrap();
 
-    let addr_buff = <[u8; 32]>::from_hex(
-        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    let addr_buff = Address::from_str(
+        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
     )
     .unwrap();
 
     assert_eq!(value, 12345);
     assert!(is_pung);
-    // assert_eq!(
-    //     Identity::from(from_buff),
-    //     Identity::Address(Address::from(addr_buff)),
-    // );
+    assert_eq!(Identity::Address(from_buff), Identity::Address(addr_buff),);
 }
 
 #[actix_web::test]
@@ -154,15 +152,6 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
-    let mut conn = pool.acquire().await.unwrap();
-    // let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.tx")
-    //     .execute(&mut conn)
-    //     .await
-    //     .unwrap();
-    // let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.block")
-    //     .execute(&mut conn)
-    //     .await
-    //     .unwrap();
 
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
