@@ -286,6 +286,8 @@ jobs:
       - name: Check for Release Branch
         id: check-release-branch
         run: |
+          echo "thing is: "
+          echo "${{ github.event.ref }}"
           if [ ${{ github.event.ref }} =~ ^refs/heads/v[0-9]+\.[0-9]+\.[0-9]+$ ]; then
               echo "is_release_branch=true" >> $GITHUB_OUTPUT
           else
