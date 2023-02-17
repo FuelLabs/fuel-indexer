@@ -7,8 +7,10 @@ scalar Bytes32
 scalar Bytes64
 scalar Int4
 scalar Int8
+scalar Int16
 scalar UInt4
 scalar UInt8
+scalar UInt16
 scalar Timestamp
 scalar Color
 scalar ContractId

@@ -791,6 +791,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d86b93f97252c47b41663388e6d155714a9d0c398b99f1005cbc5f978b29f445"
 
 [[package]]
+name = "bigdecimal"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6aaf33151a6429fe9211d1b276eafdf70cdff28b071e76c0b0e1503221ea3744"
+dependencies = [
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2300,7 +2311,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "forc-index"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -2324,7 +2335,7 @@ dependencies = [
 
 [[package]]
 name = "forc-postgres"
-version = "0.2.2"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -3002,7 +3013,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -3049,7 +3060,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -3078,7 +3089,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3092,7 +3103,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "serde",
  "strum 0.24.1",
@@ -3100,7 +3111,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-lib"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -3118,7 +3129,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macros"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3143,7 +3154,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-metrics"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "lazy_static",
  "prometheus",
@@ -3152,7 +3163,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-plugin"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3171,7 +3182,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3182,7 +3193,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-schema"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "bincode",
  "chrono",
@@ -3260,7 +3271,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-types"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "fuel-tx 0.23.1",
@@ -6761,6 +6772,7 @@ dependencies = [
  "ahash 0.7.6",
  "atoi",
  "base64 0.13.1",
+ "bigdecimal",
  "bitflags",
  "byteorder",
  "bytes",
@@ -6787,6 +6799,7 @@ dependencies = [
  "log",
  "md-5",
  "memchr",
+ "num-bigint",
  "once_cell",
  "paste",
  "percent-encoding",
