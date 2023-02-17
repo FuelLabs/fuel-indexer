@@ -137,7 +137,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
                 match (resumable, last_processed_block >= start_block_value) {
                     (true, true) => {
-                        debug!("Last processed block {} is greater than or equal to start block {}, stopping execution", 
+                        debug!("Index is resumable and last processed block {} is greater than or equal to start block {}", 
                             last_processed_block, 
                             start_block_value
                         );
@@ -147,16 +147,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 error!("Failed to retrieve transactions: {}", e);
                                 vec![]
                             });
-                        return;
                     }
                     (true, false) => {
-                        debug!("Resumable is true, last processed block {} is less than start block {}, continuing execution", 
+                        debug!("Resumable is true, last processed block {} is less than start block {}", 
                             last_processed_block, 
                             start_block_value
                         );
                     }
                     _ => {
-                        debug!("Resumable is false, last processed block {} is less than start block {}, continuing execution", 
+                        debug!("Resumable is false, last processed block {} is less than start block {}", 
                             last_processed_block, 
                             start_block_value
                         );
