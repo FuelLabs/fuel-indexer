@@ -132,7 +132,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             let mut block_info = Vec::new();
             for block in results.into_iter().rev() {
-                let resumable = resumable.unwrap_or(false);
+                let resumable = resumable.unwrap();
                 let last_processed_block = block.header.height.0;
 
                 match (resumable, last_processed_block >= start_block_value) {
