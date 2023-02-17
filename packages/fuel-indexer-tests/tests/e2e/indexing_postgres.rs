@@ -16,8 +16,10 @@ use hex::FromHex;
 use lazy_static::lazy_static;
 use sqlx::{
     pool::{Pool, PoolConnection},
+    types::BigDecimal,
     Postgres, Row,
 };
+use std::str::FromStr;
 use tokio::time::{sleep, Duration};
 
 #[actix_web::test]
@@ -217,6 +219,27 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 
     assert_eq!(id, 1);
     assert_eq!(value, 123);
+
+    // Ping also triggers the 128-bit integer test as well
+    let mut conn = pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.u16entity WHERE id = 9999")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let id: i64 = row.get(0);
+    let value1: BigDecimal = row.get(1);
+    let value2: BigDecimal = row.get(2);
+
+    assert_eq!(
+        value1,
+        BigDecimal::from_str("340282366920938463463374607431768211454").unwrap()
+    );
+    assert_eq!(
+        value2,
+        BigDecimal::from_str("170141183460469231731687303715884105727").unwrap()
+    );
 }
 
 #[actix_web::test]
