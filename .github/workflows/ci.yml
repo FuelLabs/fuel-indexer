@@ -171,15 +171,15 @@ jobs:
           - command: clippy
             args: --all-features --all-targets
           - command: check
-            args: --all-features --locked --workspace --all-targets
+            args: --all-features --locked --all-targets
           - command: build
-            args: --locked --workspace --all-features --all-targets
+            args: --locked --all-features --all-targets
           - command: test
-            args: --locked --workspace
+            args: --locked
           - command: test
-            args: --locked --all-targets --no-default-features --workspace
+            args: --locked --all-targets --no-default-features
           - command: test
-            args: --locked --all-targets --features postgres --workspace
+            args: --locked --all-targets --features postgres
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
