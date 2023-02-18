@@ -35,6 +35,8 @@ syn = { version = "1.0", features = ["full"] }
 [dev-dependencies]
 fuel-indexer-plugin = { version = "0.3", path = "../fuel-indexer-plugin" }
 fuels = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen"}
+fuels-macros = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
+fuels-types = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
 trybuild = "1.0"
 
 [features]

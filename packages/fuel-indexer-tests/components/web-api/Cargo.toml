@@ -7,5 +7,4 @@ publish = false
 [dependencies]
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../fuel-indexer-tests" }
 fuel-types = "0.26.0"
-fuels = { git = "https://github.com/FuelLabs/fuels-rs" }
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }

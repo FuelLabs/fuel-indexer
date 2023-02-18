@@ -2034,9 +2034,9 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels-core",
+ "fuels-macros",
+ "fuels-types",
  "getrandom",
  "serde",
  "serde_json",
@@ -2163,7 +2163,7 @@ dependencies = [
  "forc-util",
  "fuel-indexer-lib",
  "fuel-tx",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels-types",
  "hex",
  "hyper-rustls 0.23.2",
  "indicatif",
@@ -2758,10 +2758,11 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "fuel-tx",
- "fuels 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-code-gen 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels",
+ "fuels-code-gen",
+ "fuels-core",
+ "fuels-macros",
+ "fuels-types",
  "graphql-parser 0.3.0",
  "lazy_static",
  "proc-macro-error",
@@ -2826,7 +2827,7 @@ dependencies = [
  "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels-core",
  "graphql-parser 0.3.0",
  "hex",
  "insta",
@@ -2846,9 +2847,9 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels-core",
+ "fuels-macros",
+ "fuels-types",
  "getrandom",
  "serde",
 ]
@@ -2871,9 +2872,9 @@ dependencies = [
  "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
- "fuels 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels",
+ "fuels-core",
+ "fuels-macros",
  "futures",
  "hex",
  "hyper",
@@ -2899,8 +2900,8 @@ dependencies = [
  "chrono",
  "fuel-tx",
  "fuel-types",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels-core",
+ "fuels-types",
  "serde",
  "sha2 0.9.9",
 ]
@@ -2926,8 +2927,8 @@ dependencies = [
  "clap 3.2.23",
  "fuel-indexer-tests",
  "fuel-types",
- "fuels 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels",
+ "fuels-macros",
  "tokio",
 ]
 
@@ -2995,49 +2996,18 @@ dependencies = [
  "fuel-core",
  "fuel-core-client",
  "fuel-tx",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-programs 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-signers 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-test-helpers 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
-]
-
-[[package]]
-name = "fuels"
-version = "0.36.1"
-source = "git+https://github.com/FuelLabs/fuels-rs#6d4eed639eb74c3bd076b1b89452ea8e4afbee4a"
-dependencies = [
- "fuel-core-client",
- "fuel-tx",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-programs 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-signers 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-test-helpers 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
+ "fuels-core",
+ "fuels-macros",
+ "fuels-programs",
+ "fuels-signers",
+ "fuels-test-helpers",
+ "fuels-types",
 ]
 
 [[package]]
 name = "fuels-code-gen"
 version = "0.36.1"
 source = "git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen#5a59ad3f2105da30ecfa4122a7706f887a79ed84"
-dependencies = [
- "Inflector",
- "fuel-abi-types 0.2.1",
- "itertools",
- "lazy_static",
- "proc-macro2",
- "quote",
- "regex",
- "serde_json",
- "syn",
-]
-
-[[package]]
-name = "fuels-code-gen"
-version = "0.36.1"
-source = "git+https://github.com/FuelLabs/fuels-rs#6d4eed639eb74c3bd076b1b89452ea8e4afbee4a"
 dependencies = [
  "Inflector",
  "fuel-abi-types 0.2.1",
@@ -3058,21 +3028,7 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuel-vm",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "hex",
- "itertools",
- "sha2 0.9.9",
-]
-
-[[package]]
-name = "fuels-core"
-version = "0.36.1"
-source = "git+https://github.com/FuelLabs/fuels-rs#6d4eed639eb74c3bd076b1b89452ea8e4afbee4a"
-dependencies = [
- "fuel-tx",
- "fuel-types",
- "fuel-vm",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
+ "fuels-types",
  "hex",
  "itertools",
  "sha2 0.9.9",
@@ -3085,25 +3041,7 @@ source = "git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_f
 dependencies = [
  "Inflector",
  "fuel-abi-types 0.2.1",
- "fuels-code-gen 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "itertools",
- "lazy_static",
- "proc-macro2",
- "quote",
- "rand",
- "regex",
- "serde_json",
- "syn",
-]
-
-[[package]]
-name = "fuels-macros"
-version = "0.36.1"
-source = "git+https://github.com/FuelLabs/fuels-rs#6d4eed639eb74c3bd076b1b89452ea8e4afbee4a"
-dependencies = [
- "Inflector",
- "fuel-abi-types 0.2.1",
- "fuels-code-gen 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
+ "fuels-code-gen",
  "itertools",
  "lazy_static",
  "proc-macro2",
@@ -3124,37 +3062,9 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuel-vm",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-signers 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "futures",
- "hex",
- "itertools",
- "proc-macro2",
- "rand",
- "regex",
- "serde",
- "serde_json",
- "sha2 0.9.9",
- "strum 0.21.0",
- "strum_macros 0.21.1",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "fuels-programs"
-version = "0.36.1"
-source = "git+https://github.com/FuelLabs/fuels-rs#6d4eed639eb74c3bd076b1b89452ea8e4afbee4a"
-dependencies = [
- "bytes",
- "fuel-abi-types 0.2.1",
- "fuel-tx",
- "fuel-types",
- "fuel-vm",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-signers 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
+ "fuels-core",
+ "fuels-signers",
+ "fuels-types",
  "futures",
  "hex",
  "itertools",
@@ -3185,35 +3095,8 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuel-vm",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "hex",
- "itertools",
- "rand",
- "serde",
- "sha2 0.9.9",
- "tai64",
- "thiserror",
- "tokio",
-]
-
-[[package]]
-name = "fuels-signers"
-version = "0.36.1"
-source = "git+https://github.com/FuelLabs/fuels-rs#6d4eed639eb74c3bd076b1b89452ea8e4afbee4a"
-dependencies = [
- "async-trait",
- "bytes",
- "chrono",
- "elliptic-curve 0.11.12",
- "eth-keystore",
- "fuel-core-client",
- "fuel-crypto",
- "fuel-tx",
- "fuel-types",
- "fuel-vm",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
+ "fuels-core",
+ "fuels-types",
  "hex",
  "itertools",
  "rand",
@@ -3236,37 +3119,10 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuel-vm",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-programs 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-signers 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "futures",
- "hex",
- "portpicker",
- "rand",
- "serde",
- "serde_json",
- "serde_with",
- "tempfile",
- "tokio",
- "which",
-]
-
-[[package]]
-name = "fuels-test-helpers"
-version = "0.36.1"
-source = "git+https://github.com/FuelLabs/fuels-rs#6d4eed639eb74c3bd076b1b89452ea8e4afbee4a"
-dependencies = [
- "fuel-core-chain-config",
- "fuel-core-client",
- "fuel-core-types",
- "fuel-tx",
- "fuel-types",
- "fuel-vm",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-programs 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-signers 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
+ "fuels-core",
+ "fuels-programs",
+ "fuels-signers",
+ "fuels-types",
  "futures",
  "hex",
  "portpicker",
@@ -3291,7 +3147,7 @@ dependencies = [
  "fuel-core-client",
  "fuel-tx",
  "fuel-types",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels-macros",
  "hex",
  "itertools",
  "lazy_static",
@@ -3302,33 +3158,6 @@ dependencies = [
  "strum 0.21.0",
  "strum_macros 0.21.1",
  "thiserror",
-]
-
-[[package]]
-name = "fuels-types"
-version = "0.36.1"
-source = "git+https://github.com/FuelLabs/fuels-rs#6d4eed639eb74c3bd076b1b89452ea8e4afbee4a"
-dependencies = [
- "bech32 0.9.1",
- "chrono",
- "fuel-abi-types 0.2.1",
- "fuel-asm",
- "fuel-core-chain-config",
- "fuel-core-client",
- "fuel-tx",
- "fuel-types",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
- "hex",
- "itertools",
- "lazy_static",
- "proc-macro2",
- "regex",
- "serde",
- "serde_json",
- "strum 0.21.0",
- "strum_macros 0.21.1",
- "thiserror",
- "tokio",
 ]
 
 [[package]]
@@ -3665,10 +3494,10 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels",
+ "fuels-core",
+ "fuels-macros",
+ "fuels-types",
  "getrandom",
  "instant",
  "serde",
@@ -3683,9 +3512,9 @@ dependencies = [
  "fuel-indexer-tests",
  "fuel-tx",
  "fuel-types",
- "fuels 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels",
+ "fuels-core",
+ "fuels-macros",
  "rand",
  "thiserror",
  "tokio",
@@ -3699,9 +3528,9 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels-core",
+ "fuels-macros",
+ "fuels-types",
  "getrandom",
  "instant",
  "serde",
@@ -5892,9 +5721,9 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-macros 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
- "fuels-types 0.36.1 (git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen)",
+ "fuels-core",
+ "fuels-macros",
+ "fuels-types",
  "getrandom",
  "serde",
 ]
@@ -7340,7 +7169,6 @@ version = "0.0.0"
 dependencies = [
  "fuel-indexer-tests",
  "fuel-types",
- "fuels 0.36.1 (git+https://github.com/FuelLabs/fuels-rs)",
  "tokio",
 ]
 
