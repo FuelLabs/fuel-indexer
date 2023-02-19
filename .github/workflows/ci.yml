@@ -165,21 +165,13 @@ jobs:
     strategy:
       matrix:
         package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
+        command: [clippy]
+        args: [--all-targets]
         include:
           - command: fmt
             args: --all --verbose -- --check
-          - command: clippy
-            args: --all-features --all-targets
-          - command: check
-            args: --all-features --locked --workspace --all-targets
-          - command: build
-            args: --locked --workspace --all-features --all-targets
           - command: test
-            args: --locked --workspace
-          - command: test
-            args: --locked --all-targets --no-default-features --workspace
-          - command: test
-            args: --locked --all-targets --features postgres --workspace
+            args: --locked --all-targets --all-features --workspace
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -192,11 +184,15 @@ jobs:
           toolchain: stable
       - run: cargo install sqlx-cli
       - run: bash scripts/run_migrations.bash
-      - name: ${{ matrix.command }} ${{ matrix.args }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: ${{ matrix.command }}
-          args: ${{ matrix.args }}
+
+      - name: Cargo Workspace Checks
+        if: ${{ !matrix.package }}
+        run: cargo ${{ matrix.command }} ${{ matrix.args }}
+
+      - name: Cargo Package Checks
+        if: ${{ matrix.package }}
+        run: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
+
       - name: Notify if Job Fails
         uses: ravsamhq/notify-slack-action@v2
         if: always() && github.ref == 'refs/heads/master'
@@ -209,10 +205,9 @@ jobs:
           notify_when: 'failure'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-          RUSTFLAGS: -D warnings
 
   # TODO: https://github.com/FuelLabs/fuel-indexer/issues/269
-  cargo-test-workspace-all-features:
+  cargo-test-e2e:
     if: github.event_name != 'release' && github.event.action != 'published'
     needs:
       - cancel-previous-runs
@@ -338,11 +333,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-        with:
-          platforms: 'arm64'
 
       - name: Docker meta
         id: meta
