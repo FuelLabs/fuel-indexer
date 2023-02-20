@@ -83,7 +83,7 @@ rustup target add wasm32-unknown-unknown
 In this tutorial you will:
 
 1. Bootstrap your development environment.
-2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-2` testnet.
+2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-3` testnet.
 3. Query the indexer service for indexed data using GraphQL.
 
 ## 1. Setting up your environment
