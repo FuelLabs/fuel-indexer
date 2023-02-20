@@ -33,12 +33,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    let (tx, rx) = if cfg!(feature = "api-server") {
-        let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
-        (Some(tx), Some(rx))
-    } else {
-        (None, None)
-    };
+    let (tx, rx) = if cfg!(feature = "api-server") { let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE); (Some(tx), Some(rx)) } else { (None, None) };
 
     #[cfg(feature = "local-node")]
     {
