@@ -328,7 +328,7 @@ By now we have a brand new index that will index some blocks and transactions, b
 
 ```bash
 forc index start \
-    --fuel-node-host node-beta-2.fuel.network \
+    --fuel-node-host node-beta-3.fuel.network \
     --fuel-node-port 80
 ```
 
