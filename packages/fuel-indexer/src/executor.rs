@@ -159,6 +159,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             last_processed_block, 
                             start_block_value
                         );
+                        return;
                     }
                 }
 
