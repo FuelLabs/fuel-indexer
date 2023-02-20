@@ -152,7 +152,6 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
-
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");

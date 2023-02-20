@@ -164,14 +164,14 @@ jobs:
     if: github.event_name != 'release' && github.event.action != 'published'
     strategy:
       matrix:
-        package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
-        command: [clippy]
-        args: [--all-targets]
+        # package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
         include:
+          - command: clippy
+            args: --all-targets
           - command: fmt
             args: --all --verbose -- --check
           - command: test
-            args: --locked --all-targets --all-features --workspace
+            args: --locked --all-targets --workspace
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -206,8 +206,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
-  # TODO: https://github.com/FuelLabs/fuel-indexer/issues/269
-  cargo-test-e2e:
+  e2e-tests:
     if: github.event_name != 'release' && github.event.action != 'published'
     needs:
       - cancel-previous-runs
@@ -249,25 +248,8 @@ jobs:
             bash scripts/stripper.bash simple_wasm.wasm && \
             cp simple_wasm.wasm packages/fuel-indexer-tests/assets/
 
-      - name: Build fuel-node
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -p fuel-node --locked
-        env:
-          RUSTFLAGS: '-D warnings'
-
-      - name: Start test web components
-        run: |
-          CARGO_MANIFEST_DIR=$PWD/packages/fuel-indexer-tests/ target/debug/fuel-node \
-            --chain-config packages/fuel-indexer-tests/assets/test-chain-config.json \
-            --contract-bin packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test.bin &
-
-      - uses: actions-rs/cargo@v1
-      - name: Cargo e2e tests
-        run: bash packages/fuel-indexer-tests/scripts/e2e.bash
-      - name: Stop testing components
-        run: kill -9 $(lsof -ti:4000)
+      - name: Run E2E and integration tests
+        run: cargo test --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   check-is-release-branch:
     # if: github.event_name != 'release' && github.event.action != 'published' && github.ref != 'refs/heads/master'
