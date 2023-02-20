@@ -303,8 +303,8 @@ pub async fn connect_to_deployed_contract(
 
 pub mod test_web {
 
-    use super::{get_contract_id, tx_params, FuelIndexerTest};
-    use crate::defaults;
+    use super::{tx_params, FuelIndexerTest};
+    use crate::defaults::{self, CURRENT_TEST_CONTRACT_ID_STR};
     use actix_service::ServiceFactory;
     use actix_web::{
         body::MessageBody,
@@ -312,7 +312,11 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
-    use fuels::prelude::{CallParameters, Provider};
+    use fuel_indexer_types::Bech32ContractId;
+    use fuels::{
+        prelude::{CallParameters, Provider},
+        signers::WalletUnlocked,
+    };
     use std::path::Path;
 
     async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
@@ -549,25 +553,34 @@ pub mod test_web {
         let manifest_dir = std::env::var("CARGO_MANIFEST_DIR")?;
 
         let wallet_path = Path::new(&manifest_dir)
-            .join("..")
-            .join("..")
+            .parent()
+            .unwrap()
+            .parent()
+            .unwrap()
             .join("assets")
             .join("test-chain-config.json");
 
-        let contract_bin_path = Path::new(&manifest_dir)
-            .join("..")
-            .join("..")
-            .join("contracts")
-            .join("fuel-indexer-test")
-            .join("out")
-            .join("debug")
-            .join("fuel-indexer-test.bin");
-
-        let (wallet, contract_id) = get_contract_id(
-            wallet_path.as_os_str().to_str().unwrap(),
-            contract_bin_path.as_os_str().to_str().unwrap(),
+        let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
+        let mut wallet = WalletUnlocked::load_keystore(
+            wallet_path_str,
+            defaults::WALLET_PASSWORD,
+            None,
         )
-        .await?;
+        .unwrap();
+
+        let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
+
+        wallet.set_provider(provider.clone());
+
+        println!(
+            "Wallet({}) keystore at: {}",
+            wallet.address(),
+            wallet_path.display()
+        );
+
+        let contract_id: Bech32ContractId = CURRENT_TEST_CONTRACT_ID_STR
+            .parse()
+            .expect("Invalid ID for test contract");
 
         println!("Starting server at {}", defaults::WEB_API_ADDR);
 
