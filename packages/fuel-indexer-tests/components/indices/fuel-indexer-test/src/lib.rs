@@ -17,6 +17,17 @@ mod fuel_indexer_test {
         entity.save();
     }
 
+    fn fuel_indexer_test_u16(_ping: Ping) {
+        Logger::info("fuel_indexer_test_ping handling a U16 event.");
+        let u16entity = U16Entity {
+            id: 9999,
+            value1: 340282366920938463463374607431768211454, // 2**128-2
+            value2: 170141183460469231731687303715884105727, // 2**127-1
+        };
+
+        u16entity.save();
+    }
+
     fn fuel_indexer_test_blocks(block_data: BlockData) {
         let block = Block {
             id: first8_bytes_to_u64(block_data.id),
