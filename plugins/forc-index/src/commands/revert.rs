@@ -1,11 +1,11 @@
-use crate{ops::forc_index_revert, utils::defaults};
+use crate::{ops::forc_index_revert, utils::defaults};
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
 /// Revert the running index to the previous version.
 #[derive(Debug, Parser)]
-pub struct Revert{
+pub struct Command{
     /// URL at which index is deployed.
     #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which index is deployed.")]
     pub url: String,

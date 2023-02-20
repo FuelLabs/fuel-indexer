@@ -4,4 +4,5 @@ pub mod deploy;
 pub mod init;
 pub mod new;
 pub mod remove;
+pub mod revert;
 pub mod start;
