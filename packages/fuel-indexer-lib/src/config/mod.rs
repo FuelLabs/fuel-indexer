@@ -172,7 +172,7 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Max body size for the GraphQL API.
+    /// Max body size for the WASM binary uploads.
     #[clap(long, help = "Max body size for the GraphQL API", default_value = defaults::MAX_BODY)]
     pub max_body: String,
 

@@ -16,7 +16,7 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
         postgres_database,
         postgres_host,
         postgres_port,
-        run_migrations,
+        run_migration,
         metrics,
         manifest,
         ..
