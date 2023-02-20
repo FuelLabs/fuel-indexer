@@ -203,7 +203,7 @@ pub async fn api_server_app_postgres() -> Router {
         graphql_api: GraphQLConfig::default(),
         metrics: true,
         stop_idle_indexers: true,
-        max_body_limit: defaults::MAX_BODY_LIMIT,
+        max_body: defaults::MAX_BODY,
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -230,7 +230,7 @@ pub async fn indexer_service_postgres() -> IndexerService {
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,
-        max_body_limit: defaults::MAX_BODY_LIMIT,
+        max_body: defaults::MAX_BODY,
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())

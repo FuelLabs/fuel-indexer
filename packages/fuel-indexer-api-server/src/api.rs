@@ -114,7 +114,7 @@ impl GraphQlApi {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();
-        let max_body_limit = config.max_body_limit;
+        let max_body = config.max_body;
         let start_time = Arc::new(Instant::now());
 
         if config.graphql_api.run_migrations {
@@ -126,7 +126,7 @@ impl GraphQlApi {
             .route("/:namespace/:identifier", post(query_graph))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
-            .layer(RequestBodyLimitLayer::new(max_body_limit));
+            .layer(RequestBodyLimitLayer::new(max_body));
 
         let index_routes = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
@@ -138,7 +138,7 @@ impl GraphQlApi {
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(tx))
             .layer(Extension(pool.clone()))
-            .layer(RequestBodyLimitLayer::new(max_body_limit));
+            .layer(RequestBodyLimitLayer::new(max_body));
 
         let root_routes = Router::new()
             .route("/health", get(health_check))

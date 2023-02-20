@@ -102,8 +102,8 @@ pub struct IndexerArgs {
     pub database: String,
 
     /// Max body size for WASM binary uploads.
-    #[clap(long, help = "Max body size for the GraphQL API", default_value = defaults::MAX_BODY_LIMIT)]
-    pub max_body_limit: String,
+    #[clap(long, help = "Max body size for the GraphQL API", default_value = defaults::MAX_BODY)]
+    pub max_body: String,
 
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
@@ -173,8 +173,8 @@ pub struct ApiServerArgs {
     pub database: String,
 
     /// Max body size for the GraphQL API.
-    #[clap(long, help = "Max body size for the GraphQL API", default_value = defaults::MAX_BODY_LIMIT)]
-    pub max_body_limit: String,
+    #[clap(long, help = "Max body size for the GraphQL API", default_value = defaults::MAX_BODY)]
+    pub max_body: String,
 
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
@@ -243,7 +243,7 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
     pub metrics: bool,
     pub stop_idle_indexers: bool,
-    pub max_body_limit: usize,
+    pub max_body: usize,
 }
 
 impl From<IndexerArgs> for IndexerConfig {
@@ -299,7 +299,7 @@ impl From<IndexerArgs> for IndexerConfig {
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
-            max_body_limit: args.max_body_limit.parse::<usize>().unwrap(),
+            max_body: args.max_body.parse::<usize>().unwrap(),
         };
 
         config.inject_opt_env_vars();
@@ -361,7 +361,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             },
             metrics: args.metrics,
             stop_idle_indexers: false,
-            max_body_limit: args.max_body_limit.parse::<usize>().unwrap(),
+            max_body: args.max_body.parse::<usize>().unwrap(),
         };
 
         config.inject_opt_env_vars();
@@ -425,7 +425,7 @@ impl IndexerConfig {
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
-            max_body_limit: args.max_body_limit.parse::<usize>().unwrap(),
+            max_body: args.max_body.parse::<usize>().unwrap(),
         };
 
         config.inject_opt_env_vars();
