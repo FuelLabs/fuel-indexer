@@ -77,7 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     wallet.set_provider(provider.clone());
 
     let contract_id: Bech32ContractId =
-        "fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9"
+        "fuel1u47xjlucyjf2hkn874675fgdfue0vmyne72ucch74jcgu457rluq236j5e"
             .parse()
             .expect("Invalid ID for test contract");
 
