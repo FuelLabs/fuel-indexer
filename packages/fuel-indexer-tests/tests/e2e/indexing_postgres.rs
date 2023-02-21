@@ -152,6 +152,16 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
+    let mut conn = pool.acquire().await.unwrap();
+    let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.tx")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+    let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.block")
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -170,7 +180,6 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let mut conn = pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.block WHERE height = 1")
             .fetch_one(&mut conn)
