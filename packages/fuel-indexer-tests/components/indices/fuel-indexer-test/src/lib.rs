@@ -121,8 +121,7 @@ mod fuel_indexer_test {
             id: logdata_entity.id,
             value: logdata_entity.value,
             is_pung: logdata_entity.is_pung,
-            // TODO: https://github.com/FuelLabs/fuel-indexer/issues/386
-            pung_from: Identity::from(logdata_entity.pung_from),
+            pung_from: logdata_entity.pung_from,
         };
 
         entity.save();
@@ -177,8 +176,7 @@ mod fuel_indexer_test {
             id: pungentity.id,
             value: pungentity.value,
             is_pung: pungentity.is_pung,
-            // TODO: https://github.com/FuelLabs/fuel-indexer/issues/386
-            pung_from: Identity::from(pungentity.pung_from),
+            pung_from: pungentity.pung_from,
         };
 
         entity.save();
@@ -204,7 +202,7 @@ mod fuel_indexer_test {
             id: pung.id,
             value: pung.value,
             is_pung: pung.is_pung,
-            pung_from: Identity::from(pung.pung_from),
+            pung_from: pung.pung_from,
         };
 
         pu.save();

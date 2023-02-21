@@ -13,13 +13,15 @@ development = ["fuels", "fuel-indexer-plugin"]
 proc-macro = true
 
 [dependencies]
+fuel-abi-types = "0.2.1"
 fuel-indexer-database-types = { version = "0.3", path = "../fuel-indexer-database/database-types" }
 fuel-indexer-lib = { version = "0.3", path = "../fuel-indexer-lib", default-features = false }
 fuel-indexer-schema = { version = "0.3", path = "../fuel-indexer-schema", default-features = false }
 fuel-indexer-types = { version = "0.3", path = "../fuel-indexer-types" }
-fuel-tx = "0.23"
-fuels-core = { version = "0.30" }
-fuels-types = { version = "0.30" }
+fuel-tx = "0.26.0"
+fuels-code-gen = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
+fuels-core = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
+fuels-types = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
 graphql-parser = "0.3"
 lazy_static = "1.4"
 proc-macro-error = "1.0"
@@ -32,7 +34,9 @@ syn = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
 fuel-indexer-plugin = { version = "0.3", path = "../fuel-indexer-plugin" }
-fuels = { version = "0.30" }
+fuels = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen"}
+fuels-macros = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
+fuels-types = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
 trybuild = "1.0"
 
 [features]

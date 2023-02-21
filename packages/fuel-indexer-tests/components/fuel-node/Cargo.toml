@@ -7,7 +7,7 @@ publish = false
 [dependencies]
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../fuel-indexer-tests" }
-fuel-types = "0.5"
-fuels = { version = "0.32", features = ["fuel-core-lib"] }
-fuels-abigen-macro = "0.32"
+fuel-types = "0.26.0"
+fuels = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", features = ["fuel-core-lib"] }
+fuels-macros = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen" }
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }

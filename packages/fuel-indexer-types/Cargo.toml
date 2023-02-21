@@ -8,9 +8,9 @@ description = "Fuel Indexer Types"
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
-fuel-tx = { version = "0.23", features = ["serde"] }
-fuel-types = "0.5"
-fuels-core = "0.30"
-fuels-types = "0.30"
+fuel-tx = { version = "0.26.0", features = ["serde"] }
+fuel-types = "0.26.0"
+fuels-core = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
+fuels-types = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 sha2 = "0.9"

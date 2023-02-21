@@ -1,20 +1,23 @@
+use proc_macro::TokenStream;
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
+
+use fuel_abi_types::program_abi::{ProgramABI, TypeDeclaration};
+use fuels_code_gen::utils::Source;
+use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
+use fuels_core::function_selector::resolve_fn_selector;
+use fuels_types::param_types::ParamType;
+use lazy_static::lazy_static;
+use quote::{format_ident, quote};
+use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
+
+use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
+use fuel_indexer_types::{abi, type_id};
+
 use crate::native::handler_block_native;
 use crate::parse::IndexerConfig;
 use crate::schema::process_graphql_schema;
 use crate::wasm::handler_block_wasm;
-use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
-use fuel_indexer_types::{abi, type_id};
-use fuels_core::{
-    code_gen::{abigen::Abigen, function_selector::resolve_fn_selector},
-    source::Source,
-};
-use fuels_types::{param_types::ParamType, ProgramABI, TypeDeclaration};
-use lazy_static::lazy_static;
-use proc_macro::TokenStream;
-use quote::{format_ident, quote};
-use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
-use syn::{parse_macro_input, FnArg, Ident, Item, ItemMod, PatType, Type};
 
 lazy_static! {
     static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
@@ -681,25 +684,20 @@ pub fn get_abi_tokens(
     abi: &String,
     is_native: bool,
 ) -> proc_macro2::TokenStream {
-    match Abigen::new(namespace, abi) {
-        Ok(abi) => {
-            let abigen = if is_native {
-                abi.expand()
-            } else {
-                abi.no_std().expand()
-            };
-            match abigen {
-                Ok(tokens) => tokens,
-                Err(e) => {
-                    proc_macro_error::abort_call_site!(
-                        "Could not generate tokens for abi: {:?}.",
-                        e
-                    )
-                }
-            }
-        }
+    match Abigen::generate(
+        vec![AbigenTarget {
+            name: namespace.to_string(),
+            abi: abi.clone(),
+            program_type: ProgramType::Contract,
+        }],
+        !is_native,
+    ) {
+        Ok(tokens) => tokens,
         Err(e) => {
-            proc_macro_error::abort_call_site!("Could not generate abi object: {:?}.", e)
+            proc_macro_error::abort_call_site!(
+                "Could not generate tokens for abi: {:?}.",
+                e
+            )
         }
     }
 }
