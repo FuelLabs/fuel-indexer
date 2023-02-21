@@ -1,6 +1,6 @@
 [package]
 name = "fuel-indexer-lib"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 license = "BUSL-1.1"
 repository = "https://github.com/FuelLabs/fuel-indexer"
@@ -9,7 +9,7 @@ description = "Fuel Indexer Library"
 [dependencies]
 anyhow = "1.0"
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
-fuel-indexer-types = { version = "0.3", path = "../fuel-indexer-types" }
+fuel-indexer-types = { version = "0.4", path = "../fuel-indexer-types" }
 http = { version = "0.2", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
