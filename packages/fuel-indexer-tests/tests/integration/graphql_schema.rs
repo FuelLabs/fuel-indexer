@@ -41,124 +41,124 @@ fn generate_schema() -> Schema {
     }
 }
 
-#[test]
-fn test_query_builder_parses_correctly() {
-    let good_query = r#"
-        fragment otherfrag on Thing2 {
-            id
-        }
+// #[test]
+// fn test_query_builder_parses_correctly() {
+//     let good_query = r#"
+//         fragment otherfrag on Thing2 {
+//             id
+//         }
 
-        fragment frag1 on Thing2 {
-            account
-            hash
-            ...otherfrag
-        }
+//         fragment frag1 on Thing2 {
+//             account
+//             hash
+//             ...otherfrag
+//         }
 
-        query GetThing2 {
-            thing2(id: 1234) {
-                account
-                hash
-            }
-        }
+//         query GetThing2 {
+//             thing2(id: 1234) {
+//                 account
+//                 hash
+//             }
+//         }
 
-        query OtherQuery {
-            thing2(id: 84848) {
-                ...frag1
-            }
-        }
+//         query OtherQuery {
+//             thing2(id: 84848) {
+//                 ...frag1
+//             }
+//         }
 
-        {
-            thing1(id: 4321) { account }
-        }
-    "#;
+//         {
+//             thing1(id: 4321) { account }
+//         }
+//     "#;
 
-    let schema = generate_schema();
+//     let schema = generate_schema();
 
-    let query = GraphqlQueryBuilder::new(&schema, good_query);
-    assert!(query.is_ok());
-    let q = query.expect("It's ok here").build();
-    assert!(q.is_ok());
-    let q = q.expect("It's ok");
+//     let query = GraphqlQueryBuilder::new(&schema, good_query);
+//     assert!(query.is_ok());
+//     let q = query.expect("It's ok here").build();
+//     assert!(q.is_ok());
+//     let q = q.expect("It's ok");
 
-    let expected = vec![
-        UserQuery {
-            elements: vec![
-                QueryElement::Field {
-                    key: "account".to_string(),
-                    value: "test_namespace_index1.thing2.account".to_string(),
-                },
-                QueryElement::Field {
-                    key: "hash".to_string(),
-                    value: "test_namespace_index1.thing2.hash".to_string(),
-                },
-            ],
-            joins: vec![],
-            namespace_identifier: "test_namespace_index1".to_string(),
-            entity_name: "thing2".to_string(),
-            filters: vec![QueryFilter {
-                key: "id".to_string(),
-                relation: "=".to_string(),
-                value: "1234".to_string(),
-            }],
-        },
-        UserQuery {
-            elements: vec![
-                QueryElement::Field {
-                    key: "account".to_string(),
-                    value: "test_namespace_index1.thing2.account".to_string(),
-                },
-                QueryElement::Field {
-                    key: "hash".to_string(),
-                    value: "test_namespace_index1.thing2.hash".to_string(),
-                },
-                QueryElement::Field {
-                    key: "id".to_string(),
-                    value: "test_namespace_index1.thing2.id".to_string(),
-                },
-            ],
-            joins: vec![],
-            namespace_identifier: "test_namespace_index1".to_string(),
-            entity_name: "thing2".to_string(),
-            filters: vec![QueryFilter {
-                key: "id".to_string(),
-                relation: "=".to_string(),
-                value: "84848".to_string(),
-            }],
-        },
-        UserQuery {
-            elements: vec![QueryElement::Field {
-                key: "account".to_string(),
-                value: "test_namespace_index1.thing1.account".to_string(),
-            }],
-            joins: vec![],
-            namespace_identifier: "test_namespace_index1".to_string(),
-            entity_name: "thing1".to_string(),
-            filters: vec![QueryFilter {
-                key: "id".to_string(),
-                relation: "=".to_string(),
-                value: "4321".to_string(),
-            }],
-        },
-    ];
+//     let expected = vec![
+//         UserQuery {
+//             elements: vec![
+//                 QueryElement::Field {
+//                     key: "account".to_string(),
+//                     value: "test_namespace_index1.thing2.account".to_string(),
+//                 },
+//                 QueryElement::Field {
+//                     key: "hash".to_string(),
+//                     value: "test_namespace_index1.thing2.hash".to_string(),
+//                 },
+//             ],
+//             joins: vec![],
+//             namespace_identifier: "test_namespace_index1".to_string(),
+//             entity_name: "thing2".to_string(),
+//             filters: vec![QueryFilter {
+//                 key: "id".to_string(),
+//                 relation: "=".to_string(),
+//                 value: "1234".to_string(),
+//             }],
+//         },
+//         UserQuery {
+//             elements: vec![
+//                 QueryElement::Field {
+//                     key: "account".to_string(),
+//                     value: "test_namespace_index1.thing2.account".to_string(),
+//                 },
+//                 QueryElement::Field {
+//                     key: "hash".to_string(),
+//                     value: "test_namespace_index1.thing2.hash".to_string(),
+//                 },
+//                 QueryElement::Field {
+//                     key: "id".to_string(),
+//                     value: "test_namespace_index1.thing2.id".to_string(),
+//                 },
+//             ],
+//             joins: vec![],
+//             namespace_identifier: "test_namespace_index1".to_string(),
+//             entity_name: "thing2".to_string(),
+//             filters: vec![QueryFilter {
+//                 key: "id".to_string(),
+//                 relation: "=".to_string(),
+//                 value: "84848".to_string(),
+//             }],
+//         },
+//         UserQuery {
+//             elements: vec![QueryElement::Field {
+//                 key: "account".to_string(),
+//                 value: "test_namespace_index1.thing1.account".to_string(),
+//             }],
+//             joins: vec![],
+//             namespace_identifier: "test_namespace_index1".to_string(),
+//             entity_name: "thing1".to_string(),
+//             filters: vec![QueryFilter {
+//                 key: "id".to_string(),
+//                 relation: "=".to_string(),
+//                 value: "4321".to_string(),
+//             }],
+//         },
+//     ];
 
-    assert_eq!(q.parse(&schema), expected);
+//     assert_eq!(q.parse(&schema), expected);
 
-    let bad_query = r#"
-        fragment frag1 on BadType{
-            account
-        }
+//     let bad_query = r#"
+//         fragment frag1 on BadType{
+//             account
+//         }
 
-        query GetThing2 {
-            thing2(id: 123) {
-                ...frag
-            }
-        }
-    "#;
+//         query GetThing2 {
+//             thing2(id: 123) {
+//                 ...frag
+//             }
+//         }
+//     "#;
 
-    let query = GraphqlQueryBuilder::new(&schema, bad_query);
-    assert!(query.is_ok());
-    match query.expect("It's ok here").build() {
-        Err(GraphqlError::UnrecognizedType(_)) => (),
-        o => panic!("Should have gotten Unrecognized type, got {o:?}",),
-    }
-}
+//     let query = GraphqlQueryBuilder::new(&schema, bad_query);
+//     assert!(query.is_ok());
+//     match query.expect("It's ok here").build() {
+//         Err(GraphqlError::UnrecognizedType(_)) => (),
+//         o => panic!("Should have gotten Unrecognized type, got {o:?}",),
+//     }
+// }

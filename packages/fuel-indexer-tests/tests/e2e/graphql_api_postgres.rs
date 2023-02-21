@@ -199,6 +199,7 @@ async fn test_can_return_query_response_with_multilevel_nested_query_postgres() 
     server_handle.abort();
 
     let body = resp.text().await.unwrap();
+    println!("{}", body);
     let v: Value = serde_json::from_str(&body).unwrap();
 
     assert_eq!(v[0]["name"].as_str(), Some("Lil Ind X"));

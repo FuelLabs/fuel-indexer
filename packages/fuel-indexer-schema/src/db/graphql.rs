@@ -1,5 +1,7 @@
 use crate::db::tables::Schema;
-use crate::sql_types::{DbType, QueryElement, QueryFilter, UserQuery};
+use crate::sql_types::{
+    DbType, JoinCondition, QueryElement, QueryFilter, QueryJoinNode, UserQuery,
+};
 use graphql_parser::query as gql;
 use std::collections::HashMap;
 use thiserror::Error;
@@ -264,7 +266,9 @@ impl Operation {
         for selection in selections.get_selections() {
             let mut elements: Vec<QueryElement> = Vec::new();
             let mut entities: Vec<String> = Vec::new();
-            let mut joins: Vec<String> = Vec::new();
+
+            let mut joins: HashMap<String, QueryJoinNode> = HashMap::new();
+            // let mut joins: HashSet<QueryJoin> = HashSet::new();
 
             let mut nested_entity_stack: Vec<String> = Vec::new();
 
@@ -330,34 +334,69 @@ impl Operation {
                                 if let Some(foreign_key) =
                                     field_to_foreign_key.get(&field_name.to_lowercase())
                                 {
-                                    let reference_table = fully_qualified_reference_table(
-                                        namespace,
-                                        identifier,
-                                        &field_name,
-                                    );
-                                    let referencing_key =
-                                        fully_qualified_referencing_field(
-                                            namespace,
-                                            identifier,
-                                            &entity_name,
-                                            &field_name,
-                                        );
-                                    let primary_key = fully_qualified_primary_key(
-                                        namespace,
-                                        identifier,
-                                        &field_name,
-                                        foreign_key,
-                                    );
-
-                                    joins.push(
-                                        inner_join_reference_table_on_foreign_key(
-                                            &reference_table,
-                                            &referencing_key,
-                                            &primary_key,
+                                    let join_condition = JoinCondition {
+                                        referencing_key_table: format!(
+                                            "{namespace}_{identifier}.{entity_name}"
                                         ),
-                                    );
+                                        referencing_key_col: field_name.clone(),
+                                        primary_key_table: format!(
+                                            "{namespace}_{identifier}.{field_name}"
+                                        ),
+                                        primary_key_col: foreign_key.clone(),
+                                    };
 
-                                    nested_entity_stack.push(field_name.clone());
+                                    match joins
+                                        .get_mut(&join_condition.referencing_key_table)
+                                    {
+                                        Some(join_node) => {
+                                            join_node.dependencies.insert(
+                                                join_condition.primary_key_table.clone(),
+                                                join_condition.clone(),
+                                            );
+                                        }
+                                        None => {
+                                            joins.insert(
+                                                join_condition
+                                                    .referencing_key_table
+                                                    .clone(),
+                                                QueryJoinNode {
+                                                    dependencies: HashMap::from([(
+                                                        join_condition
+                                                            .primary_key_table
+                                                            .clone(),
+                                                        join_condition.clone(),
+                                                    )]),
+                                                    dependents: HashMap::new(),
+                                                },
+                                            );
+                                        }
+                                    };
+
+                                    match joins.get_mut(&join_condition.primary_key_table)
+                                    {
+                                        Some(join_node) => {
+                                            join_node.dependents.insert(
+                                                join_condition
+                                                    .referencing_key_table
+                                                    .clone(),
+                                                join_condition.clone(),
+                                            );
+                                        }
+                                        None => {
+                                            joins.insert(
+                                                join_condition.primary_key_table.clone(),
+                                                QueryJoinNode {
+                                                    dependencies: HashMap::new(),
+                                                    dependents: HashMap::from([(
+                                                        join_condition
+                                                            .referencing_key_table
+                                                            .clone(),
+                                                        join_condition.clone(),
+                                                    )]),
+                                                },
+                                            );
+                                        }
+                                    };
                                 }
                             }
 
@@ -368,12 +407,13 @@ impl Operation {
                                 field_name.clone();
                                 subselections.selections.len()
                             ]);
-
-                            queue.append(&mut subselections.get_selections());
+                            nested_entity_stack.push(field_name.clone());
 
                             elements.push(QueryElement::ObjectOpeningBoundary {
                                 key: field_name,
                             });
+
+                            queue.append(&mut subselections.get_selections());
                         }
                     }
                 }
@@ -414,40 +454,6 @@ impl Operation {
     }
 }
 
-fn fully_qualified_reference_table(
-    namespace: &str,
-    identifier: &str,
-    field_name: &str,
-) -> String {
-    format!("{namespace}_{identifier}.{field_name}")
-}
-
-fn fully_qualified_referencing_field(
-    namespace: &str,
-    identifier: &str,
-    entity_name: &str,
-    field_name: &str,
-) -> String {
-    format!("{namespace}_{identifier}.{entity_name}.{field_name}")
-}
-
-fn fully_qualified_primary_key(
-    namespace: &str,
-    identifier: &str,
-    field_name: &str,
-    foreign_key: &str,
-) -> String {
-    format!("{namespace}_{identifier}.{field_name}.{foreign_key}")
-}
-
-fn inner_join_reference_table_on_foreign_key(
-    reference_table: &str,
-    referencing_key: &str,
-    primary_key: &str,
-) -> String {
-    format!("INNER JOIN {reference_table} ON {referencing_key} = {primary_key}")
-}
-
 #[derive(Debug)]
 pub struct GraphqlQuery {
     operations: Vec<Operation>,
@@ -469,7 +475,7 @@ impl GraphqlQuery {
 
         queries
             .into_iter()
-            .map(|q| q.to_sql(&db_type))
+            .map(|mut q| q.to_sql(&db_type))
             .collect::<Vec<String>>()
     }
 }
@@ -745,34 +751,41 @@ mod tests {
             foreign_keys,
         };
 
-        let expected = vec![UserQuery {
-            elements: vec![
-                QueryElement::ObjectOpeningBoundary {
-                    key: "block".to_string(),
-                },
-                QueryElement::Field {
-                    key: "height".to_string(),
-                    value: "fuel_indexer_test_test_index.block.height".to_string(),
-                },
-                QueryElement::Field {
-                    key: "id".to_string(),
-                    value: "fuel_indexer_test_test_index.block.id".to_string(),
-                },
-                QueryElement::ObjectClosingBoundary,
-                QueryElement::Field {
-                    key: "id".to_string(),
-                    value: "fuel_indexer_test_test_index.tx.id".to_string(),
-                },
-                QueryElement::Field {
-                    key: "timestamp".to_string(),
-                    value: "fuel_indexer_test_test_index.tx.timestamp".to_string(),
-                },
-            ],
-            joins: vec!["INNER JOIN fuel_indexer_test_test_index.block ON fuel_indexer_test_test_index.tx.block = fuel_indexer_test_test_index.block.id".to_string()],
-            namespace_identifier: "fuel_indexer_test_test_index".to_string(),
-            entity_name: "tx".to_string(),
-            filters: Vec::new()
-        }];
-        assert_eq!(expected, operation.parse(&schema));
+        println!("{:#?}", operation.parse(&schema));
+        assert!(false);
+
+        // let expected = vec![UserQuery {
+        //     elements: vec![
+        //         QueryElement::ObjectOpeningBoundary {
+        //             key: "block".to_string(),
+        //         },
+        //         QueryElement::Field {
+        //             key: "height".to_string(),
+        //             value: "fuel_indexer_test_test_index.block.height".to_string(),
+        //         },
+        //         QueryElement::Field {
+        //             key: "id".to_string(),
+        //             value: "fuel_indexer_test_test_index.block.id".to_string(),
+        //         },
+        //         QueryElement::ObjectClosingBoundary,
+        //         QueryElement::Field {
+        //             key: "id".to_string(),
+        //             value: "fuel_indexer_test_test_index.tx.id".to_string(),
+        //         },
+        //         QueryElement::Field {
+        //             key: "timestamp".to_string(),
+        //             value: "fuel_indexer_test_test_index.tx.timestamp".to_string(),
+        //         },
+        //     ],
+        //     joins: HashSet::from([QueryJoin {
+        //         reference_table: "fuel_indexer_test_test_index.block".to_string(),
+        //         referencing_key: "fuel_indexer_test_test_index.tx.block".to_string(),
+        //         primary_key: "fuel_indexer_test_test_index.block.id".to_string(),
+        //     }]),
+        //     namespace_identifier: "fuel_indexer_test_test_index".to_string(),
+        //     entity_name: "tx".to_string(),
+        //     filters: Vec::new(),
+        // }];
+        // assert_eq!(expected, operation.parse(&schema));
     }
 }
