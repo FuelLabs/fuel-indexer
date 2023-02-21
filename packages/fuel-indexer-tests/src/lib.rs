@@ -29,6 +29,7 @@ pub mod defaults {
     pub const WALLET_PASSWORD: &str = "password";
     pub const INDEXED_EVENT_WAIT: u64 = 2;
     pub const COIN_AMOUNT: u64 = 11;
+    pub const MAX_BODY: usize = 5242880; // 5MB in bytes
 }
 
 pub mod utils {
