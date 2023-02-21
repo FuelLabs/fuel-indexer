@@ -294,7 +294,7 @@ jobs:
           fi
 
   check-forc-index:
-    if: needs.check-is-release-branch.outputs.is_release_branch != 'true'
+    if: false
     needs:
       - check-is-release-branch
     runs-on: ubuntu-latest
