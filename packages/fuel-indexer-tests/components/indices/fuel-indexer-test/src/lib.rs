@@ -17,6 +17,17 @@ mod fuel_indexer_test {
         entity.save();
     }
 
+    fn fuel_indexer_test_u16(_ping: Ping) {
+        Logger::info("fuel_indexer_test_ping handling a U16 event.");
+        let u16entity = U16Entity {
+            id: 9999,
+            value1: 340282366920938463463374607431768211454, // 2**128-2
+            value2: 170141183460469231731687303715884105727, // 2**127-1
+        };
+
+        u16entity.save();
+    }
+
     fn fuel_indexer_test_blocks(block_data: BlockData) {
         let block = Block {
             id: first8_bytes_to_u64(block_data.id),
@@ -110,8 +121,7 @@ mod fuel_indexer_test {
             id: logdata_entity.id,
             value: logdata_entity.value,
             is_pung: logdata_entity.is_pung,
-            // TODO: https://github.com/FuelLabs/fuel-indexer/issues/386
-            pung_from: Identity::from(logdata_entity.pung_from),
+            pung_from: logdata_entity.pung_from,
         };
 
         entity.save();
@@ -166,8 +176,7 @@ mod fuel_indexer_test {
             id: pungentity.id,
             value: pungentity.value,
             is_pung: pungentity.is_pung,
-            // TODO: https://github.com/FuelLabs/fuel-indexer/issues/386
-            pung_from: Identity::from(pungentity.pung_from),
+            pung_from: pungentity.pung_from,
         };
 
         entity.save();
@@ -193,7 +202,7 @@ mod fuel_indexer_test {
             id: pung.id,
             value: pung.value,
             is_pung: pung.is_pung,
-            pung_from: Identity::from(pung.pung_from),
+            pung_from: pung.pung_from,
         };
 
         pu.save();

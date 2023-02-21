@@ -4,7 +4,7 @@ abi: ~
 identifier: explorer_index
 graphql_schema: examples/block-explorer/schema/explorer_index.schema.graphql
 module:
-  wasm: target/wasm32-unknown-unknown/debug/explorer_index.wasm
+  wasm: target/wasm32-unknown-unknown/release/explorer_index.wasm
 metrics: ~
 contract_id: ~
 start_block: ~

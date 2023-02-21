@@ -15,7 +15,8 @@ env:
   RUSTFLAGS: -D warnings
   REGISTRY: ghcr.io
   SQLX_OFFLINE: true
-  RUSTC_VERSION: 1.67.0
+  RUSTC_VERSION: 1.67
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
 
 jobs:
   cancel-previous-runs:
@@ -52,7 +53,7 @@ jobs:
       - name: Check rustc version
         run: |
           # Check rustc version, log message and exit if it doesnt match env 
-          CURRENT_RUSTC_VERSION=$(rustc --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')
+          CURRENT_RUSTC_VERSION=$(rustc --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | cut -c -4)
           if [ "$CURRENT_RUSTC_VERSION" != "$RUSTC_VERSION" ]; then
             echo "Rustc version ($CURRENT_RUSTC_VERSION) does not match the required version ($RUSTC_VERSION)"
             exit 1 
@@ -273,12 +274,29 @@ jobs:
       - name: Stop testing components
         run: kill -9 $(lsof -ti:4000)
 
-  check-forc-index:
-    if: github.event_name != 'release' && github.event.action != 'published'
+  check-is-release-branch:
+    if: github.event_name != 'release' && github.event.action != 'published' && github.ref != 'refs/heads/master'
     needs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
       - check-rustc
+    runs-on: ubuntu-latest
+    outputs: 
+      is_release_branch: ${{ steps.check-release-branch.outputs.is_release_branch }}
+    steps:
+      - name: Check for Release Branch
+        id: check-release-branch
+        run: |
+          if [[ ${BRANCH_NAME} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "is_release_branch=true" >> $GITHUB_OUTPUT
+          else
+            echo "Not a release branch ^(^.^)^"
+          fi
+
+  check-forc-index:
+    if: false
+    needs:
+      - check-is-release-branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

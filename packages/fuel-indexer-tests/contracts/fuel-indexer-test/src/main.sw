@@ -56,6 +56,7 @@ abi FuelIndexer {
     fn trigger_ping() -> Ping;
     fn trigger_ping_for_optional() -> Ping;
     fn trigger_pong() -> Pong;
+    #[payable]
     fn trigger_transfer();
     fn trigger_log();
     fn trigger_logdata();
@@ -119,6 +120,7 @@ impl FuelIndexer for Contract {
         p
     }
 
+    #[payable]
     fn trigger_transfer() {
         // Transfer the asset back to the originating contract
         transfer(1, BASE_ASSET_ID, Identity::ContractId(contract_id()));

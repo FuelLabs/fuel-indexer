@@ -110,8 +110,10 @@ impl NewColumn {
             ColumnType::Salt => "varchar(64)",
             ColumnType::Int4 => "integer",
             ColumnType::Int8 => "bigint",
+            ColumnType::Int16 => "numeric",
             ColumnType::UInt4 => "integer",
             ColumnType::UInt8 => "bigint",
+            ColumnType::UInt16 => "numeric",
             ColumnType::Timestamp => "timestamp",
             ColumnType::Object => "bytea",
             ColumnType::Blob => "varchar(10485760)",
@@ -159,6 +161,8 @@ pub enum ColumnType {
     Identity = 18,
     Boolean = 19,
     Object = 20,
+    UInt16 = 21,
+    Int16 = 22,
 }
 
 impl From<ColumnType> for i32 {
@@ -185,6 +189,8 @@ impl From<ColumnType> for i32 {
             ColumnType::Identity => 18,
             ColumnType::Boolean => 19,
             ColumnType::Object => 20,
+            ColumnType::UInt16 => 21,
+            ColumnType::Int16 => 22,
         }
     }
 }
@@ -219,6 +225,8 @@ impl From<i32> for ColumnType {
             18 => ColumnType::Identity,
             19 => ColumnType::Boolean,
             20 => ColumnType::Object,
+            21 => ColumnType::Int16,
+            22 => ColumnType::UInt16,
             _ => panic!("Invalid column type."),
         }
     }
@@ -248,6 +256,8 @@ impl From<&str> for ColumnType {
             "Identity" => ColumnType::Identity,
             "Boolean" => ColumnType::Boolean,
             "Object" => ColumnType::Object,
+            "UInt16" => ColumnType::UInt16,
+            "Int16" => ColumnType::Int16,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }

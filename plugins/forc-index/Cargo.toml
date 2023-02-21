@@ -1,6 +1,6 @@
 [package]
 name = "forc-index"
-version = "0.2.3"
+version = "0.3.0"
 edition = "2021"
 license = "BUSL-1.1"
 authors = ["Fuel Labs <contact@fuel.sh>"]
@@ -11,12 +11,12 @@ description = "Fuel Indexer forc plugin"
 [dependencies]
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
-forc-postgres = { version = "0.2", path = "../forc-postgres" }
+forc-postgres = { version = "0.3", path = "../forc-postgres" }
 forc-tracing = { version = "0.31", default-features = false }
-forc-util = { version = "0.31" }
-fuel-indexer-lib = { version = "0.2", path = "../../packages/fuel-indexer-lib" }
-fuel-tx = { version = "0.23", features = ["builder"] }
-fuels-types = "0.31"
+forc-util = { version = "0.35.0" }
+fuel-indexer-lib = { version = "0.3", path = "../../packages/fuel-indexer-lib" }
+fuel-tx = { version = "0.26.0", features = ["builder"] }
+fuels-types = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen" , default-features = false }
 hex = "0.4.3"
 hyper-rustls = { version = "0.23", features = ["http2"] }
 indicatif = "0.17"
