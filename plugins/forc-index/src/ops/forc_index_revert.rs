@@ -6,14 +6,14 @@ use crate::{
 use fuel_indexer_lib::{
     manifest::Manifest,
     defaults as indexer_defaults,
-}
+};
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{
     blocking::Client,
     header::{HeaderMap, AUTHORIZATION},
 };
 use std::time::Duration;
-use tracing::{error, info};
+use tracing::info;
 
 pub fn init(command: RevertCommand) -> anyhow::Result<()> {
     let RevertCommand { path, manifest, .. } = command;
@@ -66,7 +66,6 @@ pub fn init(command: RevertCommand) -> anyhow::Result<()> {
                 "▪▪▪▪▪",
             ]),
     );
-    println!("res: {:?}", res);
 
     pb.finish_with_message("✅ Successfully deployed indexer.");
 
