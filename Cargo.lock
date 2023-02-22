@@ -2318,6 +2318,7 @@ dependencies = [
  "forc-postgres",
  "forc-tracing",
  "forc-util",
+ "fuel-indexer-database",
  "fuel-indexer-lib",
  "fuel-tx 0.23.1",
  "fuels-types 0.31.1",

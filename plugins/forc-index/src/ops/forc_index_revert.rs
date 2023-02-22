@@ -1,10 +1,18 @@
-use crate::{cli::RevertCommand, utils::project_dir_info};
-use fuel_indexer_lib::manifest::Manifest;
+use crate::ops::forc_index_start;
+use crate::{
+    cli::{RevertCommand, StartCommand},
+    utils::{defaults, project_dir_info},
+};
+use fuel_indexer_lib::{
+    manifest::Manifest,
+    defaults as indexer_defaults,
+}
+use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{
     blocking::Client,
     header::{HeaderMap, AUTHORIZATION},
-    StatusCode,
 };
+use std::time::Duration;
 use tracing::{error, info};
 
 pub fn init(command: RevertCommand) -> anyhow::Result<()> {
@@ -30,9 +38,8 @@ pub fn init(command: RevertCommand) -> anyhow::Result<()> {
         command.auth.unwrap_or_else(|| "fuel".into()).parse()?,
     );
 
-    //@TODO change emoji
     info!(
-        "\n🛑 Reverting index '{}.{}' at {}",
+        "\n⬅️  Reverting index '{}.{}' at {}",
         &manifest.namespace, &manifest.identifier, &target
     );
 
@@ -40,18 +47,51 @@ pub fn init(command: RevertCommand) -> anyhow::Result<()> {
         .get(&target)
         .headers(headers)
         .send()
-        .expect("Failed to fetch the recent index");
-
-    if res.status() != StatusCode::OK {
-        error!(
-            "\n❌ {} returned a non-200 response code: {:?}",
-            &target,
-            res.status()
-        );
-        return Ok(());
-    }
+        .expect("Failed to fetch recent index.");
 
     println!("res: {:?}", res);
 
+    let pb = ProgressBar::new_spinner();
+    pb.enable_steady_tick(Duration::from_millis(120));
+    pb.set_style(
+        ProgressStyle::with_template("{spinner:.blue} {msg}")
+            .unwrap()
+            .tick_strings(&[
+                "▹▹▹▹▹",
+                "▸▹▹▹▹",
+                "▹▸▹▹▹",
+                "▹▹▸▹▹",
+                "▹▹▹▸▹",
+                "▹▹▹▹▸",
+                "▪▪▪▪▪",
+            ]),
+    );
+    println!("res: {:?}", res);
+
+    pb.finish_with_message("✅ Successfully deployed indexer.");
+
+    let start_command = generate_start_command();
+    forc_index_start::init(start_command)?;
     Ok(())
+}
+
+fn generate_start_command() -> StartCommand {
+    StartCommand {
+        log_level: "info".to_string(),
+        config: None,
+        manifest: None,
+        fuel_node_host: indexer_defaults::FUEL_NODE_HOST.to_string(),
+        fuel_node_port: indexer_defaults::FUEL_NODE_PORT.to_string(),
+        graphql_api_host: defaults::GRAPHQL_API_HOST.to_string(),
+        graphql_api_port: defaults::GRAPHQL_API_PORT.to_string(),
+        database: indexer_defaults::DATABASE.to_string(),
+        postgres_user: Some(indexer_defaults::POSTGRES_USER.to_string()),
+        postgres_database: Some(indexer_defaults::POSTGRES_DATABASE.to_string()),
+        postgres_password: Some(indexer_defaults::POSTGRES_PASSWORD.to_string()),
+        postgres_host: Some(indexer_defaults::POSTGRES_HOST.to_string()),
+        postgres_port: Some(indexer_defaults::POSTGRES_PORT.to_string()),
+        run_migrations: true,
+        metrics: false,
+        stop_idle_indexers: false,
+    }
 }

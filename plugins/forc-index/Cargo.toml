@@ -14,6 +14,7 @@ clap = { version = "3", features = ["derive", "env"] }
 forc-postgres = { version = "0.3", path = "../forc-postgres" }
 forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.31" }
+fuel-indexer-database= { version = "0.3", path = "../../packages/fuel-indexer-database" }
 fuel-indexer-lib = { version = "0.3", path = "../../packages/fuel-indexer-lib" }
 fuel-tx = { version = "0.23", features = ["builder"] }
 fuels-types = "0.31"
