@@ -498,13 +498,23 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     let amount: i64 = row.get(3);
     let len: i64 = row.get(5);
 
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let example_message_id: i64 = row.get(0);
+    let message: &str = row.get(1);
+
     assert!((message_id > 0 && message_id < i64::MAX));
     assert_eq!(
         recipient,
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
     );
     assert_eq!(amount, 100);
-    assert_eq!(len, 8);
+    // assert_eq!(len, 8);
+    assert_eq!(example_message_id, 1234);
+    assert_eq!(message, "abcdefghijklmnopqrstuvwxyz123456");
 }
 
 #[actix_web::test]

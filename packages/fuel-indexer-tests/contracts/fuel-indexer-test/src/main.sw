@@ -6,7 +6,7 @@ use std::{
     constants::BASE_ASSET_ID,
     identity::Identity,
     logging::log,
-    message::send_message,
+    message::send_typed_message,
     revert::revert,
     token::transfer,
     bytes::Bytes,
@@ -42,6 +42,11 @@ pub struct SimpleTupleStruct {
     data: (u32, u64, str[12]),
 }
 
+pub struct ExampleMessageStruct {
+    id: u64,
+    message: str[32]
+}
+
 abi FuelIndexer {
     fn trigger_multiargs() -> Ping;
     fn trigger_callreturn() -> Pung;
@@ -53,7 +58,9 @@ abi FuelIndexer {
     fn trigger_log();
     fn trigger_logdata();
     fn trigger_scriptresult();
+    #[payable]
     fn trigger_transferout();
+    #[payable]
     fn trigger_messageout();
     fn trigger_tuple() -> ComplexTupleStruct;
 }
@@ -134,18 +141,22 @@ impl FuelIndexer for Contract {
         log(0);
     }
 
+    #[payable]
     fn trigger_transferout() {
         const RECEIVER = Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
         transfer(1, BASE_ASSET_ID, Identity::Address(RECEIVER));
     }
 
+    #[payable]
     fn trigger_messageout() {
-        let mut b = Bytes::new();
-        b.push(1u8);
-        b.push(2u8);
-        b.push(3u8);
         const RECEIVER = 0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96;
-        send_message(RECEIVER, b, 100);
+
+        let example = ExampleMessageStruct {
+            id: 1234,
+            message: "abcdefghijklmnopqrstuvwxyz123456"
+        };
+
+        send_typed_message(RECEIVER, example, 100);
     }
 
     fn trigger_tuple() -> ComplexTupleStruct {
