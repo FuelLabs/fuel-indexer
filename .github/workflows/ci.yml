@@ -164,14 +164,15 @@ jobs:
     if: github.event_name != 'release' && github.event.action != 'published'
     strategy:
       matrix:
-        # package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
         include:
           - command: clippy
             args: --all-targets
           - command: fmt
             args: --all --verbose -- --check
+          # Excluding fuel-indexer-tests package as the SDK macros cause
+          # failing tests; the package is properly tested in the next job.
           - command: test
-            args: --locked --all-targets --workspace
+            args: --locked --all-targets --workspace --exclude fuel-indexer-tests
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -206,7 +207,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
-  e2e-tests:
+  e2e-and-integration-tests:
     if: github.event_name != 'release' && github.event.action != 'published'
     needs:
       - cancel-previous-runs
@@ -249,7 +250,7 @@ jobs:
             cp simple_wasm.wasm packages/fuel-indexer-tests/assets/
 
       - name: Run E2E and integration tests
-        run: cargo test --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
+        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   check-is-release-branch:
     # if: github.event_name != 'release' && github.event.action != 'published' && github.ref != 'refs/heads/master'
