@@ -9,7 +9,6 @@
   - [`fuelup`](./getting-started/dependencies/fuelup.md)
   - [Database](./getting-started/dependencies/database.md)
   - [WASM](./getting-started/dependencies/wasm.md)
-  - [Docker](./getting-started/dependencies/docker.md)
 - [Quickstart](./quickstart/index.md)
 - [Starting the Fuel Indexer](./getting-started/starting-the-fuel-indexer.md)
 
