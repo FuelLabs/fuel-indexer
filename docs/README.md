@@ -58,6 +58,7 @@ Users of the Fuel indexer project include dApp developers looking to write flexi
 ### `wasm`
 
 Two additonal cargo components will be required to build your indexers: `wasm-snip` and the `wasm32-unknown-unknown` target.
+
 - To install `wasm-snip`:
 
 ```bash
