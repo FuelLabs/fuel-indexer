@@ -3,6 +3,7 @@ use std::process::Command;
 use tracing::info;
 
 pub fn init(command: StartCommand) -> anyhow::Result<()> {
+    println!("Start command: {:?}", command);
     let StartCommand {
         log_level,
         config,
