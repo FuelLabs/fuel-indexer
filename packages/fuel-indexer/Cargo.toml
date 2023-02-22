@@ -1,6 +1,6 @@
 [package]
 name = "fuel-indexer"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 license = "BUSL-1.1"
 repository = "https://github.com/FuelLabs/fuel-indexer"
@@ -21,14 +21,14 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-core = { version = "0.17.0", optional = true }
 fuel-core-client = "0.17.2"
-fuel-indexer-api-server = { version = "0.3", path = "../fuel-indexer-api-server", optional = true }
-fuel-indexer-database = { version = "0.3", path = "../fuel-indexer-database" }
-fuel-indexer-database-types = { version = "0.3", path = "../fuel-indexer-database/database-types" }
-fuel-indexer-lib = { version = "0.3", path = "../fuel-indexer-lib" }
-fuel-indexer-metrics = { version = "0.3", path = "../fuel-indexer-metrics", optional = true }
-fuel-indexer-postgres = { version = "0.3", path = "../fuel-indexer-database/postgres" }
-fuel-indexer-schema = { version = "0.3", path = "../fuel-indexer-schema", features = ["db-models"] }
-fuel-indexer-types = { version = "0.3", path = "../fuel-indexer-types" }
+fuel-indexer-api-server = { version = "0.4", path = "../fuel-indexer-api-server", optional = true }
+fuel-indexer-database = { version = "0.4", path = "../fuel-indexer-database" }
+fuel-indexer-database-types = { version = "0.4", path = "../fuel-indexer-database/database-types" }
+fuel-indexer-lib = { version = "0.4", path = "../fuel-indexer-lib" }
+fuel-indexer-metrics = { version = "0.4", path = "../fuel-indexer-metrics", optional = true }
+fuel-indexer-postgres = { version = "0.4", path = "../fuel-indexer-database/postgres" }
+fuel-indexer-schema = { version = "0.4", path = "../fuel-indexer-schema", features = ["db-models"] }
+fuel-indexer-types = { version = "0.4", path = "../fuel-indexer-types" }
 fuel-tx = "0.26.0"
 fuel-types = "0.26.0"
 futures = "0.3"
