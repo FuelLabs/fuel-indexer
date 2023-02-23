@@ -97,7 +97,7 @@ help: consider importing one of these items
    |
 2  | use fuels::client::schema::schema::Transaction;
    |
-     and 2 other candidates
+     and 4 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs

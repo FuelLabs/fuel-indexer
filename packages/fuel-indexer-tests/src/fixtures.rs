@@ -7,12 +7,12 @@ use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{
     DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
 };
-use fuels::core::parameters::StorageConfiguration;
 use fuels::{
     macros::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
-        Contract, Provider, TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+        Contract, Provider, StorageConfiguration, TxParameters, WalletUnlocked,
+        DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };

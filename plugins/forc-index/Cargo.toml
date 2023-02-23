@@ -16,7 +16,7 @@ forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.35.0" }
 fuel-indexer-lib = { version = "0.4", path = "../../packages/fuel-indexer-lib" }
 fuel-tx = { version = "0.26.0", features = ["builder"] }
-fuels-types = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen" , default-features = false }
+fuels-types = { version = "0.37" , default-features = false }
 hex = "0.4.3"
 hyper-rustls = { version = "0.23", features = ["http2"] }
 indicatif = "0.17"
