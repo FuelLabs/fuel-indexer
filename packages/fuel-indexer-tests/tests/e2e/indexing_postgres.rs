@@ -512,7 +512,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
     );
     assert_eq!(amount, 100);
-    // assert_eq!(len, 8);
+
     assert_eq!(example_message_id, 1234);
     assert_eq!(message, "abcdefghijklmnopqrstuvwxyz123456");
 }

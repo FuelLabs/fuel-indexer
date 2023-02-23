@@ -247,7 +247,6 @@ fn process_fn_items(
                 let message_id = typ.message_id;
                 let ty_id = typ.application.type_id;
 
-                // If we're passing the receipt to the user still, we should find a way not to clone
                 message_types.push(quote! {
                     #message_id => {
                         self.decode_type(#ty_id, data.data.clone());
@@ -564,7 +563,6 @@ fn process_fn_items(
                 #scriptresult_decoder
             }
 
-            // We should probably still pass the receipt to the user
             pub fn decode_messageout(&mut self, type_id: u64, data: abi::MessageOut) {
                 match type_id {
                     #(#message_types),*
@@ -630,13 +628,14 @@ fn process_fn_items(
                                 }
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
+
+                                // Message type ID is stored in the first word of the data field.
                                 let mut buf = [0u8; 8];
                                 buf.copy_from_slice(&data[0..8]);
                                 let type_id = u64::from_be_bytes(buf);
 
-                                // We should probably still pass the receipt to the user
-                                let payload = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data: data[8..].to_vec() };
-                                decoder.decode_messageout(type_id, payload);
+                                let receipt = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data: data[8..].to_vec() };
+                                decoder.decode_messageout(type_id, receipt);
                             }
                             Receipt::ScriptResult { result, gas_used } => {
                                 let data = abi::ScriptResult{ result: u64::from(result), gas_used };
