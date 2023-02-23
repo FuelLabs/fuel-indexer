@@ -45,7 +45,7 @@ forc index remove --url https://index.swayswap.io --manifest my_index.manifest.y
 ```
 
 ### `forx index revert`
-Revert to a previosuly deployed index
+Remove the current index and revert to the most recent.
 
 ```bash
 forc index revert --url https://index.swayswap.io --manifest my_index.manifest.yaml

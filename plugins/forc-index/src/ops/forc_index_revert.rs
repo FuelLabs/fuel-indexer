@@ -1,18 +1,14 @@
-use crate::ops::forc_index_start;
+use crate::ops::{forc_index_remove, forc_index_start};
 use crate::{
     cli::{RevertCommand, StartCommand},
     utils::{defaults, project_dir_info},
 };
-use fuel_indexer_lib::{
-    manifest::Manifest,
-    defaults as indexer_defaults,
-};
-use indicatif::{ProgressBar, ProgressStyle};
+use fuel_indexer_lib::{defaults as indexer_defaults, manifest::Manifest};
 use reqwest::{
     blocking::Client,
     header::{HeaderMap, AUTHORIZATION},
+    StatusCode,
 };
-use std::time::Duration;
 use tracing::info;
 
 pub fn init(command: RevertCommand) -> anyhow::Result<()> {
@@ -33,13 +29,26 @@ pub fn init(command: RevertCommand) -> anyhow::Result<()> {
     );
 
     let mut headers = HeaderMap::new();
+    let delete_headers = headers.clone();
+
     headers.insert(
         AUTHORIZATION,
         command.auth.unwrap_or_else(|| "fuel".into()).parse()?,
     );
 
+    let res = Client::new()
+        .delete(&target)
+        .headers(delete_headers)
+        .send()
+        .expect("Failed to fetch recent index.");
+
+    if res.status() != StatusCode::OK {
+        println!("Failed to remove index: {:?}", res);
+        return Ok(());
+    }
+
     info!(
-        "\n⬅️  Reverting index '{}.{}' at {}",
+        "\n⬅️  Removing current index '{}.{}' at {}",
         &manifest.namespace, &manifest.identifier, &target
     );
 
@@ -47,34 +56,42 @@ pub fn init(command: RevertCommand) -> anyhow::Result<()> {
         .get(&target)
         .headers(headers)
         .send()
-        .expect("Failed to fetch recent index.");
+        .expect("Failed to fetch recent index, none exists.");
 
-    println!("res: {:?}", res);
+    if res.status() != StatusCode::OK {
+        println!("Failed to fetch previous index: {:?}", res);
+        return Ok(());
+    }
 
-    let pb = ProgressBar::new_spinner();
-    pb.enable_steady_tick(Duration::from_millis(120));
-    pb.set_style(
-        ProgressStyle::with_template("{spinner:.blue} {msg}")
-            .unwrap()
-            .tick_strings(&[
-                "▹▹▹▹▹",
-                "▸▹▹▹▹",
-                "▹▸▹▹▹",
-                "▹▹▸▹▹",
-                "▹▹▹▸▹",
-                "▹▹▹▹▸",
-                "▪▪▪▪▪",
-            ]),
+    info!(
+        "\n⬅️  Reverting to previous index '{}.{}' at {}",
+        &manifest.namespace, &manifest.identifier, &target
     );
 
-    pb.finish_with_message("✅ Successfully deployed indexer.");
+    let StartCommand {
+        log_level,
+        config,
+        fuel_node_host,
+        fuel_node_port,
+        graphql_api_host,
+        graphql_api_port,
+        database,
+        postgres_user,
+        postgres_password,
+        postgres_database,
+        postgres_host,
+        postgres_port,
+        run_migrations,
+        metrics,
+        manifest,
+        ..
+    } = command.indexer_start.unwrap_or_else(|| set_default_start());
 
-    let start_command = generate_start_command();
-    forc_index_start::init(start_command)?;
+    forc_index_start::init(command.indexer_start.unwrap())?;
     Ok(())
 }
 
-fn generate_start_command() -> StartCommand {
+fn set_default_start() -> StartCommand {
     StartCommand {
         log_level: "info".to_string(),
         config: None,
