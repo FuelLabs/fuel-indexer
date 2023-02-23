@@ -82,7 +82,6 @@ jobs:
   mdbook-build:
     needs:
       - cancel-previous-runs
-      - check-rustc
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -114,6 +113,7 @@ jobs:
     needs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
+      - check-rustc
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -164,15 +164,9 @@ jobs:
     if: github.event_name != 'release' && github.event.action != 'published'
     strategy:
       matrix:
-        include:
-          - command: clippy
-            args: --all-targets
-          - command: fmt
-            args: --all --verbose -- --check
-          # Excluding fuel-indexer-tests package as the SDK macros cause
-          # failing tests; the package is properly tested in the next job.
-          - command: test
-            args: --locked --all-targets --workspace --exclude fuel-indexer-tests
+        command: [build]
+        args: [--locked --all-features --all-targets]
+        package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -186,11 +180,7 @@ jobs:
       - run: cargo install sqlx-cli
       - run: bash scripts/run_migrations.bash
 
-      - name: Cargo Workspace Checks
-        if: ${{ !matrix.package }}
-        run: cargo ${{ matrix.command }} ${{ matrix.args }}
-
-      - name: Cargo Package Checks
+      - name: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
         if: ${{ matrix.package }}
         run: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
 
@@ -207,11 +197,90 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
-  e2e-and-integration-tests:
+  cargo-clippy:
     if: github.event_name != 'release' && github.event.action != 'published'
     needs:
       - cancel-previous-runs
-      - get-workspace-members
+      - cargo-toml-fmt-check
+      - check-rustc
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: cargo clippy --all-targets
+        run: cargo clippy --all-targets
+
+  cargo-fmt-check:
+    if: github.event_name != 'release' && github.event.action != 'published'
+    needs:
+      - cancel-previous-runs
+      - cargo-toml-fmt-check
+      - check-rustc
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: cargo fmt --all --verbose -- --check
+        run: cargo fmt --all --verbose -- --check
+
+  cargo-test-unit-tests:
+    if: github.event_name != 'release' && github.event.action != 'published'
+    needs:
+      - cancel-previous-runs
+      - cargo-toml-fmt-check
+      - check-rustc
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
+        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
+
+  cargo-test-e2e-and-integration-tests:
+    if: github.event_name != 'release' && github.event.action != 'published'
+    needs:
+      - cancel-previous-runs
+      - cargo-toml-fmt-check
+      - check-rustc
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -253,8 +322,7 @@ jobs:
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   check-is-release-branch:
-    # if: github.event_name != 'release' && github.event.action != 'published' && github.ref != 'refs/heads/master'
-    if: false
+    if: github.event_name != 'release' && github.event.action != 'published' && github.ref != 'refs/heads/master'
     needs:
       - cancel-previous-runs
       - cargo-toml-fmt-check
