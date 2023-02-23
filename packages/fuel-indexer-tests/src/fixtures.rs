@@ -298,7 +298,7 @@ pub async fn connect_to_deployed_contract(
 
     let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
 
-    println!("Using contract at {}", contract_id);
+    println!("Using contract at {contract_id}");
 
     Ok(contract)
 }

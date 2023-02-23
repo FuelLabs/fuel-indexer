@@ -60,7 +60,7 @@ rand = "0.8"
 
 [features]
 default = ["api-server", "metrics"]
-local-node = ["fuel-core"]
+fuel-core-lib = ["fuel-core"]
 api-server = ["fuel-indexer-api-server"]
 metrics = [
     "fuel-indexer-metrics", 
