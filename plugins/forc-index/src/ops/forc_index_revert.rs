@@ -1,9 +1,6 @@
-use crate::ops::{forc_index_remove, forc_index_start};
-use crate::{
-    cli::{RevertCommand, StartCommand},
-    utils::{defaults, project_dir_info},
-};
-use fuel_indexer_lib::{defaults as indexer_defaults, manifest::Manifest};
+use crate::{cli::RevertCommand, utils::project_dir_info};
+use fuel_indexer_database::{queries, types::IndexAssetType, IndexerConnectionPool};
+use fuel_indexer_lib::manifest::Manifest;
 use reqwest::{
     blocking::Client,
     header::{HeaderMap, AUTHORIZATION},
@@ -11,7 +8,7 @@ use reqwest::{
 };
 use tracing::info;
 
-pub fn init(command: RevertCommand) -> anyhow::Result<()> {
+pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
     let RevertCommand { path, manifest, .. } = command;
 
     let (_root_dir, manifest_path, _index_name) =
@@ -51,23 +48,22 @@ pub fn init(command: RevertCommand) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let res = Client::new()
-        .get(&target)
-        .headers(headers)
-        .send()
-        .expect("Failed to fetch recent index, none exists.");
-
-    if res.status() != StatusCode::OK {
-        println!("Failed to fetch previous index: {:?}", res);
-        return Ok(());
-    }
-
-    println!("GET res: {:?}", res);
-
     info!(
         "\n⬅️  Reverting to previous index '{}.{}' at {}",
         &manifest.namespace, &manifest.identifier, &target
     );
+
+    let db_url = "postgres://postgres@127.0.0.1";
+    let pool = IndexerConnectionPool::connect(&db_url).await?;
+    let mut conn = pool.acquire().await?;
+
+    let index_id =
+        queries::index_id_for(&mut conn, &manifest.namespace, &manifest.identifier)
+            .await?;
+
+    let asset =
+        queries::latest_asset_for_index(&mut conn, &index_id, IndexAssetType::Wasm)
+            .await?;
 
     Ok(())
 }

@@ -28,7 +28,7 @@ pub struct Command{
     pub auth: Option<String>,
 }
 
-pub fn exec(command: Box<Command>) -> Result<()> {
-    forc_index_revert::init(*command)?;
+pub fn exec(command: Command) -> Result<()> {
+    forc_index_revert::init(command)?;
     Ok(())
 }

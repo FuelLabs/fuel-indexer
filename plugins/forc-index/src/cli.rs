@@ -27,7 +27,7 @@ enum ForcIndex {
     Start(Box<StartCommand>),
     Check(CheckCommand),
     Remove(RemoveCommand),
-    Revert(Box<RevertCommand>),
+    Revert(RevertCommand),
     Build(BuildCommand),
     Postgres(ForcPostgresOpt),
 }
