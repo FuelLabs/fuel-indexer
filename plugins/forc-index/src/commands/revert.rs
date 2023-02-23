@@ -1,7 +1,6 @@
 use crate::{ops::forc_index_revert, utils::defaults};
 use anyhow::Result;
 use clap::Parser;
-use fuel_indexer_lib::config::IndexerArgs;
 use std::path::PathBuf;
 /// Revert the running index to the previous version.
 

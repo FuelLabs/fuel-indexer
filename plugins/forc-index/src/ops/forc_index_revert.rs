@@ -89,6 +89,7 @@ fn generate_start_command() -> StartCommand {
         postgres_password: Some(indexer_defaults::POSTGRES_PASSWORD.to_string()),
         postgres_host: Some(indexer_defaults::POSTGRES_HOST.to_string()),
         postgres_port: Some(indexer_defaults::POSTGRES_PORT.to_string()),
+        max_body: indexer_defaults::MAX_BODY.to_string(),
         run_migrations: true,
         metrics: false,
         stop_idle_indexers: false,
