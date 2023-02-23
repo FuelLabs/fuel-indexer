@@ -74,7 +74,7 @@ cargo run --bin fuel-indexer run
 You can also start the service with a fresh local node for development purposes:
 
 ```bash
-cargo run --features local-node --bin fuel-indexer run
+cargo run --features fuel-core-lib --bin fuel-indexer run
 ```
 
 > If no configuration file or other options are passed, the service will default to a `postgres://postgres@localhost` database connection.
