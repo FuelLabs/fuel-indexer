@@ -28,18 +28,18 @@ actix-web = { version = "4", default-features = false, features = ["macros"] }
 async-std = "1"
 axum = { version = "0.5", features = ["multipart"] }
 chrono = { version = "0.4", features = ["serde"] }
-fuel-indexer = { version = "0.4", path = "./../fuel-indexer" }
-fuel-indexer-api-server = { version = "0.4", path = "./../fuel-indexer-api-server" }
-fuel-indexer-database = { version = "0.4", path = "./../fuel-indexer-database" }
-fuel-indexer-lib = { version = "0.4", path = "./../fuel-indexer-lib" }
-fuel-indexer-postgres = { version = "0.4", path = "./../fuel-indexer-database/postgres" }
-fuel-indexer-schema = { version = "0.4", path = "./../fuel-indexer-schema" }
-fuel-indexer-types = { version = "0.4", path = "./../fuel-indexer-types" }
+fuel-indexer = { version = "0.5", path = "./../fuel-indexer" }
+fuel-indexer-api-server = { version = "0.5", path = "./../fuel-indexer-api-server" }
+fuel-indexer-database = { version = "0.5", path = "./../fuel-indexer-database" }
+fuel-indexer-lib = { version = "0.5", path = "./../fuel-indexer-lib" }
+fuel-indexer-postgres = { version = "0.5", path = "./../fuel-indexer-database/postgres" }
+fuel-indexer-schema = { version = "0.5", path = "./../fuel-indexer-schema" }
+fuel-indexer-types = { version = "0.5", path = "./../fuel-indexer-types" }
 fuel-tx = "0.26.0"
 fuel-types = "0.26.0"
-fuels = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", features = ["fuel-core-lib"] }
-fuels-core = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = true }
-fuels-macros = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen" }
+fuels = { version = "0.37", features = ["fuel-core-lib"] }
+fuels-core = { version = "0.37", default-features = false }
+fuels-macros = { version = "0.37" }
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}

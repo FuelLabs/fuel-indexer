@@ -2034,9 +2034,9 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core",
- "fuels-macros",
- "fuels-types",
+ "fuels-core 0.37.0",
+ "fuels-macros 0.37.0",
+ "fuels-types 0.37.0",
  "getrandom",
  "serde",
  "serde_json",
@@ -2163,7 +2163,7 @@ dependencies = [
  "forc-util",
  "fuel-indexer-lib",
  "fuel-tx",
- "fuels-types",
+ "fuels-types 0.36.1",
  "hex",
  "hyper-rustls 0.23.2",
  "indicatif",
@@ -2759,10 +2759,10 @@ dependencies = [
  "fuel-indexer-types",
  "fuel-tx",
  "fuels",
- "fuels-code-gen",
- "fuels-core",
- "fuels-macros",
- "fuels-types",
+ "fuels-code-gen 0.36.1",
+ "fuels-core 0.36.1",
+ "fuels-macros 0.36.1",
+ "fuels-types 0.36.1",
  "graphql-parser 0.3.0",
  "lazy_static",
  "proc-macro-error",
@@ -2827,7 +2827,7 @@ dependencies = [
  "fuel-indexer-types",
  "fuel-tx",
  "fuel-types",
- "fuels-core",
+ "fuels-core 0.36.1",
  "graphql-parser 0.3.0",
  "hex",
  "insta",
@@ -2847,9 +2847,9 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core",
- "fuels-macros",
- "fuels-types",
+ "fuels-core 0.36.1",
+ "fuels-macros 0.36.1",
+ "fuels-types 0.36.1",
  "getrandom",
  "serde",
 ]
@@ -2873,8 +2873,8 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuels",
- "fuels-core",
- "fuels-macros",
+ "fuels-core 0.36.1",
+ "fuels-macros 0.36.1",
  "futures",
  "hex",
  "hyper",
@@ -2900,8 +2900,8 @@ dependencies = [
  "chrono",
  "fuel-tx",
  "fuel-types",
- "fuels-core",
- "fuels-types",
+ "fuels-core 0.36.1",
+ "fuels-types 0.36.1",
  "serde",
  "sha2 0.9.9",
 ]
@@ -2928,7 +2928,7 @@ dependencies = [
  "fuel-indexer-tests",
  "fuel-types",
  "fuels",
- "fuels-macros",
+ "fuels-macros 0.36.1",
  "tokio",
 ]
 
@@ -2996,18 +2996,35 @@ dependencies = [
  "fuel-core",
  "fuel-core-client",
  "fuel-tx",
- "fuels-core",
- "fuels-macros",
+ "fuels-core 0.36.1",
+ "fuels-macros 0.36.1",
  "fuels-programs",
  "fuels-signers",
  "fuels-test-helpers",
- "fuels-types",
+ "fuels-types 0.36.1",
 ]
 
 [[package]]
 name = "fuels-code-gen"
 version = "0.36.1"
 source = "git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_friendly_abigen#5a59ad3f2105da30ecfa4122a7706f887a79ed84"
+dependencies = [
+ "Inflector",
+ "fuel-abi-types 0.2.1",
+ "itertools",
+ "lazy_static",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "serde_json",
+ "syn",
+]
+
+[[package]]
+name = "fuels-code-gen"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "650beefcaa2b7c6aed98f55a64c995b4ac8f099fea6caa8bb3268cb53f6afcc8"
 dependencies = [
  "Inflector",
  "fuel-abi-types 0.2.1",
@@ -3028,7 +3045,22 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuel-vm",
- "fuels-types",
+ "fuels-types 0.36.1",
+ "hex",
+ "itertools",
+ "sha2 0.9.9",
+]
+
+[[package]]
+name = "fuels-core"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0edf26135f19f23b9c2ec879c7d325f03e29375b2760aac038adf98023327935"
+dependencies = [
+ "fuel-tx",
+ "fuel-types",
+ "fuel-vm",
+ "fuels-types 0.37.0",
  "hex",
  "itertools",
  "sha2 0.9.9",
@@ -3041,7 +3073,26 @@ source = "git+https://github.com/FuelLabs/fuels-rs?branch=segfault_magnet/wasm_f
 dependencies = [
  "Inflector",
  "fuel-abi-types 0.2.1",
- "fuels-code-gen",
+ "fuels-code-gen 0.36.1",
+ "itertools",
+ "lazy_static",
+ "proc-macro2",
+ "quote",
+ "rand",
+ "regex",
+ "serde_json",
+ "syn",
+]
+
+[[package]]
+name = "fuels-macros"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99c7eadec5720fe7318af459eecf824bf50149324d771e0a70a5e6826784cc24"
+dependencies = [
+ "Inflector",
+ "fuel-abi-types 0.2.1",
+ "fuels-code-gen 0.37.0",
  "itertools",
  "lazy_static",
  "proc-macro2",
@@ -3062,9 +3113,9 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuel-vm",
- "fuels-core",
+ "fuels-core 0.36.1",
  "fuels-signers",
- "fuels-types",
+ "fuels-types 0.36.1",
  "futures",
  "hex",
  "itertools",
@@ -3095,8 +3146,8 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuel-vm",
- "fuels-core",
- "fuels-types",
+ "fuels-core 0.36.1",
+ "fuels-types 0.36.1",
  "hex",
  "itertools",
  "rand",
@@ -3119,10 +3170,10 @@ dependencies = [
  "fuel-tx",
  "fuel-types",
  "fuel-vm",
- "fuels-core",
+ "fuels-core 0.36.1",
  "fuels-programs",
  "fuels-signers",
- "fuels-types",
+ "fuels-types 0.36.1",
  "futures",
  "hex",
  "portpicker",
@@ -3147,7 +3198,33 @@ dependencies = [
  "fuel-core-client",
  "fuel-tx",
  "fuel-types",
- "fuels-macros",
+ "fuels-macros 0.36.1",
+ "hex",
+ "itertools",
+ "lazy_static",
+ "proc-macro2",
+ "regex",
+ "serde",
+ "serde_json",
+ "strum 0.21.0",
+ "strum_macros 0.21.1",
+ "thiserror",
+]
+
+[[package]]
+name = "fuels-types"
+version = "0.37.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fc6d0112f70cced65b7ddbda5ca2d25abfb19f1a1a27a2c2bfb977884b6f1a29"
+dependencies = [
+ "bech32 0.9.1",
+ "chrono",
+ "fuel-abi-types 0.2.1",
+ "fuel-asm",
+ "fuel-core-chain-config",
+ "fuel-tx",
+ "fuel-types",
+ "fuels-macros 0.37.0",
  "hex",
  "itertools",
  "lazy_static",
@@ -3495,9 +3572,9 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels",
- "fuels-core",
- "fuels-macros",
- "fuels-types",
+ "fuels-core 0.36.1",
+ "fuels-macros 0.36.1",
+ "fuels-types 0.36.1",
  "getrandom",
  "instant",
  "serde",
@@ -3512,9 +3589,9 @@ dependencies = [
  "fuel-indexer-tests",
  "fuel-tx",
  "fuel-types",
- "fuels",
- "fuels-core",
- "fuels-macros",
+ "fuels-core 0.37.0",
+ "fuels-macros 0.37.0",
+ "fuels-types 0.37.0",
  "rand",
  "thiserror",
  "tokio",
@@ -3537,9 +3614,9 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core",
- "fuels-macros",
- "fuels-types",
+ "fuels-core 0.37.0",
+ "fuels-macros 0.37.0",
+ "fuels-types 0.37.0",
  "getrandom",
  "instant",
  "serde",
@@ -5730,9 +5807,9 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-tx",
- "fuels-core",
- "fuels-macros",
- "fuels-types",
+ "fuels-core 0.36.1",
+ "fuels-macros 0.36.1",
+ "fuels-types 0.36.1",
  "getrandom",
  "serde",
 ]
