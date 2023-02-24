@@ -2,12 +2,10 @@ use crate::ffi;
 use crate::{database::Database, IndexerError, IndexerResult};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
-use fuel_indexer_database::{queries, IndexerConnection};
 use fuel_indexer_schema::utils::serialize;
 use fuel_indexer_types::abi::BlockData;
 use futures::Future;
 use std::path::Path;
-use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use thiserror::Error;
 use tokio::task::spawn_blocking;
@@ -352,17 +350,15 @@ where
         fuel_node: &FuelNodeConfig,
         manifest: Manifest,
         stop_idle_indexers: bool,
+        start_block: u64,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
-        let start_block = manifest.start_block;
-        let resumable = manifest.resumable;
         let executor = NativeIndexExecutor::new(db_url, manifest, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
         let handle = tokio::spawn(run_executor(
             &fuel_node.to_string(),
             executor,
-            start_block,
-            resumable,
+            &start_block,
             kill_switch.clone(),
             stop_idle_indexers,
         ));
@@ -445,15 +441,14 @@ impl WasmIndexExecutor {
     }
 
     pub async fn create(
-        mut conn: IndexerConnection,
         fuel_node: &FuelNodeConfig,
         db_url: &str,
-        manifest: Arc<Manifest>,
+        manifest: &Manifest,
         exec_source: ExecutorSource,
         stop_idle_indexers: bool,
+        start_block: u64,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
-        let start_block = get_start_block(&mut conn, &manifest).await;
 
         match &exec_source {
             ExecutorSource::Manifest => match &manifest.module {
@@ -464,7 +459,7 @@ impl WasmIndexExecutor {
 
                     let executor = WasmIndexExecutor::new(
                         db_url.to_string(),
-                        (*manifest).to_owned(),
+                        manifest.to_owned(),
                         bytes.clone(),
                     )
                     .await?;
@@ -484,7 +479,7 @@ impl WasmIndexExecutor {
             },
             ExecutorSource::Registry(bytes) => {
                 let executor =
-                    WasmIndexExecutor::new(db_url.into(), (*manifest).to_owned(), bytes)
+                    WasmIndexExecutor::new(db_url.into(), manifest.to_owned(), bytes)
                         .await?;
                 let handle = tokio::spawn(run_executor(
                     &fuel_node.to_string(),
@@ -500,21 +495,6 @@ impl WasmIndexExecutor {
     }
 }
 
-pub async fn get_start_block(conn: &mut IndexerConnection, manifest: &Manifest) -> u64 {
-    let resumable = manifest.resumable.unwrap_or(false);
-    if resumable {
-        let start_block = queries::last_block_height_for_indexer(
-            conn,
-            &manifest.namespace,
-            &manifest.identifier,
-        )
-        .await
-        .unwrap_or(0) as u64;
-        start_block
-    } else {
-        manifest.start_block.unwrap() as u64
-    }
-}
 
 #[async_trait]
 impl Executor for WasmIndexExecutor {

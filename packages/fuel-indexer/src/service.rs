@@ -3,7 +3,9 @@ use crate::{
     Database, IndexerConfig, IndexerResult, Manifest,
 };
 use async_std::sync::{Arc, Mutex};
-use fuel_indexer_database::{queries, types::IndexAssetType, IndexerConnectionPool};
+use fuel_indexer_database::{
+    queries, types::IndexAssetType, IndexerConnection, IndexerConnectionPool,
+};
 use fuel_indexer_lib::{defaults, utils::ServiceRequest};
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_types::abi::BlockData;
@@ -74,12 +76,14 @@ impl IndexerService {
             .await?;
 
         let mut conn = self.pool.acquire().await?;
+        let start_block = get_start_block(&mut conn, &manifest).await;
         let (handle, exec_source, killer) = WasmIndexExecutor::create(
-            conn,
             &self.config.fuel_node.clone(),
             &database_url,
+            &manifest,
             ExecutorSource::Manifest,
             self.config.stop_idle_indexers,
+            start_block,
         )
         .await?;
 
@@ -122,13 +126,14 @@ impl IndexerService {
             let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
             let manifest = Manifest::from_slice(&assets.manifest.bytes)?;
 
+            let start_block = get_start_block(&mut conn, &manifest).await;
             let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
-                &mut conn,
                 &self.config.fuel_node,
                 &self.config.database.to_string(),
                 &manifest,
                 ExecutorSource::Registry(assets.wasm.bytes),
                 self.config.stop_idle_indexers,
+                start_block,
             )
             .await?;
 
@@ -163,12 +168,14 @@ impl IndexerService {
             )
             .await?;
 
+        let start_block = get_start_block(&mut conn, &manifest).await;
         let uid = manifest.uid();
         let (handle, _module_bytes, killer) = NativeIndexExecutor::<T>::create(
             &self.database_url,
             &self.config.fuel_node,
             manifest,
             self.config.stop_idle_indexers,
+            start_block,
             handle_events,
         )
         .await?;
@@ -245,12 +252,15 @@ async fn create_service_task(
                                     serde_yaml::from_slice(&assets.manifest.bytes)
                                         .expect("Failed to deserialize manifest");
 
+                                let start_block =
+                                    get_start_block(&mut conn, &manifest).await;
                                 let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                                     &config.fuel_node,
                                     &config.database.to_string(),
                                     &manifest,
                                     ExecutorSource::Registry(assets.wasm.bytes),
                                     config.stop_idle_indexers,
+                                    start_block,
                                 )
                                 .await
                                 .expect(
@@ -286,5 +296,21 @@ async fn create_service_task(
                 }
             }
         }
+    }
+}
+
+async fn get_start_block(conn: &mut IndexerConnection, manifest: &Manifest) -> u64 {
+    let resumable = manifest.resumable.unwrap_or(false);
+    if resumable {
+        let start_block = queries::last_block_height_for_indexer(
+            conn,
+            &manifest.namespace,
+            &manifest.identifier,
+        )
+        .await
+        .unwrap_or(0) as u64;
+        start_block
+    } else {
+        manifest.start_block.unwrap() as u64
     }
 }
