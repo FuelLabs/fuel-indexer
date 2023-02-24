@@ -284,7 +284,7 @@ pub async fn connect_to_deployed_contract(
 
     let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
 
-    wallet.set_provider(provider.clone());
+    wallet.set_provider(provider);
 
     println!(
         "Wallet({}) keystore at: {}",
@@ -298,7 +298,7 @@ pub async fn connect_to_deployed_contract(
 
     let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
 
-    println!("Using contract at {}", contract_id.to_string());
+    println!("Using contract at {}", contract_id);
 
     Ok(contract)
 }

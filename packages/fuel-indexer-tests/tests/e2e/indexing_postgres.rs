@@ -165,6 +165,13 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::get().uri("/block_height").to_request();
+    let res = test::call_and_read_body(&app, req).await;
+    let block_height = String::from_utf8(res.to_vec())
+        .unwrap()
+        .parse::<i64>()
+        .unwrap();
+
     let req = test::TestRequest::post().uri("/block").to_request();
     let _ = app.call(req).await;
     fuel_node_handle.abort();
@@ -172,17 +179,18 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.block WHERE height = 1")
-            .fetch_one(&mut conn)
-            .await
-            .unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.block ORDER BY timestamp DESC LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
 
     let id: i64 = row.get(0);
     let height: i64 = row.get(1);
     let timestamp: i64 = row.get(2);
 
-    assert_eq!(height, 1);
+    assert_eq!(height, block_height + 1);
     assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
