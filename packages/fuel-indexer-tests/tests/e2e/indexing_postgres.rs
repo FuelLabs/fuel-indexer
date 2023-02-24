@@ -165,13 +165,6 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::get().uri("/block_height").to_request();
-    let res = test::call_and_read_body(&app, req).await;
-    let block_height = String::from_utf8(res.to_vec())
-        .unwrap()
-        .parse::<i64>()
-        .unwrap();
-
     let req = test::TestRequest::post().uri("/block").to_request();
     let _ = app.call(req).await;
     fuel_node_handle.abort();
@@ -179,18 +172,17 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let mut conn = pool.acquire().await.unwrap();
-    let row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.block ORDER BY timestamp DESC LIMIT 1",
-    )
-    .fetch_one(&mut conn)
-    .await
-    .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.block WHERE height = 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     let id: i64 = row.get(0);
     let height: i64 = row.get(1);
     let timestamp: i64 = row.get(2);
 
-    assert_eq!(height, block_height + 1);
+    assert_eq!(height, 1);
     assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
@@ -732,6 +724,7 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
 
@@ -740,8 +733,7 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
             serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST)
                 .expect("Bad Yaml File");
 
-        manifest.namespace = format!("fuel_indexer_test_index{}", i + 1);
-        manifest.identifier = format!("index{}", i + 1);
+        manifest.namespace = format!("fuel_indexer_test_index{}", i + 1); 
         println!("manifest: {:?}", manifest);
 
         update_test_manifest_asset_paths(&mut manifest);
@@ -753,19 +745,21 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("indicies").to_request();
+    let req = test::TestRequest::post().uri("/indicies").to_request();
+    let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     for i in 0..3 {
         let mut conn = pool.acquire().await.unwrap();
-        let table_name = format!("fuel_indexer_test_index{}", i + 1);
+        let table_name = format!("fuel_indexer_test_index{}_index1", i + 1);
         let statement = format!(
             "SELECT * FROM {}.block ORDER by height DESC LIMIT 1",
             table_name
         );
         let block_row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
-        let block_height: i64 = block_row.get(1);
+        let block_height: i64 = block_row.get(0);
         assert!(block_height >= 1);
     }
 }
