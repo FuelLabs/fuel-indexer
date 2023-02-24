@@ -73,6 +73,8 @@ abi FuelIndexer {
     fn trigger_tuple() -> ComplexTupleStruct;
     fn trigger_explicit() -> ExplicitQueryStruct;
     fn trigger_deeply_nested() -> SimpleQueryStruct;
+    fn trigger_vec_pong_calldata(v: Vec<u8>);
+    fn trigger_vec_pong_logdata();
 }
 
 impl FuelIndexer for Contract {
@@ -108,7 +110,6 @@ impl FuelIndexer for Contract {
         p
     }
 
-
     fn trigger_ping_for_optional() -> Ping {
         let p = Ping {
             id: 8675309,
@@ -117,7 +118,6 @@ impl FuelIndexer for Contract {
         };
         p
     }
-
 
     fn trigger_pong() -> Pong {
         let p = Pong {
@@ -180,5 +180,20 @@ impl FuelIndexer for Contract {
 
     fn trigger_deeply_nested() -> SimpleQueryStruct {
         SimpleQueryStruct { id: 789 }
+    }
+
+    fn trigger_vec_pong_calldata(v: Vec<u8>) {
+        log("Do nothing");
+    }
+
+    fn trigger_vec_pong_logdata() {
+        let mut v: Vec<Pong> = Vec::new();
+        v.push(Pong{ id: 5555, value: 5555 });
+        v.push(Pong{ id: 6666, value: 6666 });
+        v.push(Pong{ id: 7777, value: 7777 });
+        v.push(Pong{ id: 8888, value: 8888 });
+        v.push(Pong{ id: 9999, value: 9999 });
+
+        log(v);
     }
 }
