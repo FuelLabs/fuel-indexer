@@ -151,9 +151,7 @@ pub async fn setup_test_fuel_node(
 }
 
 pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
-    let wallet_path = Path::new(WORKSPACE_ROOT)
-        .join("assets")
-        .join("test-chain-config.json");
+    let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
 
     let contract_bin_path = Path::new(WORKSPACE_ROOT)
         .join("contracts")
@@ -298,7 +296,7 @@ pub async fn connect_to_deployed_contract(
 
     let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
 
-    println!("Using contract at {}", contract_id);
+    println!("Using contract at {contract_id}");
 
     Ok(contract)
 }

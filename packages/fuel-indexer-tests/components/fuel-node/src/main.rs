@@ -29,7 +29,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Path::new(&manifest_dir)
             .join("..")
             .join("..")
-            .join("assets")
             .join("test-chain-config.json")
     });
 

@@ -1,0 +1,114 @@
+schema {
+    query: QueryRoot
+}
+
+# IMPORTANT: Appending 'Entity' to some object name's in order to avoid
+# naming collisions with the ABI JSON
+
+type QueryRoot {
+    pingentity: PingEntity
+    pungentity: PungEntity
+    pongentity: PongEntity
+    block: Block
+    tx: Tx
+    transfer: Transfer
+    transferout: TransferOut
+    log: Log
+    scriptresult: ScriptResult
+    messageout: MessageOut
+    optionentity: OptionEntity
+    u16entity: U16Entity
+}
+
+type PingEntity {
+    id: ID!
+    value: UInt8!
+    message: Charfield!
+}
+
+type PungEntity {
+    id: ID!
+    value: UInt8!
+    is_pung: Boolean!
+    pung_from: Identity!
+}
+
+type U16Entity {
+    id: ID!
+    value1: UInt16!
+    value2: Int16!
+}
+
+type PongEntity {
+    id: ID!
+    value: UInt8!
+}
+
+type Block {
+    id: ID!
+    height: UInt8!
+    timestamp: Int8!
+}
+
+
+type Tx {
+    id: ID!
+    block: Block!
+    input_data: Json!
+    timestamp: Int8!
+}
+
+type Transfer {
+    id: ID!
+    contract_id: ContractId!
+    # 'to' is a reserved SQL word, so using 'recipient'
+    recipient: ContractId!
+    amount: UInt8!
+    asset_id: AssetId!
+}
+
+type TransferOut {
+    id: ID!
+    contract_id: ContractId!
+    recipient: Address!
+    amount: UInt8!
+    asset_id: AssetId!
+}
+
+type Log {
+    id: ID!
+    contract_id: ContractId!
+    ra: UInt8!
+    rb: UInt8!
+}
+
+type ScriptResult {
+    id: ID!
+    result: UInt8!
+    gas_used: UInt8!
+    blob: Blob!
+}
+
+type MessageOut {
+    id: ID!
+    sender: Address!
+    recipient: Address!
+    amount: UInt8!
+    nonce: Bytes32!
+    len: UInt8!
+    digest: Bytes32!
+}
+
+type OptionEntity {
+    id: ID!
+    int_required: UInt8!
+    int_optional_some: UInt8
+    addr_optional_none: Address
+}
+
+type TupleEntity {
+    id: ID!
+    complex_a: Charfield!
+    complex_b: UInt8!
+    simple_a: Charfield!
+}
