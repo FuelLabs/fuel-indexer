@@ -568,7 +568,7 @@ pub async fn last_block_height_for_indexer(
 
     let query = format!(
         "SELECT MAX(height) FROM {}.block",
-        format!("fuel_indexer_{}_{}", namespace, identifier)
+        format_args!("fuel_indexer_{}_{}", namespace, identifier)
     );
 
     match sqlx::query(&query).fetch_one(conn).await {
