@@ -559,7 +559,7 @@ pub async fn last_block_height_for_indexer(
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<i64> {
-    #[cfg(feature = "metrics")]
+   #[cfg(feature = "metrics")]
     METRICS
         .db
         .postgres
