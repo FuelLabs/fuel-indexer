@@ -7,9 +7,10 @@ use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
         api_server_app_postgres, connect_to_deployed_contract, http_client,
-        indexer_service_postgres, test_web::app,
+        indexer_service_postgres, setup_example_test_fuel_node, test_web::app,
     },
     utils::update_test_manifest_asset_paths,
+    WORKSPACE_ROOT,
 };
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use lazy_static::lazy_static;
@@ -20,6 +21,8 @@ use tokio::time::{sleep, Duration};
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
     let mut srvc = indexer_service_postgres().await;
     let api_app = api_server_app_postgres().await;
 
@@ -42,10 +45,11 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test")
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .body(r#"{"query": "query { block { id height timestamp }}", "params": "b"}"#)
         .send()
@@ -64,6 +68,8 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
     let mut srvc = indexer_service_postgres().await;
     let api_app = api_server_app_postgres().await;
 
@@ -86,10 +92,11 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test")
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .body(r#"{"query": "query { optionentity { id int_required int_optional_some addr_optional_none }}", "params": "b"}"#)
         .send()

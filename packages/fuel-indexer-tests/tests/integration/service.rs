@@ -4,22 +4,22 @@ use fuel_indexer_tests::{
     defaults,
     fixtures::{indexer_service_postgres, tx_params},
 };
-use fuels::core::parameters::StorageConfiguration;
-use fuels::fuels_abigen::abigen;
 use fuels::prelude::{
     setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
-    WalletUnlocked, DEFAULT_COIN_AMOUNT,
+    StorageConfiguration, WalletUnlocked, DEFAULT_COIN_AMOUNT,
 };
 use fuels::signers::Signer;
+use fuels_macros::abigen;
 use std::path::Path;
 
 const SIMPLE_WASM_MANIFEST: &str = include_str!("./../../assets/macros/simple_wasm.yaml");
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
-abigen!(
-    Simple,
-    "packages/fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json"
-);
+abigen!(Contract(
+    name = "Simple",
+    abi =
+        "packages/fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json"
+));
 
 #[tokio::test]
 #[cfg_attr(feature = "e2e", ignore)]

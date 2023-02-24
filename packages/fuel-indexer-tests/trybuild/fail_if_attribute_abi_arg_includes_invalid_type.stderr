@@ -79,7 +79,7 @@ help: consider importing one of these items
    |
 2  | use fuels::client::schema::tx::TransactionStatus;
    |
-     and 1 other candidate
+     and 3 other candidates
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -97,7 +97,7 @@ help: consider importing one of these items
    |
 2  | use fuels::client::schema::schema::Transaction;
    |
-     and 3 other candidates
+     and 4 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -118,10 +118,10 @@ error[E0425]: cannot find function `handle_events` in this scope
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope
 
-error: unused import: `Tokenizable`
+error: unused import: `fuels::types::traits::Tokenizable`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |     use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
-  |                                               ^^^^^^^^^^^
+  |     use fuels::types::traits::Tokenizable;
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: `-D unused-imports` implied by `-D warnings`

@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: identity.query_fragment()
+expression: charfield.query_fragment()
 ---
-"'001212121212121212121212121212121212121212121212121212121212121212'"
+"'hello world'"
 

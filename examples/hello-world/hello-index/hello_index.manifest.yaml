@@ -2,7 +2,7 @@
 namespace: fuel_examples
 abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
 identifier: hello_index
-graphql_schema: examples/hello-world/schema/hello_index.schema.graphql
+graphql_schema: examples/hello-world/hello-index/schema/hello_index.schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/hello_index.wasm
 metrics: ~

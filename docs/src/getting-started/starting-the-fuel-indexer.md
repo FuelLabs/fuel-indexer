@@ -34,6 +34,9 @@ OPTIONS:
 
     -m, --manifest <MANIFEST>
             Index config file.
+        
+        --max-body <MAX_BODY> 
+            Max body size for WASM binary uploads in bytes. [default: 5242880]
 
         --metrics <metrics>
             Use Prometheus metrics reporting. [default: true]

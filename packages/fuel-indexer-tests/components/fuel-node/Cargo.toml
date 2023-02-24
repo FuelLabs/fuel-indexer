@@ -7,7 +7,7 @@ publish = false
 [dependencies]
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../fuel-indexer-tests" }
-fuel-types = "0.5"
-fuels = { version = "0.32", features = ["fuel-core-lib"] }
-fuels-abigen-macro = "0.32"
+fuel-types = "0.26.0"
+fuels = { version = "0.37", features = ["fuel-core-lib"] }
+fuels-macros = { version = "0.37" }
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
