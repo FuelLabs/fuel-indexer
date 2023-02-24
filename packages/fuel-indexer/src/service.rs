@@ -73,11 +73,11 @@ impl IndexerService {
             )
             .await?;
 
+        let mut conn = self.pool.acquire().await?;
         let (handle, exec_source, killer) = WasmIndexExecutor::create(
-            &mut conn,
+            conn,
             &self.config.fuel_node.clone(),
             &database_url,
-            &manifest,
             ExecutorSource::Manifest,
             self.config.stop_idle_indexers,
         )

@@ -560,7 +560,11 @@ pub async fn last_block_height_for_indexer(
     identifier: &str,
 ) -> sqlx::Result<i64> {
     #[cfg(feature = "metrics")]
-    METRICS.db.postgres.last_block_height_for_indexer_calls.inc();
+    METRICS
+        .db
+        .postgres
+        .last_block_height_for_indexer_calls
+        .inc();
 
     let query = format!(
         "SELECT MAX(height) FROM {}.block",
