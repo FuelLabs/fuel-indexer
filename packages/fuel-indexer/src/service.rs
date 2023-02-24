@@ -311,6 +311,6 @@ async fn get_start_block(conn: &mut IndexerConnection, manifest: &Manifest) -> u
         .unwrap_or(0) as u64;
         start_block
     } else {
-        manifest.start_block.unwrap() 
+        manifest.start_block.unwrap()
     }
 }
