@@ -681,13 +681,13 @@ pub fn prefix_abi_and_schema_paths(
 
 pub fn get_abi_tokens(
     namespace: &str,
-    abi: &String,
+    abi: &str,
     is_native: bool,
 ) -> proc_macro2::TokenStream {
     match Abigen::generate(
         vec![AbigenTarget {
             name: namespace.to_string(),
-            abi: abi.clone(),
+            abi: abi.to_owned(),
             program_type: ProgramType::Contract,
         }],
         !is_native,
