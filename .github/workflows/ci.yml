@@ -133,8 +133,6 @@ jobs:
           toolchain: nightly
           default: true
       - uses: Swatinem/rust-cache@v1
-      - run: cargo install sqlx-cli
-      - run: bash scripts/run_migrations.bash
       - name: Install cargo-udeps
         uses: actions-rs/cargo@v1
         with:
@@ -177,8 +175,6 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - run: cargo install sqlx-cli
-      - run: bash scripts/run_migrations.bash
 
       - name: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
         if: ${{ matrix.package }}
