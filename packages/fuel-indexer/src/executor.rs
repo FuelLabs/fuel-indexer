@@ -74,8 +74,6 @@ impl ExecutorSource {
     }
 }
 
-
-
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
     fuel_node_addr: &str,
     mut executor: T,
@@ -502,10 +500,7 @@ impl WasmIndexExecutor {
     }
 }
 
-pub async fn get_start_block(
-    conn: &mut IndexerConnection,
-    manifest: &Manifest,
-) -> u64 {
+pub async fn get_start_block(conn: &mut IndexerConnection, manifest: &Manifest) -> u64 {
     let resumable = manifest.resumable.unwrap_or(false);
     if resumable {
         let start_block = queries::last_block_height_for_indexer(
