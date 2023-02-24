@@ -1,6 +1,8 @@
 extern crate lazy_static;
 extern crate proc_macro;
 
+pub(crate) mod constant;
+pub(crate) mod helpers;
 mod indexer;
 mod native;
 mod parse;

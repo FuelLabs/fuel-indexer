@@ -524,4 +524,12 @@ mod fuel_indexer_test {
 
         team.save();
     }
+    
+    fn fuel_indexer_vec_calldata(_item: Vec<u8>) {
+        Logger::info("fuel_indexer_vec_calldata handling Vec<u8>.");
+    }
+
+    fn fuel_indexer_vec_logdata(_pongs: Vec<Pong>) {
+        Logger::info("fuel_indexer_vec_logdata handling Vec<Pong>.");
+    }
 }
