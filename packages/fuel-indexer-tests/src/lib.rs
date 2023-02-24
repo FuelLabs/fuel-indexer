@@ -12,7 +12,7 @@ pub mod assets {
     pub const BAD_SIMPLE_WASM_WASM: &[u8] =
         include_bytes!("./../components/indices/simple-wasm/bad_simple_wasm.wasm");
     pub const SIMPLE_WASM_WASM: &[u8] = include_bytes!(
-        "./../../../target/wasm32-unknown-unknown/release/simple_wasm.wasm"
+        "./../components/indices/simple-wasm/simple_wasm.wasm"
     );
     pub const SIMPLE_WASM_SCHEMA: &str =
         include_str!("./../components/indices/simple-wasm/schema/simple_wasm.graphql");

@@ -19,7 +19,7 @@ const SIMPLE_WASM_MANIFEST: &str =
 const SIMPLE_WASM_GRAPHQL_SCHEMA: &str =
     include_str!("./../../components/indices/simple-wasm/schema/simple_wasm.graphql");
 const SIMPLE_WASM_WASM: &[u8] = include_bytes!(
-    "./../../../../target/wasm32-unknown-unknown/release/simple_wasm.wasm"
+    "./../../components/indices/simple-wasm/simple_wasm.wasm"
 );
 const THING1_TYPE: i64 = -6766053528336050638;
 const TEST_COLUMNS: [(&str, i32, &str); 10] = [
