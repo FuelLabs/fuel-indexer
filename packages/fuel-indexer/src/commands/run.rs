@@ -50,7 +50,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     };
 
     #[cfg(feature = "fuel-core-lib")]
-    let _ = run_fuel_core_node().await?;
+    let _srvc = run_fuel_core_node().await?;
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
