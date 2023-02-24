@@ -495,7 +495,6 @@ impl WasmIndexExecutor {
     }
 }
 
-
 #[async_trait]
 impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.

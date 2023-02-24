@@ -108,7 +108,6 @@ impl Manifest {
         file.write_all(&self.to_bytes()?)?;
         Ok(())
     }
-    
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
