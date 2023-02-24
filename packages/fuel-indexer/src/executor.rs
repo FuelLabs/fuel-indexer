@@ -87,10 +87,12 @@ where
     let mut next_cursor;
 
     let start_block = if manifest.resumable.unwrap() {
-        let index_id =
-            queries::index_id_for(conn, &manifest.namespace, &manifest.identifier)
-                .await?;
-        queries::last_block_height_for_indexer(conn, &index_id).await;
+        queries::last_block_height_for_indexer(
+            conn,
+            &manifest.namespace,
+            &manifest.identifier,
+        )
+        .await
     } else {
         let start_block = start_block.unwrap_or(1);
         next_cursor = if start_block > 1 {
@@ -473,10 +475,10 @@ impl WasmIndexExecutor {
                     )
                     .await?;
                     let handle = tokio::spawn(run_executor(
+                        conn,
+                        manifest,
                         &fuel_node.to_string(),
                         executor,
-                        manifest.start_block,
-                        manifest.resumable,
                         killer.clone(),
                         stop_idle_indexers,
                     ));

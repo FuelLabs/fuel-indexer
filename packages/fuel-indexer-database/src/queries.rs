@@ -248,14 +248,14 @@ pub async fn latest_assets_for_index(
     }
 }
 
-//@TODO
 pub async fn last_block_height_for_indexer(
     conn: &mut IndexerConnection,
-    indexer_id: &i64,
-) -> sqlx::Result<Option<i64>> {
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<i64> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::last_block_height_for_indexer(c, indexer_id).await
+            postgres::last_block_height_for_indexer(c, namespace, identifier).await
         }
     }
 }

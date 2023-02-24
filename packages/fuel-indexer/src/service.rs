@@ -74,6 +74,7 @@ impl IndexerService {
             .await?;
 
         let (handle, exec_source, killer) = WasmIndexExecutor::create(
+            &mut conn,
             &self.config.fuel_node.clone(),
             &database_url,
             &manifest,
