@@ -23,6 +23,7 @@ use thiserror::Error;
 use tokio::sync::mpsc::{error::SendError, Sender};
 use tower_http::{
     cors::{Any, CorsLayer},
+    limit::RequestBodyLimitLayer,
     trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse, TraceLayer},
     LatencyUnit,
 };
@@ -113,6 +114,7 @@ impl GraphQlApi {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
         let config = config.clone();
+        let max_body = config.max_body;
         let start_time = Arc::new(Instant::now());
 
         if config.graphql_api.run_migrations {
@@ -123,7 +125,8 @@ impl GraphQlApi {
         let graph_route = Router::new()
             .route("/:namespace/:identifier", post(query_graph))
             .layer(Extension(schema_manager.clone()))
-            .layer(Extension(pool.clone()));
+            .layer(Extension(pool.clone()))
+            .layer(RequestBodyLimitLayer::new(max_body));
 
         let index_routes = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
@@ -134,7 +137,8 @@ impl GraphQlApi {
             .route("/:namespace/:identifier", delete(stop_index))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(tx))
-            .layer(Extension(pool.clone()));
+            .layer(Extension(pool.clone()))
+            .layer(RequestBodyLimitLayer::new(max_body));
 
         let root_routes = Router::new()
             .route("/health", get(health_check))

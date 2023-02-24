@@ -122,6 +122,7 @@ impl IndexerService {
             let manifest = Manifest::from_slice(&assets.manifest.bytes)?;
 
             let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
+                &mut conn,
                 &self.config.fuel_node,
                 &self.config.database.to_string(),
                 &manifest,

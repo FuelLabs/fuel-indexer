@@ -1,12 +1,12 @@
 use clap::Parser;
 use fuel_indexer_tests::{defaults, fixtures::setup_test_fuel_node};
-use fuels_abigen_macro::abigen;
+use fuels_macros::abigen;
 use std::path::{Path, PathBuf};
 
-abigen!(
-    FuelIndexer,
-    "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
-);
+abigen!(Contract(
+    name = "FuelIndexerTest",
+    abi = "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
+));
 
 #[derive(Debug, Parser, Clone)]
 #[clap(name = "fuel-node", about = "An ephemeral Fuel node used for testing.")]
@@ -50,12 +50,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .host
         .unwrap_or_else(|| defaults::FUEL_NODE_ADDR.to_string());
 
-    let _contract_id = setup_test_fuel_node(
-        chain_config.as_os_str().to_str().unwrap(),
-        contract_bin.as_os_str().to_str().unwrap(),
-        host,
-    )
-    .await?;
+    let _contract_id = setup_test_fuel_node(chain_config, Some(contract_bin), Some(host))
+        .await
+        .unwrap();
     std::thread::sleep(defaults::SLEEP);
 
     Ok(())

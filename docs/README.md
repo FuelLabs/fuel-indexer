@@ -16,7 +16,6 @@ The Fuel indexer is a standalone service that can be used to index various compo
 - [**For Users**](#for-users)
   - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
-    - [`docker`](#docker)
     - [`wasm`](#wasm)
   - [Quickstart](#quickstart)
   - [`forc index` Plugin](#forc-index-plugin)
@@ -56,16 +55,10 @@ Users of the Fuel indexer project include dApp developers looking to write flexi
 - We use fuelup in order to get the binaries produced by services in the Fuel ecosystem. Fuelup will install binaries related to the Fuel node, the Fuel indexer, the Fuel orchestrator (forc), and other components.
 - fuelup can be downloaded [here](https://github.com/FuelLabs/fuelup).
 
-### `docker`
-
-> IMPORTANT: Docker is not required to run the Fuel indexer.
-
-- We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. PostgreSQL).
-- Docker can be downloaded [here](https://docs.docker.com/engine/install/).
-
 ### `wasm`
 
 Two additonal cargo components will be required to build your indexers: `wasm-snip` and the `wasm32-unknown-unknown` target.
+
 - To install `wasm-snip`:
 
 ```bash
@@ -511,6 +504,13 @@ There are a few points that Fuel indexer users should know when using WASM:
 Contributors of the Fuel indexer project are devs looking to help  backends for their dApps.
 
 ## Dev Dependencies
+
+### `docker`
+
+> IMPORTANT: Docker is not required to run the Fuel indexer.
+
+- We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. PostgreSQL).
+- Docker can be downloaded [here](https://docs.docker.com/engine/install/).
 
 ### Database
 

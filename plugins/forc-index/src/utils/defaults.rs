@@ -21,13 +21,13 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.3", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.3", features = ["native-execution"] }}
-fuel-indexer-schema = {{ version = "0.3", default-features = false }}
-fuel-tx = "0.23"
-fuels = {{ version = "0.30", features = ["fuel-core-lib"] }}
-fuels-core = "0.30"
-fuels-types = "0.30"
+fuel-indexer-macros = {{ version = "0.4", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.4", features = ["native-execution"] }}
+fuel-indexer-schema = {{ version = "0.4", default-features = false }}
+fuel-tx = "0.26"
+fuels = {{ git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen" }}
+fuels-core = {{ git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen" }}
+fuels-types = {{ git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
@@ -46,12 +46,13 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.3", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.3" }}
-fuel-indexer-schema = {{ version = "0.3", default-features = false }}
-fuel-tx = "0.23"
-fuels-core = "0.30"
-fuels-types = "0.30"
+fuel-indexer-macros = {{ version = "0.4", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.4" }}
+fuel-indexer-schema = {{ version = "0.4", default-features = false }}
+fuel-tx = "0.26"
+fuels-core = {{ git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }}
+fuels-macros = {{ git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen" }}
+fuels-types ={{ git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
