@@ -272,8 +272,7 @@ pub async fn indexer_service_postgres() -> IndexerService {
 
 pub async fn connect_to_deployed_contract(
 ) -> Result<FuelIndexerTest, Box<dyn std::error::Error>> {
-    let wallet_path = Path::new(WORKSPACE_ROOT)
-        .join("test-chain-config.json");
+    let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
     let mut wallet =
         WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
