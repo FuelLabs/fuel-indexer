@@ -7,6 +7,28 @@ use fuel_indexer_plugin::prelude::*;
 )]
 mod fuel_indexer_test {
 
+    fn fuel_indexer_test_blocks(block_data: BlockData) {
+        let block = Block {
+            id: first8_bytes_to_u64(block_data.id),
+            height: block_data.height,
+            timestamp: block_data.time,
+        };
+
+        block.save();
+
+        let input_data = r#"{"foo":"bar"}"#.to_string();
+
+        for tx in block_data.transactions.iter() {
+            let tx = Tx {
+                id: first8_bytes_to_u64(tx.id),
+                block: block.id,
+                timestamp: block_data.time,
+                input_data: Json(input_data.clone()),
+            };
+            tx.save();
+        }
+    }
+
     fn fuel_indexer_test_ping(ping: Ping) {
         Logger::info("fuel_indexer_test_ping handling a Ping event.");
 
@@ -28,28 +50,6 @@ mod fuel_indexer_test {
         };
 
         u16entity.save();
-    }
-
-    fn fuel_indexer_test_blocks(block_data: BlockData) {
-        let block = Block {
-            id: first8_bytes_to_u64(block_data.id),
-            height: block_data.height,
-            timestamp: block_data.time,
-        };
-
-        block.save();
-
-        let input_data = r#"{"foo":"bar"}"#.to_string();
-
-        for tx in block_data.transactions.iter() {
-            let tx = Tx {
-                id: first8_bytes_to_u64(tx.id),
-                block: block.id,
-                timestamp: block_data.time,
-                input_data: Json(input_data.clone()),
-            };
-            tx.save();
-        }
     }
 
     fn fuel_indexer_test_transfer(transfer: abi::Transfer) {

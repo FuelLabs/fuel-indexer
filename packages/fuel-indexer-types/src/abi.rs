@@ -126,6 +126,7 @@ impl NativeFuelType for MessageOut {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Return {
     pub contract_id: ContractId,
     pub val: u64,
