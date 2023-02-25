@@ -2,7 +2,7 @@ error: `self` argument not allowed in handler function.
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_args_include_self.rs
   |
   | / #[indexer(
-  | |     manifest = "packages/fuel-indexer-tests/assets/macros/simple_wasm.yaml"
+  | |     manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml"
   | | )]
   | |__^
   |
