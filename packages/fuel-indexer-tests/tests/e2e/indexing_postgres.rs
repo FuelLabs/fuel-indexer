@@ -7,7 +7,7 @@ use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
         connect_to_deployed_contract, indexer_service_postgres, postgres_connection,
-        postgres_connection_pool, setup_example_test_fuel_node, test_web::app,
+        postgres_connection_pool, setup_example_test_fuel_node, test_web::app, 
     },
     utils::update_test_manifest_asset_paths,
     WORKSPACE_ROOT,
@@ -732,6 +732,8 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_resume_an_index() {
+    use fuel_indexer_tests::fixtures::test_web;
+
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
     let pool = postgres_connection_pool().await;
@@ -749,7 +751,7 @@ async fn test_can_resume_an_index() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/ping").to_request();
+    let req = test::TestRequest::post().uri("/resume").to_request();
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
@@ -761,16 +763,19 @@ async fn test_can_resume_an_index() {
 
     let _id: i64 = row.get(0);
     assert_eq!(row.get::<_, i64>(1), 1);
-    pool.close().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+    let req = test::TestRequest::post().uri("/resume").to_request();
+    let _ = app.call(req).await;
+
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.block LIMIT 1")
         .fetch_one(&mut conn)
         .await
         .unwrap();
-
-    let _id: i64 = row.get(0);
-    assert!(row.get::<_, i64>(1) > 1);
+    assert_eq!(row.get::<_, i64>(1), 9991123483);
 }
-
-
