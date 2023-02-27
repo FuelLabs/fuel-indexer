@@ -299,18 +299,17 @@ async fn create_service_task(
     }
 }
 
-async fn get_start_block(conn: &mut IndexerConnection, manifest: &Manifest) -> u64 {
+async fn get_start_block(conn: &mut IndexerConnection, manifest: &Manifest) -> Option<u64> {
     let resumable = manifest.resumable.unwrap_or(false);
     if resumable {
-        let start_block = queries::last_block_height_for_indexer(
+        Some(queries::last_block_height_for_indexer(
             conn,
             &manifest.namespace,
             &manifest.identifier,
         )
         .await
-        .unwrap_or(0) as u64;
-        start_block
+        .unwrap_or(0) as u64)
     } else {
-        manifest.start_block.unwrap()
+        Some(manifest.start_block.unwrap_or(1) as u64)
     }
 }

@@ -567,7 +567,7 @@ pub async fn last_block_height_for_indexer(
         .inc();
 
     let query = format!(
-        "SELECT MAX(height) FROM {}.block",
+        "SELECT MAX(id) FROM {}.indexmetadataentity LIMIT 1",
         format_args!("fuel_indexer_{}_{}", namespace, identifier)
     );
 
