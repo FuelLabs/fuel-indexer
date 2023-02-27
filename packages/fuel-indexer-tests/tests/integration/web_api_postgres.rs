@@ -100,6 +100,9 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() {
+    let pool = postgres_connection_pool().await;
+    let mut conn = pool.acquire().await.unwrap();
+
     let app = api_server_app_postgres().await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
@@ -107,12 +110,13 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
 
     let server_handle = tokio::spawn(server);
 
-    let pool = postgres_connection_pool().await;
-    let mut conn = pool.acquire().await.unwrap();
-    let is_index_registered =
-        postgres::index_is_registered(&mut conn, "fuel_indexer_test", "index1")
-            .await
-            .unwrap();
+    let is_index_registered = postgres::index_is_registered(
+        &mut conn,
+        "test_namespace",
+        "simple_wasm_executor",
+    )
+    .await
+    .unwrap();
     assert!(is_index_registered.is_none());
 
     let manifest_file =
@@ -129,7 +133,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/index/fuel_indexer_test/index1")
+        .post("http://127.0.0.1:29987/api/index/test_namespace/simple_wasm_executor")
         .multipart(form)
         .header(CONTENT_TYPE, "multipart/form-data".to_owned())
         .header(AUTHORIZATION, "foo".to_owned())
@@ -137,12 +141,17 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
         .await
         .unwrap();
 
+    server_handle.abort();
+
     assert!(resp.status().is_success());
 
-    let is_index_registered =
-        postgres::index_is_registered(&mut conn, "fuel_indexer_test", "index1")
-            .await
-            .unwrap();
+    let is_index_registered = postgres::index_is_registered(
+        &mut conn,
+        "test_namespace",
+        "simple_wasm_executor",
+    )
+    .await
+    .unwrap();
 
     assert!(is_index_registered.is_some());
 }

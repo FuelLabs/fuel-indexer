@@ -7,12 +7,12 @@ use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{
     DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
 };
-use fuels::core::parameters::StorageConfiguration;
 use fuels::{
     macros::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
-        Contract, Provider, TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+        Contract, Provider, StorageConfiguration, TxParameters, WalletUnlocked,
+        DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
@@ -151,9 +151,7 @@ pub async fn setup_test_fuel_node(
 }
 
 pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
-    let wallet_path = Path::new(WORKSPACE_ROOT)
-        .join("assets")
-        .join("test-chain-config.json");
+    let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
 
     let contract_bin_path = Path::new(WORKSPACE_ROOT)
         .join("contracts")
@@ -274,9 +272,7 @@ pub async fn indexer_service_postgres() -> IndexerService {
 
 pub async fn connect_to_deployed_contract(
 ) -> Result<FuelIndexerTest, Box<dyn std::error::Error>> {
-    let wallet_path = Path::new(WORKSPACE_ROOT)
-        .join("assets")
-        .join("test-chain-config.json");
+    let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
     let mut wallet =
         WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
@@ -284,7 +280,7 @@ pub async fn connect_to_deployed_contract(
 
     let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
 
-    wallet.set_provider(provider.clone());
+    wallet.set_provider(provider);
 
     println!(
         "Wallet({}) keystore at: {}",
@@ -298,7 +294,7 @@ pub async fn connect_to_deployed_contract(
 
     let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
 
-    println!("Using contract at {}", contract_id.to_string());
+    println!("Using contract at {contract_id}");
 
     Ok(contract)
 }
