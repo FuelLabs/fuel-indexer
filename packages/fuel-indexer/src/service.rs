@@ -76,14 +76,14 @@ impl IndexerService {
             .await?;
 
         let mut conn = self.pool.acquire().await?;
-        let start_block = get_start_block(&mut conn, &manifest).await;
+        let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
         let (handle, exec_source, killer) = WasmIndexExecutor::create(
             &self.config.fuel_node.clone(),
             &database_url,
             &manifest,
             ExecutorSource::Manifest,
             self.config.stop_idle_indexers,
-            start_block,
+            &start_block,
         )
         .await?;
 
@@ -126,14 +126,14 @@ impl IndexerService {
             let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
             let manifest = Manifest::from_slice(&assets.manifest.bytes)?;
 
-            let start_block = get_start_block(&mut conn, &manifest).await;
+            let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
             let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                 &self.config.fuel_node,
                 &self.config.database.to_string(),
                 &manifest,
                 ExecutorSource::Registry(assets.wasm.bytes),
                 self.config.stop_idle_indexers,
-                start_block,
+                &start_block,
             )
             .await?;
 
@@ -168,7 +168,7 @@ impl IndexerService {
             )
             .await?;
 
-        let start_block = get_start_block(&mut conn, &manifest).await;
+        let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
         let uid = manifest.uid();
         let (handle, _module_bytes, killer) = NativeIndexExecutor::<T>::create(
             &self.database_url,
@@ -253,14 +253,14 @@ async fn create_service_task(
                                         .expect("Failed to deserialize manifest");
 
                                 let start_block =
-                                    get_start_block(&mut conn, &manifest).await;
+                                    get_start_block(&mut conn, &manifest).await.unwrap_or(1) as u64;
                                 let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                                     &config.fuel_node,
                                     &config.database.to_string(),
                                     &manifest,
                                     ExecutorSource::Registry(assets.wasm.bytes),
                                     config.stop_idle_indexers,
-                                    start_block,
+                                    &start_block,
                                 )
                                 .await
                                 .expect(

@@ -270,6 +270,7 @@ pub async fn indexer_service_postgres() -> IndexerService {
     IndexerService::new(config, pool, None).await.unwrap()
 }
 
+
 pub async fn connect_to_deployed_contract(
 ) -> Result<FuelIndexerTest, Box<dyn std::error::Error>> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");

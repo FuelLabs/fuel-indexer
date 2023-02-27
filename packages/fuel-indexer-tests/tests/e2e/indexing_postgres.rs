@@ -728,3 +728,49 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     assert_eq!(complex_b, 54321);
     assert_eq!(simple_a, "hello world!");
 }
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+async fn test_can_resume_an_index() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
+    let pool = postgres_connection_pool().await;
+    let mut srv = indexer_service_postgres().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    manifest.resumable = Some(true);
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srv.register_index_from_manifest(manifest.clone())
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let mut conn = pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.block LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let _id: i64 = row.get(0);
+    assert_eq!(row.get::<_, i64>(1), 1);
+    pool.close().await;
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    let mut conn = pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.block LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let _id: i64 = row.get(0);
+    assert!(row.get::<_, i64>(1) > 1);
+}
+
+
