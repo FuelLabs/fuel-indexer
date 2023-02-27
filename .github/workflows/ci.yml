@@ -17,6 +17,9 @@ env:
   SQLX_OFFLINE: true
   RUSTC_VERSION: 1.67
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
+  IS_MASTER: github.ref == 'refs/heads/master'
+  IS_RELEASE: github.event_name == 'release' && github.event.action == 'published'
+  IS_RELEASE_OR_MASTER: github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master'
 
 jobs:
   cancel-previous-runs:
@@ -26,24 +29,6 @@ jobs:
         uses: styfle/cancel-workflow-action@0.9.1
         with:
           access_token: ${{ github.token }}
-
-  cargo-toml-fmt-check:
-    needs:
-      - cancel-previous-runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
-      - name: Install Cargo.toml linter
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: cargo-toml-lint
-          version: '0.1'
-      - name: Run Cargo.toml linter
-        run: git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
 
   check-rustc:
     needs:
@@ -59,29 +44,75 @@ jobs:
             exit 1 
           fi
           echo "Rustc version ($CURRENT_RUSTC_VERSION) matches the required version ($RUSTC_VERSION)"
-
-  get-workspace-members:
+      
+  cargo-toml-fmt-check:
     needs:
-      - cancel-previous-runs
-      - cargo-toml-fmt-check
+      - check-rustc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@v1
+      - name: Install Cargo.toml linter
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: cargo-toml-lint
+          version: '0.1'
+      - name: Run Cargo.toml linter
+        run: git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
+
+  set-env-vars:
+    needs:
       - check-rustc
     runs-on: ubuntu-latest
     outputs:
-      members: ${{ steps.set-members.outputs.members }}
+      IS_MASTER: ${{ steps.set-env.outputs.IS_MASTER }}
+      IS_RELEASE: ${{ steps.set-env.outputs.IS_RELEASE }}
+      IS_RELEASE_OR_MASTER: ${{ steps.set-env.outputs.IS_RELEASE_OR_MASTER }}
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-      - id: set-members
+      - name: Set env vars
+        id: set-env
         run: |
-          # install dasel
-          curl -sSLf "$DASEL_VERSION" -L -o dasel && chmod +x dasel
-          mv ./dasel /usr/local/bin/dasel
-          members=$(cat Cargo.toml | dasel -r toml -w json 'workspace.members' | jq -r ".[]" | xargs -I '{}' dasel -f {}/Cargo.toml 'package.name' | jq -R '[.]' | jq -s -c 'add')
-          echo "members=$members" >> $GITHUB_OUTPUT
+          echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT
+          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT
+          echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >> $GITHUB_OUTPUT
+
+  check-is-semver-branch:
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
+    needs:
+      - set-env-vars
+    runs-on: ubuntu-latest
+    outputs: 
+      is_semver_branch: ${{ steps.semver-branch-check.outputs.is_semver_branch }}
+    steps:
+      - name: Check for semver branch
+        id: semver-branch-check
+        run: |
+          if [[ ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "is_semver_branch=true" >> $GITHUB_OUTPUT
+          else
+            echo "Not a release branch ^(^.^)^"
+          fi
+          
+  mdbook-lint:
+    needs:
+      - check-rustc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: |
+          npm install -g markdownlint-cli@0.31.1
+          markdownlint --config .markdownlintrc **/*.md docs/src/
 
   mdbook-build:
     needs:
-      - cancel-previous-runs
+      - mdbook-lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -94,55 +125,6 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: 'latest'
-
-  mdbook-lint:
-    needs:
-      - cancel-previous-runs
-      - mdbook-build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
-      - run: |
-          npm install -g markdownlint-cli@0.31.1
-          markdownlint --config .markdownlintrc **/*.md docs/src/
-
-  cargo-unused-deps-check:
-    needs:
-      - cancel-previous-runs
-      - cargo-toml-fmt-check
-      - check-rustc
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          # `cargo-udeps` requires nightly to run
-          toolchain: nightly
-          default: true
-      - uses: Swatinem/rust-cache@v1
-      - name: Install cargo-udeps
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: cargo-udeps
-      - name: Check Unused Deps
-        uses: actions-rs/cargo@v1
-        with:
-          command: udeps
-          args: --locked --all-targets --all-features
 
   cargo-verifications:
     runs-on: ubuntu-latest
@@ -157,14 +139,14 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     needs:
-      - cancel-previous-runs
-      - get-workspace-members
-    if: github.event_name != 'release' && github.event.action != 'published'
+      - cargo-toml-fmt-check
+      - set-env-vars
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     strategy:
       matrix:
         command: [build]
         args: [--locked --all-features --all-targets]
-        package: ${{ fromJSON(needs.get-workspace-members.outputs.members) }}
+        package: [fuel-indexer-api-server, fuel-indexer-database, fuel-indexer-database-types, fuel-indexer-postgres, fuel-indexer-lib, fuel-indexer-macros, fuel-indexer-metrics, fuel-indexer-plugin, fuel-indexer-schema, fuel-indexer-types, forc-index, forc-postgres]
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -194,11 +176,10 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
   cargo-clippy:
-    if: github.event_name != 'release' && github.event.action != 'published'
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
-      - cancel-previous-runs
       - cargo-toml-fmt-check
-      - check-rustc
+      - set-env-vars
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -210,11 +191,10 @@ jobs:
         run: cargo clippy --all-targets --all-features
 
   cargo-fmt-check:
-    if: github.event_name != 'release' && github.event.action != 'published'
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
-      - cancel-previous-runs
       - cargo-toml-fmt-check
-      - check-rustc
+      - set-env-vars
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -226,11 +206,10 @@ jobs:
         run: cargo fmt --all --verbose -- --check
 
   cargo-test-unit-tests:
-    if: github.event_name != 'release' && github.event.action != 'published'
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
-      - cancel-previous-runs
       - cargo-toml-fmt-check
-      - check-rustc
+      - set-env-vars
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -252,11 +231,10 @@ jobs:
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
 
   cargo-test-e2e-and-integration-tests:
-    if: github.event_name != 'release' && github.event.action != 'published'
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
-      - cancel-previous-runs
       - cargo-toml-fmt-check
-      - check-rustc
+      - set-env-vars
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -297,29 +275,11 @@ jobs:
       - name: Run E2E and integration tests
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
-  check-is-release-branch:
-    if: github.event_name != 'release' && github.event.action != 'published' && github.ref != 'refs/heads/master'
-    needs:
-      - cancel-previous-runs
-      - cargo-toml-fmt-check
-      - check-rustc
-    runs-on: ubuntu-latest
-    outputs: 
-      is_release_branch: ${{ steps.check-release-branch.outputs.is_release_branch }}
-    steps:
-      - name: Check for Release Branch
-        id: check-release-branch
-        run: |
-          if [[ ${BRANCH_NAME} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              echo "is_release_branch=true" >> $GITHUB_OUTPUT
-          else
-            echo "Not a release branch ^(^.^)^"
-          fi
-
   check-forc-index:
-    if: needs.check-is-release-branch.outputs.is_release_branch != 'true'
+    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true' || needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
-      - check-is-release-branch
+      - cargo-toml-fmt-check
+      - set-env-vars
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -350,9 +310,14 @@ jobs:
 
   publish-docker-image:
     needs:
-      - cancel-previous-runs
-      - check-rustc
-    if: github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master'
+      - cargo-clippy
+      - cargo-fmt-check
+      - cargo-test-e2e-and-integration-tests
+      - cargo-test-unit-tests
+      - cargo-verifications
+      - check-forc-index
+      - set-env-vars
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -411,10 +376,14 @@ jobs:
   publish-fuel-indexer-binaries:
     runs-on: ${{ matrix.job.os }}
     needs:
-      - cancel-previous-runs
-      - publish-docker-image
-    if: github.event_name == 'release' && github.event.action == 'published'
-     # Only do this job if publishing a release
+      - cargo-clippy
+      - cargo-fmt-check
+      - cargo-test-e2e-and-integration-tests
+      - cargo-test-unit-tests
+      - cargo-verifications
+      - check-forc-index
+      - set-env-vars
+    if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
     strategy:
       matrix:
         job:
@@ -588,36 +557,40 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
-  validation-complete:
+  deploy:
+    if: needs.set-env-vars.outputs.IS_MASTER == 'true'
     needs:
-      - cargo-verifications
+      - publish-docker-image
+      - set-env-vars
     runs-on: ubuntu-latest
     steps:
-      - run: true
+      - name: Set Environment Variables
+        run: |
+          tag=(`echo $GITHUB_SHA | cut -c1-7`)
+          echo "IMAGE_TAG=`echo sha-$tag`" >> $GITHUB_ENV
+          echo "DEPLOYMENT_VERSION=$(echo $GITHUB_SHA)" >> $GITHUB_ENV
 
-  notify-slack-on-failure:
-    if: ${{ always() }} && github.ref == 'refs/heads/master'
-    needs:
-      - validation-complete
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify Slack On Failure
-        uses: ravsamhq/notify-slack-action@v2
-        with:
-          status: ${{ job.status }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
-          footer: ''
-          notify_when: 'failure'
+      - name: Deploy Fuel Indexer
+        id: deploy_fuel_indexer
+        run: |
+          curl \
+            -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${{ secrets.REPO_TOKEN }}" \
+            https://api.github.com/repos/FuelLabs/fuel-deployment/actions/workflows/deploy-fuel-indexer.yml/dispatches \
+            -d '{"ref":"master","inputs":{ "k8s-type": "${{ env.K8S }}", "config-directory": "${{ env.CONFIG }}", "config-env": "${{ env.ENV }}", "deployment-version": "${{ env.DEPLOYMENT_VERSION }}", "image-tag": "${{ env.IMAGE_TAG }}" }}'
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-
+          K8S: 'eks'
+          CONFIG: 'fuel-dev1'
+          ENV: 'fueldevsway.env'
+          
+  # TODO: publish these in parallel
   publish:
-    # Only do this job if publishing a release and validations pass.
     needs:
       - publish-fuel-indexer-binaries
-    if: github.event_name == 'release' && github.event.action == 'published'
+      - publish-docker-image
+      - set-env-vars
+    if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -630,7 +603,7 @@ jobs:
           override: true
       - name: Verify tag version
         run: |
-          curl -sSLf "https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64" -L -o dasel && chmod +x dasel
+          curl -sSLf "${DASEL_VERSION}" -L -o dasel && chmod +x dasel
           mv ./dasel /usr/local/bin/dasel
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-api-server/Cargo.toml
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/Cargo.toml
@@ -670,29 +643,31 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
-  # Deploy Latest Fuel-Indexer Release
-  deploy:
-    if: github.ref == 'refs/heads/master'
+
+  validation-complete:
+    if: always()
     needs:
-      - publish-fuel-indexer-binaries
+      - deploy
+      - publish
+      - cargo-verifications
     runs-on: ubuntu-latest
     steps:
-      - name: Set Environment Variables
-        run: |
-          tag=(`echo $GITHUB_SHA | cut -c1-7`)
-          echo "IMAGE_TAG=`echo sha-$tag`" >> $GITHUB_ENV
-          echo "DEPLOYMENT_VERSION=$(echo $GITHUB_SHA)" >> $GITHUB_ENV
+      - run: true
 
-      - name: Deploy Fuel Indexer
-        id: deploy_fuel_indexer
-        run: |
-          curl \
-            -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.REPO_TOKEN }}" \
-            https://api.github.com/repos/FuelLabs/fuel-deployment/actions/workflows/deploy-fuel-indexer.yml/dispatches \
-            -d '{"ref":"master","inputs":{ "k8s-type": "${{ env.K8S }}", "config-directory": "${{ env.CONFIG }}", "config-env": "${{ env.ENV }}", "deployment-version": "${{ env.DEPLOYMENT_VERSION }}", "image-tag": "${{ env.IMAGE_TAG }}" }}'
+  notify-slack-on-failure:
+    needs:
+      - validation-complete
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack On Failure
+        uses: ravsamhq/notify-slack-action@v2
+        with:
+          status: ${{ job.status }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          notification_title: '{workflow} has {status_message}'
+          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+          footer: ''
+          notify_when: 'failure'
         env:
-          K8S: 'eks'
-          CONFIG: 'fuel-dev1'
-          ENV: 'fueldevsway.env'
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
