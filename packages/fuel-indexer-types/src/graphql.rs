@@ -14,10 +14,10 @@ impl GraphqlObject for IndexMetadata {
     fn schema_fragment() -> &'static str {
         r#"
 
-    type IndexMetadataEntity {
-        id: ID!
-        time: Int8!
-    }
-    "#
+type IndexMetadataEntity {
+    id: ID!
+    time: Int8!
+}
+"#
     }
 }
