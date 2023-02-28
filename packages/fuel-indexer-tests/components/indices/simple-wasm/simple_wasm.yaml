@@ -3,4 +3,4 @@ identifier: simple_wasm_executor
 abi: packages/fuel-indexer-tests/components/indices/simple-wasm/contracts/simple-wasm/out/debug/contracts-abi.json
 graphql_schema: packages/fuel-indexer-tests/components/indices/simple-wasm/schema/schema.graphql
 module:
-  wasm: packages/fuel-indexer-tests/assets/simple_wasm.wasm
+  wasm: target/wasm32-unknown-unknown/release/simple_wasm.wasm

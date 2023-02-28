@@ -2,7 +2,9 @@ extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
-#[indexer(manifest = "packages/fuel-indexer-tests/assets/fuel_indexer_test.yaml")]
+#[indexer(
+    manifest = "packages/fuel-indexer-tests/components/indices/fuel-indexer-test/fuel_indexer_test.yaml"
+)]
 mod fuel_indexer_test {
 
     fn fuel_indexer_test_ping(ping: Ping) {
