@@ -2,7 +2,7 @@ error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   | / #[indexer(
-  | |     manifest = "packages/fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml"
+  | |     manifest = "packages/fuel-indexer-tests/trybuild/bad_simple_wasm_graphql.yaml"
   | | )]
   | |__^
   |
@@ -99,7 +99,7 @@ help: consider importing one of these items
    |
 2  | use fuels::client::schema::schema::Transaction;
    |
-     and 2 other candidates
+     and 4 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs

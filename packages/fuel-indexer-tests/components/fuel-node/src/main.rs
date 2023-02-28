@@ -29,7 +29,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Path::new(&manifest_dir)
             .join("..")
             .join("..")
-            .join("assets")
             .join("test-chain-config.json")
     });
 
@@ -50,9 +49,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .host
         .unwrap_or_else(|| defaults::FUEL_NODE_ADDR.to_string());
 
-    let _contract_id = setup_test_fuel_node(chain_config, Some(contract_bin), Some(host))
+    setup_test_fuel_node(chain_config, Some(contract_bin), Some(host))
         .await
         .unwrap();
+
     std::thread::sleep(defaults::SLEEP);
 
     Ok(())

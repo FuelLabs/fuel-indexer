@@ -1,7 +1,7 @@
 use fuel_indexer_macros::indexer;
 
 #[indexer(
-    manifest = "packages/fuel-indexer-tests/assets/macros/simple_wasm.yaml"
+    manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml"
 )]
 mod indexer {
     fn function_one(self, event: SomeEvent) {

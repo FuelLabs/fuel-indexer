@@ -16,7 +16,7 @@ fuel-indexer-postgres = { version = "0.4", path = "../fuel-indexer-database/post
 fuel-indexer-types = { version = "0.4", path = "../fuel-indexer-types" }
 fuel-tx = { version = "0.26.0", features = ["serde", "alloc"] }
 fuel-types = { version = "0.26.0", features = ["serde", "alloc"] }
-fuels-core = { git = "https://github.com/FuelLabs/fuels-rs", branch = "segfault_magnet/wasm_friendly_abigen", default-features = false }
+fuels-core = { version = "0.37", default-features = false }
 graphql-parser = "0.3"
 hex = "0.4"
 itertools = { version = "0.10", optional = true }
