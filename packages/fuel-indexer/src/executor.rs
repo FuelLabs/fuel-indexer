@@ -79,12 +79,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     kill_switch: Arc<AtomicBool>,
     stop_idle_indexers: bool,
 ) -> impl Future<Output = ()> {
-    let mut next_cursor = if *start_block > 1 {
-        let decremented = start_block - 1;
-        Some(decremented.to_string())
-    } else {
-        None
-    };
+    let mut next_cursor = Some(start_block.to_string());
     info!("Subscribing to Fuel node at {fuel_node_addr}");
 
     let client = FuelClient::from_str(fuel_node_addr).unwrap_or_else(|e| {
