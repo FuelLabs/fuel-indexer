@@ -47,7 +47,7 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::Start(command) => crate::commands::start::exec(command),
         ForcIndex::Check(command) => crate::commands::check::exec(command),
         ForcIndex::Remove(command) => crate::commands::remove::exec(command),
-        ForcIndex::Revert(command) => crate::commands::revert::exec(command),
+        ForcIndex::Revert(command) => crate::commands::revert::exec(command).await,
         ForcIndex::Build(command) => crate::commands::build::exec(command),
         ForcIndex::Postgres(opt) => match opt.command {
             ForcPostgres::Create(command) => pg_commands::create::exec(command).await,

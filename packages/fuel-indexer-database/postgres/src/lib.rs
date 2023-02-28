@@ -554,6 +554,39 @@ pub async fn latest_assets_for_index(
     })
 }
 
+pub async fn penultimate_asset_for_index(
+    conn: &mut PoolConnection<Postgres>,
+    index_id: &i64,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
+    #[cfg(feature = "metrics")]
+    METRICS.db.postgres.latest_asset_for_index_calls.inc();
+
+    let query = format!(
+        "SELECT * FROM index_asset_registry_{}
+        WHERE index_id = {}
+        ORDER BY id DESC LIMIT 1 OFFSET 1",
+        asset_type.as_ref(),
+        index_id
+    );
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let id = row.get(0);
+    let index_id = row.get(1);
+    let version = row.get(2);
+    let digest = row.get(3);
+    let bytes = row.get(4);
+
+    Ok(IndexAsset {
+        id,
+        index_id,
+        version,
+        digest,
+        bytes,
+    })
+}
+
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Postgres>,

@@ -30,28 +30,6 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         AUTHORIZATION,
         command.auth.unwrap_or_else(|| "fuel".into()).parse()?,
     );
-    let delete_headers = headers.clone();
-
-    info!(
-        "\n⬅️  Removing current index '{}.{}' at {}",
-        &manifest.namespace, &manifest.identifier, &target
-    );
-
-    let res = Client::new()
-        .delete(&target)
-        .headers(delete_headers)
-        .send()
-        .expect("Failed to fetch recent index.");
-
-    if res.status() != StatusCode::OK {
-        println!("Failed to remove index: {:?}", res);
-        return Ok(());
-    }
-
-    info!(
-        "\n⬅️  Reverting to previous index '{}.{}' at {}",
-        &manifest.namespace, &manifest.identifier, &target
-    );
 
     let db_url = "postgres://postgres@127.0.0.1";
     let pool = IndexerConnectionPool::connect(&db_url).await?;
@@ -61,9 +39,13 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         queries::index_id_for(&mut conn, &manifest.namespace, &manifest.identifier)
             .await?;
 
+    println!("index_id: {:?}", index_id);
+
     let asset =
         queries::latest_asset_for_index(&mut conn, &index_id, IndexAssetType::Wasm)
             .await?;
+
+    println!("asset: {:?}", asset);
 
     Ok(())
 }
