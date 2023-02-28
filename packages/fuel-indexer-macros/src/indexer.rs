@@ -628,7 +628,6 @@ fn process_fn_items(
                                 }
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
-                                #contract_conditional
                                 // Message type ID is stored in the first word of the data field.
                                 let mut buf = [0u8; 8];
                                 buf.copy_from_slice(&data[0..8]);
