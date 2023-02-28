@@ -252,9 +252,8 @@ async fn create_service_task(
                                     serde_yaml::from_slice(&assets.manifest.bytes)
                                         .expect("Failed to deserialize manifest");
 
-                                let start_block = get_start_block(&mut conn, &manifest)
-                                    .await
-                                    .unwrap_or(1);
+                                let start_block =
+                                    get_start_block(&mut conn, &manifest).await;
                                 let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                                     &config.fuel_node,
                                     &config.database.to_string(),
@@ -303,19 +302,17 @@ async fn create_service_task(
 async fn get_start_block(
     conn: &mut IndexerConnection,
     manifest: &Manifest,
-) -> Option<u64> {
-    let resumable = manifest.resumable.unwrap_or(false);
-    if resumable {
-        let last_block = queries::last_block_height_for_indexer(
-            conn,
-            &manifest.namespace,
-            &manifest.identifier,
-        )
-        .await
-        .unwrap_or(1) as u64;
-        println!("Last block: {}", last_block);
-        Some(last_block)
-    } else {
-        Some(manifest.start_block.unwrap_or(1))
+) -> Result<u64, Box<dyn std::error::Error>> {
+    match &manifest.resumable {
+        Some(_) => {
+            let last = queries::last_block_height_for_indexer(
+                conn,
+                &manifest.namespace,
+                &manifest.identifier,
+            )
+            .await?;
+            Ok(last)
+        }
+        None => Ok(manifest.start_block.unwrap_or(1)),
     }
 }

@@ -558,7 +558,7 @@ pub async fn last_block_height_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<i64> {
+) -> sqlx::Result<u64> {
     #[cfg(feature = "metrics")]
     METRICS
         .db
@@ -566,13 +566,13 @@ pub async fn last_block_height_for_indexer(
         .last_block_height_for_indexer_calls
         .inc();
 
-    let query = format!(
-        "SELECT MAX(id) FROM {}.indexmetadataentity LIMIT 1",
-        format_args!("{}_{}", namespace, identifier)
-    );
+    let query = format!("SELECT MAX(id) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1");
 
     match sqlx::query(&query).fetch_one(conn).await {
-        Ok(row) => Ok(row.get(0)),
+        Ok(row) => {
+            let id: i64 = row.get(0);
+            Ok(id as u64)
+        } 
         Err(_) => Ok(0),
     }
 }
