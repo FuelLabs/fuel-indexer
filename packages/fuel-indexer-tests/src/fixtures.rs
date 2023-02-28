@@ -555,7 +555,6 @@ pub mod test_web {
             .unwrap()
             .parent()
             .unwrap()
-            .join("assets")
             .join("test-chain-config.json");
 
         let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
