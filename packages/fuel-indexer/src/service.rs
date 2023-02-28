@@ -254,8 +254,7 @@ async fn create_service_task(
 
                                 let start_block = get_start_block(&mut conn, &manifest)
                                     .await
-                                    .unwrap_or(1)
-                                    as u64;
+                                    .unwrap_or(1);
                                 let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                                     &config.fuel_node,
                                     &config.database.to_string(),
@@ -307,16 +306,16 @@ async fn get_start_block(
 ) -> Option<u64> {
     let resumable = manifest.resumable.unwrap_or(false);
     if resumable {
-            let last_block = queries::last_block_height_for_indexer(
-                conn,
-                &manifest.namespace,
-                &manifest.identifier,
-            )
-            .await
-            .unwrap_or(1) as u64;
+        let last_block = queries::last_block_height_for_indexer(
+            conn,
+            &manifest.namespace,
+            &manifest.identifier,
+        )
+        .await
+        .unwrap_or(1) as u64;
         println!("Last block: {}", last_block);
         Some(last_block)
     } else {
-        Some(manifest.start_block.unwrap_or(1) as u64)
+        Some(manifest.start_block.unwrap_or(1))
     }
 }

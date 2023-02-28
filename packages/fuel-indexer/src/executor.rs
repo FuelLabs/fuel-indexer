@@ -466,7 +466,7 @@ impl WasmIndexExecutor {
                     let handle = tokio::spawn(run_executor(
                         &fuel_node.to_string(),
                         executor,
-                        &start_block,
+                        start_block,
                         killer.clone(),
                         stop_idle_indexers,
                     ));
@@ -484,7 +484,7 @@ impl WasmIndexExecutor {
                 let handle = tokio::spawn(run_executor(
                     &fuel_node.to_string(),
                     executor,
-                    &start_block,
+                    start_block,
                     killer.clone(),
                     stop_idle_indexers,
                 ));
