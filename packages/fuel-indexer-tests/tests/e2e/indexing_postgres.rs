@@ -7,7 +7,7 @@ use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
         connect_to_deployed_contract, indexer_service_postgres, postgres_connection,
-        postgres_connection_pool, setup_example_test_fuel_node, test_web::app, 
+        postgres_connection_pool, setup_example_test_fuel_node, test_web::app,
     },
     utils::update_test_manifest_asset_paths,
     WORKSPACE_ROOT,
@@ -728,4 +728,3 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     assert_eq!(complex_b, 54321);
     assert_eq!(simple_a, "hello world!");
 }
-
