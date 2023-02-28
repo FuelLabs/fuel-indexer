@@ -190,6 +190,8 @@ pub async fn register_index(
     }
 }
 
+
+
 pub async fn registered_indices(
     conn: &mut IndexerConnection,
 ) -> sqlx::Result<Vec<RegisteredIndex>> {

@@ -66,6 +66,7 @@ pub struct IndexStopRequest {
 pub enum ServiceRequest {
     AssetReload(AssetReloadRequest),
     IndexStop(IndexStopRequest),
+    IndexRevert(IndexStopRequest)
 }
 
 pub fn sha256_digest<T: AsRef<[u8]>>(blob: &T) -> String {
