@@ -568,11 +568,11 @@ pub async fn last_block_height_for_indexer(
 
     let query = format!(
         "SELECT MAX(id) FROM {}.indexmetadataentity LIMIT 1",
-        format_args!("fuel_indexer_{}_{}", namespace, identifier)
+        format_args!("{}_{}", namespace, identifier)
     );
 
     match sqlx::query(&query).fetch_one(conn).await {
-        Ok(row) => Ok(row.try_get::<i64, _>(0).unwrap_or(0)),
+        Ok(row) => Ok(row.get(0)),
         Err(_) => Ok(0),
     }
 }

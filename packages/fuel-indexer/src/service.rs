@@ -307,15 +307,15 @@ async fn get_start_block(
 ) -> Option<u64> {
     let resumable = manifest.resumable.unwrap_or(false);
     if resumable {
-        Some(
-            queries::last_block_height_for_indexer(
+            let last_block = queries::last_block_height_for_indexer(
                 conn,
                 &manifest.namespace,
                 &manifest.identifier,
             )
             .await
-            .unwrap_or(0) as u64,
-        )
+            .unwrap_or(1) as u64;
+        println!("Last block: {}", last_block);
+        Some(last_block)
     } else {
         Some(manifest.start_block.unwrap_or(1) as u64)
     }
