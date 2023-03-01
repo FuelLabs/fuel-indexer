@@ -22,7 +22,6 @@ pub struct PostgreQueries {
     pub index_is_registered_calls: IntCounter,
     pub register_index_calls: IntCounter,
     pub registered_indices_calls: IntCounter,
-    pub revert_index_calls: IntCounter,
     pub index_asset_version_calls: IntCounter,
     pub register_index_asset_calls: IntCounter,
     pub latest_asset_for_index_calls: IntCounter,
@@ -128,11 +127,6 @@ impl Metric for PostgreQueries {
             registered_indices_calls: register_int_counter!(
                 "postgres_registered_indices_calls",
                 "Count of calls to postgres registered_indices_calls."
-            )
-            .unwrap(),
-            revert_index_calls: register_int_counter!(
-                "postgres_revert_index_calls",
-                "Count of calls to postgres revert_index_calls."
             )
             .unwrap(),
             index_asset_version_calls: register_int_counter!(
