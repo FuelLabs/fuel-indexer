@@ -64,6 +64,6 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         "\n✅ Successfully reverted index '{}.{}' at {} \n",
         &manifest.namespace, &manifest.identifier, &target
     );
-     
+
     Ok(())
 }

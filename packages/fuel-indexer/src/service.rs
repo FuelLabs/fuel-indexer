@@ -284,7 +284,9 @@ async fn create_service_task(
                         if let Some(killer) = killers.get(&uid) {
                             killer.store(true, Ordering::SeqCst);
                         } else {
-                            warn!("Revert Indexer: No indexer with the name Index({uid})");
+                            warn!(
+                                "Revert Indexer: No indexer with the name Index({uid})"
+                            );
                         }
 
                         let mut conn = pool
@@ -296,7 +298,8 @@ async fn create_service_task(
                             &mut conn,
                             &request.namespace,
                             &request.identifier,
-                        ).await
+                        )
+                        .await
                         {
                             Ok(id) => {
                                 let assets =
@@ -331,7 +334,6 @@ async fn create_service_task(
                                 continue;
                             }
                         }
-
                     }
                 },
                 Err(e) => {

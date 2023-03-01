@@ -11,7 +11,7 @@ pub async fn graph_root_latest(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::graph_root_latest(c, namespace, identifier).await
         }
-   }
+    }
 }
 
 pub async fn new_graph_root(

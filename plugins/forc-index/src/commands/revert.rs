@@ -6,7 +6,7 @@ use std::path::PathBuf;
 
 /// Revert the running index to the previous version.
 #[derive(Debug, Parser)]
-pub struct Command{
+pub struct Command {
     /// URL at which index is deployed.
     #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which index is deployed.")]
     pub url: String,
@@ -28,7 +28,7 @@ pub struct Command{
     pub auth: Option<String>,
 }
 
-pub async fn exec(command: Command) -> Result<(), anyhow::Error>{
+pub async fn exec(command: Command) -> Result<(), anyhow::Error> {
     forc_index_revert::init(command).await?;
     Ok(())
 }

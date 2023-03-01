@@ -133,7 +133,8 @@ impl Metric for PostgreQueries {
             revert_index_calls: register_int_counter!(
                 "postgres_revert_index_calls",
                 "Count of calls to postgres revert_index_calls."
-            ).unwrap(),
+            )
+            .unwrap(),
             index_asset_version_calls: register_int_counter!(
                 "postgres_index_asset_version_calls",
                 "Count of calls to postgres index_asset_version_calls."
@@ -167,7 +168,8 @@ impl Metric for PostgreQueries {
             penultimate_index_id_for_calls: register_int_counter!(
                 "postgres_penultimate_index_id_for_calls",
                 "Count of calls to postgres penultimate_index_id_for_calls."
-            ).unwrap(),
+            )
+            .unwrap(),
             start_transaction_calls: register_int_counter!(
                 "postgres_start_transaction_calls",
                 "Count of calls to postgres start_transaction_calls."
