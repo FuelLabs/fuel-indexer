@@ -280,13 +280,58 @@ async fn create_service_task(
                     ServiceRequest::IndexRevert(request) => {
                         let uid = format!("{}.{}", request.namespace, request.identifier);
 
+                        println!("Reverting Indexer: {}", uid);
                         if let Some(killer) = killers.get(&uid) {
                             killer.store(true, Ordering::SeqCst);
                         } else {
                             warn!("Revert Indexer: No indexer with the name Index({uid})");
                         }
 
-                        println!("Reverting Indexer: {}", uid);
+                        let mut conn = pool
+                            .acquire()
+                            .await
+                            .expect("Failed to acquire connection from pool");
+
+                        match queries::penultimate_index_id_for(
+                            &mut conn,
+                            &request.namespace,
+                            &request.identifier,
+                        ).await
+                        {
+                            Ok(id) => {
+                                let assets =
+                                    queries::latest_assets_for_index(&mut conn, &id)
+                                        .await
+                                        .expect("Could not get latest assets for index");
+                                let manifest: Manifest =
+                                    serde_yaml::from_slice(&assets.manifest.bytes)
+                                        .expect("Failed to deserialize manifest");
+
+                                let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
+                                    &config.fuel_node,
+                                    &config.database.to_string(),
+                                    &manifest,
+                                    ExecutorSource::Registry(assets.wasm.bytes),
+                                    config.stop_idle_indexers,
+                                )
+                                .await
+                                .expect(
+                                    "Failed to spawn executor from index asset registry",
+                                );
+
+                                futs.push(handle);
+                                killers.insert(manifest.uid(), killer);
+                            }
+                            Err(e) => {
+                                error!(
+                                    "Failed to find Index({}.{}): {}",
+                                    &request.namespace, &request.identifier, e
+                                );
+
+                                continue;
+                            }
+                        }
+
                     }
                 },
                 Err(e) => {
