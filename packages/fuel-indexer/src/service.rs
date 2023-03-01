@@ -277,6 +277,17 @@ async fn create_service_task(
                             warn!("Stop Indexer: No indexer with the name Index({uid})");
                         }
                     }
+                    ServiceRequest::IndexRevert(request) => {
+                        let uid = format!("{}.{}", request.namespace, request.identifier);
+
+                        if let Some(killer) = killers.get(&uid) {
+                            killer.store(true, Ordering::SeqCst);
+                        } else {
+                            warn!("Revert Indexer: No indexer with the name Index({uid})");
+                        }
+
+                        println!("Reverting Indexer: {}", uid);
+                    }
                 },
                 Err(e) => {
                     debug!("No service request to handle: {e:?}");

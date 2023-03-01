@@ -16,8 +16,8 @@ use fuel_indexer_database::{
 use fuel_indexer_lib::{
     config::IndexerConfig,
     utils::{
-        AssetReloadRequest, FuelNodeHealthResponse, IndexStopRequest, ServiceRequest,
-        ServiceStatus,
+        AssetReloadRequest, FuelNodeHealthResponse, IndexRevertRequest, IndexStopRequest,
+        ServiceRequest, ServiceStatus,
     },
 };
 use fuel_indexer_schema::db::{
@@ -177,19 +177,24 @@ pub(crate) async fn revert_index(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
-    ) -> ApiResult<axum::Json<Value>> {
+) -> ApiResult<axum::Json<Value>> {
     let mut conn = pool.acquire().await?;
 
     let _ = queries::start_transaction(&mut conn).await?;
+    let index_id = queries::index_id_for(&mut conn, &namespace, &identifier).await?;
 
-    if let Err(_e) = queries::revert_index(&mut conn, &namespace, &identifier).await {
+    if let Err(_e) =
+        queries::revert_index(&mut conn, &index_id, IndexAssetType::Wasm).await
+    {
         queries::revert_transaction(&mut conn).await?;
     } else {
         queries::commit_transaction(&mut conn).await?;
     }
 
+    println!("API: Reverting index: {namespace}.{identifier}");
+
     if let Some(tx) = tx {
-        tx.send(ServiceRequest::IndexRevert(IndexStopRequest{
+        tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
             namespace,
             identifier,
         }))
@@ -202,8 +207,6 @@ pub(crate) async fn revert_index(
 
     Err(ApiError::default())
 }
-
-
 
 pub(crate) async fn register_index_assets(
     Path((namespace, identifier)): Path<(String, String)>,

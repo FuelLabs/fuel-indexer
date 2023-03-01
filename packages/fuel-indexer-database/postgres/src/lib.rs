@@ -554,7 +554,7 @@ pub async fn latest_assets_for_index(
     })
 }
 
-pub async fn penultimate_asset_for_index(
+pub async fn revert_index_asset(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
     asset_type: IndexAssetType,

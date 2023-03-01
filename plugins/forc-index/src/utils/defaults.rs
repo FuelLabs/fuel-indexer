@@ -6,7 +6,6 @@ pub const INDEX_LIB_FILENAME: &str = "lib.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
 pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
-pub const GRAPHQL_API_HOST: &str = "127.0.0.1";
 pub const GRAPHQL_API_PORT: &str = defaults::GRAPHQL_API_PORT;
 pub const INDEX_TARGET: &str = "wasm32-unknown-unknown";
 
