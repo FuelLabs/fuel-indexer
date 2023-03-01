@@ -18,6 +18,7 @@ type QueryRoot {
     messageout: MessageOut
     optionentity: OptionEntity
     u16entity: U16Entity
+    messageentity: MessageEntity
 }
 
 type PingEntity {
@@ -111,4 +112,9 @@ type TupleEntity {
     complex_a: Charfield!
     complex_b: UInt8!
     simple_a: Charfield!
+}
+
+type MessageEntity {
+    id: ID!
+    message: Charfield!
 }

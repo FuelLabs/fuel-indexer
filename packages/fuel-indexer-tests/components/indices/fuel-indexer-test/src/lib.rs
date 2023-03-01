@@ -144,6 +144,17 @@ mod fuel_indexer_test {
         entity.save();
     }
 
+    fn fuel_indexer_test_messageout_data(example_message: ExampleMessageStruct) {
+        Logger::info("fuel_indexer_test_messageout handling MessageOut event");
+
+        let entity = MessageEntity {
+            id: example_message.id,
+            message: example_message.message.to_string(),
+        };
+
+        entity.save();
+    }
+
     fn fuel_indexer_test_messageout(messageout: abi::MessageOut) {
         Logger::info("fuel_indexer_test_messageout handling MessageOut event");
 
