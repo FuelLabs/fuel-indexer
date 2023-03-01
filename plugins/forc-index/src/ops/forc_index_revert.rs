@@ -35,7 +35,7 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
     );
 
     info!(
-        "\n⬅️  Revertingindex '{}.{}' at {}",
+        "\n⬅️  Reverting indexer '{}.{}' at {}",
         &manifest.namespace, &manifest.identifier, &target
     );
 
