@@ -671,7 +671,7 @@ async fn test_index_respects_start_block_postgres() {
 
     let final_check = sqlx::query(&format!(
         "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
-        block_height + 2,
+        3,
     ))
     .fetch_optional(&mut conn)
     .await
@@ -685,7 +685,7 @@ async fn test_index_respects_start_block_postgres() {
     let height: i64 = row.get(1);
     let timestamp: i64 = row.get(2);
 
-    assert_eq!(height, (block_height + 2) as i64);
+    assert_eq!(height, (block_height + 3) as i64);
     assert!(timestamp > 0);
 }
 

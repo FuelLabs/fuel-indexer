@@ -566,13 +566,15 @@ pub async fn last_block_height_for_indexer(
         .last_block_height_for_indexer_calls
         .inc();
 
-    let query = format!("SELECT MAX(id) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1");
+    let query = format!(
+        "SELECT MAX(id) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1"
+    );
 
     match sqlx::query(&query).fetch_one(conn).await {
         Ok(row) => {
             let id: i64 = row.get(0);
             Ok(id as u64)
-        } 
+        }
         Err(_) => Ok(0),
     }
 }

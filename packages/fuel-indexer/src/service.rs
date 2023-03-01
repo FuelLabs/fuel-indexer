@@ -1,6 +1,6 @@
 use crate::{
     executor::{ExecutorSource, NativeIndexExecutor, WasmIndexExecutor},
-    Database, IndexerConfig, IndexerResult, Manifest,
+    Database, IndexerConfig, IndexerError, IndexerResult, Manifest,
 };
 use async_std::sync::{Arc, Mutex};
 use fuel_indexer_database::{
@@ -76,7 +76,7 @@ impl IndexerService {
             .await?;
 
         let mut conn = self.pool.acquire().await?;
-        let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
+        let start_block = get_start_block(&mut conn, &manifest).await?;
         let (handle, exec_source, killer) = WasmIndexExecutor::create(
             &self.config.fuel_node.clone(),
             &database_url,
@@ -302,7 +302,7 @@ async fn create_service_task(
 async fn get_start_block(
     conn: &mut IndexerConnection,
     manifest: &Manifest,
-) -> Result<u64, Box<dyn std::error::Error>> {
+) -> Result<u64, IndexerError> {
     match &manifest.resumable {
         Some(_) => {
             let last = queries::last_block_height_for_indexer(
