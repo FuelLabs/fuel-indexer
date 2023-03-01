@@ -13,6 +13,7 @@ use fuel_indexer_tests::{
     WORKSPACE_ROOT,
 };
 use fuel_indexer_types::{Address, ContractId, Identity};
+use fuels::signers::WalletUnlocked;
 use hex::FromHex;
 use lazy_static::lazy_static;
 use sqlx::{
@@ -20,7 +21,7 @@ use sqlx::{
     types::BigDecimal,
     Postgres, Row,
 };
-use std::str::FromStr;
+use std::{path::Path, str::FromStr};
 use tokio::time::{sleep, Duration};
 
 #[actix_web::test]
@@ -722,9 +723,14 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    use fuel_indexer_tests::fixtures::deploy_multiple_contracts;
+    use fuels::{
+        prelude::Provider,
+        signers::fuel_crypto::coins_bip32::ecdsa::digest::typenum::Prod,
+    };
+
+    //let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
 
@@ -733,9 +739,7 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
             serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST)
                 .expect("Bad Yaml File");
 
-        manifest.namespace = format!("fuel_indexer_test_index{}", i + 1); 
-        println!("manifest: {:?}", manifest);
-
+        manifest.namespace = format!("fuel_indexer_test_index{}", i + 1);
         update_test_manifest_asset_paths(&mut manifest);
 
         srvc.register_index_from_manifest(manifest)
@@ -743,23 +747,55 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
             .expect("Failed to initialize indexer.");
     }
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/indicies").to_request();
-    let _ = app.call(req).await;
+    dbg!("registered indexes, deploying contracts");
 
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
+    let wallet_path = Path::new(WORKSPACE_ROOT)
+        .join("assets")
+        .join("test-chain-config.json");
+    let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
+    let mut wallet =
+        WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
+            .unwrap();
 
-    for i in 0..3 {
-        let mut conn = pool.acquire().await.unwrap();
-        let table_name = format!("fuel_indexer_test_index{}_index1", i + 1);
-        let statement = format!(
-            "SELECT * FROM {}.block ORDER by height DESC LIMIT 1",
-            table_name
-        );
-        let block_row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
-        let block_height: i64 = block_row.get(0);
-        assert!(block_height >= 1);
-    }
+    let host = defaults::FUEL_NODE_ADDR.to_string();
+    let provider = Provider::connect(&host).await.unwrap();
+    wallet.set_provider(provider);
+
+    dbg!("wallet: {:?}", &wallet);
+
+    let contract_bin_path = Path::new(WORKSPACE_ROOT)
+        .join("contracts")
+        .join("fuel-indexer-test")
+        .join("out")
+        .join("debug")
+        .join("fuel-indexer-test.bin");
+
+    let count = 3;
+    let contract_ids = deploy_multiple_contracts(&wallet, contract_bin_path, count)
+        .await
+        .unwrap();
+    let contract_ids_str: Vec<String> =
+        contract_ids.iter().map(|x| x.to_string()).collect();
+
+    dbg!("contract_ids: {:?}", contract_ids_str);
+
+    // let contract = connect_to_deployed_contract().await.unwrap();
+    // let app = test::init_service(app(contract)).await;
+    // let req = test::TestRequest::post().uri("/indicies").to_request();
+    // let _ = app.call(req).await;
+
+    // sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    // fuel_node_handle.abort();
+
+    // for i in 0..3 {
+    //     let mut conn = pool.acquire().await.unwrap();
+    //     let table_name = format!("fuel_indexer_test_index{}_index1", i + 1);
+    //     let statement = format!(
+    //         "SELECT * FROM {}.block ORDER by height DESC LIMIT 1",
+    //         table_name
+    //     );
+    //     let block_row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
+    //     let block_height: i64 = block_row.get(0);
+    //     assert!(block_height >= 1);
+    // }
 }

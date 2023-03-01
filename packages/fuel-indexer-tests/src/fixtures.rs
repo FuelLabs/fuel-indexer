@@ -303,6 +303,29 @@ pub async fn connect_to_deployed_contract(
     Ok(contract)
 }
 
+pub async fn deploy_multiple_contracts(
+    wallet: &WalletUnlocked,
+    contract_bin_path: PathBuf,
+    count: usize,
+) -> Result<Vec<Bech32ContractId>, Box<dyn std::error::Error>> {
+    let mut contract_ids = Vec::new();
+
+    for _ in 0..count {
+        let contract_id = Contract::deploy(
+            contract_bin_path.to_str().unwrap(),
+            wallet,
+            tx_params(),
+            StorageConfiguration::default(),
+        )
+        .await
+        .unwrap();
+
+        contract_ids.push(contract_id);
+    }
+
+    Ok(contract_ids)
+}
+
 pub mod test_web {
 
     use super::{tx_params, FuelIndexerTest};
