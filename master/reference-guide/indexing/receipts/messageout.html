@@ -158,8 +158,8 @@ pub struct MessageOut {
     pub data: Vec&lt;u8&gt;,
 }</code></pre>
 <ul>
-<li>A <code>MessageOut</code> receipt is generated as a result of the <code>send_message()</code> Sway method in which a message is sent to a recipient address along with a certain amount of coins.</li>
-<li>The <code>data</code> field currently supports only a vector of non-reference types rather than something like a struct.</li>
+<li>A <code>MessageOut</code> receipt is generated as a result of the <code>send_typed_message()</code> Sway method in which a message is sent to a recipient address along with a certain amount of coins.</li>
+<li>The <code>data</code> field supports data of an arbitrary type <code>T</code> and will be decoded by the index upon receipt.</li>
 <li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#messageout-receipt">Read more about <code>MessageOut</code> in the Fuel protocol ABI spec</a></li>
 </ul>
 
