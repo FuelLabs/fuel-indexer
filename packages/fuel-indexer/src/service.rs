@@ -280,7 +280,6 @@ async fn create_service_task(
                     ServiceRequest::IndexRevert(request) => {
                         let uid = format!("{}.{}", request.namespace, request.identifier);
 
-                        println!("Reverting Indexer: {}", uid);
                         if let Some(killer) = killers.get(&uid) {
                             killer.store(true, Ordering::SeqCst);
                         } else {
