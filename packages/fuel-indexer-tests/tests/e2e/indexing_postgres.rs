@@ -736,11 +736,15 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
     use fuel_indexer_tests::fixtures::deploy_multiple_contracts;
     use fuels::{
-        prelude::Provider,
+        prelude::{Provider, abigen},
         signers::fuel_crypto::coins_bip32::ecdsa::digest::typenum::Prod,
     };
 
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+        abigen!(
+            Contract(name="fuel_indexer_test", abi="packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"),
+        );
+
+    //let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
     dbg!("setup fuel node");
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
