@@ -1,23 +1,18 @@
-use proc_macro::TokenStream;
-use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
-
-use fuel_abi_types::program_abi::TypeDeclaration;
+use crate::{
+    constant::*, helpers::*, native::handler_block_native, parse::IndexerConfig,
+    schema::process_graphql_schema, wasm::handler_block_wasm,
+};
+use fuel_abi_types::program_abi::{LoggedType, TypeDeclaration};
+use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
+use fuel_indexer_types::{abi, type_id};
 use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
 use fuels_core::function_selector::resolve_fn_selector;
 use fuels_types::param_types::ParamType;
+use proc_macro::TokenStream;
 use quote::quote;
+use std::collections::{HashMap, HashSet};
+use std::path::{Path, PathBuf};
 use syn::{parse_macro_input, FnArg, Item, ItemMod, PatType, Type};
-
-use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
-use fuel_indexer_types::{abi, type_id};
-
-use crate::constant::*;
-use crate::helpers::*;
-use crate::native::handler_block_native;
-use crate::parse::IndexerConfig;
-use crate::schema::process_graphql_schema;
-use crate::wasm::handler_block_wasm;
 
 fn process_fn_items(
     manifest: &Manifest,
@@ -40,17 +35,26 @@ fn process_fn_items(
 
     let abi = get_json_abi(abi_path);
 
-    let mut abi_types_by_type_id = HashMap::new();
-    let mut abi_types_by_name = HashMap::new();
-    let mut abi_types_set = HashSet::new();
-
-    let mut abi_selectors = Vec::new();
-    let mut abi_type_decoders = Vec::new();
-    let mut abi_struct_fields = Vec::new();
+    let mut decoded_abi_types = HashSet::new();
     let mut abi_dispatchers = Vec::new();
-    let mut log_type_decoders = Vec::new();
-    let mut log_types = HashMap::new();
-    let mut message_types = Vec::new();
+
+    let funcs = abi.clone().unwrap_or_default().functions;
+    let abi_types = abi.clone().unwrap_or_default().types;
+    let abi_log_types = abi.clone().unwrap_or_default().logged_types;
+    let abi_msg_types = abi.unwrap_or_default().messages_types;
+    let fuel_types = FUEL_PRIMITIVES
+        .iter()
+        .map(|x| {
+            let type_id = type_id(abi::FUEL_TYPES_NAMESPACE, x) as usize;
+            let typ = TypeDeclaration {
+                type_id,
+                type_field: x.to_string(),
+                components: None,
+                type_parameters: None,
+            };
+            (typ.type_id, typ)
+        })
+        .collect::<HashMap<usize, TypeDeclaration>>();
 
     let mut type_ids = FUEL_PRIMITIVES
         .iter()
@@ -62,85 +66,73 @@ fn process_fn_items(
         })
         .collect::<HashMap<String, usize>>();
 
-    if let Some(parsed) = abi {
-        // cache all types
-        for typ in &parsed.types {
+    let abi_types_tyid = abi_types
+        .iter()
+        .filter(|typ| {
             if is_non_cacheable_type(typ) {
-                continue;
+                return false;
             }
+            true
+        })
+        .map(|typ| (typ.type_id, typ.clone()))
+        .collect::<HashMap<usize, TypeDeclaration>>();
 
-            abi_types_by_type_id.insert(typ.type_id, typ.clone());
-            let ty = rust_type_token(typ);
-            abi_types_by_name.insert(ty.to_string(), typ.clone());
-        }
-
-        // cache log types
-        if let Some(logged_types) = parsed.logged_types {
-            for typ in logged_types {
-                log_types.insert(typ.application.type_id, typ.clone());
-                let log_id = typ.log_id;
-                let ty_id = typ.application.type_id;
-
-                log_type_decoders.push(quote! {
-                    #log_id => {
-                        self.decode_type(#ty_id, data);
-                    }
-                });
+    let abi_types_name = abi_types
+        .iter()
+        .filter(|typ| {
+            if is_non_cacheable_type(typ) {
+                return false;
             }
-        }
+            true
+        })
+        .map(|typ| {
+            let tok = rust_type_token(typ);
 
-        // cache message types
-        if let Some(parsed_message_types) = parsed.messages_types {
-            for typ in parsed_message_types {
-                let message_id = typ.message_id;
-                let ty_id = typ.application.type_id;
+            (tok.to_string(), typ.clone())
+        })
+        .collect::<HashMap<String, TypeDeclaration>>();
 
-                message_types.push(quote! {
-                    #message_id => {
-                        self.decode_type(#ty_id, data.data.clone());
-                    }
-                });
-            }
-        }
+    let log_types = abi_log_types
+        .iter()
+        .flatten()
+        .map(|typ| (typ.application.type_id, typ.clone()))
+        .collect::<HashMap<usize, LoggedType>>();
 
-        let generic_types =
-            build_vec_generics(&parsed.functions, &log_types, &abi_types_by_type_id);
+    let log_type_decoders = abi_log_types
+        .iter()
+        .flatten()
+        .map(|typ| {
+            let ty_id = typ.application.type_id;
+            let log_id = typ.log_id;
 
-        // cache vector types
-        for (vec_typeid, type_apps) in generic_types.iter() {
-            for type_app in type_apps.iter() {
-                let vec_typ = abi_types_by_type_id.get(vec_typeid).unwrap();
-                let vec_token = rust_type_token(vec_typ);
-
-                let abi_typ = abi_types_by_type_id.get(&type_app.type_id).unwrap();
-                let generic_tok = rust_type_token(abi_typ);
-                let vec_ident = vec_decoded_ident(abi_typ);
-
-                let generic_vec_tok =
-                    derive_vec_token(&vec_token.to_string(), &generic_tok.to_string());
-                let generic_vec_str = generic_vec_tok.to_string();
-                let ty_id = type_id(&generic_vec_str, abi::FUEL_TYPES_NAMESPACE) as usize;
-
-                type_ids.insert(generic_vec_str, ty_id);
-
-                if !abi_types_set.contains(&ty_id) {
-                    abi_struct_fields.push(quote! {
-                        #vec_ident: Vec<#generic_vec_tok>
-                    });
-
-                    abi_type_decoders.push(decode_snippet(
-                        ty_id,
-                        &generic_vec_tok,
-                        &vec_ident,
-                    ));
-                    abi_types_set.insert(ty_id);
+            quote! {
+                #log_id => {
+                    self.decode_type(#ty_id, data);
                 }
             }
-        }
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
 
-        for typ in &parsed.types {
+    let message_types_decoders = abi_msg_types
+        .iter()
+        .flatten()
+        .map(|typ| {
+            let message_id = typ.message_id;
+            let ty_id = typ.application.type_id;
+
+            quote! {
+                #message_id => {
+                    self.decode_type(#ty_id, data.data.clone());
+                }
+            }
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
+
+    let abi_type_decoders = abi_types
+        .iter()
+        .filter_map(|typ| {
             if is_non_parsable_type(typ) {
-                continue;
+                return None;
             }
 
             let name = rust_ident(typ);
@@ -148,27 +140,115 @@ fn process_fn_items(
             let ty_id = typ.type_id;
 
             if is_fuel_primitive(&ty) {
-                proc_macro_error::abort_call_site!("'{:?}' is a reserved Fuel type.")
+                proc_macro_error::abort_call_site!("'{}' is a reserved Fuel type.", ty)
             }
 
             type_ids.insert(ty.to_string(), ty_id);
+            decoded_abi_types.insert(ty_id);
 
-            if !abi_types_set.contains(&ty_id) {
-                abi_struct_fields.push(quote! {
-                    #name: Vec<#ty>
+            Some(decode_snippet(ty_id, &ty, &name))
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
+
+    let fuel_type_decoders = fuel_types
+        .values()
+        .map(|typ| {
+            let name = rust_ident(typ);
+            let ty = rust_type_token(typ);
+            let ty_id = typ.type_id;
+
+            type_ids.insert(ty.to_string(), ty_id);
+            decoded_abi_types.insert(ty_id);
+
+            decode_snippet(ty_id, &ty, &name)
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
+
+    let mut decoders = [fuel_type_decoders, abi_type_decoders].concat();
+
+    let abi_struct_fields = abi_types
+        .iter()
+        .filter_map(|typ| {
+            if is_non_parsable_type(typ) {
+                return None;
+            }
+
+            let name = rust_ident(typ);
+            let ty = rust_type_token(typ);
+            let ty_id = typ.type_id;
+
+            if is_fuel_primitive(&ty) {
+                proc_macro_error::abort_call_site!("'{}' is a reserved Fuel type.", ty)
+            }
+
+            type_ids.insert(ty.to_string(), ty_id);
+            decoded_abi_types.insert(ty_id);
+
+            Some(quote! {
+                #name: Vec<#ty>
+            })
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
+
+    let fuel_struct_fields = fuel_types
+        .iter()
+        .filter_map(|(_ty_id, typ)| {
+            if is_non_parsable_type(typ) {
+                return None;
+            }
+
+            let name = rust_ident(typ);
+            let ty = rust_type_token(typ);
+            let ty_id = typ.type_id;
+
+            type_ids.insert(ty.to_string(), ty_id);
+            decoded_abi_types.insert(ty_id);
+
+            Some(quote! {
+                #name: Vec<#ty>
+            })
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
+
+    let mut decoder_struct_fields = [abi_struct_fields, fuel_struct_fields].concat();
+
+    let generic_types = build_generics(&funcs, &log_types, &abi_types_tyid);
+
+    for (typeid, typ_apps) in generic_types.iter() {
+        for typ_app in typ_apps.iter() {
+            let strct = abi_types_tyid.get(typeid).unwrap();
+            let strct_tok = rust_type_token(strct);
+
+            let strct_t = abi_types_tyid.get(&typ_app.type_id).unwrap();
+            let struct_t_tok = rust_type_token(strct_t);
+            let generic_ident = generic_decoded_ident(strct_t, strct);
+
+            let generic_vec_tok =
+                derive_vec_token(&strct_tok.to_string(), &struct_t_tok.to_string());
+            let generic_vec_str = generic_vec_tok.to_string();
+            let ty_id = type_id(abi::FUEL_TYPES_NAMESPACE, &generic_vec_str) as usize;
+
+            type_ids.insert(generic_vec_str, ty_id);
+
+            if !decoded_abi_types.contains(&ty_id) {
+                decoder_struct_fields.push(quote! {
+                    #generic_ident: Vec<#generic_vec_tok>
                 });
 
-                abi_type_decoders.push(decode_snippet(ty_id, &ty, &name));
-                abi_types_set.insert(ty_id);
+                decoders.push(decode_snippet(ty_id, &generic_vec_tok, &generic_ident));
+                decoded_abi_types.insert(ty_id);
             }
         }
+    }
 
-        for function in &parsed.functions {
+    let abi_selectors = funcs
+        .iter()
+        .map(|function| {
             let params: Vec<ParamType> = function
                 .inputs
                 .iter()
                 .map(|x| {
-                    ParamType::try_from_type_application(x, &abi_types_by_type_id)
+                    ParamType::try_from_type_application(x, &abi_types_tyid)
                         .expect("Could not derive TypeApplication param types.")
                 })
                 .collect();
@@ -176,11 +256,11 @@ fn process_fn_items(
             let selector = u64::from_be_bytes(sig);
             let ty_id = function.output.type_id;
 
-            abi_selectors.push(quote! {
+            quote! {
                 #selector => #ty_id,
-            });
-        }
-    }
+            }
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
 
     let contents = indexer_module
         .content
@@ -188,16 +268,7 @@ fn process_fn_items(
         .1;
     let mut handler_fns = Vec::with_capacity(contents.len());
 
-    let mut transfer_decoder = quote! {};
-    let mut log_decoder = quote! {};
-    let mut blockdata_decoder = quote! {};
-    let mut transferout_decoder = quote! {};
-    let mut scriptresult_decoder = quote! {};
-    let mut messageout_decoder = quote! {};
-    let mut return_decoder = quote! {};
-    let mut blockdata_decoding = quote! {};
-
-    let start_block_conditional = match manifest.start_block {
+    let start_block = match manifest.start_block {
         Some(start_block) => {
             quote! {
                 if block.height < #start_block {
@@ -208,7 +279,7 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let contract_conditional = match &manifest.contract_id {
+    let contract = match &manifest.contract_id {
         Some(contract_id) => {
             quote! {
                 let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
@@ -256,23 +327,22 @@ fn process_fn_items(
                                 let mut path_ident = path.ident.to_string();
                                 let mut name = decoded_ident(&path_ident);
 
-                                if path_is_vec_ident(&path_ident) {
-                                    let (ident, generic_ident) = vec_path_idents(path);
-                                    let generic_typ = abi_types_by_name
-                                        .get(&generic_ident.to_string())
+                                if path_is_generic(&path_ident) {
+                                    let strct = abi_types_name.get(&path_ident).unwrap();
+                                    let (ident, strct_t_ident) =
+                                        generic_path_idents(path);
+                                    let strct_t = abi_types_name
+                                        .get(&strct_t_ident.to_string())
                                         .unwrap();
-                                    name = vec_decoded_ident(generic_typ);
+                                    name = generic_decoded_ident(strct_t, strct);
                                     path_ident = ident;
                                 }
 
-                                let ty_id = match type_ids.get(&path_ident) {
-                                    Some(id) => id,
-                                    None => {
-                                        proc_macro_error::abort_call_site!(
-                                            "Type with ident '{:?}' not defined in the ABI.",
-                                            path.ident
-                                        );
-                                    }
+                                if !type_ids.contains_key(&path_ident) {
+                                    proc_macro_error::abort_call_site!(
+                                        "Type with ident '{:?}' not defined in the ABI.",
+                                        path.ident
+                                    );
                                 };
 
                                 if DISALLOWED_ABI_JSON_TYPES.contains(path_ident.as_str())
@@ -281,76 +351,6 @@ fn process_fn_items(
                                         "Type with ident '{:?}' is not currently supported.",
                                         path.ident
                                     )
-                                }
-
-                                // If the type ID is not in the set of ABI types then this
-                                // is potentially a native Fuel type (e.g., a Receipt)
-                                if !abi_types_set.contains(ty_id) {
-                                    if FUEL_PRIMITIVES.contains(path_ident.as_str()) {
-                                        let typ = TypeDeclaration {
-                                            type_id: *ty_id,
-                                            type_field: path_ident.clone(),
-                                            type_parameters: None,
-                                            components: None,
-                                        };
-
-                                        let name = rust_ident(&typ);
-                                        let ty = rust_type_token(&typ);
-
-                                        abi_struct_fields.push(quote! {
-                                            #name: Vec<#ty>
-                                        });
-
-                                        abi_types_set.insert(*ty_id);
-                                        // NOTE: We can't use the generic struct_decoders here because each decoder takes a different
-                                        // data param. The generic struct_decoders all take Vec<u8> as their data param while native
-                                        // Fuel types take different data params (e.g., Transfer, BlockData, etc)
-                                        //
-                                        // NOTE: We actually could use the generic struct_decoders here but we would have to pay for an
-                                        // extra serialization/deserialization when matching these receipts to create these structs.
-                                        match path_ident.as_str() {
-                                            "BlockData" => {
-                                                blockdata_decoding = quote! { decoder.decode_blockdata(block.clone()); };
-                                                blockdata_decoder =
-                                                    quote! { self.#name.push(data); };
-                                            }
-                                            "Log" => {
-                                                log_decoder =
-                                                    quote! { self.#name.push(data); };
-                                            }
-                                            "LogData" => {
-                                                abi_type_decoders.push(decode_snippet(
-                                                    *ty_id, &ty, &name,
-                                                ));
-                                            }
-                                            "MessageOut" => {
-                                                messageout_decoder =
-                                                    quote! { self.#name.push(data); };
-                                            }
-                                            "Return" => {
-                                                return_decoder =
-                                                    quote! { self.#name.push(data); };
-                                            }
-                                            "ScriptResult" => {
-                                                scriptresult_decoder =
-                                                    quote! { self.#name.push(data); };
-                                            }
-                                            "Transfer" => {
-                                                transfer_decoder =
-                                                    quote! { self.#name.push(data); };
-                                            }
-                                            "TransferOut" => {
-                                                transferout_decoder =
-                                                    quote! { self.#name.push(data); };
-                                            }
-                                            _ => todo!(),
-                                        }
-                                    } else {
-                                        proc_macro_error::abort_call_site!(
-                                            "Type with ident '{:?}' is not defined within the ABI.",
-                                            path.ident,
-                                        )
-                                    }
                                 }
 
                                 input_checks.push(quote! { self.#name.len() > 0 });
@@ -387,7 +387,7 @@ fn process_fn_items(
     let decoder_struct = quote! {
         #[derive(Default)]
         struct Decoders {
-            #(#abi_struct_fields),*
+            #(#decoder_struct_fields),*
         }
 
         impl Decoders {
@@ -403,32 +403,20 @@ fn process_fn_items(
 
             fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
-                    #(#abi_type_decoders),*
+                    #(#decoders),*
                     _ => {
                         Logger::warn("Unknown type ID; check ABI to make sure types are well-formed");
                     },
                 }
             }
 
+            pub fn decode_block(&mut self, data: BlockData) {
+                self.blockdata_decoded.push(data);
+            }
+
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
                 let ty_id = self.selector_to_type_id(sel);
                 self.decode_type(ty_id, data);
-            }
-
-            pub fn decode_blockdata(&mut self, data: BlockData) {
-                #blockdata_decoder
-            }
-
-            pub fn decode_transfer(&mut self, data: abi::Transfer) {
-                #transfer_decoder
-            }
-
-            pub fn decode_transferout(&mut self, data: abi::TransferOut) {
-                #transferout_decoder
-            }
-
-            pub fn decode_log(&mut self, data: abi::Log) {
-                #log_decoder
             }
 
             pub fn decode_logdata(&mut self, rb: u64, data: Vec<u8>) {
@@ -438,20 +426,11 @@ fn process_fn_items(
                 }
             }
 
-            pub fn decode_scriptresult(&mut self, data: abi::ScriptResult) {
-                #scriptresult_decoder
-            }
-
             pub fn decode_messageout(&mut self, type_id: u64, data: abi::MessageOut) {
                 match type_id {
-                    #(#message_types),*
+                    #(#message_types_decoders),*
                     _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are well-formed")
                 }
-                #messageout_decoder
-            }
-
-            pub fn decode_return(&mut self, data: abi::Return) {
-                #return_decoder
             }
 
             pub #asyncness fn dispatch(&self) {
@@ -463,11 +442,13 @@ fn process_fn_items(
         quote! {
             for block in blocks {
 
-                #start_block_conditional
+                #start_block
 
                 let mut decoder = Decoders::default();
 
-                #blockdata_decoding
+                let ty_id = abi::BlockData::type_id();
+                let data = bincode::serialize(&block).expect("Bad serialization.");
+                decoder.decode_type(ty_id, data);
 
                 for tx in block.transactions {
 
@@ -475,59 +456,61 @@ fn process_fn_items(
                     let mut callees = HashSet::new();
 
                     for receipt in tx.receipts {
-
                         match receipt {
                             Receipt::Call { param1, to: id, ..} => {
-                                #contract_conditional
+                                #contract
                                 return_types.push(param1);
                                 callees.insert(id);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
-                                #contract_conditional
-                                let data = abi::Log{ contract_id: id, ra, rb };
-                                decoder.decode_log(data);
+                                #contract
+                                let ty_id = abi::Log::type_id();
+                                let data = bincode::serialize(&abi::Log{ contract_id: id, ra, rb }).expect("Bad encoding,");
+                                decoder.decode_type(ty_id, data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
-                                #contract_conditional
+                                #contract
                                 decoder.decode_logdata(rb, data);
 
                             }
                             Receipt::Return { id, val, pc, is } => {
-                                #contract_conditional
+                                #contract
                                 if callees.contains(&id) {
-                                    let data = abi::Return{ contract_id: id, val, pc, is };
-                                    decoder.decode_return(data);
+                                    let ty_id = abi::Return::type_id();
+                                    let data = bincode::serialize(&abi::Return{ contract_id: id, val, pc, is }).expect("Bad encoding,");
+                                    decoder.decode_type(ty_id, data);
                                 }
                             }
                             Receipt::ReturnData { data, id, .. } => {
-                                #contract_conditional
+                                #contract
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
                                     decoder.decode_return_type(selector, data);
                                 }
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
-                                // Message type ID is stored in the first word of the data field.
                                 let mut buf = [0u8; 8];
                                 buf.copy_from_slice(&data[0..8]);
                                 let type_id = u64::from_be_bytes(buf);
-
                                 let receipt = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data: data[8..].to_vec() };
                                 decoder.decode_messageout(type_id, receipt);
                             }
                             Receipt::ScriptResult { result, gas_used } => {
-                                let data = abi::ScriptResult{ result: u64::from(result), gas_used };
-                                decoder.decode_scriptresult(data);
+                                let ty_id = abi::ScriptResult::type_id();
+                                let data = bincode::serialize(&abi::ScriptResult{ result: u64::from(result), gas_used }).expect("Bad encoding,");
+                                decoder.decode_type(ty_id, data);
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
-                                #contract_conditional
-                                let data = abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is };
-                                decoder.decode_transfer(data);
+                                #contract
+                                let ty_id = abi::Transfer::type_id();
+                                let data = bincode::serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
+                                decoder.decode_type(ty_id, data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
-                                #contract_conditional
-                                let data = abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is };
-                                decoder.decode_transferout(data);
+                                #contract
+                                let ty_id = abi::TransferOut::type_id();
+                                let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
+                                decoder.decode_type(ty_id, data);
                             }
                             _ => {
                                 Logger::info("This type is not handled yet. (>'.')>");

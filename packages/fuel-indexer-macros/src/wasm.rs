@@ -40,6 +40,7 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         use fuels_types::traits::{Parameterize, Tokenizable};
         use fuels_macros::{Parameterize, Tokenizable};
         use std::str::FromStr;
+        use fuel_indexer_plugin::wasm::bincode;
 
         type B256 = [u8; 32];
     }

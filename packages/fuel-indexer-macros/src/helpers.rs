@@ -87,10 +87,13 @@ pub fn is_non_parsable_type(typ: &TypeDeclaration) -> bool {
 }
 
 /// Whether a path is a path for a vector
-pub fn path_is_vec_ident(p: &str) -> bool {
+
+// TODO: path_is_generic
+pub fn path_is_generic(p: &str) -> bool {
     p == "Vec"
 }
 
+// TOOD: derive generic_token
 pub fn derive_vec_token(vec: &str, generic: &str) -> proc_macro2::TokenStream {
     let v = format_ident!("{}", vec);
     let g = format_ident!("{}", generic);
@@ -98,7 +101,8 @@ pub fn derive_vec_token(vec: &str, generic: &str) -> proc_macro2::TokenStream {
 }
 
 /// Return path String and type ID for given generic PathSegment
-pub fn vec_path_idents(p: &PathSegment) -> (String, Ident) {
+pub fn generic_path_idents(p: &PathSegment) -> (String, Ident) {
+    // todo: match for vec
     let v = p.ident.to_string();
     let generic = match &p.arguments {
         AngleBracketed(AngleBracketedGenericArguments { args, .. }) => {
@@ -129,7 +133,7 @@ pub fn decoded_ident(ty: &str) -> Ident {
 }
 
 /// Return type field name for complex type
-fn derive_complex_type_field(ty: &TypeDeclaration) -> String {
+fn derive_type_field(ty: &TypeDeclaration) -> String {
     ty.type_field
         .split(' ')
         .last()
@@ -138,10 +142,17 @@ fn derive_complex_type_field(ty: &TypeDeclaration) -> String {
 }
 
 /// Equivalent of `decoded_ident` but for Vec type specifically
-pub fn vec_decoded_ident(ty: &TypeDeclaration) -> Ident {
-    let name = derive_complex_type_field(ty);
-    let name = decoded_ident(&name);
-    format_ident!("vec_{}", name.to_string())
+pub fn generic_decoded_ident(
+    generic_t: &TypeDeclaration,
+    generic: &TypeDeclaration,
+) -> Ident {
+    match generic.type_field.to_string().as_ref() {
+        "struct Vec" => {
+            let name = decoded_ident(&derive_type_field(generic_t));
+            format_ident!("vec_{}", name.to_string())
+        }
+        _ => unimplemented!(),
+    }
 }
 
 /// Derive Ident for given TypeDeclaration
@@ -151,7 +162,7 @@ pub fn rust_ident(ty: &TypeDeclaration) -> Ident {
             proc_macro_error::abort_call_site!("Cannot derive rust_ident of tuple type.");
         }
 
-        let name = derive_complex_type_field(ty);
+        let name = derive_type_field(ty);
         decoded_ident(&name)
     } else {
         let name = ty.type_field.replace(['[', ']'], "_");
@@ -161,7 +172,7 @@ pub fn rust_ident(ty: &TypeDeclaration) -> Ident {
 
 /// Given a set of ABI functions, logged types, and abi types, build a mapping
 /// of Vec types to their generic types: where Vec<T> is { TypeId(Vec) -> TypeApplication(T) }
-pub fn build_vec_generics(
+pub fn build_generics(
     functions: &Vec<ABIFunction>,
     log_types: &HashMap<usize, LoggedType>,
     _abi_types: &HashMap<usize, TypeDeclaration>,
@@ -241,6 +252,7 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
 pub fn is_fuel_primitive(ty: &proc_macro2::TokenStream) -> bool {
     let ident_str = ty.to_string();
     FUEL_PRIMITIVES.contains(ident_str.as_str())
+        || FUEL_PRIMITIVES_NAMESPACED.contains(ident_str.as_str())
 }
 
 /// Whether or not the given token is a Rust primitive
@@ -255,7 +267,7 @@ pub fn is_primitive(ty: &proc_macro2::TokenStream) -> bool {
 }
 
 /// Whether an Ident is for a vector of types
-pub fn is_vec_ident(ty: &Ident) -> bool {
+pub fn is_generic_ident(ty: &Ident) -> bool {
     ty.to_string().as_str().starts_with("vec_")
 }
 
@@ -266,17 +278,24 @@ pub fn decode_snippet(
     ty: &proc_macro2::TokenStream,
     name: &Ident,
 ) -> proc_macro2::TokenStream {
-    if is_primitive(ty) {
+    if is_fuel_primitive(ty) {
         quote! {
             #ty_id => {
-                Logger::warn("Skipping primitive decoder.");
+                let obj: #ty = bincode::deserialize(&data).expect("Bad bincode.");
+                self.#name.push(obj);
             }
         }
-    } else if is_vec_ident(name) {
+    } else if is_generic_ident(name) {
         quote! {
             #ty_id => {
                 Logger::warn("Vec type decoder not implemented.");
                 unimplemented!();
+            }
+        }
+    } else if is_primitive(ty) {
+        quote! {
+            #ty_id => {
+                Logger::warn("Skipping primitive decoder.");
             }
         }
     } else {
@@ -289,3 +308,19 @@ pub fn decode_snippet(
         }
     }
 }
+
+// TODO: finish
+pub trait Foobar {
+    fn decoded_name(&self) -> Ident;
+    fn rust_type_token(&self) -> proc_macro2::TokenStream;
+}
+
+// impl Foobar for TypeDeclaration {
+//     fn decoded_name(&self) {
+//         unimplemented!();
+//     }
+
+//     fn rust_type_token(&self) -> proc_macro2::TokenStream {
+//         unimplemented!();
+//     }
+// }
