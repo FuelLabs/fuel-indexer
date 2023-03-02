@@ -176,20 +176,7 @@ pub(crate) async fn stop_index(
 pub(crate) async fn revert_index(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
-    Extension(pool): Extension<IndexerConnectionPool>,
 ) -> ApiResult<axum::Json<Value>> {
-    let mut conn = pool.acquire().await?;
-
-    let _ = queries::start_transaction(&mut conn).await?;
-
-    if let Err(_e) =
-        queries::penultimate_index_id_for(&mut conn, &namespace, &identifier).await
-    {
-        queries::revert_transaction(&mut conn).await?;
-    } else {
-        queries::commit_transaction(&mut conn).await?;
-    }
-
     if let Some(tx) = tx {
         tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
             namespace,
