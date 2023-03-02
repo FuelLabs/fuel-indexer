@@ -19,6 +19,7 @@ type QueryRoot {
     optionentity: OptionEntity
     tupleentity: TupleEntity
     u16entity: U16Entity
+    messageentity: MessageEntity
 
     # GraphQL API test entities
     genre: Genre
@@ -213,4 +214,9 @@ type SportsTeam {
     id: ID!
     name: Charfield!
     municipality: Municipality! @join(on:name)
+}
+
+type MessageEntity {
+    id: ID!
+    message: Charfield!
 }

@@ -8,9 +8,9 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = { version = "0.4", path = "../../../../../../packages/fuel-indexer-macros", default-features = false }
-fuel-indexer-plugin = { version = "0.4", path = "../../../../../../packages/fuel-indexer-plugin" }
-fuel-indexer-schema = { version = "0.4", path = "../../../../../../packages/fuel-indexer-schema", default-features = false }
+fuel-indexer-macros = { workspace = true, default-features = false }
+fuel-indexer-plugin = { workspace = true }
+fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-tx = "0.26.0"
 fuels-core = { version = "0.37", default-features = false }
 fuels-macros = { version = "0.37" }
