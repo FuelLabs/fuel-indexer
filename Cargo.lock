@@ -2168,6 +2168,7 @@ dependencies = [
  "hex",
  "hyper-rustls 0.23.2",
  "indicatif",
+ "owo-colors",
  "reqwest",
  "serde",
  "serde_json",
@@ -4473,6 +4474,12 @@ name = "overload"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b15813163c1d831bf4a13c3610c05c0d03b39feb07f7e09fa234dac9b15aaf39"
+
+[[package]]
+name = "owo-colors"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2386b4ebe91c2f7f51082d4cefa145d030e33a1842a96b12e4885cc3c01f7a55"
 
 [[package]]
 name = "parity-scale-codec"
