@@ -5,7 +5,7 @@ use fuel_indexer_macros::indexer;
 fn ff_log_data(_inp: ()) {}
 
 #[indexer(
-    manifest = "packages/fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml"
+    manifest = "packages/fuel-indexer-tests/trybuild/bad_simple_wasm_graphql.yaml"
 )]
 mod indexer {
     fn function_one(event: SomeEvent) {

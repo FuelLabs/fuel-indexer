@@ -2,7 +2,7 @@ error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   | / #[indexer(
-  | |     manifest = "packages/fuel-indexer-tests/assets/macros/bad_simple_wasm_graphql.yaml"
+  | |     manifest = "packages/fuel-indexer-tests/trybuild/bad_simple_wasm_graphql.yaml"
   | | )]
   | |__^
   |

@@ -1,8 +1,8 @@
-error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(222..229) }' not defined in the ABI.
+error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(217..224) }' not defined in the ABI.
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  | #[indexer(manifest = "packages/fuel-indexer-tests/assets/macros/simple_wasm.yaml")]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 

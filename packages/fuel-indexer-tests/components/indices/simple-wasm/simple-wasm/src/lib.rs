@@ -2,7 +2,7 @@ extern crate alloc;
 use fuel_indexer_macros::indexer;
 
 #[indexer(
-    manifest = "packages/fuel-indexer-tests/components/indices/simple-wasm/manifest.yaml"
+    manifest = "packages/fuel-indexer-tests/components/indices/simple-wasm/simple_wasm.yaml"
 )]
 pub mod test_namespace {
 

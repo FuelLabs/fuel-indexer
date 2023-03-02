@@ -133,8 +133,6 @@ jobs:
           toolchain: nightly
           default: true
       - uses: Swatinem/rust-cache@v1
-      - run: cargo install sqlx-cli
-      - run: bash scripts/run_migrations.bash
       - name: Install cargo-udeps
         uses: actions-rs/cargo@v1
         with:
@@ -177,8 +175,6 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - run: cargo install sqlx-cli
-      - run: bash scripts/run_migrations.bash
 
       - name: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
         if: ${{ matrix.package }}
@@ -288,15 +284,15 @@ jobs:
       
       - name: Build fuel-indexer-test WASM
         run: |
-          cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown && \
-            bash scripts/stripper.bash fuel_indexer_test.wasm && \
-            cp fuel_indexer_test.wasm packages/fuel-indexer-tests/assets/
+          cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown
+          bash scripts/stripper.bash fuel_indexer_test.wasm
+          cp fuel_indexer_test.wasm target/wasm32-unknown-unknown/release/
 
       - name: Build simple-wasm WASM
         run: |
-          cargo build -p simple-wasm --release --target wasm32-unknown-unknown && \
-            bash scripts/stripper.bash simple_wasm.wasm && \
-            cp simple_wasm.wasm packages/fuel-indexer-tests/assets/
+          cargo build -p simple-wasm --release --target wasm32-unknown-unknown
+          bash scripts/stripper.bash simple_wasm.wasm
+          cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
 
       - name: Run E2E and integration tests
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1

@@ -12,7 +12,8 @@ use fuels::signers::Signer;
 use fuels_macros::abigen;
 use std::path::Path;
 
-const SIMPLE_WASM_MANIFEST: &str = include_str!("./../../assets/macros/simple_wasm.yaml");
+const SIMPLE_WASM_MANIFEST: &str =
+    include_str!("./../../components/indices/simple-wasm/simple_wasm.yaml");
 const WORKSPACE_DIR: &str = env!("CARGO_MANIFEST_DIR");
 
 abigen!(Contract(
@@ -26,7 +27,7 @@ abigen!(Contract(
 async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres() {
     let workdir = Path::new(WORKSPACE_DIR);
 
-    let wallet_path = workdir.join("assets/test-chain-config.json");
+    let wallet_path = workdir.join("test-chain-config.json");
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
 
     let mut wallet =

@@ -2,7 +2,9 @@ extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
-#[indexer(manifest = "packages/fuel-indexer-tests/assets/fuel_indexer_test.yaml")]
+#[indexer(
+    manifest = "packages/fuel-indexer-tests/components/indices/fuel-indexer-test/fuel_indexer_test.yaml"
+)]
 mod fuel_indexer_test {
 
     fn fuel_indexer_test_ping(ping: Ping) {
@@ -137,6 +139,17 @@ mod fuel_indexer_test {
             result,
             gas_used,
             blob: vec![1u8, 1, 1, 1, 1],
+        };
+
+        entity.save();
+    }
+
+    fn fuel_indexer_test_messageout_data(example_message: ExampleMessageStruct) {
+        Logger::info("fuel_indexer_test_messageout handling MessageOut event");
+
+        let entity = MessageEntity {
+            id: example_message.id,
+            message: example_message.message.to_string(),
         };
 
         entity.save();

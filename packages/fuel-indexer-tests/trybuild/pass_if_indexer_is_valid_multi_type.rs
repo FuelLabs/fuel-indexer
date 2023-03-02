@@ -7,7 +7,7 @@ fn ff_log_data(_inp: ()) {}
 #[no_mangle]
 fn ff_put_object(_inp: ()) {}
 
-#[indexer(manifest = "packages/fuel-indexer-tests/assets/macros/simple_wasm.yaml")]
+#[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
 mod indexer {
     fn function_one(event: SomeEvent) {
         let SomeEvent { id, account } = event;
