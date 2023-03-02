@@ -730,7 +730,8 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
         signers::fuel_crypto::coins_bip32::ecdsa::digest::typenum::Prod,
     };
 
-    //let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    dbg!("setup fuel node");
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
 

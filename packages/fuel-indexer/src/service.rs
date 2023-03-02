@@ -73,6 +73,8 @@ impl IndexerService {
             )
             .await?;
 
+        dbg!("Aboout to create executor");
+
         let (handle, exec_source, killer) = WasmIndexExecutor::create(
             &self.config.fuel_node.clone(),
             &database_url,
@@ -81,6 +83,8 @@ impl IndexerService {
             self.config.stop_idle_indexers,
         )
         .await?;
+
+        dbg!("Created executor");
 
         let mut items = vec![
             (IndexAssetType::Wasm, exec_source.to_vec()),

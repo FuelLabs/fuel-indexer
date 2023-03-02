@@ -161,7 +161,7 @@ pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
         .join("out")
         .join("debug")
         .join("fuel-indexer-test.bin");
-
+   
     setup_test_fuel_node(wallet_path, Some(contract_bin_path), None).await
 }
 
