@@ -1,3 +1,5 @@
+#![deny(unused_crate_dependencies)]
+
 use crate::directives::IndexMethod;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
