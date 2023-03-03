@@ -531,7 +531,7 @@ impl UserQuery {
                                 sj.primary_key_table,
                                 sj.primary_key_col
                             );
-                            *elem = format!("{} AND {}", elem, join_condition)
+                            *elem = format!("{elem} AND {join_condition}")
                         }
                     } else {
                         joins.push(format!(
