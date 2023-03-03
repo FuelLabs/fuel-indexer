@@ -1,6 +1,6 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
-use sqlx::{pool::PoolConnection, types::JsonValue, Postgres, Row};
+use sqlx::{pool::PoolConnection, types::JsonValue, Postgres, Row, postgres::PgRow};
 use tracing::info;
 
 #[cfg(feature = "metrics")]
@@ -570,13 +570,18 @@ pub async fn last_block_height_for_indexer(
         "SELECT MAX(id) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1"
     );
 
-    match sqlx::query(&query).fetch_one(conn).await {
-        Ok(row) => {
-            let id: i64 = row.get(0);
-            Ok(id as u64)
-        }
-        Err(_) => Ok(0),
+    let row = sqlx::query(&query)
+        .fetch_one(conn)
+        .await?;
+
+    println!("Executed query");
+
+    if row.is_empty() {
+        println!("Row is empty");
+        return Ok(1);
     }
+    let id: i64 = row.get(0);
+    Ok(id as u64)
 }
 
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251

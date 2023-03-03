@@ -201,7 +201,7 @@ impl IndexerService {
             handles.into_values(),
         )));
 
-        tokio::spawn(create_service_task(
+        let _ = tokio::spawn(create_service_task(
             rx,
             config.clone(),
             pool.clone(),
@@ -223,7 +223,7 @@ async fn create_service_task(
     pool: IndexerConnectionPool,
     futs: Arc<Mutex<FuturesUnordered<JoinHandle<()>>>>,
     mut killers: HashMap<String, Arc<AtomicBool>>,
-) {
+) -> IndexerResult<()> {
     if let Some(mut rx) = rx {
         loop {
             let futs = futs.lock().await;
@@ -297,6 +297,7 @@ async fn create_service_task(
             }
         }
     }
+    Ok(())
 }
 
 async fn get_start_block(
@@ -310,7 +311,8 @@ async fn get_start_block(
                 &manifest.namespace,
                 &manifest.identifier,
             )
-            .await?;
+            .await.unwrap_or(1);
+            println!("last_block_height_for_indexer: {}", last);
             Ok(last)
         }
         None => Ok(manifest.start_block.unwrap_or(1)),
