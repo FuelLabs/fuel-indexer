@@ -37,11 +37,12 @@ const FUEL_LOGO: &str = r#"
                     :YP!                          
 "#;
 
-const WELCOME_MANIFEST: String = "welcome.manifest.yaml".to_string();
-const WASM_TARGET: String = "wasm32-unknown-unknown".to_string();
+const WELCOME_MANIFEST: &str= "welcome.manifest.yaml";
+const WASM_TARGET: &str= "wasm32-unknown-unknown";
 
 pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
-    println!("Create default indexer? (Y/n)");
+    //start the fuel-indexer with fuel-node
+    println!("Create default index? (Y/n)");
 
     let mut input = String::new();
     io::stdout().flush().expect("failed to flush stdout");
@@ -65,11 +66,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
             println!("Indexer project initialized. The manifest file has been created:");
             println!("{}", manifest_str);
 
-            println!("Deply indexer to local node or testnet");
-            println!("1. Local node");
-            println!("2. Testnet");
-
-            println!("Deply the index? (Y/n)");
+            println!("Deploy the index? (Y/n)");
 
             input.clear();
             io::stdout().flush().expect("failed to flush stdout");
@@ -79,9 +76,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 
             match input.trim().to_lowercase().as_str() {
                 "y" | "yes" => {
-                    println!("Deploy indexer to local node or testnet");
-                    println!("1. Local node");
-                    println!("2. Testnet");
+                    println!("To network? \n1. Local node\n2. Testnet");
 
                     input.clear();
                     io::stdout().flush().expect("failed to flush stdout");
@@ -140,13 +135,13 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 
 fn init_build() -> BuildCommand {
     BuildCommand {
-        manifest: Some(WELCOME_MANIFEST),
+        manifest: Some(WELCOME_MANIFEST.to_string()),
         path: Some(std::path::PathBuf::from(".")),
-        target: Some(WASM_TARGET),
+        target: Some(WASM_TARGET.to_string()),
         release: true,
         profile: Some("release".to_string()),
         verbose: false,
-        locked: true, 
+        locked: false, 
         native: false, 
         output_dir_root: Some(std::path::PathBuf::from(".")),
     }
@@ -155,23 +150,23 @@ fn init_build() -> BuildCommand {
 fn init_deploy(network: Network) -> DeployCommand {
     let mut deploy_command = DeployCommand {
                 url: String::new(),
-                manifest: Some(WELCOME_MANIFEST),
+                manifest: Some(WELCOME_MANIFEST.to_string()),
                 path: Some(std::path::PathBuf::from(".")),
                 auth: Some("".to_string()),
-                target: Some(WASM_TARGET),
+                target: Some(WASM_TARGET.to_string()),
                 release: true,
                 profile: Some("release".to_string()),
                 verbose: false,
-                locked: true,
+                locked: false,
                 native: false,
                 output_dir_root: Some(std::path::PathBuf::from(".")),
     };
     match network {
         Network::Local => {
-            deploy_command.url = "http://localhost:8080".to_string();
+            deploy_command.url = "127.0.0.1:4000".to_string();
         }
         Network::Testnet => {
-            deploy_command.url = "https://testnet.thegraph.com/deploy/".to_string();
+            deploy_command.url = "https://node-beta-2.fuel.network".to_string();
         }
     }
 
