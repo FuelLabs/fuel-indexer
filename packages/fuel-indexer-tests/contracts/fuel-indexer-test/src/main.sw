@@ -42,6 +42,14 @@ pub struct SimpleTupleStruct {
     data: (u32, u64, str[12]),
 }
 
+pub struct ExplicitQueryStruct {
+    id: u64
+}
+
+pub struct SimpleQueryStruct {
+    id: u64
+}
+
 pub struct ExampleMessageStruct {
     id: u64,
     message: str[32]
@@ -63,6 +71,8 @@ abi FuelIndexer {
     #[payable]
     fn trigger_messageout();
     fn trigger_tuple() -> ComplexTupleStruct;
+    fn trigger_explicit() -> ExplicitQueryStruct;
+    fn trigger_deeply_nested() -> SimpleQueryStruct;
 }
 
 impl FuelIndexer for Contract {
@@ -162,5 +172,13 @@ impl FuelIndexer for Contract {
     fn trigger_tuple() -> ComplexTupleStruct {
         log(SimpleTupleStruct { data: (4u32, 5u64, "hello world!")});
         ComplexTupleStruct{ data: (1u32, (5u64, true, ("abcde", TupleStructItem { id: 54321 })))}
+    }
+
+    fn trigger_explicit() -> ExplicitQueryStruct {
+        ExplicitQueryStruct { id: 456 }
+    }
+
+    fn trigger_deeply_nested() -> SimpleQueryStruct {
+        SimpleQueryStruct { id: 789 }
     }
 }

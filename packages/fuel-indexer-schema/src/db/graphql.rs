@@ -1,6 +1,8 @@
 use crate::db::tables::Schema;
+use crate::sql_types::{
+    DbType, JoinCondition, QueryElement, QueryFilter, QueryJoinNode, UserQuery,
+};
 use graphql_parser::query as gql;
-use itertools::Itertools;
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -252,51 +254,205 @@ impl Operation {
         }
     }
 
-    pub fn as_sql(&self, jsonify: bool) -> Vec<String> {
+    pub fn parse(&self, schema: &Schema) -> Vec<UserQuery> {
         let Operation {
             namespace,
             identifier,
             selections,
             ..
         } = self;
+
         let mut queries = Vec::new();
 
-        // TODO: nested queries, joins, etc....
         for selection in selections.get_selections() {
-            if let Selection::Field(name, filters, selections) = selection {
-                let columns: Vec<_> = selections
-                    .get_selections()
-                    .into_iter()
-                    .filter_map(|f| {
-                        if let Selection::Field(name, ..) = f {
-                            Some(name)
-                        } else {
-                            None
+            let mut elements: Vec<QueryElement> = Vec::new();
+            let mut entities: Vec<String> = Vec::new();
+
+            let mut joins: HashMap<String, QueryJoinNode> = HashMap::new();
+
+            let mut nested_entity_stack: Vec<String> = Vec::new();
+
+            // Selections can have their own set of subselections and so on, so a queue
+            // is created with the first level of selections. In order to track the containing
+            // entity of the selection, an entity list of the same length is created.
+            if let Selection::Field(entity_name, filters, selections) = selection {
+                let mut queue: Vec<Selection> = Vec::new();
+
+                // Selections and entities will be popped from their respective vectors
+                // easy access to an element. In order to be compliant with the GraphQL
+                // spec (which says that a query should be resovled top-down), the order
+                // of the elements is reversed prior to insertion in the queues.
+                entities.append(
+                    &mut vec![entity_name.clone(); selections.selections.len()]
+                        .drain(..)
+                        .rev()
+                        .collect::<Vec<String>>(),
+                );
+                queue.append(
+                    &mut selections
+                        .get_selections()
+                        .drain(..)
+                        .rev()
+                        .collect::<Vec<Selection>>(),
+                );
+
+                let mut last_seen_entities_len = entities.len();
+
+                while let Some(current) = queue.pop() {
+                    let entity_name = entities.pop().unwrap();
+
+                    // If a selection was processed without adding additional selections
+                    // to the queue, then check the entity of the selection against the
+                    // current nesting level. If they differ, then the operation has moved
+                    // out of a child entity into a parent entity.
+                    if let Some(current_nesting_level) = nested_entity_stack.last() {
+                        if entities.len() < last_seen_entities_len
+                            && current_nesting_level != &entity_name
+                        {
+                            let _ = nested_entity_stack.pop();
+                            elements.push(QueryElement::ObjectClosingBoundary);
                         }
+                    }
+
+                    last_seen_entities_len = entities.len();
+
+                    if let Selection::Field(field_name, _f, subselections) = current {
+                        if subselections.selections.is_empty() {
+                            elements.push(QueryElement::Field {
+                                key: field_name.clone(),
+                                value: format!(
+                                    "{namespace}_{identifier}.{entity_name}.{field_name}"
+                                ),
+                            });
+                        } else {
+                            let mut new_entity = field_name.clone();
+                            // If the current entity has a foreign key on the current
+                            // selection, join the foreign table on that primary key
+                            // and set the field as the innermost entity by pushing to the stack.
+                            if let Some(field_to_foreign_key) =
+                                schema.foreign_keys.get(&entity_name.to_lowercase())
+                            {
+                                if let Some((foreign_key_table, foreign_key_col)) =
+                                    field_to_foreign_key.get(&field_name.to_lowercase())
+                                {
+                                    let join_condition = JoinCondition {
+                                        referencing_key_table: format!(
+                                            "{namespace}_{identifier}.{entity_name}"
+                                        ),
+                                        referencing_key_col: field_name.clone(),
+                                        primary_key_table: format!(
+                                            "{namespace}_{identifier}.{foreign_key_table}"
+                                        ),
+                                        primary_key_col: foreign_key_col.clone(),
+                                    };
+
+                                    // Joins are modelled like a directed graph in
+                                    // order to ensure that tables can be joined in
+                                    // a dependent order, if necessary.
+                                    match joins
+                                        .get_mut(&join_condition.referencing_key_table)
+                                    {
+                                        Some(join_node) => {
+                                            join_node.dependencies.insert(
+                                                join_condition.primary_key_table.clone(),
+                                                join_condition.clone(),
+                                            );
+                                        }
+                                        None => {
+                                            joins.insert(
+                                                join_condition
+                                                    .referencing_key_table
+                                                    .clone(),
+                                                QueryJoinNode {
+                                                    dependencies: HashMap::from([(
+                                                        join_condition
+                                                            .primary_key_table
+                                                            .clone(),
+                                                        join_condition.clone(),
+                                                    )]),
+                                                    dependents: HashMap::new(),
+                                                },
+                                            );
+                                        }
+                                    };
+
+                                    if *foreign_key_table != field_name {
+                                        new_entity = foreign_key_table.to_string();
+                                    }
+
+                                    match joins.get_mut(&join_condition.primary_key_table)
+                                    {
+                                        Some(join_node) => {
+                                            join_node.dependents.insert(
+                                                join_condition
+                                                    .referencing_key_table
+                                                    .clone(),
+                                                join_condition.clone(),
+                                            );
+                                        }
+                                        None => {
+                                            joins.insert(
+                                                join_condition.primary_key_table.clone(),
+                                                QueryJoinNode {
+                                                    dependencies: HashMap::new(),
+                                                    dependents: HashMap::from([(
+                                                        join_condition
+                                                            .referencing_key_table
+                                                            .clone(),
+                                                        join_condition.clone(),
+                                                    )]),
+                                                },
+                                            );
+                                        }
+                                    };
+                                }
+                            }
+
+                            // Add the subselections and entities to the ends of
+                            // their respective vectors so that they are resolved
+                            // immediately after their parent selection.
+                            entities.append(&mut vec![
+                                new_entity.clone();
+                                subselections.selections.len()
+                            ]);
+                            nested_entity_stack.push(new_entity.clone());
+
+                            elements.push(QueryElement::ObjectOpeningBoundary {
+                                key: field_name,
+                            });
+
+                            queue.append(&mut subselections.get_selections());
+                        }
+                    }
+                }
+
+                // If the query document ends without selections from outer entities,
+                // then append the requisite number of object closing boundaries in
+                // order to properly format the JSON structure for the database query.
+                if !nested_entity_stack.is_empty() {
+                    elements.append(&mut vec![
+                        QueryElement::ObjectClosingBoundary;
+                        nested_entity_stack.len()
+                    ]);
+                }
+
+                // TODO: Support filtering operations, e.g. <, >, set membership, etc.
+                let filters: Vec<QueryFilter> = filters
+                    .into_iter()
+                    .map(|f| QueryFilter {
+                        key: f.name,
+                        relation: "=".to_string(),
+                        value: f.value,
                     })
                     .collect();
 
-                let column_text = columns.join(", ");
-
-                let namespace = format!("{namespace}_{identifier}");
-                let mut query = format!(
-                    "SELECT {} FROM {}.{}",
-                    column_text,
-                    namespace,
-                    name.to_lowercase()
-                );
-
-                if !filters.is_empty() {
-                    let filter_text: String = filters
-                        .iter()
-                        .map(|f| Filter::as_sql(f, jsonify))
-                        .join(" AND ");
-                    query.push_str(format!(" WHERE {filter_text}").as_str());
-                }
-
-                if jsonify {
-                    query = format!("SELECT row_to_json(x) as row from ({query}) x");
-                }
+                let query = UserQuery {
+                    elements,
+                    joins,
+                    namespace_identifier: format!("{namespace}_{identifier}"),
+                    entity_name,
+                    filters,
+                };
 
                 queries.push(query)
             }
@@ -312,14 +468,23 @@ pub struct GraphqlQuery {
 }
 
 impl GraphqlQuery {
-    pub fn as_sql(&self, jsonify: bool) -> Vec<String> {
-        let mut queries = Vec::new();
-
-        for op in &self.operations {
-            queries.extend(op.as_sql(jsonify));
-        }
+    pub fn parse(&self, schema: &Schema) -> Vec<UserQuery> {
+        let queries: Vec<UserQuery> = self
+            .operations
+            .iter()
+            .flat_map(|o| o.parse(schema))
+            .collect::<Vec<UserQuery>>();
 
         queries
+    }
+
+    pub fn as_sql(&self, schema: &Schema, db_type: DbType) -> Vec<String> {
+        let queries = self.parse(schema);
+
+        queries
+            .into_iter()
+            .map(|mut q| q.to_sql(&db_type))
+            .collect::<Vec<String>>()
     }
 }
 
@@ -463,5 +628,203 @@ impl<'a> GraphqlQueryBuilder<'a> {
         }
 
         Ok(fragments)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashSet;
+
+    use super::*;
+
+    #[test]
+    fn test_operation_parse_into_user_query() {
+        let selections_on_block_field = Selections {
+            _field_type: "Block".to_string(),
+            has_fragments: false,
+            selections: vec![
+                Selection::Field(
+                    "id".to_string(),
+                    Vec::new(),
+                    Selections {
+                        _field_type: "ID!".to_string(),
+                        has_fragments: false,
+                        selections: Vec::new(),
+                    },
+                ),
+                Selection::Field(
+                    "height".to_string(),
+                    Vec::new(),
+                    Selections {
+                        _field_type: "UInt8!".to_string(),
+                        has_fragments: false,
+                        selections: Vec::new(),
+                    },
+                ),
+            ],
+        };
+
+        let selections_on_tx_field = Selections {
+            _field_type: "Tx".to_string(),
+            has_fragments: false,
+            selections: vec![
+                Selection::Field(
+                    "block".to_string(),
+                    Vec::new(),
+                    selections_on_block_field,
+                ),
+                Selection::Field(
+                    "id".to_string(),
+                    Vec::new(),
+                    Selections {
+                        _field_type: "ID!".to_string(),
+                        has_fragments: false,
+                        selections: Vec::new(),
+                    },
+                ),
+                Selection::Field(
+                    "timestamp".to_string(),
+                    Vec::new(),
+                    Selections {
+                        _field_type: "Int8!".to_string(),
+                        has_fragments: false,
+                        selections: Vec::new(),
+                    },
+                ),
+            ],
+        };
+
+        let query_selections = vec![Selection::Field(
+            "tx".to_string(),
+            Vec::new(),
+            selections_on_tx_field,
+        )];
+
+        let operation = Operation {
+            _name: "".to_string(),
+            namespace: "fuel_indexer_test".to_string(),
+            identifier: "test_index".to_string(),
+            selections: Selections {
+                _field_type: "QueryRoot".to_string(),
+                has_fragments: false,
+                selections: query_selections,
+            },
+        };
+
+        let fields = HashMap::from([
+            (
+                "QueryRoot".to_string(),
+                HashMap::from([
+                    ("tx".to_string(), "Tx".to_string()),
+                    ("block".to_string(), "Block".to_string()),
+                ]),
+            ),
+            (
+                "Tx".to_string(),
+                HashMap::from([
+                    ("timestamp".to_string(), "Int8!".to_string()),
+                    ("input_data".to_string(), "Json!".to_string()),
+                    ("id".to_string(), "ID!".to_string()),
+                    ("object".to_string(), "__".to_string()),
+                    ("block".to_string(), "Block".to_string()),
+                ]),
+            ),
+            (
+                "Block".to_string(),
+                HashMap::from([
+                    ("id".to_string(), "ID!".to_string()),
+                    ("height".to_string(), "UInt8!".to_string()),
+                    ("object".to_string(), "__".to_string()),
+                    ("timestamp".to_string(), "Int8!".to_string()),
+                ]),
+            ),
+        ]);
+
+        let foreign_keys = HashMap::from([(
+            "tx".to_string(),
+            HashMap::from([(
+                "block".to_string(),
+                ("block".to_string(), "id".to_string()),
+            )]),
+        )]);
+
+        let schema = Schema {
+            version: "test_version".to_string(),
+            namespace: "fuel_indexer_test".to_string(),
+            identifier: "test_index".to_string(),
+            query: "QueryRoot".to_string(),
+            types: HashSet::from([
+                "Tx".to_string(),
+                "Block".to_string(),
+                "QueryRoot".to_string(),
+            ]),
+            fields,
+            foreign_keys,
+        };
+
+        let expected = vec![UserQuery {
+            elements: vec![
+                QueryElement::ObjectOpeningBoundary {
+                    key: "block".to_string(),
+                },
+                QueryElement::Field {
+                    key: "height".to_string(),
+                    value: "fuel_indexer_test_test_index.block.height".to_string(),
+                },
+                QueryElement::Field {
+                    key: "id".to_string(),
+                    value: "fuel_indexer_test_test_index.block.id".to_string(),
+                },
+                QueryElement::ObjectClosingBoundary,
+                QueryElement::Field {
+                    key: "id".to_string(),
+                    value: "fuel_indexer_test_test_index.tx.id".to_string(),
+                },
+                QueryElement::Field {
+                    key: "timestamp".to_string(),
+                    value: "fuel_indexer_test_test_index.tx.timestamp".to_string(),
+                },
+            ],
+            joins: HashMap::from([
+                (
+                    "fuel_indexer_test_test_index.tx".to_string(),
+                    QueryJoinNode {
+                        dependencies: HashMap::from([(
+                            "fuel_indexer_test_test_index.block".to_string(),
+                            JoinCondition {
+                                referencing_key_table: "fuel_indexer_test_test_index.tx"
+                                    .to_string(),
+                                referencing_key_col: "block".to_string(),
+                                primary_key_table: "fuel_indexer_test_test_index.block"
+                                    .to_string(),
+                                primary_key_col: "id".to_string(),
+                            },
+                        )]),
+                        dependents: HashMap::new(),
+                    },
+                ),
+                (
+                    "fuel_indexer_test_test_index.block".to_string(),
+                    QueryJoinNode {
+                        dependents: HashMap::from([(
+                            "fuel_indexer_test_test_index.tx".to_string(),
+                            JoinCondition {
+                                referencing_key_table: "fuel_indexer_test_test_index.tx"
+                                    .to_string(),
+                                referencing_key_col: "block".to_string(),
+                                primary_key_table: "fuel_indexer_test_test_index.block"
+                                    .to_string(),
+                                primary_key_col: "id".to_string(),
+                            },
+                        )]),
+                        dependencies: HashMap::new(),
+                    },
+                ),
+            ]),
+            namespace_identifier: "fuel_indexer_test_test_index".to_string(),
+            entity_name: "tx".to_string(),
+            filters: Vec::new(),
+        }];
+        assert_eq!(expected, operation.parse(&schema));
     }
 }
