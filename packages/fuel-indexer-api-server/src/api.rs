@@ -1,6 +1,6 @@
 use crate::uses::{
     authorize_middleware, health_check, metrics, query_graph, register_index_assets,
-    revert_indexer, stop_index,
+    revert_indexer, stop_index, revert_indexer,
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
@@ -41,6 +41,10 @@ pub enum HttpError {
     NotFound(String),
     #[error("Error.")]
     InternalServer,
+}
+
+pub enum AuthStrategy {
+    Jwt,
 }
 
 #[derive(Debug, Error)]
@@ -148,10 +152,13 @@ impl GraphQlApi {
             .layer(Extension(start_time))
             .route("/metrics", get(metrics));
 
+        let auth_routes = Router::new().route("/nonce", get(get_nonce));
+
         let api_routes = Router::new()
             .nest("/", root_routes)
             .nest("/index", index_routes)
-            .nest("/graph", graph_route);
+            .nest("/graph", graph_route)
+            .nest("/auth", auth_routes);
 
         let app = Router::new()
             .nest("/api", api_routes)

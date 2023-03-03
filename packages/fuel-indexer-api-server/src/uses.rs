@@ -293,6 +293,11 @@ pub(crate) async fn register_index_assets(
     Err(ApiError::default())
 }
 
+pub(crate) async fn get_nonce() -> ApiResult<axum::Json<Value>> {
+    let uid = uuid::Uuid::new_v4();
+    Ok(Json(json!({"nonce": uid.as_simple().to_string()})))
+}
+
 pub async fn run_query(
     query: Query,
     schema: Schema,
