@@ -12,13 +12,7 @@ use syn::{
 
 /// If TypeDeclaration is tuple type
 pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
-    typ.type_field.as_str().starts_with("(_")
-}
-
-/// If TypeDeclaration is a generic Vec type
-#[allow(unused)]
-pub fn is_vec_type(typ: &TypeDeclaration) -> bool {
-    typ.type_field.as_str().starts_with("struct Vec")
+    typ.type_field.as_str().starts_with('(')
 }
 
 /// Extract tokens from JSON ABI file
@@ -59,72 +53,71 @@ pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
     }
 }
 
-/// Whether we should ignore this type
-pub fn is_non_cacheable_type(typ: &TypeDeclaration) -> bool {
-    if IGNORED_ABI_JSON_TYPES.contains(typ.type_field.as_str()) {
-        return true;
-    }
-
+/// Whether this TypeDeclaration should be used in the codgen
+pub fn is_ignored_type(typ: &TypeDeclaration) -> bool {
     if is_tuple_type(typ) {
         return true;
     }
+    false
+}
+
+/// Whether the TypeDeclaration should be used to build struct fields and decoders
+pub fn is_non_decodable_type(typ: &TypeDeclaration) -> bool {
+    if GENERIC_TYPES.contains(typ.type_field.as_str()) {
+        return true;
+    }
+
+    if is_ignored_type(typ) {
+        return true;
+    }
 
     false
 }
 
-/// Whether the TypeDeclaration should be used to build struct fields
-/// and decoders
-pub fn is_non_parsable_type(typ: &TypeDeclaration) -> bool {
-    if VEC_GENERIC_TYPES.contains(typ.type_field.as_str()) {
-        return true;
-    }
-
-    if is_non_cacheable_type(typ) {
-        return true;
-    }
-
-    false
+pub fn path_is_generic_struct(p: &str) -> bool {
+    // TODO: Add others as needed
+    matches!(p, "Vec")
 }
 
-/// Whether a path is a path for a vector
-
-// TODO: path_is_generic
-pub fn path_is_generic(p: &str) -> bool {
-    p == "Vec"
-}
-
-// TOOD: derive generic_token
-pub fn derive_vec_token(vec: &str, generic: &str) -> proc_macro2::TokenStream {
-    let v = format_ident!("{}", vec);
-    let g = format_ident!("{}", generic);
-    quote! { #v<#g> }
-}
-
-/// Return path String and type ID for given generic PathSegment
-pub fn generic_path_idents(p: &PathSegment) -> (String, Ident) {
-    // todo: match for vec
-    let v = p.ident.to_string();
-    let generic = match &p.arguments {
-        AngleBracketed(AngleBracketedGenericArguments { args, .. }) => {
-            match args.last().unwrap() {
-                GenericArgument::Type(t) => match t {
-                    Type::Path(p) => {
-                        let zero = p.path.segments.last().unwrap();
-                        zero.ident.to_string()
-                    }
-                    _ => unimplemented!(),
-                },
-                _ => unimplemented!(),
-            }
+pub fn derive_generic_tokens(generic: &str, generic_t: &str) -> proc_macro2::TokenStream {
+    match generic {
+        "Vec" => {
+            let generic = format_ident!("{}", generic);
+            let generic_t = format_ident!("{}", generic_t);
+            quote! { #generic<#generic_t> }
         }
+        _ => unimplemented!(),
+    }
+}
+
+/// Return  for given generic PathSegment
+pub fn generic_path_idents(p: &PathSegment) -> (String, Ident) {
+    // TODO: Implement as needed
+    let g = p.ident.to_string();
+    let generic_t = match g.as_ref() {
+        "Vec" => match &p.arguments {
+            AngleBracketed(AngleBracketedGenericArguments { args, .. }) => {
+                match args.last().unwrap() {
+                    GenericArgument::Type(t) => match t {
+                        Type::Path(p) => {
+                            let zero = p.path.segments.last().unwrap();
+                            zero.ident.to_string()
+                        }
+                        _ => unimplemented!(),
+                    },
+                    _ => unimplemented!(),
+                }
+            }
+            _ => unimplemented!(),
+        },
         _ => unimplemented!(),
     };
 
-    let generic_ident = format_ident!("{}", generic);
-    let generic_vec_tok = derive_vec_token(&v, &generic);
-    let generic_vec_str = generic_vec_tok.to_string();
+    let generic_ident = format_ident!("{}", generic_t);
+    let generic_tok = derive_generic_tokens(&g, &generic_t);
+    let generic_str = generic_tok.to_string();
 
-    (generic_vec_str, generic_ident)
+    (generic_str, generic_ident)
 }
 
 /// Derive Ident for decoded type
@@ -141,7 +134,7 @@ fn derive_type_field(ty: &TypeDeclaration) -> String {
         .to_string()
 }
 
-/// Equivalent of `decoded_ident` but for Vec type specifically
+/// Equivalent of `decoded_ident` but for generic type specifically
 pub fn generic_decoded_ident(
     generic_t: &TypeDeclaration,
     generic: &TypeDeclaration,
@@ -156,10 +149,12 @@ pub fn generic_decoded_ident(
 }
 
 /// Derive Ident for given TypeDeclaration
-pub fn rust_ident(ty: &TypeDeclaration) -> Ident {
+pub fn rust_type_ident(ty: &TypeDeclaration) -> Ident {
     if ty.components.is_some() {
         if is_tuple_type(ty) {
-            proc_macro_error::abort_call_site!("Cannot derive rust_ident of tuple type.");
+            proc_macro_error::abort_call_site!(
+                "Cannot derive rust_type_ident of tuple type."
+            );
         }
 
         let name = derive_type_field(ty);
@@ -261,14 +256,11 @@ pub fn is_rust_primitive(ty: &proc_macro2::TokenStream) -> bool {
     RUST_PRIMITIVES.contains(ident_str.as_str())
 }
 
-/// Whether or not the given token is a Rust or Fuel primitive
-pub fn is_primitive(ty: &proc_macro2::TokenStream) -> bool {
-    is_rust_primitive(ty) || is_fuel_primitive(ty)
-}
-
-/// Whether an Ident is for a vector of types
-pub fn is_generic_ident(ty: &Ident) -> bool {
-    ty.to_string().as_str().starts_with("vec_")
+/// Whether or not this is a generic primitive
+fn is_generic_primitive(ty: &proc_macro2::TokenStream) -> bool {
+    // TODO: Add more as needed
+    let ty = ty.to_string();
+    matches!(ty.starts_with("Vec"), true)
 }
 
 /// Given a type ID, a type token, and a type Ident, return a decoder snippet
@@ -285,14 +277,14 @@ pub fn decode_snippet(
                 self.#name.push(obj);
             }
         }
-    } else if is_generic_ident(name) {
+    } else if is_generic_primitive(ty) {
         quote! {
             #ty_id => {
-                Logger::warn("Vec type decoder not implemented.");
+                Logger::warn("Generic type decoder not implemented.");
                 unimplemented!();
             }
         }
-    } else if is_primitive(ty) {
+    } else if is_rust_primitive(ty) {
         quote! {
             #ty_id => {
                 Logger::warn("Skipping primitive decoder.");
@@ -310,17 +302,23 @@ pub fn decode_snippet(
 }
 
 // TODO: finish
-pub trait Foobar {
-    fn decoded_name(&self) -> Ident;
+
+pub trait Codegen {
+    fn decoded_ident(&self) -> Ident;
     fn rust_type_token(&self) -> proc_macro2::TokenStream;
+    fn rust_type_ident(&self) -> Ident;
 }
 
-// impl Foobar for TypeDeclaration {
-//     fn decoded_name(&self) {
-//         unimplemented!();
-//     }
+impl Codegen for TypeDeclaration {
+    fn decoded_ident(&self) -> Ident {
+        decoded_ident(&self.rust_type_token().to_string())
+    }
 
-//     fn rust_type_token(&self) -> proc_macro2::TokenStream {
-//         unimplemented!();
-//     }
-// }
+    fn rust_type_token(&self) -> proc_macro2::TokenStream {
+        rust_type_token(self)
+    }
+
+    fn rust_type_ident(&self) -> Ident {
+        rust_type_ident(self)
+    }
+}

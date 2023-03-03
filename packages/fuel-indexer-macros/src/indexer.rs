@@ -69,7 +69,7 @@ fn process_fn_items(
     let abi_types_tyid = abi_types
         .iter()
         .filter(|typ| {
-            if is_non_cacheable_type(typ) {
+            if is_ignored_type(typ) {
                 return false;
             }
             true
@@ -80,16 +80,12 @@ fn process_fn_items(
     let abi_types_name = abi_types
         .iter()
         .filter(|typ| {
-            if is_non_cacheable_type(typ) {
+            if is_ignored_type(typ) {
                 return false;
             }
             true
         })
-        .map(|typ| {
-            let tok = rust_type_token(typ);
-
-            (tok.to_string(), typ.clone())
-        })
+        .map(|typ| (typ.rust_type_token().to_string(), typ.clone()))
         .collect::<HashMap<String, TypeDeclaration>>();
 
     let log_types = abi_log_types
@@ -131,36 +127,34 @@ fn process_fn_items(
     let abi_type_decoders = abi_types
         .iter()
         .filter_map(|typ| {
-            if is_non_parsable_type(typ) {
+            if is_non_decodable_type(typ) {
                 return None;
             }
 
-            let name = rust_ident(typ);
-            let ty = rust_type_token(typ);
-            let ty_id = typ.type_id;
+            let name = typ.rust_type_ident();
+            let ty = typ.rust_type_token();
 
             if is_fuel_primitive(&ty) {
                 proc_macro_error::abort_call_site!("'{}' is a reserved Fuel type.", ty)
             }
 
-            type_ids.insert(ty.to_string(), ty_id);
-            decoded_abi_types.insert(ty_id);
+            type_ids.insert(ty.to_string(), typ.type_id);
+            decoded_abi_types.insert(typ.type_id);
 
-            Some(decode_snippet(ty_id, &ty, &name))
+            Some(decode_snippet(typ.type_id, &ty, &name))
         })
         .collect::<Vec<proc_macro2::TokenStream>>();
 
     let fuel_type_decoders = fuel_types
         .values()
         .map(|typ| {
-            let name = rust_ident(typ);
-            let ty = rust_type_token(typ);
-            let ty_id = typ.type_id;
+            let name = typ.rust_type_ident();
+            let ty = typ.rust_type_token();
 
-            type_ids.insert(ty.to_string(), ty_id);
-            decoded_abi_types.insert(ty_id);
+            type_ids.insert(ty.to_string(), typ.type_id);
+            decoded_abi_types.insert(typ.type_id);
 
-            decode_snippet(ty_id, &ty, &name)
+            decode_snippet(typ.type_id, &ty, &name)
         })
         .collect::<Vec<proc_macro2::TokenStream>>();
 
@@ -169,20 +163,19 @@ fn process_fn_items(
     let abi_struct_fields = abi_types
         .iter()
         .filter_map(|typ| {
-            if is_non_parsable_type(typ) {
+            if is_non_decodable_type(typ) {
                 return None;
             }
 
-            let name = rust_ident(typ);
-            let ty = rust_type_token(typ);
-            let ty_id = typ.type_id;
+            let name = typ.rust_type_ident();
+            let ty = typ.rust_type_token();
 
             if is_fuel_primitive(&ty) {
                 proc_macro_error::abort_call_site!("'{}' is a reserved Fuel type.", ty)
             }
 
-            type_ids.insert(ty.to_string(), ty_id);
-            decoded_abi_types.insert(ty_id);
+            type_ids.insert(ty.to_string(), typ.type_id);
+            decoded_abi_types.insert(typ.type_id);
 
             Some(quote! {
                 #name: Vec<#ty>
@@ -193,16 +186,15 @@ fn process_fn_items(
     let fuel_struct_fields = fuel_types
         .iter()
         .filter_map(|(_ty_id, typ)| {
-            if is_non_parsable_type(typ) {
+            if is_non_decodable_type(typ) {
                 return None;
             }
 
-            let name = rust_ident(typ);
-            let ty = rust_type_token(typ);
-            let ty_id = typ.type_id;
+            let name = typ.rust_type_ident();
+            let ty = typ.rust_type_token();
 
-            type_ids.insert(ty.to_string(), ty_id);
-            decoded_abi_types.insert(ty_id);
+            type_ids.insert(ty.to_string(), typ.type_id);
+            decoded_abi_types.insert(typ.type_id);
 
             Some(quote! {
                 #name: Vec<#ty>
@@ -223,19 +215,19 @@ fn process_fn_items(
             let struct_t_tok = rust_type_token(strct_t);
             let generic_ident = generic_decoded_ident(strct_t, strct);
 
-            let generic_vec_tok =
-                derive_vec_token(&strct_tok.to_string(), &struct_t_tok.to_string());
-            let generic_vec_str = generic_vec_tok.to_string();
-            let ty_id = type_id(abi::FUEL_TYPES_NAMESPACE, &generic_vec_str) as usize;
+            let generic_tok =
+                derive_generic_tokens(&strct_tok.to_string(), &struct_t_tok.to_string());
+            let generic_str = generic_tok.to_string();
+            let ty_id = type_id(abi::FUEL_TYPES_NAMESPACE, &generic_str) as usize;
 
-            type_ids.insert(generic_vec_str, ty_id);
+            type_ids.insert(generic_str, ty_id);
 
             if !decoded_abi_types.contains(&ty_id) {
                 decoder_struct_fields.push(quote! {
-                    #generic_ident: Vec<#generic_vec_tok>
+                    #generic_ident: Vec<#generic_tok>
                 });
 
-                decoders.push(decode_snippet(ty_id, &generic_vec_tok, &generic_ident));
+                decoders.push(decode_snippet(ty_id, &generic_tok, &generic_ident));
                 decoded_abi_types.insert(ty_id);
             }
         }
@@ -327,7 +319,7 @@ fn process_fn_items(
                                 let mut path_ident = path.ident.to_string();
                                 let mut name = decoded_ident(&path_ident);
 
-                                if path_is_generic(&path_ident) {
+                                if path_is_generic_struct(&path_ident) {
                                     let strct = abi_types_name.get(&path_ident).unwrap();
                                     let (ident, strct_t_ident) =
                                         generic_path_idents(path);
