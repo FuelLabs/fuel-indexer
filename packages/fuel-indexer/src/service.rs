@@ -253,7 +253,7 @@ async fn create_service_task(
                                         .expect("Failed to deserialize manifest");
 
                                 let start_block =
-                                    get_start_block(&mut conn, &manifest).await.unwrap();
+                                    get_start_block(&mut conn, &manifest).await?;
                                 let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                                     &config.fuel_node,
                                     &config.database.to_string(),
