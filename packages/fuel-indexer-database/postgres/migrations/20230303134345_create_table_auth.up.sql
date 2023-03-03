@@ -1,5 +1,5 @@
 create table auth (
-    id primary key auto increment,
+    id bigserial primary key,
     index_id bigserial,
     token varchar(255),
     constraint fk_index_registry_id

@@ -1,6 +1,7 @@
 #![deny(unused_crate_dependencies)]
 
 pub mod api;
+pub(crate) mod models;
 mod uses;
 
 pub mod cli;
