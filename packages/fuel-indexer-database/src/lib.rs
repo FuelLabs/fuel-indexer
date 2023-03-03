@@ -1,3 +1,5 @@
+#![deny(unused_crate_dependencies)]
+
 pub use fuel_indexer_database_types::DbType;
 use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
 use fuel_indexer_postgres as postgres;
