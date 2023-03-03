@@ -79,22 +79,22 @@ pub fn path_is_generic_struct(p: &str) -> bool {
     matches!(p, "Vec")
 }
 
-pub fn derive_generic_tokens(generic: &str, generic_t: &str) -> proc_macro2::TokenStream {
+pub fn generic_path_tokens(generic: &str, gt: &str) -> proc_macro2::TokenStream {
     match generic {
         "Vec" => {
             let generic = format_ident!("{}", generic);
-            let generic_t = format_ident!("{}", generic_t);
-            quote! { #generic<#generic_t> }
+            let gt = format_ident!("{}", gt);
+            quote! { #generic<#gt> }
         }
         _ => unimplemented!(),
     }
 }
 
-/// Return  for given generic PathSegment
+/// Return the fully qualified path String and Ident for a given generic PathSegment
 pub fn generic_path_idents(p: &PathSegment) -> (String, Ident) {
     // TODO: Implement as needed
     let g = p.ident.to_string();
-    let generic_t = match g.as_ref() {
+    let gt = match g.as_ref() {
         "Vec" => match &p.arguments {
             AngleBracketed(AngleBracketedGenericArguments { args, .. }) => {
                 match args.last().unwrap() {
@@ -113,11 +113,11 @@ pub fn generic_path_idents(p: &PathSegment) -> (String, Ident) {
         _ => unimplemented!(),
     };
 
-    let generic_ident = format_ident!("{}", generic_t);
-    let generic_tok = derive_generic_tokens(&g, &generic_t);
-    let generic_str = generic_tok.to_string();
+    let gi = format_ident!("{}", gt);
+    let gt = generic_path_tokens(&g, &gt);
+    let gs = gt.to_string();
 
-    (generic_str, generic_ident)
+    (gs, gi)
 }
 
 /// Derive Ident for decoded type
@@ -135,13 +135,10 @@ fn derive_type_field(ty: &TypeDeclaration) -> String {
 }
 
 /// Equivalent of `decoded_ident` but for generic type specifically
-pub fn generic_decoded_ident(
-    generic_t: &TypeDeclaration,
-    generic: &TypeDeclaration,
-) -> Ident {
+pub fn generic_decoded_ident(gt: &TypeDeclaration, generic: &TypeDeclaration) -> Ident {
     match generic.type_field.to_string().as_ref() {
         "struct Vec" => {
-            let name = decoded_ident(&derive_type_field(generic_t));
+            let name = decoded_ident(&derive_type_field(gt));
             format_ident!("vec_{}", name.to_string())
         }
         _ => unimplemented!(),

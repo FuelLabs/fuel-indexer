@@ -216,7 +216,7 @@ fn process_fn_items(
             let generic_ident = generic_decoded_ident(strct_t, strct);
 
             let generic_tok =
-                derive_generic_tokens(&strct_tok.to_string(), &struct_t_tok.to_string());
+                generic_path_tokens(&strct_tok.to_string(), &struct_t_tok.to_string());
             let generic_str = generic_tok.to_string();
             let ty_id = type_id(abi::FUEL_TYPES_NAMESPACE, &generic_str) as usize;
 
