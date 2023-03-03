@@ -19,8 +19,6 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
-    println!("manifest_path: {:?}", manifest_path);
-
     let manifest: Manifest = Manifest::from_file(manifest_path.as_path())?;
 
     let target = format!(

@@ -323,10 +323,27 @@ async fn create_service_task(
 
                                 futs.push(handle);
                                 killers.insert(manifest.uid(), killer);
+
+                                match queries::remove_index(
+                                    &mut conn,
+                                    &request.namespace,
+                                    &request.identifier,
+                                )
+                                .await
+                                {
+                                    Ok(_) => info!(
+                                        "Removed index: {}.{}",
+                                        &request.namespace, &request.identifier
+                                    ),
+                                    Err(e) => error!(
+                                        "Failed to remove index: {}.{}: {}",
+                                        &request.namespace, &request.identifier, e
+                                    ),
+                                }
                             }
                             Err(e) => {
                                 error!(
-                                    "Failed to find Index({}.{}): {}",
+                                    "Failed to find penultimate Index to revert to({}.{}): {}",
                                     &request.namespace, &request.identifier, e
                                 );
 
