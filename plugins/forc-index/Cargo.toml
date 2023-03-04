@@ -15,6 +15,7 @@ clap = { version = "3", features = ["derive", "env"] }
 forc-postgres = { workspace = true }
 forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.35.0" }
+forc-wallet = { version = "0.2" }
 fuel-indexer-lib = { workspace = true }
 indicatif = "0.17"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls", "multipart", "blocking"] }

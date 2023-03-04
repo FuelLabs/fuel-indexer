@@ -1,3 +1,4 @@
+pub mod forc_index_auth;
 pub mod forc_index_build;
 pub mod forc_index_check;
 pub mod forc_index_deploy;
