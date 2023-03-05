@@ -311,8 +311,7 @@ async fn get_start_block(
                 &manifest.namespace,
                 &manifest.identifier,
             )
-            .await.unwrap_or(1);
-            println!("last_block_height_for_indexer: {}", last);
+            .await?;
             Ok(last)
         }
         None => Ok(manifest.start_block.unwrap_or(1)),
