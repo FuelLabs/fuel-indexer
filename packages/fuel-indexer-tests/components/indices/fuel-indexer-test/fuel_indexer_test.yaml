@@ -6,5 +6,4 @@ contract_id: fuel1dthcclayuwhce7t7jt8dlpvv2c0q4wsyj4xsudcek5gwc6nd5cnqj4qkua
 identifier: index1
 module:
   wasm: target/wasm32-unknown-unknown/release/fuel_indexer_test.wasm
-resumable: true
 report_metrics: true
