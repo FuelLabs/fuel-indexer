@@ -9,7 +9,7 @@ use fuel_indexer_lib::{
         AuthenticationConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig,
         IndexerConfig,
     },
-    defaults::AuthScheme,
+    defaults::AuthStrategy,
 };
 use fuels::{
     macros::abigen,
@@ -239,7 +239,7 @@ pub async fn api_server_app_postgres() -> Router {
         stop_idle_indexers: true,
         authentication: AuthenticationConfig {
             auth_enabled: false,
-            auth_scheme: AuthScheme::default(),
+            strategy: AuthStrategy::default(),
         },
     };
 
@@ -269,7 +269,7 @@ pub async fn indexer_service_postgres() -> IndexerService {
         stop_idle_indexers: true,
         authentication: AuthenticationConfig {
             auth_enabled: false,
-            auth_scheme: AuthScheme::default(),
+            strategy: AuthStrategy::default(),
         },
     };
 

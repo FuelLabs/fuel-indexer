@@ -72,4 +72,4 @@
 #   enabled: true
 
 #   # Which authentication scheme to use
-#   scheme: jwt
+#   strategy: jwt

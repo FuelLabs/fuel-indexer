@@ -9,7 +9,7 @@ pub use crate::{
         fuel_node::FuelNodeConfig, graphql::GraphQLConfig,
     },
     defaults,
-    defaults::AuthScheme,
+    defaults::AuthStrategy,
 };
 pub use clap::{Args, Parser, ValueEnum};
 use serde::Deserialize;
@@ -163,8 +163,8 @@ pub struct IndexerArgs {
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
-    #[clap(value_enum, long, default_value = AuthScheme::Jwt.as_ref(), help = "Authentication scheme used.")]
-    pub auth_scheme: AuthScheme,
+    #[clap(value_enum, long, default_value = AuthStrategy::Jwt.as_ref(), help = "Authentication scheme used.")]
+    pub strategy: AuthStrategy,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -235,8 +235,8 @@ pub struct ApiServerArgs {
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
-    #[clap(value_enum, long, default_value = AuthScheme::Jwt.as_ref(), help = "Authentication scheme used.")]
-    pub auth_scheme: AuthScheme,
+    #[clap(value_enum, long, default_value = AuthStrategy::Jwt.as_ref(), help = "Authentication scheme used.")]
+    pub strategy: AuthStrategy,
 }
 
 fn derive_http_url(host: &String, port: &String) -> String {
@@ -328,7 +328,7 @@ impl From<IndexerArgs> for IndexerConfig {
 
             authentication: AuthenticationConfig {
                 auth_enabled: args.auth_enabled,
-                auth_scheme: args.auth_scheme,
+                strategy: args.strategy,
             },
         };
 
@@ -394,7 +394,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             stop_idle_indexers: false,
             authentication: AuthenticationConfig {
                 auth_enabled: args.auth_enabled,
-                auth_scheme: args.auth_scheme,
+                strategy: args.strategy,
             },
         };
 
@@ -463,7 +463,7 @@ impl IndexerConfig {
 
             authentication: AuthenticationConfig {
                 auth_enabled: args.auth_enabled,
-                auth_scheme: args.auth_scheme,
+                strategy: args.strategy,
             },
         };
 
@@ -585,12 +585,11 @@ impl IndexerConfig {
             if let Some(auth_enabled) = auth_enabled {
                 config.authentication.auth_enabled = auth_enabled.as_bool().unwrap();
             }
-            let auth_scheme =
-                section.get(&serde_yaml::Value::String("auth_scheme".into()));
+            let strategy = section.get(&serde_yaml::Value::String("strategy".into()));
 
-            if let Some(auth_scheme) = auth_scheme {
-                config.authentication.auth_scheme =
-                    AuthScheme::from_str(auth_scheme.as_str().unwrap(), true).unwrap();
+            if let Some(strategy) = strategy {
+                config.authentication.strategy =
+                    AuthStrategy::from_str(strategy.as_str().unwrap(), true).unwrap();
             }
         }
 

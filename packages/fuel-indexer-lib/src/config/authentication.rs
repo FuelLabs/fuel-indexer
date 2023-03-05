@@ -1,28 +1,28 @@
 use crate::{
     config::{IndexerConfigResult, MutConfig},
     defaults,
-    defaults::AuthScheme,
+    defaults::AuthStrategy,
     utils::{is_opt_env_var, trim_opt_env_key},
 };
 pub use clap::Parser;
 use serde::Deserialize;
 
-const AUTH_ENABLED_KEY: &str = "auth_enabled";
-const AUTH_SCHEME_KEY: &str = "auth_scheme";
+const AUTH_ENABLED_KEY: &str = "AUTH_ENABLED";
+const AUTH_STRATEGY_KEY: &str = "AUTH_STRATEGY";
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct AuthenticationConfig {
     #[serde(default)]
     pub auth_enabled: bool,
     #[serde(default)]
-    pub auth_scheme: AuthScheme,
+    pub strategy: AuthStrategy,
 }
 
 impl Default for AuthenticationConfig {
     fn default() -> Self {
         Self {
             auth_enabled: defaults::AUTH_ENABLED,
-            auth_scheme: AuthScheme::Jwt,
+            strategy: AuthStrategy::Jwt,
         }
     }
 }
@@ -35,8 +35,8 @@ impl MutConfig for AuthenticationConfig {
                 .unwrap();
         }
 
-        if is_opt_env_var(AUTH_SCHEME_KEY) {
-            self.auth_scheme = std::env::var(trim_opt_env_key(AUTH_SCHEME_KEY))?
+        if is_opt_env_var(AUTH_STRATEGY_KEY) {
+            self.strategy = std::env::var(trim_opt_env_key(AUTH_STRATEGY_KEY))?
                 .parse()
                 .unwrap();
         }

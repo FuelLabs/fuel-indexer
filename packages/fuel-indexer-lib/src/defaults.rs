@@ -47,7 +47,7 @@ pub const AUTH_ENABLED: bool = false;
     Serialize, Deserialize, EnumString, AsRefStr, ValueEnum, Clone, Debug, Default,
 )]
 #[serde(rename_all = "snake_case")]
-pub enum AuthScheme {
+pub enum AuthStrategy {
     #[default]
     Jwt,
 }

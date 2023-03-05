@@ -43,10 +43,6 @@ pub enum HttpError {
     InternalServer,
 }
 
-pub enum AuthStrategy {
-    Jwt,
-}
-
 #[derive(Debug, Error)]
 pub enum ApiError {
     #[error("Query builder error {0:?}")]

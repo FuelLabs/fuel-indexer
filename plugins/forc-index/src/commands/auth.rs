@@ -22,7 +22,7 @@ pub struct Command {
     #[clap(short, long, help = "Path to the indexer project.")]
     pub path: Option<PathBuf>,
 
-    /// Verbose output
+    /// Verbose output.
     #[clap(short, long, help = "Verbose output.")]
     pub verbose: bool,
 }
