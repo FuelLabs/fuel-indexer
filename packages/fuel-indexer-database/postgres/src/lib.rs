@@ -2,7 +2,7 @@
 
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
-use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
+use sqlx::{pool::PoolConnection, types::JsonValue, Postgres, Row};
 use tracing::info;
 
 #[cfg(feature = "metrics")]
