@@ -289,7 +289,7 @@ pub async fn run_query(
     let builder = GraphqlQueryBuilder::new(&schema, &query.query)?;
     let query = builder.build()?;
 
-    let queries = query.as_sql(true).join(";\n");
+    let queries = query.as_sql(&schema, pool.database_type()).join(";\n");
 
     let mut conn = pool.acquire().await?;
 
