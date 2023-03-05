@@ -4,8 +4,12 @@ use axum::Router;
 use fuel_indexer::IndexerService;
 use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
-use fuel_indexer_lib::config::{
-    DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
+use fuel_indexer_lib::{
+    config::{
+        AuthenticationConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig,
+        IndexerConfig,
+    },
+    defaults::AuthScheme,
 };
 use fuels::{
     macros::abigen,
@@ -233,7 +237,10 @@ pub async fn api_server_app_postgres() -> Router {
         graphql_api: GraphQLConfig::default(),
         metrics: true,
         stop_idle_indexers: true,
-        max_body: defaults::MAX_BODY,
+        authentication: AuthenticationConfig {
+            auth_enabled: false,
+            auth_scheme: AuthScheme::default(),
+        },
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -260,7 +267,10 @@ pub async fn indexer_service_postgres() -> IndexerService {
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,
-        max_body: defaults::MAX_BODY,
+        authentication: AuthenticationConfig {
+            auth_enabled: false,
+            auth_scheme: AuthScheme::default(),
+        },
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())

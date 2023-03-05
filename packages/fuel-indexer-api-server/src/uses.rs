@@ -302,7 +302,7 @@ pub(crate) async fn get_nonce() -> ApiResult<axum::Json<Value>> {
 }
 
 pub(crate) async fn verify_signature(
-    Json(payload): Json<VerifySignatureRequest>,
+    Json(_payload): Json<VerifySignatureRequest>,
 ) -> ApiResult<()> {
     Ok(())
 }
