@@ -1,3 +1,5 @@
+#![deny(unused_crate_dependencies)]
+
 pub mod cli;
 pub(crate) mod commands;
 mod database;

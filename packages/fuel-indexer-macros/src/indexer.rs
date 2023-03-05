@@ -214,6 +214,7 @@ fn process_fn_items(
     let mut type_vecs = Vec::new();
     let mut abi_dispatchers = Vec::new();
     let mut logged_types = Vec::new();
+    let mut message_types = Vec::new();
 
     let mut type_map = HashMap::new();
     let mut tuple_map = HashMap::new();
@@ -236,6 +237,19 @@ fn process_fn_items(
                 logged_types.push(quote! {
                     #log_id => {
                         self.decode_type(#ty_id, data);
+                    }
+                });
+            }
+        }
+
+        if let Some(parsed_message_types) = parsed.messages_types {
+            for typ in parsed_message_types {
+                let message_id = typ.message_id;
+                let ty_id = typ.application.type_id;
+
+                message_types.push(quote! {
+                    #message_id => {
+                        self.decode_type(#ty_id, data.data.clone());
                     }
                 });
             }
@@ -549,7 +563,11 @@ fn process_fn_items(
                 #scriptresult_decoder
             }
 
-            pub fn decode_messageout(&mut self, data: abi::MessageOut) {
+            pub fn decode_messageout(&mut self, type_id: u64, data: abi::MessageOut) {
+                match type_id {
+                    #(#message_types),*
+                    _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are well-formed")
+                }
                 #messageout_decoder
             }
 
@@ -610,8 +628,13 @@ fn process_fn_items(
                                 }
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
-                                let payload = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
-                                decoder.decode_messageout(payload);
+                                // Message type ID is stored in the first word of the data field.
+                                let mut buf = [0u8; 8];
+                                buf.copy_from_slice(&data[0..8]);
+                                let type_id = u64::from_be_bytes(buf);
+
+                                let receipt = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data: data[8..].to_vec() };
+                                decoder.decode_messageout(type_id, receipt);
                             }
                             Receipt::ScriptResult { result, gas_used } => {
                                 let data = abi::ScriptResult{ result: u64::from(result), gas_used };
