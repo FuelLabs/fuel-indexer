@@ -80,6 +80,7 @@ pub fn path_is_generic_struct(p: &str) -> bool {
 }
 
 pub fn generic_path_tokens(generic: &str, gt: &str) -> proc_macro2::TokenStream {
+    // TODO: Add others as needed
     match generic {
         "Vec" => {
             let generic = format_ident!("{}", generic);
@@ -91,7 +92,7 @@ pub fn generic_path_tokens(generic: &str, gt: &str) -> proc_macro2::TokenStream 
 }
 
 /// Return the fully qualified path String and Ident for a given generic PathSegment
-pub fn generic_path_idents(p: &PathSegment) -> (String, Ident) {
+pub fn generic_path_ident_tokens(p: &PathSegment) -> (String, Ident) {
     // TODO: Implement as needed
     let g = p.ident.to_string();
     let gt = match g.as_ref() {
@@ -113,11 +114,10 @@ pub fn generic_path_idents(p: &PathSegment) -> (String, Ident) {
         _ => unimplemented!(),
     };
 
-    let gi = format_ident!("{}", gt);
-    let gt = generic_path_tokens(&g, &gt);
-    let gs = gt.to_string();
+    let ident = format_ident!("{}", gt);
+    let tokens = generic_path_tokens(&g, &gt);
 
-    (gs, gi)
+    (tokens.to_string(), ident)
 }
 
 /// Derive Ident for decoded type
@@ -162,8 +162,8 @@ pub fn rust_type_ident(ty: &TypeDeclaration) -> Ident {
     }
 }
 
-/// Given a set of ABI functions, logged types, and abi types, build a mapping
-/// of Vec types to their generic types: where Vec<T> is { TypeId(Vec) -> TypeApplication(T) }
+/// Given a set of ABI functions, logged types, and abi types, build a mapping of Vec
+// types to their generic types: where Vec<T> is { TypeId(Vec) -> TypeApplication(T) }
 pub fn build_generics(
     functions: &Vec<ABIFunction>,
     log_types: &HashMap<usize, LoggedType>,
@@ -298,12 +298,13 @@ pub fn decode_snippet(
     }
 }
 
-// TODO: finish
-
+/// A wrapper trait for helper functions such as rust_type_ident,
+/// rust_type_token, and rust_type_ident
 pub trait Codegen {
     fn decoded_ident(&self) -> Ident;
     fn rust_type_token(&self) -> proc_macro2::TokenStream;
     fn rust_type_ident(&self) -> Ident;
+    fn rust_type_token_string(&self) -> String;
 }
 
 impl Codegen for TypeDeclaration {
@@ -317,5 +318,9 @@ impl Codegen for TypeDeclaration {
 
     fn rust_type_ident(&self) -> Ident {
         rust_type_ident(self)
+    }
+
+    fn rust_type_token_string(&self) -> String {
+        self.rust_type_token().to_string()
     }
 }

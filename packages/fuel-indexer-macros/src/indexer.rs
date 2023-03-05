@@ -208,15 +208,14 @@ fn process_fn_items(
 
     for (typeid, typ_apps) in generic_types.iter() {
         for typ_app in typ_apps.iter() {
-            let strct = abi_types_tyid.get(typeid).unwrap();
-            let strct_tok = rust_type_token(strct);
+            let generic = abi_types_tyid.get(typeid).unwrap();
+            let generic_t = abi_types_tyid.get(&typ_app.type_id).unwrap();
+            let generic_ident = generic_decoded_ident(generic_t, generic);
 
-            let strct_t = abi_types_tyid.get(&typ_app.type_id).unwrap();
-            let struct_t_tok = rust_type_token(strct_t);
-            let generic_ident = generic_decoded_ident(strct_t, strct);
-
-            let generic_tok =
-                generic_path_tokens(&strct_tok.to_string(), &struct_t_tok.to_string());
+            let generic_tok = generic_path_tokens(
+                &generic.rust_type_token_string(),
+                &generic_t.rust_type_token_string(),
+            );
             let generic_str = generic_tok.to_string();
             let ty_id = type_id(abi::FUEL_TYPES_NAMESPACE, &generic_str) as usize;
 
@@ -320,13 +319,14 @@ fn process_fn_items(
                                 let mut name = decoded_ident(&path_ident);
 
                                 if path_is_generic_struct(&path_ident) {
-                                    let strct = abi_types_name.get(&path_ident).unwrap();
-                                    let (ident, strct_t_ident) =
-                                        generic_path_idents(path);
-                                    let strct_t = abi_types_name
-                                        .get(&strct_t_ident.to_string())
+                                    let generic =
+                                        abi_types_name.get(&path_ident).unwrap();
+                                    let (ident, generic_t_ident) =
+                                        generic_path_ident_tokens(path);
+                                    let generic_t = abi_types_name
+                                        .get(&generic_t_ident.to_string())
                                         .unwrap();
-                                    name = generic_decoded_ident(strct_t, strct);
+                                    name = generic_decoded_ident(generic_t, generic);
                                     path_ident = ident;
                                 }
 
