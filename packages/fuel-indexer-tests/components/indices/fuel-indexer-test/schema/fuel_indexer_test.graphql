@@ -17,8 +17,26 @@ type QueryRoot {
     scriptresult: ScriptResult
     messageout: MessageOut
     optionentity: OptionEntity
+    tupleentity: TupleEntity
     u16entity: U16Entity
     messageentity: MessageEntity
+
+    # GraphQL API test entities
+    genre: Genre
+    person: Person
+    planet: Planet
+    continent: Continent
+    country: Country
+    region: Region
+    author: Author
+    city: City
+    library: Library
+    book: Book
+    sponsor: Sponsor
+    chapter: Chapter
+    bookclub: BookClub
+    municipality: Municipality
+    sportsteam: SportsTeam
 }
 
 type PingEntity {
@@ -50,7 +68,6 @@ type Block {
     height: UInt8!
     timestamp: Int8!
 }
-
 
 type Tx {
     id: ID!
@@ -112,6 +129,91 @@ type TupleEntity {
     complex_a: Charfield!
     complex_b: UInt8!
     simple_a: Charfield!
+}
+
+type Genre {
+    id: ID!
+    name: Charfield!
+}
+
+type Person {
+    id: ID!
+    name: Charfield!
+}
+
+type Planet {
+    id: ID!
+    name: Charfield!
+}
+
+type Continent {
+    id: ID!
+    name: Charfield!
+    planet: Planet!
+}
+
+type Country {
+    id: ID!
+    name: Charfield!
+    continent: Continent!
+}
+
+type Region {
+    id: ID!
+    name: Charfield!
+    country: Country!
+}
+
+type City {
+    id: ID!
+    name: Charfield!
+    region: Region!
+}
+
+type Author {
+    id: ID!
+    name: Charfield!
+    genre: Genre!
+}
+
+type Library {
+    id: ID!
+    name: Charfield!
+    city: City!
+}
+
+type Book {
+    id: ID!
+    name: Charfield!
+    author: Author!
+    library: Library!
+    genre: Genre!
+}
+
+type Sponsor {
+    id: ID!
+    name: Charfield! @unique
+    amount: UInt8!
+    representative: Person!
+}
+
+# TODO: Fix nullable foreign keys; there seems to be issues during codegen
+type BookClub {
+    id: ID!
+    book: Book!
+    member: Person!
+    corporate_sponsor: Sponsor! @join(on:name)
+}
+
+type Municipality {
+    id: ID!
+    name: Charfield! @unique
+}
+
+type SportsTeam {
+    id: ID!
+    name: Charfield!
+    municipality: Municipality! @join(on:name)
 }
 
 type MessageEntity {
