@@ -1,4 +1,8 @@
-use crate::{ops::forc_postgres_createdb, pg::PostgresVersion, utils::db_dir_or_default};
+use crate::{
+    ops::forc_postgres_createdb,
+    pg::PostgresVersion,
+    utils::{db_dir_or_default, default_indexer_dir},
+};
 use anyhow::Result;
 use clap::Parser;
 use fuel_indexer_lib::defaults;
@@ -63,6 +67,25 @@ pub struct Command {
     /// Fuel indexer configuration file.
     #[clap(short, long, help = "Fuel indexer configuration file.")]
     pub config: Option<PathBuf>,
+}
+
+impl Default for Command {
+    fn default() -> Self {
+        Command {
+            name: defaults::POSTGRES_DATABASE.to_string(),
+            password: defaults::POSTGRES_PASSWORD.to_string(),
+            user: defaults::POSTGRES_USER.to_string(),
+            port: defaults::POSTGRES_PORT.to_string(),
+            database_dir: Some(default_indexer_dir()),
+            auth_method: "plain".to_string(),
+            persistent: true,
+            start: true,
+            config: None,
+            timeout: None,
+            migration_dir: None,
+            postgres_version: PostgresVersion::V14,
+        }
+    }
 }
 
 pub async fn exec(command: Box<Command>) -> Result<()> {

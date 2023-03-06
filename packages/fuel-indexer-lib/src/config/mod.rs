@@ -151,7 +151,7 @@ pub struct IndexerArgs {
     /// Automatically create and start database using provided options or defaults.
     #[clap(
         long,
-        help = "Automatically create and start database using options, if provided."
+        help = "Automatically create and start database using provided options or defaults."
     )]
     pub auto_setup_database: bool,
 }
