@@ -1,4 +1,5 @@
 use crate::cli::{BuildCommand, InitCommand, WelcomeCommand, DeployCommand};
+use fuel_indexer_tests::fixtures::setup_test_fuel_node;
 use crate::ops::{
     forc_index_build::init as build, forc_index_deploy::init as deploy,
     forc_index_init::create_indexer,
@@ -76,7 +77,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 
             match input.trim().to_lowercase().as_str() {
                 "y" | "yes" => {
-                    println!("To network? \n1. Local node\n2. Testnet");
+                    println!("Connect to which network? \n1. Local node\n2. Testnet");
 
                     input.clear();
                     io::stdout().flush().expect("failed to flush stdout");
@@ -86,7 +87,9 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 
                     match input.trim().to_lowercase().as_str() {
                         "1" => {
-                            println!("Building indexer to local node...");
+                            println!("Starting a local fuel node...");
+
+                            println!("Building indexer for local node deployment...");
                             build(init_build())?;
                             println!("Deploying indexer to local node...");
                             deploy(init_deploy(Network::Local))?;
@@ -136,7 +139,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 fn init_build() -> BuildCommand {
     BuildCommand {
         manifest: Some(WELCOME_MANIFEST.to_string()),
-        path: Some(std::path::PathBuf::from(".")),
+        path: None,
         target: Some(WASM_TARGET.to_string()),
         release: true,
         profile: Some("release".to_string()),
@@ -151,7 +154,7 @@ fn init_deploy(network: Network) -> DeployCommand {
     let mut deploy_command = DeployCommand {
                 url: String::new(),
                 manifest: Some(WELCOME_MANIFEST.to_string()),
-                path: Some(std::path::PathBuf::from(".")),
+                path: None,
                 auth: Some("".to_string()),
                 target: Some(WASM_TARGET.to_string()),
                 release: true,
@@ -163,7 +166,7 @@ fn init_deploy(network: Network) -> DeployCommand {
     };
     match network {
         Network::Local => {
-            deploy_command.url = "127.0.0.1:4000".to_string();
+            deploy_command.url = "http://127.0.0.1:29987".to_string();
         }
         Network::Testnet => {
             deploy_command.url = "https://node-beta-2.fuel.network".to_string();
