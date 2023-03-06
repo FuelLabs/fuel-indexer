@@ -320,3 +320,15 @@ pub async fn remove_index(
         }
     }
 }
+
+pub async fn remove_last_index(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::remove_last_index(c, namespace, identifier).await
+        }
+    }
+}

@@ -614,6 +614,25 @@ pub async fn index_id_for(
     Ok(id)
 }
 
+pub async fn last_index_id_for(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<i64> {
+    #[cfg(feature = "metrics")]
+    METRICS.db.postgres.last_index_id_for_calls.inc();
+
+    let query = format!(
+        "SELECT id FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' ORDER BY id DESC LIMIT 1",
+    );
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let id: i64 = row.get(0);
+
+    Ok(id)
+}
+
 pub async fn penultimate_index_id_for(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -623,7 +642,7 @@ pub async fn penultimate_index_id_for(
     METRICS.db.postgres.penultimate_index_id_for_calls.inc();
 
     let query = format!(
-    "SELECT id FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' ORDER BY id DESC LIMIT 1, 1",
+        "SELECT id FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' ORDER BY id DESC LIMIT 1 OFFSET 1",
     );
 
     let row = sqlx::query(&query).fetch_one(conn).await?;
@@ -669,6 +688,49 @@ pub async fn remove_index(
     METRICS.db.postgres.remove_index.inc();
 
     let index_id = index_id_for(conn, namespace, identifier).await?;
+
+    execute_query(
+        conn,
+        format!("DELETE FROM index_asset_registry_wasm WHERE index_id = {index_id}",),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!("DELETE FROM index_asset_registry_manifest WHERE index_id = {index_id}",),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!("DELETE FROM index_asset_registry_schema WHERE index_id = {index_id}",),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!("DELETE FROM index_registry WHERE id = {index_id}",),
+    )
+    .await?;
+
+    Ok(())
+}
+
+pub async fn remove_last_index(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    #[cfg(feature = "metrics")]
+    METRICS.db.postgres.remove_last_index_calls.inc();
+
+    let index_id = last_index_id_for(conn, namespace, identifier).await?;
+
+    execute_query(
+        conn,
+        format!("DELETE FROM index_asset_registry_wasm WHERE index_id = {index_id}",),
+    )
+    .await?;
 
     execute_query(
         conn,

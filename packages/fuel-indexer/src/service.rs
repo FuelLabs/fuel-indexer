@@ -301,10 +301,31 @@ async fn create_service_task(
                         .await
                         {
                             Ok(id) => {
+                                let _ = queries::start_transaction(&mut conn)
+                                    .await
+                                    .expect("Failed to start transaction");
+
                                 let assets =
                                     queries::latest_assets_for_index(&mut conn, &id)
                                         .await
                                         .expect("Could not get latest assets for index");
+
+                                if let Err(_e) = queries::remove_last_index(
+                                    &mut conn,
+                                    &request.namespace,
+                                    &request.identifier,
+                                )
+                                .await
+                                {
+                                    queries::revert_transaction(&mut conn)
+                                        .await
+                                        .expect("Failed to revert transaction");
+                                } else {
+                                    queries::commit_transaction(&mut conn)
+                                        .await
+                                        .expect("Failed to commit transaction");
+                                }
+
                                 let manifest: Manifest =
                                     serde_yaml::from_slice(&assets.manifest.bytes)
                                         .expect("Failed to deserialize manifest");
@@ -323,23 +344,6 @@ async fn create_service_task(
 
                                 futs.push(handle);
                                 killers.insert(manifest.uid(), killer);
-
-                                match queries::remove_index(
-                                    &mut conn,
-                                    &request.namespace,
-                                    &request.identifier,
-                                )
-                                .await
-                                {
-                                    Ok(_) => info!(
-                                        "Removed index: {}.{}",
-                                        &request.namespace, &request.identifier
-                                    ),
-                                    Err(e) => error!(
-                                        "Failed to remove index: {}.{}: {}",
-                                        &request.namespace, &request.identifier, e
-                                    ),
-                                }
                             }
                             Err(e) => {
                                 error!(
