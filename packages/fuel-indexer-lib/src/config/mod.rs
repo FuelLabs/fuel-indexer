@@ -147,6 +147,13 @@ pub struct IndexerArgs {
         help = "Prevent indexers from running without handling any blocks."
     )]
     pub stop_idle_indexers: bool,
+
+    /// Automatically create and start database using provided options or defaults.
+    #[clap(
+        long,
+        help = "Automatically create and start database using options, if provided."
+    )]
+    pub auto_setup_database: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
