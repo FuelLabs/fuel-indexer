@@ -64,7 +64,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .file("schema", graphql_schema)?
         .file("wasm", module_path)?;
 
-    let target = format!("{}/api/index/{}/{}", &url, &namespace, &identifier);
+    let target = format!("{url}/api/index/{namespace}/{identifier}");
 
     info!(
         "Deploying indexer at {} to {}",
@@ -104,8 +104,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     if res.status() != StatusCode::OK {
         error!(
-            "\n❌ {} returned a non-200 response code: {:?}",
-            &target,
+            "\n❌ {target} returned a non-200 response code: {:?}",
             res.status()
         );
         return Ok(());

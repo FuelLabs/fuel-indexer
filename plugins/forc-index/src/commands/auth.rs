@@ -18,6 +18,10 @@ pub struct Command {
     )]
     pub manifest: Option<String>,
 
+    /// Index of account to use for signing.
+    #[clap(long, help = "Index of account to use for signing.")]
+    pub account_index: String,
+
     /// Path of index project.
     #[clap(short, long, help = "Path to the indexer project.")]
     pub path: Option<PathBuf>,
