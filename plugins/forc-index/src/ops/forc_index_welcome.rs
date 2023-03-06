@@ -1,5 +1,4 @@
 use crate::cli::{BuildCommand, InitCommand, WelcomeCommand, DeployCommand};
-use fuel_indexer_tests::fixtures::setup_test_fuel_node;
 use crate::ops::{
     forc_index_build::init as build, forc_index_deploy::init as deploy,
     forc_index_init::create_indexer,
@@ -175,3 +174,4 @@ fn init_deploy(network: Network) -> DeployCommand {
 
     deploy_command
 }
+

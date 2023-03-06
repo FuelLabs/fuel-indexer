@@ -54,6 +54,5 @@ fuel-indexer-metrics = { version = "0.4.0", path = "./packages/fuel-indexer-metr
 fuel-indexer-plugin = { version = "0.4.0", path = "./packages/fuel-indexer-plugin", default-features = false }
 fuel-indexer-postgres = { version = "0.4.0", path = "./packages/fuel-indexer-database/postgres", default-features = false }
 fuel-indexer-schema = { version = "0.4.0", path = "./packages/fuel-indexer-schema", default-features = false }
-fuel-indexer-tests = { version = "0.0.0", path = "./packages/fuel-indexer-tests" }
 fuel-indexer-types = { version = "0.4.0", path = "./packages/fuel-indexer-types" }
 

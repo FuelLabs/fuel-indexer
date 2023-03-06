@@ -2151,7 +2151,6 @@ dependencies = [
  "forc-tracing 0.31.3",
  "forc-util",
  "fuel-indexer-lib",
- "fuel-indexer-tests",
  "fuel-tx",
  "fuels-types",
  "hex",
