@@ -293,27 +293,29 @@ async fn create_service_task(
                             .await
                             .expect("Failed to acquire connection from pool");
 
-                        match queries::penultimate_index_id_for(
+                        match queries::penultimate_asset_for_index(
                             &mut conn,
                             &request.namespace,
                             &request.identifier,
+                            IndexAssetType::Wasm,
                         )
                         .await
                         {
-                            Ok(id) => {
+                            Ok(penultimate_asset) => {
                                 let _ = queries::start_transaction(&mut conn)
                                     .await
                                     .expect("Failed to start transaction");
 
-                                let assets =
-                                    queries::latest_assets_for_index(&mut conn, &id)
+                                let latest_assets =
+                                    queries::latest_assets_for_index(&mut conn, &penultimate_asset.id)
                                         .await
                                         .expect("Could not get latest assets for index");
 
-                                if let Err(_e) = queries::remove_last_index(
+                                if let Err(_e) = queries::remove_asset_by_version(
                                     &mut conn,
-                                    &request.namespace,
-                                    &request.identifier,
+                                    &latest_assets.manifest.id,
+                                    &latest_assets.wasm.version,
+                                    IndexAssetType::Wasm,
                                 )
                                 .await
                                 {
@@ -325,16 +327,17 @@ async fn create_service_task(
                                         .await
                                         .expect("Failed to commit transaction");
                                 }
+                                
 
                                 let manifest: Manifest =
-                                    serde_yaml::from_slice(&assets.manifest.bytes)
+                                    serde_yaml::from_slice(&penultimate_asset.bytes)
                                         .expect("Failed to deserialize manifest");
 
                                 let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                                     &config.fuel_node,
                                     &config.database.to_string(),
                                     &manifest,
-                                    ExecutorSource::Registry(assets.wasm.bytes),
+                                    ExecutorSource::Registry(penultimate_asset.bytes),
                                     config.stop_idle_indexers,
                                 )
                                 .await

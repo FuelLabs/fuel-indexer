@@ -46,7 +46,9 @@ fn print_welcome_message() {
 `forc index deploy`
     Deploy your index.
 `forc index remove`
-    Stop a running index."#;
+    Stop a running index.
+`forc index revert`
+    Revert a deployed index."#;
 
     let ascii_tag = r#"
 ███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 
