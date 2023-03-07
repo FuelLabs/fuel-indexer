@@ -623,7 +623,7 @@ pub async fn penultimate_asset_for_index(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.penultimate_asset_for_index_calls.inc();
 
-    let index_id = index_id_for(conn, namespace, identifier).await?; 
+    let index_id = index_id_for(conn, namespace, identifier).await?;
     let query = format!(
         "SELECT * FROM index_asset_registry_{0} WHERE index_id = {1} ORDER BY id DESC LIMIT 1 OFFSET 1",
         asset_type.as_ref(),
