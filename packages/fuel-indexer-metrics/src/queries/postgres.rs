@@ -36,7 +36,6 @@ pub struct PostgreQueries {
     pub revert_transaction_calls: IntCounter,
     pub run_migration_calls: IntCounter,
     pub remove_index: IntCounter,
-    pub remove_last_index_calls: IntCounter,
     pub remove_asset_by_version_calls: IntCounter,
 }
 
@@ -201,11 +200,6 @@ impl Metric for PostgreQueries {
             remove_index: register_int_counter!(
                 "postgres_remove_index",
                 "Count of calls to postgres remove_index."
-            )
-            .unwrap(),
-            remove_last_index_calls: register_int_counter!(
-                "postgres_remove_last_index_id_for",
-                "Count of calls to postgres remove_last_index_id_for."
             )
             .unwrap(),
             remove_asset_by_version_calls: register_int_counter!(
