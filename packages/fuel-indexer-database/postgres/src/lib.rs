@@ -749,49 +749,6 @@ pub async fn remove_index(
     Ok(())
 }
 
-pub async fn remove_last_index(
-    conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-    identifier: &str,
-) -> sqlx::Result<()> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.remove_last_index_calls.inc();
-
-    let index_id = last_index_id_for(conn, namespace, identifier).await?;
-
-    execute_query(
-        conn,
-        format!("DELETE FROM index_asset_registry_wasm WHERE index_id = {index_id}",),
-    )
-    .await?;
-
-    execute_query(
-        conn,
-        format!("DELETE FROM index_asset_registry_wasm WHERE index_id = {index_id}",),
-    )
-    .await?;
-
-    execute_query(
-        conn,
-        format!("DELETE FROM index_asset_registry_manifest WHERE index_id = {index_id}",),
-    )
-    .await?;
-
-    execute_query(
-        conn,
-        format!("DELETE FROM index_asset_registry_schema WHERE index_id = {index_id}",),
-    )
-    .await?;
-
-    execute_query(
-        conn,
-        format!("DELETE FROM index_registry WHERE id = {index_id}",),
-    )
-    .await?;
-
-    Ok(())
-}
-
 pub async fn remove_asset_by_version(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
