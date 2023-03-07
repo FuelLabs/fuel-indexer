@@ -306,10 +306,12 @@ async fn create_service_task(
                                     .await
                                     .expect("Failed to start transaction");
 
-                                let latest_assets =
-                                    queries::latest_assets_for_index(&mut conn, &penultimate_asset.id)
-                                        .await
-                                        .expect("Could not get latest assets for index");
+                                let latest_assets = queries::latest_assets_for_index(
+                                    &mut conn,
+                                    &penultimate_asset.id,
+                                )
+                                .await
+                                .expect("Could not get latest assets for index");
 
                                 if let Err(_e) = queries::remove_asset_by_version(
                                     &mut conn,
@@ -327,7 +329,6 @@ async fn create_service_task(
                                         .await
                                         .expect("Failed to commit transaction");
                                 }
-                                
 
                                 let manifest: Manifest =
                                     serde_yaml::from_slice(&penultimate_asset.bytes)

@@ -212,7 +212,7 @@ impl Metric for PostgreQueries {
                 "postgres_remove_asset_by_version",
                 "Count of calls to postgres remove_asset_by_version."
             )
-            .unwrap()
+            .unwrap(),
         }
     }
 }
