@@ -8,7 +8,7 @@ The WASM module is generated based on your manifest, schema, and your `lib.rs` f
 
 You can implement the logic for handling events and saving data to the database in your `lib.rs` file in the `src` folder.
 
-Here, you can define which functions handle different events based on the function parameters. If you add a function parameter of a certain type, the function will handle all blocks, transactions, or transaction receipts that contain match type.
+Here, you can define which functions handle different events based on the function parameters. If you add a function parameter of a certain type, the function will handle all blocks, transactions, or transaction receipts that contain a matching type.
 
 We can look at the function below as an example:
 
