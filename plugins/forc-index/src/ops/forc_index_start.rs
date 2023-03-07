@@ -1,6 +1,5 @@
 use crate::cli::StartCommand;
-use forc_postgres::cli::CreateDbCommand;
-use forc_postgres::ops::forc_postgres_createdb;
+use forc_postgres::cli::{CreateDbCommand, StartDbCommand};
 use fuel_indexer_lib::defaults;
 use std::process::Command;
 use tracing::info;
@@ -39,8 +38,9 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         let port = postgres_port
             .clone()
             .unwrap_or(defaults::POSTGRES_PORT.to_string());
+
         let create_db_cmd = CreateDbCommand {
-            name,
+            name: name.clone(),
             password,
             user,
             port,
@@ -48,8 +48,16 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             ..Default::default()
         };
 
-        forc_postgres_createdb::init(create_db_cmd).await?;
+        let start_db_cmd = StartDbCommand {
+            name,
+            database_dir: create_db_cmd.database_dir.clone(),
+            config: config.clone(),
+        };
+
+        forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
+        forc_postgres::commands::start::exec(start_db_cmd).await?;
     }
+
     let stdout = Command::new("which")
         .arg("fuel-indexer")
         .output()

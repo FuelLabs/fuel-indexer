@@ -79,7 +79,7 @@ impl Default for Command {
             database_dir: Some(default_indexer_dir()),
             auth_method: "plain".to_string(),
             persistent: true,
-            start: true,
+            start: false,
             config: None,
             timeout: None,
             migration_dir: None,
