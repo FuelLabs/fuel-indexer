@@ -52,7 +52,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 
     match input.trim().to_lowercase().as_str() {
         "y" | "yes" => {
-            info!("🏗️ Creating a default index...");
+            info!("\n Creating the default index... 🔥");
             create(InitCommand {
                 name: Some("welcome".to_string()),
                 path: Some(std::path::PathBuf::from(".")),
@@ -62,7 +62,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
             })?;
 
             info!("\n✅ Indexer project initialized. Manifest file created.");
-            info!("\n Start the an indexer and deploy the index? (Y/n)");
+            info!("\n Start the indexer and deploy the index? (Y/n)");
 
             input = process_std(input);
             match input.trim().to_lowercase().as_str() {
@@ -94,21 +94,11 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
                     println!("Invalid input. Please enter Y or n");
                 }
             }
-
-            match input.trim().to_lowercase().as_str() {
-                "1" => {
-                    println!("Deploying indexer to local node...");
-                }
-                "2" => {
-                    println!("Deploying indexer to testnet...");
-                }
-                _ => {
-                    println!("Invalid input. Please enter 1 or 2");
-                }
-            }
         }
         "n" | "no" => {
-            println!("Skipping default indexer creation...");
+            info!("\n Create a name for your index");
+            input = process_std(input);
+            let name = input.trim().to_lowercase();
         }
         _ => {
             println!("Invalid input. Please enter Y or n");
