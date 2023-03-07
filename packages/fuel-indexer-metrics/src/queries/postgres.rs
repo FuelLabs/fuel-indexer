@@ -28,7 +28,6 @@ pub struct PostgreQueries {
     pub latest_assets_for_index_calls: IntCounter,
     pub asset_already_exists_calls: IntCounter,
     pub index_id_for_calls: IntCounter,
-    pub last_index_id_for_calls: IntCounter,
     pub penultimate_index_id_for_calls: IntCounter,
     pub penultimate_asset_for_index_calls: IntCounter,
     pub start_transaction_calls: IntCounter,
@@ -160,11 +159,6 @@ impl Metric for PostgreQueries {
             index_id_for_calls: register_int_counter!(
                 "postgres_index_id_for_calls",
                 "Count of calls to postgres index_id_for_calls."
-            )
-            .unwrap(),
-            last_index_id_for_calls: register_int_counter!(
-                "postgres_last_index_id_for_calls",
-                "Count of calls to postgres last_index_id_for_calls."
             )
             .unwrap(),
             penultimate_index_id_for_calls: register_int_counter!(
