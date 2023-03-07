@@ -85,7 +85,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
                             println!("Invalid input. Please enter 1 or 2");
                         }
                     }
-                                    }
+                }
                 "n" | "no" => {
                     println!("Skipping indexer deployment...");
                     std::process::exit(0);
@@ -127,15 +127,15 @@ fn process_std(mut input: String) -> String {
 }
 
 fn init_start(on_network: Network) -> StartCommand {
-    println!("Starting indexer...");
+    info!("Starting indexer...");
     let mut start_command = StartCommand {
         log_level: "info".to_string(),
         config: None,
         manifest: Some(std::path::PathBuf::from(".")),
         fuel_node_host: String::new(),
         fuel_node_port: String::new(),
-        graphql_api_host: defaults::GRAPHQL_API_HOST.to_string(),
-        graphql_api_port: defaults::GRAPHQL_API_PORT.to_string(),
+        graphql_api_host: String::new(),
+        graphql_api_port: String::new(),
         database: defaults::DATABASE.to_string(),
         max_body: defaults::MAX_BODY.to_string(),
         postgres_user: None,
@@ -151,17 +151,22 @@ fn init_start(on_network: Network) -> StartCommand {
         Network::Local => {
             start_command.fuel_node_host = "http://127.0.0.1:29987".to_string();
             start_command.fuel_node_port = "29987".to_string();
+            start_command.graphql_api_host = defaults::GRAPHQL_API_HOST.to_string(); 
+            start_command.graphql_api_port = defaults::GRAPHQL_API_PORT.to_string();
         }
         Network::Testnet => {
-            start_command.fuel_node_host = "https://node-beta-2.fuel.network".to_string();
+            start_command.fuel_node_host =
+                "https://node-beta-2.fuel.network/graphql".to_string();
             start_command.fuel_node_port = "4000".to_string();
+            start_command.graphql_api_host = "node-beta-2.fuel.network".to_string();
+            start_command.graphql_api_port = "80".to_string();
         }
     }
     start_command
 }
 
 fn init_build() -> BuildCommand {
-    println!("Building indexer for local node deployment...");
+    info!("Building indexer for local node deployment...");
     BuildCommand {
         manifest: Some(WELCOME_MANIFEST.to_string()),
         path: None,
@@ -176,7 +181,7 @@ fn init_build() -> BuildCommand {
 }
 
 fn init_deploy() -> DeployCommand {
-    println!("Deploying indexer to local node...");
+    info!("Deploying indexer to local node...");
     DeployCommand {
         url: "http://127.0.0.1:29987".to_string(),
         manifest: Some(WELCOME_MANIFEST.to_string()),
