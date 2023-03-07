@@ -273,18 +273,6 @@ pub async fn index_id_for(
     }
 }
 
-pub async fn penultimate_index_id_for(
-    conn: &mut IndexerConnection,
-    namespace: &str,
-    identifier: &str,
-) -> sqlx::Result<i64> {
-    match conn {
-        IndexerConnection::Postgres(ref mut c) => {
-            postgres::penultimate_index_id_for(c, namespace, identifier).await
-        }
-    }
-}
-
 pub async fn penultimate_asset_for_index(
     conn: &mut IndexerConnection,
     namespace: &str,

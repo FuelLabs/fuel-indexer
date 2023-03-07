@@ -614,25 +614,6 @@ pub async fn index_id_for(
     Ok(id)
 }
 
-pub async fn penultimate_index_id_for(
-    conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-    identifier: &str,
-) -> sqlx::Result<i64> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.penultimate_index_id_for_calls.inc();
-
-    let query = format!(
-        "SELECT id FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' ORDER BY id DESC LIMIT 1 OFFSET 1",
-    );
-
-    let row = sqlx::query(&query).fetch_one(conn).await?;
-
-    let id: i64 = row.get(0);
-
-    Ok(id)
-}
-
 pub async fn penultimate_asset_for_index(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -642,7 +623,7 @@ pub async fn penultimate_asset_for_index(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.penultimate_asset_for_index_calls.inc();
 
-    let index_id = penultimate_index_id_for(conn, namespace, identifier).await?;
+    let index_id = index_id_for(conn, namespace, identifier).await?; 
     let query = format!(
         "SELECT * FROM index_asset_registry_{0} WHERE index_id = {1} ORDER BY id DESC LIMIT 1 OFFSET 1",
         asset_type.as_ref(),
