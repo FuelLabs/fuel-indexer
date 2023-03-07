@@ -6,5 +6,5 @@ graphql_schema: examples/hello-world/hello-index/schema/hello_index.schema.graph
 module:
   wasm: target/wasm32-unknown-unknown/release/hello_index.wasm
 metrics: ~
-contract_id: ~
+contract_id: fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9
 start_block: 1

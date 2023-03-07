@@ -14,7 +14,5 @@ fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-postgres = { workspace = true, default-features = true }
 sqlx = { version = "0.6" }
-strum = { version = "0.24", default-features = false, features = ["derive"] }
 thiserror = { version = "1.0" }
-tracing = "0.1"
 url = "2.2"
