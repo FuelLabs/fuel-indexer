@@ -1,7 +1,10 @@
-use crate::cli::{BuildCommand, InitCommand, WelcomeCommand, DeployCommand};
+use crate::{
+    cli::{BuildCommand, DeployCommand, InitCommand, WelcomeCommand, StartCommand},
+    utils::defaults,
+};
 use crate::ops::{
     forc_index_build::init as build, forc_index_deploy::init as deploy,
-    forc_index_init::create_indexer,
+    forc_index_init::create_indexer as create, forc_index_start::init as start,
 };
 use std::io::{self, Write};
 
@@ -37,8 +40,8 @@ const FUEL_LOGO: &str = r#"
                     :YP!                          
 "#;
 
-const WELCOME_MANIFEST: &str= "welcome.manifest.yaml";
-const WASM_TARGET: &str= "wasm32-unknown-unknown";
+const WELCOME_MANIFEST: &str = "welcome.manifest.yaml";
+const WASM_TARGET: &str = "wasm32-unknown-unknown";
 
 pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
     //start the fuel-indexer with fuel-node
@@ -52,8 +55,8 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 
     match input.trim().to_lowercase().as_str() {
         "y" | "yes" => {
-            println!("Creating a default indexer...");
-            create_indexer(InitCommand {
+            println!("Creating a default index...");
+            create(InitCommand {
                 name: Some("welcome".to_string()),
                 path: Some(std::path::PathBuf::from(".")),
                 namespace: "default".to_string(),
@@ -61,13 +64,10 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
                 absolute_paths: true,
             })?;
 
-            let manifest_path= std::path::PathBuf::from("./welcome.manifest.yaml");
-            let manifest_str = std::fs::read_to_string(&manifest_path)?;
             println!("Indexer project initialized. The manifest file has been created:");
-            println!("{}", manifest_str);
+            println!("Starting indexer...");
 
-            println!("Deploy the index? (Y/n)");
-
+            
             input.clear();
             io::stdout().flush().expect("failed to flush stdout");
             io::stdin()
@@ -77,7 +77,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
             match input.trim().to_lowercase().as_str() {
                 "y" | "yes" => {
                     println!("Connect to which network? \n1. Local node\n2. Testnet");
-
+                    
                     input.clear();
                     io::stdout().flush().expect("failed to flush stdout");
                     io::stdin()
@@ -86,19 +86,21 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 
                     match input.trim().to_lowercase().as_str() {
                         "1" => {
-                            println!("Starting a local fuel node...");
+
+                            start(init_start(Network::Local))?;
+                            println!("Deploy the index? (Y/n)");
 
                             println!("Building indexer for local node deployment...");
                             build(init_build())?;
                             println!("Deploying indexer to local node...");
-                            deploy(init_deploy(Network::Local))?;
-
+                            deploy(init_deploy())?;
                         }
                         "2" => {
+                            start(init_start(Network::Testnet))?;
                             println!("Deploying indexer to testnet...");
                             build(init_build())?;
                             println!("Deploying indexer to testnet...");
-                            deploy(init_deploy(Network::Testnet))?;
+                            deploy(init_deploy())?;
                         }
                         _ => {
                             println!("Invalid input. Please enter 1 or 2");
@@ -143,35 +145,57 @@ fn init_build() -> BuildCommand {
         release: true,
         profile: Some("release".to_string()),
         verbose: false,
-        locked: false, 
-        native: false, 
+        locked: false,
+        native: false,
         output_dir_root: Some(std::path::PathBuf::from(".")),
     }
 }
 
-fn init_deploy(network: Network) -> DeployCommand {
-    let mut deploy_command = DeployCommand {
-                url: String::new(),
-                manifest: Some(WELCOME_MANIFEST.to_string()),
-                path: None,
-                auth: Some("".to_string()),
-                target: Some(WASM_TARGET.to_string()),
-                release: true,
-                profile: Some("release".to_string()),
-                verbose: false,
-                locked: false,
-                native: false,
-                output_dir_root: Some(std::path::PathBuf::from(".")),
-    };
-    match network {
-        Network::Local => {
-            deploy_command.url = "http://127.0.0.1:29987".to_string();
-        }
-        Network::Testnet => {
-            deploy_command.url = "https://node-beta-2.fuel.network".to_string();
-        }
+fn init_deploy() -> DeployCommand {
+    DeployCommand {
+        url: "http://127.0.0.1:29987".to_string(),
+        manifest: Some(WELCOME_MANIFEST.to_string()),
+        path: None,
+        auth: Some("".to_string()),
+        target: Some(WASM_TARGET.to_string()),
+        release: true,
+        profile: Some("release".to_string()),
+        verbose: false,
+        locked: false,
+        native: false,
+        output_dir_root: Some(std::path::PathBuf::from(".")),
     }
-
-    deploy_command
 }
 
+fn init_start(on_network: Network) -> StartCommand {
+    let mut start_command = StartCommand {
+        log_level: "info".to_string(),
+        config: None,
+        manifest: Some(std::path::PathBuf::from(".")),
+        fuel_node_host: String::new(),
+        fuel_node_port: String::new(), 
+        graphql_api_host: defaults::GRAPHQL_API_HOST.to_string(),
+        graphql_api_port: defaults::GRAPHQL_API_PORT.to_string(),
+        database: defaults::DATABASE.to_string(),
+        max_body: defaults::MAX_BODY.to_string(),
+        postgres_user: None,
+        postgres_database: None,
+        postgres_password: None,
+        postgres_host: None,
+        postgres_port: None,
+        run_migrations: true,
+        metrics: false,
+        stop_idle_indexers: true,
+    };
+    match on_network {
+        Network::Local => {
+            start_command.fuel_node_host = "http://127.0.0.1:29987".to_string();
+            start_command.fuel_node_port = "29987".to_string();
+        }
+        Network::Testnet => {
+            start_command.fuel_node_host = "https://node-beta-2.fuel.network".to_string();
+            start_command.fuel_node_port = "4000".to_string();
+        }
+    }
+    start_command
+}
