@@ -1,12 +1,13 @@
-use crate::{
-    cli::{BuildCommand, DeployCommand, InitCommand, WelcomeCommand, StartCommand},
-    utils::defaults,
-};
 use crate::ops::{
     forc_index_build::init as build, forc_index_deploy::init as deploy,
     forc_index_init::create_indexer as create, forc_index_start::init as start,
 };
+use crate::{
+    cli::{BuildCommand, DeployCommand, InitCommand, StartCommand, WelcomeCommand},
+    utils::defaults,
+};
 use std::io::{self, Write};
+use tracing::info;
 
 enum Network {
     Local,
@@ -44,18 +45,14 @@ const WELCOME_MANIFEST: &str = "welcome.manifest.yaml";
 const WASM_TARGET: &str = "wasm32-unknown-unknown";
 
 pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
-    //start the fuel-indexer with fuel-node
-    println!("Create default index? (Y/n)");
+    info!("Create default index? (Y/n)");
 
     let mut input = String::new();
-    io::stdout().flush().expect("failed to flush stdout");
-    io::stdin()
-        .read_line(&mut input)
-        .expect("failed to read from stdin");
+    input = process_std(input);
 
     match input.trim().to_lowercase().as_str() {
         "y" | "yes" => {
-            println!("Creating a default index...");
+            info!("🏗️ Creating a default index...");
             create(InitCommand {
                 name: Some("welcome".to_string()),
                 path: Some(std::path::PathBuf::from(".")),
@@ -64,51 +61,34 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
                 absolute_paths: true,
             })?;
 
-            println!("Indexer project initialized. The manifest file has been created:");
-            println!("Starting indexer...");
+            info!("\n✅ Indexer project initialized. Manifest file created.");
+            info!("\n Start the an indexer and deploy the index? (Y/n)");
 
-            
-            input.clear();
-            io::stdout().flush().expect("failed to flush stdout");
-            io::stdin()
-                .read_line(&mut input)
-                .expect("failed to read from stdin");
-
+            input = process_std(input);
             match input.trim().to_lowercase().as_str() {
                 "y" | "yes" => {
-                    println!("Connect to which network? \n1. Local node\n2. Testnet");
-                    
-                    input.clear();
-                    io::stdout().flush().expect("failed to flush stdout");
-                    io::stdin()
-                        .read_line(&mut input)
-                        .expect("failed to read from stdin");
+                    info!("\n Connect to which network? 🤔 \n1. Local node\n2. Testnet");
+                    input = process_std(input);
 
                     match input.trim().to_lowercase().as_str() {
                         "1" => {
-
                             start(init_start(Network::Local))?;
-                            println!("Deploy the index? (Y/n)");
-
-                            println!("Building indexer for local node deployment...");
                             build(init_build())?;
-                            println!("Deploying indexer to local node...");
                             deploy(init_deploy())?;
                         }
                         "2" => {
                             start(init_start(Network::Testnet))?;
-                            println!("Deploying indexer to testnet...");
                             build(init_build())?;
-                            println!("Deploying indexer to testnet...");
                             deploy(init_deploy())?;
                         }
                         _ => {
                             println!("Invalid input. Please enter 1 or 2");
                         }
                     }
-                }
+                                    }
                 "n" | "no" => {
                     println!("Skipping indexer deployment...");
+                    std::process::exit(0);
                 }
                 _ => {
                     println!("Invalid input. Please enter Y or n");
@@ -137,43 +117,23 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
     Ok(())
 }
 
-fn init_build() -> BuildCommand {
-    BuildCommand {
-        manifest: Some(WELCOME_MANIFEST.to_string()),
-        path: None,
-        target: Some(WASM_TARGET.to_string()),
-        release: true,
-        profile: Some("release".to_string()),
-        verbose: false,
-        locked: false,
-        native: false,
-        output_dir_root: Some(std::path::PathBuf::from(".")),
-    }
-}
-
-fn init_deploy() -> DeployCommand {
-    DeployCommand {
-        url: "http://127.0.0.1:29987".to_string(),
-        manifest: Some(WELCOME_MANIFEST.to_string()),
-        path: None,
-        auth: Some("".to_string()),
-        target: Some(WASM_TARGET.to_string()),
-        release: true,
-        profile: Some("release".to_string()),
-        verbose: false,
-        locked: false,
-        native: false,
-        output_dir_root: Some(std::path::PathBuf::from(".")),
-    }
+fn process_std(mut input: String) -> String {
+    input.clear();
+    io::stdout().flush().expect("failed to flush stdout");
+    io::stdin()
+        .read_line(&mut input)
+        .expect("failed to read from stdin");
+    input
 }
 
 fn init_start(on_network: Network) -> StartCommand {
+    println!("Starting indexer...");
     let mut start_command = StartCommand {
         log_level: "info".to_string(),
         config: None,
         manifest: Some(std::path::PathBuf::from(".")),
         fuel_node_host: String::new(),
-        fuel_node_port: String::new(), 
+        fuel_node_port: String::new(),
         graphql_api_host: defaults::GRAPHQL_API_HOST.to_string(),
         graphql_api_port: defaults::GRAPHQL_API_PORT.to_string(),
         database: defaults::DATABASE.to_string(),
@@ -198,4 +158,36 @@ fn init_start(on_network: Network) -> StartCommand {
         }
     }
     start_command
+}
+
+fn init_build() -> BuildCommand {
+    println!("Building indexer for local node deployment...");
+    BuildCommand {
+        manifest: Some(WELCOME_MANIFEST.to_string()),
+        path: None,
+        target: Some(WASM_TARGET.to_string()),
+        release: true,
+        profile: Some("release".to_string()),
+        verbose: false,
+        locked: false,
+        native: false,
+        output_dir_root: Some(std::path::PathBuf::from(".")),
+    }
+}
+
+fn init_deploy() -> DeployCommand {
+    println!("Deploying indexer to local node...");
+    DeployCommand {
+        url: "http://127.0.0.1:29987".to_string(),
+        manifest: Some(WELCOME_MANIFEST.to_string()),
+        path: None,
+        auth: Some("".to_string()),
+        target: Some(WASM_TARGET.to_string()),
+        release: true,
+        profile: Some("release".to_string()),
+        verbose: false,
+        locked: false,
+        native: false,
+        output_dir_root: Some(std::path::PathBuf::from(".")),
+    }
 }
