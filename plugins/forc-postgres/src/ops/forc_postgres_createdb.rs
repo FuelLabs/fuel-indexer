@@ -154,6 +154,9 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
     info!("\n✅ Successfully created database at '{pg_db_uri}'.");
 
     if start {
+        // Allow for start command to fully manage PgEmbed object
+        pg.stop_db().await?;
+
         start::exec(StartDbCommand {
             name,
             database_dir: Some(database_dir.unwrap()),

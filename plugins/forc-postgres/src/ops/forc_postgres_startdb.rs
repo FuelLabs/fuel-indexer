@@ -20,6 +20,7 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
         ..Default::default()
     };
 
+    // Disabling Drop trait behavior as PgEmbed shuts down when going out of scope
     let mut pg =
         ManuallyDrop::new(PgEmbed::new(pg_config.clone().into(), fetch_settings).await?);
 
