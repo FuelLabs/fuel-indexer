@@ -27,32 +27,12 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use tracing_subscriber::filter::EnvFilter;
 
+#[derive(Clone, Debug)]
 pub struct ContractData {
     pub id: ContractId,
     pub bytes: Bytes32,
     pub bin_path: PathBuf,
 }
-
-impl fmt::Debug for ContractData {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "ContractData {{ contract_id: {:?}, bytes: {:?} }}",
-            self.id, self.bytes
-        )
-    }
-}
-
-impl Clone for ContractData {
-    fn clone(&self) -> Self {
-        ContractData {
-            id: self.id.clone(),
-            bytes: self.bytes.clone(),
-            bin_path: self.bin_path.clone(),
-        }
-    }
-}
-
 
 abigen!(Contract(
     name = "FuelIndexerTest",
@@ -157,9 +137,6 @@ pub async fn setup_test_fuel_node(
 
     wallet.set_provider(provider.clone());
     println!("contracts: {:?}", &contracts);
-
-    let database_url = "postgres://postgres:my-secret@127.0.0.1:5432";
-    let mut db = Database::new(database_url);
 
     let mut counter = 0;
     for contract in contracts {
