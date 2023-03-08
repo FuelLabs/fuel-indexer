@@ -25,7 +25,7 @@ forc index new --namespace my_org_name
 Start a local Fuel Indexer service.
 
 ```bash
-forc index start --background
+forc index start
 ```
 
 ### `forc index deploy`
