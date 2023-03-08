@@ -6,8 +6,9 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        connect_to_deployed_contract, indexer_service_postgres, postgres_connection,
-        postgres_connection_pool, setup_example_test_fuel_node, test_web::app,
+        connect_to_deployed_contract, generate_contracts, indexer_service_postgres,
+        postgres_connection, postgres_connection_pool, setup_example_test_fuel_node,
+        test_web::app,
     },
     utils::update_test_manifest_asset_paths,
     WORKSPACE_ROOT,
@@ -734,17 +735,23 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 
 #[actix_web::test]
 async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
-    use fuel_indexer_tests::fixtures::deploy_multiple_contracts;
     use fuels::{
-        prelude::{Provider, abigen},
+        prelude::{abigen, Provider},
         signers::fuel_crypto::coins_bip32::ecdsa::digest::typenum::Prod,
     };
 
-        abigen!(
-            Contract(name="fuel_indexer_test", abi="packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"),
-        );
+    let contract_bin_path = Path::new(WORKSPACE_ROOT)
+        .join("contracts")
+        .join("fuel-indexer-test")
+        .join("out")
+        .join("debug")
+        .join("fuel-indexer-test.bin");
 
-    //let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contracts = generate_contracts(3, Some(contract_bin_path))
+        .expect("Failed to generate contracts.");
+    println!("contracts: {:?}", contracts);
+
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
     dbg!("setup fuel node");
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -763,36 +770,6 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
     }
 
     dbg!("registered indexes, deploying contracts");
-
-    let wallet_path = Path::new(WORKSPACE_ROOT)
-        .join("assets")
-        .join("test-chain-config.json");
-    let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
-    let mut wallet =
-        WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
-            .unwrap();
-
-    let host = defaults::FUEL_NODE_ADDR.to_string();
-    let provider = Provider::connect(&host).await.unwrap();
-    wallet.set_provider(provider);
-
-    dbg!("wallet: {:?}", &wallet);
-
-    let contract_bin_path = Path::new(WORKSPACE_ROOT)
-        .join("contracts")
-        .join("fuel-indexer-test")
-        .join("out")
-        .join("debug")
-        .join("fuel-indexer-test.bin");
-
-    let count = 3;
-    let contract_ids = deploy_multiple_contracts(&wallet, contract_bin_path, count)
-        .await
-        .unwrap();
-    let contract_ids_str: Vec<String> =
-        contract_ids.iter().map(|x| x.to_string()).collect();
-
-    dbg!("contract_ids: {:?}", contract_ids_str);
 
     // let contract = connect_to_deployed_contract().await.unwrap();
     // let app = test::init_service(app(contract)).await;

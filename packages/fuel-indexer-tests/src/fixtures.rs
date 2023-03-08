@@ -7,6 +7,7 @@ use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{
     DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
 };
+use fuel_indexer_types::{Bytes32, ContractId};
 use fuels::{
     macros::abigen,
     prelude::{
@@ -20,6 +21,7 @@ use sqlx::{
     pool::{Pool, PoolConnection},
     Postgres,
 };
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use tracing_subscriber::filter::EnvFilter;
@@ -159,7 +161,7 @@ pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
         .join("out")
         .join("debug")
         .join("fuel-indexer-test.bin");
-   
+
     setup_test_fuel_node(wallet_path, Some(contract_bin_path), None).await
 }
 
@@ -299,27 +301,24 @@ pub async fn connect_to_deployed_contract(
     Ok(contract)
 }
 
-pub async fn deploy_multiple_contracts(
-    wallet: &WalletUnlocked,
-    contract_bin_path: PathBuf,
-    count: usize,
-) -> Result<Vec<Bech32ContractId>, Box<dyn std::error::Error>> {
-    let mut contract_ids = Vec::new();
-
-    for _ in 0..count {
-        let contract_id = Contract::deploy(
-            contract_bin_path.to_str().unwrap(),
-            wallet,
-            tx_params(),
-            StorageConfiguration::default(),
-        )
-        .await
-        .unwrap();
-
-        contract_ids.push(contract_id);
+pub fn generate_contracts(
+    count: u8,
+    contract_bin_path: Option<PathBuf>,
+) -> Result<Vec<(ContractId, Bytes32)>, Box<dyn std::error::Error>> {
+    let mut contracts = Vec::new();
+    if let Some(contract_bin_path) = contract_bin_path.clone() {
+        for i in 0..count {
+            let compiled = Contract::load_contract(
+                contract_bin_path.as_os_str().to_str().unwrap(),
+                &None,
+            )
+            .expect(&format!("Failed to load contract {}", i));
+            let (contract_id, bytes) =
+                Contract::compute_contract_id_and_state_root(&compiled);
+            contracts.push((contract_id, bytes));
+        }
     }
-
-    Ok(contract_ids)
+    Ok(contracts)
 }
 
 pub mod test_web {
