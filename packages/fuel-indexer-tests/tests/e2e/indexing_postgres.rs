@@ -770,14 +770,16 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
     let contracts =
         generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 3)
             .expect("Failed to generate contracts.");
-    println!("Generated contracts: {:?}", contracts);
 
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contracts));
-    dbg!("setup fuel node");
+    dbg!("fuel node started");
     let pool = postgres_connection_pool().await;
+    dbg!("pool created");
     let mut srvc = indexer_service_postgres().await;
+    dbg!("service created");
 
     for i in 0..3 {
+        println!("registering index {}", i + 1);
         let mut manifest: Manifest =
             serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST)
                 .expect("Bad Yaml File");

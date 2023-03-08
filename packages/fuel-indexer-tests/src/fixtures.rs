@@ -7,16 +7,17 @@ use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{
     DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
 };
-use fuel_indexer_types::{Bytes32, ContractId};
+use fuel_indexer_types::{Bytes32, ContractId, Salt};
 use fuels::{
     macros::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
-        Contract, Provider, StorageConfiguration, TxParameters, WalletUnlocked,
-        DEFAULT_COIN_AMOUNT,
+        Configurables, Contract, Provider, StorageConfiguration, TxParameters,
+        WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
+use rand::prelude::{Rng, SeedableRng, StdRng};
 use sqlx::{
     pool::{Pool, PoolConnection},
     Postgres,
@@ -98,6 +99,7 @@ pub async fn setup_test_fuel_node(
     contracts: Vec<ContractData>,
     host_str: Option<String>,
 ) -> Result<(), ()> {
+    dbg!("setup_test_fuel_node");
     let filter = match std::env::var_os("RUST_LOG") {
         Some(_) => {
             EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
@@ -143,19 +145,29 @@ pub async fn setup_test_fuel_node(
     let provider = Provider::new(client);
 
     wallet.set_provider(provider.clone());
+    println!("contracts: {:?}", &contracts);
 
+    let mut counter = 0;
     for contract in contracts {
-        let contract_id = Contract::deploy(
+        let rand: u64 = rand::random();
+        let rng = &mut StdRng::seed_from_u64(rand);
+        let salt: Salt = rng.gen();
+
+        let contract_id = Contract::deploy_with_parameters(
             contract.bin_path.as_os_str().to_str().unwrap(),
             &wallet,
             tx_params(),
             StorageConfiguration::default(),
+            Configurables::default(),
+            Salt::from(salt),
         )
         .await
-        .unwrap();
+        .expect("Failed to deploy contract");
 
         let contract_id = contract_id.to_string();
         println!("Contract deployed at: {}", &contract_id);
+        counter += 1;
+        println!("Number of contracts deploy {}", counter);
     }
 
     Ok(())
@@ -309,17 +321,16 @@ pub fn generate_contracts(
     count: u8,
 ) -> Result<Vec<ContractData>, Box<dyn std::error::Error>> {
     let mut contracts = Vec::new();
-    //@TODO: Check this
-    let bin_path = bin_path.unwrap_or_else(|| {
-        PathBuf::from(WORKSPACE_ROOT)
-            .join("target")
-            .join("wasm32-unknown-unknown")
-            .join("release")
-            .join("fuel_indexer_test.wasm")
-    });
+    let bin_path = bin_path.unwrap();
     for i in 0..count {
-        let compiled =
-            Contract::load_contract(bin_path.as_os_str().to_str().unwrap(), &None)?;
+        let rand: u64 = rand::random();
+        let rng = &mut StdRng::seed_from_u64(rand);
+        let salt: Salt = rng.gen();
+        let compiled = Contract::load_contract_with_parameters(
+            bin_path.as_os_str().to_str().unwrap(),
+            &None,
+            salt,
+        )?;
         let (id, bytes) = Contract::compute_contract_id_and_state_root(&compiled);
         contracts.push(ContractData {
             id,
