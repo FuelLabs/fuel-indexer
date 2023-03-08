@@ -1,6 +1,6 @@
 use clap::Parser;
-use fuel_indexer_tests::defaults;
 use fuel_indexer_tests::fixtures::setup_test_fuel_node;
+use fuel_indexer_tests::{defaults, fixtures::generate_contracts};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Parser, Clone)]
@@ -43,6 +43,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .join("greeting.bin")
     });
 
+    let contract =
+        generate_contracts(Some(contract_bin), 1).expect("Failed to generate contracts");
+
     let host = if opts.host.is_some() {
         opts.host
     } else {
@@ -51,7 +54,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Spinning up test Fuel node; node will automatically exit in ten minutes.");
     let server_handle =
-        tokio::spawn(setup_test_fuel_node(chain_config, Some(contract_bin), host));
+        tokio::spawn(setup_test_fuel_node(chain_config, contract, host));
     std::thread::sleep(std::time::Duration::from_secs(600));
 
     server_handle.abort();

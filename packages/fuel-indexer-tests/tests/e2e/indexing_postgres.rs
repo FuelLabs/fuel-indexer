@@ -29,7 +29,9 @@ use tokio::time::{sleep, Duration};
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
 {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -104,7 +106,9 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_callreturn_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -151,7 +155,9 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
 
@@ -200,7 +206,9 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_ping_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -259,7 +267,9 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transfer_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -296,7 +306,9 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -333,7 +345,8 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    contract::generate_contracts(1).expect("Failed to generate contracts.");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -379,7 +392,9 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -426,7 +441,9 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -468,7 +485,9 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -522,7 +541,9 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_index_event_with_optional_fields_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -569,7 +590,9 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;
@@ -606,7 +629,9 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_respects_start_block_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut conn = pool.acquire().await.unwrap();
@@ -696,7 +721,9 @@ async fn test_index_respects_start_block_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let pool = postgres_connection_pool().await;
     let mut srv = indexer_service_postgres().await;
@@ -740,18 +767,12 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
         signers::fuel_crypto::coins_bip32::ecdsa::digest::typenum::Prod,
     };
 
-    let contract_bin_path = Path::new(WORKSPACE_ROOT)
-        .join("contracts")
-        .join("fuel-indexer-test")
-        .join("out")
-        .join("debug")
-        .join("fuel-indexer-test.bin");
+    let contracts =
+        generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 3)
+            .expect("Failed to generate contracts.");
+    println!("Generated contracts: {:?}", contracts);
 
-    let contracts = generate_contracts(3, Some(contract_bin_path))
-        .expect("Failed to generate contracts.");
-    println!("contracts: {:?}", contracts);
-
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contracts));
     dbg!("setup fuel node");
     let pool = postgres_connection_pool().await;
     let mut srvc = indexer_service_postgres().await;

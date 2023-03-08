@@ -1,5 +1,7 @@
 use clap::Parser;
-use fuel_indexer_tests::{defaults, fixtures::setup_test_fuel_node};
+use fuel_indexer_tests::{defaults, fixtures::{
+    generate_contracts, setup_test_fuel_node,
+}};
 use fuels_macros::abigen;
 use std::path::{Path, PathBuf};
 
@@ -49,7 +51,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .host
         .unwrap_or_else(|| defaults::FUEL_NODE_ADDR.to_string());
 
-    setup_test_fuel_node(chain_config, Some(contract_bin), Some(host))
+    let contract = generate_contracts(Some(contract_bin), 1).expect("Failed to generate contracts");
+    setup_test_fuel_node(chain_config, contract, Some(host))
         .await
         .unwrap();
 

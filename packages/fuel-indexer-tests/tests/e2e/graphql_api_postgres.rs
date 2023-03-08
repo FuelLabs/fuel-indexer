@@ -3,6 +3,7 @@ use actix_web::test;
 use fuel_indexer::IndexerService;
 use fuel_indexer_lib::config::GraphQLConfig;
 use fuel_indexer_lib::manifest::Manifest;
+use fuel_indexer_tests::fixtures::generate_contracts;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
@@ -22,7 +23,9 @@ use tokio::time::{sleep, Duration};
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let mut srvc = indexer_service_postgres().await;
     let api_app = api_server_app_postgres().await;
@@ -69,7 +72,9 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let mut srvc = indexer_service_postgres().await;
     let api_app = api_server_app_postgres().await;
@@ -117,7 +122,9 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let mut srvc = indexer_service_postgres().await;
     let api_app = api_server_app_postgres().await;
@@ -172,7 +179,9 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let mut srvc = indexer_service_postgres().await;
     let api_app = api_server_app_postgres().await;
@@ -327,7 +336,9 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let contract = generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 1)
+        .expect("Failed to generate contracts");
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contract));
 
     let mut srvc = indexer_service_postgres().await;
     let api_app = api_server_app_postgres().await;

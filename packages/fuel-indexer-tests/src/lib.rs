@@ -18,7 +18,10 @@ pub mod assets {
 }
 
 pub mod defaults {
+    use super::WORKSPACE_ROOT;
+    use std::path::{Path, PathBuf};
     use std::time::Duration;
+    use lazy_static::lazy_static;
 
     pub const FUEL_NODE_ADDR: &str = "127.0.0.1:4000";
     pub const FUEL_NODE_HOST: &str = "127.0.0.1";
@@ -39,6 +42,15 @@ pub mod defaults {
     pub const CURRENT_TEST_CONTRACT_ID_STR: &str =
         "fuel1dthcclayuwhce7t7jt8dlpvv2c0q4wsyj4xsudcek5gwc6nd5cnqj4qkua";
     pub const MAX_BODY: usize = 5242880; // 5MB in bytes
+
+    lazy_static! {
+        pub static ref CONTRACT_BIN_PATH: PathBuf = Path::new(WORKSPACE_ROOT)
+            .join("contracts")
+            .join("fuel-indexer-test")
+            .join("out")
+            .join("debug")
+            .join("fuel-indexer-test.bin");
+    }
 }
 
 pub mod utils {

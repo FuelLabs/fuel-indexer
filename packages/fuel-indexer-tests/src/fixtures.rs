@@ -21,10 +21,26 @@ use sqlx::{
     pool::{Pool, PoolConnection},
     Postgres,
 };
-use std::collections::HashMap;
+use std::fmt;
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use tracing_subscriber::filter::EnvFilter;
+
+pub struct ContractData {
+    pub id: ContractId,
+    pub bytes: Bytes32,
+    pub bin_path: PathBuf,
+}
+
+impl fmt::Debug for ContractData {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "ContractData {{ contract_id: {:?}, bytes: {:?} }}",
+            self.id, self.bytes
+        )
+    }
+}
 
 abigen!(Contract(
     name = "FuelIndexerTest",
@@ -79,7 +95,7 @@ pub fn tx_params() -> TxParameters {
 
 pub async fn setup_test_fuel_node(
     wallet_path: PathBuf,
-    contract_bin_path: Option<PathBuf>,
+    contracts: Vec<ContractData>,
     host_str: Option<String>,
 ) -> Result<(), ()> {
     let filter = match std::env::var_os("RUST_LOG") {
@@ -128,15 +144,9 @@ pub async fn setup_test_fuel_node(
 
     wallet.set_provider(provider.clone());
 
-    if let Some(contract_bin_path) = contract_bin_path {
-        let _compiled = Contract::load_contract(
-            contract_bin_path.as_os_str().to_str().unwrap(),
-            &None,
-        )
-        .unwrap();
-
+    for contract in contracts {
         let contract_id = Contract::deploy(
-            contract_bin_path.as_os_str().to_str().unwrap(),
+            contract.bin_path.as_os_str().to_str().unwrap(),
             &wallet,
             tx_params(),
             StorageConfiguration::default(),
@@ -145,24 +155,17 @@ pub async fn setup_test_fuel_node(
         .unwrap();
 
         let contract_id = contract_id.to_string();
-
         println!("Contract deployed at: {}", &contract_id);
     }
 
     Ok(())
 }
 
-pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
+pub async fn setup_example_test_fuel_node(
+    contracts: Vec<ContractData>,
+) -> Result<(), ()> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
-
-    let contract_bin_path = Path::new(WORKSPACE_ROOT)
-        .join("contracts")
-        .join("fuel-indexer-test")
-        .join("out")
-        .join("debug")
-        .join("fuel-indexer-test.bin");
-
-    setup_test_fuel_node(wallet_path, Some(contract_bin_path), None).await
+    setup_test_fuel_node(wallet_path, contracts, None).await
 }
 
 pub async fn get_contract_id(
@@ -302,21 +305,27 @@ pub async fn connect_to_deployed_contract(
 }
 
 pub fn generate_contracts(
+    bin_path: Option<PathBuf>,
     count: u8,
-    contract_bin_path: Option<PathBuf>,
-) -> Result<Vec<(ContractId, Bytes32)>, Box<dyn std::error::Error>> {
+) -> Result<Vec<ContractData>, Box<dyn std::error::Error>> {
     let mut contracts = Vec::new();
-    if let Some(contract_bin_path) = contract_bin_path.clone() {
-        for i in 0..count {
-            let compiled = Contract::load_contract(
-                contract_bin_path.as_os_str().to_str().unwrap(),
-                &None,
-            )
-            .expect(&format!("Failed to load contract {}", i));
-            let (contract_id, bytes) =
-                Contract::compute_contract_id_and_state_root(&compiled);
-            contracts.push((contract_id, bytes));
-        }
+    //@TODO: Check this
+    let bin_path = bin_path.unwrap_or_else(|| {
+        PathBuf::from(WORKSPACE_ROOT)
+            .join("target")
+            .join("wasm32-unknown-unknown")
+            .join("release")
+            .join("fuel_indexer_test.wasm")
+    });
+    for i in 0..count {
+        let compiled =
+            Contract::load_contract(bin_path.as_os_str().to_str().unwrap(), &None)?;
+        let (id, bytes) = Contract::compute_contract_id_and_state_root(&compiled);
+        contracts.push(ContractData {
+            id,
+            bytes,
+            bin_path: bin_path.clone(),
+        });
     }
     Ok(contracts)
 }
