@@ -148,6 +148,13 @@
                 <div id="content" class="content">
                     <main>
                         <!-- markdownlint-disable MD041 -->
+<blockquote>
+<p>IMPORTANT: Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its <code>clang</code> binary not supporting WASM targets. If encountered, you can install a binary with better support from Homebrew (<code>brew install llvm</code>) and instruct <code>rustc</code> to leverage it by setting the following environment variables:</p>
+<ul>
+<li><code>AR=/opt/homebrew/opt/llvm/bin/llvm-ar</code></li>
+<li><code>CC=/opt/homebrew/opt/llvm/bin/clang</code></li>
+</ul>
+</blockquote>
 <h2 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h2>
 <p>In this tutorial you will:</p>
 <ol>
@@ -259,7 +266,6 @@ server started
 CREATE DATABASE &quot;postgres&quot;; rows affected: 0, rows returned: 0, elapsed: 325.683µs
 
 Default database postgres already exists.
-
 
 Writing PgEmbedConfig to &quot;/Users/rashad/.fuel/indexer/postgres/postgres-db.json&quot;
 ▪▪▪▪▪ ⏱  Setting up database...
@@ -429,7 +435,6 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
 ]
 </code></pre>
 <h3 id="finished-"><a class="header" href="#finished-">Finished! 🥳</a></h3>
-<p>Congrats, you just created, built, and deployed your first index on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you <a href="https://fuellabs.github.io/fuel-indexer/master/"><strong>read the book</strong></a>.</p>
 
                     </main>
 
