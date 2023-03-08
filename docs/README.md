@@ -71,6 +71,11 @@ To install the `wasm32-unknown-unknown` target via `rustup`:
 rustup target add wasm32-unknown-unknown
 ```
 
+> IMPORTANT: Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its `clang` binary not supporting WASM targets. If encountered, you can install a binary with better support from Homebrew (`brew install llvm`) and instruct `rustc` to leverage it by setting the following environment variables:
+>
+> - `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
+> - `CC=/opt/homebrew/opt/llvm/bin/clang`
+
 ## Quickstart
 
 In this tutorial you will:
@@ -94,7 +99,6 @@ curl \
 ```
 
 > If you require a non-default `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
-
 
 ## 2. Using the `forc-index` plugin
 
@@ -205,7 +209,6 @@ server started
 CREATE DATABASE "postgres"; rows affected: 0, rows returned: 0, elapsed: 325.683µs
 
 Default database postgres already exists.
-
 
 Writing PgEmbedConfig to "/Users/rashad/.fuel/indexer/postgres/postgres-db.json"
 ▪▪▪▪▪ ⏱  Setting up database...
