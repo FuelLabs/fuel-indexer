@@ -1,7 +1,7 @@
 use crate::defaults::CURRENT_TEST_CONTRACT_ID_STR;
 use crate::{defaults, WORKSPACE_ROOT};
 use axum::Router;
-use fuel_indexer::IndexerService;
+use fuel_indexer::{Database, IndexerService};
 use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{
@@ -42,6 +42,17 @@ impl fmt::Debug for ContractData {
         )
     }
 }
+
+impl Clone for ContractData {
+    fn clone(&self) -> Self {
+        ContractData {
+            id: self.id.clone(),
+            bytes: self.bytes.clone(),
+            bin_path: self.bin_path.clone(),
+        }
+    }
+}
+
 
 abigen!(Contract(
     name = "FuelIndexerTest",
@@ -147,6 +158,9 @@ pub async fn setup_test_fuel_node(
     wallet.set_provider(provider.clone());
     println!("contracts: {:?}", &contracts);
 
+    let database_url = "postgres://postgres:my-secret@127.0.0.1:5432";
+    let mut db = Database::new(database_url);
+
     let mut counter = 0;
     for contract in contracts {
         let rand: u64 = rand::random();
@@ -166,15 +180,15 @@ pub async fn setup_test_fuel_node(
 
         let contract_id = contract_id.to_string();
         println!("Contract deployed at: {}", &contract_id);
-        counter += 1;
         println!("Number of contracts deploy {}", counter);
+        counter += 1;
     }
 
     Ok(())
 }
 
 pub async fn setup_example_test_fuel_node(
-    contracts: Vec<ContractData>,
+    contracts: Vec<ContractData>
 ) -> Result<(), ()> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
     setup_test_fuel_node(wallet_path, contracts, None).await
@@ -314,6 +328,39 @@ pub async fn connect_to_deployed_contract(
     println!("Using contract at {contract_id}");
 
     Ok(contract)
+}
+
+pub async fn connect_to_deployed_contracts(
+    contracts: Vec<ContractData>,
+) -> Result<Vec<FuelIndexerTest>, Box<dyn std::error::Error>> {
+    let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
+    let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
+    let mut wallet =
+        WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
+            .unwrap();
+
+    let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
+
+    wallet.set_provider(provider);
+
+    println!(
+        "Wallet({}) keystore at: {}",
+        wallet.address(),
+        wallet_path.display()
+    );
+
+    let mut contract_list = Vec::new();
+    for contract in contracts {
+        let contract_id: Bech32ContractId = contract
+            .id
+            .to_string()
+            .parse()
+            .expect("Invalid ID for test contract");
+        let contract = FuelIndexerTest::new(contract_id.clone(), wallet.clone());
+        contract_list.push(contract);
+    }
+
+    Ok(contract_list)
 }
 
 pub fn generate_contracts(

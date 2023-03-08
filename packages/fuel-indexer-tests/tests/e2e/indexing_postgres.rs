@@ -6,9 +6,9 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        connect_to_deployed_contract, generate_contracts, indexer_service_postgres,
-        postgres_connection, postgres_connection_pool, setup_example_test_fuel_node,
-        test_web::app,
+        connect_to_deployed_contract, connect_to_deployed_contracts, generate_contracts,
+        indexer_service_postgres, postgres_connection, postgres_connection_pool,
+        setup_example_test_fuel_node, test_web::app,
     },
     utils::update_test_manifest_asset_paths,
     WORKSPACE_ROOT,
@@ -770,8 +770,10 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
     let contracts =
         generate_contracts(Some(defaults::CONTRACT_BIN_PATH.to_path_buf()), 3)
             .expect("Failed to generate contracts.");
+    let cloned_contracts = contracts.clone();
 
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contracts));
+    let fuel_node_handle =
+        tokio::spawn(setup_example_test_fuel_node(contracts));
     dbg!("fuel node started");
     let pool = postgres_connection_pool().await;
     dbg!("pool created");
@@ -779,7 +781,6 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
     dbg!("service created");
 
     for i in 0..3 {
-        println!("registering index {}", i + 1);
         let mut manifest: Manifest =
             serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST)
                 .expect("Bad Yaml File");
@@ -792,25 +793,25 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
             .expect("Failed to initialize indexer.");
     }
 
-    dbg!("registered indexes, deploying contracts");
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
-    // let contract = connect_to_deployed_contract().await.unwrap();
-    // let app = test::init_service(app(contract)).await;
-    // let req = test::TestRequest::post().uri("/indicies").to_request();
-    // let _ = app.call(req).await;
+    let contracts = connect_to_deployed_contracts(cloned_contracts).await.unwrap();
+    for contract in contracts {
+        let app = test::init_service(app(contract)).await;
+        let req = test::TestRequest::post().uri("/pongentity").to_request();
+        let _ = app.call(req).await;
+    }
 
-    // sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    // fuel_node_handle.abort();
-
-    // for i in 0..3 {
-    //     let mut conn = pool.acquire().await.unwrap();
-    //     let table_name = format!("fuel_indexer_test_index{}_index1", i + 1);
-    //     let statement = format!(
-    //         "SELECT * FROM {}.block ORDER by height DESC LIMIT 1",
-    //         table_name
-    //     );
-    //     let block_row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
-    //     let block_height: i64 = block_row.get(0);
-    //     assert!(block_height >= 1);
-    // }
+    for i in 0..3 {
+        let mut conn = pool.acquire().await.unwrap();
+        let table_name = format!("fuel_indexer_test_index{}_index1", i + 1);
+        let statement = format!(
+            "SELECT * FROM {}.pongentity ORDER by height DESC LIMIT 1",
+            table_name
+        );
+        let block_row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
+        let block_height: i64 = block_row.get(0);
+        assert!(block_height >= 1);
+    }
 }
