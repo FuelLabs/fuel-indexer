@@ -1,7 +1,3 @@
-use clap::ValueEnum;
-use serde::{Deserialize, Serialize};
-use strum::{AsRefStr, EnumString};
-
 pub const FUEL_NODE_HOST: &str = "127.0.0.1";
 pub const FUEL_NODE_PORT: &str = "4000";
 
@@ -43,11 +39,5 @@ pub const FORC_INDEX: &str = "forc-index";
 
 pub const AUTH_ENABLED: bool = false;
 
-#[derive(
-    Serialize, Deserialize, EnumString, AsRefStr, ValueEnum, Clone, Debug, Default,
-)]
-#[serde(rename_all = "snake_case")]
-pub enum AuthStrategy {
-    #[default]
-    Jwt,
-}
+pub const JWT_SECRET: &str =
+    "6906573247652854078288872150120717701634680141358560585446649749925714230966";

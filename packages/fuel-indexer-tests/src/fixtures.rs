@@ -6,10 +6,10 @@ use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{
     config::{
-        AuthenticationConfig, DatabaseConfig, FuelNodeConfig, GraphQLConfig,
-        IndexerConfig,
+        authentication::AuthStrategy, AuthenticationConfig, DatabaseConfig,
+        FuelNodeConfig, GraphQLConfig, IndexerConfig,
     },
-    defaults::AuthStrategy,
+    defaults as lib_defaults,
 };
 use fuels::{
     macros::abigen,
@@ -238,8 +238,9 @@ pub async fn api_server_app_postgres() -> Router {
         metrics: true,
         stop_idle_indexers: true,
         authentication: AuthenticationConfig {
-            auth_enabled: false,
+            enabled: false,
             strategy: AuthStrategy::default(),
+            jwt_secret: Some(lib_defaults::JWT_SECRET.to_string()),
         },
     };
 
@@ -268,8 +269,9 @@ pub async fn indexer_service_postgres() -> IndexerService {
         metrics: false,
         stop_idle_indexers: true,
         authentication: AuthenticationConfig {
-            auth_enabled: false,
+            enabled: false,
             strategy: AuthStrategy::default(),
+            jwt_secret: Some(lib_defaults::JWT_SECRET.to_string()),
         },
     };
 

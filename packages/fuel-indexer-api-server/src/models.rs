@@ -2,5 +2,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VerifySignatureRequest {
-    signature: String,
+    pub signature: String,
+    pub message: String,
 }

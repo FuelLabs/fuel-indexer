@@ -5,18 +5,22 @@ pub mod graphql;
 
 pub use crate::{
     config::{
-        authentication::AuthenticationConfig, database::DatabaseConfig,
-        fuel_node::FuelNodeConfig, graphql::GraphQLConfig,
+        authentication::{AuthStrategy, AuthenticationConfig},
+        database::DatabaseConfig,
+        fuel_node::FuelNodeConfig,
+        graphql::GraphQLConfig,
     },
     defaults,
-    defaults::AuthStrategy,
 };
 pub use clap::{Args, Parser, ValueEnum};
 use serde::Deserialize;
-use std::fs::File;
-use std::io::Error;
-use std::net::AddrParseError;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::File,
+    io::Error,
+    net::AddrParseError,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 use strum::{AsRefStr, EnumString};
 use thiserror::Error;
 
@@ -46,6 +50,8 @@ pub enum EnvVar {
     PostgresPort,
     #[strum(serialize = "POSTGRES_USER")]
     PostgresUser,
+    #[strum(serialize = "JWT_SECRET")]
+    JwtSecret,
 }
 
 pub fn env_or_default(var: EnvVar, default: String) -> String {
@@ -163,8 +169,15 @@ pub struct IndexerArgs {
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
-    #[clap(value_enum, long, default_value = AuthStrategy::Jwt.as_ref(), help = "Authentication scheme used.")]
-    pub strategy: AuthStrategy,
+    #[clap(long, default_value = "JWT", help = "Authentication scheme used.")]
+    pub strategy: String,
+
+    /// Secret used for JWT scheme (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Secret used for JWT scheme (if JWT scheme is specified)."
+    )]
+    pub jwt_secret: Option<String>,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -235,8 +248,15 @@ pub struct ApiServerArgs {
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
-    #[clap(value_enum, long, default_value = AuthStrategy::Jwt.as_ref(), help = "Authentication scheme used.")]
-    pub strategy: AuthStrategy,
+    #[clap(long, default_value = "JWT", help = "Authentication scheme used.")]
+    pub strategy: String,
+
+    /// Secret used for JWT scheme (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Secret used for JWT scheme (if JWT scheme is specified)."
+    )]
+    pub jwt_secret: Option<String>,
 }
 
 fn derive_http_url(host: &String, port: &String) -> String {
@@ -327,8 +347,9 @@ impl From<IndexerArgs> for IndexerConfig {
             stop_idle_indexers: args.stop_idle_indexers,
 
             authentication: AuthenticationConfig {
-                auth_enabled: args.auth_enabled,
-                strategy: args.strategy,
+                enabled: args.auth_enabled,
+                strategy: AuthStrategy::from_str(&args.strategy).unwrap(),
+                jwt_secret: args.jwt_secret,
             },
         };
 
@@ -393,10 +414,18 @@ impl From<ApiServerArgs> for IndexerConfig {
             metrics: args.metrics,
             stop_idle_indexers: false,
             authentication: AuthenticationConfig {
-                auth_enabled: args.auth_enabled,
-                strategy: args.strategy,
+                enabled: args.auth_enabled,
+                strategy: AuthStrategy::from_str(&args.strategy).unwrap(),
+                jwt_secret: None,
             },
         };
+
+        if config.has_jwt_auth() {
+            config.authentication.jwt_secret =
+                Some(args.jwt_secret.unwrap_or_else(|| {
+                    env_or_default(EnvVar::JwtSecret, defaults::JWT_SECRET.to_string())
+                }))
+        }
 
         config.inject_opt_env_vars();
 
@@ -462,8 +491,9 @@ impl IndexerConfig {
             stop_idle_indexers: args.stop_idle_indexers,
 
             authentication: AuthenticationConfig {
-                auth_enabled: args.auth_enabled,
-                strategy: args.strategy,
+                enabled: args.auth_enabled,
+                strategy: AuthStrategy::from_str(&args.strategy).unwrap(),
+                jwt_secret: args.jwt_secret,
             },
         };
 
@@ -583,13 +613,13 @@ impl IndexerConfig {
                 section.get(&serde_yaml::Value::String("auth_enabled".into()));
 
             if let Some(auth_enabled) = auth_enabled {
-                config.authentication.auth_enabled = auth_enabled.as_bool().unwrap();
+                config.authentication.enabled = auth_enabled.as_bool().unwrap();
             }
             let strategy = section.get(&serde_yaml::Value::String("strategy".into()));
 
             if let Some(strategy) = strategy {
                 config.authentication.strategy =
-                    AuthStrategy::from_str(strategy.as_str().unwrap(), true).unwrap();
+                    AuthStrategy::from_str(strategy.as_str().unwrap()).unwrap();
             }
         }
 
@@ -603,6 +633,10 @@ impl IndexerConfig {
         let _ = self.fuel_node.inject_opt_env_vars();
         let _ = self.database.inject_opt_env_vars();
         let _ = self.graphql_api.inject_opt_env_vars();
+    }
+
+    pub fn has_jwt_auth(&self) -> bool {
+        self.authentication.enabled && self.authentication.strategy == AuthStrategy::JWT
     }
 }
 

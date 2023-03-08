@@ -11,12 +11,14 @@ use axum::{
     routing::{delete, get, post, put},
     Error as AxumError, Router,
 };
+use fuel_crypto::Error as FuelCryptoError;
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
 };
 use hyper::{Error as HyperError, Method};
+use jsonwebtoken::errors::Error as JsonWebTokenError;
 use serde_json::json;
 use std::{net::SocketAddr, time::Instant};
 use thiserror::Error;
@@ -63,6 +65,10 @@ pub enum ApiError {
     AxumError(#[from] AxumError),
     #[error("Hyper error: {0:?}")]
     HyperError(#[from] HyperError),
+    #[error("FuelCrypto error: {0:?}")]
+    FuelCryptoError(#[from] FuelCryptoError),
+    #[error("JsonWebTokenError: {0:?}")]
+    JsonWebTokenError(#[from] JsonWebTokenError),
 }
 
 impl Default for ApiError {
@@ -84,9 +90,12 @@ impl From<StatusCode> for ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let generic_err_msg = "Internal server error.".to_string();
-        // NOTE: Free to add more specific messaging/handing here as needed
-        #[allow(clippy::match_single_binding)]
+        // TODO: Free to add more specific messaging/handing here as needed
         let (status, err_msg) = match self {
+            Self::JsonWebTokenError(e) => (
+                StatusCode::BAD_REQUEST,
+                format!("Could not process JWT: {e}"),
+            ),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg),
         };
 
@@ -150,7 +159,7 @@ impl GraphQlApi {
 
         let auth_routes = Router::new()
             .route("/nonce", get(get_nonce))
-            .route("/sig", post(verify_signature));
+            .route("/signature", post(verify_signature));
 
         let api_routes = Router::new()
             .nest("/", root_routes)

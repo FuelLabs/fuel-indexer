@@ -1,20 +1,7 @@
-use crate::{
-    cli::AuthCommand,
-    utils::{extract_manifest_fields, project_dir_info},
-};
-use reqwest::{
-    blocking::{multipart::Form, Client},
-    header::{HeaderMap, AUTHORIZATION},
-    StatusCode,
-};
+use crate::cli::AuthCommand;
+use reqwest::{blocking::Client, StatusCode};
 use serde::{Deserialize, Serialize};
-use serde_json::{to_string_pretty, value::Value, Map};
-use std::{
-    collections::HashMap,
-    fs,
-    io::{BufReader, Read},
-    process::Command,
-};
+use std::process::Command;
 use tracing::{error, info};
 
 #[derive(Deserialize)]
@@ -25,8 +12,6 @@ struct NonceResponse {
 #[derive(Deserialize)]
 struct SignatureResponse {
     token: Option<String>,
-    success: Option<String>,
-    details: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -39,24 +24,7 @@ fn derive_signature_from_output(o: &str) -> String {
 }
 
 pub fn init(command: AuthCommand) -> anyhow::Result<()> {
-    let AuthCommand {
-        url,
-        manifest,
-        path,
-        verbose,
-        account_index,
-    } = command;
-
-    let (_root_dir, manifest_path, _index_name) =
-        project_dir_info(path.as_ref(), manifest.as_ref())?;
-
-    let mut manifest_file = fs::File::open(&manifest_path)?;
-    let mut manifest_contents = String::new();
-    manifest_file.read_to_string(&mut manifest_contents)?;
-    let manifest: serde_yaml::Value = serde_yaml::from_str(&manifest_contents)?;
-
-    let (namespace, identifier, graphql_schema, module_path) =
-        extract_manifest_fields(manifest, None)?;
+    let AuthCommand { url, account, .. } = command;
 
     let target = format!("{url}/api/auth/nonce");
 
@@ -77,9 +45,9 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
     let response: NonceResponse = res.json().unwrap();
 
     let signature = match Command::new("forc-wallet")
-        .arg("--account-index")
-        .arg(&account_index)
         .arg("sign")
+        .arg("--account")
+        .arg(&account)
         .arg("string")
         .arg(&response.nonce)
         .output()
@@ -103,7 +71,7 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
         .post(&target)
         .json(&SignatureRequest { signature })
         .send()
-        .expect("Failed to deploy indexer.");
+        .expect("Failed post signature.");
 
     if res.status() != StatusCode::OK {
         error!(

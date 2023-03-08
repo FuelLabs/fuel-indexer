@@ -11,13 +11,14 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Response},
 };
+use fuel_crypto::{Message, Signature};
 use fuel_indexer_database::{
     queries,
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
 use fuel_indexer_lib::{
-    config::IndexerConfig,
+    config::{authentication::Claims, IndexerConfig},
     utils::{
         AssetReloadRequest, FuelNodeHealthResponse, IndexRevertRequest, IndexStopRequest,
         ServiceRequest, ServiceStatus,
@@ -28,6 +29,9 @@ use fuel_indexer_schema::db::{
 };
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
+use jsonwebtoken::{
+    decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation,
+};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::str::FromStr;
@@ -119,8 +123,10 @@ pub(crate) async fn health_check(
     })))
 }
 
-async fn authenticate_user(_signature: &str) -> Option<Result<bool, ApiError>> {
-    // TODO: Placeholder until actual authentication scheme is in place
+async fn authenticate_user(value: &str) -> Option<Result<bool, ApiError>> {
+    // match config.authentication.strategy {
+    //     _ =>  Some(Ok(true))
+    // }
     Some(Ok(true))
 }
 
@@ -132,13 +138,13 @@ pub(crate) async fn authorize_middleware<B>(
         .headers()
         .get(http::header::AUTHORIZATION)
         .and_then(|header| header.to_str().ok());
-    let auth_header = if let Some(auth_header) = header {
-        auth_header
+    let value = if let Some(value) = header {
+        value
     } else {
         return Err(StatusCode::UNAUTHORIZED);
     };
 
-    if let Some(current_user) = authenticate_user(auth_header).await {
+    if let Some(current_user) = authenticate_user(value).await {
         req.extensions_mut().insert(current_user);
         Ok(next.run(req).await)
     } else {
@@ -302,9 +308,34 @@ pub(crate) async fn get_nonce() -> ApiResult<axum::Json<Value>> {
 }
 
 pub(crate) async fn verify_signature(
-    Json(_payload): Json<VerifySignatureRequest>,
-) -> ApiResult<()> {
-    Ok(())
+    Extension(config): Extension<IndexerConfig>,
+    Json(payload): Json<VerifySignatureRequest>,
+) -> ApiResult<axum::Json<Value>> {
+    let mut buff: [u8; 64] = [0u8; 64];
+    buff.copy_from_slice(&payload.signature.as_bytes()[..64]);
+    let sig = Signature::from_bytes(buff);
+    let msg = Message::new(payload.message);
+    let pk = sig.recover(&msg)?;
+
+    let claims = Claims {
+        sub: pk.to_string(),
+        iss: "Issuer".to_string(),
+        iat: 0,
+        exp: 0,
+    };
+
+    if let Err(e) = sig.verify(&pk, &msg) {
+        error!("Failed to verify signature: {e}.");
+        return Err(ApiError::FuelCryptoError(e));
+    }
+
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(config.authentication.jwt_secret.unwrap().as_ref()),
+    )?;
+
+    Ok(Json(json!({"token": token.to_string()})))
 }
 
 pub async fn run_query(
