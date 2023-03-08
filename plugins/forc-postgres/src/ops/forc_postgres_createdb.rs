@@ -108,7 +108,7 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
 
     let pg_db_uri = pg.full_db_uri(&name);
 
-    info!("Downloading, unpacking, and bootstrapping database.");
+    info!("📦 Downloading, unpacking, and bootstrapping database...\n");
     let pb = ProgressBar::new_spinner();
     pb.enable_steady_tick(Duration::from_millis(120));
     pb.set_style(
