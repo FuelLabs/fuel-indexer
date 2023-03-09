@@ -6,8 +6,10 @@ use crate::{
     cli::{BuildCommand, DeployCommand, InitCommand, StartCommand, WelcomeCommand},
     utils::defaults,
 };
+use forc_util::{kebab_to_snake_case, validate_name};
 use owo_colors::OwoColorize;
 use rand::{thread_rng, Rng};
+use std::fs;
 use std::{
     io::{self, Write},
     thread, time,
@@ -29,11 +31,11 @@ const TITLE: &str = "
 ╚═╝░░░░░░╚═════╝░╚══════╝╚══════╝  ╚═╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝
 ";
 
-const WELCOME_MANIFEST: &str = "welcome.manifest.yaml";
+const WELCOME_MANIFEST_PATH: &str = "welcome.manifest.yaml";
 const WASM_TARGET: &str = "wasm32-unknown-unknown";
 const PROJECT_INITIALIZED: &str =
     "\n Indexer project initialized. Manifest file created. ✅";
-const DEPLOY_QUESTION: &str = "\n Start the indexer and deploy the index? (Y/n)";
+const DEPLOY_QUESTION: &str = "\n Start the indexer and deploy the index? (Y/n) \n > ";
 
 pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
     for line in TITLE.lines() {
@@ -46,7 +48,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
         render_greeter();
     }
 
-    humanize_message("\n Would you like to create the default index? (Y/n)".to_string());
+    humanize_message("\n Would you like to create the default index? (Y/n) \n > ".to_string());
 
     let mut input = String::new();
 
@@ -65,22 +67,29 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
             humanize_message(DEPLOY_QUESTION.to_string());
 
             input = process_std(input);
-            deploy_to_network(input)?;
+            deploy_to_network(input, WELCOME_MANIFEST_PATH.to_string())?;
         }
         "n" | "no" => {
             humanize_message(
                 "\n Ok! Let's create a namespace for your custom index.".to_string(),
             );
             humanize_message(
-                "\n enter a namespace for your index below \n >".to_string(),
+                "\n Enter a namespace for your index below \n > ".to_string(),
             );
             input = process_std(input);
             let namespace = input.trim().to_lowercase();
             humanize_message(
-                "\n Great, now create an identifier for your custom index. \n >".to_string(),
+                "\n Great, now create an identifier for your custom index. \n > "
+                    .to_string(),
             );
+
             input = process_std(input);
-            let identifier = input.trim().to_lowercase();
+            let mut identifier = input.trim().to_lowercase();
+            identifier = kebab_to_snake_case(&identifier);
+            validate_name(&identifier, "index")?;
+
+            let identifer_copy = identifier.clone();
+
             humanize_message(
                 "\n Ok, creating a new index with the values you've set... ⚙️".to_string(),
             );
@@ -92,10 +101,21 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
                 absolute_paths: true,
             })?;
             humanize_message(PROJECT_INITIALIZED.to_string());
+            humanize_message("\n Here is the manifest file we created: \n\n".to_string());
+
+            let manifest_name = format!("{}.manifest.yaml", identifer_copy);
+            let manifest_path = format!("./{}", manifest_name);
+            let manifest_content  = fs::read_to_string(&manifest_path)?;
+
+            for line in manifest_content.lines() {
+                println!("{}", line.trim().bright_green());
+                thread::sleep(time::Duration::from_millis(22));
+            }
+
             humanize_message(DEPLOY_QUESTION.to_string());
 
             input = process_std(input);
-            deploy_to_network(input)?;
+            deploy_to_network(input, manifest_path)?;
         }
         _ => {
             println!("Invalid input. Please enter Y or n");
@@ -118,24 +138,24 @@ fn render_greeter() {
     thread::sleep(time::Duration::from_millis(500));
 }
 
-fn deploy_to_network(mut input: String) -> anyhow::Result<()> {
+fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Result<()> {
     match input.trim().to_lowercase().as_str() {
         "y" | "yes" => {
             humanize_message(
-                "\n Connect to which network? 🤔 \n1. Local node\n2. Testnet".to_string(),
+                "\n Connect to which network? 🤔 \n1. Local node\n2. Testnet \n > ".to_string(),
             );
 
             input = process_std(input);
             match input.trim().to_lowercase().as_str() {
                 "1" => {
                     start(init_start(Network::Local))?;
-                    build(init_build())?;
-                    deploy(init_deploy())?;
+                    build(init_build(&manifest))?;
+                    deploy(init_deploy(&manifest))?;
                 }
                 "2" => {
                     start(init_start(Network::Testnet))?;
-                    build(init_build())?;
-                    deploy(init_deploy())?;
+                    build(init_build(&manifest))?;
+                    deploy(init_deploy(&manifest))?;
                 }
                 _ => {
                     println!("Invalid input. Please enter 1 or 2");
@@ -210,10 +230,10 @@ fn init_start(on_network: Network) -> StartCommand {
     start_command
 }
 
-fn init_build() -> BuildCommand {
-    info!("Building indexer for local node deployment...");
+fn init_build(manifest: &str) -> BuildCommand {
+    humanize_message("\n Building indexer...".to_string());
     BuildCommand {
-        manifest: Some(WELCOME_MANIFEST.to_string()),
+        manifest: Some(manifest.to_owned()),
         path: None,
         target: Some(WASM_TARGET.to_string()),
         release: true,
@@ -225,11 +245,11 @@ fn init_build() -> BuildCommand {
     }
 }
 
-fn init_deploy() -> DeployCommand {
-    info!("Deploying indexer to local node...");
+fn init_deploy(manifest: &str) -> DeployCommand {
+    humanize_message("\n Deploying indexer...".to_string());
     DeployCommand {
         url: "http://127.0.0.1:29987".to_string(),
-        manifest: Some(WELCOME_MANIFEST.to_string()),
+        manifest: Some(manifest.to_owned()),
         path: None,
         auth: Some("".to_string()),
         target: Some(WASM_TARGET.to_string()),
