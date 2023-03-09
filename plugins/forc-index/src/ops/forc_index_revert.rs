@@ -58,10 +58,5 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
 
     println!("\n{}", to_string_pretty(&res_json)?);
 
-    info!(
-        "\n✅ Successfully reverted index '{}.{}' at {} \n Please restart the indexer for changes to take effect.",
-        &manifest.namespace, &manifest.identifier, &target
-    );
-
     Ok(())
 }

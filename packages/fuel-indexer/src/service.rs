@@ -331,7 +331,7 @@ async fn create_service_task(
                                 }
 
                                 let manifest: Manifest =
-                                    serde_yaml::from_slice(&penultimate_asset.bytes)
+                                    serde_yaml::from_slice(&latest_assets.manifest.bytes)
                                         .expect("Failed to deserialize manifest");
 
                                 let (handle, _module_bytes, killer) = WasmIndexExecutor::create(

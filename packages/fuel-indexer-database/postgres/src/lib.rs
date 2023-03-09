@@ -625,7 +625,7 @@ pub async fn penultimate_asset_for_index(
 
     let index_id = index_id_for(conn, namespace, identifier).await?;
     let query = format!(
-        "SELECT * FROM index_asset_registry_{0} WHERE index_id = {1} ORDER BY id DESC LIMIT 1 OFFSET 1",
+        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1 OFFSET 1",
         asset_type.as_ref(),
         index_id
     );
