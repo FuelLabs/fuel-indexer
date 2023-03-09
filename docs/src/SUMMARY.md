@@ -19,9 +19,13 @@
 
 # Reference Guide
 
-- [What Can I Index?](./reference-guide/indexing/blocks-and-transactions.md)
+- [A Fuel Indexer Project](./reference-guide/components/fuel-indexer-project.md)
+  - [Manifest](./reference-guide/components/assets/manifest.md)
+  - [Schema](./reference-guide/components/assets/schema.md)
+  - [Module](./reference-guide/components/assets/module.md)
+- [What Can I Index?](./reference-guide/indexing/what-can-i-index.md)
   - [Blocks and Transactions](./reference-guide/indexing/blocks-and-transactions.md)
-  - [Receipts](./reference-guide/indexing/receipts/call.md)
+  - [Receipts](./reference-guide/indexing/receipts.md)
     - [Call](./reference-guide/indexing/receipts/call.md)
     - [Log](./reference-guide/indexing/receipts/log.md)
     - [LogData](./reference-guide/indexing/receipts/logdata.md)
@@ -31,10 +35,6 @@
     - [Transfer](./reference-guide/indexing/receipts/transfer.md)
     - [TransferOut](./reference-guide/indexing/receipts/transferout.md)
     - [ScriptResult](./reference-guide/indexing/receipts/scriptresult.md)
-- [A Fuel Indexer Project](./reference-guide/components/fuel-indexer-project.md)
-  - [Manifest](./reference-guide/components/assets/manifest.md)
-  - [Schema](./reference-guide/components/assets/schema.md)
-  - [Module](./reference-guide/components/assets/module.md)
 - [Data Types](./reference-guide/data-types/types.md)
 - [GraphQL](./reference-guide/components/graphql/schema.md)
   - [Schema](./reference-guide/components/graphql/schema.md)
