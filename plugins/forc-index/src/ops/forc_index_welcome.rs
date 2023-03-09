@@ -31,6 +31,9 @@ const TITLE: &str = "
 
 const WELCOME_MANIFEST: &str = "welcome.manifest.yaml";
 const WASM_TARGET: &str = "wasm32-unknown-unknown";
+const PROJECT_INITIALIZED: &str =
+    "\n Indexer project initialized. Manifest file created. ✅";
+const DEPLOY_QUESTION: &str = "\n Start the indexer and deploy the index? (Y/n)";
 
 pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
     for line in TITLE.lines() {
@@ -38,22 +41,19 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
         thread::sleep(time::Duration::from_millis(50));
     }
 
-    humanize_message("\n Welcome to the Fuel Indexer CLI 🚀".to_string());
-    thread::sleep(time::Duration::from_millis(500));
-    humanize_message("\n This tool will help you understand how to create and deploy an index on the Fuel blockchain.".to_string());
-    thread::sleep(time::Duration::from_millis(500));
-    humanize_message("\n Let's get started!".to_string());
-    thread::sleep(time::Duration::from_millis(500));
-    humanize_message("\n First, we'll create a new index.".to_string());
-    thread::sleep(time::Duration::from_millis(500));
+    let WelcomeCommand { greeter } = command;
+    if greeter {
+        render_greeter();
+    }
+
     humanize_message("\n Would you like to create the default index? (Y/n)".to_string());
 
     let mut input = String::new();
-    input = process_std(input);
 
+    input = process_std(input);
     match input.trim().to_lowercase().as_str() {
         "y" | "yes" => {
-            info!("\n Creating the default index... 🔥");
+            humanize_message("\n Creating the default index... ⚙️".to_string());
             create(InitCommand {
                 name: Some("welcome".to_string()),
                 path: Some(std::path::PathBuf::from(".")),
@@ -61,46 +61,90 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
                 native: false,
                 absolute_paths: true,
             })?;
+            humanize_message(PROJECT_INITIALIZED.to_string());
+            humanize_message(DEPLOY_QUESTION.to_string());
 
-            info!("\n✅ Indexer project initialized. Manifest file created.");
-            info!("\n Start the indexer and deploy the index? (Y/n)");
+            input = process_std(input);
+            deploy_to_network(input)?;
+        }
+        "n" | "no" => {
+            humanize_message(
+                "\n Ok! Let's create a namespace for your custom index.".to_string(),
+            );
+            humanize_message(
+                "\n enter a namespace for your index below \n >".to_string(),
+            );
+            input = process_std(input);
+            let namespace = input.trim().to_lowercase();
+            humanize_message(
+                "\n Great, now create an identifier for your custom index. \n >".to_string(),
+            );
+            input = process_std(input);
+            let identifier = input.trim().to_lowercase();
+            humanize_message(
+                "\n Ok, creating a new index with the values you've set... ⚙️".to_string(),
+            );
+            create(InitCommand {
+                name: Some(identifier),
+                path: Some(std::path::PathBuf::from(".")),
+                namespace,
+                native: false,
+                absolute_paths: true,
+            })?;
+            humanize_message(PROJECT_INITIALIZED.to_string());
+            humanize_message(DEPLOY_QUESTION.to_string());
+
+            input = process_std(input);
+            deploy_to_network(input)?;
+        }
+        _ => {
+            println!("Invalid input. Please enter Y or n");
+        }
+    }
+    Ok(())
+}
+
+fn render_greeter() {
+    humanize_message("\n Welcome to the Fuel Indexer CLI 🚀".to_string());
+    thread::sleep(time::Duration::from_millis(500));
+    humanize_message(
+        "\n This tool will help you understand how to create and deploy an index on the Fuel blockchain."
+        .to_string()
+    );
+    thread::sleep(time::Duration::from_millis(500));
+    humanize_message("\n Let's get started!".to_string());
+    thread::sleep(time::Duration::from_millis(500));
+    humanize_message("\n First, we'll create a new index.".to_string());
+    thread::sleep(time::Duration::from_millis(500));
+}
+
+fn deploy_to_network(mut input: String) -> anyhow::Result<()> {
+    match input.trim().to_lowercase().as_str() {
+        "y" | "yes" => {
+            humanize_message(
+                "\n Connect to which network? 🤔 \n1. Local node\n2. Testnet".to_string(),
+            );
 
             input = process_std(input);
             match input.trim().to_lowercase().as_str() {
-                "y" | "yes" => {
-                    info!("\n Connect to which network? 🤔 \n1. Local node\n2. Testnet");
-                    input = process_std(input);
-
-                    match input.trim().to_lowercase().as_str() {
-                        "1" => {
-                            start(init_start(Network::Local))?;
-                            build(init_build())?;
-                            deploy(init_deploy())?;
-                        }
-                        "2" => {
-                            start(init_start(Network::Testnet))?;
-                            build(init_build())?;
-                            deploy(init_deploy())?;
-                        }
-                        _ => {
-                            println!("Invalid input. Please enter 1 or 2");
-                        }
-                    }
+                "1" => {
+                    start(init_start(Network::Local))?;
+                    build(init_build())?;
+                    deploy(init_deploy())?;
                 }
-                "n" | "no" => {
-                    println!("Skipping indexer deployment...");
-                    std::process::exit(0);
+                "2" => {
+                    start(init_start(Network::Testnet))?;
+                    build(init_build())?;
+                    deploy(init_deploy())?;
                 }
                 _ => {
-                    println!("Invalid input. Please enter Y or n");
+                    println!("Invalid input. Please enter 1 or 2");
                 }
             }
         }
         "n" | "no" => {
-            info!("\n Create a name for your index");
-            input = process_std(input);
-            let name = input.trim().to_lowercase();
-            //do more stuff here with the name
+            println!("Skipping indexer deployment...");
+            std::process::exit(0);
         }
         _ => {
             println!("Invalid input. Please enter Y or n");
@@ -113,7 +157,7 @@ fn humanize_message(output: String) {
     for c in output.chars() {
         print!("{}", c.to_string().bright_yellow());
         io::stdout().flush().unwrap();
-        let sleep_time = thread_rng().gen_range(11..92);
+        let sleep_time = thread_rng().gen_range(20..92);
         thread::sleep(time::Duration::from_millis(sleep_time as u64));
     }
 }
