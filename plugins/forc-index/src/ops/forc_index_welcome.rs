@@ -7,7 +7,7 @@ use crate::{
     utils::defaults,
 };
 use owo_colors::OwoColorize;
-use rand::Rng;
+use rand::{thread_rng, Rng};
 use std::{
     io::{self, Write},
     thread, time,
@@ -100,6 +100,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
             info!("\n Create a name for your index");
             input = process_std(input);
             let name = input.trim().to_lowercase();
+            //do more stuff here with the name
         }
         _ => {
             println!("Invalid input. Please enter Y or n");
@@ -110,10 +111,10 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 
 fn humanize_message(output: String) {
     for c in output.chars() {
-        info!("{}", c);
+        print!("{}", c.to_string().bright_yellow());
         io::stdout().flush().unwrap();
-        let sleep_time = rand::thread_rng().gen_range(20..77);
-        thread::sleep(time::Duration::from_millis(sleep_time));
+        let sleep_time = thread_rng().gen_range(11..92);
+        thread::sleep(time::Duration::from_millis(sleep_time as u64));
     }
 }
 
