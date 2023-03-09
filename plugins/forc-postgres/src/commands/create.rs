@@ -1,8 +1,4 @@
-use crate::{
-    ops::forc_postgres_createdb,
-    pg::PostgresVersion,
-    utils::{db_dir_or_default, default_indexer_dir},
-};
+use crate::{ops::forc_postgres_createdb, pg::PostgresVersion, utils::db_dir_or_default};
 use anyhow::Result;
 use clap::Parser;
 use fuel_indexer_lib::defaults;
@@ -76,7 +72,7 @@ impl Default for Command {
             password: defaults::POSTGRES_PASSWORD.to_string(),
             user: defaults::POSTGRES_USER.to_string(),
             port: defaults::POSTGRES_PORT.to_string(),
-            database_dir: Some(default_indexer_dir()),
+            database_dir: None,
             auth_method: "plain".to_string(),
             persistent: true,
             start: false,
