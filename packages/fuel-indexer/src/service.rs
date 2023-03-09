@@ -256,7 +256,13 @@ async fn create_service_task(
                                 );
 
                                 futs.push(handle);
-                                killers.insert(manifest.uid(), killer);
+
+                                if let Some(prior_module_killer) =
+                                    killers.insert(manifest.uid(), killer)
+                                {
+                                    info!("Replaced execution module for {}, stopping old execution module.", manifest.uid());
+                                    prior_module_killer.store(true, Ordering::SeqCst);
+                                }
                             }
                             Err(e) => {
                                 error!(
