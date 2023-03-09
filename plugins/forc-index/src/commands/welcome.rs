@@ -1,10 +1,10 @@
 use crate::ops::forc_index_welcome;
-use clap::Parser;
 use anyhow::Result;
+use clap::Parser;
 
 #[derive(Debug, Parser)]
 pub struct Command {
-    /// Skip the greeter 
+    /// Skip the greeter
     #[clap(long, help = "Skip the greeter.", default_value = "true")]
     pub greeter: bool,
 }

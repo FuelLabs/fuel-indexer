@@ -48,7 +48,9 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
         render_greeter();
     }
 
-    humanize_message("\n Would you like to create the default index? (Y/n) \n > ".to_string());
+    humanize_message(
+        "\n Would you like to create the default index? (Y/n) \n > ".to_string(),
+    );
 
     let mut input = String::new();
 
@@ -105,7 +107,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
 
             let manifest_name = format!("{}.manifest.yaml", identifer_copy);
             let manifest_path = format!("./{}", manifest_name);
-            let manifest_content  = fs::read_to_string(&manifest_path)?;
+            let manifest_content = fs::read_to_string(&manifest_path)?;
 
             for line in manifest_content.lines() {
                 println!("{}", line.trim().bright_green());
@@ -142,7 +144,8 @@ fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Result<()> 
     match input.trim().to_lowercase().as_str() {
         "y" | "yes" => {
             humanize_message(
-                "\n Connect to which network? 🤔 \n1. Local node\n2. Testnet \n > ".to_string(),
+                "\n Connect to which network? 🤔 \n1. Local node\n2. Testnet \n > "
+                    .to_string(),
             );
 
             input = process_std(input);
