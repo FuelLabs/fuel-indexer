@@ -2157,6 +2157,7 @@ dependencies = [
  "hyper-rustls 0.23.2",
  "indicatif",
  "owo-colors",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",

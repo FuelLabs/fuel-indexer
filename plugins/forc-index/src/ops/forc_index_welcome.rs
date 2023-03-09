@@ -6,7 +6,12 @@ use crate::{
     cli::{BuildCommand, DeployCommand, InitCommand, StartCommand, WelcomeCommand},
     utils::defaults,
 };
-use std::io::{self, Write};
+use owo_colors::OwoColorize;
+use rand::Rng;
+use std::{
+    io::{self, Write},
+    thread, time,
+};
 use tracing::info;
 
 enum Network {
@@ -14,38 +19,34 @@ enum Network {
     Testnet,
 }
 
-const FUEL_LOGO: &str = r#"
-                         .7J!:                    
-                        ~5PP@@#J                  
-                      :YPP5#@@@G                  
-                     7PPPPP@@@&~                  
-                   ~5PPPP5#@@@5                   
-                 :YPPPPPPP@@@&^                   
-                7PPPPPPP5&@@@Y                    
-              ~5PPPPPPPPG@@@#:                    
-            :YPPPPPPPPPPPGGGPJJJJJJJJJJJJ?~.      
-           7PPPPPPPPPPPPPPPPPPPPPPPPPPPPB@@@G^    
-         ~5PPPPPPPPPPPPPPPPPPPPPPPPPP5P&@@@@P:    
-       :YPPPPPPPPPPPPPPPPPPPPPPPPPP5P#@@@@#~      
-      7PPPPPPPPPPPPPPPPPPPPPPPPPPP5G@@@@&J        
-    ^PPP5555555555555PPPPPPPPPPP5P&@@@@P:         
-    .JG&&&&&&&&&&&&&&BPPPPPPPP5P#@@@@#~           
-      .Y&@@@@@@@@@@@@GPPPPPPP5G@@@@&J             
-        .~77777777775PPPPPP5P&@@@@P:              
-                    YPPPP5P#@@@@#~                
-                   !PPPP5G@@@@&J.                 
-                  .PPP5P&@@@@P:                   
-                  7P5P#@@@@#~                     
-                 .PPB@@@@&J.                      
-                  ~5&@@@P:                        
-                    :YP!                          
-"#;
+const TITLE: &str = "
+
+███████╗██╗░░░██╗███████╗██╗░░░░░  ██╗███╗░░██╗██████╗░███████╗██╗░░██╗███████╗██████╗░
+██╔════╝██║░░░██║██╔════╝██║░░░░░  ██║████╗░██║██╔══██╗██╔════╝╚██╗██╔╝██╔════╝██╔══██╗
+█████╗░░██║░░░██║█████╗░░██║░░░░░  ██║██╔██╗██║██║░░██║█████╗░░░╚███╔╝░█████╗░░██████╔╝
+██╔══╝░░██║░░░██║██╔══╝░░██║░░░░░  ██║██║╚████║██║░░██║██╔══╝░░░██╔██╗░██╔══╝░░██╔══██╗
+██║░░░░░╚██████╔╝███████╗███████╗  ██║██║░╚███║██████╔╝███████╗██╔╝╚██╗███████╗██║░░██║
+╚═╝░░░░░░╚═════╝░╚══════╝╚══════╝  ╚═╝╚═╝░░╚══╝╚═════╝░╚══════╝╚═╝░░╚═╝╚══════╝╚═╝░░╚═╝
+";
 
 const WELCOME_MANIFEST: &str = "welcome.manifest.yaml";
 const WASM_TARGET: &str = "wasm32-unknown-unknown";
 
 pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
-    info!("Create default index? (Y/n)");
+    for line in TITLE.lines() {
+        println!("{}", line.trim().bright_cyan());
+        thread::sleep(time::Duration::from_millis(50));
+    }
+
+    humanize_message("\n Welcome to the Fuel Indexer CLI 🚀".to_string());
+    thread::sleep(time::Duration::from_millis(500));
+    humanize_message("\n This tool will help you understand how to create and deploy an index on the Fuel blockchain.".to_string());
+    thread::sleep(time::Duration::from_millis(500));
+    humanize_message("\n Let's get started!".to_string());
+    thread::sleep(time::Duration::from_millis(500));
+    humanize_message("\n First, we'll create a new index.".to_string());
+    thread::sleep(time::Duration::from_millis(500));
+    humanize_message("\n Would you like to create the default index? (Y/n)".to_string());
 
     let mut input = String::new();
     input = process_std(input);
@@ -107,6 +108,15 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
     Ok(())
 }
 
+fn humanize_message(output: String) {
+    for c in output.chars() {
+        info!("{}", c);
+        io::stdout().flush().unwrap();
+        let sleep_time = rand::thread_rng().gen_range(20..77);
+        thread::sleep(time::Duration::from_millis(sleep_time));
+    }
+}
+
 fn process_std(mut input: String) -> String {
     input.clear();
     io::stdout().flush().expect("failed to flush stdout");
@@ -141,7 +151,7 @@ fn init_start(on_network: Network) -> StartCommand {
         Network::Local => {
             start_command.fuel_node_host = "http://127.0.0.1:29987".to_string();
             start_command.fuel_node_port = "29987".to_string();
-            start_command.graphql_api_host = defaults::GRAPHQL_API_HOST.to_string(); 
+            start_command.graphql_api_host = defaults::GRAPHQL_API_HOST.to_string();
             start_command.graphql_api_port = defaults::GRAPHQL_API_PORT.to_string();
         }
         Network::Testnet => {
