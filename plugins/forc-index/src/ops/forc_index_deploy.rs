@@ -47,12 +47,6 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
-    //print all the variables above
-    println!(
-        "root_dir: {:?}, manifest_path{:?}, index_name{:?}",
-        _root_dir, manifest_path, _index_name
-    );
-
     let mut manifest_file = fs::File::open(&manifest_path)?;
     let mut manifest_contents = String::new();
     manifest_file.read_to_string(&mut manifest_contents)?;
