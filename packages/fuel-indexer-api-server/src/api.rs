@@ -1,6 +1,15 @@
+<<<<<<< HEAD
 use crate::uses::{
     authorize_middleware, get_nonce, health_check, metrics, query_graph,
     register_index_assets, stop_index, verify_signature, revert_indexer,
+=======
+use crate::{
+    auth::AuthenitcationMiddleware,
+    uses::{
+        authorize_middleware, get_nonce, health_check, metrics, query_graph,
+        register_index_assets, stop_indexer, verify_signature,
+    },
+>>>>>>> ea4a440d (add custom middleware)
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
@@ -8,8 +17,13 @@ use axum::{
     http::StatusCode,
     middleware,
     response::{IntoResponse, Response},
+<<<<<<< HEAD
     routing::{delete, get, post, put},
     Error as AxumError, Router,
+=======
+    routing::{delete, get, post, Router},
+    Error as AxumError,
+>>>>>>> ea4a440d (add custom middleware)
 };
 use fuel_crypto::Error as FuelCryptoError;
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
@@ -139,13 +153,15 @@ impl GraphQlApi {
 
         let index_routes = Router::new()
             .route("/:namespace/:identifier", post(register_index_assets))
-            .route_layer(middleware::from_fn(authorize_middleware))
+            .layer(AuthenitcationMiddleware::from(&config))
             .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()))
             .route("/:namespace/:identifier", delete(stop_index))
             .route("/:namespace/:identifier", put(revert_indexer))
             .route_layer(middleware::from_fn(authorize_middleware))
+            .route("/:namespace/:identifier", delete(stop_indexer))
+            .layer(AuthenitcationMiddleware::from(&config))
             .layer(Extension(tx))
             .layer(Extension(pool.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));

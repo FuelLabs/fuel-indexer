@@ -313,14 +313,14 @@ pub async fn run_migration(conn: &mut IndexerConnection) -> sqlx::Result<()> {
     }
 }
 
-pub async fn remove_index(
+pub async fn remove_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::remove_index(c, namespace, identifier).await
+            postgres::remove_indexer(c, namespace, identifier).await
         }
     }
 }

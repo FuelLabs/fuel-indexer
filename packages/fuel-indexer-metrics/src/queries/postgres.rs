@@ -33,8 +33,12 @@ pub struct PostgreQueries {
     pub commit_transaction_calls: IntCounter,
     pub revert_transaction_calls: IntCounter,
     pub run_migration_calls: IntCounter,
+<<<<<<< HEAD
     pub remove_index: IntCounter,
     pub remove_asset_by_version_calls: IntCounter,
+=======
+    pub remove_indexer: IntCounter,
+>>>>>>> ea4a440d (add custom middleware)
 }
 
 impl Metric for PostgreQueries {
@@ -185,9 +189,9 @@ impl Metric for PostgreQueries {
                 "Count of calls to postgres run_migration_calls."
             )
             .unwrap(),
-            remove_index: register_int_counter!(
+            remove_indexer: register_int_counter!(
                 "postgres_remove_index",
-                "Count of calls to postgres remove_index."
+                "Count of calls to postgres remove_indexer."
             )
             .unwrap(),
             remove_asset_by_version_calls: register_int_counter!(

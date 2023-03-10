@@ -1,13 +1,13 @@
 use crate::defaults::CURRENT_TEST_CONTRACT_ID_STR;
 use crate::{defaults, WORKSPACE_ROOT};
-use axum::Router;
+use axum::routing::Router;
 use fuel_indexer::IndexerService;
 use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{
     config::{
-        authentication::AuthStrategy, AuthenticationConfig, DatabaseConfig,
-        FuelNodeConfig, GraphQLConfig, IndexerConfig,
+        auth::AuthStrategy, AuthenticationConfig, DatabaseConfig, FuelNodeConfig,
+        GraphQLConfig, IndexerConfig,
     },
     defaults as lib_defaults,
 };

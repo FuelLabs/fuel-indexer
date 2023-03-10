@@ -679,13 +679,13 @@ pub async fn revert_transaction(
     execute_query(conn, "ROLLBACK".into()).await
 }
 
-pub async fn remove_index(
+pub async fn remove_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<()> {
     #[cfg(feature = "metrics")]
-    METRICS.db.postgres.remove_index.inc();
+    METRICS.db.postgres.remove_indexer.inc();
 
     let index_id = index_id_for(conn, namespace, identifier).await?;
 

@@ -237,7 +237,9 @@ async fn create_service_task(
                                 let assets =
                                     queries::latest_assets_for_index(&mut conn, &id)
                                         .await
-                                        .expect("Could not get latest assets for index");
+                                        .expect(
+                                            "Could not get latest assets for indexer",
+                                        );
 
                                 let manifest: Manifest =
                                     serde_yaml::from_slice(&assets.manifest.bytes)
@@ -268,7 +270,7 @@ async fn create_service_task(
                             }
                             Err(e) => {
                                 error!(
-                                    "Failed to find Index({}.{}): {}",
+                                    "Failed to find Indexer({}.{}): {}",
                                     &request.namespace, &request.identifier, e
                                 );
 

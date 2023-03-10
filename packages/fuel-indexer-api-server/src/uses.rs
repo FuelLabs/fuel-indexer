@@ -18,7 +18,7 @@ use fuel_indexer_database::{
     IndexerConnectionPool,
 };
 use fuel_indexer_lib::{
-    config::{authentication::Claims, IndexerConfig},
+    config::{auth::Claims, IndexerConfig},
     utils::{
         AssetReloadRequest, FuelNodeHealthResponse, IndexRevertRequest, IndexStopRequest,
         ServiceRequest, ServiceStatus,
@@ -51,9 +51,9 @@ pub struct Query {
 
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
-    Json(query): Json<Query>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
+    Json(query): Json<Query>,
 ) -> ApiResult<axum::Json<Value>> {
     match manager
         .read()
@@ -152,7 +152,7 @@ pub(crate) async fn authorize_middleware<B>(
     }
 }
 
-pub(crate) async fn stop_index(
+pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -161,22 +161,31 @@ pub(crate) async fn stop_index(
 
     let _ = queries::start_transaction(&mut conn).await?;
 
-    if let Err(_e) = queries::remove_index(&mut conn, &namespace, &identifier).await {
+    if let Err(e) = queries::remove_indexer(&mut conn, &namespace, &identifier).await {
         queries::revert_transaction(&mut conn).await?;
-    } else {
-        queries::commit_transaction(&mut conn).await?;
-    }
 
-    if let Some(tx) = tx {
-        tx.send(ServiceRequest::IndexStop(IndexStopRequest {
-            namespace,
-            identifier,
-        }))
-        .await?;
+        error!(
+            "Failed to remove Indexer({}.{}): {}",
+            namespace, identifier, e
+        );
 
         return Ok(Json(json!({
-            "success": "true"
+            "success": "false"
         })));
+    } else {
+        queries::commit_transaction(&mut conn).await?;
+
+        if let Some(tx) = tx {
+            tx.send(ServiceRequest::IndexStop(IndexStopRequest {
+                namespace,
+                identifier,
+            }))
+            .await?;
+
+            return Ok(Json(json!({
+                "success": "true"
+            })));
+        }
     }
 
     Err(ApiError::default())

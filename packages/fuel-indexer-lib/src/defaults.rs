@@ -14,7 +14,7 @@ pub const POSTGRES_PASSWORD: &str = "postgres";
 pub const INDEX_FAILED_CALLS: usize = 10;
 
 pub const GRAPHQL_API_RUN_MIGRATIONS: bool = false;
-pub const MAX_BODY_SIZE: &str = "5242880"; // 5MB
+pub const MAX_BODY_SIZE: usize = 5242880; // 5MB
 
 pub const SERVICE_REQUEST_CHANNEL_SIZE: usize = 100;
 pub const IDLE_SERVICE_WAIT_SECS: u64 = 3;
@@ -37,7 +37,8 @@ pub const HEADER_PADDING: usize = 20;
 
 pub const FORC_INDEX: &str = "forc-index";
 
-pub const AUTH_ENABLED: bool = false;
+pub const AUTH_ENABLED: bool = true;
 
+// IMPORTANT: Not to be used in production
 pub const JWT_SECRET: &str =
     "6906573247652854078288872150120717701634680141358560585446649749925714230966";

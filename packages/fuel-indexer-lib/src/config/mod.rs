@@ -1,11 +1,11 @@
-pub mod authentication;
+pub mod auth;
 pub mod database;
 pub mod fuel_node;
 pub mod graphql;
 
 pub use crate::{
     config::{
-        authentication::{AuthStrategy, AuthenticationConfig},
+        auth::{AuthStrategy, AuthenticationConfig},
         database::DatabaseConfig,
         fuel_node::FuelNodeConfig,
         graphql::GraphQLConfig,
@@ -111,8 +111,8 @@ pub struct IndexerArgs {
     pub database: String,
 
     /// Max body size for GraphQL API requests.
-    #[clap(long, help = "Max body size for GraphQL API requests.", default_value = defaults::MAX_BODY_SIZE )]
-    pub max_body_size: String,
+    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    pub max_body_size: usize,
 
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
@@ -165,7 +165,7 @@ pub struct IndexerArgs {
     pub embedded_database: bool,
     
     /// Require users to authenticate for some operations.
-    #[clap(long, help = "Require users to authenticate for some operations.")]
+    #[clap(long, default_value_t = defaults::AUTH_ENABLED, help = "Require users to authenticate for some operations.")]
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
@@ -204,8 +204,8 @@ pub struct ApiServerArgs {
     pub database: String,
 
     /// Max body size for GraphQL API requests.
-    #[clap(long, help = "Max body size for GraphQL API requests.", default_value = defaults::MAX_BODY_SIZE )]
-    pub max_body_size: String,
+    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    pub max_body_size: usize,
 
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
@@ -244,7 +244,7 @@ pub struct ApiServerArgs {
     pub metrics: bool,
 
     /// Require users to authenticate for some operations.
-    #[clap(long, help = "Require users to authenticate for some operations.")]
+    #[clap(long, default_value_t = defaults::AUTH_ENABLED, help = "Require users to authenticate for some operations.")]
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
@@ -341,7 +341,7 @@ impl From<IndexerArgs> for IndexerConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
                 run_migrations: args.run_migrations,
-                max_body_size: args.max_body_size.parse::<usize>().unwrap(),
+                max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
@@ -409,7 +409,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
                 run_migrations: args.run_migrations,
-                max_body_size: args.max_body_size.parse::<usize>().unwrap(),
+                max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: false,
@@ -485,7 +485,7 @@ impl IndexerConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
                 run_migrations: args.run_migrations,
-                max_body_size: args.max_body_size.parse::<usize>().unwrap(),
+                max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
