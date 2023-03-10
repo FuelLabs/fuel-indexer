@@ -153,7 +153,7 @@ pub struct IndexerArgs {
         long,
         help = "Automatically create and start database using provided options or defaults."
     )]
-    pub auto_setup_database: bool,
+    pub embedded_database: bool,
 }
 
 #[derive(Debug, Parser, Clone)]

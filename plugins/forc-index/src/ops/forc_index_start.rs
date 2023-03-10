@@ -21,11 +21,11 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         run_migrations,
         metrics,
         manifest,
-        auto_setup_database,
+        embedded_database,
         ..
     } = command;
 
-    if auto_setup_database {
+    if embedded_database {
         let name = postgres_database
             .clone()
             .unwrap_or(defaults::POSTGRES_DATABASE.to_string());

@@ -11,14 +11,14 @@ USAGE:
     forc-index start [OPTIONS]
 
 OPTIONS:
-        --auto-setup-database
-            Automatically create and start database using provided options or defaults.
-
     -c, --config <FILE>
             Indexer service config file.
 
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
+
+        --embedded-database
+            Automatically create and start database using provided options or defaults.
 
         --fuel-node-host <FUEL_NODE_HOST>
             Host of the running Fuel node. [default: 127.0.0.1]

@@ -158,7 +158,7 @@ forc index check
 
 ### 2.2 Setup a Database and Start the Indexer Service
 
-To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll use `forc-index` and its `forc-postgres` sub-plugin, which was also installed wtih `fuelup`.
+To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll use `forc index` and its `forc index postgres` subcommand.
 
 We can quickly create a bootstrapped database and start the Fuel indexer service by running the following command:
 
@@ -166,7 +166,7 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 
 ```bash
 forc index start \
-    --auto-database-setup                       # Setup and start a default database.
+    --embedded-database                         # Setup and start a default database.
     --fuel-node-host node-beta-2.fuel.network \ # Connect to a Fuel node at this host
     --fuel-node-port 80                         # and port, and monitor the network.
 ```

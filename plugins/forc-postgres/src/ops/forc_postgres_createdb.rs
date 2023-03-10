@@ -4,11 +4,8 @@ use crate::{
     pg::{PgEmbedConfig, PostgresVersion},
     utils::{db_config_file_name, default_indexer_dir},
 };
-use anyhow::Result;
-use fuel_indexer_lib::{
-    config::{DatabaseConfig, IndexerConfig},
-    defaults,
-};
+use anyhow::{Ok, Result};
+use fuel_indexer_lib::config::{DatabaseConfig, IndexerConfig};
 use indicatif::{ProgressBar, ProgressStyle};
 use pg_embed::{pg_fetch::PgFetchSettings, postgres::PgEmbed};
 use std::{fs::File, io::Write, path::PathBuf, time::Duration};
@@ -133,11 +130,21 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
     info!("\n💡 Creating database at '{pg_db_uri}'.");
 
     if let Err(e) = pg.create_database(&name).await {
-        if name == defaults::POSTGRES_DATABASE {
-            info!(
-                "\nDefault database {} already exists.\n",
-                defaults::POSTGRES_DATABASE
-            );
+        if let Some(err) = e.source {
+            if let Some(inner_error) = err.source() {
+                if inner_error.to_string()
+                    == format!("database \"{name}\" already exists")
+                {
+                    info!("Database {} already exists", &name);
+                    pb.finish();
+
+                    if start {
+                        start_database(pg, name, database_dir, config).await?;
+                    }
+
+                    return Ok(());
+                }
+            }
         } else {
             anyhow::bail!(e);
         }
@@ -154,16 +161,27 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
     info!("\n✅ Successfully created database at '{pg_db_uri}'.");
 
     if start {
-        // Allow for start command to fully manage PgEmbed object
-        pg.stop_db().await?;
-
-        start::exec(StartDbCommand {
-            name,
-            database_dir: Some(database_dir.unwrap()),
-            config,
-        })
-        .await?;
+        start_database(pg, name, database_dir, config).await?;
     }
+
+    Ok(())
+}
+
+async fn start_database(
+    mut pg: PgEmbed,
+    name: String,
+    database_dir: Option<PathBuf>,
+    config: Option<PathBuf>,
+) -> Result<(), anyhow::Error> {
+    // Allow for start command to fully manage PgEmbed object
+    pg.stop_db().await?;
+
+    start::exec(StartDbCommand {
+        name,
+        database_dir: Some(database_dir.unwrap()),
+        config,
+    })
+    .await?;
 
     Ok(())
 }
