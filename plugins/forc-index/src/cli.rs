@@ -1,8 +1,9 @@
 pub(crate) use crate::commands::{
-    build::Command as BuildCommand, check::Command as CheckCommand,
-    deploy::Command as DeployCommand, init::Command as InitCommand,
-    new::Command as NewCommand, remove::Command as RemoveCommand,
-    revert::Command as RevertCommand, start::Command as StartCommand, auth::Command as AuthCommand,
+    auth::Command as AuthCommand, build::Command as BuildCommand,
+    check::Command as CheckCommand, deploy::Command as DeployCommand,
+    init::Command as InitCommand, new::Command as NewCommand,
+    remove::Command as RemoveCommand, revert::Command as RevertCommand,
+    start::Command as StartCommand,
 };
 use clap::{Parser, Subcommand};
 use forc_postgres::{

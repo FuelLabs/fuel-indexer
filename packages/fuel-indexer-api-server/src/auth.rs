@@ -7,7 +7,7 @@ use axum::{
     routing::get,
     Router,
 };
-use fuel_indexer_lib::config::{auth::AuthStrategy, IndexerConfig};
+use fuel_indexer_lib::config::{auth::AuthenticationStrategy, IndexerConfig};
 use std::task::{Context, Poll};
 use tower::{Layer, Service};
 
@@ -74,7 +74,7 @@ where
 
         if config.authentication.enabled {
             match &config.authentication.strategy {
-                AuthStrategy::JWT => {
+                AuthenticationStrategy::JWT => {
                     println!("\n>>> I'm DOING JWT STUFF.\n");
                     self.inner.call(req)
                 }

@@ -2,13 +2,11 @@ use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::VerifySignatureRequest,
 };
-use anyhow::Result;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
     extract::{multipart::Multipart, Extension, Json, Path},
     http::{Request, StatusCode},
-    middleware::Next,
     response::{IntoResponse, Response},
 };
 use fuel_crypto::{Message, Signature};
@@ -18,7 +16,10 @@ use fuel_indexer_database::{
     IndexerConnectionPool,
 };
 use fuel_indexer_lib::{
-    config::{auth::Claims, IndexerConfig},
+    config::{
+        auth::{AuthenticationStrategy, Claims},
+        IndexerConfig,
+    },
     utils::{
         AssetReloadRequest, FuelNodeHealthResponse, IndexRevertRequest, IndexStopRequest,
         ServiceRequest, ServiceStatus,
@@ -30,7 +31,7 @@ use fuel_indexer_schema::db::{
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{
-    decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation,
+    encode, EncodingKey, Header,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -123,35 +124,6 @@ pub(crate) async fn health_check(
     })))
 }
 
-async fn authenticate_user(value: &str) -> Option<Result<bool, ApiError>> {
-    // match config.authentication.strategy {
-    //     _ =>  Some(Ok(true))
-    // }
-    Some(Ok(true))
-}
-
-pub(crate) async fn authorize_middleware<B>(
-    mut req: Request<B>,
-    next: Next<B>,
-) -> impl IntoResponse {
-    let header = req
-        .headers()
-        .get(http::header::AUTHORIZATION)
-        .and_then(|header| header.to_str().ok());
-    let value = if let Some(value) = header {
-        value
-    } else {
-        return Err(StatusCode::UNAUTHORIZED);
-    };
-
-    if let Some(current_user) = authenticate_user(value).await {
-        req.extensions_mut().insert(current_user);
-        Ok(next.run(req).await)
-    } else {
-        Err(StatusCode::UNAUTHORIZED)
-    }
-}
-
 pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
@@ -222,7 +194,7 @@ pub(crate) async fn revert_indexer(
     Err(ApiError::default())
 }
 
-pub(crate) async fn register_index_assets(
+pub(crate) async fn register_indexer_assets(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
@@ -320,31 +292,42 @@ pub(crate) async fn verify_signature(
     Extension(config): Extension<IndexerConfig>,
     Json(payload): Json<VerifySignatureRequest>,
 ) -> ApiResult<axum::Json<Value>> {
-    let mut buff: [u8; 64] = [0u8; 64];
-    buff.copy_from_slice(&payload.signature.as_bytes()[..64]);
-    let sig = Signature::from_bytes(buff);
-    let msg = Message::new(payload.message);
-    let pk = sig.recover(&msg)?;
+    if config.authentication.enabled {
+        match config.authentication.strategy {
+            AuthenticationStrategy::JWT => {
+                let mut buff: [u8; 64] = [0u8; 64];
+                buff.copy_from_slice(&payload.signature.as_bytes()[..64]);
+                let sig = Signature::from_bytes(buff);
+                let msg = Message::new(payload.message);
+                let pk = sig.recover(&msg)?;
 
-    let claims = Claims {
-        sub: pk.to_string(),
-        iss: "Issuer".to_string(),
-        iat: 0,
-        exp: 0,
-    };
+                let claims = Claims {
+                    sub: pk.to_string(),
+                    iss: "Issuer".to_string(),
+                    iat: 0,
+                    exp: 0,
+                };
 
-    if let Err(e) = sig.verify(&pk, &msg) {
-        error!("Failed to verify signature: {e}.");
-        return Err(ApiError::FuelCryptoError(e));
+                if let Err(e) = sig.verify(&pk, &msg) {
+                    error!("Failed to verify signature: {e}.");
+                    return Err(ApiError::FuelCryptoError(e));
+                }
+
+                let token = encode(
+                    &Header::default(),
+                    &claims,
+                    &EncodingKey::from_secret(
+                        config.authentication.jwt_secret.unwrap().as_ref(),
+                    ),
+                )?;
+
+                Ok(Json(json!({"token": token.to_string()})))
+            }
+            _ => unimplemented!(),
+        }
+    } else {
+        unreachable!()
     }
-
-    let token = encode(
-        &Header::default(),
-        &claims,
-        &EncodingKey::from_secret(config.authentication.jwt_secret.unwrap().as_ref()),
-    )?;
-
-    Ok(Json(json!({"token": token.to_string()})))
 }
 
 pub async fn run_query(

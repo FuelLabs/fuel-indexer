@@ -5,7 +5,7 @@ pub mod graphql;
 
 pub use crate::{
     config::{
-        auth::{AuthStrategy, AuthenticationConfig},
+        auth::{AuthenticationConfig, AuthenticationStrategy},
         database::DatabaseConfig,
         fuel_node::FuelNodeConfig,
         graphql::GraphQLConfig,
@@ -163,7 +163,7 @@ pub struct IndexerArgs {
         help = "Automatically create and start database using provided options or defaults."
     )]
     pub embedded_database: bool,
-    
+
     /// Require users to authenticate for some operations.
     #[clap(long, default_value_t = defaults::AUTH_ENABLED, help = "Require users to authenticate for some operations.")]
     pub auth_enabled: bool,
@@ -348,7 +348,7 @@ impl From<IndexerArgs> for IndexerConfig {
 
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
-                strategy: AuthStrategy::from_str(&args.strategy).unwrap(),
+                strategy: AuthenticationStrategy::from_str(&args.strategy).unwrap(),
                 jwt_secret: args.jwt_secret,
             },
         };
@@ -415,7 +415,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             stop_idle_indexers: false,
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
-                strategy: AuthStrategy::from_str(&args.strategy).unwrap(),
+                strategy: AuthenticationStrategy::from_str(&args.strategy).unwrap(),
                 jwt_secret: None,
             },
         };
@@ -492,7 +492,7 @@ impl IndexerConfig {
 
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
-                strategy: AuthStrategy::from_str(&args.strategy).unwrap(),
+                strategy: AuthenticationStrategy::from_str(&args.strategy).unwrap(),
                 jwt_secret: args.jwt_secret,
             },
         };
@@ -619,7 +619,7 @@ impl IndexerConfig {
 
             if let Some(strategy) = strategy {
                 config.authentication.strategy =
-                    AuthStrategy::from_str(strategy.as_str().unwrap()).unwrap();
+                    AuthenticationStrategy::from_str(strategy.as_str().unwrap()).unwrap();
             }
         }
 
@@ -636,7 +636,8 @@ impl IndexerConfig {
     }
 
     pub fn has_jwt_auth(&self) -> bool {
-        self.authentication.enabled && self.authentication.strategy == AuthStrategy::JWT
+        self.authentication.enabled
+            && self.authentication.strategy == AuthenticationStrategy::JWT
     }
 }
 

@@ -16,7 +16,7 @@ pub struct AuthenticationConfig {
     #[serde(default)]
     pub enabled: bool,
     #[serde(default)]
-    pub strategy: AuthStrategy,
+    pub strategy: AuthenticationStrategy,
     pub jwt_secret: Option<String>,
 }
 
@@ -24,7 +24,7 @@ impl Default for AuthenticationConfig {
     fn default() -> Self {
         Self {
             enabled: defaults::AUTH_ENABLED,
-            strategy: AuthStrategy::JWT,
+            strategy: AuthenticationStrategy::JWT,
             jwt_secret: Some(defaults::JWT_SECRET.to_string()),
         }
     }
@@ -58,7 +58,7 @@ impl MutConfig for AuthenticationConfig {
     Serialize, Deserialize, EnumString, AsRefStr, Clone, Debug, Default, Eq, PartialEq,
 )]
 #[serde(rename_all = "lowercase")]
-pub enum AuthStrategy {
+pub enum AuthenticationStrategy {
     #[default]
     JWT,
 }

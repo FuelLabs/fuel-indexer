@@ -33,12 +33,8 @@ pub struct PostgreQueries {
     pub commit_transaction_calls: IntCounter,
     pub revert_transaction_calls: IntCounter,
     pub run_migration_calls: IntCounter,
-<<<<<<< HEAD
-    pub remove_index: IntCounter,
     pub remove_asset_by_version_calls: IntCounter,
-=======
     pub remove_indexer: IntCounter,
->>>>>>> ea4a440d (add custom middleware)
 }
 
 impl Metric for PostgreQueries {
