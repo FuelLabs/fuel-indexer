@@ -1,5 +1,5 @@
 use crate::{
-    config::{IndexerConfigResult, MutConfig},
+    config::{Env, IndexerConfigResult},
     defaults,
     utils::{is_opt_env_var, trim_opt_env_key},
 };
@@ -10,27 +10,30 @@ use strum::{AsRefStr, EnumString};
 const AUTH_ENABLED_KEY: &str = "AUTH_ENABLED";
 const AUTH_STRATEGY_KEY: &str = "AUTH_STRATEGY";
 const JWT_SECRET_KEY: &str = "JWT_SECRET";
+const JWT_ISSUER_KEY: &str = "JWT_ISSUER";
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct AuthenticationConfig {
     #[serde(default)]
     pub enabled: bool,
     #[serde(default)]
-    pub strategy: AuthenticationStrategy,
+    pub strategy: Option<AuthenticationStrategy>,
     pub jwt_secret: Option<String>,
+    pub jwt_issuer: Option<String>,
 }
 
 impl Default for AuthenticationConfig {
     fn default() -> Self {
         Self {
             enabled: defaults::AUTH_ENABLED,
-            strategy: AuthenticationStrategy::JWT,
-            jwt_secret: Some(defaults::JWT_SECRET.to_string()),
+            strategy: None,
+            jwt_secret: None,
+            jwt_issuer: None,
         }
     }
 }
 
-impl MutConfig for AuthenticationConfig {
+impl Env for AuthenticationConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         if is_opt_env_var(AUTH_ENABLED_KEY) {
             self.enabled = std::env::var(trim_opt_env_key(AUTH_ENABLED_KEY))?
@@ -39,27 +42,36 @@ impl MutConfig for AuthenticationConfig {
         }
 
         if is_opt_env_var(AUTH_STRATEGY_KEY) {
-            self.strategy = std::env::var(trim_opt_env_key(AUTH_STRATEGY_KEY))?
-                .parse()
-                .unwrap();
+            self.strategy = Some(
+                std::env::var(trim_opt_env_key(AUTH_STRATEGY_KEY))?
+                    .parse()
+                    .unwrap(),
+            );
         }
 
         if is_opt_env_var(JWT_SECRET_KEY) {
-            self.strategy = std::env::var(trim_opt_env_key(JWT_SECRET_KEY))?
-                .parse()
-                .unwrap();
+            self.strategy = Some(
+                std::env::var(trim_opt_env_key(JWT_SECRET_KEY))?
+                    .parse()
+                    .unwrap(),
+            );
+        }
+
+        if is_opt_env_var(JWT_ISSUER_KEY) {
+            self.strategy = Some(
+                std::env::var(trim_opt_env_key(JWT_ISSUER_KEY))?
+                    .parse()
+                    .unwrap(),
+            );
         }
 
         Ok(())
     }
 }
 
-#[derive(
-    Serialize, Deserialize, EnumString, AsRefStr, Clone, Debug, Default, Eq, PartialEq,
-)]
+#[derive(Serialize, Deserialize, EnumString, AsRefStr, Clone, Debug, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum AuthenticationStrategy {
-    #[default]
     JWT,
 }
 

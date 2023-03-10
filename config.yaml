@@ -69,10 +69,13 @@
 
 # authentication:
 #   # Require users to authenticate for some operations.
-#   enabled: true
+#   enabled: false
 
-#   # Which authentication scheme to use
-#   strategy: jwt
+#   # Which authentication scheme to use.
+#   strategy: ~
 #
-#   # Secret used if JWT authentication is specified
-#   jwt_secret: 6906573247652854078288872150120717701634680141358560585446649749925714230966
+#   # Secret used if JWT authentication is specified.
+#   jwt_secret: ~
+#
+#   # JWT issuer if JWT authentication is specified.
+#   # jwt_issuer: ~

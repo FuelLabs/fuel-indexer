@@ -1,12 +1,4 @@
-use crate::api::ApiError;
-use axum::{
-    extract::State,
-    http::{header, Request, StatusCode},
-    middleware::{self, Next},
-    response::Response,
-    routing::get,
-    Router,
-};
+use axum::http::{Request, StatusCode};
 use fuel_indexer_lib::config::{auth::AuthenticationStrategy, IndexerConfig};
 use std::task::{Context, Poll};
 use tower::{Layer, Service};
@@ -17,11 +9,11 @@ struct MiddlewareState {
 }
 
 #[derive(Clone)]
-pub struct AuthenitcationMiddleware {
+pub struct AuthenticationMiddleware {
     state: MiddlewareState,
 }
 
-impl From<&IndexerConfig> for AuthenitcationMiddleware {
+impl From<&IndexerConfig> for AuthenticationMiddleware {
     fn from(config: &IndexerConfig) -> Self {
         Self {
             state: MiddlewareState {
@@ -31,7 +23,7 @@ impl From<&IndexerConfig> for AuthenitcationMiddleware {
     }
 }
 
-impl<S> Layer<S> for AuthenitcationMiddleware {
+impl<S> Layer<S> for AuthenticationMiddleware {
     type Service = AuthenticationService<S>;
 
     fn layer(&self, inner: S) -> Self::Service {
@@ -48,10 +40,6 @@ pub struct AuthenticationService<S> {
     state: MiddlewareState,
 }
 
-fn authenticate_user(value: &str) -> Result<bool, ApiError> {
-    Ok(true)
-}
-
 impl<S, B> Service<Request<B>> for AuthenticationService<S>
 where
     S: Service<Request<B>>,
@@ -65,7 +53,7 @@ where
     }
 
     fn call(&mut self, req: Request<B>) -> Self::Future {
-        let header = req
+        let _header = req
             .headers()
             .get(http::header::AUTHORIZATION)
             .and_then(|header| header.to_str().ok());
@@ -74,7 +62,7 @@ where
 
         if config.authentication.enabled {
             match &config.authentication.strategy {
-                AuthenticationStrategy::JWT => {
+                Some(AuthenticationStrategy::JWT) => {
                     println!("\n>>> I'm DOING JWT STUFF.\n");
                     self.inner.call(req)
                 }

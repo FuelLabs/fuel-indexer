@@ -294,7 +294,7 @@ pub(crate) async fn verify_signature(
 ) -> ApiResult<axum::Json<Value>> {
     if config.authentication.enabled {
         match config.authentication.strategy {
-            AuthenticationStrategy::JWT => {
+            Some(AuthenticationStrategy::JWT) => {
                 let mut buff: [u8; 64] = [0u8; 64];
                 buff.copy_from_slice(&payload.signature.as_bytes()[..64]);
                 let sig = Signature::from_bytes(buff);

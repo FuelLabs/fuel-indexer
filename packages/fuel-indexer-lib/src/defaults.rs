@@ -37,8 +37,4 @@ pub const HEADER_PADDING: usize = 20;
 
 pub const FORC_INDEX: &str = "forc-index";
 
-pub const AUTH_ENABLED: bool = true;
-
-// IMPORTANT: Not to be used in production
-pub const JWT_SECRET: &str =
-    "6906573247652854078288872150120717701634680141358560585446649749925714230966";
+pub const AUTH_ENABLED: bool = false;

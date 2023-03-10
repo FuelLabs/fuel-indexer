@@ -1,6 +1,6 @@
 use crate::{
-    uses::auth::AuthenitcationMiddleware,
-    {
+    auth::AuthenticationMiddleware,
+    uses::{
         get_nonce, health_check, metrics, query_graph, register_indexer_assets,
         revert_indexer, stop_indexer, verify_signature,
     },
@@ -9,7 +9,6 @@ use async_std::sync::{Arc, RwLock};
 use axum::{
     extract::{Extension, Json},
     http::StatusCode,
-    middleware,
     response::{IntoResponse, Response},
     routing::{delete, get, post, put},
     Error as AxumError, Router,
@@ -142,13 +141,17 @@ impl GraphQlApi {
 
         let index_routes = Router::new()
             .route("/:namespace/:identifier", post(register_indexer_assets))
-            .layer(AuthenitcationMiddleware::from(&config))
+            .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()))
             .route("/:namespace/:identifier", delete(stop_indexer))
+<<<<<<< HEAD
             .route("/:namespace/:identifier", put(revert_indexer))
             .layer(AuthenitcationMiddleware::from(&config))
+=======
+            .layer(AuthenticationMiddleware::from(&config))
+>>>>>>> 9efe1c8a (disable auth by default)
             .layer(Extension(tx))
             .layer(Extension(pool.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));
