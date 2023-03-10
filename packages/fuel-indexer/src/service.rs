@@ -257,11 +257,13 @@ async fn create_service_task(
 
                                 futs.push(handle);
 
-                                if let Some(prior_module_killer) =
+                                if let Some(killer_for_prev_executor) =
                                     killers.insert(manifest.uid(), killer)
                                 {
-                                    info!("Replaced execution module for {}, stopping old execution module.", manifest.uid());
-                                    prior_module_killer.store(true, Ordering::SeqCst);
+                                    let uid = manifest.uid();
+                                    info!("Indexer({uid}) was replaced. Stopping previous version of Indexer({uid}).");
+                                    killer_for_prev_executor
+                                        .store(true, Ordering::SeqCst);
                                 }
                             }
                             Err(e) => {
