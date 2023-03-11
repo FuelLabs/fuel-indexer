@@ -1,6 +1,6 @@
 use crate::uses::{
     authorize_middleware, health_check, metrics, query_graph, register_index_assets,
-    revert_index, stop_index,
+    revert_indexer, stop_index
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
