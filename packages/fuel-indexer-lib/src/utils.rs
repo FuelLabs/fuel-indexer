@@ -1,5 +1,6 @@
 use crate::defaults;
 use anyhow::Result;
+use fuel_indexer_database::IndexAsset;
 use fuel_indexer_types::Bytes32;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -13,7 +14,6 @@ use std::{
 };
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
-use fuel_indexer_database::IndexAsset;
 
 // Testing assets use relative paths, while production assets will use absolute paths
 //
