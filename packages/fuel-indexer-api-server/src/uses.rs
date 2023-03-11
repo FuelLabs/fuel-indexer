@@ -176,11 +176,13 @@ pub(crate) async fn stop_index(
 pub(crate) async fn revert_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+    Extension(pool): Extension<IndexerConnectionPool>,
 ) -> ApiResult<axum::Json<Value>> {
+    let mut conn = pool.acquire().await?;
     let asset = queries::penultimate_asset_for_index(
         &mut conn,
-        &request.namespace,
-        &request.identifier,
+        &namespace,
+        &identifier,
         IndexAssetType::Wasm,
     )
     .await?;
