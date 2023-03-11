@@ -284,7 +284,7 @@ async fn create_service_task(
                             killer.store(true, Ordering::SeqCst);
                         } else {
                             warn!(
-                                "Revert Indexer: No indexer with the name Index({uid})"
+                                "Revert Indexer: Indexer({uid}) not found."
                             );
                         }
 
