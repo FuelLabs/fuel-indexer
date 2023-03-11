@@ -177,8 +177,18 @@ pub(crate) async fn revert_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
 ) -> ApiResult<axum::Json<Value>> {
+    let asset = queries::penultimate_asset_for_index(
+        &mut conn,
+        &request.namespace,
+        &request.identifier,
+        IndexAssetType::Wasm,
+    )
+    .await?;
+
     if let Some(tx) = tx {
         tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
+            penultimate_asset_id: asset.id,
+            penultimate_asset_bytes: asset.bytes,
             namespace,
             identifier,
         }))

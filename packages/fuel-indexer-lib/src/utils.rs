@@ -13,6 +13,7 @@ use std::{
 };
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
+use fuel_indexer_database::IndexAsset;
 
 // Testing assets use relative paths, while production assets will use absolute paths
 //
@@ -64,6 +65,8 @@ pub struct IndexStopRequest {
 
 #[derive(Debug)]
 pub struct IndexRevertRequest {
+    pub penultimate_asset_id: i64,
+    pub penultimate_asset_bytes: Vec<u8>,
     pub namespace: String,
     pub identifier: String,
 }

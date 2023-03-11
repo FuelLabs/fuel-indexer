@@ -283,9 +283,7 @@ async fn create_service_task(
                         if let Some(killer) = killers.get(&uid) {
                             killer.store(true, Ordering::SeqCst);
                         } else {
-                            warn!(
-                                "Revert Indexer: Indexer({uid}) not found."
-                            );
+                            warn!("Revert Indexer: Indexer({uid}) not found.");
                         }
 
                         let mut conn = pool
@@ -293,71 +291,50 @@ async fn create_service_task(
                             .await
                             .expect("Failed to acquire connection from pool");
 
-                        match queries::penultimate_asset_for_index(
+                        let _ = queries::start_transaction(&mut conn)
+                            .await
+                            .expect("Failed to start transaction");
+
+                        let latest_assets = queries::latest_assets_for_index(
                             &mut conn,
-                            &request.namespace,
-                            &request.identifier,
+                            &request.penultimate_asset_id,
+                        )
+                        .await
+                        .expect("Could not get latest assets for index");
+
+                        if let Err(_e) = queries::remove_asset_by_version(
+                            &mut conn,
+                            &latest_assets.manifest.id,
+                            &latest_assets.wasm.version,
                             IndexAssetType::Wasm,
                         )
                         .await
                         {
-                            Ok(penultimate_asset) => {
-                                let _ = queries::start_transaction(&mut conn)
-                                    .await
-                                    .expect("Failed to start transaction");
-
-                                let latest_assets = queries::latest_assets_for_index(
-                                    &mut conn,
-                                    &penultimate_asset.id,
-                                )
+                            queries::revert_transaction(&mut conn)
                                 .await
-                                .expect("Could not get latest assets for index");
-
-                                if let Err(_e) = queries::remove_asset_by_version(
-                                    &mut conn,
-                                    &latest_assets.manifest.id,
-                                    &latest_assets.wasm.version,
-                                    IndexAssetType::Wasm,
-                                )
+                                .expect("Failed to revert transaction");
+                        } else {
+                            queries::commit_transaction(&mut conn)
                                 .await
-                                {
-                                    queries::revert_transaction(&mut conn)
-                                        .await
-                                        .expect("Failed to revert transaction");
-                                } else {
-                                    queries::commit_transaction(&mut conn)
-                                        .await
-                                        .expect("Failed to commit transaction");
-                                }
-
-                                let manifest: Manifest =
-                                    serde_yaml::from_slice(&latest_assets.manifest.bytes)
-                                        .expect("Failed to deserialize manifest");
-
-                                let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
-                                    &config.fuel_node,
-                                    &config.database.to_string(),
-                                    &manifest,
-                                    ExecutorSource::Registry(penultimate_asset.bytes),
-                                    config.stop_idle_indexers,
-                                )
-                                .await
-                                .expect(
-                                    "Failed to spawn executor from index asset registry",
-                                );
-
-                                futs.push(handle);
-                                killers.insert(manifest.uid(), killer);
-                            }
-                            Err(e) => {
-                                error!(
-                                    "Failed to find penultimate Index to revert to({}.{}): {}",
-                                    &request.namespace, &request.identifier, e
-                                );
-
-                                continue;
-                            }
+                                .expect("Failed to commit transaction");
                         }
+
+                        let manifest: Manifest =
+                            serde_yaml::from_slice(&latest_assets.manifest.bytes)
+                                .expect("Failed to deserialize manifest");
+
+                        let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
+                            &config.fuel_node,
+                            &config.database.to_string(),
+                            &manifest,
+                            ExecutorSource::Registry(request.penultimate_asset_bytes),
+                            config.stop_idle_indexers,
+                        )
+                        .await
+                        .expect("Failed to spawn executor from index asset registry");
+
+                        futs.push(handle);
+                        killers.insert(manifest.uid(), killer);
                     }
                 },
                 Err(e) => {
