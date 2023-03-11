@@ -3,6 +3,7 @@ pub(crate) use crate::commands::{
     deploy::Command as DeployCommand, init::Command as InitCommand,
     new::Command as NewCommand, remove::Command as RemoveCommand,
     start::Command as StartCommand, welcome::Command as WelcomeCommand,
+    tree::Command as TreeCommand,
 };
 use clap::{Parser, Subcommand};
 use forc_postgres::{
@@ -30,6 +31,7 @@ enum ForcIndex {
     Build(BuildCommand),
     Postgres(ForcPostgresOpt),
     Welcome(WelcomeCommand),
+    Tree(TreeCommand),
 }
 
 pub async fn run_cli() -> Result<(), anyhow::Error> {
@@ -49,6 +51,7 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::Remove(command) => crate::commands::remove::exec(command),
         ForcIndex::Build(command) => crate::commands::build::exec(command),
         ForcIndex::Welcome(command) => crate::commands::welcome::exec(command).await,
+        ForcIndex::Tree(command) => crate::commands::tree::exec(command).await,
         ForcIndex::Postgres(opt) => match opt.command {
             ForcPostgres::Create(command) => pg_commands::create::exec(command).await,
             ForcPostgres::Stop(command) => pg_commands::stop::exec(command).await,

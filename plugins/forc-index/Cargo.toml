@@ -30,6 +30,7 @@ serde_yaml = "0.8"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "process"] }
 toml = "0.5"
 tracing = "0.1"
+walkdir = "2"
 
 [[bin]]
 name = "forc-index"

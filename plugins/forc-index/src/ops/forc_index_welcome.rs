@@ -1,9 +1,10 @@
 use crate::ops::{
     forc_index_build::init as build, forc_index_deploy::init as deploy,
     forc_index_init::create_indexer as create, forc_index_start::init as start,
+    forc_index_tree::init as render_tree,
 };
 use crate::{
-    cli::{BuildCommand, DeployCommand, InitCommand, StartCommand, WelcomeCommand},
+    cli::{BuildCommand, DeployCommand, InitCommand, StartCommand, WelcomeCommand, TreeCommand},
     utils::defaults,
 };
 use forc_util::{kebab_to_snake_case, validate_name};
@@ -43,7 +44,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
         thread::sleep(time::Duration::from_millis(50));
     }
 
-    let WelcomeCommand { greeter } = command;
+    let WelcomeCommand { greeter, verbose } = command;
     if greeter {
         render_greeter();
     }
@@ -66,6 +67,11 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
                 absolute_paths: true,
             })?;
             humanize_message(PROJECT_INITIALIZED.to_string());
+            if verbose {
+               render_tree(TreeCommand {
+                    verbose: true,
+                })?;
+            }
             humanize_message(DEPLOY_QUESTION.to_string());
 
             input = process_std(input);
