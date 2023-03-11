@@ -173,7 +173,7 @@ pub(crate) async fn stop_index(
     Err(ApiError::default())
 }
 
-pub(crate) async fn revert_index(
+pub(crate) async fn revert_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
 ) -> ApiResult<axum::Json<Value>> {
