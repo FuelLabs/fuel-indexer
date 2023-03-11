@@ -5,11 +5,9 @@ use walkdir::WalkDir;
 
 pub fn init(command: TreeCommand) -> anyhow::Result<()> {
     let current_dir = Path::new(".");
-    info!(
-        "Printing tree and files in current directory: {:?}",
-        current_dir
-    );
 
+    //@TODO add in verbose details by file type, 
+    //@TODO colourize
     for entry in WalkDir::new(current_dir) {
         let entry = entry?;
         let path = entry.path();
