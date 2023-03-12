@@ -73,9 +73,9 @@
 
 #   # Which authentication scheme to use.
 #   strategy: ~
-#
+
 #   # Secret used if JWT authentication is specified.
 #   jwt_secret: ~
-#
+
 #   # JWT issuer if JWT authentication is specified.
 #   # jwt_issuer: ~
