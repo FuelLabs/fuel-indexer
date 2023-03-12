@@ -4,19 +4,20 @@ use serde::{Deserialize, Serialize};
 use std::process::Command;
 use tracing::{error, info};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct NonceResponse {
     nonce: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 struct SignatureResponse {
     token: Option<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 struct SignatureRequest {
     signature: String,
+    message: String,
 }
 
 fn derive_signature_from_output(o: &str) -> String {
@@ -44,6 +45,8 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
 
     let response: NonceResponse = res.json().unwrap();
 
+    // NOTE: Until latest forc-wallet is available via fuelup, manually insert
+    // the path to the latest compiled forc-wallet binary
     let signature = match Command::new("forc-wallet")
         .arg("sign")
         .arg("--account")
@@ -57,7 +60,7 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
             let msg = stdout
                 .strip_suffix('\n')
                 .expect("Failed to capture signature output.");
-            derive_signature_from_output(&msg)
+            derive_signature_from_output(msg)
         }
 
         Err(e) => {
@@ -67,9 +70,14 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
 
     let target = format!("{url}/api/auth/signature");
 
+    let body = SignatureRequest {
+        signature,
+        message: response.nonce,
+    };
+
     let res = Client::new()
         .post(&target)
-        .json(&SignatureRequest { signature })
+        .json(&body)
         .send()
         .expect("Failed post signature.");
 
@@ -84,10 +92,13 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
 
     let response: SignatureResponse = res.json().unwrap();
 
-    if response.token.is_some() {
-        info!("\n✅ Successfully authenticated at {target}",);
+    if let Some(token) = response.token {
+        info!(
+            "\n✅ Successfully authenticated at {target}.\n\nToken: {}",
+            token
+        );
     } else {
-        error!("\n❌ Failed to produce a token.",);
+        error!("\n❌ Failed to produce a token.");
     }
 
     Ok(())

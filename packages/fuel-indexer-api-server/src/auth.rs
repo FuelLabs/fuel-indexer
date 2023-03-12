@@ -1,7 +1,12 @@
-use axum::http::{Request, StatusCode};
-use fuel_indexer_lib::config::{auth::AuthenticationStrategy, IndexerConfig};
+use axum::http::Request;
+use fuel_indexer_lib::config::{
+    auth::{AuthenticationStrategy, Claims},
+    IndexerConfig,
+};
+use jsonwebtoken::{decode, DecodingKey, Validation};
 use std::task::{Context, Poll};
 use tower::{Layer, Service};
+use tracing::error;
 
 #[derive(Clone)]
 struct MiddlewareState {
@@ -52,19 +57,39 @@ where
         self.inner.poll_ready(cx)
     }
 
-    fn call(&mut self, req: Request<B>) -> Self::Future {
-        let _header = req
+    fn call(&mut self, mut req: Request<B>) -> Self::Future {
+        let header = req
             .headers()
             .get(http::header::AUTHORIZATION)
             .and_then(|header| header.to_str().ok());
+
+        let header = if let Some(header) = header {
+            header
+        } else {
+            unimplemented!();
+        };
 
         let config = &self.state.config;
 
         if config.authentication.enabled {
             match &config.authentication.strategy {
                 Some(AuthenticationStrategy::JWT) => {
-                    println!("\n>>> I'm DOING JWT STUFF.\n");
-                    self.inner.call(req)
+                    let secret =
+                        config.authentication.jwt_secret.clone().unwrap_or_default();
+                    match decode::<Claims>(
+                        header,
+                        &DecodingKey::from_secret(secret.as_bytes()),
+                        &Validation::default(),
+                    ) {
+                        Ok(claims) => {
+                            req.extensions_mut().insert(claims);
+                            self.inner.call(req)
+                        }
+                        Err(e) => {
+                            error!("Failed to decode claims: {e}");
+                            unimplemented!();
+                        }
+                    }
                 }
                 _ => unimplemented!(),
             }

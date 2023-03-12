@@ -73,10 +73,9 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     );
 
     let mut headers = HeaderMap::new();
-    headers.insert(
-        AUTHORIZATION,
-        auth.unwrap_or_else(|| "fuel".into()).parse()?,
-    );
+    if let Some(auth) = auth {
+        headers.insert(AUTHORIZATION, auth.parse()?);
+    }
 
     let pb = ProgressBar::new_spinner();
     pb.enable_steady_tick(Duration::from_millis(120));

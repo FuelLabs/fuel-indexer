@@ -339,6 +339,8 @@ impl From<IndexerArgs> for IndexerConfig {
             }
         };
 
+        println!(">> ARGS: {:?}", args.auth_strategy);
+
         let mut config = IndexerConfig {
             database,
             fuel_node: FuelNodeConfig {
@@ -356,7 +358,9 @@ impl From<IndexerArgs> for IndexerConfig {
 
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
-                strategy: None,
+                strategy: args
+                    .auth_strategy
+                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
                 jwt_secret: args.jwt_secret,
                 jwt_issuer: args.jwt_issuer,
             },
@@ -424,7 +428,9 @@ impl From<ApiServerArgs> for IndexerConfig {
             stop_idle_indexers: false,
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
-                strategy: None,
+                strategy: args
+                    .auth_strategy
+                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
                 jwt_secret: args.jwt_secret,
                 jwt_issuer: args.jwt_issuer,
             },
@@ -495,7 +501,9 @@ impl IndexerConfig {
 
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
-                strategy: None,
+                strategy: args
+                    .auth_strategy
+                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
                 jwt_secret: args.jwt_secret,
                 jwt_issuer: args.jwt_issuer,
             },

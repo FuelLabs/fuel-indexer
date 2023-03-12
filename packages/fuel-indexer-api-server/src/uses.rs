@@ -126,6 +126,7 @@ pub(crate) async fn health_check(
 
 pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
+    // Extension(claims): Extension<Claims>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
 ) -> ApiResult<axum::Json<Value>> {
@@ -303,7 +304,7 @@ pub(crate) async fn verify_signature(
 
                 let claims = Claims {
                     sub: pk.to_string(),
-                    iss: "Issuer".to_string(),
+                    iss: config.authentication.jwt_issuer.unwrap_or_default(),
                     iat: 0,
                     exp: 0,
                 };
@@ -317,11 +318,15 @@ pub(crate) async fn verify_signature(
                     &Header::default(),
                     &claims,
                     &EncodingKey::from_secret(
-                        config.authentication.jwt_secret.unwrap().as_ref(),
+                        config
+                            .authentication
+                            .jwt_secret
+                            .unwrap_or_default()
+                            .as_ref(),
                     ),
                 )?;
 
-                Ok(Json(json!({"token": token.to_string()})))
+                Ok(Json(json!({ "token": token })))
             }
             _ => unimplemented!(),
         }

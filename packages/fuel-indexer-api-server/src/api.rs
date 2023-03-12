@@ -158,14 +158,15 @@ impl GraphQlApi {
 
         let root_routes = Router::new()
             .route("/health", get(health_check))
-            .layer(Extension(config))
+            .layer(Extension(config.clone()))
             .layer(Extension(pool))
             .layer(Extension(start_time))
             .route("/metrics", get(metrics));
 
         let auth_routes = Router::new()
             .route("/nonce", get(get_nonce))
-            .route("/signature", post(verify_signature));
+            .route("/signature", post(verify_signature))
+            .layer(Extension(config));
 
         let api_routes = Router::new()
             .nest("/", root_routes)

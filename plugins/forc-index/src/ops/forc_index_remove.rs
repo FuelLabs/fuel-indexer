@@ -13,6 +13,7 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
         path,
         manifest,
         url,
+        auth,
         ..
     } = command;
 
@@ -27,10 +28,9 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
     );
 
     let mut headers = HeaderMap::new();
-    headers.insert(
-        AUTHORIZATION,
-        command.auth.unwrap_or_else(|| "fuel".into()).parse()?,
-    );
+    if let Some(auth) = auth {
+        headers.insert(AUTHORIZATION, auth.parse()?);
+    }
 
     info!(
         "\n🛑 Removing index '{}.{}' at {target}",
