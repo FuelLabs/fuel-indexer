@@ -136,6 +136,7 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
                     == format!("database \"{name}\" already exists")
                 {
                     info!("Database {} already exists", &name);
+                    save_pgembed_config(pg_config, database_dir.as_ref())?;
                     pb.finish();
 
                     if start {
