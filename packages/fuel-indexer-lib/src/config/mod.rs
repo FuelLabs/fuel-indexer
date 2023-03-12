@@ -182,6 +182,13 @@ pub struct IndexerArgs {
     /// Issuer of JWT claims (if JWT scheme is specified).
     #[clap(long, help = "Issuer of JWT claims (if JWT scheme is specified).")]
     pub jwt_issuer: Option<String>,
+
+    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
+    )]
+    pub jwt_expiry: Option<usize>,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -265,6 +272,13 @@ pub struct ApiServerArgs {
     /// Issuer of JWT claims (if JWT scheme is specified).
     #[clap(long, help = "Issuer of JWT claims (if JWT scheme is specified).")]
     pub jwt_issuer: Option<String>,
+
+    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
+    )]
+    pub jwt_expiry: Option<usize>,
 }
 
 fn derive_http_url(host: &String, port: &String) -> String {
@@ -339,8 +353,6 @@ impl From<IndexerArgs> for IndexerConfig {
             }
         };
 
-        println!(">> ARGS: {:?}", args.auth_strategy);
-
         let mut config = IndexerConfig {
             database,
             fuel_node: FuelNodeConfig {
@@ -363,6 +375,7 @@ impl From<IndexerArgs> for IndexerConfig {
                     .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
                 jwt_secret: args.jwt_secret,
                 jwt_issuer: args.jwt_issuer,
+                jwt_expiry: args.jwt_expiry,
             },
         };
 
@@ -433,6 +446,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                     .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
                 jwt_secret: args.jwt_secret,
                 jwt_issuer: args.jwt_issuer,
+                jwt_expiry: args.jwt_expiry,
             },
         };
 
@@ -506,6 +520,7 @@ impl IndexerConfig {
                     .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
                 jwt_secret: args.jwt_secret,
                 jwt_issuer: args.jwt_issuer,
+                jwt_expiry: args.jwt_expiry,
             },
         };
 

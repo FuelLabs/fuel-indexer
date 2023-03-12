@@ -72,10 +72,13 @@
 #   enabled: false
 
 #   # Which authentication scheme to use.
-#   strategy: ~
+#   strategy: JWT
 
 #   # Secret used if JWT authentication is specified.
-#   jwt_secret: ~
+#   jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890*
 
 #   # JWT issuer if JWT authentication is specified.
-#   # jwt_issuer: ~
+#   # jwt_issuer: FuelLabs
+
+#   # Amount of time (seconds) before expiring token if JWT authentication is specified.
+#   # jwt_expiry: 2592000

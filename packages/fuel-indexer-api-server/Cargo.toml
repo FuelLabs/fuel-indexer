@@ -16,7 +16,7 @@ path = "src/bin/main.rs"
 [dependencies]
 anyhow = "1.0"
 async-std = "1"
-axum = { version = "0.6", features = ["multipart"] }
+axum = { version = "0.6", features = ["multipart", "macros"] }
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-crypto = { version = "0.27", features = ["std"] }
 fuel-indexer-database = { workspace = true }

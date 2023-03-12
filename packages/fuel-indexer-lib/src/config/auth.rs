@@ -11,6 +11,7 @@ const AUTH_ENABLED_KEY: &str = "AUTH_ENABLED";
 const AUTH_STRATEGY_KEY: &str = "AUTH_STRATEGY";
 const JWT_SECRET_KEY: &str = "JWT_SECRET";
 const JWT_ISSUER_KEY: &str = "JWT_ISSUER";
+const JWT_EXPIRY_KEY: &str = "JWT_EXPIRY";
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct AuthenticationConfig {
@@ -20,6 +21,7 @@ pub struct AuthenticationConfig {
     pub strategy: Option<AuthenticationStrategy>,
     pub jwt_secret: Option<String>,
     pub jwt_issuer: Option<String>,
+    pub jwt_expiry: Option<usize>,
 }
 
 impl Default for AuthenticationConfig {
@@ -29,6 +31,7 @@ impl Default for AuthenticationConfig {
             strategy: None,
             jwt_secret: None,
             jwt_issuer: None,
+            jwt_expiry: None,
         }
     }
 }
@@ -58,8 +61,16 @@ impl Env for AuthenticationConfig {
         }
 
         if is_opt_env_var(JWT_ISSUER_KEY) {
-            self.strategy = Some(
+            self.jwt_issuer = Some(
                 std::env::var(trim_opt_env_key(JWT_ISSUER_KEY))?
+                    .parse()
+                    .unwrap(),
+            );
+        }
+
+        if is_opt_env_var(JWT_EXPIRY_KEY) {
+            self.jwt_expiry = Some(
+                std::env::var(trim_opt_env_key(JWT_EXPIRY_KEY))?
                     .parse()
                     .unwrap(),
             );
@@ -75,7 +86,7 @@ pub enum AuthenticationStrategy {
     JWT,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     /// Subject (to whom token refers).
     pub sub: String,

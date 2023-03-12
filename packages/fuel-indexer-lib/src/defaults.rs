@@ -38,3 +38,4 @@ pub const HEADER_PADDING: usize = 20;
 pub const FORC_INDEX: &str = "forc-index";
 
 pub const AUTH_ENABLED: bool = false;
+pub const JWT_EXPIRY_SECS: usize = 2592000; // 30 days

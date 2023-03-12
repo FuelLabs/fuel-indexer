@@ -20,6 +20,7 @@ use fuel_indexer_lib::{
         auth::{AuthenticationStrategy, Claims},
         IndexerConfig,
     },
+    defaults,
     utils::{
         AssetReloadRequest, FuelNodeHealthResponse, IndexRevertRequest, IndexStopRequest,
         ServiceRequest, ServiceStatus,
@@ -35,8 +36,10 @@ use jsonwebtoken::{
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::str::FromStr;
-use std::time::Instant;
+use std::{
+    str::FromStr,
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
 use tokio::sync::mpsc::Sender;
 use tracing::error;
 
@@ -126,11 +129,13 @@ pub(crate) async fn health_check(
 
 pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
-    // Extension(claims): Extension<Claims>,
+    Extension(claims): Extension<Claims>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
 ) -> ApiResult<axum::Json<Value>> {
     let mut conn = pool.acquire().await?;
+
+    println!(">>> AUTH: {:?}", claims);
 
     let _ = queries::start_transaction(&mut conn).await?;
 
@@ -302,11 +307,20 @@ pub(crate) async fn verify_signature(
                 let msg = Message::new(payload.message);
                 let pk = sig.recover(&msg)?;
 
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs() as usize;
+
                 let claims = Claims {
                     sub: pk.to_string(),
                     iss: config.authentication.jwt_issuer.unwrap_or_default(),
-                    iat: 0,
-                    exp: 0,
+                    iat: now,
+                    exp: now
+                        + config
+                            .authentication
+                            .jwt_expiry
+                            .unwrap_or(defaults::JWT_EXPIRY_SECS),
                 };
 
                 if let Err(e) = sig.verify(&pk, &msg) {

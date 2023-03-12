@@ -238,6 +238,7 @@ pub async fn api_server_app_postgres() -> Router {
             strategy: None,
             jwt_secret: None,
             jwt_issuer: None,
+            jwt_expiry: None,
         },
     };
 
@@ -270,6 +271,7 @@ pub async fn indexer_service_postgres() -> IndexerService {
             strategy: None,
             jwt_secret: None,
             jwt_issuer: None,
+            jwt_expiry: None,
         },
     };
 
