@@ -129,9 +129,9 @@ pub(crate) async fn health_check(
 
 pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
-    Extension(claims): Extension<Claims>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
     let mut conn = pool.acquire().await?;
 
