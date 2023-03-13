@@ -6,7 +6,7 @@ It is important to note that authentication is disabled by default. However, if 
 
 ## Usage
 
-Below is a demonstration of basic JWT authentication using an indexer operator at https://index.swayswap.io
+Below is a demonstration of basic JWT authentication using an indexer operator at "https://index.swayswap.io"
 
 ```bash
 forc index auth --account 0 --url https://index.swayswap.io:29987
