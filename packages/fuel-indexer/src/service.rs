@@ -343,12 +343,15 @@ async fn create_service_task(
                         let manifest =
                             Manifest::from_slice(&latest_assets.manifest.bytes)
                                 .expect("Failed to deserialize manifest");
+
+                        let start_block = get_start_block(&mut conn, &manifest).await?;
                         let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                             &config.fuel_node,
                             &config.database.to_string(),
                             &manifest,
                             ExecutorSource::Registry(request.penultimate_asset_bytes),
                             config.stop_idle_indexers,
+                            &start_block,
                         )
                         .await
                         .expect("Failed to spawn executor from index asset registry");
