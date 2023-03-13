@@ -45,6 +45,6 @@ Finally, you can run the Fuel indexer as part of a project that uses other compo
 
 Every Fuel indexer project requires three components:
 
-- a [Manifest](../components/assets/manifest.md) describing index metadata
+- a [Manifest](../components/assets/manifest.md) describing indexer metadata
 - a [Schema](../components/assets/schema.md) containing models for the data you want to index
 - an [Execution Module](../components/assets/module.md) which houses the logic for creating the aforementioned data models

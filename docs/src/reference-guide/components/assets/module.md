@@ -30,13 +30,13 @@ instance.save();
 
 ## Usage
 
-To compile your index code to WASM, you'll first need to install the `wasm32-unknown-unknown` target platform through `rustup`, if you haven't done so already.
+To compile your indexer code to WASM, you'll first need to install the `wasm32-unknown-unknown` target platform through `rustup`, if you haven't done so already.
 
 ```bash
 rustup add target wasm32-unknown-unknown
 ```
 
-After that, you would compile your index code by navigating to the root folder for your index code and build. An example of this can be found below:
+After that, you would compile your indexer code by navigating to the root folder for your indexer code and build. An example of this can be found below:
 
 ```bash
 cd /my/index-lib && cargo build --release

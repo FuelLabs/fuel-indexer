@@ -1,6 +1,6 @@
 # Manifest
 
-A manifest serves as the YAML configuration file for a given index. A proper manifest has the following structure:
+A manifest serves as the YAML configuration file for a given indexer. A proper manifest has the following structure:
 
 ```yaml
 namespace: fuel
@@ -16,12 +16,12 @@ report_metrics: true
 
 ## `namespace`
 
-- Think of the `namespace` as an organization identifier. If you're familiar with say, [Java package naming](https://stackoverflow.com/questions/6247849/java-package-naming), then think of an index's `namespace` as being its _domain name_. The `namespace` is unique to a given index operator -- i.e., index operators will not be able to support more than one `namespace` of the same name.
+- Think of the `namespace` as an organization identifier. If you're familiar with say, [Java package naming](https://stackoverflow.com/questions/6247849/java-package-naming), then think of an indexer's `namespace` as being its _domain name_. The `namespace` is unique to a given indexer operator -- i.e., indexer operators will not be able to support more than one `namespace` of the same name.
 
 ## `identifier`
 
-- The `identifier` field is used to (quite literally) identify the given index. If `namespace` is the organization/domain name, then think of `identifier` as the name of an index within that organization/domain.
-- As an example, if a provided `namespace` is `"fuel"` and a provided `identifier` is `"index1"`, then the unique identifier for the given index will be `fuel.index1`.
+- The `identifier` field is used to (quite literally) identify the given indexer. If `namespace` is the organization/domain name, then think of `identifier` as the name of an indexer within that organization/domain.
+- As an example, if a provided `namespace` is `"fuel"` and a provided `identifier` is `"index1"`, then the unique identifier for the given indexer will be `fuel.index1`.
 
 ## `abi`
 
@@ -29,13 +29,13 @@ report_metrics: true
 
 ## `contract_id`
 
-- The `contract_id` specifies which particular contract you would like your index to subscribe to. Setting this field to an empty string will index events from any contract that is currently executing on the network.
+- The `contract_id` specifies which particular contract you would like your indexer to subscribe to. Setting this field to an empty string will index events from any contract that is currently executing on the network.
 
 > Important: Contract IDs are unique to the content of a contract. If you are subscribing to a certain contract and then the contract itself is changed or updated, you will need to change the `contract_id` field of the manifest to the new ID.
 
 ## `graphql_schema`
 
-- The `graphql_schema` field contains the file path that points to the GraphQL schema for the given index. This schema file holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file [here](schema.md).
+- The `graphql_schema` field contains the file path that points to the GraphQL schema for the given indexer. This schema file holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file [here](./schema.md).
 
 > Important: The objects defined in your GraphQL schema are called 'entities'. These entities are what will be eventually be stored in the database.
 
