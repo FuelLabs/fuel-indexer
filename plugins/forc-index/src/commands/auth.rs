@@ -2,7 +2,7 @@ use crate::{ops::forc_index_auth, utils::defaults};
 use anyhow::Result;
 use clap::Parser;
 
-/// Deploy an index asset bundle to a remote or locally running indexer server.
+/// Authenticate against an indexer operator.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// URL at which to deploy indexer assets
