@@ -146,12 +146,8 @@ impl GraphQlApi {
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()))
             .route("/:namespace/:identifier", delete(stop_indexer))
-<<<<<<< HEAD
             .route("/:namespace/:identifier", put(revert_indexer))
-            .layer(AuthenitcationMiddleware::from(&config))
-=======
             .layer(AuthenticationMiddleware::from(&config))
->>>>>>> 9efe1c8a (disable auth by default)
             .layer(Extension(tx))
             .layer(Extension(pool.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));

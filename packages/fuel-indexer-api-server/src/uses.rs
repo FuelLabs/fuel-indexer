@@ -31,9 +31,7 @@ use fuel_indexer_schema::db::{
 };
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
-use jsonwebtoken::{
-    encode, EncodingKey, Header,
-};
+use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
