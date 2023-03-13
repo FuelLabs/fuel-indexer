@@ -108,7 +108,7 @@ module:
 report_metrics: true
 
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
-with the latest block if it has fallen out of sync. 
+# with the latest block if it has fallen out of sync. 
 resumable: ~
 "#
     )
