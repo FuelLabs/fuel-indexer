@@ -297,6 +297,65 @@ async fn create_service_task(
                             warn!("Stop Indexer: No indexer with the name Index({uid})");
                         }
                     }
+                    ServiceRequest::IndexRevert(request) => {
+                        let uid = format!("{}.{}", request.namespace, request.identifier);
+
+                        if let Some(killer) = killers.get(&uid) {
+                            killer.store(true, Ordering::SeqCst);
+                        } else {
+                            warn!("Revert Indexer: Indexer({uid}) not found.");
+                        }
+
+                        let mut conn = pool
+                            .acquire()
+                            .await
+                            .expect("Failed to acquire connection from pool");
+
+                        let _ = queries::start_transaction(&mut conn)
+                            .await
+                            .expect("Failed to start transaction");
+
+                        let latest_assets = queries::latest_assets_for_index(
+                            &mut conn,
+                            &request.penultimate_asset_id,
+                        )
+                        .await
+                        .expect("Could not get latest assets for index");
+
+                        if let Err(_e) = queries::remove_asset_by_version(
+                            &mut conn,
+                            &latest_assets.manifest.id,
+                            &latest_assets.wasm.version,
+                            IndexAssetType::Wasm,
+                        )
+                        .await
+                        {
+                            error!("Failed to remove asset by version");
+                            queries::revert_transaction(&mut conn)
+                                .await
+                                .expect("Failed to revert transaction");
+                        } else {
+                            queries::commit_transaction(&mut conn)
+                                .await
+                                .expect("Failed to commit transaction");
+                        }
+
+                        let manifest =
+                            Manifest::from_slice(&latest_assets.manifest.bytes)
+                                .expect("Failed to deserialize manifest");
+                        let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
+                            &config.fuel_node,
+                            &config.database.to_string(),
+                            &manifest,
+                            ExecutorSource::Registry(request.penultimate_asset_bytes),
+                            config.stop_idle_indexers,
+                        )
+                        .await
+                        .expect("Failed to spawn executor from index asset registry");
+
+                        futs.push(handle);
+                        killers.insert(manifest.uid(), killer);
+                    }
                 },
                 Err(e) => {
                     debug!("No service request to handle: {e:?}");
