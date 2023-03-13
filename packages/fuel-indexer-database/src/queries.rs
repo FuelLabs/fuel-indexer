@@ -39,10 +39,11 @@ pub async fn type_id_list_by_name(
 pub async fn type_id_latest(
     conn: &mut IndexerConnection,
     schema_name: &str,
+    identifier: &str,
 ) -> sqlx::Result<String> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::type_id_latest(c, schema_name).await
+            postgres::type_id_latest(c, schema_name, identifier).await
         }
     }
 }
@@ -96,11 +97,12 @@ pub async fn list_column_by_id(
 pub async fn columns_get_schema(
     conn: &mut IndexerConnection,
     name: &str,
+    identifier: &str,
     version: &str,
 ) -> sqlx::Result<Vec<ColumnInfo>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::columns_get_schema(c, name, version).await
+            postgres::columns_get_schema(c, name, identifier, version).await
         }
     }
 }
