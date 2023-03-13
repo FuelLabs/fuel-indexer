@@ -8,3 +8,4 @@ module:
 metrics: ~
 contract_id: ~
 start_block: ~
+resumable: ~

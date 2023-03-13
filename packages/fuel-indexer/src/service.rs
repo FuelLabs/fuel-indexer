@@ -312,6 +312,7 @@ async fn get_start_block(
                 &manifest.identifier,
             )
             .await?;
+            info!("Resuming index from block {}", last);
             Ok(last)
         }
         None => Ok(manifest.start_block.unwrap_or(1)),

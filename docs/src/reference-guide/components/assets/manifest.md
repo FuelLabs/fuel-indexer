@@ -52,3 +52,9 @@ report_metrics: true
 ## `report_metrics`
 
 - Whether or not to report Prometheus metrics to the Fuel backend
+
+## `resumable`
+
+- The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
+with the latest block if it has fallen out of sync. 
+
