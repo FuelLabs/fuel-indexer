@@ -3,11 +3,19 @@
 ## Using CLI options
 
 ```text
+Standalone binary for the fuel indexer service.
+
 USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
-    -c, --config <CONFIG>
+        --auth-enabled <auth-enabled>
+            Require users to authenticate for some operations. [default: false]
+
+        --auth-strategy <AUTH_STRATEGY>
+            Authentication scheme used.
+
+    -c, --config <FILE>
             Indexer service config file.
 
         --database <DATABASE>
@@ -28,15 +36,24 @@ OPTIONS:
     -h, --help
             Print help information
 
-        --log-level <LOG_LEVEL>
-            Log level passed to the Fuel Indexer service. [default: info]
-                [possible values: info, debug, error, warn]
+        --jwt-expiry <JWT_EXPIRY>
+            Amount of time (seconds) before expiring token (if JWT scheme is specified).
 
-    -m, --manifest <MANIFEST>
+        --jwt-issuer <JWT_ISSUER>
+            Issuer of JWT claims (if JWT scheme is specified).
+
+        --jwt-secret <JWT_SECRET>
+            Secret used for JWT scheme (if JWT scheme is specified).
+
+        --log-level <LOG_LEVEL>
+            Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
+            debug, error, warn]
+
+    -m, --manifest <FILE>
             Index config file.
-        
-        --max-body <MAX_BODY_SIZE> 
-            Max body size for WASM binary uploads in bytes. [default: 5242880]
+
+        --max-body-size <MAX_BODY_SIZE>
+            Max body size for GraphQL API requests. [default: 5242880]
 
         --metrics <metrics>
             Use Prometheus metrics reporting. [default: true]
@@ -59,40 +76,99 @@ OPTIONS:
         --run-migrations <run-migrations>
             Run database migrations before starting service. [default: true]
 
+        --stop-idle-indexers
+            Prevent indexers from running without handling any blocks.
+
     -V, --version
             Print version information
+
 ```
 
 ## Using a configuration file
 
 ```yaml
-## The following is an example Fuel indexer configuration file.
-##
-## This configuration spec is intended to be used for a single instance
-## of a Fuel indexer node or service.
+# # The following is an example Fuel indexer configuration file.
+# #
+# # This configuration spec is intended to be used for a single instance
+# # of a Fuel indexer node or service.
+# #
+# # For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
+# # or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
-## Fuel Node configuration
+# # Use Prometheus metrics reporting.
+# metrics: true
 
-fuel_node:
-    host: 127.0.0.1
-    port: 4000
+# # Prevent indexers from running without handling any blocks.
+# stop_idle_indexers: true
 
-## GraphQL API configuration
+# # ***********************
+# # Fuel Node configuration
+# # ************************
 
-graphql_api:
-    host: 127.0.0.1
-    port: 29987
-    run_migrations: false
+# fuel_node:
 
-## Database configuration options.
+#   # Host of the running Fuel node.
+#   host: 127.0.0.1
 
-database:
-    postgres:
-        user: postgres
-        database:
-        password:
-        host: 127.0.0.1
-        port: 5432
+#   # Listening port of the running Fuel node.
+#   port: 4000
 
-metrics: true
+# # *************************
+# # GraphQL API configuration
+# # *************************
+
+# graphql_api:
+#   # GraphQL API host.
+#   host: 127.0.0.1
+
+#   # GraphQL API port.
+#   port: 29987
+
+#   # Run database migrations before starting service.
+#   run_migrations: false
+
+#   # Max body size for GraphQL API requests.
+#   max_body_size: "5242880"
+
+# # *******************************
+# # Database configuration options.
+# # *******************************
+
+# database:
+
+#   postgres:
+#     # Postgres username.
+#     user: postgres
+
+#     # Postgres database.
+#     database: postgres
+
+#     # Postgres password.
+#     password: password
+
+#     # Postgres host.
+#     host: 127.0.0.1
+
+#     # Postgres port.
+#     port: 5432
+
+# # ******************************
+# # Indexer service authentication
+# # ******************************
+
+# authentication:
+#   # Require users to authenticate for some operations.
+#   enabled: false
+
+#   # Which authentication scheme to use.
+#   strategy: JWT
+
+#   # Secret used if JWT authentication is specified.
+#   jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890*
+
+#   # JWT issuer if JWT authentication is specified.
+#   # jwt_issuer: FuelLabs
+
+#   # Amount of time (seconds) before expiring token if JWT authentication is specified.
+#   # jwt_expiry: 2592000
 ```

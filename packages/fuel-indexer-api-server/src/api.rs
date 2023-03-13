@@ -101,7 +101,7 @@ impl IntoResponse for ApiError {
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg),
         };
 
-        error!("{:?} - {}", status, err_msg);
+        error!("{status:?} - {err_msg}");
 
         (
             status,

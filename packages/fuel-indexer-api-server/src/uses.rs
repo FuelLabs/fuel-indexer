@@ -142,10 +142,7 @@ pub(crate) async fn stop_indexer(
     if let Err(e) = queries::remove_indexer(&mut conn, &namespace, &identifier).await {
         queries::revert_transaction(&mut conn).await?;
 
-        error!(
-            "Failed to remove Indexer({}.{}): {}",
-            namespace, identifier, e
-        );
+        error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
 
         return Ok(Json(json!({
             "success": "false"
@@ -384,7 +381,7 @@ pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
                 .unwrap(),
             Err(_e) => Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from("Error"))
+                .body(Body::from("Error."))
                 .unwrap(),
         }
     }
