@@ -1,6 +1,32 @@
 # WASM Modules
 
-- WebAssembly (WASM) modules are compiled binaries that are registered into a Fuel indexer at runtime. The WASM bytes are read in by the indexer and _executors_ are created which will implement blocking calls the to the WASM runtime.
+WebAssembly (WASM) modules are compiled binaries that are registered into a Fuel indexer at runtime. The WASM bytes are read in by the indexer and _executors_ are created which will implement blocking calls the to the WASM runtime.
+
+The WASM module is generated based on your manifest, schema, and your `lib.rs` file. 
+
+## `lib.rs`
+
+You can implement the logic for handling events and saving data to the database in your `lib.rs` file in the `src` folder.
+
+Here, you can define which functions handle different events based on the function parameters. If you add a function parameter of a certain type, the function will handle all blocks, transactions, or transaction receipts that contain a matching type.
+
+We can look at the function below as an example:
+
+```rust, ignore
+fn index_logged_greeting(greeter: Greeting) {
+    // function logic goes here
+}
+```
+
+All transactions that have a receipt that contains data with a type of `Greeting` will be handled by the function. 
+
+You can learn more about what data can be indexed in the [What Can I Index](../../indexing/what-can-i-index.md) section.
+
+To save an instance of a schema type in your database, you can call the `save` method on the instance.
+
+```rust, ignore
+instance.save();
+```
 
 ## Usage
 

@@ -1,6 +1,6 @@
 # Blocks and Transactions
 
-You can index use the `BlockData` and `TransactionData` data structures to index important information about the Fuel network for your dApp.
+You can use the `BlockData` and `TransactionData` data structures to index important information about the Fuel network for your dApp.
 
 ## `BlockData`
 

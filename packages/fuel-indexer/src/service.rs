@@ -268,7 +268,15 @@ async fn create_service_task(
                                 );
 
                                 futs.push(handle);
-                                killers.insert(manifest.uid(), killer);
+
+                                if let Some(killer_for_prev_executor) =
+                                    killers.insert(manifest.uid(), killer)
+                                {
+                                    let uid = manifest.uid();
+                                    info!("Indexer({uid}) was replaced. Stopping previous version of Indexer({uid}).");
+                                    killer_for_prev_executor
+                                        .store(true, Ordering::SeqCst);
+                                }
                             }
                             Err(e) => {
                                 error!(
