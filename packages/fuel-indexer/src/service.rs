@@ -65,6 +65,7 @@ impl IndexerService {
             None,
         )
         .await?;
+
         let schema = manifest.graphql_schema()?;
         let schema_bytes = schema.as_bytes().to_vec();
 

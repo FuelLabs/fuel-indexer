@@ -362,19 +362,22 @@ pub async fn index_is_registered(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.index_is_registered_calls.inc();
 
-    let row = sqlx::query(&format!("SELECT * FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}'")).fetch_one(conn).await?;
+    match sqlx::query(&format!("SELECT * FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}'")).fetch_one(conn).await {
+        Ok(row) => {
+            let id = row.get(0);
+            let namespace = row.get(1);
+            let identifier = row.get(2);
+            let pubkey = row.get(3);
 
-    let id = row.get(0);
-    let namespace = row.get(1);
-    let identifier = row.get(2);
-    let pubkey = row.get(3);
-
-    Ok(Some(RegisteredIndex {
-        id,
-        namespace,
-        identifier,
-        pubkey,
-    }))
+            Ok(Some(RegisteredIndex {
+                id,
+                namespace,
+                identifier,
+                pubkey,
+            }))
+        }
+        Err(_e) => Ok(None),
+    }
 }
 
 pub async fn register_index(
