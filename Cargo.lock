@@ -2151,10 +2151,6 @@ dependencies = [
  "forc-tracing 0.31.3",
  "forc-util",
  "fuel-indexer-lib",
- "fuel-tx",
- "fuels-types",
- "hex",
- "hyper-rustls 0.23.2",
  "indicatif",
  "reqwest",
  "serde",
@@ -2176,7 +2172,6 @@ dependencies = [
  "home",
  "indicatif",
  "pg-embed",
- "platforms",
  "serde",
  "serde_json",
  "tokio",
@@ -4754,12 +4749,6 @@ name = "pkg-config"
 version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
-
-[[package]]
-name = "platforms"
-version = "3.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3d7ddaed09e0eb771a79ab0fd64609ba0afb0a8366421957936ad14cbd13630"
 
 [[package]]
 name = "polling"

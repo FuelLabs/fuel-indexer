@@ -65,6 +65,25 @@ pub struct Command {
     pub config: Option<PathBuf>,
 }
 
+impl Default for Command {
+    fn default() -> Self {
+        Command {
+            name: defaults::POSTGRES_DATABASE.to_string(),
+            password: defaults::POSTGRES_PASSWORD.to_string(),
+            user: defaults::POSTGRES_USER.to_string(),
+            port: defaults::POSTGRES_PORT.to_string(),
+            database_dir: None,
+            auth_method: "plain".to_string(),
+            persistent: true,
+            start: false,
+            config: None,
+            timeout: None,
+            migration_dir: None,
+            postgres_version: PostgresVersion::V14,
+        }
+    }
+}
+
 pub async fn exec(command: Box<Command>) -> Result<()> {
     let Command {
         name,
