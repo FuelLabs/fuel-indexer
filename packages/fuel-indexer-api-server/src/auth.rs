@@ -6,7 +6,7 @@ use fuel_indexer_lib::config::{
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use std::task::{Context, Poll};
 use tower::{Layer, Service};
-use tracing::error;
+use tracing::{error, warn};
 
 #[derive(Clone)]
 struct MiddlewareState {
@@ -89,7 +89,7 @@ where
                     }
                 }
                 _ => {
-                    // FIXME: Fail gracefully
+                    warn!("Unsupported authentication strategy.");
                     unimplemented!();
                 }
             }

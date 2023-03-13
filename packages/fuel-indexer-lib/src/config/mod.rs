@@ -165,7 +165,7 @@ pub struct IndexerArgs {
     pub embedded_database: bool,
 
     /// Require users to authenticate for some operations.
-    #[clap(long, default_value_t = defaults::AUTH_ENABLED, help = "Require users to authenticate for some operations.")]
+    #[clap(long, help = "Require users to authenticate for some operations.")]
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
@@ -255,7 +255,7 @@ pub struct ApiServerArgs {
     pub metrics: bool,
 
     /// Require users to authenticate for some operations.
-    #[clap(long, default_value_t = defaults::AUTH_ENABLED, help = "Require users to authenticate for some operations.")]
+    #[clap(long, help = "Require users to authenticate for some operations.")]
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
@@ -531,7 +531,7 @@ impl IndexerConfig {
 
     // When building the config via a file, if any section (e.g., graphql, fuel_node, etc),
     // or if any individual setting in a section (e.g., fuel_node.host) is empty, replace it
-    // with its respective default value
+    // with its respective default value.
     pub fn from_file(path: &Path) -> IndexerConfigResult<Self> {
         let file = File::open(path)?;
 
