@@ -226,14 +226,16 @@ pub async fn type_id_list_by_name(
 pub async fn type_id_latest(
     conn: &mut PoolConnection<Postgres>,
     schema_name: &str,
+    identifier: &str,
 ) -> sqlx::Result<String> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.type_id_latest_calls.inc();
 
     let latest = sqlx::query_as!(
         IdLatest,
-        "SELECT schema_version FROM graph_registry_type_ids WHERE schema_name = $1 ORDER BY id",
-        schema_name
+        "SELECT schema_version FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_identifier = $2 ORDER BY id",
+        schema_name,
+        identifier
     )
     .fetch_one(conn)
     .await?;
@@ -323,6 +325,7 @@ pub async fn list_column_by_id(
 pub async fn columns_get_schema(
     conn: &mut PoolConnection<Postgres>,
     name: &str,
+    identifier: &str,
     version: &str,
 ) -> sqlx::Result<Vec<ColumnInfo>> {
     #[cfg(feature = "metrics")]
@@ -340,9 +343,11 @@ pub async fn columns_get_schema(
            INNER JOIN graph_registry_columns as c
            ON t.id = c.type_id
            WHERE t.schema_name = $1
-           AND t.schema_version = $2
+           AND t.schema_identifier = $2
+           AND t.schema_version = $3
            ORDER BY c.type_id, c.column_position"#,
         name,
+        identifier,
         version
     )
     .fetch_all(conn)
