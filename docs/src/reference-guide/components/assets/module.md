@@ -2,7 +2,7 @@
 
 WebAssembly (WASM) modules are compiled binaries that are registered into a Fuel indexer at runtime. The WASM bytes are read in by the indexer and _executors_ are created which will implement blocking calls the to the WASM runtime.
 
-The WASM module is generated based on your manifest, schema, and your `lib.rs` file. 
+The WASM module is generated based on your manifest, schema, and your `lib.rs` file.
 
 ## `lib.rs`
 
@@ -18,7 +18,7 @@ fn index_logged_greeting(greeter: Greeting) {
 }
 ```
 
-All transactions that have a receipt that contains data with a type of `Greeting` will be handled by the function. 
+All transactions that have a receipt that contains data with a type of `Greeting` will be handled by the function.
 
 You can learn more about what data can be indexed in the [What Can I Index](../../indexing/what-can-i-index.md) section.
 
