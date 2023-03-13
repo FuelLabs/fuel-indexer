@@ -15,13 +15,20 @@ pub fn init(command: TreeCommand) -> anyhow::Result<()> {
         let depth = entry.depth();
 
         // Indent the output based on the depth of the directory.
-        // Each level of indentation is two spaces.
-        let indent = "  |".repeat(depth);
+        // Use "│ " for vertical lines and spaces, and "├─" for branches.
+        let indent = "│ ".repeat(depth.saturating_sub(1))
+            + match depth {
+                0 => "",
+                _ => "├─",
+            };
+
+        // Get the name of the file or directory without the dots and slashes.
+        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
         if path.is_dir() {
-            info!("{}{}/", indent.bright_cyan(), path.display().bright_cyan());
+            info!("{}{}/", indent.bright_cyan(), name.bright_cyan());
         } else {
-            info!("{}{}", indent.bright_cyan(), path.display().bright_cyan());
+            info!("{}{}", indent.bright_cyan(), name.bright_cyan());
         }
     }
     Ok(())
