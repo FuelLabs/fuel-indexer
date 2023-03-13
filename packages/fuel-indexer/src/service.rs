@@ -328,10 +328,9 @@ async fn create_service_task(
                                 .expect("Failed to commit transaction");
                         }
 
-                        let manifest: Manifest =
-                            serde_yaml::from_slice(&latest_assets.manifest.bytes)
-                                .expect("Whoops!");
-
+                        let manifest =
+                            Manifest::from_slice(&latest_assets.manifest.bytes)
+                                .expect("Failed to deserialize manifest");
                         let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                             &config.fuel_node,
                             &config.database.to_string(),
