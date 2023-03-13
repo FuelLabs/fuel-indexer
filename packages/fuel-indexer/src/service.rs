@@ -318,6 +318,7 @@ async fn create_service_task(
                         )
                         .await
                         {
+                            error!("Failed to remove asset by version");
                             queries::revert_transaction(&mut conn)
                                 .await
                                 .expect("Failed to revert transaction");
@@ -329,7 +330,7 @@ async fn create_service_task(
 
                         let manifest: Manifest =
                             serde_yaml::from_slice(&latest_assets.manifest.bytes)
-                                .expect("Failed to deserialize manifest");
+                                .expect("Whoops!");
 
                         let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                             &config.fuel_node,
