@@ -20,13 +20,11 @@ Thanks for your interest in contributing to the Fuel indexer! Below we've compil
 
 ### `fuelup`
 
-- We use fuelup in order to get the binaries produced by services in the Fuel ecosystem. Fuelup will install binaries related to the Fuel node, the Fuel indexer, the Fuel orchestrator (forc), and other components.
-- fuelup can be downloaded [here](https://github.com/FuelLabs/fuelup).
+We use fuelup in order to get the binaries produced by services in the Fuel ecosystem. Fuelup will install binaries related to the Fuel node, the Fuel indexer, the Fuel orchestrator (forc), and other components. `fuelup` can be downloaded [here](https://github.com/FuelLabs/fuelup).
 
 ### `docker`
 
-- We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. Postgres).
-- Docker can be downloaded [here](https://docs.docker.com/engine/install/).
+We use Docker to produce reproducible environments for users that may be concerned with installing components with large sets of dependencies (e.g. Postgres). Docker can be downloaded [here](https://docs.docker.com/engine/install/).
 
 ### Database
 
@@ -44,9 +42,7 @@ In either case, your PostgreSQL database should now be accessible at `postgres:/
 
 ### SQLx
 
-- After setting up your database, you should install `sqlx-cli` in order to run migrations for your indexer service.
-- You can do so by running `cargo install sqlx-cli --features postgres`.
-- Once installed, you can run the migrations by running the following command after changing `DATABASE_URL` to match your setup.
+After setting up your database, you should install `sqlx-cli` in order to run migrations for your indexer service. You can do so by running `cargo install sqlx-cli --features postgres`. Once installed, you can run the migrations by running the following command after changing `DATABASE_URL` to match your setup.
 
 ## Building from Source
 

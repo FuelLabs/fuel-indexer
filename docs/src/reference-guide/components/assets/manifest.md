@@ -16,46 +16,42 @@ report_metrics: true
 
 ## `namespace`
 
-- Think of the `namespace` as an organization identifier. If you're familiar with say, [Java package naming](https://stackoverflow.com/questions/6247849/java-package-naming), then think of an indexer's `namespace` as being its _domain name_. The `namespace` is unique to a given indexer operator -- i.e., indexer operators will not be able to support more than one `namespace` of the same name.
+The `namespace` is the topmost organizational level of an indexer. You can think of different `namespace`s as separate and distinct collections comprised of indexers. The `namespace` is unique to a given indexer operator -- i.e., indexer operators will not be able to support more than one `namespace` of the same name.
 
 ## `identifier`
 
-- The `identifier` field is used to (quite literally) identify the given indexer. If `namespace` is the organization/domain name, then think of `identifier` as the name of an indexer within that organization/domain.
-- As an example, if a provided `namespace` is `"fuel"` and a provided `identifier` is `"index1"`, then the unique identifier for the given indexer will be `fuel.index1`.
+The `identifier` field is used to (quite literally) identify the given indexer. If a `namespace` describes a collection of indexers, then an `identifier` describes a unique indexer inside that collection. As an example, if a provided `namespace` is `"fuel"` and a provided `identifier` is `"index1"`, then the full unique identifier for the given indexer will be `fuel.index1`.
 
 ## `abi`
 
-- The `abi` option is used to provide a link to the Sway JSON application binary interface (JSON ABI) that is generated when you build your Sway project. This generated ABI contains all types, type IDs, and logged types used in your Sway contract.
+The `abi` option is used to provide a link to the Sway JSON application binary interface (ABI) that is generated when you build your Sway project. This generated ABI contains all types, type IDs, logged types, and message types used in your Sway contract.
 
 ## `contract_id`
 
-- The `contract_id` specifies which particular contract you would like your indexer to subscribe to. Setting this field to an empty string will index events from any contract that is currently executing on the network.
+The `contract_id` specifies the particular contract to which you would like an indexer to subscribe. Setting this field to an empty string will index events from any contract that is currently executing on the network.
 
 > Important: Contract IDs are unique to the content of a contract. If you are subscribing to a certain contract and then the contract itself is changed or updated, you will need to change the `contract_id` field of the manifest to the new ID.
 
 ## `graphql_schema`
 
-- The `graphql_schema` field contains the file path that points to the GraphQL schema for the given indexer. This schema file holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file [here](./schema.md).
+The `graphql_schema` field contains the file path pointing to the corresponding GraphQL schema for a given indexer. This schema file holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file [here](./schema.md).
 
 > Important: The objects defined in your GraphQL schema are called 'entities'. These entities are what will be eventually be stored in the database.
 
 ## `start_block`
 
-- The particular start block after which you'd like your indexer to start indexing events.
+The `start_block` field indicates the block height after which you'd like your indexer to start indexing events.
 
 ## `module`
 
-- The `module` field contains a file path that points to code that will be run as an _executor_ inside of the indexer.
-- There are two available options for modules/execution: `wasm` and `native`.
-  - When specifying a `wasm` module, the provided path must lead to a compiled WASM binary.
+The `module` field contains a file path that points to code that will be run as an _executor_ inside of the indexer. There are two available options for modules/execution: `wasm` and `native`. Note that when specifying a `wasm` module, the provided path must lead to a compiled WASM binary.
 
 > Important: At this time, `wasm` is the preferred method of execution.
 
 ## `report_metrics`
 
-- Whether or not to report Prometheus metrics to the Fuel backend
+The `report_metrics` field indicates whether to report Prometheus metrics to the Fuel backend.
 
 ## `resumable`
 
-- The resumable field of type boolean specifies whether or not the indexer should synchronise with the latest block if it has fallen out of sync. 
-
+The `resumable` field contains a boolean value and specifies whether the indexer should synchronise with the latest block if it has fallen out of sync.

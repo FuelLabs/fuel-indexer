@@ -1,8 +1,6 @@
 # Indexer Registration
 
-- The Fuel indexer service allows users to upload new indexers at runtime, with absolutely no downtime required to start using your new indexer.
-- Meaning, as soon as users upload new assets to the service, those assets are immediately registered, and a new executor is created using the new assets.
-  - This provides the benefit of no service downtime, and allows users to immediately get started using their new indexer.
+The Fuel indexer service allows users to upload new indexers at runtime with absolutely no downtime required to start using it. This means that as soon as users upload new assets to the service, those assets are immediately registered and a new executor is created from them. This provides the benefit of no service downtime, and allows users to immediately get started using their new indexer.
 
 ## Usage
 

@@ -1,6 +1,6 @@
 # Types
 
-Below is a mapping of GraphQL schema types to their database equivalents.
+Below is a mapping of GraphQL schema types to their Sway and database equivalents.
 
 | Sway Type | GraphQL Schema Type | Postgres Type |
 |------|----------|----------|
@@ -50,7 +50,7 @@ And finally, this GraphQL schema will generate the following Postgres schema:
                                            Table "schema.event"
     Column   |     Type    | Collation | Nullable | Default | Storage  | Compression | Stats target | Description
 --------------+-------------+-----------+----------+---------+----------+-------------+--------------+-------------
- id           |    bigint   |           | not null |         | plain        |             |              |
+ id           |    bigint   |           | not null |         | plain    |             |              |
  block_height |    bigint   |           | not null |         | plain    |             |              |
  address      | varchar(64) |           | not null |         | plain    |             |              |
  object       |    bytea    |           | not null |         | extended |             |              |
