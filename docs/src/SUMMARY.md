@@ -66,3 +66,7 @@
 - [Environment Setup](./for-contributors/index.md)
 - [Contributing Standards](./for-contributors/contributing-standards.md)
 - [Release Schedule](./for-contributors/release-schedule.md)
+
+# Appendix
+
+- [A: Glossary](./glossary.md)
