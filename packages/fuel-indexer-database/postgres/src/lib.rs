@@ -619,6 +619,39 @@ pub async fn index_id_for(
     Ok(id)
 }
 
+pub async fn penultimate_asset_for_index(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
+    #[cfg(feature = "metrics")]
+    METRICS.db.postgres.penultimate_asset_for_index_calls.inc();
+
+    let index_id = index_id_for(conn, namespace, identifier).await?;
+    let query = format!(
+        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1 OFFSET 1",
+        asset_type.as_ref(),
+        index_id
+    );
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let id = row.get(0);
+    let index_id = row.get(1);
+    let version = row.get(2);
+    let digest = row.get(3);
+    let bytes = row.get(4);
+
+    Ok(IndexAsset {
+        id,
+        index_id,
+        version,
+        digest,
+        bytes,
+    })
+}
+
 pub async fn start_transaction(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<usize> {
@@ -677,6 +710,29 @@ pub async fn remove_index(
     execute_query(
         conn,
         format!("DELETE FROM index_registry WHERE id = {index_id}",),
+    )
+    .await?;
+
+    Ok(())
+}
+
+pub async fn remove_asset_by_version(
+    conn: &mut PoolConnection<Postgres>,
+    index_id: &i64,
+    version: &i32,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<()> {
+    #[cfg(feature = "metrics")]
+    METRICS.db.postgres.remove_asset_by_version_calls.inc();
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM index_asset_registry_{0} WHERE index_id = {1} AND version = '{2}'",
+            asset_type.as_ref(),
+            index_id,
+            version
+        ),
     )
     .await?;
 

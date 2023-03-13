@@ -22,5 +22,6 @@ SUBCOMMANDS:
     init      Create a new indexer project in the current directory
     new       Create a new indexer project in a new directory
     remove    Stop and remove a running index
+    revert    Revert a running indexer to its previous version
     start     Start a local indexer service
 ```

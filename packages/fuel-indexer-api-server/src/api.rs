@@ -1,6 +1,6 @@
 use crate::uses::{
     authorize_middleware, health_check, metrics, query_graph, register_index_assets,
-    stop_index,
+    revert_indexer, stop_index,
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
@@ -8,7 +8,7 @@ use axum::{
     http::StatusCode,
     middleware,
     response::{IntoResponse, Response},
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Error as AxumError, Router,
 };
 use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
@@ -135,6 +135,7 @@ impl GraphQlApi {
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()))
             .route("/:namespace/:identifier", delete(stop_index))
+            .route("/:namespace/:identifier", put(revert_indexer))
             .route_layer(middleware::from_fn(authorize_middleware))
             .layer(Extension(tx))
             .layer(Extension(pool.clone()))

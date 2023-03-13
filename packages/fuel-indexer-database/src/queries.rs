@@ -275,6 +275,20 @@ pub async fn index_id_for(
     }
 }
 
+pub async fn penultimate_asset_for_index(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::penultimate_asset_for_index(c, namespace, identifier, asset_type)
+                .await
+        }
+    }
+}
+
 pub async fn start_transaction(conn: &mut IndexerConnection) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::start_transaction(c).await,
@@ -307,6 +321,19 @@ pub async fn remove_index(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::remove_index(c, namespace, identifier).await
+        }
+    }
+}
+
+pub async fn remove_asset_by_version(
+    conn: &mut IndexerConnection,
+    index_id: &i64,
+    version: &i32,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::remove_asset_by_version(c, index_id, version, asset_type).await
         }
     }
 }
