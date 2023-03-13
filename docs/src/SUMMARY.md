@@ -5,7 +5,7 @@
 
 # Getting Started
 
-- [Dependencies](./getting-started/dependencies/fuelup.md)
+- [Dependencies](./getting-started/dependencies/index.md)
   - [`fuelup`](./getting-started/dependencies/fuelup.md)
   - [Database](./getting-started/dependencies/database.md)
   - [WASM](./getting-started/dependencies/wasm.md)
@@ -36,11 +36,11 @@
     - [TransferOut](./reference-guide/indexing/receipts/transferout.md)
     - [ScriptResult](./reference-guide/indexing/receipts/scriptresult.md)
 - [Data Types](./reference-guide/data-types/types.md)
-- [GraphQL](./reference-guide/components/graphql/schema.md)
+- [GraphQL](./reference-guide/components/graphql/index.md)
   - [Schema](./reference-guide/components/graphql/schema.md)
   - [Directives](./reference-guide/components/graphql/directives.md)
   - [API Server](./reference-guide/components/graphql/api-server.md)
-- [Database](./reference-guide/components/database/foreign-keys.md)
+- [Database](./reference-guide/components/database/index.md)
   - [Foreign Keys](./reference-guide/components/database/foreign-keys.md)
   - [ID Types](./reference-guide/components/database/ids.md)
 - [Plugins](./reference-guide/plugins/index.md)
