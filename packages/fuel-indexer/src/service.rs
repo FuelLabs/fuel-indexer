@@ -58,9 +58,13 @@ impl IndexerService {
     ) -> IndexerResult<()> {
         let database_url = self.database_url.clone();
         let mut conn = self.pool.acquire().await?;
-        let index =
-            queries::register_index(&mut conn, &manifest.namespace, &manifest.identifier)
-                .await?;
+        let index = queries::register_index(
+            &mut conn,
+            &manifest.namespace,
+            &manifest.identifier,
+            None,
+        )
+        .await?;
         let schema = manifest.graphql_schema()?;
         let schema_bytes = schema.as_bytes().to_vec();
 
@@ -102,6 +106,7 @@ impl IndexerService {
                     &manifest.identifier,
                     bytes,
                     asset_type,
+                    None,
                 )
                 .await?;
             }
@@ -146,9 +151,13 @@ impl IndexerService {
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
-        let _index =
-            queries::register_index(&mut conn, &manifest.namespace, &manifest.identifier)
-                .await?;
+        let _index = queries::register_index(
+            &mut conn,
+            &manifest.namespace,
+            &manifest.identifier,
+            None,
+        )
+        .await?;
         let schema = manifest.graphql_schema()?;
         let _schema_bytes = schema.as_bytes().to_vec();
 

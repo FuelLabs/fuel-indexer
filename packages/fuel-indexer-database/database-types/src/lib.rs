@@ -297,6 +297,7 @@ pub struct RegisteredIndex {
     pub id: i64,
     pub namespace: String,
     pub identifier: String,
+    pub pubkey: Option<String>,
 }
 
 impl RegisteredIndex {

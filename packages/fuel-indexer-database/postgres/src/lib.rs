@@ -362,24 +362,26 @@ pub async fn index_is_registered(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.index_is_registered_calls.inc();
 
-    match sqlx::query_as!(
-        RegisteredIndex,
-        "SELECT * FROM index_registry WHERE namespace = $1 AND identifier = $2",
+    let row = sqlx::query(&format!("SELECT * FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}'")).fetch_one(conn).await?;
+
+    let id = row.get(0);
+    let namespace = row.get(1);
+    let identifier = row.get(2);
+    let pubkey = row.get(3);
+
+    Ok(Some(RegisteredIndex {
+        id,
         namespace,
-        identifier
-    )
-    .fetch_one(conn)
-    .await
-    {
-        Ok(row) => Ok(Some(row)),
-        Err(_e) => Ok(None),
-    }
+        identifier,
+        pubkey,
+    }))
 }
 
 pub async fn register_index(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
+    pubkey: Option<&str>,
 ) -> sqlx::Result<RegisteredIndex> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.register_index_calls.inc();
@@ -388,8 +390,8 @@ pub async fn register_index(
         return Ok(index);
     }
 
-    let query = format!("INSERT INTO index_registry (namespace, identifier) VALUES ('{namespace}', '{identifier}') RETURNING *",
-    );
+    let pubkey = pubkey.unwrap_or("");
+    let query = format!("INSERT INTO index_registry (namespace, identifier, pubkey) VALUES ('{namespace}', '{identifier}', '{pubkey}') RETURNING *");
 
     let row = sqlx::QueryBuilder::new(query)
         .build()
@@ -399,11 +401,13 @@ pub async fn register_index(
     let id = row.get(0);
     let namespace = row.get(1);
     let identifier = row.get(2);
+    let pubkey = row.get(3);
 
     Ok(RegisteredIndex {
         id,
         namespace,
         identifier,
+        pubkey,
     })
 }
 
@@ -413,9 +417,24 @@ pub async fn registered_indices(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.registered_indices_calls.inc();
 
-    sqlx::query_as!(RegisteredIndex, "SELECT * FROM index_registry",)
+    Ok(sqlx::query("SELECT * FROM index_registry")
         .fetch_all(conn)
-        .await
+        .await?
+        .iter()
+        .map(|row| {
+            let id = row.get(0);
+            let namespace = row.get(1);
+            let identifier = row.get(2);
+            let pubkey = row.get(3);
+
+            RegisteredIndex {
+                id,
+                namespace,
+                identifier,
+                pubkey,
+            }
+        })
+        .collect::<Vec<RegisteredIndex>>())
 }
 
 pub async fn index_asset_version(
@@ -445,13 +464,14 @@ pub async fn register_index_asset(
     identifier: &str,
     bytes: Vec<u8>,
     asset_type: IndexAssetType,
+    pubkey: Option<&str>,
 ) -> sqlx::Result<IndexAsset> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.register_index_asset_calls.inc();
 
     let index = match index_is_registered(conn, namespace, identifier).await? {
         Some(index) => index,
-        None => register_index(conn, namespace, identifier).await?,
+        None => register_index(conn, namespace, identifier, pubkey).await?,
     };
 
     let digest = sha256_digest(&bytes);
@@ -460,8 +480,7 @@ pub async fn register_index_asset(
         asset_already_exists(conn, &asset_type, &bytes, &index.id).await?
     {
         info!(
-            "Asset({:?}) for Index({}) already registered.",
-            asset_type,
+            "Asset({asset_type:?}) for Index({}) already registered.",
             index.uid()
         );
         return Ok(asset);
@@ -472,11 +491,10 @@ pub async fn register_index_asset(
         .expect("Failed to get asset version.");
 
     let query = format!(
-        "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{}') RETURNING *",
+        "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{digest}') RETURNING *",
         asset_type.as_ref(),
         index.id,
         current_version + 1,
-        digest,
     );
 
     let row = sqlx::QueryBuilder::new(query)

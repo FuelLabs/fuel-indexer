@@ -184,10 +184,11 @@ pub async fn register_index(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
+    pubkey: Option<&str>,
 ) -> sqlx::Result<RegisteredIndex> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::register_index(c, namespace, identifier).await
+            postgres::register_index(c, namespace, identifier, pubkey).await
         }
     }
 }
@@ -218,11 +219,14 @@ pub async fn register_index_asset(
     identifier: &str,
     bytes: Vec<u8>,
     asset_type: IndexAssetType,
+    pubkey: Option<&str>,
 ) -> sqlx::Result<IndexAsset> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::register_index_asset(c, namespace, identifier, bytes, asset_type)
-                .await
+            postgres::register_index_asset(
+                c, namespace, identifier, bytes, asset_type, pubkey,
+            )
+            .await
         }
     }
 }

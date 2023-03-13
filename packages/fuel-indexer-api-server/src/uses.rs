@@ -131,11 +131,9 @@ pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
-    Extension(claims): Extension<Claims>,
+    Extension(_claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
     let mut conn = pool.acquire().await?;
-
-    println!(">>> AUTH: {:?}", claims);
 
     let _ = queries::start_transaction(&mut conn).await?;
 
@@ -201,6 +199,7 @@ pub(crate) async fn register_indexer_assets(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
+    Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
     multipart: Option<Multipart>,
 ) -> ApiResult<axum::Json<Value>> {
@@ -230,6 +229,7 @@ pub(crate) async fn register_indexer_assets(
                         &identifier,
                         data.to_vec(),
                         asset_type,
+                        Some(&claims.sub),
                     )
                     .await?
                 }
@@ -240,6 +240,7 @@ pub(crate) async fn register_indexer_assets(
                         &identifier,
                         data.to_vec(),
                         IndexAssetType::Schema,
+                        Some(&claims.sub),
                     )
                     .await
                     {

@@ -58,20 +58,16 @@ where
     }
 
     fn call(&mut self, mut req: Request<B>) -> Self::Future {
-        let header = req
-            .headers()
-            .get(http::header::AUTHORIZATION)
-            .and_then(|header| header.to_str().ok());
-
-        let header = if let Some(header) = header {
-            header
-        } else {
-            unimplemented!();
-        };
-
         let config = &self.state.config;
 
         if config.authentication.enabled {
+            let header = req
+                .headers()
+                .get(http::header::AUTHORIZATION)
+                .and_then(|header| header.to_str().ok());
+
+            let header = header.unwrap_or_default();
+
             match &config.authentication.strategy {
                 Some(AuthenticationStrategy::JWT) => {
                     let secret =
@@ -81,20 +77,24 @@ where
                         &DecodingKey::from_secret(secret.as_bytes()),
                         &Validation::default(),
                     ) {
-                        Ok(claims) => {
-                            req.extensions_mut().insert(claims);
-                            self.inner.call(req)
+                        Ok(token) => {
+                            req.extensions_mut().insert(token.claims);
+                            return self.inner.call(req);
                         }
                         Err(e) => {
-                            error!("Failed to decode claims: {e}");
+                            error!("Failed to decode claims: {e}.");
+                            // FIXME: Fail gracefully
                             unimplemented!();
                         }
                     }
                 }
-                _ => unimplemented!(),
+                _ => {
+                    // FIXME: Fail gracefully
+                    unimplemented!();
+                }
             }
-        } else {
-            self.inner.call(req)
         }
+
+        self.inner.call(req)
     }
 }
