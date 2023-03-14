@@ -15,7 +15,6 @@ const JWT_EXPIRY_KEY: &str = "JWT_EXPIRY";
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct AuthenticationConfig {
-    #[serde(default)]
     pub enabled: bool,
     #[serde(default)]
     pub strategy: Option<AuthenticationStrategy>,
@@ -113,7 +112,16 @@ impl Default for Claims {
 }
 
 impl Claims {
+    pub fn unauthenticated() -> Self {
+        Self {
+            sub: "".to_string(),
+            iss: "".to_string(),
+            iat: 1,
+            exp: 1,
+        }
+    }
+
     pub fn is_unauthenticated(&self) -> bool {
-        self.exp == 0 && self.iat == 0
+        self.exp == 1 && self.iat == 1
     }
 }

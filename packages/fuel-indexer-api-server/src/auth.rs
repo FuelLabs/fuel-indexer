@@ -82,7 +82,7 @@ where
                         }
                         Err(e) => {
                             error!("Failed to decode claims: {e}.");
-                            req.extensions_mut().insert(Claims::default());
+                            req.extensions_mut().insert(Claims::unauthenticated());
                         }
                     }
                     return self.inner.call(req);
