@@ -101,17 +101,18 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .send()
         .expect("Failed to deploy indexer.");
 
-    if res.status() != StatusCode::OK {
-        error!(
-            "\n❌ {target} returned a non-200 response code: {:?}",
-            res.status()
-        );
-        return Ok(());
-    }
-
+    let status = res.status();
     let res_json = res
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
+
+    if status != StatusCode::OK {
+        error!("\n❌ {target} returned a non-200 response code: {status:?}",);
+
+        println!("\n{}", to_string_pretty(&res_json)?);
+
+        return Ok(());
+    }
 
     println!("\n{}", to_string_pretty(&res_json)?);
 

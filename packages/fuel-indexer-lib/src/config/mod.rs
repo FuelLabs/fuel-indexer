@@ -135,7 +135,7 @@ pub struct IndexerArgs {
     pub postgres_port: Option<String>,
 
     /// Run database migrations before starting service.
-    #[clap(long, help = "Run database migrations before starting service.")]
+    #[clap(long, default_value_t = defaults::RUN_MIGRATIONS, help = "Run database migrations before starting service.")]
     pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.
@@ -247,7 +247,7 @@ pub struct ApiServerArgs {
     pub postgres_port: Option<String>,
 
     /// Run database migrations before starting service.
-    #[clap(long, help = "Run database migrations before starting service.")]
+    #[clap(long, default_value_t = defaults::GRAPHQL_API_RUN_MIGRATIONS, help = "Run database migrations before starting service.")]
     pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.

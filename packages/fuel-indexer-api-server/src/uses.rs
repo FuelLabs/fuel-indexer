@@ -129,8 +129,12 @@ pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
-    Extension(_claims): Extension<Claims>,
+    Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
     let mut conn = pool.acquire().await?;
 
     let _ = queries::start_transaction(&mut conn).await?;
@@ -166,7 +170,12 @@ pub(crate) async fn revert_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
     let mut conn = pool.acquire().await?;
     let asset = queries::penultimate_asset_for_index(
         &mut conn,
@@ -201,13 +210,12 @@ pub(crate) async fn register_indexer_assets(
     Extension(pool): Extension<IndexerConnectionPool>,
     multipart: Option<Multipart>,
 ) -> ApiResult<axum::Json<Value>> {
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
     if let Some(mut multipart) = multipart {
-        let mut conn = match pool.acquire().await {
-            Ok(conn) => conn,
-            Err(e) => {
-                return Err::<axum::Json<serde_json::Value>, ApiError>(e.into());
-            }
-        };
+        let mut conn = pool.acquire().await?;
 
         let _ = queries::start_transaction(&mut conn).await?;
 

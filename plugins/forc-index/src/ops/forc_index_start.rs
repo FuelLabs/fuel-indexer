@@ -57,18 +57,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
     }
 
-    let stdout = Command::new("which")
-        .arg("fuel-indexer")
-        .output()
-        .expect("❌ Failed to locate fuel-indexer binary.")
-        .stdout;
-
-    let exec = String::from_utf8_lossy(&stdout)
-        .strip_suffix('\n')
-        .expect("Failed to detect fuel-indexer binary in $PATH.")
-        .to_string();
-
-    let mut cmd = Command::new(&exec);
+    let mut cmd = Command::new("fuel-indexer");
     cmd.arg("run");
 
     if let Some(m) = &manifest {

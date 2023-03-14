@@ -6,7 +6,9 @@ use tracing::{error, info};
 
 #[derive(Deserialize, Debug)]
 struct NonceResponse {
-    nonce: String,
+    uid: String,
+    #[allow(unused)]
+    expiry: u64,
 }
 
 #[derive(Deserialize, Debug)]
@@ -47,15 +49,13 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
 
     // NOTE: Until latest forc-wallet is available via fuelup, manually insert
     // the path to the latest compiled forc-wallet binary
-    let signature = match Command::new(
-        "/Users/rashad/development/repos/forc-wallet/target/release/forc-wallet",
-    )
-    .arg("sign")
-    .arg("--account")
-    .arg(&account)
-    .arg("string")
-    .arg(&response.nonce)
-    .output()
+    let signature = match Command::new("forc-wallet")
+        .arg("sign")
+        .arg("--account")
+        .arg(&account)
+        .arg("string")
+        .arg(&response.uid)
+        .output()
     {
         Ok(o) => {
             let stdout = String::from_utf8_lossy(&o.stdout).to_string();
@@ -74,7 +74,7 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
 
     let body = SignatureRequest {
         signature,
-        message: response.nonce,
+        message: response.uid,
     };
 
     let res = Client::new()

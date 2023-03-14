@@ -92,12 +92,14 @@ impl From<StatusCode> for ApiError {
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let generic_err_msg = "Internal server error.".to_string();
-        // TODO: Free to add more specific messaging/handing here as needed
         let (status, err_msg) = match self {
             Self::JsonWebTokenError(e) => (
                 StatusCode::BAD_REQUEST,
                 format!("Could not process JWT: {e}"),
             ),
+            ApiError::Http(HttpError::Unauthorized) => {
+                (StatusCode::UNAUTHORIZED, "Unauthorized.".to_string())
+            }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg),
         };
 

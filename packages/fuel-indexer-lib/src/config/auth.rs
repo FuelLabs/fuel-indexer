@@ -111,3 +111,9 @@ impl Default for Claims {
         }
     }
 }
+
+impl Claims {
+    pub fn is_unauthenticated(&self) -> bool {
+        self.exp == 0 && self.iat == 0
+    }
+}
