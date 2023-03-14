@@ -177,6 +177,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     fuel_node_handle.abort();
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
 
     let mut conn = pool.acquire().await.unwrap();
     let row = sqlx::query(
@@ -737,4 +738,48 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     assert_eq!(complex_a, "abcde");
     assert_eq!(complex_b, 54321);
     assert_eq!(simple_a, "hello world!");
+}
+
+#[actix_web::test]
+//#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+async fn test_can_trigger_and_index_events_with_multiple_indexes() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let pool = postgres_connection_pool().await;
+    let mut srvc = indexer_service_postgres().await;
+
+    for i in 0..3 {
+        let mut manifest: Manifest =
+            serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST)
+                .expect("Bad Yaml File");
+
+        manifest.identifier = format!("many_{}", i + 1);
+        update_test_manifest_asset_paths(&mut manifest);
+
+        srvc.register_index_from_manifest(manifest)
+            .await
+            .expect("Failed to initialize indexer.");
+    }
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    let pool = postgres_connection_pool().await;
+    let mut conn = pool.acquire().await.unwrap();
+
+    for i in 0..3 {
+        let mut conn = pool.acquire().await.unwrap();
+        let table_name = format!("fuel_indexer_test_many_{}", i + 1);
+        let statement = format!(
+            "SELECT height FROM {}.block ORDER by height DESC LIMIT 1",
+            table_name
+        );
+        let row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
+        let height: i64 = row.get(1);
+        let timestamp: i64 = row.get(2);
+
+        assert!(height > 0);
+        assert!(timestamp > 0);
+    }
 }
