@@ -341,3 +341,24 @@ pub async fn remove_asset_by_version(
         }
     }
 }
+
+pub async fn create_nonce(conn: &mut IndexerConnection) -> sqlx::Result<Nonce> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::create_nonce(c).await,
+    }
+}
+
+pub async fn get_nonce(conn: &mut IndexerConnection, uid: &str) -> sqlx::Result<Nonce> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::get_nonce(c, uid).await,
+    }
+}
+
+pub async fn delete_nonce(
+    conn: &mut IndexerConnection,
+    nonce: &Nonce,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::delete_nonce(c, nonce).await,
+    }
+}

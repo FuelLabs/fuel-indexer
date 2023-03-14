@@ -645,6 +645,12 @@ impl UserQuery {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Nonce {
+    pub uid: String,
+    pub expiry: i64,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

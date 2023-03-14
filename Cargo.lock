@@ -2754,7 +2754,6 @@ dependencies = [
  "tower",
  "tower-http 0.3.5",
  "tracing",
- "uuid 1.3.0",
 ]
 
 [[package]]
@@ -2860,6 +2859,7 @@ dependencies = [
  "fuel-indexer-metrics",
  "sqlx",
  "tracing",
+ "uuid 1.3.0",
 ]
 
 [[package]]

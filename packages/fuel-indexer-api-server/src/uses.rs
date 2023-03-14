@@ -285,19 +285,27 @@ pub(crate) async fn register_indexer_assets(
     Err(ApiError::default())
 }
 
-pub(crate) async fn get_nonce() -> ApiResult<axum::Json<Value>> {
-    let uid = uuid::Uuid::new_v4();
-    Ok(Json(json!({"nonce": uid.as_simple().to_string()})))
+pub(crate) async fn get_nonce(
+    Extension(pool): Extension<IndexerConnectionPool>,
+) -> ApiResult<axum::Json<Value>> {
+    let mut conn = pool.acquire().await?;
+    let nonce = queries::create_nonce(&mut conn).await?;
+
+    Ok(Json(json!(nonce)))
 }
 
 pub(crate) async fn verify_signature(
     Extension(config): Extension<IndexerConfig>,
+    Extension(pool): Extension<IndexerConnectionPool>,
     Json(payload): Json<VerifySignatureRequest>,
 ) -> ApiResult<axum::Json<Value>> {
     if config.authentication.enabled {
+        let mut conn = pool.acquire().await?;
         match config.authentication.strategy {
             Some(AuthenticationStrategy::JWT) => {
-                // TODO: find nonce in db and remove it
+                let nonce = queries::get_nonce(&mut conn, &payload.message).await?;
+                queries::delete_nonce(&mut conn, &nonce).await?;
+
                 let mut buff: [u8; 64] = [0u8; 64];
                 buff.copy_from_slice(&payload.signature.as_bytes()[..64]);
                 let sig = Signature::from_bytes(buff);

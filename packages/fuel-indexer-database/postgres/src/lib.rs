@@ -3,10 +3,13 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, types::JsonValue, Postgres, Row};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
 
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::METRICS;
+
+const NONCE_EXPIRY: i64 = 3600; // 1 hour
 
 pub async fn put_object(
     conn: &mut PoolConnection<Postgres>,
@@ -758,4 +761,58 @@ pub async fn remove_asset_by_version(
     .await?;
 
     Ok(())
+}
+
+pub async fn create_nonce(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<Nonce> {
+    let uid = uuid::Uuid::new_v4().as_simple().to_string();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs() as i64;
+
+    let expiry = now + NONCE_EXPIRY;
+
+    let row = sqlx::QueryBuilder::new(&format!(
+        "INSERT INTO nonce (uid, expiry) VALUES ('{uid}', {expiry}) RETURNING *"
+    ))
+    .build()
+    .fetch_one(conn)
+    .await?;
+
+    let uid: String = row.get(1);
+    let expiry: i64 = row.get(2);
+
+    Ok(Nonce { uid, expiry })
+}
+
+pub async fn delete_nonce(
+    conn: &mut PoolConnection<Postgres>,
+    nonce: &Nonce,
+) -> sqlx::Result<()> {
+    let _ = sqlx::query(&format!("DELETE FROM nonce WHERE uid = '{}'", nonce.uid))
+        .execute(conn)
+        .await?;
+
+    Ok(())
+}
+
+pub async fn get_nonce(
+    conn: &mut PoolConnection<Postgres>,
+    uid: &str,
+) -> sqlx::Result<Nonce> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let row = sqlx::query(&format!(
+        "SELECT * FROM nonce WHERE uid = '{uid}' AND expiry > {now}"
+    ))
+    .fetch_one(conn)
+    .await?;
+
+    let uid: String = row.get(1);
+    let expiry: i64 = row.get(2);
+
+    Ok(Nonce { uid, expiry })
 }
