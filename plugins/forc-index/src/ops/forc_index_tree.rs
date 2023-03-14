@@ -22,7 +22,7 @@ pub fn init(command: TreeCommand) -> anyhow::Result<()> {
             };
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-        let yaml_info = "[the manifest file contains all the configuration options needed for your index]";
+        let yaml_info = " [the manifest file contains all the configuration options needed for your index]";
         let graphql_info =
             "[the GraphQL schema and types for the data your indexer will index]";
         let lib_info = "[the index execution code, written in plain rust]";
