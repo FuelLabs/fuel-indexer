@@ -40,8 +40,7 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
         .unwrap();
 
     server_handle.abort();
-
-    assert_eq!(resp.split('\n').count(), 109);
+    assert_eq!(resp.split('\n').count(), 112);
 }
 
 #[tokio::test]

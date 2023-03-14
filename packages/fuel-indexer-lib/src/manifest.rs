@@ -17,6 +17,8 @@ pub struct Manifest {
     pub metrics: Option<bool>,
     pub contract_id: Option<String>,
     pub start_block: Option<u64>,
+    #[serde(default)]
+    pub resumable: Option<bool>,
 }
 
 type ManifestResult<T> = Result<T, ManifestError>;
