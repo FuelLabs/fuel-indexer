@@ -1076,6 +1076,10 @@ report_metrics: true
 <ul>
 <li>Whether or not to report Prometheus metrics to the Fuel backend</li>
 </ul>
+<h2 id="resumable"><a class="header" href="#resumable"><code>resumable</code></a></h2>
+<ul>
+<li>The resumable field of type boolean specifies whether or not the indexer should synchronise with the latest block if it has fallen out of sync. </li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h1>
 <p>The GraphQL schema is a required component of the Fuel indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the schema.</p>
 <p>In its most basic form, a Fuel indexer GraphQL schema should have a <code>schema</code> definition that contains a defined query root. The rest of the implementation is up to you. Here's an example of a well-formed schema:</p>
