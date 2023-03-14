@@ -738,3 +738,49 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     assert_eq!(complex_b, 54321);
     assert_eq!(simple_a, "hello world!");
 }
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_pure_function_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
+    let pool = postgres_connection_pool().await;
+    let mut srv = indexer_service_postgres().await;
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srv.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/pure_function").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let id: i64 = row.get(0);
+    let contract_id: &str = row.get(1);
+    let _callee: &str = row.get(2);
+    let asset_id: &str = row.get(3);
+    let _gas: i64 = row.get(4);
+    let fn_name: &str = row.get(5);
+
+    assert_eq!(id, 123);
+    assert_eq!(
+        contract_id,
+        "0000000000000000000000000000000000000000000000000000000000000000"
+    );
+    assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
+    assert_eq!(fn_name, "trigger_pure_function");
+}

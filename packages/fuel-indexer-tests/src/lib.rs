@@ -37,7 +37,7 @@ pub mod defaults {
     // the node provider for E2E tests, but spawning a task that is supposed
     // to return the contract ID won't give us the ID until the task is completed.
     pub const CURRENT_TEST_CONTRACT_ID_STR: &str =
-        "fuel1mwtjnwgjz2x7akw8gw9mqs9tt0gs5k49q48v3fu0hfz0mkq3y50qv83xu8";
+        "fuel13asjtk7s7urt2j3wuwygxt3u4hlgfe82zr5ernaplxkpghp08x5sgtewtn";
     pub const MAX_BODY: usize = 5242880; // 5MB in bytes
 }
 

@@ -264,6 +264,31 @@ mod fuel_indexer_test {
         entity.save();
     }
 
+    fn fuel_indexer_test_pure_function(call: abi::Call) {
+        Logger::info("fuel_indexer_test_tuple handling Call event.");
+
+        let abi::Call {
+            contract_id,
+            to,
+            asset_id,
+            gas,
+            fn_name,
+            amount,
+        } = call;
+
+        let entity = CallEntity {
+            id: 123,
+            contract_id,
+            callee: to,
+            asset_id,
+            gas,
+            fn_name,
+            amount,
+        };
+
+        entity.save();
+    }
+
     fn fuel_indexer_test_deeply_nested_schema_fields(_deeply_nested: SimpleQueryStruct) {
         Logger::info("fuel_indexer_test_deeply_nested_schema_fields handling DeeplyNestedQueryTestStruct event.");
 
