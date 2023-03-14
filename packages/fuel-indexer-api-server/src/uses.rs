@@ -16,8 +16,8 @@ use fuel_indexer_database::{
 use fuel_indexer_lib::{
     config::IndexerConfig,
     utils::{
-        AssetReloadRequest, FuelNodeHealthResponse, IndexStopRequest, ServiceRequest,
-        ServiceStatus,
+        AssetReloadRequest, FuelNodeHealthResponse, IndexRevertRequest, IndexStopRequest,
+        ServiceRequest, ServiceStatus,
     },
 };
 use fuel_indexer_schema::db::{
@@ -160,6 +160,37 @@ pub(crate) async fn stop_index(
 
     if let Some(tx) = tx {
         tx.send(ServiceRequest::IndexStop(IndexStopRequest {
+            namespace,
+            identifier,
+        }))
+        .await?;
+
+        return Ok(Json(json!({
+            "success": "true"
+        })));
+    }
+
+    Err(ApiError::default())
+}
+
+pub(crate) async fn revert_indexer(
+    Path((namespace, identifier)): Path<(String, String)>,
+    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+) -> ApiResult<axum::Json<Value>> {
+    let mut conn = pool.acquire().await?;
+    let asset = queries::penultimate_asset_for_index(
+        &mut conn,
+        &namespace,
+        &identifier,
+        IndexAssetType::Wasm,
+    )
+    .await?;
+
+    if let Some(tx) = tx {
+        tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
+            penultimate_asset_id: asset.id,
+            penultimate_asset_bytes: asset.bytes,
             namespace,
             identifier,
         }))

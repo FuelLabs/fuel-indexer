@@ -141,6 +141,7 @@ fn process_fk_field<'a>(
 fn process_type_def(
     query_root: &str,
     namespace: &str,
+    identifier: &str,
     types: &HashSet<String>,
     typ: &TypeDefinition<String>,
     processed: &mut HashSet<String>,
@@ -155,7 +156,7 @@ fn process_type_def(
             }
 
             let name = &obj.name;
-            let type_id = type_id(namespace, name);
+            let type_id = type_id(&format!("{namespace}_{identifier}"), name);
             let mut block = quote! {};
             let mut row_extractors = quote! {};
             let mut construction = quote! {};
@@ -304,6 +305,7 @@ fn process_type_def(
 fn process_definition(
     query_root: &str,
     namespace: &str,
+    identifier: &str,
     types: &HashSet<String>,
     definition: &Definition<String>,
     processed: &mut HashSet<String>,
@@ -313,8 +315,8 @@ fn process_definition(
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
         Definition::TypeDefinition(def) => process_type_def(
-            query_root, namespace, types, def, processed, primitives, types_map,
-            is_native,
+            query_root, namespace, identifier, types, def, processed, primitives,
+            types_map, is_native,
         ),
         Definition::SchemaDefinition(_def) => None,
         def => {
@@ -430,6 +432,7 @@ pub(crate) fn process_graphql_schema(
         if let Some(def) = process_definition(
             &query_root,
             &namespace,
+            &identifier,
             &types,
             definition,
             &mut processed,

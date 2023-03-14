@@ -63,9 +63,18 @@ pub struct IndexStopRequest {
 }
 
 #[derive(Debug)]
+pub struct IndexRevertRequest {
+    pub penultimate_asset_id: i64,
+    pub penultimate_asset_bytes: Vec<u8>,
+    pub namespace: String,
+    pub identifier: String,
+}
+
+#[derive(Debug)]
 pub enum ServiceRequest {
     AssetReload(AssetReloadRequest),
     IndexStop(IndexStopRequest),
+    IndexRevert(IndexRevertRequest),
 }
 
 pub fn sha256_digest<T: AsRef<[u8]>>(blob: &T) -> String {

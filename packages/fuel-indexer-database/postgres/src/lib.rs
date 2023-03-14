@@ -226,14 +226,16 @@ pub async fn type_id_list_by_name(
 pub async fn type_id_latest(
     conn: &mut PoolConnection<Postgres>,
     schema_name: &str,
+    identifier: &str,
 ) -> sqlx::Result<String> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.type_id_latest_calls.inc();
 
     let latest = sqlx::query_as!(
         IdLatest,
-        "SELECT schema_version FROM graph_registry_type_ids WHERE schema_name = $1 ORDER BY id",
-        schema_name
+        "SELECT schema_version FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_identifier = $2 ORDER BY id",
+        schema_name,
+        identifier
     )
     .fetch_one(conn)
     .await?;
@@ -323,6 +325,7 @@ pub async fn list_column_by_id(
 pub async fn columns_get_schema(
     conn: &mut PoolConnection<Postgres>,
     name: &str,
+    identifier: &str,
     version: &str,
 ) -> sqlx::Result<Vec<ColumnInfo>> {
     #[cfg(feature = "metrics")]
@@ -340,9 +343,11 @@ pub async fn columns_get_schema(
            INNER JOIN graph_registry_columns as c
            ON t.id = c.type_id
            WHERE t.schema_name = $1
-           AND t.schema_version = $2
+           AND t.schema_identifier = $2
+           AND t.schema_version = $3
            ORDER BY c.type_id, c.column_position"#,
         name,
+        identifier,
         version
     )
     .fetch_all(conn)
@@ -556,6 +561,31 @@ pub async fn latest_assets_for_index(
     })
 }
 
+pub async fn last_block_height_for_indexer(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<u64> {
+    #[cfg(feature = "metrics")]
+    METRICS
+        .db
+        .postgres
+        .last_block_height_for_indexer_calls
+        .inc();
+
+    let query = format!(
+        "SELECT MAX(id) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1"
+    );
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+    let id: i64 = match row.try_get(0) {
+        Ok(id) => id,
+        Err(_e) => return Ok(1),
+    };
+
+    Ok(id as u64)
+}
+
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Postgres>,
@@ -612,6 +642,39 @@ pub async fn index_id_for(
     let id: i64 = row.get(0);
 
     Ok(id)
+}
+
+pub async fn penultimate_asset_for_index(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
+    #[cfg(feature = "metrics")]
+    METRICS.db.postgres.penultimate_asset_for_index_calls.inc();
+
+    let index_id = index_id_for(conn, namespace, identifier).await?;
+    let query = format!(
+        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1 OFFSET 1",
+        asset_type.as_ref(),
+        index_id
+    );
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let id = row.get(0);
+    let index_id = row.get(1);
+    let version = row.get(2);
+    let digest = row.get(3);
+    let bytes = row.get(4);
+
+    Ok(IndexAsset {
+        id,
+        index_id,
+        version,
+        digest,
+        bytes,
+    })
 }
 
 pub async fn start_transaction(
@@ -672,6 +735,29 @@ pub async fn remove_index(
     execute_query(
         conn,
         format!("DELETE FROM index_registry WHERE id = {index_id}",),
+    )
+    .await?;
+
+    Ok(())
+}
+
+pub async fn remove_asset_by_version(
+    conn: &mut PoolConnection<Postgres>,
+    index_id: &i64,
+    version: &i32,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<()> {
+    #[cfg(feature = "metrics")]
+    METRICS.db.postgres.remove_asset_by_version_calls.inc();
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM index_asset_registry_{0} WHERE index_id = {1} AND version = '{2}'",
+            asset_type.as_ref(),
+            index_id,
+            version
+        ),
     )
     .await?;
 

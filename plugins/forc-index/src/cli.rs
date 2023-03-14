@@ -2,7 +2,7 @@ pub(crate) use crate::commands::{
     build::Command as BuildCommand, check::Command as CheckCommand,
     deploy::Command as DeployCommand, init::Command as InitCommand,
     new::Command as NewCommand, remove::Command as RemoveCommand,
-    start::Command as StartCommand,
+    revert::Command as RevertCommand, start::Command as StartCommand,
 };
 use clap::{Parser, Subcommand};
 use forc_postgres::{
@@ -27,6 +27,7 @@ enum ForcIndex {
     Start(Box<StartCommand>),
     Check(CheckCommand),
     Remove(RemoveCommand),
+    Revert(RevertCommand),
     Build(BuildCommand),
     Postgres(ForcPostgresOpt),
 }
@@ -43,9 +44,10 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::Init(command) => crate::commands::init::exec(command),
         ForcIndex::New(command) => crate::commands::new::exec(command),
         ForcIndex::Deploy(command) => crate::commands::deploy::exec(command),
-        ForcIndex::Start(command) => crate::commands::start::exec(command),
+        ForcIndex::Start(command) => crate::commands::start::exec(command).await,
         ForcIndex::Check(command) => crate::commands::check::exec(command),
         ForcIndex::Remove(command) => crate::commands::remove::exec(command),
+        ForcIndex::Revert(command) => crate::commands::revert::exec(command).await,
         ForcIndex::Build(command) => crate::commands::build::exec(command),
         ForcIndex::Postgres(opt) => match opt.command {
             ForcPostgres::Create(command) => pg_commands::create::exec(command).await,
