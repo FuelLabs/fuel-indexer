@@ -165,7 +165,7 @@ pub async fn setup_test_fuel_node(
 }
 
 pub async fn setup_example_test_fuel_node(
-    contracts: Vec<ContractData>
+    contracts: Vec<ContractData>,
 ) -> Result<(), ()> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
     setup_test_fuel_node(wallet_path, contracts, None).await
@@ -328,11 +328,8 @@ pub async fn connect_to_deployed_contracts(
 
     let mut contract_list = Vec::new();
     for contract in contracts {
-        let contract_id: Bech32ContractId = contract
-            .id
-            .to_string()
-            .parse()
-            .expect("Invalid ID for test contract");
+        let contract_id = Bech32ContractId::from(contract.id);
+        println!("{:?}", contract_id);
         let contract = FuelIndexerTest::new(contract_id.clone(), wallet.clone());
         contract_list.push(contract);
     }
@@ -350,9 +347,11 @@ pub fn generate_contracts(
         let rand: u64 = rand::random();
         let rng = &mut StdRng::seed_from_u64(rand);
         let salt: Salt = rng.gen();
+        let storage_config = StorageConfiguration::default();
+
         let compiled = Contract::load_contract_with_parameters(
             bin_path.as_os_str().to_str().unwrap(),
-            &None,
+            &storage_config.storage_path,
             salt,
         )?;
         let (id, bytes) = Contract::compute_contract_id_and_state_root(&compiled);

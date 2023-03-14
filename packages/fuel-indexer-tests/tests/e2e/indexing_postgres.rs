@@ -772,8 +772,7 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
             .expect("Failed to generate contracts.");
     let cloned_contracts = contracts.clone();
 
-    let fuel_node_handle =
-        tokio::spawn(setup_example_test_fuel_node(contracts));
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node(contracts));
     dbg!("fuel node started");
     let pool = postgres_connection_pool().await;
     dbg!("pool created");
@@ -785,7 +784,7 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
             serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST)
                 .expect("Bad Yaml File");
 
-        manifest.namespace = format!("fuel_indexer_test_index{}", i + 1);
+        manifest.identifier = format!("many_{}", i + 1);
         update_test_manifest_asset_paths(&mut manifest);
 
         srvc.register_index_from_manifest(manifest)
@@ -796,22 +795,43 @@ async fn test_can_trigger_and_index_events_with_multiple_fuel_indexes() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let contracts = connect_to_deployed_contracts(cloned_contracts).await.unwrap();
+    let contracts = connect_to_deployed_contracts(cloned_contracts)
+        .await
+        .unwrap();
+
     for contract in contracts {
         let app = test::init_service(app(contract)).await;
-        let req = test::TestRequest::post().uri("/pongentity").to_request();
+        let req = test::TestRequest::post().uri("/pingentity").to_request();
         let _ = app.call(req).await;
+        sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     }
+
+    let pool = postgres_connection_pool().await;
+    let mut conn = pool.acquire().await.unwrap();
+
+    //we need to delete the preview row from this table
+    //we wont need to do this after we have implemented a test DB that is reset after each test
+    // let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.tx")
+    //     .execute(&mut conn)
+    //     .await
+    //     .unwrap();
+    // let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.block")
+    //     .execute(&mut conn)
+    //     .await
+    //     .unwrap();
 
     for i in 0..3 {
         let mut conn = pool.acquire().await.unwrap();
-        let table_name = format!("fuel_indexer_test_index{}_index1", i + 1);
+        let table_name = format!("fuel_indexer_test_many_{}", i + 1);
         let statement = format!(
-            "SELECT * FROM {}.pongentity ORDER by height DESC LIMIT 1",
+            "SELECT height FROM {}.block ORDER by height DESC LIMIT 1",
             table_name
         );
+        println!("statement: {}", statement);
         let block_row = sqlx::query(&statement).fetch_one(&mut conn).await.unwrap();
+        println!("got block row");
         let block_height: i64 = block_row.get(0);
+        println!("block_height: {}", block_height);
         assert!(block_height >= 1);
     }
 }
