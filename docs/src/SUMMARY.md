@@ -54,6 +54,7 @@
     - [deploy](./reference-guide/plugins/forc-index/deploy.md)
     - [remove](./reference-guide/plugins/forc-index/remove.md)
     - [auth](./reference-guide/plugins/forc-index/auth.md)
+    - [revert](./reference-guide/plugins/forc-index/revert.md)
   - [forc index postgres](./reference-guide/plugins/forc-postgres/index.md)
     - [create](./reference-guide/plugins/forc-postgres/create.md)
     - [start](./reference-guide/plugins/forc-postgres/start.md)
