@@ -297,6 +297,7 @@ pub(crate) async fn verify_signature(
     if config.authentication.enabled {
         match config.authentication.strategy {
             Some(AuthenticationStrategy::JWT) => {
+                // TODO: find nonce in db and remove it
                 let mut buff: [u8; 64] = [0u8; 64];
                 buff.copy_from_slice(&payload.signature.as_bytes()[..64]);
                 let sig = Signature::from_bytes(buff);
@@ -338,7 +339,10 @@ pub(crate) async fn verify_signature(
 
                 Ok(Json(json!({ "token": token })))
             }
-            _ => unimplemented!(),
+            _ => {
+                error!("Unsupported authentication strategy.");
+                unimplemented!();
+            }
         }
     } else {
         unreachable!()

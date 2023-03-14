@@ -6,7 +6,7 @@ use fuel_indexer_lib::config::{
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use std::task::{Context, Poll};
 use tower::{Layer, Service};
-use tracing::{error, warn};
+use tracing::error;
 
 #[derive(Clone)]
 struct MiddlewareState {
@@ -79,22 +79,22 @@ where
                     ) {
                         Ok(token) => {
                             req.extensions_mut().insert(token.claims);
-                            return self.inner.call(req);
                         }
                         Err(e) => {
                             error!("Failed to decode claims: {e}.");
-                            // FIXME: Fail gracefully
-                            unimplemented!();
+                            req.extensions_mut().insert(Claims::default());
                         }
                     }
+                    return self.inner.call(req);
                 }
                 _ => {
-                    warn!("Unsupported authentication strategy.");
+                    error!("Unsupported authentication strategy.");
                     unimplemented!();
                 }
             }
         }
 
+        req.extensions_mut().insert(Claims::default());
         self.inner.call(req)
     }
 }

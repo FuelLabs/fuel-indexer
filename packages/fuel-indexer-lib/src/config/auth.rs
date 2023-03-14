@@ -100,3 +100,14 @@ pub struct Claims {
     // Expiration time (as UTC timestamp).
     pub exp: usize,
 }
+
+impl Default for Claims {
+    fn default() -> Self {
+        Self {
+            sub: "".to_string(),
+            iss: "".to_string(),
+            iat: 0,
+            exp: 0,
+        }
+    }
+}

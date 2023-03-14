@@ -135,19 +135,11 @@ pub struct IndexerArgs {
     pub postgres_port: Option<String>,
 
     /// Run database migrations before starting service.
-    #[clap(
-        long,
-        default_value = "true",
-        help = "Run database migrations before starting service."
-    )]
+    #[clap(long, help = "Run database migrations before starting service.")]
     pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.
-    #[clap(
-        long,
-        default_value = "true",
-        help = "Use Prometheus metrics reporting."
-    )]
+    #[clap(long, help = "Use Prometheus metrics reporting.")]
     pub metrics: bool,
 
     /// Prevent indexers from running without handling any blocks.
@@ -202,6 +194,22 @@ pub struct ApiServerArgs {
     #[clap(short, long, help = "API server config file.")]
     pub config: Option<PathBuf>,
 
+    /// Host of the running Fuel node.
+    #[clap(
+        long,
+        help = "Host of the running Fuel node.",
+        default_value = defaults::FUEL_NODE_HOST
+    )]
+    pub fuel_node_host: String,
+
+    /// Listening port of the running Fuel node.
+    #[clap(
+        long,
+        help = "Listening port of the running Fuel node.",
+        default_value = defaults::FUEL_NODE_PORT
+    )]
+    pub fuel_node_port: String,
+
     /// GraphQL API host.
     #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
     pub graphql_api_host: String,
@@ -239,19 +247,11 @@ pub struct ApiServerArgs {
     pub postgres_port: Option<String>,
 
     /// Run database migrations before starting service.
-    #[clap(
-        long,
-        default_value = "false",
-        help = "Run database migrations before starting service."
-    )]
+    #[clap(long, help = "Run database migrations before starting service.")]
     pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.
-    #[clap(
-        long,
-        default_value = "true",
-        help = "Use Prometheus metrics reporting."
-    )]
+    #[clap(long, help = "Use Prometheus metrics reporting.")]
     pub metrics: bool,
 
     /// Require users to authenticate for some operations.
@@ -428,8 +428,8 @@ impl From<ApiServerArgs> for IndexerConfig {
         let mut config = IndexerConfig {
             database,
             fuel_node: FuelNodeConfig {
-                host: defaults::FUEL_NODE_HOST.to_string(),
-                port: defaults::FUEL_NODE_PORT.to_string(),
+                host: args.fuel_node_host,
+                port: args.fuel_node_port,
             },
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
@@ -438,7 +438,8 @@ impl From<ApiServerArgs> for IndexerConfig {
                 max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
-            stop_idle_indexers: false,
+            stop_idle_indexers: defaults::STOP_IDLE_INDEXERS,
+
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
                 strategy: args

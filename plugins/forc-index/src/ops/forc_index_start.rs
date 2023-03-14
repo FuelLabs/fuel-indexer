@@ -137,6 +137,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         .spawn()
         .expect("❌ Failed to spawn fuel-indexer child process.");
 
+    // TODO: check stats code of process before saying ok
     info!("\n✅ Successfully started the indexer service.");
 
     Ok(())

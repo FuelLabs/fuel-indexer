@@ -218,11 +218,7 @@ pub async fn get_contract_id_with_host(
 
 pub async fn api_server_app_postgres() -> Router {
     let config = IndexerConfig {
-        fuel_node: FuelNodeConfig::from(
-            defaults::FUEL_NODE_ADDR
-                .parse::<std::net::SocketAddr>()
-                .unwrap(),
-        ),
+        fuel_node: FuelNodeConfig::default(),
         database: DatabaseConfig::Postgres {
             user: "postgres".into(),
             password: "my-secret".into(),
@@ -231,15 +227,9 @@ pub async fn api_server_app_postgres() -> Router {
             database: "postgres".to_string(),
         },
         graphql_api: GraphQLConfig::default(),
-        metrics: true,
+        metrics: false,
         stop_idle_indexers: true,
-        authentication: AuthenticationConfig {
-            enabled: false,
-            strategy: None,
-            jwt_secret: None,
-            jwt_issuer: None,
-            jwt_expiry: None,
-        },
+        authentication: AuthenticationConfig::default(),
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -251,11 +241,7 @@ pub async fn api_server_app_postgres() -> Router {
 
 pub async fn indexer_service_postgres() -> IndexerService {
     let config = IndexerConfig {
-        fuel_node: FuelNodeConfig::from(
-            defaults::FUEL_NODE_ADDR
-                .parse::<std::net::SocketAddr>()
-                .unwrap(),
-        ),
+        fuel_node: FuelNodeConfig::default(),
         database: DatabaseConfig::Postgres {
             user: "postgres".into(),
             password: "my-secret".into(),
@@ -266,13 +252,7 @@ pub async fn indexer_service_postgres() -> IndexerService {
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,
-        authentication: AuthenticationConfig {
-            enabled: false,
-            strategy: None,
-            jwt_secret: None,
-            jwt_issuer: None,
-            jwt_expiry: None,
-        },
+        authentication: AuthenticationConfig::default(),
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
