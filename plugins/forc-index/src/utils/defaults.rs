@@ -9,8 +9,7 @@ pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
 pub const GRAPHQL_API_HOST: &str = defaults::GRAPHQL_API_HOST;
 pub const GRAPHQL_API_PORT: &str = defaults::GRAPHQL_API_PORT;
 pub const INDEX_TARGET: &str = "wasm32-unknown-unknown";
-pub const DATABASE: &str = defaults::DATABASE;
-pub const MAX_BODY: &str = defaults::MAX_BODY;
+pub const WASM_TARGET: &str = "wasm32-unknown-unknown";
 
 pub fn default_native_index_cargo_toml(index_name: &str) -> String {
     format!(

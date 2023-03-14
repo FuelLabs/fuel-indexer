@@ -214,6 +214,30 @@ pub struct ApiServerArgs {
     pub metrics: bool,
 }
 
+impl Default for IndexerArgs {
+    fn default() -> Self {
+        Self {
+            log_level: "info".to_string(),
+            config: None,
+            manifest: Some(std::path::PathBuf::from(".")),
+            fuel_node_host: String::new(),
+            fuel_node_port: String::new(),
+            graphql_api_host: String::new(),
+            graphql_api_port: String::new(),
+            database: defaults::DATABASE.to_string(),
+            max_body: defaults::MAX_BODY.to_string(),
+            postgres_user: None,
+            postgres_database: None,
+            postgres_password: None,
+            postgres_host: None,
+            postgres_port: None,
+            run_migrations: true,
+            metrics: false,
+            stop_idle_indexers: false,
+        }
+    }
+}
+
 fn derive_http_url(host: &String, port: &String) -> String {
     let protocol = match port.as_str() {
         "443" | "4443" => "https",

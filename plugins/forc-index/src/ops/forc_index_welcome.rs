@@ -4,7 +4,10 @@ use crate::ops::{
     forc_index_tree::init as render_tree,
 };
 use crate::{
-    cli::{BuildCommand, DeployCommand, InitCommand, StartCommand, WelcomeCommand, TreeCommand},
+    cli::{
+        BuildCommand, DeployCommand, InitCommand, StartCommand, TreeCommand,
+        WelcomeCommand,
+    },
     utils::defaults,
 };
 use forc_util::{kebab_to_snake_case, validate_name};
@@ -15,12 +18,6 @@ use std::{
     io::{self, Write},
     thread, time,
 };
-use tracing::info;
-
-enum Network {
-    Local,
-    Testnet,
-}
 
 const TITLE: &str = "
 
@@ -33,16 +30,15 @@ const TITLE: &str = "
 ";
 
 const WELCOME_MANIFEST_PATH: &str = "welcome.manifest.yaml";
-const WASM_TARGET: &str = "wasm32-unknown-unknown";
 const PROJECT_INITIALIZED: &str =
     "\n Indexer project initialized. Manifest file created. ✅";
 const DEPLOY_QUESTION: &str = "\n Start the indexer and deploy the index? (Y/n) \n > ";
 
 pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
-    for line in TITLE.lines() {
+    TITLE.lines().for_each(|line| {
         println!("{}", line.trim().bright_cyan());
         thread::sleep(time::Duration::from_millis(50));
-    }
+    });
 
     let WelcomeCommand { greeter, verbose } = command;
     if greeter {
@@ -68,9 +64,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
             })?;
             humanize_message(PROJECT_INITIALIZED.to_string());
             if verbose {
-               render_tree(TreeCommand {
-                    verbose: true,
-                })?;
+                render_tree(TreeCommand { verbose: true })?;
             }
             humanize_message(DEPLOY_QUESTION.to_string());
 
@@ -154,17 +148,43 @@ fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Result<()> 
                     .to_string(),
             );
 
+            let build_command = BuildCommand {
+                manifest: Some(manifest.to_owned()),
+                ..Default::default()
+            };
+            let deploy_command = DeployCommand {
+                manifest: Some(manifest.to_owned()),
+                ..Default::default()
+            };
+
             input = process_std(input);
             match input.trim().to_lowercase().as_str() {
                 "1" => {
-                    start(init_start(Network::Local))?;
-                    build(init_build(&manifest))?;
-                    deploy(init_deploy(&manifest))?;
+                    //init for local node
+                    let start_command = StartCommand {
+                        fuel_node_host: "http://127.0.0.1:29987".to_string(),
+                        fuel_node_port: "29987".to_string(),
+                        graphql_api_host: defaults::GRAPHQL_API_HOST.to_string(),
+                        graphql_api_port: defaults::GRAPHQL_API_PORT.to_string(),
+                        ..Default::default()
+                    };
+                    start(start_command)?;
+                    build(build_command)?;
+                    deploy(deploy_command)?;
                 }
                 "2" => {
-                    start(init_start(Network::Testnet))?;
-                    build(init_build(&manifest))?;
-                    deploy(init_deploy(&manifest))?;
+                    //init for testnet
+                    let start_command = StartCommand {
+                        fuel_node_host: "https://node-beta-2.fuel.network/graphql"
+                            .to_string(),
+                        fuel_node_port: "4000".to_string(),
+                        graphql_api_host: "node-beta-2.fuel.network".to_string(),
+                        graphql_api_port: "80".to_string(),
+                        ..Default::default()
+                    };
+                    start(start_command)?;
+                    build(build_command)?;
+                    deploy(deploy_command)?;
                 }
                 _ => {
                     println!("Invalid input. Please enter 1 or 2");
@@ -183,12 +203,12 @@ fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Result<()> 
 }
 
 fn humanize_message(output: String) {
-    for c in output.chars() {
+    output.chars().for_each(|c| {
         print!("{}", c.to_string().bright_yellow());
-        io::stdout().flush().unwrap();
-        let sleep_time = thread_rng().gen_range(20..92);
-        thread::sleep(time::Duration::from_millis(sleep_time as u64));
-    }
+        io::stdout().flush().expect("failed to flush stdout");
+        let sleep_time = rand::thread_rng().gen_range(20..92);
+        thread::sleep(time::Duration::from_millis(sleep_time));
+    })
 }
 
 fn process_std(mut input: String) -> String {
@@ -198,75 +218,4 @@ fn process_std(mut input: String) -> String {
         .read_line(&mut input)
         .expect("failed to read from stdin");
     input
-}
-
-fn init_start(on_network: Network) -> StartCommand {
-    info!("Starting indexer...");
-    let mut start_command = StartCommand {
-        log_level: "info".to_string(),
-        config: None,
-        manifest: Some(std::path::PathBuf::from(".")),
-        fuel_node_host: String::new(),
-        fuel_node_port: String::new(),
-        graphql_api_host: String::new(),
-        graphql_api_port: String::new(),
-        database: defaults::DATABASE.to_string(),
-        max_body: defaults::MAX_BODY.to_string(),
-        postgres_user: None,
-        postgres_database: None,
-        postgres_password: None,
-        postgres_host: None,
-        postgres_port: None,
-        run_migrations: true,
-        metrics: false,
-        stop_idle_indexers: true,
-    };
-    match on_network {
-        Network::Local => {
-            start_command.fuel_node_host = "http://127.0.0.1:29987".to_string();
-            start_command.fuel_node_port = "29987".to_string();
-            start_command.graphql_api_host = defaults::GRAPHQL_API_HOST.to_string();
-            start_command.graphql_api_port = defaults::GRAPHQL_API_PORT.to_string();
-        }
-        Network::Testnet => {
-            start_command.fuel_node_host =
-                "https://node-beta-2.fuel.network/graphql".to_string();
-            start_command.fuel_node_port = "4000".to_string();
-            start_command.graphql_api_host = "node-beta-2.fuel.network".to_string();
-            start_command.graphql_api_port = "80".to_string();
-        }
-    }
-    start_command
-}
-
-fn init_build(manifest: &str) -> BuildCommand {
-    humanize_message("\n Building indexer...".to_string());
-    BuildCommand {
-        manifest: Some(manifest.to_owned()),
-        path: None,
-        target: Some(WASM_TARGET.to_string()),
-        release: true,
-        profile: Some("release".to_string()),
-        verbose: false,
-        locked: false,
-        native: false,
-        output_dir_root: Some(std::path::PathBuf::from(".")),
-    }
-}
-
-fn init_deploy(manifest: &str) -> DeployCommand {
-    humanize_message("\n Deploying indexer...".to_string());
-    DeployCommand {
-        url: "http://127.0.0.1:29987".to_string(),
-        manifest: Some(manifest.to_owned()),
-        path: None,
-        auth: Some("".to_string()),
-        target: Some(WASM_TARGET.to_string()),
-        release: true,
-        profile: Some("release".to_string()),
-        verbose: false,
-        locked: false,
-        native: false,
-        output_dir_root: Some(std::path::PathBuf::from(".")),
-    }
 }

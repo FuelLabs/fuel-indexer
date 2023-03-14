@@ -1,4 +1,4 @@
-use crate::ops::forc_index_build;
+use crate::{ops::forc_index_build, utils::defaults};
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
@@ -48,6 +48,22 @@ pub struct Command {
         help = "Path with which to prefix asset filepaths in the index manifest."
     )]
     pub output_dir_root: Option<PathBuf>,
+}
+
+impl Default for Command {
+    fn default() -> Self {
+        Command {
+            manifest: Some(String::new()),
+            path: None,
+            target: Some(defaults::WASM_TARGET.to_string()),
+            release: true,
+            profile: Some("release".to_string()),
+            verbose: false,
+            locked: false,
+            native: false,
+            output_dir_root: Some(std::path::PathBuf::from(".")),
+        }
+    }
 }
 
 pub fn exec(command: Command) -> Result<()> {
