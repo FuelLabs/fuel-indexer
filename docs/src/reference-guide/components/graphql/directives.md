@@ -10,7 +10,7 @@ As of this writing, the list of supported Fuel GraphQL schema directives include
 
 ## `@indexed`
 
-The `@indexed` directive adds a database index to the underlying column for the indicated field of that type. Generally, a database index is a data structure that allows you to quickly locate data without having to search each row in a database table.
+The `@indexed` directive adds a [database index](https://www.postgresql.org/docs/current/indexes-intro.html) to the underlying column for the indicated field of that type. Generally, a database index is a data structure that allows you to quickly locate data without having to search each row in a database table.
 
 ```graphql
 schema {

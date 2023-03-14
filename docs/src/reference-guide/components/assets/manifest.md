@@ -16,11 +16,11 @@ report_metrics: true
 
 ## `namespace`
 
-The `namespace` is the topmost organizational level of an indexer. You can think of different `namespace`s as separate and distinct collections comprised of indexers. The `namespace` is unique to a given indexer operator -- i.e., indexer operators will not be able to support more than one `namespace` of the same name.
+The `namespace` is the topmost organizational level of an indexer. You can think of different namespaces as separate and distinct collections comprised of indexers. A namespace is unique to a given indexer operator -- i.e., indexer operators will not be able to support more than one namespace of the same name.
 
 ## `identifier`
 
-The `identifier` field is used to (quite literally) identify the given indexer. If a `namespace` describes a collection of indexers, then an `identifier` describes a unique indexer inside that collection. As an example, if a provided `namespace` is `"fuel"` and a provided `identifier` is `"index1"`, then the full unique identifier for the given indexer will be `fuel.index1`.
+The `identifier` field is used to (quite literally) identify the given indexer. If a namespace describes a collection of indexers, then an identifier describes a unique indexer inside that collection. As an example, if a provided `namespace` is `"fuel"` and a provided `identifier` is `"index1"`, then the full identifier for the given indexer will be `fuel.index1`.
 
 ## `abi`
 
