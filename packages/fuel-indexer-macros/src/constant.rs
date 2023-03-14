@@ -4,6 +4,7 @@ use std::collections::HashSet;
 lazy_static! {
     pub static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
         "BlockData",
+        "Call",
         "Log",
         "LogData",
         "MessageOut",
@@ -14,6 +15,7 @@ lazy_static! {
     ]);
     pub static ref FUEL_PRIMITIVES_NAMESPACED: HashSet<&'static str> = HashSet::from([
         "abi :: BlockData",
+        "abi :: Call",
         "abi :: Log",
         "abi :: LogData",
         "abi :: MessageOut",
@@ -32,6 +34,7 @@ lazy_static! {
         "struct Vec"
     ]);
     pub static ref FUEL_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
+        "Call",
         "Log",
         "LogData",
         "MessageOut",

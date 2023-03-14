@@ -208,6 +208,27 @@ fn process_fn_items(
         })
         .collect::<Vec<proc_macro2::TokenStream>>();
 
+    let abi_selectors_to_fn_names = funcs
+        .iter()
+        .map(|function| {
+            let params: Vec<ParamType> = function
+                .inputs
+                .iter()
+                .map(|x| {
+                    ParamType::try_from_type_application(x, &abi_types_tyid)
+                        .expect("Could not derive TypeApplication param types.")
+                })
+                .collect();
+            let sig = resolve_fn_selector(&function.name, &params[..]);
+            let fn_name = function.name.clone();
+            let selector = u64::from_be_bytes(sig);
+
+            quote! {
+               #selector => #fn_name.to_string(),
+            }
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
+
     let contents = indexer_module
         .content
         .expect("Could not parse input content.")
@@ -338,6 +359,16 @@ fn process_fn_items(
                 }
             }
 
+            pub fn selector_to_fn_name(&self, sel: u64) -> String {
+                match sel {
+                    #(#abi_selectors_to_fn_names)*
+                    _ => {
+                        Logger::warn("Unknown selector; check ABI to make sure function outputs match to types");
+                        "".to_string()
+                    }
+                }
+            }
+
             fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
                     #(#decoders),*
@@ -394,10 +425,16 @@ fn process_fn_items(
 
                     for receipt in tx.receipts {
                         match receipt {
-                            Receipt::Call { param1, to: id, ..} => {
+                            Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
                                 #contract
+
+                                let fn_name = decoder.selector_to_fn_name(param1);
                                 return_types.push(param1);
                                 callees.insert(id);
+
+                                let data = bincode::serialize(&abi::Call { contract_id, to: id, amount, asset_id, gas, fn_name }).expect("Bad encoding");
+                                let ty_id = abi::Call::type_id();
+                                decoder.decode_type(ty_id, data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
                                 #contract

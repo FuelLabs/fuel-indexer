@@ -521,6 +521,21 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_pure_function(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_pure_function()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest,
     }
@@ -576,6 +591,10 @@ pub mod test_web {
             )
             .route("/vec-calldata", web::post().to(fuel_indexer_vec_calldata))
             .route("/vec-logdata", web::post().to(fuel_indexer_vec_logdata))
+            .route(
+                "/pure_function",
+                web::post().to(fuel_indexer_test_pure_function),
+            )
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

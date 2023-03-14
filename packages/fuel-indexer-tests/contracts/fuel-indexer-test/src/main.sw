@@ -75,6 +75,7 @@ abi FuelIndexer {
     fn trigger_deeply_nested() -> SimpleQueryStruct;
     fn trigger_vec_pong_calldata(v: Vec<u8>);
     fn trigger_vec_pong_logdata();
+    fn trigger_pure_function();
 }
 
 impl FuelIndexer for Contract {
@@ -197,5 +198,9 @@ impl FuelIndexer for Contract {
         v.push(Pong{ id: 9999, value: 9999 });
     
         log(v);
+    }
+
+    fn trigger_pure_function() {
+        let sum = 1 + 2;
     }
 }
