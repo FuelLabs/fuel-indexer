@@ -94,13 +94,7 @@ pub async fn root_columns_list_by_id(
 
     sqlx::query_as!(
         RootColumns,
-        r#"SELECT
-            id AS "id: i64", 
-            root_id AS "root_id: i64", 
-            column_name, 
-            graphql_type
-           FROM graph_registry_root_columns
-           WHERE root_id = $1"#,
+        r#"SELECT * FROM graph_registry_root_columns WHERE root_id = $1"#,
         root_id
     )
     .fetch_all(conn)
@@ -194,29 +188,24 @@ pub async fn type_id_list_by_name(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.type_id_list_by_name_calls.inc();
 
-    Ok(sqlx::query(&format!(r#"
-        SELECT id, schema_version, schema_name, schema_identifier, graphql_name, table_name 
-        FROM graph_registry_type_ids 
-        WHERE schema_name = '{namespace}' AND schema_version = '{version}' AND schema_identifier = '{identifier}'"#
-    ))
+    sqlx::query_as!(
+        TypeId,
+        r#"
+        SELECT 
+            id AS "id!", 
+            schema_version AS "schema_version!", 
+            schema_name AS "schema_name!", 
+            table_name AS "table_name!", 
+            graphql_name AS "graphql_name!", 
+            schema_identifier AS "schema_identifier!"
+        FROM graph_registry_type_ids
+        WHERE schema_name = $1 AND schema_version = $2 AND schema_identifier = $3"#,
+        namespace,
+        version,
+        identifier
+    )
     .fetch_all(conn)
-    .await?.iter().map(|row| {
-        let id: i64 = row.get(0);
-        let schema_version: String = row.get(1);
-        let schema_name: String = row.get(2);
-        let table_name: String = row.get(3);
-        let graphql_name: String = row.get(4);
-        let schema_identifier = row.get(5);
-
-        TypeId{
-            id,
-            schema_identifier,
-            schema_version,
-            schema_name,
-            table_name,
-            graphql_name,
-        }
-    }).collect::<Vec<TypeId>>())
+    .await
 }
 
 pub async fn type_id_latest(
@@ -387,23 +376,16 @@ pub async fn register_index(
         return Ok(index);
     }
 
-    let query = format!("INSERT INTO index_registry (namespace, identifier) VALUES ('{namespace}', '{identifier}') RETURNING *",
-    );
-
-    let row = sqlx::QueryBuilder::new(query)
-        .build()
-        .fetch_one(conn)
-        .await?;
-
-    let id = row.get(0);
-    let namespace = row.get(1);
-    let identifier = row.get(2);
-
-    Ok(RegisteredIndex {
-        id,
+    sqlx::query_as!(
+        RegisteredIndex,
+        "INSERT INTO index_registry (namespace, identifier)
+        VALUES ($1, $2) 
+        RETURNING id, namespace, identifier",
         namespace,
-        identifier,
-    })
+        identifier
+    )
+    .fetch_one(conn)
+    .await
 }
 
 pub async fn registered_indices(
@@ -656,24 +638,6 @@ pub async fn penultimate_asset_for_index(
         asset_type.as_ref(),
         index_id
     );
-
-    let row = sqlx::query_as!(
-        IndexAsset,
-        format!(
-            "SELECT
-                id,
-                index_id,
-                version,
-                digest,
-                bytes
-            FROM index_asset_registry_{} WHERE index_id = ? ORDER BY id DESC LIMIT 1 OFFSET 1",
-            asset_type.as_ref(),
-            index_id
-            )
-        )
-    .fetch_one(conn)
-    .await?;
-
     let row = sqlx::query(&query).fetch_one(conn).await?;
 
     let id = row.get(0);
