@@ -6,7 +6,7 @@ We strongly recommend that you use the Fuel indexer through [`forc`, the Fuel or
 curl \
     --proto '=https' \
     --tlsv1.2 -sSf \
-    https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+    curl --proto '=https' --tlsv1.2 -sSf https://install.fuel.network/fuelup-init.sh | sh
 ```
 
 After `fuelup` has been installed, the `forc index` command and `fuel-indexer` binaries will be available on your system.
