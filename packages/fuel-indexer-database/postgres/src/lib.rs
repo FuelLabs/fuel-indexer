@@ -92,23 +92,26 @@ pub async fn root_columns_list_by_id(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.root_columns_list_by_id_calls.inc();
 
-    let rows =
+    Ok(
         sqlx::query("SELECT * FROM graph_registry_root_columns WHERE root_id = $1")
             .bind(root_id)
             .fetch_all(conn)
-            .await?;
-
-    let root_columns: Vec<RootColumns> = rows
-        .into_iter()
-        .map(|row| RootColumns {
-            id: row.get("id"),
-            root_id: row.get("root_id"),
-            column_name: row.get("column_name"),
-            graphql_type: row.get("graphql_type"),
-        })
-        .collect();
-
-    Ok(root_columns)
+            .await?
+            .into_iter()
+            .map(|row| {
+                let id: i64 = row.get("id");
+                let root_id: i64 = row.get("root_id");
+                let column_name: String = row.get("column_name");
+                let graphql_type: String = row.get("graphql_type");
+                RootColumns {
+                    id,
+                    root_id,
+                    column_name,
+                    graphql_type,
+                }
+            })
+            .collect(),
+    )
 }
 
 pub async fn new_root_columns(
@@ -170,14 +173,7 @@ pub async fn graph_root_latest(
     METRICS.db.postgres.graph_root_latest_calls.inc();
 
     let row = sqlx::query(
-        "SELECT 
-            id, 
-            version, 
-            schema_name, 
-            query,
-            schema, 
-            schema_identifier
-        FROM graph_registry_graph_root
+        "SELECT * FROM graph_registry_graph_root
         WHERE schema_name = $1 AND schema_identifier = $2
         ORDER BY id DESC LIMIT 1",
     )
@@ -186,13 +182,20 @@ pub async fn graph_root_latest(
     .fetch_one(conn)
     .await?;
 
+    let id: i64 = row.get("id");
+    let version: String = row.get("version");
+    let schema_name: String = row.get("schema_name");
+    let schema_identifier: String = row.get("schema_identifier");
+    let query: String = row.get("query");
+    let schema: String = row.get("schema");
+
     Ok(GraphRoot {
-        id: row.get("id"),
-        version: row.get("version"),
-        schema_name: row.get("schema_name"),
-        query: row.get("query"),
-        schema: row.get("schema"),
-        schema_identifier: row.get("schema_identifier"),
+        id,
+        version,
+        schema_name,
+        schema_identifier,
+        query,
+        schema,
     })
 }
 
@@ -206,15 +209,10 @@ pub async fn type_id_list_by_name(
     METRICS.db.postgres.type_id_list_by_name_calls.inc();
 
     let rows = sqlx::query(
-        "SELECT 
-            id, 
-            schema_version, 
-            schema_name, 
-            table_name, 
-            graphql_name, 
-            schema_identifier
-        FROM graph_registry_type_ids
-        WHERE schema_name = $1 AND schema_version = $2 AND schema_identifier = $3",
+        "SELECT * FROM graph_registry_type_ids
+        WHERE schema_name = $1 
+        AND schema_version = $2 
+        AND schema_identifier = $3",
     )
     .bind(namespace)
     .bind(version)
@@ -224,13 +222,22 @@ pub async fn type_id_list_by_name(
 
     let type_ids: Vec<TypeId> = rows
         .into_iter()
-        .map(|row| TypeId {
-            id: row.get("id"),
-            schema_version: row.get("schema_version"),
-            schema_name: row.get("schema_name"),
-            table_name: row.get("table_name"),
-            graphql_name: row.get("graphql_name"),
-            schema_identifier: row.get("schema_identifier"),
+        .map(|row| {
+            let id: i64 = row.get("id");
+            let schema_version: String = row.get("schema_version");
+            let schema_name: String = row.get("schema_name");
+            let schema_identifier: String = row.get("schema_identifier");
+            let graphql_name: String = row.get("graphql_name");
+            let table_name: String = row.get("table_name");
+
+            TypeId {
+                id,
+                schema_version,
+                schema_name,
+                table_name,
+                graphql_name,
+                schema_identifier,
+            }
         })
         .collect();
 
@@ -245,13 +252,18 @@ pub async fn type_id_latest(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.type_id_latest_calls.inc();
 
-    let latest = sqlx::query("SELECT schema_version FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_identifier = $2 ORDER BY id")
-        .bind(schema_name)
-        .bind(identifier)
-        .fetch_one(conn)
-        .await?;
+    let latest = sqlx::query(
+        "SELECT schema_version FROM graph_registry_type_ids 
+        WHERE schema_name = $1 
+        AND schema_identifier = $2 
+        ORDER BY id",
+    )
+    .bind(schema_name)
+    .bind(identifier)
+    .fetch_one(conn)
+    .await?;
 
-    let schema_version: String = latest.get(0);
+    let schema_version: String = latest.get("schema_version");
 
     Ok(schema_version)
 }
@@ -290,12 +302,17 @@ pub async fn schema_exists(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.schema_exists_calls.inc();
 
-    let count = sqlx::query("SELECT COUNT(*) AS count FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_identifier = $2 AND schema_version = $3")
-        .bind(namespace)
-        .bind(identifier)
-        .bind(version)
-        .fetch_one(conn)
-        .await?;
+    let count = sqlx::query(
+        "SELECT COUNT(*) AS count FROM graph_registry_type_ids 
+        WHERE schema_name = $1 
+        AND schema_identifier = $2 
+        AND schema_version = $3",
+    )
+    .bind(namespace)
+    .bind(identifier)
+    .bind(version)
+    .fetch_one(conn)
+    .await?;
 
     let count: i64 = count.get("count");
 
@@ -334,27 +351,33 @@ pub async fn list_column_by_id(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.list_column_by_id_calls.inc();
 
-    let rows = sqlx::query(
-        "SELECT id, type_id, column_position, column_name, column_type, nullable, graphql_type FROM graph_registry_columns WHERE type_id = $1"
-        )
-        .bind(col_id)
-        .fetch_all(conn)
-        .await?;
+    Ok(
+        sqlx::query("SELECT * FROM graph_registry_columns WHERE type_id = $1")
+            .bind(col_id)
+            .fetch_all(conn)
+            .await?
+            .into_iter()
+            .map(|row| {
+                let id: i64 = row.get("id");
+                let type_id: i64 = row.get("type_id");
+                let column_position: i32 = row.get("column_position");
+                let column_name: String = row.get("column_name");
+                let column_type: String = row.get("column_type");
+                let nullable: bool = row.get("nullable");
+                let graphql_type: String = row.get("graphql_type");
 
-    let columns = rows
-        .into_iter()
-        .map(|row| Columns {
-            id: row.get("id"),
-            type_id: row.get("type_id"),
-            column_position: row.get("column_position"),
-            column_name: row.get("column_name"),
-            column_type: row.get("column_type"),
-            nullable: row.get("nullable"),
-            graphql_type: row.get("graphql_type"),
-        })
-        .collect();
-
-    Ok(columns)
+                Columns {
+                    id,
+                    type_id,
+                    column_position,
+                    column_name,
+                    column_type,
+                    nullable,
+                    graphql_type,
+                }
+            })
+            .collect(),
+    )
 }
 
 pub async fn columns_get_schema(
@@ -383,12 +406,20 @@ pub async fn columns_get_schema(
         .bind(name)
         .bind(identifier)
         .bind(version)
-        .map(|row: PgRow| ColumnInfo {
-            type_id: row.get("type_id"),
-            table_name: row.get("table_name"),
-            column_position: row.get("column_position"),
-            column_name: row.get("column_name"),
-            column_type: row.get("column_type"),
+        .map(|row: PgRow| {
+            let type_id: i64 = row.get("type_id");
+            let table_name: String = row.get("table_name");
+            let column_position: i32 = row.get("column_position");
+            let column_name: String = row.get("column_name");
+            let column_type: String = row.get("column_type");
+
+            ColumnInfo {
+                type_id,
+                table_name,
+                column_position,
+                column_name,
+                column_type,
+            }
         })
         .fetch_all(conn)
         .await?;
@@ -405,7 +436,9 @@ pub async fn index_is_registered(
     METRICS.db.postgres.index_is_registered_calls.inc();
 
     match sqlx::query(
-        "SELECT * FROM index_registry WHERE namespace = $1 AND identifier = $2",
+        "SELECT * FROM index_registry 
+        WHERE namespace = $1 
+        AND identifier = $2",
     )
     .bind(namespace)
     .bind(identifier)
@@ -443,10 +476,14 @@ pub async fn register_index(
     .fetch_one(conn)
     .await?;
 
+    let id: i64 = row.get("id");
+    let namespace: String = row.get("namespace");
+    let identifier: String = row.get("identifier");
+
     Ok(RegisteredIndex {
-        id: row.get("id"),
-        namespace: row.get("namespace"),
-        identifier: row.get("identifier"),
+        id,
+        namespace,
+        identifier,
     })
 }
 
@@ -456,20 +493,22 @@ pub async fn registered_indices(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.registered_indices_calls.inc();
 
-    let rows = sqlx::query("SELECT * FROM index_registry")
+    Ok(sqlx::query("SELECT * FROM index_registry")
         .fetch_all(conn)
-        .await?;
-
-    let registered_indices = rows
+        .await?
         .into_iter()
-        .map(|row| RegisteredIndex {
-            id: row.get("id"),
-            namespace: row.get("namespace"),
-            identifier: row.get("identifier"),
-        })
-        .collect();
+        .map(|row| {
+            let id: i64 = row.get("id");
+            let namespace: String = row.get("namespace");
+            let identifier: String = row.get("identifier");
 
-    Ok(registered_indices)
+            RegisteredIndex {
+                id,
+                namespace,
+                identifier,
+            }
+        })
+        .collect())
 }
 
 pub async fn index_asset_version(
@@ -688,7 +727,9 @@ pub async fn index_id_for(
     METRICS.db.postgres.index_id_for_calls.inc();
 
     let row = sqlx::query(
-        r#"select id from index_registry where namespace = $1 and identifier = $2"#,
+        "SELECT id FROM index_registry 
+        WHERE namespace = $1 
+        AND identifier = $2",
     )
     .bind(namespace)
     .bind(identifier)
@@ -711,7 +752,8 @@ pub async fn penultimate_asset_for_index(
 
     let index_id = index_id_for(conn, namespace, identifier).await?;
     let query = format!(
-        "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1 OFFSET 1",
+        "SELECT * FROM index_asset_registry_{} 
+        WHERE index_id = {} ORDER BY id DESC LIMIT 1 OFFSET 1",
         asset_type.as_ref(),
         index_id
     );
