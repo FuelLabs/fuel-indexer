@@ -95,7 +95,10 @@ pub async fn root_columns_list_by_id(
     sqlx::query_as!(
         RootColumns,
         r#"SELECT
-               id AS "id: i64", root_id AS "root_id: i64", column_name, graphql_type
+            id AS "id: i64", 
+            root_id AS "root_id: i64", 
+            column_name, 
+            graphql_type
            FROM graph_registry_root_columns
            WHERE root_id = $1"#,
         root_id
@@ -162,31 +165,24 @@ pub async fn graph_root_latest(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.graph_root_latest_calls.inc();
 
-    let row = sqlx::query(&format!(
+    sqlx::query_as!(
+        GraphRoot,
         r#"
-        SELECT *
+        SELECT 
+            id AS "id!", 
+            version AS "version!", 
+            schema_name AS "schema_name!", 
+            query AS "query!",
+            schema AS "schema!", 
+            schema_identifier AS "schema_identifier!"
         FROM graph_registry_graph_root
-        WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}'
-        ORDER BY id DESC LIMIT 1"#
-    ))
+        WHERE schema_name = $1 AND schema_identifier = $2
+        ORDER BY id DESC LIMIT 1"#,
+        namespace,
+        identifier
+    )
     .fetch_one(conn)
-    .await?;
-
-    let id: i64 = row.get(0);
-    let version: String = row.get(1);
-    let schema_name: String = row.get(2);
-    let query: String = row.get(3);
-    let schema: String = row.get(4);
-    let schema_identifier: String = row.get(5);
-
-    Ok(GraphRoot {
-        id,
-        version,
-        schema_name,
-        query,
-        schema,
-        schema_identifier,
-    })
+    .await
 }
 
 pub async fn type_id_list_by_name(
@@ -277,14 +273,17 @@ pub async fn schema_exists(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.schema_exists_calls.inc();
 
-    let row = sqlx::query(&format!(r#"
-        SELECT COUNT(*)
-        FROM graph_registry_type_ids
-        WHERE schema_name = '{namespace}'  AND schema_identifier = '{identifier}' AND schema_version = '{version}'
-    "#,)).fetch_one(conn).await?;
+    let count = sqlx::query_scalar!(
+        "SELECT COUNT(*) AS count FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_identifier = $2 AND schema_version = $3",
+        namespace,
+        identifier,
+        version,
+        )
+        .fetch_one(conn)
+        .await?
+        .unwrap_or(0);
 
-    let num: i64 = row.get(0);
-    Ok(num > 0)
+    Ok(count > 0)
 }
 
 pub async fn new_column_insert(
@@ -633,15 +632,13 @@ pub async fn index_id_for(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.index_id_for_calls.inc();
 
-    let query = format!(
-        "SELECT id FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}'",
-    );
-
-    let row = sqlx::query(&query).fetch_one(conn).await?;
-
-    let id: i64 = row.get(0);
-
-    Ok(id)
+    sqlx::query_scalar!(
+        r#"select id from index_registry where namespace = $1 and identifier = $2"#,
+        namespace,
+        identifier,
+    )
+    .fetch_one(conn)
+    .await
 }
 
 pub async fn penultimate_asset_for_index(
@@ -659,6 +656,23 @@ pub async fn penultimate_asset_for_index(
         asset_type.as_ref(),
         index_id
     );
+
+    let row = sqlx::query_as!(
+        IndexAsset,
+        format!(
+            "SELECT
+                id,
+                index_id,
+                version,
+                digest,
+                bytes
+            FROM index_asset_registry_{} WHERE index_id = ? ORDER BY id DESC LIMIT 1 OFFSET 1",
+            asset_type.as_ref(),
+            index_id
+            )
+        )
+    .fetch_one(conn)
+    .await?;
 
     let row = sqlx::query(&query).fetch_one(conn).await?;
 
