@@ -99,10 +99,10 @@ pub async fn root_columns_list_by_id(
             .await?
             .into_iter()
             .map(|row| {
-                let id: i64 = row.get("id");
-                let root_id: i64 = row.get("root_id");
-                let column_name: String = row.get("column_name");
-                let graphql_type: String = row.get("graphql_type");
+                let id: i64 = row.get(0);
+                let root_id: i64 = row.get(1);
+                let column_name: String = row.get(2);
+                let graphql_type: String = row.get(3);
                 RootColumns {
                     id,
                     root_id,
@@ -182,12 +182,12 @@ pub async fn graph_root_latest(
     .fetch_one(conn)
     .await?;
 
-    let id: i64 = row.get("id");
-    let version: String = row.get("version");
-    let schema_name: String = row.get("schema_name");
-    let schema_identifier: String = row.get("schema_identifier");
-    let query: String = row.get("query");
-    let schema: String = row.get("schema");
+    let id: i64 = row.get(0);
+    let version: String = row.get(1);
+    let schema_name: String = row.get(2);
+    let schema_identifier: String = row.get(3);
+    let query: String = row.get(4);
+    let schema: String = row.get(5);
 
     Ok(GraphRoot {
         id,
@@ -221,12 +221,12 @@ pub async fn type_id_list_by_name(
     .await?
     .into_iter()
     .map(|row| {
-        let id: i64 = row.get("id");
-        let schema_version: String = row.get("schema_version");
-        let schema_name: String = row.get("schema_name");
-        let schema_identifier: String = row.get("schema_identifier");
-        let graphql_name: String = row.get("graphql_name");
-        let table_name: String = row.get("table_name");
+        let id: i64 = row.get(0);
+        let schema_version: String = row.get(1);
+        let schema_name: String = row.get(2);
+        let schema_identifier: String = row.get(3);
+        let graphql_name: String = row.get(4);
+        let table_name: String = row.get(5);
 
         TypeId {
             id,
@@ -259,7 +259,7 @@ pub async fn type_id_latest(
     .fetch_one(conn)
     .await?;
 
-    let schema_version: String = latest.get("schema_version");
+    let schema_version: String = latest.get(0);
 
     Ok(schema_version)
 }
@@ -310,7 +310,7 @@ pub async fn schema_exists(
     .fetch_one(conn)
     .await?;
 
-    let count: i64 = count.get("count");
+    let count: i64 = count.get(0);
 
     Ok(count > 0)
 }
@@ -354,13 +354,13 @@ pub async fn list_column_by_id(
             .await?
             .into_iter()
             .map(|row| {
-                let id: i64 = row.get("id");
-                let type_id: i64 = row.get("type_id");
-                let column_position: i32 = row.get("column_position");
-                let column_name: String = row.get("column_name");
-                let column_type: String = row.get("column_type");
-                let nullable: bool = row.get("nullable");
-                let graphql_type: String = row.get("graphql_type");
+                let id: i64 = row.get(0);
+                let type_id: i64 = row.get(1);
+                let column_position: i32 = row.get(2);
+                let column_name: String = row.get(3);
+                let column_type: String = row.get(4);
+                let nullable: bool = row.get(5);
+                let graphql_type: String = row.get(6);
 
                 Columns {
                     id,
@@ -407,11 +407,11 @@ pub async fn columns_get_schema(
     .await?
     .into_iter()
     .map(|row: PgRow| {
-        let type_id: i64 = row.get("type_id");
-        let table_name: String = row.get("table_name");
-        let column_position: i32 = row.get("column_position");
-        let column_name: String = row.get("column_name");
-        let column_type: String = row.get("column_type");
+        let type_id: i64 = row.get(0);
+        let table_name: String = row.get(1);
+        let column_position: i32 = row.get(2);
+        let column_name: String = row.get(3);
+        let column_type: String = row.get(4);
 
         ColumnInfo {
             type_id,
@@ -443,9 +443,9 @@ pub async fn index_is_registered(
     .await?
     {
         Some(row) => Ok(Some(RegisteredIndex {
-            id: row.get("id"),
-            namespace: row.get("namespace"),
-            identifier: row.get("identifier"),
+            id: row.get(0),
+            namespace: row.get(1),
+            identifier: row.get(2),
         })),
         None => Ok(None),
     }
@@ -473,9 +473,9 @@ pub async fn register_index(
     .fetch_one(conn)
     .await?;
 
-    let id: i64 = row.get("id");
-    let namespace: String = row.get("namespace");
-    let identifier: String = row.get("identifier");
+    let id: i64 = row.get(0);
+    let namespace: String = row.get(1);
+    let identifier: String = row.get(2);
 
     Ok(RegisteredIndex {
         id,
@@ -495,9 +495,9 @@ pub async fn registered_indices(
         .await?
         .into_iter()
         .map(|row| {
-            let id: i64 = row.get("id");
-            let namespace: String = row.get("namespace");
-            let identifier: String = row.get("identifier");
+            let id: i64 = row.get(0);
+            let namespace: String = row.get(1);
+            let identifier: String = row.get(2);
 
             RegisteredIndex {
                 id,
