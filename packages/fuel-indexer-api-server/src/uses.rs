@@ -318,7 +318,7 @@ pub(crate) async fn verify_signature(
                 }
 
                 let mut buff: [u8; 64] = [0u8; 64];
-                buff.copy_from_slice(payload.signature.as_bytes());
+                buff.copy_from_slice(&payload.signature.as_bytes()[..64]);
                 let sig = Signature::from_bytes(buff);
                 let msg = Message::new(payload.message);
                 let pk = sig.recover(&msg)?;
