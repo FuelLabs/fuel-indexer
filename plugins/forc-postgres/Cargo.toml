@@ -8,7 +8,6 @@ license = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
 description = "Fuel Indexer forc Postgres plugin"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]

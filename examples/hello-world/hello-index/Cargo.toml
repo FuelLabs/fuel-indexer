@@ -13,8 +13,8 @@ fuel-indexer-plugin = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-tx = "0.26.0"
 fuels-core = { version = "0.37", default-features = false }
-fuels-macros = { version = "0.37"}
-fuels-types = { version = "0.37" , default-features = false }
+fuels-macros = { version = "0.37" }
+fuels-types = { version = "0.37", default-features = false }
 getrandom = { version = "0.2", features = ["js"] }
 instant = { version = "0.1", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
