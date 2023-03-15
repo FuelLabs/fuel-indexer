@@ -92,9 +92,11 @@ pub async fn root_columns_list_by_id(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.root_columns_list_by_id_calls.inc();
 
-    let query = format!("SELECT * FROM graph_registry_root_columns WHERE root_id = $1");
-
-    let rows = sqlx::query(&query).bind(root_id).fetch_all(conn).await?;
+    let rows =
+        sqlx::query("SELECT * FROM graph_registry_root_columns WHERE root_id = $1")
+            .bind(root_id)
+            .fetch_all(conn)
+            .await?;
 
     let root_columns: Vec<RootColumns> = rows
         .into_iter()
@@ -167,7 +169,7 @@ pub async fn graph_root_latest(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.graph_root_latest_calls.inc();
 
-    let query = format!(
+    let row = sqlx::query(
         "SELECT 
             id, 
             version, 
@@ -177,14 +179,12 @@ pub async fn graph_root_latest(
             schema_identifier
         FROM graph_registry_graph_root
         WHERE schema_name = $1 AND schema_identifier = $2
-        ORDER BY id DESC LIMIT 1"
-    );
-
-    let row = sqlx::query(&query)
-        .bind(namespace)
-        .bind(identifier)
-        .fetch_one(conn)
-        .await?;
+        ORDER BY id DESC LIMIT 1",
+    )
+    .bind(namespace)
+    .bind(identifier)
+    .fetch_one(conn)
+    .await?;
 
     Ok(GraphRoot {
         id: row.get("id"),
@@ -204,7 +204,8 @@ pub async fn type_id_list_by_name(
 ) -> sqlx::Result<Vec<TypeId>> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.type_id_list_by_name_calls.inc();
-    let query = format!(
+
+    let rows = sqlx::query(
         "SELECT 
             id, 
             schema_version, 
@@ -213,15 +214,13 @@ pub async fn type_id_list_by_name(
             graphql_name, 
             schema_identifier
         FROM graph_registry_type_ids
-        WHERE schema_name = $1 AND schema_version = $2 AND schema_identifier = $3"
-    );
-
-    let rows = sqlx::query(&query)
-        .bind(namespace)
-        .bind(version)
-        .bind(identifier)
-        .fetch_all(conn)
-        .await?;
+        WHERE schema_name = $1 AND schema_version = $2 AND schema_identifier = $3",
+    )
+    .bind(namespace)
+    .bind(version)
+    .bind(identifier)
+    .fetch_all(conn)
+    .await?;
 
     let type_ids: Vec<TypeId> = rows
         .into_iter()
@@ -291,8 +290,7 @@ pub async fn schema_exists(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.schema_exists_calls.inc();
 
-    let count_query = "SELECT COUNT(*) AS count FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_identifier = $2 AND schema_version = $3";
-    let count = sqlx::query(count_query)
+    let count = sqlx::query("SELECT COUNT(*) AS count FROM graph_registry_type_ids WHERE schema_name = $1 AND schema_identifier = $2 AND schema_version = $3")
         .bind(namespace)
         .bind(identifier)
         .bind(version)
@@ -336,8 +334,12 @@ pub async fn list_column_by_id(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.list_column_by_id_calls.inc();
 
-    let query = "SELECT id, type_id, column_position, column_name, column_type, nullable, graphql_type FROM graph_registry_columns WHERE type_id = $1";
-    let rows = sqlx::query(query).bind(col_id).fetch_all(conn).await?;
+    let rows = sqlx::query(
+        "SELECT id, type_id, column_position, column_name, column_type, nullable, graphql_type FROM graph_registry_columns WHERE type_id = $1"
+        )
+        .bind(col_id)
+        .fetch_all(conn)
+        .await?;
 
     let columns = rows
         .into_iter()
@@ -402,13 +404,13 @@ pub async fn index_is_registered(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.index_is_registered_calls.inc();
 
-    let query = "SELECT * FROM index_registry WHERE namespace = $1 AND identifier = $2";
-
-    match sqlx::query(query)
-        .bind(namespace)
-        .bind(identifier)
-        .fetch_optional(conn)
-        .await?
+    match sqlx::query(
+        "SELECT * FROM index_registry WHERE namespace = $1 AND identifier = $2",
+    )
+    .bind(namespace)
+    .bind(identifier)
+    .fetch_optional(conn)
+    .await?
     {
         Some(row) => Ok(Some(RegisteredIndex {
             id: row.get("id"),
@@ -454,8 +456,9 @@ pub async fn registered_indices(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.registered_indices_calls.inc();
 
-    let query = "SELECT * FROM index_registry";
-    let rows = sqlx::query(query).fetch_all(conn).await?;
+    let rows = sqlx::query("SELECT * FROM index_registry")
+        .fetch_all(conn)
+        .await?;
 
     let registered_indices = rows
         .into_iter()
