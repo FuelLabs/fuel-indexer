@@ -733,7 +733,7 @@ pub async fn index_id_for(
     .fetch_one(conn)
     .await?;
 
-    let id: i64 = row.get("id");
+    let id: i64 = row.get(0);
 
     Ok(id)
 }
