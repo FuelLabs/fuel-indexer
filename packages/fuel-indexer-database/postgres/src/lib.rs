@@ -684,13 +684,17 @@ pub async fn index_id_for(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.index_id_for_calls.inc();
 
-    sqlx::query_scalar!(
+    let row = sqlx::query(
         r#"select id from index_registry where namespace = $1 and identifier = $2"#,
-        namespace,
-        identifier,
     )
+    .bind(namespace)
+    .bind(identifier)
     .fetch_one(conn)
-    .await
+    .await?;
+
+    let id: i64 = row.get("id");
+
+    Ok(id)
 }
 
 pub async fn penultimate_asset_for_index(
