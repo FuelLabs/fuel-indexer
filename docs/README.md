@@ -95,7 +95,7 @@ To Install fuelup with the default features/options, use the following command, 
 ```bash
 curl \
   --proto '=https' \
-  --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+  --tlsv1.2 -sSf https://install.fuel.network/fuelup-init.sh | sh 
 ```
 
 > If you require a non-default `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
