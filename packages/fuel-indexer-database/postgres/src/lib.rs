@@ -403,6 +403,9 @@ pub async fn columns_get_schema(
     .bind(name)
     .bind(identifier)
     .bind(version)
+    .fetch_all(conn)
+    .await?
+    .into_iter()
     .map(|row: PgRow| {
         let type_id: i64 = row.get("type_id");
         let table_name: String = row.get("table_name");
@@ -418,8 +421,7 @@ pub async fn columns_get_schema(
             column_type,
         }
     })
-    .fetch_all(conn)
-    .await?)
+    .collect::<Vec<ColumnInfo>>())
 }
 
 pub async fn index_is_registered(
