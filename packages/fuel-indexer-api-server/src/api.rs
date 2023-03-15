@@ -14,7 +14,7 @@ use axum::{
     Error as AxumError, Router,
 };
 use fuel_crypto::Error as FuelCryptoError;
-use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
+use fuel_indexer_database::{IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
@@ -68,7 +68,7 @@ pub enum ApiError {
     #[error("Hyper error: {0:?}")]
     HyperError(#[from] HyperError),
     #[error("FuelCrypto error: {0:?}")]
-    FuelCryptoError(#[from] FuelCryptoError),
+    FuelCrypto(#[from] FuelCryptoError),
     #[error("JsonWebTokenError: {0:?}")]
     JsonWebTokenError(#[from] JsonWebTokenError),
 }
@@ -91,8 +91,8 @@ impl From<StatusCode> for ApiError {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let generic_err_msg = "Internal server error.".to_string();
-        let (status, err_msg) = match self {
+        let generic_details = "Internal server error.".to_string();
+        let (status, details) = match self {
             Self::JsonWebTokenError(e) => (
                 StatusCode::BAD_REQUEST,
                 format!("Could not process JWT: {e}"),
@@ -100,16 +100,27 @@ impl IntoResponse for ApiError {
             ApiError::Http(HttpError::Unauthorized) => {
                 (StatusCode::UNAUTHORIZED, "Unauthorized.".to_string())
             }
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg),
+            ApiError::Sqlx(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {e}."),
+            ),
+            ApiError::Database(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {e}."),
+            ),
+            ApiError::FuelCrypto(e) => {
+                (StatusCode::BAD_REQUEST, format!("Crypto error: {e}."))
+            }
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };
 
-        error!("{status:?} - {err_msg}");
+        error!("{status:?} - {details}");
 
         (
             status,
             Json(json!({
                 "success": "false",
-                "details": err_msg,
+                "details": details,
             })),
         )
             .into_response()
@@ -126,14 +137,8 @@ impl GraphQlApi {
     ) -> ApiResult<Router> {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
-        let config = config.clone();
         let max_body_size = config.graphql_api.max_body_size;
         let start_time = Arc::new(Instant::now());
-
-        if config.graphql_api.run_migrations {
-            let mut c = pool.acquire().await?;
-            queries::run_migration(&mut c).await?;
-        }
 
         let graph_route = Router::new()
             .route("/:namespace/:identifier", post(query_graph))

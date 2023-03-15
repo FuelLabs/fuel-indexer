@@ -229,6 +229,7 @@ pub async fn api_server_app_postgres() -> Router {
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,
+        run_migrations: false,
         authentication: AuthenticationConfig::default(),
     };
 
@@ -252,6 +253,7 @@ pub async fn indexer_service_postgres() -> IndexerService {
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,
+        run_migrations: false,
         authentication: AuthenticationConfig::default(),
     };
 

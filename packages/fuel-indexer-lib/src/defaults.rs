@@ -14,7 +14,6 @@ pub const POSTGRES_PASSWORD: &str = "postgres";
 pub const INDEX_FAILED_CALLS: usize = 10;
 pub const STOP_IDLE_INDEXERS: bool = false;
 
-pub const GRAPHQL_API_RUN_MIGRATIONS: bool = false;
 pub const MAX_BODY_SIZE: usize = 5242880; // 5MB
 
 pub const SERVICE_REQUEST_CHANNEL_SIZE: usize = 100;

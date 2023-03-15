@@ -2,9 +2,13 @@
 
 use crate::directives::IndexMethod;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet};
-use std::string::ToString;
-use std::{fmt, fmt::Write};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+    fmt::Write,
+    string::ToString,
+    time::{SystemTime, UNIX_EPOCH},
+};
 use strum::{AsRefStr, EnumString};
 
 pub mod directives;
@@ -649,6 +653,17 @@ impl UserQuery {
 pub struct Nonce {
     pub uid: String,
     pub expiry: i64,
+}
+
+impl Nonce {
+    pub fn is_expired(&self) -> bool {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as i64;
+
+        now >= self.expiry
+    }
 }
 
 #[cfg(test)]

@@ -226,6 +226,10 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
     pub max_body_size: usize,
 
+    /// Run database migrations before starting service.
+    #[clap(long, default_value_t = defaults::RUN_MIGRATIONS, help = "Run database migrations before starting service.")]
+    pub run_migrations: bool,
+
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
@@ -245,10 +249,6 @@ pub struct ApiServerArgs {
     /// Postgres port.
     #[clap(long, help = "Postgres port.")]
     pub postgres_port: Option<String>,
-
-    /// Run database migrations before starting service.
-    #[clap(long, default_value_t = defaults::GRAPHQL_API_RUN_MIGRATIONS, help = "Run database migrations before starting service.")]
-    pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.
     #[clap(long, help = "Use Prometheus metrics reporting.")]
@@ -310,6 +310,7 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
     pub metrics: bool,
     pub stop_idle_indexers: bool,
+    pub run_migrations: bool,
     pub authentication: AuthenticationConfig,
 }
 
@@ -362,12 +363,11 @@ impl From<IndexerArgs> for IndexerConfig {
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
                 max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
-
+            run_migrations: args.run_migrations,
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
                 strategy: args
@@ -434,12 +434,11 @@ impl From<ApiServerArgs> for IndexerConfig {
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
                 max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: defaults::STOP_IDLE_INDEXERS,
-
+            run_migrations: args.run_migrations,
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
                 strategy: args
@@ -508,12 +507,11 @@ impl IndexerConfig {
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
                 max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
-
+            run_migrations: args.run_migrations,
             authentication: AuthenticationConfig {
                 enabled: args.auth_enabled,
                 strategy: args
@@ -567,14 +565,6 @@ impl IndexerConfig {
             let graphql_api_port = section.get(&serde_yaml::Value::String("port".into()));
             if let Some(graphql_api_port) = graphql_api_port {
                 config.graphql_api.port = graphql_api_port.as_u64().unwrap().to_string();
-            }
-
-            let graphql_run_migrations =
-                section.get(&serde_yaml::Value::String("run_migrations".into()));
-
-            if let Some(graphql_run_migrations) = graphql_run_migrations {
-                config.graphql_api.run_migrations =
-                    graphql_run_migrations.as_bool().unwrap();
             }
 
             let max_body_size =

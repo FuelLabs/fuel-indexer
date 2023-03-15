@@ -312,10 +312,13 @@ pub(crate) async fn verify_signature(
         match config.authentication.strategy {
             Some(AuthenticationStrategy::JWT) => {
                 let nonce = queries::get_nonce(&mut conn, &payload.message).await?;
-                queries::delete_nonce(&mut conn, &nonce).await?;
+
+                if nonce.is_expired() {
+                    return Err(ApiError::Http(HttpError::Unauthorized));
+                }
 
                 let mut buff: [u8; 64] = [0u8; 64];
-                buff.copy_from_slice(&payload.signature.as_bytes()[..64]);
+                buff.copy_from_slice(payload.signature.as_bytes());
                 let sig = Signature::from_bytes(buff);
                 let msg = Message::new(payload.message);
                 let pk = sig.recover(&msg)?;
@@ -338,7 +341,7 @@ pub(crate) async fn verify_signature(
 
                 if let Err(e) = sig.verify(&pk, &msg) {
                     error!("Failed to verify signature: {e}.");
-                    return Err(ApiError::FuelCryptoError(e));
+                    return Err(ApiError::FuelCrypto(e));
                 }
 
                 let token = encode(
@@ -352,6 +355,8 @@ pub(crate) async fn verify_signature(
                             .as_ref(),
                     ),
                 )?;
+
+                queries::delete_nonce(&mut conn, &nonce).await?;
 
                 Ok(Json(json!({ "token": token })))
             }

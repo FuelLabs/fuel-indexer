@@ -96,7 +96,7 @@ pub struct Claims {
     /// Issued at (as UTC timestamp).
     pub iat: usize,
 
-    // Expiration time (as UTC timestamp).
+    /// Expiration time (as UTC timestamp).
     pub exp: usize,
 }
 

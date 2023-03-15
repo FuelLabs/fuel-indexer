@@ -17,8 +17,6 @@ pub struct GraphQLConfig {
     #[serde(default)]
     pub port: String,
     #[serde(default)]
-    pub run_migrations: bool,
-    #[serde(default)]
     pub max_body_size: usize,
 }
 
@@ -42,7 +40,6 @@ impl Default for GraphQLConfig {
         Self {
             host: defaults::GRAPHQL_API_HOST.into(),
             port: defaults::GRAPHQL_API_PORT.into(),
-            run_migrations: defaults::GRAPHQL_API_RUN_MIGRATIONS,
             max_body_size: defaults::MAX_BODY_SIZE,
         }
     }

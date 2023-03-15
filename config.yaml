@@ -12,6 +12,9 @@
 # # Prevent indexers from running without handling any blocks.
 # stop_idle_indexers: true
 
+# # Run database migrations before starting service.
+# run_migrations: true
+
 # # ***********************
 # # Fuel Node configuration
 # # ************************
@@ -34,9 +37,6 @@
 
 #   # GraphQL API port.
 #   port: 29987
-
-#   # Run database migrations before starting service.
-#   run_migrations: false
 
 #   # Max body size for GraphQL API requests.
 #   max_body_size: "5242880"

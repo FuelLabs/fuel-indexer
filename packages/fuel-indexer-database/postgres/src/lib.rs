@@ -9,7 +9,7 @@ use tracing::info;
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::METRICS;
 
-const NONCE_EXPIRY: i64 = 3600; // 1 hour
+const NONCE_EXPIRY: u64 = 3600; // 1 hour
 
 pub async fn put_object(
     conn: &mut PoolConnection<Postgres>,
@@ -768,7 +768,7 @@ pub async fn create_nonce(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<N
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
-        .as_secs() as i64;
+        .as_secs();
 
     let expiry = now + NONCE_EXPIRY;
 
@@ -800,16 +800,9 @@ pub async fn get_nonce(
     conn: &mut PoolConnection<Postgres>,
     uid: &str,
 ) -> sqlx::Result<Nonce> {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs();
-
-    let row = sqlx::query(&format!(
-        "SELECT * FROM nonce WHERE uid = '{uid}' AND expiry > {now}"
-    ))
-    .fetch_one(conn)
-    .await?;
+    let row = sqlx::query(&format!("SELECT * FROM nonce WHERE uid = '{uid}'"))
+        .fetch_one(conn)
+        .await?;
 
     let uid: String = row.get(1);
     let expiry: i64 = row.get(2);
