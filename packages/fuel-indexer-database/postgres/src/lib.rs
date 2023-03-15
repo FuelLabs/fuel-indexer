@@ -110,7 +110,7 @@ pub async fn root_columns_list_by_id(
                     graphql_type,
                 }
             })
-            .collect(),
+            .collect::<Vec<RootColumns>>(),
     )
 }
 
@@ -208,7 +208,7 @@ pub async fn type_id_list_by_name(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.type_id_list_by_name_calls.inc();
 
-    let rows = sqlx::query(
+    Ok(sqlx::query(
         "SELECT * FROM graph_registry_type_ids
         WHERE schema_name = $1 
         AND schema_version = $2 
@@ -218,30 +218,26 @@ pub async fn type_id_list_by_name(
     .bind(version)
     .bind(identifier)
     .fetch_all(conn)
-    .await?;
+    .await?
+    .into_iter()
+    .map(|row| {
+        let id: i64 = row.get("id");
+        let schema_version: String = row.get("schema_version");
+        let schema_name: String = row.get("schema_name");
+        let schema_identifier: String = row.get("schema_identifier");
+        let graphql_name: String = row.get("graphql_name");
+        let table_name: String = row.get("table_name");
 
-    let type_ids: Vec<TypeId> = rows
-        .into_iter()
-        .map(|row| {
-            let id: i64 = row.get("id");
-            let schema_version: String = row.get("schema_version");
-            let schema_name: String = row.get("schema_name");
-            let schema_identifier: String = row.get("schema_identifier");
-            let graphql_name: String = row.get("graphql_name");
-            let table_name: String = row.get("table_name");
-
-            TypeId {
-                id,
-                schema_version,
-                schema_name,
-                table_name,
-                graphql_name,
-                schema_identifier,
-            }
-        })
-        .collect();
-
-    Ok(type_ids)
+        TypeId {
+            id,
+            schema_version,
+            schema_name,
+            table_name,
+            graphql_name,
+            schema_identifier,
+        }
+    })
+    .collect::<Vec<TypeId>>())
 }
 
 pub async fn type_id_latest(
@@ -376,7 +372,7 @@ pub async fn list_column_by_id(
                     graphql_type,
                 }
             })
-            .collect(),
+            .collect::<Vec<Columns>>(),
     )
 }
 
@@ -389,42 +385,41 @@ pub async fn columns_get_schema(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.columns_get_schema_calls.inc();
 
-    let query = "
-        SELECT
+    Ok(sqlx::query(
+        "
+            SELECT
             c.type_id as type_id,
             t.table_name as table_name,
             c.column_position as column_position,
             c.column_name as column_name,
             c.column_type as column_type
-        FROM graph_registry_type_ids as t
-        INNER JOIN graph_registry_columns as c ON t.id = c.type_id
-        WHERE t.schema_name = $1 AND t.schema_identifier = $2 AND t.schema_version = $3
-        ORDER BY c.type_id, c.column_position
-    ";
+            FROM graph_registry_type_ids as t
+            INNER JOIN graph_registry_columns as c ON t.id = c.type_id
+            WHERE t.schema_name = $1 
+            AND t.schema_identifier = $2 
+            AND t.schema_version = $3
+            ORDER BY c.type_id, c.column_position",
+    )
+    .bind(name)
+    .bind(identifier)
+    .bind(version)
+    .map(|row: PgRow| {
+        let type_id: i64 = row.get("type_id");
+        let table_name: String = row.get("table_name");
+        let column_position: i32 = row.get("column_position");
+        let column_name: String = row.get("column_name");
+        let column_type: String = row.get("column_type");
 
-    let rows = sqlx::query(query)
-        .bind(name)
-        .bind(identifier)
-        .bind(version)
-        .map(|row: PgRow| {
-            let type_id: i64 = row.get("type_id");
-            let table_name: String = row.get("table_name");
-            let column_position: i32 = row.get("column_position");
-            let column_name: String = row.get("column_name");
-            let column_type: String = row.get("column_type");
-
-            ColumnInfo {
-                type_id,
-                table_name,
-                column_position,
-                column_name,
-                column_type,
-            }
-        })
-        .fetch_all(conn)
-        .await?;
-
-    Ok(rows)
+        ColumnInfo {
+            type_id,
+            table_name,
+            column_position,
+            column_name,
+            column_type,
+        }
+    })
+    .fetch_all(conn)
+    .await?)
 }
 
 pub async fn index_is_registered(
@@ -508,7 +503,7 @@ pub async fn registered_indices(
                 identifier,
             }
         })
-        .collect())
+        .collect::<Vec<RegisteredIndex>>())
 }
 
 pub async fn index_asset_version(
