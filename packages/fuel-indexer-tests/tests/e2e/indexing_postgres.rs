@@ -6,7 +6,7 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        connect_to_deployed_contract, indexer_service_postgres, postgres_connection,
+        connect_to_deployed_contract, get_test_contract_id, indexer_service_postgres,
         postgres_connection_pool, setup_example_test_fuel_node, test_web::app,
     },
     utils::update_test_manifest_asset_paths,
@@ -33,6 +33,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -108,6 +109,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -156,6 +158,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -212,6 +215,7 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -271,6 +275,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -308,6 +313,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -345,6 +351,7 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -391,6 +398,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -438,6 +446,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -480,6 +489,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -534,6 +544,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -581,6 +592,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
     let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -640,6 +652,7 @@ async fn test_index_respects_start_block_postgres() {
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
+    manifest.contract_id = Some(get_test_contract_id().to_string());
     manifest.start_block = Some(block_height + 2);
 
     update_test_manifest_asset_paths(&mut manifest);
@@ -708,6 +721,7 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     let mut srv = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
