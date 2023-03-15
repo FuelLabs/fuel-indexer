@@ -185,17 +185,16 @@ pub async fn graph_root_latest(
     let id: i64 = row.get(0);
     let version: String = row.get(1);
     let schema_name: String = row.get(2);
-    let schema_identifier: String = row.get(3);
-    let query: String = row.get(4);
-    let schema: String = row.get(5);
+    let query: String = row.get(3);
+    let schema: String = row.get(4);
 
     Ok(GraphRoot {
         id,
         version,
         schema_name,
-        schema_identifier,
         query,
         schema,
+        schema_identifier: identifier.to_string(),
     })
 }
 
@@ -224,9 +223,8 @@ pub async fn type_id_list_by_name(
         let id: i64 = row.get(0);
         let schema_version: String = row.get(1);
         let schema_name: String = row.get(2);
-        let schema_identifier: String = row.get(3);
-        let graphql_name: String = row.get(4);
-        let table_name: String = row.get(5);
+        let graphql_name: String = row.get(3);
+        let table_name: String = row.get(4);
 
         TypeId {
             id,
@@ -234,7 +232,7 @@ pub async fn type_id_list_by_name(
             schema_name,
             table_name,
             graphql_name,
-            schema_identifier,
+            schema_identifier: identifier.to_string(),
         }
     })
     .collect::<Vec<TypeId>>())
@@ -517,7 +515,9 @@ pub async fn index_asset_version(
     METRICS.db.postgres.index_asset_version_calls.inc();
 
     match sqlx::query(&format!(
-        "SELECT COUNT(*) FROM index_asset_registry_{} WHERE index_id = {}",
+        "SELECT COUNT(*) 
+        FROM index_asset_registry_{} 
+        WHERE index_id = {}",
         asset_type.as_ref(),
         index_id,
     ))
