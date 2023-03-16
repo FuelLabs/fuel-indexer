@@ -1,6 +1,8 @@
 use crate::{
     cli::InitCommand,
-    utils::{default_manifest_filename, default_schema_filename, defaults},
+    utils::{
+        default_manifest_filename, default_schema_filename, defaults, log::LoggerConfig,
+    },
 };
 use anyhow::Context;
 use forc_util::{kebab_to_snake_case, validate_name};
@@ -74,7 +76,11 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         namespace,
         native,
         absolute_paths,
+        verbose,
     } = command;
+
+    let logger_config = LoggerConfig::new(verbose);
+    logger_config.init();
 
     let project_dir = match &path {
         Some(p) => PathBuf::from(p),

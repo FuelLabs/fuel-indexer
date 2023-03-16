@@ -1,4 +1,7 @@
-use crate::{cli::RevertCommand, utils::project_dir_info};
+use crate::{
+    cli::RevertCommand,
+    utils::{log::LoggerConfig, project_dir_info},
+};
 use fuel_indexer_lib::manifest::Manifest;
 use reqwest::{
     blocking::Client,
@@ -13,8 +16,12 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         url,
         path,
         manifest,
+        verbose,
         ..
     } = command;
+
+    let logger = LoggerConfig::new(command.verbose);
+    logger.init();
 
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;

@@ -30,6 +30,10 @@ pub struct Command {
     /// Resolve index asset filepaths using absolute paths.
     #[clap(long, help = "Resolve index asset filepaths using absolute paths.")]
     pub absolute_paths: bool,
+
+    /// Enable verbose output.
+    #[clap(short, long, help = "Enable verbose output.", default_value = "true")]
+    pub verbose: bool,
 }
 
 pub fn exec(command: Command) -> Result<()> {

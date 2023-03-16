@@ -25,6 +25,10 @@ pub struct Command {
     /// Authentication header value.
     #[clap(long, help = "Authentication header value.")]
     pub auth: Option<String>,
+
+    /// Enable verbose output.
+    #[clap(short, long, help = "Enable verbose output.", default_value = "true")]
+    pub verbose: bool,
 }
 
 pub fn exec(command: Command) -> Result<()> {

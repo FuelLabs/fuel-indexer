@@ -1,6 +1,6 @@
 use crate::{
     cli::BuildCommand,
-    utils::{defaults, project_dir_info},
+    utils::{defaults, log::LoggerConfig, project_dir_info},
 };
 use fuel_indexer_lib::manifest::{Manifest, Module};
 use indicatif::{ProgressBar, ProgressStyle};
@@ -49,6 +49,9 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         manifest,
         output_dir_root,
     } = command;
+
+    let logger_config = LoggerConfig::new(command.verbose);
+    logger_config.init();
 
     let (root_dir, manifest, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;

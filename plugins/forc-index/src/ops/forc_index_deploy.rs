@@ -1,7 +1,7 @@
 use crate::{
     cli::{BuildCommand, DeployCommand},
     commands::build,
-    utils::{extract_manifest_fields, project_dir_info},
+    utils::{extract_manifest_fields, log::LoggerConfig, project_dir_info},
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{
@@ -31,6 +31,9 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         native,
         output_dir_root,
     } = command;
+
+    let logger_config = LoggerConfig::new(command.verbose);
+    logger_config.init();
 
     build::exec(BuildCommand {
         manifest: manifest.clone(),

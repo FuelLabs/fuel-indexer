@@ -1,4 +1,4 @@
-use crate::cli::StartCommand;
+use crate::{cli::StartCommand, utils::log::LoggerConfig};
 use forc_postgres::cli::CreateDbCommand;
 use fuel_indexer_lib::defaults;
 use std::process::Command;
@@ -24,6 +24,12 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         embedded_database,
         ..
     } = command;
+
+    if log_level == "info".to_string() {
+        let verbose = true;
+        let logger = LoggerConfig::new(true);
+        logger.init();
+    }
 
     if embedded_database {
         let name = postgres_database

@@ -1,3 +1,4 @@
+use crate::commands::log::LoggerConfig;
 use crate::ops::forc_index_build;
 use anyhow::Result;
 use clap::Parser;
@@ -30,8 +31,8 @@ pub struct Command {
     #[clap(long, help = "Build with the given profile.")]
     pub profile: Option<String>,
 
-    /// Verbose output
-    #[clap(short, long, help = "Verbose output.")]
+    /// Verbose output.
+    #[clap(short, long, help = "Verbose output.", default_value = "true")]
     pub verbose: bool,
 
     /// Ensure that the Cargo.lock file is up-to-date.

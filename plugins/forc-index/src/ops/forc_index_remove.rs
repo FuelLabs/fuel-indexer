@@ -1,4 +1,7 @@
-use crate::{cli::RemoveCommand, utils::project_dir_info};
+use crate::{
+    cli::RemoveCommand,
+    utils::{log::LoggerConfig, project_dir_info},
+};
 use fuel_indexer_lib::manifest::Manifest;
 use reqwest::{
     blocking::Client,
@@ -9,7 +12,15 @@ use serde_json::{to_string_pretty, value::Value, Map};
 use tracing::{error, info};
 
 pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
-    let RemoveCommand { path, manifest, .. } = command;
+    let RemoveCommand {
+        path,
+        manifest,
+        verbose,
+        ..
+    } = command;
+
+    let logger_config = LoggerConfig::new(command.verbose);
+    logger_config.init();
 
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
