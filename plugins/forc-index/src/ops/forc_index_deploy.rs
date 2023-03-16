@@ -118,7 +118,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
 
-    println!("\n{}", to_string_pretty(&res_json)?);
+    info!("\n{}", to_string_pretty(&res_json)?);
 
     pb.finish_with_message("✅ Successfully deployed indexer.");
 

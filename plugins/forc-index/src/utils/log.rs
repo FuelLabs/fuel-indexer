@@ -26,9 +26,9 @@ impl LoggerConfig {
                 writeln!(buf, "{}: - {}", record.level(), record.args())
             });
             if self.verbose {
-                builder.filter(None, log::LevelFilter::Debug);
+                builder.filter(None, log::LevelFilter::Info);
             } else {
-                builder.filter(None, log::LevelFilter::Off);
+                builder.filter(None, log::LevelFilter::Error);
             }
             builder.init();
         }
