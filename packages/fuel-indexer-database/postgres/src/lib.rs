@@ -467,7 +467,7 @@ pub async fn register_index(
     }
 
     let row = sqlx::query(
-        "INSERT INTO index_registry (namespace, identifier)
+        "INSERT INTO index_registry (namespace, identifier, pubkey)
          VALUES ($1, $2, $3) 
          RETURNING *",
     )
