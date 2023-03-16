@@ -585,6 +585,31 @@ pub async fn latest_assets_for_index(
     })
 }
 
+pub async fn last_block_height_for_indexer(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<u64> {
+    #[cfg(feature = "metrics")]
+    METRICS
+        .db
+        .postgres
+        .last_block_height_for_indexer_calls
+        .inc();
+
+    let query = format!(
+        "SELECT MAX(id) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1"
+    );
+
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+    let id: i64 = match row.try_get(0) {
+        Ok(id) => id,
+        Err(_e) => return Ok(1),
+    };
+
+    Ok(id as u64)
+}
+
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Postgres>,
