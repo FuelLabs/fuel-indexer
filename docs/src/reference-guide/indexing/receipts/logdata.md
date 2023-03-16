@@ -16,3 +16,13 @@ pub struct LogData {
 - The `data` field will include the logged value as a hexadecimal.
   - The `rb` field will contain a unique ID that can be used to look up the logged data type.
 - [Read more about `LogData` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#logdata-receipt)
+
+You can handle functions that produce a `LogData` receipt type by using the logged type as a function parameter.
+
+> Note: the example below will run both when the type `MyStruct` is logged as well as when `MyStruct` is returned from a function.
+
+```rust, ignore
+fn handle_log_data(data: MyStruct) {
+  // handle the logged data
+}
+```
