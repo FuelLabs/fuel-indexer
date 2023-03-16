@@ -578,7 +578,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acee9fd5073ab6b045a275b3e709c163dd36c90685219cb21804a147b58dba43"
 dependencies = [
  "async-trait",
- "axum-core",
+ "axum-core 0.2.9",
  "bitflags",
  "bytes",
  "futures-util",
@@ -586,10 +586,9 @@ dependencies = [
  "http-body",
  "hyper",
  "itoa",
- "matchit",
+ "matchit 0.5.0",
  "memchr",
  "mime",
- "multer",
  "percent-encoding",
  "pin-project-lite",
  "serde",
@@ -598,7 +597,42 @@ dependencies = [
  "sync_wrapper",
  "tokio",
  "tower",
- "tower-http",
+ "tower-http 0.3.5",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "axum"
+version = "0.6.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8582122b8edba2af43eaf6b80dbfd33f421b5a0eb3a3113d21bc096ac5b44faf"
+dependencies = [
+ "async-trait",
+ "axum-core 0.3.3",
+ "axum-macros",
+ "bitflags",
+ "bytes",
+ "futures-util",
+ "http",
+ "http-body",
+ "hyper",
+ "itoa",
+ "matchit 0.7.0",
+ "memchr",
+ "mime",
+ "multer",
+ "percent-encoding",
+ "pin-project-lite",
+ "rustversion",
+ "serde",
+ "serde_json",
+ "serde_path_to_error",
+ "serde_urlencoded",
+ "sync_wrapper",
+ "tokio",
+ "tower",
+ "tower-http 0.4.0",
  "tower-layer",
  "tower-service",
 ]
@@ -617,6 +651,35 @@ dependencies = [
  "mime",
  "tower-layer",
  "tower-service",
+]
+
+[[package]]
+name = "axum-core"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2f958c80c248b34b9a877a643811be8dbca03ca5ba827f2b63baf3a81e5fc4e"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "futures-util",
+ "http",
+ "http-body",
+ "mime",
+ "rustversion",
+ "tower-layer",
+ "tower-service",
+]
+
+[[package]]
+name = "axum-macros"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "404e816a138c27c29f7428ae9b1816ab880ba6923fa76a9f15296af79444a8dc"
+dependencies = [
+ "heck 0.4.1",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -2151,6 +2214,10 @@ dependencies = [
  "forc-tracing 0.31.3",
  "forc-util",
  "fuel-indexer-lib",
+ "fuel-tx",
+ "fuels-types",
+ "hex",
+ "hyper-rustls 0.23.2",
  "indicatif",
  "reqwest",
  "serde",
@@ -2275,7 +2342,7 @@ version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2848e936ce953d9571771279b270ee6f098c04ad5cbb7227bf5dc04abfc57b59"
 dependencies = [
- "fuel-types",
+ "fuel-types 0.26.1",
  "serde",
 ]
 
@@ -2288,7 +2355,7 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "async-trait",
- "axum",
+ "axum 0.5.17",
  "clap 4.1.6",
  "derive_more",
  "enum-iterator 1.3.0",
@@ -2321,7 +2388,7 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-stream",
- "tower-http",
+ "tower-http 0.3.5",
  "tracing",
  "uuid 1.3.0",
 ]
@@ -2426,7 +2493,7 @@ version = "0.17.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4713699e67a1026ba19b1875213752b42120fab7bc3afd06778932b35f18fa27"
 dependencies = [
- "axum",
+ "axum 0.5.17",
  "lazy_static",
  "once_cell",
  "prometheus-client",
@@ -2534,11 +2601,30 @@ dependencies = [
  "borrown",
  "coins-bip32",
  "coins-bip39",
- "fuel-types",
+ "fuel-types 0.26.1",
  "getrandom",
  "lazy_static",
  "rand",
- "secp256k1",
+ "secp256k1 0.24.3",
+ "serde",
+ "sha2 0.10.6",
+ "zeroize",
+]
+
+[[package]]
+name = "fuel-crypto"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8516bafad9352b3af8e38d349efd9e4cffcee5bb48ee3a8f7830794d1b06ebd7"
+dependencies = [
+ "borrown",
+ "coins-bip32",
+ "coins-bip39",
+ "fuel-types 0.27.0",
+ "getrandom",
+ "lazy_static",
+ "rand",
+ "secp256k1 0.26.0",
  "serde",
  "sha2 0.10.6",
  "zeroize",
@@ -2649,8 +2735,9 @@ version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-std",
- "axum",
+ "axum 0.6.10",
  "clap 3.2.23",
+ "fuel-crypto 0.27.0",
  "fuel-indexer-database",
  "fuel-indexer-lib",
  "fuel-indexer-metrics",
@@ -2658,12 +2745,14 @@ dependencies = [
  "http",
  "hyper",
  "hyper-rustls 0.23.2",
+ "jsonwebtoken",
  "serde",
  "serde_json",
  "sqlx",
  "thiserror",
  "tokio",
- "tower-http",
+ "tower",
+ "tower-http 0.3.5",
  "tracing",
 ]
 
@@ -2770,6 +2859,7 @@ dependencies = [
  "fuel-indexer-metrics",
  "sqlx",
  "tracing",
+ "uuid 1.3.0",
 ]
 
 [[package]]
@@ -2811,7 +2901,7 @@ dependencies = [
  "actix-service",
  "actix-web",
  "async-std",
- "axum",
+ "axum 0.6.10",
  "chrono",
  "fuel-indexer",
  "fuel-indexer-api-server",
@@ -2821,7 +2911,7 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "fuel-tx",
- "fuel-types",
+ "fuel-types 0.26.1",
  "fuels",
  "fuels-core",
  "fuels-macros",
@@ -2832,6 +2922,7 @@ dependencies = [
  "lazy_static",
  "rand",
  "reqwest",
+ "serde",
  "serde_json",
  "serde_yaml",
  "sqlx",
@@ -2849,7 +2940,7 @@ version = "0.4.0"
 dependencies = [
  "chrono",
  "fuel-tx",
- "fuel-types",
+ "fuel-types 0.26.1",
  "fuels-core",
  "fuels-types",
  "serde",
@@ -2876,7 +2967,7 @@ version = "0.0.0"
 dependencies = [
  "clap 3.2.23",
  "fuel-indexer-tests",
- "fuel-types",
+ "fuel-types 0.26.1",
  "fuels",
  "fuels-macros",
  "tokio",
@@ -2896,9 +2987,9 @@ checksum = "8e0bbf8d062f8a41395184b7d60c1bb674254545dd64a0026beda65005de8bc7"
 dependencies = [
  "derivative",
  "fuel-asm",
- "fuel-crypto",
+ "fuel-crypto 0.26.1",
  "fuel-merkle",
- "fuel-types",
+ "fuel-types 0.26.1",
  "itertools",
  "num-integer",
  "rand",
@@ -2917,6 +3008,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-types"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddad99d773af58884e9a72989d73ded772712b409affdbd7509376a23d8ccd4f"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "fuel-vm"
 version = "0.26.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2924,11 +3024,11 @@ checksum = "87dbbf70e3be9243d5cb237e6e3ad2ef18fcad8c725f6c50e2451546e3f61636"
 dependencies = [
  "bitflags",
  "fuel-asm",
- "fuel-crypto",
+ "fuel-crypto 0.26.1",
  "fuel-merkle",
  "fuel-storage",
  "fuel-tx",
- "fuel-types",
+ "fuel-types 0.26.1",
  "itertools",
  "rand",
  "serde",
@@ -2979,7 +3079,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d846794076498a56c4fdf64e62852a2e183f4a50a70492a329f54fce3830e95c"
 dependencies = [
  "fuel-tx",
- "fuel-types",
+ "fuel-types 0.26.1",
  "fuel-vm",
  "fuels-types",
  "hex",
@@ -3015,7 +3115,7 @@ dependencies = [
  "bytes",
  "fuel-abi-types 0.2.1",
  "fuel-tx",
- "fuel-types",
+ "fuel-types 0.26.1",
  "fuel-vm",
  "fuels-core",
  "fuels-signers",
@@ -3047,9 +3147,9 @@ dependencies = [
  "elliptic-curve 0.11.12",
  "eth-keystore",
  "fuel-core-client",
- "fuel-crypto",
+ "fuel-crypto 0.26.1",
  "fuel-tx",
- "fuel-types",
+ "fuel-types 0.26.1",
  "fuel-vm",
  "fuels-core",
  "fuels-types",
@@ -3074,7 +3174,7 @@ dependencies = [
  "fuel-core-client",
  "fuel-core-types",
  "fuel-tx",
- "fuel-types",
+ "fuel-types 0.26.1",
  "fuel-vm",
  "fuels-core",
  "fuels-programs",
@@ -3105,7 +3205,7 @@ dependencies = [
  "fuel-core-chain-config",
  "fuel-core-client",
  "fuel-tx",
- "fuel-types",
+ "fuel-types 0.26.1",
  "fuels-macros",
  "hex",
  "itertools",
@@ -3470,7 +3570,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-tests",
  "fuel-tx",
- "fuel-types",
+ "fuel-types 0.26.1",
  "fuels",
  "fuels-core",
  "fuels-macros",
@@ -3896,6 +3996,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "jsonwebtoken"
+version = "8.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09f4f04699947111ec1733e71778d763555737579e44b85844cae8e1940a1828"
+dependencies = [
+ "base64 0.13.1",
+ "pem",
+ "ring",
+ "serde",
+ "serde_json",
+ "simple_asn1",
+]
+
+[[package]]
 name = "k256"
 version = "0.11.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4113,6 +4227,12 @@ name = "matchit"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73cbba799671b762df5a175adf59ce145165747bb891505c43d09aefbbf38beb"
+
+[[package]]
+name = "matchit"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b87248edafb776e59e6ee64a79086f65890d3510f2c656c000bf2a7e8a0aea40"
 
 [[package]]
 name = "md-5"
@@ -4577,6 +4697,15 @@ name = "peg-runtime"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c719dcf55f09a3a7e764c6649ab594c18a177e3599c467983cdf644bfc0a4088"
+
+[[package]]
+name = "pem"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8835c273a76a90455d7344889b0964598e3316e2a79ede8e36f16bdcf2228b8"
+dependencies = [
+ "base64 0.13.1",
+]
 
 [[package]]
 name = "percent-encoding"
@@ -5125,12 +5254,10 @@ dependencies = [
  "tokio",
  "tokio-native-tls",
  "tokio-rustls 0.23.4",
- "tokio-util",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "wasm-streams",
  "web-sys",
  "webpki-roots 0.22.6",
  "winreg",
@@ -5418,7 +5545,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b1629c9c557ef9b293568b338dddfc8208c98a18c59d722a9d53f859d9c9b62"
 dependencies = [
  "rand",
- "secp256k1-sys",
+ "secp256k1-sys 0.6.1",
+]
+
+[[package]]
+name = "secp256k1"
+version = "0.26.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4124a35fe33ae14259c490fd70fa199a32b9ce9502f2ee6bc4f81ec06fa65894"
+dependencies = [
+ "rand",
+ "secp256k1-sys 0.8.0",
 ]
 
 [[package]]
@@ -5426,6 +5563,15 @@ name = "secp256k1-sys"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "83080e2c2fc1006e625be82e5d1eb6a43b7fd9578b617fcc55814daf286bba4b"
+dependencies = [
+ "cc",
+]
+
+[[package]]
+name = "secp256k1-sys"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "642a62736682fdd8c71da0eb273e453c8ac74e33b9fb310e22ba5b03ec7651ff"
 dependencies = [
  "cc",
 ]
@@ -5505,6 +5651,15 @@ checksum = "cad406b69c91885b5107daf2c29572f6c8cdb3c66826821e286c533490c0bc76"
 dependencies = [
  "itoa",
  "ryu",
+ "serde",
+]
+
+[[package]]
+name = "serde_path_to_error"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "db0969fff533976baadd92e08b1d102c5a3d8a8049eadfd69d4d1e3c5b2ed189"
+dependencies = [
  "serde",
 ]
 
@@ -5677,6 +5832,18 @@ dependencies = [
  "fuels-types",
  "getrandom",
  "serde",
+]
+
+[[package]]
+name = "simple_asn1"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "adc4e5204eb1910f40f9cfa375f6f05b68c3abac4b6fd879c8ff5e7ae8a0a085"
+dependencies = [
+ "num-bigint",
+ "num-traits",
+ "thiserror",
+ "time 0.3.19",
 ]
 
 [[package]]
@@ -6070,7 +6237,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8527e944a8d3bb1312904b2d1610120dbd1259c33d4159df27a308850986830e"
 dependencies = [
  "fuel-asm",
- "fuel-crypto",
+ "fuel-crypto 0.26.1",
  "fuel-tx",
  "lazy_static",
  "serde",
@@ -6429,6 +6596,25 @@ dependencies = [
  "tower-layer",
  "tower-service",
  "tracing",
+]
+
+[[package]]
+name = "tower-http"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5d1d42a9b3f3ec46ba828e8d376aec14592ea199f70a06a548587ecd1c4ab658"
+dependencies = [
+ "bitflags",
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "http",
+ "http-body",
+ "http-range-header",
+ "pin-project-lite",
+ "tower",
+ "tower-layer",
+ "tower-service",
 ]
 
 [[package]]
@@ -6841,19 +7027,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasm-streams"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bbae3363c08332cadccd13b67db371814cd214c2524020932f0804b8cf7c078"
-dependencies = [
- "futures-util",
- "js-sys",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "wasmer"
 version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7116,7 +7289,7 @@ name = "web-api"
 version = "0.0.0"
 dependencies = [
  "fuel-indexer-tests",
- "fuel-types",
+ "fuel-types 0.26.1",
  "tokio",
 ]
 

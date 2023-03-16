@@ -52,11 +52,13 @@
     - [start](./reference-guide/plugins/forc-index/start.md)
     - [deploy](./reference-guide/plugins/forc-index/deploy.md)
     - [remove](./reference-guide/plugins/forc-index/remove.md)
+    - [auth](./reference-guide/plugins/forc-index/auth.md)
   - [forc index postgres](./reference-guide/plugins/forc-postgres/index.md)
     - [create](./reference-guide/plugins/forc-postgres/create.md)
     - [start](./reference-guide/plugins/forc-postgres/start.md)
     - [stop](./reference-guide/plugins/forc-postgres/stop.md)
     - [drop](./reference-guide/plugins/forc-postgres/drop.md)
+- [Authentication](./reference-guide/authentication/index.md)
 
 # For Contributors
 
