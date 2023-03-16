@@ -1,6 +1,13 @@
 use env_logger::Builder;
 use std::io::Write;
 
+/// Logger behavior based on the `verbose` flag:
+///
+/// * If `verbose` is set to `true`:
+///   * The filter is set to `LevelFilter::Debug`, and the logger will print logs at the `Error`, `Warn`, `Info`, and `Debug` levels.
+///
+/// * If `verbose` is set to `false`:
+///   * The filter is set to `LevelFilter::Off`, and the logger will not print any logs.
 pub struct LoggerConfig {
     pub verbose: bool,
 }
@@ -18,7 +25,7 @@ impl LoggerConfig {
         if self.verbose {
             builder.filter(None, log::LevelFilter::Debug);
         } else {
-            builder.filter(None, log::LevelFilter::Info);
+            builder.filter(None, log::LevelFilter::Off);
         }
         builder.init();
     }
