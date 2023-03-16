@@ -1,12 +1,13 @@
 #![deny(unused_crate_dependencies)]
 
 use fuel_indexer_database_types::*;
-use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
 use tracing::info;
 
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::METRICS;
+
+const NONCE_EXPIRY: u64 = 3600; // 1 hour
 
 pub async fn put_object(
     conn: &mut PoolConnection<Postgres>,
@@ -444,6 +445,7 @@ pub async fn index_is_registered(
             id: row.get(0),
             namespace: row.get(1),
             identifier: row.get(2),
+            pubkey: row.get(3),
         })),
         None => Ok(None),
     }
@@ -453,6 +455,7 @@ pub async fn register_index(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
+    pubkey: Option<&str>,
 ) -> sqlx::Result<RegisteredIndex> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.register_index_calls.inc();
@@ -474,11 +477,13 @@ pub async fn register_index(
     let id: i64 = row.get(0);
     let namespace: String = row.get(1);
     let identifier: String = row.get(2);
+    let pubkey: Option<String> = row.get(3);
 
     Ok(RegisteredIndex {
         id,
         namespace,
         identifier,
+        pubkey,
     })
 }
 
@@ -496,11 +501,13 @@ pub async fn registered_indices(
             let id: i64 = row.get(0);
             let namespace: String = row.get(1);
             let identifier: String = row.get(2);
+            let pubkey = row.get(3);
 
             RegisteredIndex {
                 id,
                 namespace,
                 identifier,
+                pubkey,
             }
         })
         .collect::<Vec<RegisteredIndex>>())
@@ -535,13 +542,14 @@ pub async fn register_index_asset(
     identifier: &str,
     bytes: Vec<u8>,
     asset_type: IndexAssetType,
+    pubkey: Option<&str>,
 ) -> sqlx::Result<IndexAsset> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.register_index_asset_calls.inc();
 
     let index = match index_is_registered(conn, namespace, identifier).await? {
         Some(index) => index,
-        None => register_index(conn, namespace, identifier).await?,
+        None => register_index(conn, namespace, identifier, pubkey).await?,
     };
 
     let digest = sha256_digest(&bytes);
@@ -550,8 +558,7 @@ pub async fn register_index_asset(
         asset_already_exists(conn, &asset_type, &bytes, &index.id).await?
     {
         info!(
-            "Asset({:?}) for Index({}) already registered.",
-            asset_type,
+            "Asset({asset_type:?}) for Index({}) already registered.",
             index.uid()
         );
         return Ok(asset);
@@ -562,11 +569,10 @@ pub async fn register_index_asset(
         .expect("Failed to get asset version.");
 
     let query = format!(
-        "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{}') RETURNING *",
+        "INSERT INTO index_asset_registry_{} (index_id, bytes, version, digest) VALUES ({}, $1, {}, '{digest}') RETURNING *",
         asset_type.as_ref(),
         index.id,
         current_version + 1,
-        digest,
     );
 
     let row = sqlx::QueryBuilder::new(query)
@@ -798,13 +804,13 @@ pub async fn revert_transaction(
     execute_query(conn, "ROLLBACK".into()).await
 }
 
-pub async fn remove_index(
+pub async fn remove_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<()> {
     #[cfg(feature = "metrics")]
-    METRICS.db.postgres.remove_index.inc();
+    METRICS.db.postgres.remove_indexer.inc();
 
     let index_id = index_id_for(conn, namespace, identifier).await?;
 
@@ -856,4 +862,51 @@ pub async fn remove_asset_by_version(
     .await?;
 
     Ok(())
+}
+
+pub async fn create_nonce(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<Nonce> {
+    let uid = uuid::Uuid::new_v4().as_simple().to_string();
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let expiry = now + NONCE_EXPIRY;
+
+    let row = sqlx::QueryBuilder::new(&format!(
+        "INSERT INTO nonce (uid, expiry) VALUES ('{uid}', {expiry}) RETURNING *"
+    ))
+    .build()
+    .fetch_one(conn)
+    .await?;
+
+    let uid: String = row.get(1);
+    let expiry: i64 = row.get(2);
+
+    Ok(Nonce { uid, expiry })
+}
+
+pub async fn delete_nonce(
+    conn: &mut PoolConnection<Postgres>,
+    nonce: &Nonce,
+) -> sqlx::Result<()> {
+    let _ = sqlx::query(&format!("DELETE FROM nonce WHERE uid = '{}'", nonce.uid))
+        .execute(conn)
+        .await?;
+
+    Ok(())
+}
+
+pub async fn get_nonce(
+    conn: &mut PoolConnection<Postgres>,
+    uid: &str,
+) -> sqlx::Result<Nonce> {
+    let row = sqlx::query(&format!("SELECT * FROM nonce WHERE uid = '{uid}'"))
+        .fetch_one(conn)
+        .await?;
+
+    let uid: String = row.get(1);
+    let expiry: i64 = row.get(2);
+
+    Ok(Nonce { uid, expiry })
 }
