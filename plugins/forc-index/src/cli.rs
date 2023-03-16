@@ -4,6 +4,7 @@ pub(crate) use crate::commands::{
     new::Command as NewCommand, remove::Command as RemoveCommand,
     revert::Command as RevertCommand, start::Command as StartCommand,
 };
+use crate::utils::log::LoggerConfig;
 use clap::{Parser, Subcommand};
 use forc_postgres::{
     cli::{ForcPostgres, Opt as ForcPostgresOpt},
