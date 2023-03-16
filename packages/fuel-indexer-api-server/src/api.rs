@@ -79,16 +79,6 @@ impl Default for ApiError {
     }
 }
 
-impl From<StatusCode> for ApiError {
-    fn from(status: StatusCode) -> Self {
-        match status {
-            StatusCode::BAD_REQUEST => ApiError::Http(HttpError::BadRequest),
-            StatusCode::UNAUTHORIZED => ApiError::Http(HttpError::Unauthorized),
-            _ => ApiError::Http(HttpError::InternalServer),
-        }
-    }
-}
-
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let generic_details = "Internal server error.".to_string();

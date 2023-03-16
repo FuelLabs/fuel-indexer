@@ -144,9 +144,7 @@ pub(crate) async fn stop_indexer(
 
         error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
 
-        return Ok(Json(json!({
-            "success": "false"
-        })));
+        return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
     } else {
         queries::commit_transaction(&mut conn).await?;
 

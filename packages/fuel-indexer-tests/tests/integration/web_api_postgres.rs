@@ -1,16 +1,22 @@
 use fuel_indexer_api_server::api::GraphQlApi;
-use fuel_indexer_lib::config::GraphQLConfig;
+use fuel_indexer_database::queries;
+use fuel_indexer_lib::{config::GraphQLConfig, defaults};
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_tests::assets::{
     SIMPLE_WASM_MANIFEST, SIMPLE_WASM_SCHEMA, SIMPLE_WASM_WASM,
 };
 use fuel_indexer_tests::fixtures::{
-    api_server_app_postgres, http_client, indexer_service_postgres,
-    postgres_connection_pool,
+    api_server_app_postgres, authenticated_api_server_app_postgres, http_client,
+    indexer_service_postgres, postgres_connection_pool,
 };
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use reqwest::{multipart, Body};
+use serde::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::task::spawn;
+
+const SIGNATURE: &str = "cb19384361af5dd7fec2a0052ca49d289f997238ea90590baf47f16ff0a33fb20170a43bd20208ce16daf443bad06dd66c1d1bf73f48b5ae53de682a5731d7d9";
+const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
@@ -154,4 +160,65 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
     .unwrap();
 
     assert!(is_index_registered.is_some());
+}
+
+#[derive(Serialize, Debug)]
+struct SignatureRequest {
+    signature: String,
+    message: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct SignatureResponse {
+    token: Option<String>,
+}
+
+#[tokio::test]
+#[cfg(all(feature = "postgres"))]
+async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt() {
+    let pool = postgres_connection_pool().await;
+    let mut conn = pool.acquire().await.unwrap();
+
+    let app = authenticated_api_server_app_postgres().await;
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+
+    let expiry = now + 3600;
+    let _ = sqlx::QueryBuilder::new("INSERT INTO nonce (uid, expiry) VALUES ($1, $2)")
+        .build()
+        .bind(NONCE)
+        .bind(expiry as i64)
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+
+    let resp = http_client()
+        .post("http://127.0.0.1:29987/api/auth/signature")
+        .header(CONTENT_TYPE, "application/json".to_owned())
+        .json(&SignatureRequest {
+            signature: SIGNATURE.to_string(),
+            message: NONCE.to_string(),
+        })
+        .send()
+        .await
+        .unwrap();
+
+    let res: SignatureResponse = resp.json().await.unwrap();
+
+    assert!(res.token.is_some());
+    assert!(res.token.unwrap().len() > 300);
+
+    let _ = sqlx::QueryBuilder::new("DELETE FROM nonce WHERE uid = $1")
+        .build()
+        .bind(NONCE)
+        .execute(&mut conn)
+        .await
+        .unwrap();
 }
