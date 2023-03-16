@@ -38,7 +38,7 @@ pub mod defaults {
     // to return the contract ID won't give us the ID until the task is completed.
     pub const CURRENT_TEST_CONTRACT_ID_STR: &str =
         "fuel1dthcclayuwhce7t7jt8dlpvv2c0q4wsyj4xsudcek5gwc6nd5cnqj4qkua";
-    pub const MAX_BODY: usize = 5242880; // 5MB in bytes
+    pub const MAX_BODY_SIZE: usize = 5242880; // 5MB in bytes
 }
 
 pub mod utils {

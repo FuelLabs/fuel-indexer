@@ -1,3 +1,4 @@
+pub mod auth;
 pub mod build;
 pub mod check;
 pub mod deploy;

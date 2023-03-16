@@ -1,7 +1,9 @@
 #![deny(unused_crate_dependencies)]
 
 use fuel_indexer_database_types::*;
+use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
 
 #[cfg(feature = "metrics")]

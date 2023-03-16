@@ -65,6 +65,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let wasm_snip = "wasm-snip";
     let forc_pg = "forc-postgres";
     let rustc = "rustc";
+    let forc_wallet = "forc-wallet";
 
     match Client::new().get(&target).send() {
         Ok(res) => {
@@ -102,6 +103,8 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let (wasm_snip_emoji, _wasm_snip_path, wasm_snip_msg) =
         find_executable_with_msg(wasm_snip);
     let (rustc_emoji, _rustc_path, rustc_msg) = find_executable_with_msg(rustc);
+    let (forc_wallet_emoji, _forc_wallet_path, forc_wallet_msg) =
+        find_executable_with_msg(forc_wallet);
 
     // Padding here is done on an as-needed basis
     let status_padding = 5;
@@ -119,6 +122,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let wasm_snip_header = rightpad_whitespace(wasm_snip, defaults::HEADER_PADDING);
     let forc_pg_header = rightpad_whitespace(forc_pg, defaults::HEADER_PADDING);
     let rustc_header = rightpad_whitespace(rustc, defaults::HEADER_PADDING);
+    let forc_wallet_header = rightpad_whitespace(forc_wallet, defaults::HEADER_PADDING);
 
     let stdout = format!(
         r#"
@@ -142,6 +146,8 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
 |  {forc_pg_emoji}  | {forc_pg_header}   |  {forc_pg_msg}|
 +--------+------------------------+---------------------------------------------------------+
 |  {rustc_emoji}  | {rustc_header}   |  {rustc_msg}|
++--------+------------------------+---------------------------------------------------------+
+|  {forc_wallet_emoji}  | {forc_wallet_header}   |  {forc_wallet_msg}|
 +--------+------------------------+---------------------------------------------------------+
 "#
     );

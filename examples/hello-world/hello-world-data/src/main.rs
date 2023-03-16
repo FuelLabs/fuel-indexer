@@ -30,6 +30,8 @@ pub struct Args {
 
 static MAX_BIGINT: u64 = 0x7fffffffffffffff;
 const BYTES32_LEN: usize = 0x20;
+const CONTRACT_ID: &str =
+    "fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9";
 
 // The FuelVM only recognizes SizedAsciiStrings, but we don't always care
 // about perfectly sized Strings, so we pad any String shorter than the expected
@@ -76,9 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     wallet.set_provider(provider.clone());
 
     let contract_id: Bech32ContractId =
-        "fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9"
-            .parse()
-            .expect("Invalid ID for test contract");
+        CONTRACT_ID.parse().expect("Invalid ID for test contract");
 
     let contract = Greet::new(contract_id, wallet.clone());
 
