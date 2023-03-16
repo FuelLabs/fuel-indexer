@@ -6,9 +6,8 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        api_server_app_postgres, connect_to_deployed_contract, get_test_contract_id,
-        http_client, indexer_service_postgres, setup_example_test_fuel_node,
-        test_web::app,
+        api_server_app_postgres, connect_to_deployed_contract, http_client,
+        indexer_service_postgres, setup_example_test_fuel_node, test_web::app,
     },
     utils::update_test_manifest_asset_paths,
     WORKSPACE_ROOT,
@@ -34,7 +33,6 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -82,7 +80,6 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
     let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -131,7 +128,6 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
     let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -187,7 +183,6 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
     let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -343,7 +338,6 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
     let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-    manifest.contract_id = Some(get_test_contract_id().to_string());
 
     update_test_manifest_asset_paths(&mut manifest);
 
