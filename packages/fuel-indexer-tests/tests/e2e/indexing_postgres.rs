@@ -6,8 +6,8 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        connect_to_deployed_contract, indexer_service_postgres, postgres_connection_pool,
-        setup_example_test_fuel_node, test_web::app,
+        connect_to_deployed_contract, indexer_service_postgres,
+        setup_example_test_fuel_node, test_web::app, TestPostgresDb,
     },
     utils::update_test_manifest_asset_paths,
     WORKSPACE_ROOT,
@@ -29,8 +29,9 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -48,7 +49,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let block_row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.block ORDER BY height DESC LIMIT 1",
     )
@@ -104,8 +105,9 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 async fn test_can_trigger_and_index_callreturn_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -123,7 +125,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 3")
             .fetch_one(&mut conn)
@@ -151,9 +153,9 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
 
-    let mut srvc = indexer_service_postgres().await;
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -178,7 +180,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.block ORDER BY timestamp DESC LIMIT 1",
     )
@@ -208,8 +210,9 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 async fn test_can_trigger_and_index_ping_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -227,7 +230,7 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.pingentity WHERE id = 1")
             .fetch_one(&mut conn)
@@ -241,7 +244,6 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
     assert_eq!(value, 123);
 
     // Ping also triggers the 128-bit integer test as well
-    let mut conn = pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.u16entity WHERE id = 9999")
             .fetch_one(&mut conn)
@@ -267,8 +269,9 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 async fn test_can_trigger_and_index_transfer_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -286,7 +289,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transfer LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -304,8 +307,9 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 async fn test_can_trigger_and_index_log_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -315,7 +319,6 @@ async fn test_can_trigger_and_index_log_event_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let mut conn = pool.acquire().await.unwrap();
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
     let req = test::TestRequest::post().uri("/log").to_request();
@@ -324,6 +327,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.log WHERE ra = 8675309 LIMIT 1",
     )
@@ -341,8 +345,9 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 async fn test_can_trigger_and_index_logdata_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -360,7 +365,7 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 1")
             .fetch_one(&mut conn)
@@ -387,8 +392,9 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -406,8 +412,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
-
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.scriptresult LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -434,8 +439,9 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 async fn test_can_trigger_and_index_transferout_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -453,7 +459,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferout LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -476,8 +482,9 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 async fn test_can_trigger_and_index_messageout_event_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -495,7 +502,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageout LIMIT 1")
         .fetch_one(&mut conn)
         .await
@@ -530,8 +537,9 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 async fn test_can_index_event_with_optional_fields_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -549,7 +557,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query(
         "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
     )
@@ -577,8 +585,9 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -596,7 +605,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row =
         sqlx::query("SELECT * FROM fuel_indexer_test_index1.indexmetadataentity LIMIT 1")
             .fetch_one(&mut conn)
@@ -614,19 +623,8 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
 async fn test_index_respects_start_block_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut conn = pool.acquire().await.unwrap();
-
-    let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.tx")
-        .execute(&mut conn)
-        .await
-        .unwrap();
-    let result = sqlx::query("DELETE FROM fuel_indexer_test_index1.block")
-        .execute(&mut conn)
-        .await
-        .unwrap();
-
-    let mut srvc = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -648,6 +646,7 @@ async fn test_index_respects_start_block_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let pre_check = sqlx::query(&format!(
         "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
         block_height + 1,
@@ -704,14 +703,15 @@ async fn test_index_respects_start_block_postgres() {
 async fn test_can_trigger_and_index_tuple_events_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let pool = postgres_connection_pool().await;
-    let mut srv = indexer_service_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srv.register_index_from_manifest(manifest)
+    srvc.register_index_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -723,7 +723,7 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.tupleentity LIMIT 1")
         .fetch_one(&mut conn)
         .await

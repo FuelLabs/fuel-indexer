@@ -7,6 +7,7 @@ use fuel_indexer_lib::config::{
     auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
     DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
 };
+use fuel_indexer_postgres;
 use fuels::{
     macros::abigen,
     prelude::{
@@ -16,9 +17,13 @@ use fuels::{
     },
     signers::Signer,
 };
-use sqlx::{pool::Pool, Postgres};
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use sqlx::{pool::Pool, PgConnection, Postgres};
+use sqlx::{Connection, Executor};
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use tracing_subscriber::filter::EnvFilter;
 
 abigen!(Contract(
@@ -26,19 +31,124 @@ abigen!(Contract(
     abi = "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
 ));
 
-pub async fn postgres_connection_pool() -> Pool<Postgres> {
-    let config = DatabaseConfig::Postgres {
-        user: "postgres".into(),
-        password: "my-secret".into(),
-        host: "127.0.0.1".into(),
-        port: "5432".into(),
-        database: "postgres".to_string(),
-    };
-    match IndexerConnectionPool::connect(&config.to_string())
+pub struct TestPostgresDb {
+    pub db_name: String,
+    pub url: String,
+    pub pool: Pool<Postgres>,
+    server_connection_str: String,
+}
+
+impl TestPostgresDb {
+    pub async fn new() -> Self {
+        let rng = thread_rng();
+        let db_name: String = rng
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
+
+        let connection_config: DatabaseConfig =
+            std::env::var("DATABASE_URL").unwrap().parse().unwrap();
+        let server_connection_str = connection_config.to_string();
+
+        let DatabaseConfig::Postgres {
+            user,
+            password,
+            host,
+            port,
+            ..
+        } = connection_config;
+        let test_db_config = DatabaseConfig::Postgres {
+            user,
+            password,
+            host,
+            port,
+            database: db_name.clone(),
+        };
+
+        let mut conn = PgConnection::connect(server_connection_str.as_str())
+            .await
+            .unwrap();
+
+        conn.execute(format!(r#"CREATE DATABASE "{}""#, &db_name).as_str())
+            .await
+            .expect("Could not create database");
+
+        let pool =
+            match IndexerConnectionPool::connect(&test_db_config.clone().to_string())
+                .await
+                .unwrap()
+            {
+                IndexerConnectionPool::Postgres(p) => {
+                    let mut conn = p
+                        .acquire()
+                        .await
+                        .expect("Could not acquire connection from pool");
+                    fuel_indexer_postgres::run_migration(&mut conn)
+                        .await
+                        .expect("Could not run migrations for test database");
+                    p
+                }
+            };
+
+        Self {
+            db_name,
+            url: test_db_config.to_string(),
+            pool,
+            server_connection_str,
+        }
+    }
+
+    async fn teardown(&mut self) {
+        let mut conn = PgConnection::connect(&self.server_connection_str)
+            .await
+            .expect("Failed to connect to Postgres server");
+
+        conn.execute(
+            format!(
+                r#"
+                SELECT pg_terminate_backend(pg_stat_activity.pid)
+                FROM pg_stat_activity
+                WHERE pg_stat_activity.datname = '{}'
+                AND pid <> pg_backend_pid()
+                "#,
+                self.db_name
+            )
+            .as_str(),
+        )
         .await
-        .unwrap()
-    {
-        IndexerConnectionPool::Postgres(p) => p,
+        .unwrap_or_else(|_| {
+            panic!(
+                "Failed to terminate current connections to test database {}",
+                self.db_name
+            )
+        });
+
+        conn.execute(
+            format!(
+                r#"DROP DATABASE IF EXISTS "{}" WITH (FORCE);"#,
+                self.db_name
+            )
+            .as_str(),
+        )
+        .await
+        .unwrap_or_else(|_| {
+            panic!("Failed to forcefully drop test database {}", self.db_name)
+        });
+    }
+}
+
+impl Drop for TestPostgresDb {
+    fn drop(&mut self) {
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                let runtime = tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap();
+                runtime.block_on(self.teardown());
+            });
+        });
     }
 }
 
@@ -160,16 +270,15 @@ pub fn get_test_contract_id() -> Bech32ContractId {
     Bech32ContractId::from(id)
 }
 
-pub async fn api_server_app_postgres() -> Router {
+pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
+    let database: DatabaseConfig = if database_url.is_some() {
+        DatabaseConfig::from_str(database_url.unwrap()).unwrap()
+    } else {
+        DatabaseConfig::default()
+    };
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::default(),
-        database: DatabaseConfig::Postgres {
-            user: "postgres".into(),
-            password: "my-secret".into(),
-            host: "127.0.0.1".into(),
-            port: "5432".into(),
-            database: "postgres".to_string(),
-        },
+        database,
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,
@@ -184,16 +293,15 @@ pub async fn api_server_app_postgres() -> Router {
     GraphQlApi::build(config, pool, None).await.unwrap()
 }
 
-pub async fn authenticated_api_server_app_postgres() -> Router {
+pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -> Router {
+    let database: DatabaseConfig = if database_url.is_some() {
+        DatabaseConfig::from_str(database_url.unwrap()).unwrap()
+    } else {
+        DatabaseConfig::default()
+    };
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::default(),
-        database: DatabaseConfig::Postgres {
-            user: "postgres".into(),
-            password: "my-secret".into(),
-            host: "127.0.0.1".into(),
-            port: "5432".into(),
-            database: "postgres".to_string(),
-        },
+        database,
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,
@@ -214,16 +322,15 @@ pub async fn authenticated_api_server_app_postgres() -> Router {
     GraphQlApi::build(config, pool, None).await.unwrap()
 }
 
-pub async fn indexer_service_postgres() -> IndexerService {
+pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerService {
+    let database: DatabaseConfig = if database_url.is_some() {
+        DatabaseConfig::from_str(database_url.unwrap()).unwrap()
+    } else {
+        DatabaseConfig::default()
+    };
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::default(),
-        database: DatabaseConfig::Postgres {
-            user: "postgres".into(),
-            password: "my-secret".into(),
-            host: "127.0.0.1".into(),
-            port: "5432".into(),
-            database: "postgres".to_string(),
-        },
+        database,
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     config::{Env, IndexerConfigResult},
     defaults,
@@ -6,6 +8,8 @@ use crate::{
 pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
+
+use super::IndexerConfigError;
 
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -109,5 +113,50 @@ impl Default for DatabaseConfig {
 impl From<DatabaseConfig> for Uri {
     fn from(_: DatabaseConfig) -> Self {
         unimplemented!()
+    }
+}
+
+impl FromStr for DatabaseConfig {
+    type Err = IndexerConfigError;
+
+    fn from_str(db_url: &str) -> Result<Self, Self::Err> {
+        let scheme_and_conn_details: Vec<&str> = db_url.split(r"://").collect();
+
+        let (scheme, conn_details) =
+            (scheme_and_conn_details[0], scheme_and_conn_details[1]);
+
+        match scheme.to_lowercase().as_str() {
+            "postgres" => {
+                let conn_str_and_database: Vec<&str> = conn_details.split('/').collect();
+
+                let conn_str: Vec<&str> = conn_str_and_database[0].split('@').collect();
+                let credentials: Vec<&str> = conn_str[0].split(':').collect();
+
+                let user = credentials[0];
+                let password = if credentials.len() == 2 {
+                    credentials[1]
+                } else {
+                    ""
+                };
+
+                let host_str: Vec<&str> = conn_str[1].split(':').collect();
+                let (host, port) = (host_str[0], host_str[1]);
+
+                let database = if conn_str_and_database.len() == 2 {
+                    conn_str_and_database[1]
+                } else {
+                    ""
+                };
+
+                Ok(DatabaseConfig::Postgres {
+                    user: user.to_string(),
+                    password: password.to_string(),
+                    host: host.to_string(),
+                    port: port.to_string(),
+                    database: database.to_string(),
+                })
+            }
+            _ => Err(IndexerConfigError::DbUrlParseError),
+        }
     }
 }

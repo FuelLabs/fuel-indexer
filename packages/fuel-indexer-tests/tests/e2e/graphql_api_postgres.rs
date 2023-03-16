@@ -8,6 +8,7 @@ use fuel_indexer_tests::{
     fixtures::{
         api_server_app_postgres, connect_to_deployed_contract, http_client,
         indexer_service_postgres, setup_example_test_fuel_node, test_web::app,
+        TestPostgresDb,
     },
     utils::update_test_manifest_asset_paths,
     WORKSPACE_ROOT,
@@ -24,8 +25,9 @@ use tokio::time::{sleep, Duration};
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let mut srvc = indexer_service_postgres().await;
-    let api_app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let api_app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
@@ -71,8 +73,9 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let mut srvc = indexer_service_postgres().await;
-    let api_app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let api_app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
@@ -119,8 +122,9 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let mut srvc = indexer_service_postgres().await;
-    let api_app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let api_app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
@@ -174,8 +178,9 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let mut srvc = indexer_service_postgres().await;
-    let api_app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let api_app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
@@ -329,8 +334,9 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
 async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgres() {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
 
-    let mut srvc = indexer_service_postgres().await;
-    let api_app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let mut srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let api_app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());

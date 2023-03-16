@@ -7,7 +7,7 @@ use fuel_indexer_tests::assets::{
 };
 use fuel_indexer_tests::fixtures::{
     api_server_app_postgres, authenticated_api_server_app_postgres, http_client,
-    indexer_service_postgres, postgres_connection_pool,
+    indexer_service_postgres, TestPostgresDb,
 };
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
 use reqwest::{multipart, Body};
@@ -21,8 +21,9 @@ const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
-    let _ = indexer_service_postgres().await;
-    let app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let _srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
@@ -53,16 +54,16 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
 #[cfg(all(feature = "postgres"))]
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
-    let _ = indexer_service_postgres().await;
-    let app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let _ = indexer_service_postgres(Some(&test_db.url)).await;
+    let app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
 
     let server_handle = tokio::spawn(server);
 
-    let pool = postgres_connection_pool().await;
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
 
@@ -105,16 +106,15 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() {
-    let pool = postgres_connection_pool().await;
-    let mut conn = pool.acquire().await.unwrap();
-
-    let app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await;
+    let app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
 
     let server_handle = tokio::spawn(server);
 
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let is_index_registered = postgres::index_is_registered(
         &mut conn,
         "test_namespace",
@@ -175,16 +175,16 @@ struct SignatureResponse {
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt() {
-    let pool = postgres_connection_pool().await;
-    let mut conn = pool.acquire().await.unwrap();
+    let test_db = TestPostgresDb::new().await;
+    let app = authenticated_api_server_app_postgres(Some(&test_db.url)).await;
 
-    let app = authenticated_api_server_app_postgres().await;
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs();
-
     let expiry = now + 3600;
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let _ = sqlx::QueryBuilder::new("INSERT INTO nonce (uid, expiry) VALUES ($1, $2)")
         .build()
         .bind(NONCE)
