@@ -468,18 +468,19 @@ pub async fn register_index(
 
     let row = sqlx::query(
         "INSERT INTO index_registry (namespace, identifier)
-         VALUES ($1, $2) 
-         RETURNING id, namespace, identifier",
+         VALUES ($1, $2, $3) 
+         RETURNING *",
     )
     .bind(namespace)
     .bind(identifier)
+    .bind(pubkey)
     .fetch_one(conn)
     .await?;
 
     let id: i64 = row.get(0);
     let namespace: String = row.get(1);
     let identifier: String = row.get(2);
-    let pubkey: Option<String> = row.get(3);
+    let pubkey = row.get(3);
 
     Ok(RegisteredIndex {
         id,
