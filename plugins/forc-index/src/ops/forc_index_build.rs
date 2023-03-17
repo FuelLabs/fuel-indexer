@@ -50,9 +50,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         output_dir_root,
     } = command;
 
-    let logger_config = LoggerConfig::new(command.verbose);
-    logger_config.init();
-
     let (root_dir, manifest, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 

@@ -32,9 +32,6 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         output_dir_root,
     } = command;
 
-    let logger_config = LoggerConfig::new(command.verbose);
-    logger_config.init();
-
     build::exec(BuildCommand {
         manifest: manifest.clone(),
         path: path.clone(),

@@ -79,9 +79,6 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         verbose,
     } = command;
 
-    let logger_config = LoggerConfig::new(verbose);
-    logger_config.init();
-
     let project_dir = match &path {
         Some(p) => PathBuf::from(p),
         None => std::env::current_dir()

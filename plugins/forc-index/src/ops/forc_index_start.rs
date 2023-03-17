@@ -25,12 +25,6 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         ..
     } = command;
 
-    if log_level == "info".to_string() {
-        let verbose = true;
-        let logger = LoggerConfig::new(true);
-        logger.init();
-    }
-
     if embedded_database {
         let name = postgres_database
             .clone()

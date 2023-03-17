@@ -39,7 +39,8 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ..Default::default()
     };
 
-    init_tracing_subscriber(tracing_options);
+    init_logger(&opt.command);
+    //init_tracing_subscriber(tracing_options);
 
     match opt.command {
         ForcIndex::Init(command) => crate::commands::init::exec(command),
@@ -57,4 +58,26 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
             ForcPostgres::Start(command) => pg_commands::start::exec(command).await,
         },
     }
+}
+
+fn init_logger(command: &ForcIndex) {
+    let verbose = match command {
+        ForcIndex::Init(c) => c.verbose,
+        ForcIndex::New(c) => c.verbose,
+        ForcIndex::Deploy(c) => c.verbose,
+        ForcIndex::Start(_) => return,
+        ForcIndex::Check(_) => return,
+        ForcIndex::Remove(c) => c.verbose,
+        ForcIndex::Revert(c) => c.verbose,
+        ForcIndex::Build(c) => c.verbose,
+        ForcIndex::Postgres(opt) => match &opt.command {
+            ForcPostgres::Create(_) => return,
+            ForcPostgres::Stop(_) => return,
+            ForcPostgres::Drop(_) => return,
+            ForcPostgres::Start(_) => return,
+        },
+    };
+
+    let logger = LoggerConfig::new(verbose);
+    logger.init();
 }

@@ -20,9 +20,6 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         ..
     } = command;
 
-    let logger = LoggerConfig::new(command.verbose);
-    logger.init();
-
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
