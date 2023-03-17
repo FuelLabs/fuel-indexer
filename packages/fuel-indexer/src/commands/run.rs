@@ -54,7 +54,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
-    if config.graphql_api.run_migrations {
+    if config.run_migrations {
         let mut c = pool.acquire().await?;
         queries::run_migration(&mut c).await?;
     }

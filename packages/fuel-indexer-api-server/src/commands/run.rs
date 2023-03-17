@@ -1,5 +1,5 @@
 use crate::api::GraphQlApi;
-use fuel_indexer_database::IndexerConnectionPool;
+use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::config::{ApiServerArgs, IndexerConfig};
 use tracing::info;
 
@@ -12,6 +12,11 @@ pub async fn exec(args: ApiServerArgs) -> anyhow::Result<()> {
     info!("Configuration: {:?}", config);
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+
+    if config.run_migrations {
+        let mut c = pool.acquire().await?;
+        queries::run_migration(&mut c).await?;
+    }
 
     let _ = GraphQlApi::build_and_run(config.clone(), pool, None).await;
 

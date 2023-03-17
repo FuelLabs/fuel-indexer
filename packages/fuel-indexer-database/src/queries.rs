@@ -184,10 +184,11 @@ pub async fn register_index(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
+    pubkey: Option<&str>,
 ) -> sqlx::Result<RegisteredIndex> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::register_index(c, namespace, identifier).await
+            postgres::register_index(c, namespace, identifier, pubkey).await
         }
     }
 }
@@ -218,11 +219,14 @@ pub async fn register_index_asset(
     identifier: &str,
     bytes: Vec<u8>,
     asset_type: IndexAssetType,
+    pubkey: Option<&str>,
 ) -> sqlx::Result<IndexAsset> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::register_index_asset(c, namespace, identifier, bytes, asset_type)
-                .await
+            postgres::register_index_asset(
+                c, namespace, identifier, bytes, asset_type, pubkey,
+            )
+            .await
         }
     }
 }
@@ -325,14 +329,14 @@ pub async fn run_migration(conn: &mut IndexerConnection) -> sqlx::Result<()> {
     }
 }
 
-pub async fn remove_index(
+pub async fn remove_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::remove_index(c, namespace, identifier).await
+            postgres::remove_indexer(c, namespace, identifier).await
         }
     }
 }
@@ -347,5 +351,26 @@ pub async fn remove_asset_by_version(
         IndexerConnection::Postgres(ref mut c) => {
             postgres::remove_asset_by_version(c, index_id, version, asset_type).await
         }
+    }
+}
+
+pub async fn create_nonce(conn: &mut IndexerConnection) -> sqlx::Result<Nonce> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::create_nonce(c).await,
+    }
+}
+
+pub async fn get_nonce(conn: &mut IndexerConnection, uid: &str) -> sqlx::Result<Nonce> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::get_nonce(c, uid).await,
+    }
+}
+
+pub async fn delete_nonce(
+    conn: &mut IndexerConnection,
+    nonce: &Nonce,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => postgres::delete_nonce(c, nonce).await,
     }
 }

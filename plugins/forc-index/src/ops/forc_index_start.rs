@@ -22,6 +22,11 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         metrics,
         manifest,
         embedded_database,
+        auth_enabled,
+        auth_strategy,
+        jwt_secret,
+        jwt_issuer,
+        jwt_expiry,
         ..
     } = command;
 
@@ -52,18 +57,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
     }
 
-    let stdout = Command::new("which")
-        .arg("fuel-indexer")
-        .output()
-        .expect("❌ Failed to locate fuel-indexer binary.")
-        .stdout;
-
-    let exec = String::from_utf8_lossy(&stdout)
-        .strip_suffix('\n')
-        .expect("Failed to detect fuel-indexer binary in $PATH.")
-        .to_string();
-
-    let mut cmd = Command::new(&exec);
+    let mut cmd = Command::new("fuel-indexer");
     cmd.arg("run");
 
     if let Some(m) = &manifest {
@@ -81,10 +75,27 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         cmd.arg("--log-level").arg(&log_level);
 
         // Bool options
-        let options = vec![("--run-migrations", run_migrations), ("--metrics", metrics)];
+        let options = vec![
+            ("--run-migrations", run_migrations),
+            ("--metrics", metrics),
+            ("--auth-enabled", auth_enabled),
+        ];
         for (opt, value) in options.iter() {
             if *value {
-                cmd.arg(opt).arg("true");
+                cmd.arg(opt);
+            }
+        }
+
+        // Nullable options
+        let options = vec![
+            ("--auth-strategy", auth_strategy),
+            ("--jwt-secret", jwt_secret),
+            ("--jwt-issuer", jwt_issuer),
+            ("--jwt-expiry", jwt_expiry.map(|x| x.to_string())),
+        ];
+        for (opt, value) in options.iter() {
+            if let Some(value) = value {
+                cmd.arg(opt).arg(value);
             }
         }
 
@@ -109,10 +120,13 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         }
     }
 
+    println!("{cmd:?}");
+
     let _proc = cmd
         .spawn()
         .expect("❌ Failed to spawn fuel-indexer child process.");
 
+    // TODO: check stats code of process before saying ok
     info!("\n✅ Successfully started the indexer service.");
 
     Ok(())

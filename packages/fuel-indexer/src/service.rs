@@ -60,9 +60,14 @@ impl IndexerService {
     ) -> IndexerResult<()> {
         let database_url = self.database_url.clone();
         let mut conn = self.pool.acquire().await?;
-        let index =
-            queries::register_index(&mut conn, &manifest.namespace, &manifest.identifier)
-                .await?;
+        let index = queries::register_index(
+            &mut conn,
+            &manifest.namespace,
+            &manifest.identifier,
+            None,
+        )
+        .await?;
+
         let schema = manifest.graphql_schema()?;
         let schema_bytes = schema.as_bytes().to_vec();
 
@@ -107,6 +112,7 @@ impl IndexerService {
                     &manifest.identifier,
                     bytes,
                     asset_type,
+                    None,
                 )
                 .await?;
             }
@@ -153,9 +159,13 @@ impl IndexerService {
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
-        let _index =
-            queries::register_index(&mut conn, &manifest.namespace, &manifest.identifier)
-                .await?;
+        let _index = queries::register_index(
+            &mut conn,
+            &manifest.namespace,
+            &manifest.identifier,
+            None,
+        )
+        .await?;
         let schema = manifest.graphql_schema()?;
         let _schema_bytes = schema.as_bytes().to_vec();
 
@@ -246,7 +256,9 @@ async fn create_service_task(
                                 let assets =
                                     queries::latest_assets_for_index(&mut conn, &id)
                                         .await
-                                        .expect("Could not get latest assets for index");
+                                        .expect(
+                                            "Could not get latest assets for indexer",
+                                        );
 
                                 let manifest: Manifest =
                                     serde_yaml::from_slice(&assets.manifest.bytes)
@@ -280,7 +292,7 @@ async fn create_service_task(
                             }
                             Err(e) => {
                                 error!(
-                                    "Failed to find Index({}.{}): {}",
+                                    "Failed to find Indexer({}.{}): {}",
                                     &request.namespace, &request.identifier, e
                                 );
 
