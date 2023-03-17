@@ -1,3 +1,4 @@
+use crate::defaults::CURRENT_TEST_CONTRACT_ID_STR;
 use crate::{defaults, WORKSPACE_ROOT};
 use axum::routing::Router;
 use fuel_indexer::IndexerService;
@@ -16,7 +17,10 @@ use fuels::{
     },
     signers::Signer,
 };
-use sqlx::{pool::Pool, Postgres};
+use sqlx::{
+    pool::{Pool, PoolConnection},
+    Postgres,
+};
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use tracing_subscriber::filter::EnvFilter;
@@ -39,6 +43,22 @@ pub async fn postgres_connection_pool() -> Pool<Postgres> {
         .unwrap()
     {
         IndexerConnectionPool::Postgres(p) => p,
+    }
+}
+
+pub async fn postgres_connection() -> PoolConnection<Postgres> {
+    let config = DatabaseConfig::Postgres {
+        user: "postgres".into(),
+        password: "my-secret".into(),
+        host: "127.0.0.1".into(),
+        port: "5432".into(),
+        database: "postgres".to_string(),
+    };
+    match IndexerConnectionPool::connect(&config.to_string())
+        .await
+        .unwrap()
+    {
+        IndexerConnectionPool::Postgres(p) => p.acquire().await.unwrap(),
     }
 }
 
@@ -144,20 +164,57 @@ pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
     setup_test_fuel_node(wallet_path, Some(contract_bin_path), None).await
 }
 
-pub fn get_test_contract_id() -> Bech32ContractId {
-    let contract_bin_path = Path::new(WORKSPACE_ROOT)
-        .join("contracts")
-        .join("fuel-indexer-test")
-        .join("out")
-        .join("debug")
-        .join("fuel-indexer-test.bin");
+pub async fn get_contract_id(
+    wallet_path: &str,
+    contract_bin_path: &str,
+) -> Result<(WalletUnlocked, Bech32ContractId), Box<dyn std::error::Error>> {
+    get_contract_id_with_host(
+        wallet_path,
+        contract_bin_path,
+        defaults::FUEL_NODE_ADDR.to_string(),
+    )
+    .await
+}
 
-    let compiled =
-        Contract::load_contract(contract_bin_path.as_os_str().to_str().unwrap(), &None)
+pub async fn get_contract_id_with_host(
+    wallet_path: &str,
+    contract_bin_path: &str,
+    host: String,
+) -> Result<(WalletUnlocked, Bech32ContractId), Box<dyn std::error::Error>> {
+    let filter = match std::env::var_os("RUST_LOG") {
+        Some(_) => {
+            EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
+        }
+        None => EnvFilter::new("info"),
+    };
+
+    let _ = tracing_subscriber::fmt::Subscriber::builder()
+        .with_writer(std::io::stderr)
+        .with_env_filter(filter)
+        .try_init();
+
+    let mut wallet =
+        WalletUnlocked::load_keystore(wallet_path, defaults::WALLET_PASSWORD, None)
             .unwrap();
-    let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
 
-    Bech32ContractId::from(id)
+    let provider = Provider::connect(&host).await.unwrap();
+
+    wallet.set_provider(provider.clone());
+
+    let _compiled = Contract::load_contract(contract_bin_path, &None).unwrap();
+
+    let contract_id = Contract::deploy(
+        contract_bin_path,
+        &wallet,
+        tx_params(),
+        StorageConfiguration::default(),
+    )
+    .await
+    .unwrap();
+
+    println!("Using contract at {:?}", &contract_id);
+
+    Ok((wallet, contract_id))
 }
 
 pub async fn api_server_app_postgres() -> Router {
@@ -256,7 +313,9 @@ pub async fn connect_to_deployed_contract(
         wallet_path.display()
     );
 
-    let contract_id: Bech32ContractId = get_test_contract_id();
+    let contract_id: Bech32ContractId = CURRENT_TEST_CONTRACT_ID_STR
+        .parse()
+        .expect("Invalid ID for test contract");
 
     let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
 
@@ -268,7 +327,7 @@ pub async fn connect_to_deployed_contract(
 pub mod test_web {
 
     use super::{tx_params, FuelIndexerTest};
-    use crate::{defaults, fixtures::get_test_contract_id};
+    use crate::defaults::{self, CURRENT_TEST_CONTRACT_ID_STR};
     use actix_service::ServiceFactory;
     use actix_web::{
         body::MessageBody,
@@ -579,7 +638,9 @@ pub mod test_web {
             wallet_path.display()
         );
 
-        let contract_id: Bech32ContractId = get_test_contract_id();
+        let contract_id: Bech32ContractId = CURRENT_TEST_CONTRACT_ID_STR
+            .parse()
+            .expect("Invalid ID for test contract");
 
         println!("Starting server at {}", defaults::WEB_API_ADDR);
 
