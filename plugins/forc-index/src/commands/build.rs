@@ -1,7 +1,6 @@
 use crate::ops::forc_index_build;
 use anyhow::Result;
 use clap::Parser;
-use forc_tracing::{init_tracing_subscriber, TracingSubscriberOptions};
 use std::path::PathBuf;
 
 /// Build an index.
