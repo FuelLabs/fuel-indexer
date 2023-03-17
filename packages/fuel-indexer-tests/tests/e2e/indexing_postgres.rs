@@ -6,8 +6,8 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        connect_to_deployed_contract, indexer_service_postgres, postgres_connection,
-        postgres_connection_pool, setup_example_test_fuel_node, test_web::app,
+        connect_to_deployed_contract, indexer_service_postgres, postgres_connection_pool,
+        setup_example_test_fuel_node, test_web::app,
     },
     utils::update_test_manifest_asset_paths,
     WORKSPACE_ROOT,
