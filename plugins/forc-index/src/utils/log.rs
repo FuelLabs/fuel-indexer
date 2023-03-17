@@ -1,5 +1,6 @@
-use env_logger::Builder;
-use std::io::Write;
+use tracing::{level_filters::LevelFilter, subscriber::set_global_default};
+use tracing_log::LogTracer;
+use tracing_subscriber::FmtSubscriber;
 
 /// Logger behavior based on the `verbose` flag:
 ///
@@ -16,17 +17,18 @@ impl LoggerConfig {
     pub fn new(verbose: bool) -> Self {
         Self { verbose }
     }
-
     pub fn init(&self) {
-        let mut builder = Builder::new();
-        builder.format(|buf, record| {
-            writeln!(buf, "{}: - {}", record.level(), record.args())
-        });
-        if self.verbose {
-            builder.filter(None, log::LevelFilter::Info);
+        let level = if self.verbose {
+            LevelFilter::INFO
         } else {
-            builder.filter(None, log::LevelFilter::Error);
+            LevelFilter::ERROR
+        };
+
+        let subscriber = FmtSubscriber::builder().with_max_level(level).finish();
+
+        if LogTracer::init().is_ok() {
+            set_global_default(subscriber)
+                .expect("Unable to set global tracing subscriber");
         }
-        builder.init();
     }
 }

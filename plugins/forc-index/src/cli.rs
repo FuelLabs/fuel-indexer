@@ -73,6 +73,7 @@ fn init_logger(command: &ForcIndex) {
         ForcIndex::Remove(c) => c.verbose,
         ForcIndex::Revert(c) => c.verbose,
         ForcIndex::Build(c) => c.verbose,
+        ForcIndex::Auth(_) => return,
         ForcIndex::Postgres(opt) => match &opt.command {
             ForcPostgres::Create(_) => return,
             ForcPostgres::Stop(_) => return,
@@ -80,6 +81,8 @@ fn init_logger(command: &ForcIndex) {
             ForcPostgres::Start(_) => return,
         },
     };
+
+    println!("verbose: {}", verbose);
 
     let logger = LoggerConfig::new(verbose);
     logger.init();
