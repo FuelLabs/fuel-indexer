@@ -232,7 +232,28 @@ fn process_fn_items(
         }
     }
 
-    let abi_selector_tuple_vec = funcs
+    let abi_selectors = funcs
+        .iter()
+        .map(|function| {
+            let params: Vec<ParamType> = function
+                .inputs
+                .iter()
+                .map(|x| {
+                    ParamType::try_from_type_application(x, &abi_types_tyid)
+                        .expect("Could not derive TypeApplication param types.")
+                })
+                .collect();
+            let sig = resolve_fn_selector(&function.name, &params[..]);
+            let selector = u64::from_be_bytes(sig);
+            let ty_id = function.output.type_id;
+
+            quote! {
+                #selector => #ty_id,
+            }
+        })
+        .collect::<Vec<proc_macro2::TokenStream>>();
+
+    let abi_selectors_to_fn_names = funcs
         .iter()
         .map(|function| {
             let params: Vec<ParamType> = function
@@ -246,23 +267,12 @@ fn process_fn_items(
             let sig = resolve_fn_selector(&function.name, &params[..]);
             let fn_name = function.name.clone();
             let selector = u64::from_be_bytes(sig);
-            let ty_id = function.output.type_id;
 
-            (
-                quote! {
-                    #selector => #ty_id,
-                },
-                quote! {
-                   #selector => #fn_name.to_string(),
-                },
-            )
+            quote! {
+               #selector => #fn_name.to_string(),
+            }
         })
-        .collect::<Vec<(proc_macro2::TokenStream, proc_macro2::TokenStream)>>();
-
-    let (abi_selectors, abi_selectors_to_fn_names): (
-        Vec<proc_macro2::TokenStream>,
-        Vec<proc_macro2::TokenStream>,
-    ) = abi_selector_tuple_vec.into_iter().unzip();
+        .collect::<Vec<proc_macro2::TokenStream>>();
 
     let contents = indexer_module
         .content
@@ -404,6 +414,16 @@ fn process_fn_items(
                 }
             }
 
+            pub fn selector_to_fn_name(&self, sel: u64) -> String {
+                match sel {
+                    #(#abi_selectors_to_fn_names)*
+                    _ => {
+                        Logger::warn("Unknown selector; check ABI to make sure function outputs match to types");
+                        "".to_string()
+                    }
+                }
+            }
+
             fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
                     #(#decoders),*
@@ -462,20 +482,11 @@ fn process_fn_items(
                         match receipt {
                             Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
                                 #contract
-                                fn selector_to_fn_name(sel: u64) -> String {
-                                    match sel {
-                                        #(#abi_selectors_to_fn_names)*
-                                        _ => {
-                                            Logger::warn("Unknown selector; check ABI to make sure function outputs match to types");
-                                            "".to_string()
-                                        }
-                                    }
-                                }
 
+                                let fn_name = decoder.selector_to_fn_name(param1);
                                 return_types.push(param1);
                                 callees.insert(id);
 
-                                let fn_name = selector_to_fn_name(param1);
                                 let data = bincode::serialize(&abi::Call { contract_id, to: id, amount, asset_id, gas, fn_name }).expect("Bad encoding");
                                 let ty_id = abi::Call::type_id();
                                 decoder.decode_type(ty_id, data);
