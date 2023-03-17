@@ -1,4 +1,4 @@
-use crate::{cli::StartCommand, utils::log::LoggerConfig};
+use crate::cli::StartCommand;
 use forc_postgres::cli::CreateDbCommand;
 use fuel_indexer_lib::defaults;
 use std::process::Command;
@@ -120,7 +120,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         }
     }
 
-    println!("{cmd:?}");
+    info!("{cmd:?}");
 
     let _proc = cmd
         .spawn()

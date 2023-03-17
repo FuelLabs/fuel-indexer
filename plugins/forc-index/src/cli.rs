@@ -11,7 +11,6 @@ use forc_postgres::{
     cli::{ForcPostgres, Opt as ForcPostgresOpt},
     commands as pg_commands,
 };
-use forc_tracing::{init_tracing_subscriber, TracingSubscriberOptions};
 
 #[derive(Debug, Parser)]
 #[clap(name = "forc index", about = "Fuel Index Orchestrator", version)]
@@ -22,7 +21,7 @@ struct Opt {
 }
 
 #[derive(Subcommand, Debug)]
-enum ForcIndex {
+pub enum ForcIndex {
     Init(InitCommand),
     New(NewCommand),
     Deploy(DeployCommand),
@@ -37,12 +36,8 @@ enum ForcIndex {
 
 pub async fn run_cli() -> Result<(), anyhow::Error> {
     let opt = Opt::parse();
-    let tracing_options = TracingSubscriberOptions {
-        ..Default::default()
-    };
-
-    init_logger(&opt.command);
-    //init_tracing_subscriber(tracing_options);
+    let logger = LoggerConfig::new(&opt.command);
+    logger.init();
 
     match opt.command {
         ForcIndex::Init(command) => crate::commands::init::exec(command),
@@ -61,29 +56,4 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
             ForcPostgres::Start(command) => pg_commands::start::exec(command).await,
         },
     }
-}
-
-fn init_logger(command: &ForcIndex) {
-    let verbose = match command {
-        ForcIndex::Init(c) => c.verbose,
-        ForcIndex::New(c) => c.verbose,
-        ForcIndex::Deploy(c) => c.verbose,
-        ForcIndex::Start(_) => return,
-        ForcIndex::Check(_) => return,
-        ForcIndex::Remove(c) => c.verbose,
-        ForcIndex::Revert(c) => c.verbose,
-        ForcIndex::Build(c) => c.verbose,
-        ForcIndex::Auth(_) => return,
-        ForcIndex::Postgres(opt) => match &opt.command {
-            ForcPostgres::Create(_) => return,
-            ForcPostgres::Stop(_) => return,
-            ForcPostgres::Drop(_) => return,
-            ForcPostgres::Start(_) => return,
-        },
-    };
-
-    println!("verbose: {}", verbose);
-
-    let logger = LoggerConfig::new(verbose);
-    logger.init();
 }

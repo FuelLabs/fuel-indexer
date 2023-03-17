@@ -1,7 +1,7 @@
 use crate::{
     cli::{BuildCommand, DeployCommand},
     commands::build,
-    utils::{extract_manifest_fields, log::LoggerConfig, project_dir_info},
+    utils::{extract_manifest_fields, project_dir_info},
 };
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{

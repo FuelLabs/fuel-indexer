@@ -32,7 +32,7 @@ pub struct Command {
     pub absolute_paths: bool,
 
     /// Enable verbose output.
-    #[clap(short, long, help = "Enable verbose output.", default_value = "true")]
+    #[clap(short, long, help = "Enable verbose output.")]
     pub verbose: bool,
 }
 

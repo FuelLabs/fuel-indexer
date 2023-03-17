@@ -1,7 +1,4 @@
-use crate::{
-    cli::RemoveCommand,
-    utils::{log::LoggerConfig, project_dir_info},
-};
+use crate::{cli::RemoveCommand, utils::project_dir_info};
 use fuel_indexer_lib::manifest::Manifest;
 use reqwest::{
     blocking::Client,
@@ -15,7 +12,6 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
     let RemoveCommand {
         path,
         manifest,
-        verbose,
         url,
         auth,
         ..
@@ -59,9 +55,9 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
 
-    println!("\n{}", to_string_pretty(&res_json)?);
+    info!("\n{}", to_string_pretty(&res_json)?);
 
-    info!(
+    println!(
         "\n✅ Successfully removed index '{}.{}' at {} \n",
         &manifest.namespace, &manifest.identifier, &target
     );

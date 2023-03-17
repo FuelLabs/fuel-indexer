@@ -1,7 +1,4 @@
-use crate::{
-    cli::RevertCommand,
-    utils::{log::LoggerConfig, project_dir_info},
-};
+use crate::{cli::RevertCommand, utils::project_dir_info};
 use fuel_indexer_lib::manifest::Manifest;
 use reqwest::{
     blocking::Client,
@@ -16,7 +13,6 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         url,
         path,
         manifest,
-        verbose,
         ..
     } = command;
 
@@ -60,7 +56,12 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
 
-    println!("\n{}", to_string_pretty(&res_json)?);
+    info!("\n{}", to_string_pretty(&res_json)?);
+
+    println!(
+        "\n✅ Indexer '{}'.'{}' reverted successfully.",
+        &manifest.namespace, &manifest.identifier
+    );
 
     Ok(())
 }

@@ -159,7 +159,7 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
 
     pb.finish();
 
-    info!("\n✅ Successfully created database at '{pg_db_uri}'.");
+    println!("\n✅ Successfully created database at '{pg_db_uri}'.");
 
     if start {
         start_database(pg, name, database_dir, config).await?;
@@ -181,6 +181,7 @@ async fn start_database(
         name,
         database_dir: Some(database_dir.unwrap()),
         config,
+        verbose: false,
     })
     .await?;
 

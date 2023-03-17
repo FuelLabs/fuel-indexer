@@ -1,6 +1,6 @@
 use crate::{
     cli::BuildCommand,
-    utils::{defaults, log::LoggerConfig, project_dir_info},
+    utils::{defaults, project_dir_info},
 };
 use fuel_indexer_lib::manifest::{Manifest, Module};
 use indicatif::{ProgressBar, ProgressStyle};

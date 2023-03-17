@@ -8,6 +8,7 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
         name,
         database_dir,
         config,
+        ..
     } = command;
 
     let pg_config =
@@ -32,7 +33,7 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
     match pg.database_exists(&name).await {
         Ok(exists) => {
             if exists {
-                info!("\n✅ Successfully started database at '{pg_db_uri}'.");
+                println!("\n✅ Successfully started database at '{pg_db_uri}'.");
             } else {
                 anyhow::bail!("❌ Database at '{pg_db_uri}' does not exist.");
             }

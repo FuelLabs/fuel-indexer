@@ -2,7 +2,7 @@ use crate::cli::AuthCommand;
 use reqwest::{blocking::Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use tracing::{error, info};
+use tracing::error;
 
 #[derive(Deserialize, Debug)]
 struct NonceResponse {
@@ -95,7 +95,7 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
     let response: SignatureResponse = res.json().unwrap();
 
     if let Some(token) = response.token {
-        info!(
+        println!(
             "\n✅ Successfully authenticated at {target}.\n\nToken: {}",
             token
         );

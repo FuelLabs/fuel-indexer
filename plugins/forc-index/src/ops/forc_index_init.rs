@@ -1,8 +1,6 @@
 use crate::{
     cli::InitCommand,
-    utils::{
-        default_manifest_filename, default_schema_filename, defaults, log::LoggerConfig,
-    },
+    utils::{default_manifest_filename, default_schema_filename, defaults},
 };
 use anyhow::Context;
 use forc_util::{kebab_to_snake_case, validate_name};
@@ -10,7 +8,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
-use tracing::{debug, info};
+use tracing::info;
 
 fn print_welcome_message() {
     let read_the_docs = format!(
@@ -76,7 +74,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         namespace,
         native,
         absolute_paths,
-        verbose,
+        ..
     } = command;
 
     let project_dir = match &path {
@@ -99,7 +97,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         );
     }
 
-    debug!(
+    info!(
         "\nUsing project directory at {}",
         project_dir.canonicalize()?.display()
     );
@@ -188,7 +186,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         );
     }
 
-    debug!("\n✅ nSuccessfully created index {project_name}");
+    println!("\n✅ Successfully created index {project_name}");
 
     print_welcome_message();
 
