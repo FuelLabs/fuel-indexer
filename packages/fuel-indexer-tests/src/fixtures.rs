@@ -1,10 +1,11 @@
 use crate::defaults::CURRENT_TEST_CONTRACT_ID_STR;
 use crate::{defaults, WORKSPACE_ROOT};
-use axum::Router;
+use axum::routing::Router;
 use fuel_indexer::IndexerService;
 use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::config::{
+    auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
     DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
 };
 use fuels::{
@@ -218,11 +219,7 @@ pub async fn get_contract_id_with_host(
 
 pub async fn api_server_app_postgres() -> Router {
     let config = IndexerConfig {
-        fuel_node: FuelNodeConfig::from(
-            defaults::FUEL_NODE_ADDR
-                .parse::<std::net::SocketAddr>()
-                .unwrap(),
-        ),
+        fuel_node: FuelNodeConfig::default(),
         database: DatabaseConfig::Postgres {
             user: "postgres".into(),
             password: "my-secret".into(),
@@ -231,9 +228,40 @@ pub async fn api_server_app_postgres() -> Router {
             database: "postgres".to_string(),
         },
         graphql_api: GraphQLConfig::default(),
-        metrics: true,
+        metrics: false,
         stop_idle_indexers: true,
-        max_body: defaults::MAX_BODY,
+        run_migrations: false,
+        authentication: AuthenticationConfig::default(),
+    };
+
+    let pool = IndexerConnectionPool::connect(&config.database.to_string())
+        .await
+        .expect("Failed to create connection pool");
+
+    GraphQlApi::build(config, pool, None).await.unwrap()
+}
+
+pub async fn authenticated_api_server_app_postgres() -> Router {
+    let config = IndexerConfig {
+        fuel_node: FuelNodeConfig::default(),
+        database: DatabaseConfig::Postgres {
+            user: "postgres".into(),
+            password: "my-secret".into(),
+            host: "127.0.0.1".into(),
+            port: "5432".into(),
+            database: "postgres".to_string(),
+        },
+        graphql_api: GraphQLConfig::default(),
+        metrics: false,
+        stop_idle_indexers: true,
+        run_migrations: false,
+        authentication: AuthenticationConfig{
+            enabled: true,
+            strategy: Some(AuthenticationStrategy::JWT),
+            jwt_secret: Some("6906573247652854078288872150120717701634680141358560585446649749925714230966".to_string()),
+            jwt_issuer: Some("FuelLabs".to_string()),
+            jwt_expiry: Some(config_defaults::JWT_EXPIRY_SECS)
+        },
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -245,11 +273,7 @@ pub async fn api_server_app_postgres() -> Router {
 
 pub async fn indexer_service_postgres() -> IndexerService {
     let config = IndexerConfig {
-        fuel_node: FuelNodeConfig::from(
-            defaults::FUEL_NODE_ADDR
-                .parse::<std::net::SocketAddr>()
-                .unwrap(),
-        ),
+        fuel_node: FuelNodeConfig::default(),
         database: DatabaseConfig::Postgres {
             user: "postgres".into(),
             password: "my-secret".into(),
@@ -260,7 +284,8 @@ pub async fn indexer_service_postgres() -> IndexerService {
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,
-        max_body: defaults::MAX_BODY,
+        run_migrations: false,
+        authentication: AuthenticationConfig::default(),
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())

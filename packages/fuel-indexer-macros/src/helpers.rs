@@ -74,11 +74,13 @@ pub fn is_non_decodable_type(typ: &TypeDeclaration) -> bool {
     false
 }
 
+/// Whether this Path token is a generic
 pub fn path_is_generic_struct(p: &str) -> bool {
     // TODO: Add others as needed
     matches!(p, "Vec")
 }
 
+/// Given a generic struct and it's T, return the corresponding Ident
 pub fn generic_path_tokens(generic: &str, gt: &str) -> proc_macro2::TokenStream {
     // TODO: Add others as needed
     match generic {
@@ -220,8 +222,8 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u32" => quote! { u32 },
             "u64" => quote! { u64 },
             "u8" => quote! { u8 },
-            "BlockData" => quote! { BlockData },
             "Call" => quote! { abi::Call },
+            "BlockData" => quote! { BlockData },
             "Identity" => quote! { abi::Identity },
             "Log" => quote! { abi::Log },
             "LogData" => quote! { abi::LogData },

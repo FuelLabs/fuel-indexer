@@ -1,5 +1,5 @@
 use crate::{
-    config::{IndexerConfigResult, MutConfig},
+    config::{Env, IndexerConfigResult},
     defaults,
     utils::{is_opt_env_var, trim_opt_env_key},
 };
@@ -17,7 +17,7 @@ pub struct GraphQLConfig {
     #[serde(default)]
     pub port: String,
     #[serde(default)]
-    pub run_migrations: bool,
+    pub max_body_size: usize,
 }
 
 impl std::string::ToString for GraphQLConfig {
@@ -40,7 +40,7 @@ impl Default for GraphQLConfig {
         Self {
             host: defaults::GRAPHQL_API_HOST.into(),
             port: defaults::GRAPHQL_API_PORT.into(),
-            run_migrations: defaults::GRAPHQL_API_RUN_MIGRATIONS,
+            max_body_size: defaults::MAX_BODY_SIZE,
         }
     }
 }
@@ -53,7 +53,7 @@ impl From<GraphQLConfig> for SocketAddr {
     }
 }
 
-impl MutConfig for GraphQLConfig {
+impl Env for GraphQLConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         if is_opt_env_var(&self.host) {
             self.host = std::env::var(trim_opt_env_key(&self.host))?;

@@ -9,9 +9,6 @@ repository = { workspace = true }
 rust-version = { workspace = true }
 description = "Fuel Indexer Macros"
 
-[package.metadata.cargo-udeps.ignore]
-development = ["fuels", "fuel-indexer-plugin"]
-
 [lib]
 proc-macro = true
 
@@ -37,7 +34,7 @@ syn = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
 fuel-indexer-plugin = { workspace = true }
-fuels = { version = "0.37"}
+fuels = { version = "0.37" }
 fuels-macros = { version = "0.37", default-features = false }
 fuels-types = { version = "0.37", default-features = false }
 trybuild = "1.0"

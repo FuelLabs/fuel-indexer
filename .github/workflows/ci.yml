@@ -14,16 +14,17 @@ env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
   REGISTRY: ghcr.io
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   SQLX_OFFLINE: true
   RUSTC_VERSION: 1.67
-  BRANCH_NAME: ${{ github.head_ref || github.ref_name }} 
+  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   IS_MASTER: github.ref == 'refs/heads/master'
   IS_RELEASE: github.event_name == 'release' && github.event.action == 'published'
   IS_RELEASE_OR_MASTER: github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master'
 
 jobs:
   cancel-previous-runs:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.9.1
@@ -33,40 +34,38 @@ jobs:
   check-rustc:
     needs:
       - cancel-previous-runs
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Check rustc version
         run: |
-          # Check rustc version, log message and exit if it doesnt match env 
+          # Check rustc version, log message and exit if it doesnt match env
           CURRENT_RUSTC_VERSION=$(rustc --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | cut -c -4)
           if [ "$CURRENT_RUSTC_VERSION" != "$RUSTC_VERSION" ]; then
             echo "Rustc version ($CURRENT_RUSTC_VERSION) does not match the required version ($RUSTC_VERSION)"
-            exit 1 
+            exit 1
           fi
           echo "Rustc version ($CURRENT_RUSTC_VERSION) matches the required version ($RUSTC_VERSION)"
-      
+
   cargo-toml-fmt-check:
     needs:
       - check-rustc
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v1
+          toolchain: ${{ env.RUSTC_VERSION }}
+      - name: setup binstall
+        uses: taiki-e/install-action@cargo-binstall
       - name: Install Cargo.toml linter
-        uses: baptiste0928/cargo-install@v1
-        with:
-          crate: cargo-toml-lint
-          version: '0.1'
-      - name: Run Cargo.toml linter
-        run: git ls-files | grep Cargo.toml$ | xargs --verbose -n 1 cargo-toml-lint
+        run: cargo binstall --no-confirm cargo-sort
+      - name: Run Cargo.toml sort check
+        run: cargo sort -w --check packages/**/Cargo.toml
 
   set-env-vars:
     needs:
       - check-rustc
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     outputs:
       IS_MASTER: ${{ steps.set-env.outputs.IS_MASTER }}
       IS_RELEASE: ${{ steps.set-env.outputs.IS_RELEASE }}
@@ -84,8 +83,8 @@ jobs:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
     needs:
       - set-env-vars
-    runs-on: ubuntu-latest
-    outputs: 
+    runs-on: buildjet-4vcpu-ubuntu-2204
+    outputs:
       is_semver_branch: ${{ steps.semver-branch-check.outputs.is_semver_branch }}
     steps:
       - name: Check for semver branch
@@ -96,11 +95,11 @@ jobs:
           else
             echo "Not a release branch ^(^.^)^"
           fi
-          
+
   mdbook-lint:
     needs:
       - check-rustc
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -113,7 +112,7 @@ jobs:
   mdbook-build:
     needs:
       - mdbook-lint
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -127,7 +126,7 @@ jobs:
           mdbook-version: 'latest'
 
   cargo-verifications:
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     services:
       postgres:
         image: postgres:latest
@@ -180,7 +179,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -195,7 +194,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -210,7 +209,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     services:
       postgres:
         image: postgres:latest
@@ -235,7 +234,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     services:
       postgres:
         image: postgres:latest
@@ -259,7 +258,7 @@ jobs:
 
       - name: Install wasm-snip
         run: cargo install wasm-snip
-      
+
       - name: Build fuel-indexer-test WASM
         run: |
           cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown
@@ -280,7 +279,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -318,7 +317,7 @@ jobs:
       - check-forc-index
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     permissions:
       contents: read
       packages: write
@@ -359,6 +358,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: BUILD_TARGET=--all-targets
 
       - name: Notify if Job Fails
         uses: ravsamhq/notify-slack-action@v2
@@ -442,7 +442,14 @@ jobs:
 
       - name: Build fuel-indexer
         run: |
-          cross build --profile=release --target ${{ matrix.job.target }} -p fuel-indexer -p fuel-indexer-api-server -p forc-index
+          cross \
+            build \
+            --profile=release \
+            --target ${{ matrix.job.target }} \
+            --features fuel-core-lib \
+            -p fuel-indexer \
+            -p fuel-indexer-api-server \
+            -p forc-index
 
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
@@ -562,7 +569,7 @@ jobs:
     needs:
       - publish-docker-image
       - set-env-vars
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Set Environment Variables
         run: |
@@ -583,7 +590,7 @@ jobs:
           K8S: 'eks'
           CONFIG: 'fuel-dev1'
           ENV: 'fueldevsway.env'
-          
+
   # TODO: publish these in parallel
   publish:
     needs:
@@ -591,7 +598,7 @@ jobs:
       - publish-docker-image
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -643,14 +650,13 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
-
   validation-complete:
     if: always()
     needs:
       - deploy
       - publish
       - cargo-verifications
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - run: true
 
@@ -658,7 +664,7 @@ jobs:
     needs:
       - validation-complete
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - name: Notify Slack On Failure
         uses: ravsamhq/notify-slack-action@v2

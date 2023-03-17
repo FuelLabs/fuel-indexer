@@ -44,6 +44,13 @@ Kill a running indexer
 forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
 ```
 
+### `forc index revert`
+Remove the current indexer and revert to the penultimate version of this indexer.
+
+```bash
+forc index revert --url https://index.swayswap.io --manifest my_index.manifest.yaml
+```
+
 ### `forc index check`
 
 Check to see which indexer components you have installed.

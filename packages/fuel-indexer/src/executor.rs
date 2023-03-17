@@ -1,5 +1,5 @@
 use crate::ffi;
-use crate::{database::Database, IndexerError, IndexerResult, Manifest};
+use crate::{database::Database, IndexerError, IndexerResult};
 use async_std::sync::{Arc, Mutex};
 use async_trait::async_trait;
 use fuel_indexer_schema::utils::serialize;
@@ -29,6 +29,7 @@ use fuel_indexer_lib::{
         DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR, INDEX_FAILED_CALLS,
         MAX_EMPTY_BLOCK_REQUESTS,
     },
+    manifest::Manifest,
 };
 use fuel_indexer_types::{
     abi::TransactionData,
@@ -74,18 +75,16 @@ impl ExecutorSource {
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
     fuel_node_addr: &str,
     mut executor: T,
-    start_block: Option<u64>,
+    start_block: &u64,
     kill_switch: Arc<AtomicBool>,
     stop_idle_indexers: bool,
 ) -> impl Future<Output = ()> {
-    let start_block_value = start_block.unwrap_or(1);
-    let mut next_cursor = if start_block_value > 1 {
-        let decremented = start_block_value - 1;
+    let mut next_cursor = if *start_block > 1 {
+        let decremented = start_block - 1;
         Some(decremented.to_string())
     } else {
         None
     };
-
     info!("Subscribing to Fuel node at {fuel_node_addr}");
 
     let client = FuelClient::from_str(fuel_node_addr).unwrap_or_else(|e| {
@@ -351,15 +350,15 @@ where
         fuel_node: &FuelNodeConfig,
         manifest: Manifest,
         stop_idle_indexers: bool,
+        start_block: u64,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
-        let start_block = manifest.start_block;
         let executor = NativeIndexExecutor::new(db_url, manifest, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
         let handle = tokio::spawn(run_executor(
             &fuel_node.to_string(),
             executor,
-            start_block,
+            &start_block,
             kill_switch.clone(),
             stop_idle_indexers,
         ));
@@ -447,8 +446,10 @@ impl WasmIndexExecutor {
         manifest: &Manifest,
         exec_source: ExecutorSource,
         stop_idle_indexers: bool,
+        start_block: &u64,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
+
         match &exec_source {
             ExecutorSource::Manifest => match &manifest.module {
                 crate::Module::Wasm(ref module) => {
@@ -465,7 +466,7 @@ impl WasmIndexExecutor {
                     let handle = tokio::spawn(run_executor(
                         &fuel_node.to_string(),
                         executor,
-                        manifest.start_block,
+                        start_block,
                         killer.clone(),
                         stop_idle_indexers,
                     ));
@@ -483,7 +484,7 @@ impl WasmIndexExecutor {
                 let handle = tokio::spawn(run_executor(
                     &fuel_node.to_string(),
                     executor,
-                    manifest.start_block,
+                    start_block,
                     killer.clone(),
                     stop_idle_indexers,
                 ));

@@ -35,7 +35,6 @@ use std::collections::HashSet;
     manifest = "examples/block-explorer/explorer-index/explorer_index.manifest.yaml"
 )]
 mod explorer_index {
-
     // When specifying args to your handler functions, you can either use types defined
     // in your ABI JSON file, or you can use native Fuel types. These native Fuel types
     // include various `Receipt`s, as well as more comprehensive data, in the form of

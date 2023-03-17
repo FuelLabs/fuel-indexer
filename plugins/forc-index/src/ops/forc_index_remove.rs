@@ -9,7 +9,13 @@ use serde_json::{to_string_pretty, value::Value, Map};
 use tracing::{error, info};
 
 pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
-    let RemoveCommand { path, manifest, .. } = command;
+    let RemoveCommand {
+        path,
+        manifest,
+        url,
+        auth,
+        ..
+    } = command;
 
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
@@ -17,19 +23,18 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
     let manifest: Manifest = Manifest::from_file(manifest_path.as_path())?;
 
     let target = format!(
-        "{}/api/index/{}/{}",
-        &command.url, &manifest.namespace, &manifest.identifier
+        "{url}/api/index/{}/{}",
+        &manifest.namespace, &manifest.identifier
     );
 
     let mut headers = HeaderMap::new();
-    headers.insert(
-        AUTHORIZATION,
-        command.auth.unwrap_or_else(|| "fuel".into()).parse()?,
-    );
+    if let Some(auth) = auth {
+        headers.insert(AUTHORIZATION, auth.parse()?);
+    }
 
     info!(
-        "\n🛑 Removing index '{}.{}' at {}",
-        &manifest.namespace, &manifest.identifier, &target
+        "\n🛑 Removing index '{}.{}' at {target}",
+        &manifest.namespace, &manifest.identifier
     );
 
     let res = Client::new()
@@ -40,8 +45,7 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
 
     if res.status() != StatusCode::OK {
         error!(
-            "\n❌ {} returned a non-200 response code: {:?}",
-            &target,
+            "\n❌ {target} returned a non-200 response code: {:?}",
             res.status()
         );
         return Ok(());
