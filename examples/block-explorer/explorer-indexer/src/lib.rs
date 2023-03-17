@@ -5,7 +5,7 @@
 //! wasm32-unknown-unknown target will be required.
 //!
 //! ```bash
-//! cargo build -p explorer-index --release --target wasm32-unknown-unknown
+//! cargo build -p explorer-indexer --release --target wasm32-unknown-unknown
 //! ```
 //!
 //! Use the fuel-indexer testing components to start your Fuel node and web API
@@ -18,7 +18,7 @@
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/block-explorer/explorer_indexer.manifest.yaml
+//! cargo run --bin fuel-indexer -- --manifest examples/explorer-indexer/explorer_indexer.manifest.yaml
 //! ```
 
 extern crate alloc;
