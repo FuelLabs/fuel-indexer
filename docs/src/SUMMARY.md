@@ -40,7 +40,6 @@
   - [Schema](./reference-guide/components/graphql/schema.md)
   - [Directives](./reference-guide/components/graphql/directives.md)
   - [API Server](./reference-guide/components/graphql/api-server.md)
-  - [Queries](./reference-guide/components/graphql/queries.md)
 - [Database](./reference-guide/components/database/index.md)
   - [Foreign Keys](./reference-guide/components/database/foreign-keys.md)
   - [ID Types](./reference-guide/components/database/ids.md)
