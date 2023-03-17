@@ -30,8 +30,8 @@ extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
-#[indexer(manifest = "examples/hello-world/hello-index/hello_index.manifest.yaml")]
-mod hello_world_index {
+#[indexer(manifest = "examples/hello-world/hello-index/hello_indexer.manifest.yaml")]
+mod hello_world_indexer {
 
     fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the
