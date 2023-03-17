@@ -1,8 +1,6 @@
 <!-- markdownlint-disable MD033 -->
 # 🗃 Fuel Indexer
 
-![Fuel Logo](./img/fuel.png)
-
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
 By using a combination of Fuel-flavored GraphQL schema, a SQL backend, and indexers written in Rust, users of the Fuel indexer can get started creating production-ready backends for their dApps, meant to go fast 🚗💨.

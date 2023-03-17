@@ -1,12 +1,27 @@
-# 🗃 Fuel Indexer
 <!-- markdownlint-disable MD033 -->
 <!-- markdownlint-disable MD025 -->
-![Fuel Logo](./src/img/fuel.png "Fuel Logo")
+<!-- markdownlint-disable MD041 -->
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="./src/img/fuel-indexer-logo-dark.png">
+        <img alt="Fuel Indexer logo" width="400px" src="./src/img/fuel-indexer-logo-light.png">
+    </picture>
 
-[![build](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/fuel-indexer?label=latest)](https://crates.io/crates/fuel-indexer)
-[![docs](https://docs.rs/fuel-indexer/badge.svg)](https://docs.rs/fuel-indexer/)
-[![discord](https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xfpK4Pe)
+</p>
+<p align="center">
+    <a href="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml" alt="CI">
+        <img src="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg" />
+    </a>
+    <a href="https://crates.io/crates/fuel-indexer" alt="crates.io">
+        <img src="https://img.shields.io/crates/v/fuel-indexer?label=latest" />
+    </a>
+    <a href="https://docs.rs/fuel-indexer/" alt="docs.rs">
+        <img src="https://docs.rs/fuel-indexer/badge.svg" />
+    </a>
+    <a href="https://discord.gg/xfpK4Pe" alt="Discord">
+        <img src="https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" />
+    </a>
+</p>
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
