@@ -14,6 +14,7 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
         manifest,
         url,
         auth,
+        verbose,
         ..
     } = command;
 
@@ -32,10 +33,14 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
         headers.insert(AUTHORIZATION, auth.parse()?);
     }
 
-    info!(
-        "\n🛑 Removing index '{}.{}' at {target}",
-        &manifest.namespace, &manifest.identifier
-    );
+    if verbose {
+        info!(
+            "\n🛑 Removing index '{}.{}' at {target}",
+            &manifest.namespace, &manifest.identifier
+        );
+    } else {
+        info!("\n🛑 Removing index ")
+    }
 
     let res = Client::new()
         .delete(&target)
@@ -57,10 +62,14 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
 
     info!("\n{}", to_string_pretty(&res_json)?);
 
-    println!(
-        "\n✅ Successfully removed index '{}.{}' at {} \n",
-        &manifest.namespace, &manifest.identifier, &target
-    );
+    if verbose {
+        info!(
+            "\n✅ Successfully removed index '{}.{}' at {} \n",
+            &manifest.namespace, &manifest.identifier, &target
+        );
+    } else {
+        info!("\n✅ Successfully removed index \n");
+    }
 
     Ok(())
 }

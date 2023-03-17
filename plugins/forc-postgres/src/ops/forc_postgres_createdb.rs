@@ -87,6 +87,7 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
         migration_dir,
         start,
         config,
+        verbose,
         ..
     } = command.clone();
 
@@ -127,7 +128,11 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
 
     pg.start_db().await?;
 
-    info!("\n💡 Creating database at '{pg_db_uri}'.");
+    if verbose {
+        info!("\n💡 Creating database at '{pg_db_uri}'.");
+    } else {
+        info!("💡 Creating database");
+    }
 
     if let Err(e) = pg.create_database(&name).await {
         if let Some(err) = e.source {
@@ -159,7 +164,11 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
 
     pb.finish();
 
-    println!("\n✅ Successfully created database at '{pg_db_uri}'.");
+    if verbose {
+        info!("\n✅ Successfully created database at '{pg_db_uri}'.");
+    } else {
+        info!("✅ Successfully created database");
+    }
 
     if start {
         start_database(pg, name, database_dir, config).await?;

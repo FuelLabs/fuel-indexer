@@ -13,6 +13,7 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         url,
         path,
         manifest,
+        verbose,
         ..
     } = command;
 
@@ -32,10 +33,14 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         command.auth.unwrap_or_else(|| "fuel".into()).parse()?,
     );
 
-    info!(
-        "\n⬅️  Reverting indexer '{}.{}' at {}",
-        &manifest.namespace, &manifest.identifier, &target
-    );
+    if verbose {
+        info!(
+            "\n⬅️  Reverting indexer '{}.{}' at {}",
+            &manifest.namespace, &manifest.identifier, &target
+        );
+    } else {
+        info!("\n⬅️  Reverting indexer")
+    }
 
     let res = Client::new()
         .put(&target)
@@ -56,12 +61,18 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
 
-    info!("\n{}", to_string_pretty(&res_json)?);
+    if verbose {
+        info!("\n{}", to_string_pretty(&res_json)?);
+    }
 
-    println!(
-        "\n✅ Indexer '{}'.'{}' reverted successfully.",
-        &manifest.namespace, &manifest.identifier
-    );
+    if verbose {
+        info!(
+            "\n✅ Indexer '{}'.'{}' reverted successfully.",
+            &manifest.namespace, &manifest.identifier
+        );
+    } else {
+        info!("\n✅ Indexer reverted successfully.")
+    }
 
     Ok(())
 }

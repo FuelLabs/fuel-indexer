@@ -74,7 +74,7 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         namespace,
         native,
         absolute_paths,
-        ..
+        verbose,
     } = command;
 
     let project_dir = match &path {
@@ -97,10 +97,12 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         );
     }
 
-    info!(
-        "\nUsing project directory at {}",
-        project_dir.canonicalize()?.display()
-    );
+    if verbose {
+        info!(
+            "\nUsing project directory at {}",
+            project_dir.canonicalize()?.display()
+        );
+    }
 
     let project_name = match name {
         Some(name) => name,
@@ -186,9 +188,12 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
         );
     }
 
-    println!("\n✅ Successfully created index {project_name}");
+    if verbose {
+        info!("\n✅ Successfully created index {project_name}");
+    } else {
+        info!("\n✅ Successfully created index");
+    }
 
     print_welcome_message();
-
     Ok(())
 }

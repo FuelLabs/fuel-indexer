@@ -2,7 +2,7 @@ use crate::cli::AuthCommand;
 use reqwest::{blocking::Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use std::process::Command;
-use tracing::error;
+use tracing::{error, info};
 
 #[derive(Deserialize, Debug)]
 struct NonceResponse {
@@ -27,7 +27,11 @@ fn derive_signature_from_output(o: &str) -> String {
 }
 
 pub fn init(command: AuthCommand) -> anyhow::Result<()> {
-    let AuthCommand { url, account, .. } = command;
+    let AuthCommand {
+        url,
+        account,
+        verbose,
+    } = command;
 
     let target = format!("{url}/api/auth/nonce");
 
@@ -95,10 +99,14 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
     let response: SignatureResponse = res.json().unwrap();
 
     if let Some(token) = response.token {
-        println!(
-            "\n✅ Successfully authenticated at {target}.\n\nToken: {}",
-            token
-        );
+        if verbose {
+            info!(
+                "\n✅ Successfully authenticated at {target}.\n\nToken: {}",
+                token
+            );
+        } else {
+            info!("\n✅ Authenticated successfully.");
+        }
     } else {
         error!("\n❌ Failed to produce a token.");
     }

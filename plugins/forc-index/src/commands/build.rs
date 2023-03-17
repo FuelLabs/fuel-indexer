@@ -1,6 +1,7 @@
 use crate::ops::forc_index_build;
 use anyhow::Result;
 use clap::Parser;
+use forc_tracing::{init_tracing_subscriber, TracingSubscriberOptions};
 use std::path::PathBuf;
 
 /// Build an index.
@@ -30,10 +31,6 @@ pub struct Command {
     #[clap(long, help = "Build with the given profile.")]
     pub profile: Option<String>,
 
-    /// Verbose output.
-    #[clap(short, long, help = "Verbose output.")]
-    pub verbose: bool,
-
     /// Ensure that the Cargo.lock file is up-to-date.
     #[clap(long, help = "Ensure that the Cargo.lock file is up-to-date.")]
     pub locked: bool,
@@ -48,6 +45,10 @@ pub struct Command {
         help = "Path with which to prefix asset filepaths in the index manifest."
     )]
     pub output_dir_root: Option<PathBuf>,
+
+    /// Enable verbose output.
+    #[clap(short, long, help = "Enable verbose output.")]
+    pub verbose: bool,
 }
 
 pub fn exec(command: Command) -> Result<()> {

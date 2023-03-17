@@ -1,5 +1,4 @@
 pub mod defaults;
-pub mod log;
 use defaults::manifest_name;
 use std::{fs::canonicalize, path::PathBuf};
 

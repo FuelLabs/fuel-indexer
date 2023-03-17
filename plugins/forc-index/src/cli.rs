@@ -5,12 +5,12 @@ pub(crate) use crate::commands::{
     remove::Command as RemoveCommand, revert::Command as RevertCommand,
     start::Command as StartCommand,
 };
-use crate::utils::log::LoggerConfig;
 use clap::{Parser, Subcommand};
 use forc_postgres::{
     cli::{ForcPostgres, Opt as ForcPostgresOpt},
     commands as pg_commands,
 };
+use forc_tracing::{init_tracing_subscriber, TracingSubscriberOptions};
 
 #[derive(Debug, Parser)]
 #[clap(name = "forc index", about = "Fuel Index Orchestrator", version)]
@@ -36,8 +36,10 @@ pub enum ForcIndex {
 
 pub async fn run_cli() -> Result<(), anyhow::Error> {
     let opt = Opt::parse();
-    let logger = LoggerConfig::new(&opt.command);
-    logger.init();
+    let tracing_options = TracingSubscriberOptions {
+        ..Default::default()
+    };
+    init_tracing_subscriber(tracing_options);
 
     match opt.command {
         ForcIndex::Init(command) => crate::commands::init::exec(command),

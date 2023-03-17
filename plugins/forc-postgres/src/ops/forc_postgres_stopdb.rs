@@ -7,6 +7,7 @@ pub async fn init(command: StopDbCommand) -> anyhow::Result<()> {
         name,
         database_dir,
         config,
+        verbose,
         ..
     } = command;
 
@@ -28,7 +29,11 @@ pub async fn init(command: StopDbCommand) -> anyhow::Result<()> {
                 info!("\nStopping database at '{pg_db_uri}'.\n");
                 match pg.stop_db().await {
                     Ok(_) => {
-                        println!("✅ Successfully stopped database at '{pg_db_uri}'.");
+                        if verbose {
+                            info!("✅ Successfully stopped database at '{pg_db_uri}'.");
+                        } else {
+                            info!("✅ Successfully stopped database.");
+                        }
                     }
                     Err(e) => {
                         anyhow::bail!(

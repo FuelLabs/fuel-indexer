@@ -42,12 +42,13 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         target: target_triple,
         native,
         path,
-        verbose,
         profile,
         release,
         locked,
         manifest,
         output_dir_root,
+        verbose,
+        ..
     } = command;
 
     let (root_dir, manifest, _index_name) =
