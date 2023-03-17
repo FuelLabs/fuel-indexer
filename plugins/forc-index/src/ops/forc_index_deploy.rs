@@ -110,7 +110,6 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
 
-    info!("\n{}", to_string_pretty(&res_json)?);
     if status != StatusCode::OK {
         error!("\n❌ {target} returned a non-200 response code: {status:?}",);
 
