@@ -3,7 +3,7 @@
 //! Build this example's binary using the following command.
 //!
 //! ```bash
-//! cargo run --bin hello-indexer-native -- --manifest examples/hello-world-native/hello_index_native.manifest.yaml
+//! cargo run --bin hello-indexer-native -- --manifest examples/hello-world-native/hello_indexer_native.manifest.yaml
 //! ```
 //!
 //! Start a local test Fuel node

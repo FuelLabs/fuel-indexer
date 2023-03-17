@@ -9,7 +9,7 @@ Below is a simple "Hello World" Sway contract that we want to index. This contra
 We can define our schema like this in the schema file:
 
 ```graphql
-{{#include ../../../examples/hello-world/hello-indexer/schema/hello_index.schema.graphql}}
+{{#include ../../../examples/hello-world/hello-indexer/schema/hello_indexer.schema.graphql}}
 ```
 
 Now that our schema is defined, here is how we can implement the WASM module in our `lib.rs` file:
