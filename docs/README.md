@@ -1,12 +1,27 @@
-# 🗃 Fuel Indexer
 <!-- markdownlint-disable MD033 -->
 <!-- markdownlint-disable MD025 -->
-![Fuel Logo](./src/img/fuel.png "Fuel Logo")
+<!-- markdownlint-disable MD041 -->
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="./src/img/fuel-indexer-logo-dark.png">
+        <img alt="Fuel Indexer logo" width="400px" src="./src/img/fuel-indexer-logo-light.png">
+    </picture>
 
-[![build](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/fuel-indexer?label=latest)](https://crates.io/crates/fuel-indexer)
-[![docs](https://docs.rs/fuel-indexer/badge.svg)](https://docs.rs/fuel-indexer/)
-[![discord](https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xfpK4Pe)
+</p>
+<p align="center">
+    <a href="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml" alt="CI">
+        <img src="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg" />
+    </a>
+    <a href="https://crates.io/crates/fuel-indexer" alt="crates.io">
+        <img src="https://img.shields.io/crates/v/fuel-indexer?label=latest" />
+    </a>
+    <a href="https://docs.rs/fuel-indexer/" alt="docs.rs">
+        <img src="https://docs.rs/fuel-indexer/badge.svg" />
+    </a>
+    <a href="https://discord.gg/xfpK4Pe" alt="Discord">
+        <img src="https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" />
+    </a>
+</p>
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
@@ -189,15 +204,15 @@ You should see output indicating the successful creation of a database and start
 
 > You can `Ctrl+C` to exit the `forc index start` process, and your indexer service and database should still be running in the background.
 
-### 2.3 Creating a new index
+### 2.3 Creating a new indexer
 
-Now that we have our development environment set up, the next step is to create an index.
+Now that we have our development environment set up, the next step is to create an indexer.
 
 ```bash
 forc index new hello-index --namespace my_project && cd hello-index
 ```
 
-> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your index project might contain one or many indices all under the same `namespace`.
+> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`.
 
 ```text
 forc index new hello-index --namespace my_project
@@ -243,11 +258,11 @@ Take a quick tour.
     Stop a running index.
 ```
 
-> IMPORTANT: If you want more details on how this index works, check out our [block explorer index example](https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html).
+> IMPORTANT: If you want more details on how this indexer works, check out our [block explorer indexer example](https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html).
 
-### 2.4 Deploying our index
+### 2.4 Deploying our indexer
 
-At this point, we have a brand new index that will index some blocks and transactions. And with our database and Fuel indexer service up and running, all that's left is to build and deploy the index in order to see it in action. but now we need to build and deploy it in order to see it in action.
+At this point, we have a brand new indexer that will index some blocks and transactions. And with our database and Fuel indexer service up and running, all that's left is to build and deploy the indexer in order to see it in action. but now we need to build and deploy it in order to see it in action.
 
 ```bash
 forc index deploy --manifest hello_index.manifest.yaml
@@ -259,7 +274,7 @@ If all goes well, you should see the following:
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
-Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
+Deploying indexer at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
 ▹▸▹▹▹ 🚀 Deploying...
 {
   "assets": [
@@ -284,12 +299,12 @@ Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index
   ],
   "success": "true"
 }
-▪▪▪▪▪ ✅ Successfully deployed index.
+▪▪▪▪▪ ✅ Successfully deployed indexer.
 ```
 
 ## 3. Querying for data
 
-With our index deployed, we should be able to query for newly indexed data after a few seconds.
+With our indexer deployed, we should be able to query for newly indexed data after a few seconds.
 
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
@@ -322,7 +337,7 @@ curl -X POST http://127.0.0.1:29987/api/graph/my_project/hello_index \
 
 ### Finished! 🥳
 
-Congrats, you just created, built, and deployed your first index on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
+Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
 
 ## `forc-index` Plugin
 
@@ -342,7 +357,7 @@ forc index check
 
 ### `forc index new`
 
-Create new index project at the provided path.
+Create new indexer project at the provided path.
 
 ```bash
 forc index new --namespace my_org_name
@@ -350,7 +365,7 @@ forc index new --namespace my_org_name
 
 ### `forc index init`
 
-Create a new index project at the provided path. If no path is provided the current working directory will be used.
+Create a new indexer project at the provided path. If no path is provided the current working directory will be used.
 
 ```bash
 forc index init --namespace my_org_name
@@ -358,7 +373,7 @@ forc index init --namespace my_org_name
 
 ### `forc index build`
 
-Build the index in the current directory.
+Build the indexer in the current directory.
 
 ```bash
 forc index build --manifest my_index.manifest.yaml
@@ -366,7 +381,7 @@ forc index build --manifest my_index.manifest.yaml
 
 ### `forc index deploy`
 
-Deploy a given index project to a particular endpoint
+Deploy a given indexer project to a particular endpoint
 
 ```bash
 forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
@@ -447,7 +462,7 @@ At this time, the Fuel indexer requires the use of a database. We currently supp
 
 > Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.
 
-On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add PostgreSQL to your system by running `brew install postgresql`. You can then start the service through `brew services start postgresql`. You'll need to create a database for your index data, which you can do by running `createdb [DATABASE_NAME]`. You may also need to create the `postgres` role; you can do so by running `createuser -s postgres`.
+On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add PostgreSQL to your system by running `brew install postgresql`. You can then start the service through `brew services start postgresql`. You'll need to create a database for your indexed data, which you can do by running `createdb [DATABASE_NAME]`. You may also need to create the `postgres` role; you can do so by running `createuser -s postgres`.
 
 For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new `postgres` user account; you can switch to that account by running `sudo -i -u postgres`. After you have switched accounts, you may need to create a `postgres` database role by running `createuser --interactive`. You will be asked a few questions; the name of the role should be `postgres` and you should elect for the new role to be a superuser. Finally, you can create a database by running `createdb [DATABASE_NAME]`.
 
