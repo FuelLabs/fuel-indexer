@@ -1,8 +1,8 @@
 ---
 namespace: fuel_examples
 abi: ~
-identifier: explorer_index
-graphql_schema: examples/block-explorer/explorer-index/schema/explorer_index.schema.graphql
+identifier: explorer_indexer
+graphql_schema: examples/block-explorer/explorer-indexer/schema/explorer_indexer.schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/explorer_index.wasm
 metrics: ~

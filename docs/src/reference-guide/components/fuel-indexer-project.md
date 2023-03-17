@@ -32,11 +32,11 @@ Finally, you can run the Fuel indexer as part of a project that uses other compo
 ├── frontend
 │   └── index.html
 └── indexer
-    └── hello-index
+    └── hello-indexer
         ├── Cargo.toml
-        ├── hello_index.manifest.yaml
+        ├── hello_indexer.manifest.yaml
         ├── schema
-        │   └── hello_index.schema.graphql
+        │   └── hello_indexer.schema.graphql
         └── src
             └── lib.rs
 ```

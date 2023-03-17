@@ -2091,7 +2091,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "explorer_index"
+name = "explorer_indexer"
 version = "0.0.0"
 dependencies = [
  "fuel-indexer-macros",
@@ -3544,7 +3544,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "hello-index-native"
+name = "hello-indexer-native"
 version = "0.0.0"
 dependencies = [
  "async-trait",

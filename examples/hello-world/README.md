@@ -20,7 +20,7 @@ docker compose up --build
 
 ```bash
 forc index deploy \
-   --path hello-index \
+   --path hello-indexer \
    --output-dir-root /path/to/repository/fuel-indexer \
    --url http://0.0.0.0:29987 \
    --target wasm32-unknown-unknown \
