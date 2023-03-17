@@ -1,6 +1,6 @@
 # Hello World
 
-Below is a simple "Hello World" Sway contract that we want to index. This contract has a function called `new_greeting` that logs a `Greeting` and a `Person`. 
+Below is a simple "Hello World" Sway contract that we want to index. This contract has a function called `new_greeting` that logs a `Greeting` and a `Person`.
 
 ```rust, ignore
 {{#include ../../../examples/hello-world/contracts/greeting/src/main.sw}}

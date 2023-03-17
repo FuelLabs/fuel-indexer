@@ -8,4 +8,4 @@ Understanding how these components interact is critical to understanding how to 
 - [Database](./database/index.md)
 - [Fuel Node](./fuel-node.md)
 - [GraphQL API](./graphql/index.md)
-- [Indices](./indices/index.md)
+- [Indexers](./indexers/index.md)
