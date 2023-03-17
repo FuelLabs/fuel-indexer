@@ -32,12 +32,6 @@ pub mod defaults {
     pub const WALLET_PASSWORD: &str = "password";
     pub const INDEXED_EVENT_WAIT: u64 = 2;
     pub const COIN_AMOUNT: u64 = 11;
-
-    // Note: We need the contract ID in order to connect an instance to
-    // the node provider for E2E tests, but spawning a task that is supposed
-    // to return the contract ID won't give us the ID until the task is completed.
-    pub const CURRENT_TEST_CONTRACT_ID_STR: &str =
-        "fuel1dthcclayuwhce7t7jt8dlpvv2c0q4wsyj4xsudcek5gwc6nd5cnqj4qkua";
     pub const MAX_BODY_SIZE: usize = 5242880; // 5MB in bytes
 }
 
