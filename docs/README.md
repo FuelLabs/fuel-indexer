@@ -209,7 +209,7 @@ You should see output indicating the successful creation of a database and start
 Now that we have our development environment set up, the next step is to create an indexer.
 
 ```bash
-forc index new hello-indexer --namespace my_project && cd hello-index
+forc index new hello-indexer --namespace my_project && cd hello-indexer
 ```
 
 > The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`.
