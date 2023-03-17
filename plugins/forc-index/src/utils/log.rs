@@ -21,7 +21,13 @@ impl LoggerConfig {
             ForcIndex::Init(c) => c.verbose,
             ForcIndex::New(c) => c.verbose,
             ForcIndex::Deploy(c) => c.verbose,
-            ForcIndex::Start(_) => false,
+            ForcIndex::Start(c) => {
+                if c.log_level == "info" {
+                    true
+                } else {
+                    false
+                }
+            }
             ForcIndex::Check(_) => false,
             ForcIndex::Remove(c) => c.verbose,
             ForcIndex::Revert(c) => c.verbose,

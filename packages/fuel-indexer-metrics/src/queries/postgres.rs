@@ -192,7 +192,7 @@ impl Metric for PostgreQueries {
             )
             .unwrap(),
             remove_indexer: register_int_counter!(
-                "postgres_remove_index",
+                "postgres_remove_indexer",
                 "Count of calls to postgres remove_indexer."
             )
             .unwrap(),

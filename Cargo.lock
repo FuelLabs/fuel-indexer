@@ -2211,7 +2211,6 @@ dependencies = [
  "anyhow",
  "clap 3.2.23",
  "forc-postgres",
- "forc-tracing 0.31.3",
  "forc-util",
  "fuel-indexer-lib",
  "fuel-tx",
