@@ -5,20 +5,14 @@
 //! wasm32-unknown-unknown target will be required.
 //!
 //! ```bash
-//! cargo build -p explorer-index --release --target wasm32-unknown-unknown
-//! ```
-//!
-//! Use the fuel-indexer testing components to start your Fuel node and web API
-//!
-//! ```bash
-//! bash scripts/utils/start_test_components.bash
+//! cargo build -p explorer-indexer --release --target wasm32-unknown-unknown
 //! ```
 //!
 //! With your database backend set up, now start your fuel-indexer binary using the
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/block-explorer/manifest.yaml
+//! cargo run --bin fuel-indexer -- run --manifest examples/block-explorer/explorer-indexer/explorer_indexer.manifest.yaml
 //! ```
 
 extern crate alloc;
@@ -32,7 +26,7 @@ use std::collections::HashSet;
 // fuel-indexer root) but if you're building an index outside of the fuel-indexer
 // project you'll want to use full/absolute paths.
 #[indexer(
-    manifest = "examples/block-explorer/explorer-index/explorer_index.manifest.yaml"
+    manifest = "examples/block-explorer/explorer-indexer/explorer_indexer.manifest.yaml"
 )]
 mod explorer_index {
     // When specifying args to your handler functions, you can either use types defined

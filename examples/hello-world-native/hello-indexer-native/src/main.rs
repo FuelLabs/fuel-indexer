@@ -3,7 +3,7 @@
 //! Build this example's binary using the following command.
 //!
 //! ```bash
-//! cargo run --bin hello-index-native -- --manifest examples/hello-world-native/hello_index_native.manifest.yaml
+//! cargo run --bin hello-indexer-native -- --manifest examples/hello-world-native/hello_indexer_native.manifest.yaml
 //! ```
 //!
 //! Start a local test Fuel node
@@ -22,7 +22,7 @@ use fuel_indexer::prelude::*;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
-#[indexer(manifest = "examples/hello-world-native/hello_index_native.manifest.yaml")]
+#[indexer(manifest = "examples/hello-world-native/hello_indexer_native.manifest.yaml")]
 mod hello_world_native {
     async fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the

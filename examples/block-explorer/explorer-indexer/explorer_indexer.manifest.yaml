@@ -1,0 +1,11 @@
+---
+namespace: fuel_examples
+abi: ~
+identifier: explorer_indexer
+graphql_schema: examples/block-explorer/explorer-indexer/schema/explorer_indexer.schema.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/release/explorer_indexer.wasm
+metrics: ~
+contract_id: ~
+start_block: ~
+resumable: ~

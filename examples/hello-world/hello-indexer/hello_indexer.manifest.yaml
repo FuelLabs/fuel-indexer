@@ -1,10 +1,10 @@
 ---
 namespace: fuel_examples
 abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
-identifier: hello_index
-graphql_schema: examples/hello-world/hello-index/schema/hello_index.schema.graphql
+identifier: hello_indexer
+graphql_schema: examples/hello-world/hello-indexer/schema/hello_indexer.schema.graphql
 module:
-  wasm: target/wasm32-unknown-unknown/release/hello_index.wasm
+  wasm: target/wasm32-unknown-unknown/release/hello_indexer.wasm
 metrics: ~
 contract_id: fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9
 start_block: 1
