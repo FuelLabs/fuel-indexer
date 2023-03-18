@@ -17,7 +17,7 @@
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello-indexer/hello_indexer.manifest.yaml
+//! cargo run --bin fuel-indexer -- run --manifest examples/hello-world/hello-indexer/hello_indexer.manifest.yaml
 //! ```
 //!
 //! Now trigger an event.

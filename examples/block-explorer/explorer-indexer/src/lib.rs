@@ -8,17 +8,11 @@
 //! cargo build -p explorer-indexer --release --target wasm32-unknown-unknown
 //! ```
 //!
-//! Use the fuel-indexer testing components to start your Fuel node and web API
-//!
-//! ```bash
-//! bash scripts/utils/start_test_components.bash
-//! ```
-//!
 //! With your database backend set up, now start your fuel-indexer binary using the
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/explorer-indexer/explorer_indexer.manifest.yaml
+//! cargo run --bin fuel-indexer -- run --manifest examples/block-explorer/explorer-indexer/explorer_indexer.manifest.yaml
 //! ```
 
 extern crate alloc;
