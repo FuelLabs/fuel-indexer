@@ -53,6 +53,9 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let (root_dir, manifest, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
+    println!("root_dir: {:?}", root_dir);
+    println!("manifest: {:?}", manifest);
+
     // Must be in the directory of the index being built
     let cargo_manifest_path = root_dir.join(defaults::CARGO_MANIFEST_FILE_NAME);
     if !cargo_manifest_path.exists() {
@@ -62,7 +65,10 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         );
     }
 
+    println!("cargo_manifest_path: {:?}", cargo_manifest_path);
+
     let mut file = File::open(&cargo_manifest_path)?;
+    println!("file: {:?}", file);
     let mut content = String::new();
     file.read_to_string(&mut content)?;
     let config: Config = toml::from_str(&content)?;

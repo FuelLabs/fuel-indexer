@@ -13,7 +13,10 @@ description = "Tests for the Forc Index plugins"
 
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
+fuel-indexer-macros = { version = "0.4", default-features = false }
+fuel-indexer-plugin = { version = "0.4" }
 forc-index = { workspace = true }
+fuels-macros = { version = "0.37" }
 forc-postgres = { workspace = true }
 forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.35.0" }
@@ -30,7 +33,6 @@ serde_yaml = "0.8"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "process"] }
 toml = "0.5"
 tracing = "0.1"
-
 
 [lib]
 path = "src/lib.rs"
