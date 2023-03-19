@@ -1,0 +1,11 @@
+---
+namespace: test 
+abi: ~
+identifier: indexer 
+graphql_schema: /Users/rvm/fuel/hello-index/schema/hello_index.schema.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/debug/hello_index.wasm
+metrics: ~
+contract_id: ~
+start_block: ~
+resumable: ~
