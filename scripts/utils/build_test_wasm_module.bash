@@ -19,14 +19,14 @@ cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
 cp simple_wasm.wasm packages/fuel-indexer-tests/components/indices/simple-wasm
 rm -fv simple_wasm.wasm
 
-cargo build -p explorer_index --release --target wasm32-unknown-unknown
-bash scripts/stripper.bash explorer_index.wasm
-cp explorer_index.wasm target/wasm32-unknown-unknown/release/
+cargo build -p explorer-indexer --release --target wasm32-unknown-unknown
+bash scripts/stripper.bash explorer_indexer.wasm
+cp explorer_indexer.wasm target/wasm32-unknown-unknown/release/
 rm -fv explorer_index.wasm
 
-cargo build -p hello_index --release --target wasm32-unknown-unknown
-bash scripts/stripper.bash hello_index.wasm
-cp hello_index.wasm target/wasm32-unknown-unknown/release/
+cargo build -p hello-indexer --release --target wasm32-unknown-unknown
+bash scripts/stripper.bash hello_indexer.wasm
+cp hello_indexer.wasm target/wasm32-unknown-unknown/release/
 rm -fv hello_index.wasm
 
 set +ex

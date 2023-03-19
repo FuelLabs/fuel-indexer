@@ -2091,7 +2091,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "explorer_index"
+name = "explorer-indexer"
 version = "0.0.0"
 dependencies = [
  "fuel-indexer-macros",
@@ -3544,7 +3544,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "hello-index-native"
+name = "hello-indexer"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels-core",
+ "fuels-macros",
+ "fuels-types",
+ "getrandom",
+ "instant",
+ "serde",
+]
+
+[[package]]
+name = "hello-indexer-native"
 version = "0.0.0"
 dependencies = [
  "async-trait",
@@ -3586,22 +3602,6 @@ dependencies = [
  "clap 3.2.23",
  "fuel-indexer-tests",
  "tokio",
-]
-
-[[package]]
-name = "hello_index"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuel-tx",
- "fuels-core",
- "fuels-macros",
- "fuels-types",
- "getrandom",
- "instant",
- "serde",
 ]
 
 [[package]]

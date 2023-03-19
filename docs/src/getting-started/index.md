@@ -22,6 +22,6 @@ The Fuel indexer is meant to run alongside a Fuel node and a database. Generally
 
 1. A Sway smart contract emits receipts during its execution on the Fuel node.
 2. Blocks, transactions, and receipts from the node are monitored by the Fuel indexer service and checked for specific user-defined event types.
-3. When a specific event type is found, the indexer executes the corresponding handler from an index module.
-4. The handler processes the event and stores the index information in the database.
+3. When a specific event type is found, the indexer executes the corresponding handler from an indexer module.
+4. The handler processes the event and stores the indexed information in the database.
 5. A dApp queries for blockchain data by using the indexer's GraphQL API endpoint, which fetches the desired information from the corresponding index in the database and returns it to the user.

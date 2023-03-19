@@ -4,7 +4,7 @@ At this time, the Fuel indexer requires the use of a database. We currently supp
 
 ## PostgreSQL
 
-> Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.
+> Note: The following explanation is for demonstration purposes only. For an even faster setup on some platforms, you can use the [forc index postgres](../../reference-guide/plugins/forc-postgres/index.md) command. _A production setup should use secure users, permissions, and passwords._
 
 ### macOS
 

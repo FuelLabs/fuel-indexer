@@ -1,5 +1,5 @@
 [package]
-name = "hello-index-native"
+name = "hello-indexer-native"
 version = "0.0.0"
 edition = "2021"
 publish = false

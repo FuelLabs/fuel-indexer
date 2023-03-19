@@ -2,7 +2,7 @@
 
 WebAssembly (WASM) modules are compiled binaries that are registered into a Fuel indexer at runtime. The WASM bytes are read in by the indexer and _executors_ are created which will implement blocking calls the to the WASM runtime.
 
-The WASM module is generated based on your manifest, schema, and your `lib.rs` file. 
+The WASM module is generated based on your manifest, schema, and your `lib.rs` file.
 
 ## `lib.rs`
 
@@ -18,7 +18,7 @@ fn index_logged_greeting(greeter: Greeting) {
 }
 ```
 
-All transactions that have a receipt that contains data with a type of `Greeting` will be handled by the function. 
+All transactions that have a receipt that contains data with a type of `Greeting` will be handled by the function.
 
 You can learn more about what data can be indexed in the [What Can I Index](../../indexing/what-can-i-index.md) section.
 
@@ -30,13 +30,13 @@ instance.save();
 
 ## Usage
 
-To compile your index code to WASM, you'll first need to install the `wasm32-unknown-unknown` target platform through `rustup`, if you haven't done so already.
+To compile your indexer code to WASM, you'll first need to install the `wasm32-unknown-unknown` target platform through `rustup`, if you haven't done so already.
 
 ```bash
 rustup add target wasm32-unknown-unknown
 ```
 
-After that, you would compile your index code by navigating to the root folder for your index code and build. An example of this can be found below:
+After that, you would compile your indexer code by navigating to the root folder for your indexer code and build. An example of this can be found below:
 
 ```bash
 cd /my/index-lib && cargo build --release
