@@ -3,7 +3,7 @@
 Below is an example of a rudimentary block explorer backend implementation that demonstrates how to leverage basic Fuel indexer abstractions in order to build a cool dApp backend.
 
 ```rust,ignore
-{{#include ../../../examples/block-explorer/explorer-index/src/lib.rs}}
+{{#include ../../../examples/block-explorer/explorer-indexer/src/lib.rs}}
 ```
 
 Once blocks have been added to the database by the indexer, you can query for them by using a query similar to the following:
