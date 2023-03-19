@@ -25,6 +25,7 @@ members = [
    "packages/fuel-indexer-types",
    "plugins/forc-index",
    "plugins/forc-postgres",
+   "plugins/plugin-tests",
 ]
 
 [profile.release]

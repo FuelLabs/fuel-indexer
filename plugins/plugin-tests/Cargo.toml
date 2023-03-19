@@ -1,5 +1,5 @@
 [package]
-name = "forc-index"
+name = "plugin-tests"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -7,13 +7,13 @@ homepage = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
-description = "Fuel Indexer forc plugin"
+description = "Tests for the Forc Index plugins"
 
 [dependencies]
 
-actix-web = { version = "4", default-features = false, features = ["macros"] }
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
+forc-index = { workspace = true }
 forc-postgres = { workspace = true }
 forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.35.0" }
@@ -29,12 +29,8 @@ serde_json = "1.0.73"
 serde_yaml = "0.8"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "process"] }
 toml = "0.5"
-tempfile = "3.4.0"
 tracing = "0.1"
 
-[[bin]]
-name = "forc-index"
-path = "src/bin/forc-index.rs"
 
 [lib]
 path = "src/lib.rs"
