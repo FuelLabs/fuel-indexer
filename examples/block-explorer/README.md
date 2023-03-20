@@ -19,7 +19,7 @@ docker compose up
 ```bash
 forc-index deploy \
    --path explorer-index \
-   --output-dir-root /Users/rashad/development/repos/fuel-indexer \
+   --target-dir /Users/rashad/development/repos/fuel-indexer \
    --url http://0.0.0.0:29987 \
    --target wasm32-unknown-unknown
 ```

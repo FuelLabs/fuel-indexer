@@ -28,7 +28,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         profile,
         locked,
         native,
-        output_dir_root,
+        target_dir,
         verbose,
     } = command;
 
@@ -41,7 +41,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         verbose,
         locked,
         native,
-        output_dir_root: output_dir_root.clone(),
+        target_dir: target_dir.clone(),
     })?;
 
     let (_root_dir, manifest_path, _index_name) =
@@ -53,7 +53,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let manifest: serde_yaml::Value = serde_yaml::from_str(&manifest_contents)?;
 
     let (namespace, identifier, graphql_schema, module_path) =
-        extract_manifest_fields(manifest, output_dir_root.as_ref())?;
+        extract_manifest_fields(manifest, target_dir.as_ref())?;
 
     let mut manifest_buff = Vec::new();
     let mut manifest_reader = BufReader::new(manifest_file);
