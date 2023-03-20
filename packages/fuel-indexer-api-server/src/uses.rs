@@ -33,7 +33,6 @@ use fuel_indexer_schema::db::{
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
-use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
     str::FromStr,
@@ -45,18 +44,11 @@ use tracing::error;
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::{encode_metrics_response, METRICS};
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct Query {
-    pub query: String,
-    #[allow(unused)] // TODO
-    pub params: String,
-}
-
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
-    Json(query): Json<Query>,
+    query: String,
 ) -> ApiResult<axum::Json<Value>> {
     match manager
         .read()
@@ -370,11 +362,11 @@ pub(crate) async fn verify_signature(
 }
 
 pub async fn run_query(
-    query: Query,
+    query: String,
     schema: Schema,
     pool: &IndexerConnectionPool,
 ) -> ApiResult<Value> {
-    let builder = GraphqlQueryBuilder::new(&schema, &query.query)?;
+    let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
 
     let queries = query.as_sql(&schema, pool.database_type()).join(";\n");

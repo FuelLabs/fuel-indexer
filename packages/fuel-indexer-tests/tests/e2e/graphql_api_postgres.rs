@@ -63,9 +63,9 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 
     let client = http_client();
     let resp = client
-        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/json".to_owned())
-        .body(r#"{"query": "query { block { id height timestamp }}", "params": "b"}"#)
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(r#"query { block { id height timestamp }}"#)
         .send()
         .await
         .unwrap();
@@ -107,9 +107,9 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 
     let client = http_client();
     let resp = client
-        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/json".to_owned())
-        .body(r#"{"query": "query { optionentity { int_required int_optional_some addr_optional_none }}", "params": "b"}"#)
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(r#"query { optionentity { int_required int_optional_some addr_optional_none }}"#)
         .send()
         .await
         .unwrap();
@@ -152,11 +152,9 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 
     let client = http_client();
     let resp = client
-        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/json".to_owned())
-        .body(
-            r#"{"query": "query { tx { block { id height } id timestamp }}", "params": "b"}"#,
-        )
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(r#"query { tx { block { id height } id timestamp }}"#)
         .send()
         .await
         .unwrap();
@@ -202,74 +200,69 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let deeply_nested_query = HashMap::from([
-        (
-            "query",
-            "query { 
-                bookclub { 
+    let deeply_nested_query = r#"query {
+        bookclub {
+            id
+            book {
+                id
+                name
+                author {
+                    name
+                    genre {
+                        id
+                        name
+                    }
+                }
+                library {
                     id
-                    book { 
-                        id 
-                        name 
-                        author { 
-                            name 
-                            genre { 
-                                id 
-                                name 
-                            } 
-                        } 
-                        library { 
-                            id 
-                            name 
-                            city { 
-                                id 
-                                name 
-                                region { 
-                                    id 
-                                    name 
-                                    country { 
-                                        id 
-                                        name 
-                                        continent { 
-                                            id 
-                                            name 
-                                            planet { 
-                                                id 
-                                                name 
-                                            } 
-                                        } 
-                                    } 
-                                } 
-                            } 
-                        } 
-                        genre { 
-                            id 
-                            name 
-                        } 
-                    } 
-                    member { 
-                        name 
-                        id 
-                    } 
-                    corporate_sponsor { 
-                        id 
-                        name 
-                        amount 
-                        representative { 
-                            id 
-                            name 
-                        } 
-                    } 
-                } 
-            }",
-        ),
-        ("params", "b"),
-    ]);
+                    name
+                    city {
+                        id
+                        name
+                        region {
+                            id
+                            name
+                            country {
+                                id
+                                name
+                                continent {
+                                    id
+                                    name
+                                    planet {
+                                        id
+                                        name
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                genre {
+                    id
+                    name
+                }
+            }
+            member {
+                name
+                id
+            }
+            corporate_sponsor {
+                id
+                name
+                amount
+                representative {
+                    id
+                    name
+                }
+            }
+        }
+    }"#;
 
     let client = http_client();
     let resp = client
-        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
-        .json(&deeply_nested_query)
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(deeply_nested_query)
         .send()
         .await
         .unwrap();
@@ -356,11 +349,9 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
 
     let client = http_client();
     let resp = client
-        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/json".to_owned())
-        .body(
-            r#"{"query": "query { sportsteam { id name municipality { id name } } }", "params": "b"}"#,
-        )
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(r#"query { sportsteam { id name municipality { id name } } }"#)
         .send()
         .await
         .unwrap();
@@ -378,3 +369,229 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
         Some("Republic of Indexia")
     );
 }
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_equivalence_relation_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
+    let mut srvc = indexer_service_postgres().await;
+    let api_app = api_server_app_postgres().await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(api_app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(
+            r#"query { filterentity(id: "1") { id member potentially_null_value value } }"#,
+        )
+        .send()
+        .await
+        .unwrap();
+
+    server_handle.abort();
+
+    let body = resp.text().await.unwrap();
+    println!("{body:#?}");
+    let v: Value = serde_json::from_str(&body).unwrap();
+
+    assert_eq!(v[1], Value::Null);
+
+    assert_eq!(v[0]["id"].as_i64(), Some(1));
+    assert_eq!(v[0]["member"].as_str(), Some("foo"));
+    assert_eq!(v[0]["potentially_null_value"].as_i64(), Some(123));
+    assert_eq!(v[0]["value"].as_i64(), Some(1));
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_membership_relation_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
+    let mut srvc = indexer_service_postgres().await;
+    let api_app = api_server_app_postgres().await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(api_app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(
+            r#"query { filterentity(filter: { member: [foo, bar] } ) { id member potentially_null_value value } }"#,
+        )
+        .send()
+        .await
+        .unwrap();
+
+    server_handle.abort();
+
+    let body = resp.text().await.unwrap();
+    let v: Value = serde_json::from_str(&body).unwrap();
+
+    assert_eq!(v[2], Value::Null);
+
+    assert_eq!(v[0]["id"].as_i64(), Some(1));
+    assert_eq!(v[0]["member"].as_str(), Some("foo"));
+    assert_eq!(v[0]["potentially_null_value"].as_i64(), Some(123));
+    assert_eq!(v[0]["value"].as_i64(), Some(1));
+    assert_eq!(v[1]["id"].as_i64(), Some(2));
+    assert_eq!(v[1]["member"].as_str(), Some("bar"));
+    assert_eq!(v[1]["potentially_null_value"].as_i64(), None);
+    assert_eq!(v[1]["value"].as_i64(), Some(5));
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_non_null_filter_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
+    let mut srvc = indexer_service_postgres().await;
+    let api_app = api_server_app_postgres().await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(api_app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/explicit").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(
+            r#"query { filterentity(filter: { has: [potentially_null_value] } ) { id member potentially_null_value value } }"#,
+        )
+        .send()
+        .await
+        .unwrap();
+
+    server_handle.abort();
+
+    let body = resp.text().await.unwrap();
+    let v: Value = serde_json::from_str(&body).unwrap();
+
+    assert_eq!(v[2], Value::Null);
+
+    assert_eq!(v[0]["id"].as_i64(), Some(1));
+    assert_eq!(v[0]["member"].as_str(), Some("foo"));
+    assert_eq!(v[0]["potentially_null_value"].as_i64(), Some(123));
+    assert_eq!(v[0]["value"].as_i64(), Some(1));
+    assert_eq!(v[1]["id"].as_i64(), Some(3));
+    assert_eq!(v[1]["member"].as_str(), Some("baz"));
+    assert_eq!(v[1]["potentially_null_value"].as_i64(), Some(456));
+    assert_eq!(v[1]["value"].as_i64(), Some(1000));
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_comparison_filter_postgres() {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+
+    let mut srvc = indexer_service_postgres().await;
+    let api_app = api_server_app_postgres().await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(api_app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/explicit").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(
+            r#"query { filterentity(filter: { value: between: { min: 0, max: 10 } } ) { id member potentially_null_value value } }"#,
+        )
+        .send()
+        .await
+        .unwrap();
+
+    server_handle.abort();
+
+    let body = resp.text().await.unwrap();
+    let v: Value = serde_json::from_str(&body).unwrap();
+
+    assert_eq!(v[2], Value::Null);
+
+    assert_eq!(v[0]["id"].as_i64(), Some(1));
+    assert_eq!(v[0]["member"].as_str(), Some("foo"));
+    assert_eq!(v[0]["potentially_null_value"].as_i64(), Some(123));
+    assert_eq!(v[0]["value"].as_i64(), Some(1));
+    assert_eq!(v[1]["id"].as_i64(), Some(2));
+    assert_eq!(v[1]["member"].as_str(), Some("bar"));
+    assert_eq!(v[1]["potentially_null_value"].as_i64(), None);
+    assert_eq!(v[1]["value"].as_i64(), Some(5));
+}
+>>>>>>> bcd678a (Move from JSON-based query to GraphQL header type)
