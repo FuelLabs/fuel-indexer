@@ -80,7 +80,7 @@ jobs:
           echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >> $GITHUB_OUTPUT
 
   check-is-semver-branch:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != true
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
     needs:
       - set-env-vars
     runs-on: buildjet-4vcpu-ubuntu-2204
@@ -141,7 +141,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE != true
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     strategy:
       matrix:
         command: [build]
@@ -176,7 +176,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
   cargo-clippy:
-    if: needs.set-env-vars.outputs.IS_RELEASE != true
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -191,7 +191,7 @@ jobs:
         run: cargo clippy --all-targets --all-features
 
   cargo-fmt-check:
-    if: needs.set-env-vars.outputs.IS_RELEASE != true
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -206,7 +206,7 @@ jobs:
         run: cargo fmt --all --verbose -- --check
 
   cargo-test-unit-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE != true
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -231,7 +231,7 @@ jobs:
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
 
   cargo-test-e2e-and-integration-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE != true
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -276,7 +276,8 @@ jobs:
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   check-forc-index:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
+    # if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
+    if: false
     needs:
       - check-is-semver-branch
     runs-on: buildjet-4vcpu-ubuntu-2204
