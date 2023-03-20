@@ -128,16 +128,6 @@ jobs:
 
   cargo-verifications:
     runs-on: buildjet-4vcpu-ubuntu-2204
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
