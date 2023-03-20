@@ -315,7 +315,6 @@ jobs:
       - cargo-test-e2e-and-integration-tests
       - cargo-test-unit-tests
       - cargo-verifications
-      - check-forc-index
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
     runs-on: buildjet-4vcpu-ubuntu-2204
@@ -388,7 +387,6 @@ jobs:
       - cargo-test-e2e-and-integration-tests
       - cargo-test-unit-tests
       - cargo-verifications
-      - check-forc-index
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
     strategy:
