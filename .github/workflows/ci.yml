@@ -641,6 +641,12 @@ jobs:
       - deploy
       - publish
       - cargo-verifications
+      - cargo-test-unit-tests
+      - cargo-test-e2e-and-integration-tests
+      - cargo-clippy
+      - cargo-fmt-check
+      - check-forc-index
+
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - run: true
