@@ -47,6 +47,20 @@ fn init_command_creates_correct_project_tree() {
 
 #[test]
 fn build_command_creates_artifact_at_expected_path() {
+    let test_indexer_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("output");
+    remove_contents_of_dir(&test_indexer_path)
+        .expect("Failed to remove output directory");
+
+    let command = InitCommand {
+        name: Some("plugin_test".to_string()),
+        path: Some(test_indexer_path.clone()),
+        namespace: "plugin_test".to_string(),
+        native: false,
+        absolute_paths: true,
+    };
+
+    forc_index::commands::init::exec(command).expect("Init command failed");
+
     let output_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests");
 
     let manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
