@@ -136,7 +136,7 @@ jobs:
       matrix:
         command: [build]
         args: [--locked --all-features --all-targets]
-        package: [fuel-indexer-api-server, fuel-indexer-database, fuel-indexer-database-types, fuel-indexer-postgres, fuel-indexer-lib, fuel-indexer-macros, fuel-indexer-metrics, fuel-indexer-plugin, fuel-indexer-schema, fuel-indexer-types, forc-index, forc-postgres]
+        package: [fuel-indexer, fuel-indexer-api-server, fuel-indexer-database, fuel-indexer-database-types, fuel-indexer-postgres, fuel-indexer-lib, fuel-indexer-macros, fuel-indexer-metrics, fuel-indexer-plugin, fuel-indexer-schema, fuel-indexer-types, forc-index, forc-postgres]
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
