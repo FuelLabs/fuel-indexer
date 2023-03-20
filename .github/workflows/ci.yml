@@ -18,9 +18,9 @@ env:
   SQLX_OFFLINE: true
   RUSTC_VERSION: 1.67
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  IS_MASTER: github.ref == 'refs/heads/master'
-  IS_RELEASE: github.event_name == 'release' && github.event.action == 'published'
-  IS_RELEASE_OR_MASTER: github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master'
+  IS_MASTER: ${{ github.ref == 'refs/heads/master' }}
+  IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+  IS_RELEASE_OR_MASTER: ${{ github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master' }}
 
 jobs:
   cancel-previous-runs:
@@ -80,7 +80,7 @@ jobs:
           echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >> $GITHUB_OUTPUT
 
   check-is-semver-branch:
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != true
     needs:
       - set-env-vars
     runs-on: buildjet-4vcpu-ubuntu-2204
@@ -92,6 +92,7 @@ jobs:
         run: |
           if [[ ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "is_semver_branch=true" >> $GITHUB_OUTPUT
+              echo "This is a release branch ^(^.^)^"
           else
             echo "Not a release branch ^(^.^)^"
           fi
@@ -140,7 +141,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE != true
     strategy:
       matrix:
         command: [build]
@@ -175,7 +176,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
   cargo-clippy:
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE != true
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -190,7 +191,7 @@ jobs:
         run: cargo clippy --all-targets --all-features
 
   cargo-fmt-check:
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE != true
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -205,7 +206,7 @@ jobs:
         run: cargo fmt --all --verbose -- --check
 
   cargo-test-unit-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE != true
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -230,7 +231,7 @@ jobs:
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
 
   cargo-test-e2e-and-integration-tests:
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    if: needs.set-env-vars.outputs.IS_RELEASE != true
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -275,10 +276,9 @@ jobs:
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   check-forc-index:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true' || needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
     needs:
-      - cargo-toml-fmt-check
-      - set-env-vars
+      - check-is-semver-branch
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
