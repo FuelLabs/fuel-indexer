@@ -2094,9 +2094,9 @@ dependencies = [
 name = "explorer-indexer"
 version = "0.0.0"
 dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
+ "fuel-indexer-macros 0.4.0",
+ "fuel-indexer-plugin 0.4.0",
+ "fuel-indexer-schema 0.4.0",
  "fuel-tx",
  "fuels-core",
  "fuels-macros",
@@ -2208,12 +2208,13 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 name = "forc-index"
 version = "0.4.0"
 dependencies = [
+ "actix-web",
  "anyhow",
  "clap 3.2.23",
  "forc-postgres",
  "forc-tracing 0.31.3",
  "forc-util",
- "fuel-indexer-lib",
+ "fuel-indexer-lib 0.4.0",
  "fuel-tx",
  "fuels-types",
  "hex",
@@ -2223,6 +2224,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "tempfile",
  "tokio",
  "toml",
  "tracing",
@@ -2235,7 +2237,7 @@ dependencies = [
  "anyhow",
  "clap 3.2.23",
  "forc-tracing 0.31.3",
- "fuel-indexer-lib",
+ "fuel-indexer-lib 0.4.0",
  "home",
  "indicatif",
  "pg-embed",
@@ -2715,9 +2717,9 @@ dependencies = [
  "fuel-core-client",
  "fuel-indexer-api-server",
  "fuel-indexer-database",
- "fuel-indexer-lib",
- "fuel-indexer-schema",
- "fuel-indexer-types",
+ "fuel-indexer-lib 0.4.0",
+ "fuel-indexer-schema 0.4.0",
+ "fuel-indexer-types 0.4.0",
  "futures",
  "serde_yaml",
  "sqlx",
@@ -2739,9 +2741,9 @@ dependencies = [
  "clap 3.2.23",
  "fuel-crypto 0.27.0",
  "fuel-indexer-database",
- "fuel-indexer-lib",
+ "fuel-indexer-lib 0.4.0",
  "fuel-indexer-metrics",
- "fuel-indexer-schema",
+ "fuel-indexer-schema 0.4.0",
  "http",
  "hyper",
  "hyper-rustls 0.23.2",
@@ -2760,8 +2762,8 @@ dependencies = [
 name = "fuel-indexer-database"
 version = "0.4.0"
 dependencies = [
- "fuel-indexer-database-types",
- "fuel-indexer-lib",
+ "fuel-indexer-database-types 0.4.0",
+ "fuel-indexer-lib 0.4.0",
  "fuel-indexer-postgres",
  "sqlx",
  "thiserror",
@@ -2777,12 +2779,42 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-database-types"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f1db4272fdc6f9cd8ade08bf24dd70a20ae5cb951f3ada284ab52e1973f39ec"
+dependencies = [
+ "serde",
+ "strum 0.24.1",
+]
+
+[[package]]
 name = "fuel-indexer-lib"
 version = "0.4.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
- "fuel-indexer-types",
+ "fuel-indexer-types 0.4.0",
+ "http",
+ "serde",
+ "serde_yaml",
+ "sha2 0.9.9",
+ "strum 0.24.1",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.16",
+]
+
+[[package]]
+name = "fuel-indexer-lib"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0e9c396358b94aafb7e26f9b5b4147a3be371acfadc18094b8021211900652c9"
+dependencies = [
+ "anyhow",
+ "clap 3.2.23",
+ "fuel-indexer-types 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "http",
  "serde",
  "serde_yaml",
@@ -2799,11 +2831,11 @@ name = "fuel-indexer-macros"
 version = "0.4.0"
 dependencies = [
  "fuel-abi-types 0.2.1",
- "fuel-indexer-database-types",
- "fuel-indexer-lib",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuel-indexer-types",
+ "fuel-indexer-database-types 0.4.0",
+ "fuel-indexer-lib 0.4.0",
+ "fuel-indexer-plugin 0.4.0",
+ "fuel-indexer-schema 0.4.0",
+ "fuel-indexer-types 0.4.0",
  "fuel-tx",
  "fuels",
  "fuels-code-gen",
@@ -2820,6 +2852,32 @@ dependencies = [
  "sha2 0.9.9",
  "syn",
  "trybuild",
+]
+
+[[package]]
+name = "fuel-indexer-macros"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5bdd71621dbe84f2b3ba409a8a45d1d9782b5455c87e86493352f20a29f4e567"
+dependencies = [
+ "fuel-abi-types 0.2.1",
+ "fuel-indexer-database-types 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-lib 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-schema 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-types 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-tx",
+ "fuels-code-gen",
+ "fuels-core",
+ "fuels-types",
+ "graphql-parser 0.3.0",
+ "lazy_static",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "serde_json",
+ "sha2 0.9.9",
+ "syn",
 ]
 
 [[package]]
@@ -2841,9 +2899,9 @@ dependencies = [
  "fuel-indexer",
  "fuel-indexer-api-server",
  "fuel-indexer-database",
- "fuel-indexer-lib",
- "fuel-indexer-schema",
- "fuel-indexer-types",
+ "fuel-indexer-lib 0.4.0",
+ "fuel-indexer-schema 0.4.0",
+ "fuel-indexer-types 0.4.0",
  "hex",
  "tokio",
  "tracing",
@@ -2851,11 +2909,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-plugin"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ab54bc3fd7f4a7f2f4dcb0bfa579123471f76c44e0c0a8bc6012327086496e46"
+dependencies = [
+ "fuel-indexer-lib 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-schema 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-types 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hex",
+]
+
+[[package]]
 name = "fuel-indexer-postgres"
 version = "0.4.0"
 dependencies = [
- "fuel-indexer-database-types",
- "fuel-indexer-lib",
+ "fuel-indexer-database-types 0.4.0",
+ "fuel-indexer-lib 0.4.0",
  "fuel-indexer-metrics",
  "sqlx",
  "tracing",
@@ -2868,8 +2938,8 @@ version = "0.4.0"
 dependencies = [
  "bincode",
  "fuel-indexer-database",
- "fuel-indexer-database-types",
- "fuel-indexer-types",
+ "fuel-indexer-database-types 0.4.0",
+ "fuel-indexer-types 0.4.0",
  "graphql-parser 0.3.0",
  "hex",
  "insta",
@@ -2880,12 +2950,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-schema"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "540674928f626418eebdeacb99a4340f45de152328f32a7a4c6dfbd93197130a"
+dependencies = [
+ "bincode",
+ "chrono",
+ "fuel-indexer-database-types 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-lib 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-types 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-tx",
+ "fuel-types 0.26.1",
+ "fuels-core",
+ "graphql-parser 0.3.0",
+ "hex",
+ "serde",
+ "sha2 0.9.9",
+ "strum 0.24.1",
+]
+
+[[package]]
 name = "fuel-indexer-test"
 version = "0.0.0"
 dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
+ "fuel-indexer-macros 0.4.0",
+ "fuel-indexer-plugin 0.4.0",
+ "fuel-indexer-schema 0.4.0",
  "fuel-tx",
  "fuels-core",
  "fuels-macros",
@@ -2906,10 +2997,10 @@ dependencies = [
  "fuel-indexer",
  "fuel-indexer-api-server",
  "fuel-indexer-database",
- "fuel-indexer-lib",
+ "fuel-indexer-lib 0.4.0",
  "fuel-indexer-postgres",
- "fuel-indexer-schema",
- "fuel-indexer-types",
+ "fuel-indexer-schema 0.4.0",
+ "fuel-indexer-types 0.4.0",
  "fuel-tx",
  "fuel-types 0.26.1",
  "fuels",
@@ -2937,6 +3028,21 @@ dependencies = [
 [[package]]
 name = "fuel-indexer-types"
 version = "0.4.0"
+dependencies = [
+ "chrono",
+ "fuel-tx",
+ "fuel-types 0.26.1",
+ "fuels-core",
+ "fuels-types",
+ "serde",
+ "sha2 0.9.9",
+]
+
+[[package]]
+name = "fuel-indexer-types"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60f2df31974246eedc0fbdb77cae3b55e69044be41df8551cd7199ccf522b47e"
 dependencies = [
  "chrono",
  "fuel-tx",
@@ -3547,9 +3653,9 @@ dependencies = [
 name = "hello-indexer"
 version = "0.0.0"
 dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
+ "fuel-indexer-macros 0.4.0",
+ "fuel-indexer-plugin 0.4.0",
+ "fuel-indexer-schema 0.4.0",
  "fuel-tx",
  "fuels-core",
  "fuels-macros",
@@ -3565,9 +3671,9 @@ version = "0.0.0"
 dependencies = [
  "async-trait",
  "fuel-indexer",
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
+ "fuel-indexer-macros 0.4.0",
+ "fuel-indexer-plugin 0.4.0",
+ "fuel-indexer-schema 0.4.0",
  "fuel-tx",
  "fuels",
  "fuels-core",
@@ -3583,7 +3689,7 @@ name = "hello-world-data"
 version = "0.0.0"
 dependencies = [
  "clap 3.2.23",
- "fuel-indexer-lib",
+ "fuel-indexer-lib 0.4.0",
  "fuel-indexer-tests",
  "fuel-tx",
  "fuel-types 0.26.1",
@@ -4880,6 +4986,35 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 
 [[package]]
+name = "plugin-tests"
+version = "0.4.0"
+dependencies = [
+ "anyhow",
+ "clap 3.2.23",
+ "forc-index",
+ "forc-postgres",
+ "forc-tracing 0.31.3",
+ "forc-util",
+ "fuel-indexer-lib 0.4.0",
+ "fuel-indexer-macros 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-indexer-plugin 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "fuel-tx",
+ "fuels-macros",
+ "fuels-types",
+ "hex",
+ "hyper-rustls 0.23.2",
+ "indicatif",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+ "tokio",
+ "toml",
+ "tracing",
+]
+
+[[package]]
 name = "polling"
 version = "2.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5199,15 +5334,6 @@ dependencies = [
  "bitflags",
  "libc",
  "mach",
- "winapi",
-]
-
-[[package]]
-name = "remove_dir_all"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
-dependencies = [
  "winapi",
 ]
 
@@ -5823,9 +5949,9 @@ checksum = "420acb44afdae038210c99e69aae24109f32f15500aa708e81d46c9f29d55fcf"
 name = "simple-wasm"
 version = "0.0.0"
 dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
+ "fuel-indexer-macros 0.4.0",
+ "fuel-indexer-plugin 0.4.0",
+ "fuel-indexer-schema 0.4.0",
  "fuel-tx",
  "fuels-core",
  "fuels-macros",
@@ -6312,16 +6438,15 @@ checksum = "8ae9980cab1db3fceee2f6c6f643d5d8de2997c58ee8d25fb0cc8a9e9e7348e5"
 
 [[package]]
 name = "tempfile"
-version = "3.3.0"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cdb1ef4eaeeaddc8fbd371e5017057064af0911902ef36b39801f67cc6d79e4"
+checksum = "af18f7ae1acd354b992402e9ec5864359d693cd8a79dcbef59f76891701c1e95"
 dependencies = [
  "cfg-if 1.0.0",
  "fastrand",
- "libc",
  "redox_syscall",
- "remove_dir_all",
- "winapi",
+ "rustix",
+ "windows-sys 0.42.0",
 ]
 
 [[package]]

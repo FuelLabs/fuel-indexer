@@ -196,8 +196,12 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             .join(profile)
             .join(&binary);
 
+        println!("rel_artifact_path: {:?}", rel_artifact_path);
+
         let abs_wasm = abs_artifact_path.as_path().display().to_string();
+        println!("abs_wasm: {:?}", abs_wasm);
         let relative_wasm = rel_artifact_path.as_path().display().to_string();
+        println!("relative_wasm: {:?}", relative_wasm);
 
         manifest.module = Module::Wasm(relative_wasm);
 
@@ -211,6 +215,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             .unwrap_or_else(|e| panic!("❌ Failed to spawn wasm-snip process: {e}",))
             .wait()
             .unwrap_or_else(|e| panic!("❌ Failed to finish wasm-snip process: {e}",));
+
+        println!("status: {:?}", status);
 
         if !status.success() {
             let code = status.code();

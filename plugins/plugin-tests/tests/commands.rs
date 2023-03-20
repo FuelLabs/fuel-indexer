@@ -4,88 +4,96 @@ use forc_index::commands::{
 use std::fs::{self, ReadDir};
 use std::io;
 use std::path::{Path, PathBuf};
+use tempfile::TempDir;
 
 #[test]
 fn init_command_creates_correct_project_tree() {
-    let test_indexer_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("output");
-    remove_contents_of_dir(&test_indexer_path)
-        .expect("Failed to remove output directory");
+    let temp_dir = TempDir::new().expect("Failed to create temp dir");
+    let temp_dir_path = temp_dir.path().to_path_buf();
+    let temp_dir_name = temp_dir_path
+        .file_name()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .trim_start_matches('.')
+        .to_string();
 
     let command = InitCommand {
-        name: Some("plugin_test".to_string()),
-        path: Some(test_indexer_path.clone()),
-        namespace: "plugin_test".to_string(),
+        name: Some(temp_dir_name.clone()),
+        path: Some(temp_dir_path.clone()),
+        namespace: temp_dir_name.to_string(),
         native: false,
-        absolute_paths: true,
+        absolute_paths: false,
     };
 
     forc_index::commands::init::exec(command).expect("Init command failed");
 
+    let manifest_path = temp_dir_name.clone() + ".manifest.yaml";
+    let schema_path = format!("schema/{}.schema.graphql", temp_dir_name);
+
     let expected_project_tree = vec![
-        "plugin_test.manifest.yaml",
+        manifest_path.as_str(),
         "Cargo.toml",
         "src",
         "src/lib.rs",
         "schema",
-        "schema/plugin_test.schema.graphql",
+        schema_path.as_str(),
     ];
 
-    let base_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("output");
-
     for path in expected_project_tree {
-        let full_path = base_path.join(path);
+        let full_path = temp_dir_path.join(path);
         assert!(
             full_path.exists(),
             "Expected path '{}' does not exist.",
             full_path.to_string_lossy()
         )
     }
-
-    remove_contents_of_dir(&test_indexer_path)
-        .expect("Failed to remove output directory");
 }
+
+//@TODO add negative case for init command
 
 #[test]
 fn build_command_creates_artifact_at_expected_path() {
-    let test_indexer_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("output");
-    remove_contents_of_dir(&test_indexer_path)
-        .expect("Failed to remove output directory");
+    let temp_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("output");
+    remove_contents_of_dir(&temp_dir_path).expect("Failed to remove output directory");
 
+    //we set the namespace to the name of the dir so that the
+    //build command can find the manifest
     let command = InitCommand {
-        name: Some("plugin_test".to_string()),
-        path: Some(test_indexer_path.clone()),
-        namespace: "plugin_test".to_string(),
+        name: Some("output".to_string()),
+        path: Some(temp_dir_path.clone()),
+        namespace: "output".to_string(),
         native: false,
-        absolute_paths: true,
+        absolute_paths: false,
     };
 
     forc_index::commands::init::exec(command).expect("Init command failed");
 
-    let output_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests");
+    assert!(
+        Path::new(&temp_dir_path.join("output.manifest.yaml")).exists(),
+        "Manifest not found at expected path"
+    );
 
-    let manifest_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("tests")
-        .join("plugin_test.manifest.yaml");
+    println!("init success");
 
-    println!("Output dir path: {:?}", output_dir_path);
-    println!("Manifest path: {:?}", manifest_path);
+    //cd into the output dir
+    std::env::set_current_dir(&temp_dir_path).expect("Failed to set current dir");
 
     let command = BuildCommand {
         target: None,
         native: false,
-        path: Some(output_dir_path.clone()),
-        verbose: false,
+        path: None,
+        verbose: true,
         profile: None,
         release: false,
         locked: false,
-        manifest: Some(manifest_path.to_str().unwrap().to_owned()),
-        output_dir_root: Some(output_dir_path.clone()),
+        manifest: None,
+        output_dir_root: None,
     };
 
     forc_index::commands::build::exec(command).expect("Build command failed");
     let wasm_artifact_path =
-        output_dir_path.join("target/wasm32-unknown-unknown/debug/plugin_test.wasm");
-    println!("Wasm pth: {:?}", wasm_artifact_path);
+        temp_dir_path.join("target/wasm32-unknown-unknown/debug/plugin_test.wasm");
 
     assert!(
         Path::new(&wasm_artifact_path).exists(),

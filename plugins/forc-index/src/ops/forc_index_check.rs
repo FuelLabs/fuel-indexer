@@ -53,7 +53,7 @@ fn find_indexer_service_info(grpahql_api_port: &str) -> (String, String) {
 pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let CheckCommand {
         url,
-        grpahql_api_port,
+        graphql_api_port,
     } = command;
 
     let target = format!("{url}/api/health");
@@ -96,7 +96,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let (psql_emoji, _psql_path, psql_msg) = find_executable_with_msg(psql);
     let (fuel_core_emoji, _fuelcore_path, fuel_core_msg) =
         find_executable_with_msg(fuel_core);
-    let (service_emoji, service_msg) = find_indexer_service_info(&grpahql_api_port);
+    let (service_emoji, service_msg) = find_indexer_service_info(&graphql_api_port);
     let (docker_emoji, _docker_path, docker_msg) = find_executable_with_msg(docker);
     let (fuelup_emoji, _fuelup_path, fuelup_msg) = find_executable_with_msg(fuelup);
     let (forc_pg_emoji, _forc_pg_path, forc_pg_msg) = find_executable_with_msg(fuelup);
