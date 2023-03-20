@@ -8,14 +8,12 @@ use std::path::{Path, PathBuf};
 #[test]
 fn init_command_creates_correct_project_tree() {
     let test_indexer_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("output");
-    if test_indexer_path.exists() {
-        remove_contents_of_dir(&test_indexer_path)
-            .expect("Failed to remove output directory");
-    }
+    remove_contents_of_dir(&test_indexer_path)
+        .expect("Failed to remove output directory");
 
     let command = InitCommand {
         name: Some("plugin_test".to_string()),
-        path: Some(test_indexer_path),
+        path: Some(test_indexer_path.clone()),
         namespace: "plugin_test".to_string(),
         native: false,
         absolute_paths: true,
@@ -42,6 +40,9 @@ fn init_command_creates_correct_project_tree() {
             full_path.to_string_lossy()
         )
     }
+
+    remove_contents_of_dir(&test_indexer_path)
+        .expect("Failed to remove output directory");
 }
 
 #[test]
