@@ -211,6 +211,9 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        credentials:
+          username: fuellabs
+          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -236,6 +239,9 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        credentials:
+          username: fuellabs
+          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -431,7 +437,6 @@ jobs:
             build \
             --profile=release \
             --target ${{ matrix.job.target }} \
-            --features fuel-core-lib \
             -p fuel-indexer \
             -p fuel-indexer-api-server \
             -p forc-index

@@ -30,10 +30,10 @@ COPY --from=planner /build/recipe.json recipe.json
 
 ENV SQLX_OFFLINE=true
 
-RUN cargo chef cook --release --features fuel-core-lib -p fuel-indexer --recipe-path recipe.json
-RUN cargo chef cook --release --features fuel-core-lib -p fuel-indexer-api-server --recipe-path recipe.json
+RUN cargo chef cook --release -p fuel-indexer --recipe-path recipe.json
+RUN cargo chef cook --release -p fuel-indexer-api-server --recipe-path recipe.json
 COPY . .
-RUN cargo build --release --features fuel-core-lib -p fuel-indexer -p fuel-indexer-api-server $BUILD_TARGET
+RUN cargo build --release -p fuel-indexer -p fuel-indexer-api-server $BUILD_TARGET
 
 # Stage 3: Run
 FROM ubuntu:22.04 AS run
