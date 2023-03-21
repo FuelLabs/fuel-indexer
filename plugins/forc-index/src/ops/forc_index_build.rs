@@ -172,10 +172,10 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
 
         let target_dir = target_dir.unwrap_or(".".into()).join("target");
         let abs_artifact_path =
-            target_dir.join(&target_triple).join(&profile).join(&binary);
+            target_dir.join(&target_triple).join(profile).join(&binary);
 
         let rel_artifact_path =
-            target_dir.join(&target_triple).join(&profile).join(&binary);
+            target_dir.join(&target_triple).join(profile).join(&binary);
 
         let abs_wasm = abs_artifact_path.as_path().display().to_string();
         let relative_wasm = rel_artifact_path.as_path().display().to_string();
