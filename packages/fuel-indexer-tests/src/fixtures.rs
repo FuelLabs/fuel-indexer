@@ -282,7 +282,6 @@ pub mod test_web {
         signers::WalletUnlocked,
     };
     use std::path::Path;
-
     async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
             .contract
@@ -496,6 +495,47 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_vec_calldata(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_vec_pong_calldata(vec![1, 2, 3, 4, 5, 6, 7, 8])
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_vec_logdata(state: web::Data<Arc<AppState>>) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_vec_pong_logdata()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_pure_function(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_pure_function()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest,
     }
@@ -548,6 +588,12 @@ pub mod test_web {
                 web::post().to(
                     fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields,
                 ),
+            )
+            .route("/vec-calldata", web::post().to(fuel_indexer_vec_calldata))
+            .route("/vec-logdata", web::post().to(fuel_indexer_vec_logdata))
+            .route(
+                "/pure_function",
+                web::post().to(fuel_indexer_test_pure_function),
             )
     }
 
