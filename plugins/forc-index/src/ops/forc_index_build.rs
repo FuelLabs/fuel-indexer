@@ -53,9 +53,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let (root_dir, manifest, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
-    println!("root_dir: {:?}", root_dir);
-    println!("manifest: {:?}", manifest);
-
     // Must be in the directory of the index being built
     let cargo_manifest_path = root_dir.join(defaults::CARGO_MANIFEST_FILE_NAME);
     if !cargo_manifest_path.exists() {
@@ -64,8 +61,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             "❌ `forc index build` must be run from inside the directory of the index being built. Cargo manifest file expected at '{manifest_path:?}'",
         );
     }
-
-    println!("cargo_manifest_path: {:?}", cargo_manifest_path);
 
     let mut file = File::open(&cargo_manifest_path)?;
     println!("file: {:?}", file);
@@ -196,12 +191,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             .join(profile)
             .join(&binary);
 
-        println!("rel_artifact_path: {:?}", rel_artifact_path);
-
         let abs_wasm = abs_artifact_path.as_path().display().to_string();
-        println!("abs_wasm: {:?}", abs_wasm);
         let relative_wasm = rel_artifact_path.as_path().display().to_string();
-        println!("relative_wasm: {:?}", relative_wasm);
 
         manifest.module = Module::Wasm(relative_wasm);
 
@@ -215,8 +206,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             .unwrap_or_else(|e| panic!("❌ Failed to spawn wasm-snip process: {e}",))
             .wait()
             .unwrap_or_else(|e| panic!("❌ Failed to finish wasm-snip process: {e}",));
-
-        println!("status: {:?}", status);
 
         if !status.success() {
             let code = status.code();
