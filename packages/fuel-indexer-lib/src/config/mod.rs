@@ -181,6 +181,10 @@ pub struct IndexerArgs {
         help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
     )]
     pub jwt_expiry: Option<usize>,
+
+    /// Enable verbose logging.
+    #[clap(long, help = "Enable verbose logging.")]
+    pub verbose: bool,
 }
 
 #[derive(Debug, Parser, Clone)]

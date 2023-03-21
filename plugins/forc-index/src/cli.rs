@@ -21,7 +21,7 @@ struct Opt {
 }
 
 #[derive(Subcommand, Debug)]
-pub enum ForcIndex {
+enum ForcIndex {
     Init(InitCommand),
     New(NewCommand),
     Deploy(DeployCommand),

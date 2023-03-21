@@ -27,6 +27,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         jwt_secret,
         jwt_issuer,
         jwt_expiry,
+        verbose,
         ..
     } = command;
 
@@ -120,7 +121,9 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         }
     }
 
-    info!("{cmd:?}");
+    if verbose {
+        info!("{cmd:?}");
+    }
 
     let _proc = cmd
         .spawn()
