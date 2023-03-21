@@ -30,19 +30,22 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         native,
         target_dir,
         verbose,
+        skip_build,
     } = command;
 
-    build::exec(BuildCommand {
-        manifest: manifest.clone(),
-        path: path.clone(),
-        target,
-        release,
-        profile,
-        verbose,
-        locked,
-        native,
-        target_dir: target_dir.clone(),
-    })?;
+    if !skip_build {
+        build::exec(BuildCommand {
+            manifest: manifest.clone(),
+            path: path.clone(),
+            target,
+            release,
+            profile,
+            verbose,
+            locked,
+            native,
+            target_dir: target_dir.clone(),
+        })?;
+    }
 
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;

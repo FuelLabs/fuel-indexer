@@ -8,6 +8,7 @@ use serde::Deserialize;
 use std::{
     fs::File,
     io::{Read, Write},
+    path::Path,
     process::{Command, Stdio},
     time::Duration,
 };
@@ -174,8 +175,10 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         let abs_artifact_path =
             target_dir.join(&target_triple).join(profile).join(&binary);
 
-        let rel_artifact_path =
-            target_dir.join(&target_triple).join(profile).join(&binary);
+        let rel_artifact_path = Path::new("target")
+            .join(&target_triple)
+            .join(profile)
+            .join(&binary);
 
         let abs_wasm = abs_artifact_path.as_path().display().to_string();
         let relative_wasm = rel_artifact_path.as_path().display().to_string();
