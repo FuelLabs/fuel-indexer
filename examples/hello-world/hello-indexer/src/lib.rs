@@ -4,7 +4,7 @@
 //! wasm32-unknown-unknown target will be required.
 //!
 //! ```bash
-//! cargo build -p hello-index --release --target wasm32-unknown-unknown
+//! cargo build -p hello-indexer --release --target wasm32-unknown-unknown
 //! ```
 //!
 //! Start a local test Fuel node
@@ -17,7 +17,7 @@
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- --manifest examples/hello-world/hello_index.manifest.yaml
+//! cargo run --bin fuel-indexer -- run --manifest examples/hello-world/hello-indexer/hello_indexer.manifest.yaml
 //! ```
 //!
 //! Now trigger an event.
@@ -30,8 +30,8 @@ extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
-#[indexer(manifest = "examples/hello-world/hello-index/hello_index.manifest.yaml")]
-mod hello_world_index {
+#[indexer(manifest = "examples/hello-world/hello-indexer/hello_indexer.manifest.yaml")]
+mod hello_world_indexer {
 
     fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the

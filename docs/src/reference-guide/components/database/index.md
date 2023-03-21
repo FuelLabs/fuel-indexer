@@ -1,11 +1,10 @@
 # Database
 
-The Fuel indexer uses [Postgres](https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile) as the primary database.
-.
+The Fuel indexer uses [PostgreSQL](https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile) as the primary database. We're open to supporting other storage solutions in the future.
 
-- [Types](./types.md)
-  - How to use different data types from your Sway contract, all the way to your Postgres table
+In this chapter, you can find information regarding how your data should be structured for use in the Fuel indexer:
+
 - [Foreign Keys](./foreign-keys.md)
-  - How foreign keys are handled in GraphQL schema, and Postgres.
+  - How foreign keys are handled in the Fuel indexer.
 - [⚠️ IDs](./ids.md)
   - Explains some conventions surrounding the usage of `ID` types

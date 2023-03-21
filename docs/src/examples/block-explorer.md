@@ -3,13 +3,13 @@
 Below is an example of a rudimentary block explorer backend implementation that demonstrates how to leverage basic Fuel indexer abstractions in order to build a cool dApp backend.
 
 ```rust,ignore
-{{#include ../../../examples/block-explorer/explorer-index/src/lib.rs}}
+{{#include ../../../examples/block-explorer/explorer-indexer/src/lib.rs}}
 ```
 
 Once blocks have been added to the database by the indexer, you can query for them by using a query similar to the following:
 
 ```sh
-curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples \
+curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples/explorer_index \
    -H 'content-type: application/json' \
    -d '{"query": "query { block { id height timestamp }}", "params": "b"}' \
 | json_pp

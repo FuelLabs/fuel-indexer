@@ -1,18 +1,16 @@
 # Directives
 
-> Per GraphQL: A directive is an identifier preceded by a @ character, optionally followed by a list of named arguments, which can appear after almost any form of syntax in the GraphQL query or schema languages.
+> Per GraphQL: A directive is a keyword preceded by a @ character (optionally followed by a list of named arguments) which can appear after almost any form of syntax in the GraphQL query or schema languages.
 
-- As of this writing, the list of supported Fuel GraphQL schema directives includes:
+As of this writing, the list of supported Fuel GraphQL schema directives includes:
 
-  - `@indexed`
-  - `@unique`
-  - `@join`
-
-Using our `Library` and `Book` example from the previous [Foreign Keys](../database/foreign-keys.md) section -- given the following schema:
+- `@indexed`
+- `@unique`
+- `@join`
 
 ## `@indexed`
 
-The `@indexed` directive adds an index to the underlying database column for the indicated field of that type. Generally, an index is a data structure that allows you to quickly locate data without having to search each row in a database table.
+The `@indexed` directive adds a [database index](https://www.postgresql.org/docs/current/indexes-intro.html) to the underlying column for the indicated field of that type. Generally, a database index is a data structure that allows you to quickly locate data without having to search each row in a database table.
 
 ```graphql
 schema {
@@ -37,7 +35,7 @@ type Library {
 
 In this example, a single `BTREE INDEX` constraint will be created on the `book` table's `name` column, which allows for faster lookups on that field.
 
-> Important: At the moment, index constraint support is limited to `BTREE` in Postgres with `ON DELETE`, and `ON UPDATE` actions not being supported.
+> Important: At the moment, database index constraint support is limited to `BTREE` in Postgres with `ON DELETE`, and `ON UPDATE` actions not being supported.
 
 ## `@unique`
 
