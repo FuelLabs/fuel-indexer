@@ -24,8 +24,9 @@ spec:
       containers:
         - name: {{ .Values.app.name }}
           image: {{ .Values.fuelIndexerImage }} 
-          command: ["./fuel-indexer run"]
+          command: ["./fuel-indexer"]
           args:
+            - "run"
             - "--fuel-node-host"
             - "{{ .Values.app.fuel_node_host }}"
             - "--fuel-node-port"
