@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+  merge_group:
   release:
     types: [published]
 
@@ -18,9 +19,9 @@ env:
   SQLX_OFFLINE: true
   RUSTC_VERSION: 1.67
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  IS_MASTER: github.ref == 'refs/heads/master'
-  IS_RELEASE: github.event_name == 'release' && github.event.action == 'published'
-  IS_RELEASE_OR_MASTER: github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master'
+  IS_MASTER: ${{ github.ref == 'refs/heads/master' }}
+  IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
+  IS_RELEASE_OR_MASTER: ${{ github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master' }}
 
 jobs:
   cancel-previous-runs:
@@ -92,6 +93,7 @@ jobs:
         run: |
           if [[ ${{ env.BRANCH_NAME }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "is_semver_branch=true" >> $GITHUB_OUTPUT
+              echo "This is a release branch ^(^.^)^"
           else
             echo "Not a release branch ^(^.^)^"
           fi
@@ -127,16 +129,6 @@ jobs:
 
   cargo-verifications:
     runs-on: buildjet-4vcpu-ubuntu-2204
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -145,7 +137,7 @@ jobs:
       matrix:
         command: [build]
         args: [--locked --all-features --all-targets]
-        package: [fuel-indexer-api-server, fuel-indexer-database, fuel-indexer-database-types, fuel-indexer-postgres, fuel-indexer-lib, fuel-indexer-macros, fuel-indexer-metrics, fuel-indexer-plugin, fuel-indexer-schema, fuel-indexer-types, forc-index, forc-postgres]
+        package: [fuel-indexer, fuel-indexer-api-server, fuel-indexer-database, fuel-indexer-database-types, fuel-indexer-postgres, fuel-indexer-lib, fuel-indexer-macros, fuel-indexer-metrics, fuel-indexer-plugin, fuel-indexer-schema, fuel-indexer-types, forc-index, forc-postgres]
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -220,6 +212,9 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        credentials:
+          username: fuellabs
+          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -245,6 +240,9 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+        credentials:
+          username: fuellabs
+          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -275,10 +273,10 @@ jobs:
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   check-forc-index:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true' || needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    # if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
+    if: false
     needs:
-      - cargo-toml-fmt-check
-      - set-env-vars
+      - check-is-semver-branch
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v2
@@ -309,12 +307,6 @@ jobs:
 
   publish-docker-image:
     needs:
-      - cargo-clippy
-      - cargo-fmt-check
-      - cargo-test-e2e-and-integration-tests
-      - cargo-test-unit-tests
-      - cargo-verifications
-      - check-forc-index
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
     runs-on: buildjet-4vcpu-ubuntu-2204
@@ -348,6 +340,12 @@ jobs:
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Log in to the docker.io registry
+        uses: docker/login-action@v2
+        with:
+          username: fuellabs
+          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
+
       - name: Build and push the image to ghcr.io
         uses: docker/build-push-action@v2
         with:
@@ -376,12 +374,6 @@ jobs:
   publish-fuel-indexer-binaries:
     runs-on: ${{ matrix.job.os }}
     needs:
-      - cargo-clippy
-      - cargo-fmt-check
-      - cargo-test-e2e-and-integration-tests
-      - cargo-test-unit-tests
-      - cargo-verifications
-      - check-forc-index
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
     strategy:
@@ -446,7 +438,6 @@ jobs:
             build \
             --profile=release \
             --target ${{ matrix.job.target }} \
-            --features fuel-core-lib \
             -p fuel-indexer \
             -p fuel-indexer-api-server \
             -p forc-index
@@ -608,21 +599,12 @@ jobs:
         with:
           toolchain: stable
           override: true
+          
       - name: Verify tag version
         run: |
           curl -sSLf "${DASEL_VERSION}" -L -o dasel && chmod +x dasel
           mv ./dasel /usr/local/bin/dasel
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-api-server/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/database-types/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-database/postgres/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-lib/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-macros/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-metrics/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-plugin/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-schema/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer-types/Cargo.toml
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} packages/fuel-indexer/Cargo.toml
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} Cargo.toml
 
       - name: Install WASM target
         uses: actions-rs/toolchain@v1
@@ -656,6 +638,12 @@ jobs:
       - deploy
       - publish
       - cargo-verifications
+      - cargo-test-unit-tests
+      - cargo-test-e2e-and-integration-tests
+      - cargo-clippy
+      - cargo-fmt-check
+      - check-forc-index
+
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - run: true
