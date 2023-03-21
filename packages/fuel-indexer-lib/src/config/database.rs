@@ -143,7 +143,7 @@ impl FromStr for DatabaseConfig {
             }
             _ => {
                 println!("Unsupported database. Please check your database URL.");
-                Err(ParseError::InvalidIpv4Address)
+                unimplemented!()
             }
         }
     }
