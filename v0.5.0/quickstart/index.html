@@ -1,0 +1,404 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Quickstart - The Fuel Indexer Service</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = null;
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded affix "><li class="part-title">Getting Started</li><li class="chapter-item expanded "><a href="../getting-started/dependencies/index.html"><strong aria-hidden="true">1.</strong> Dependencies</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/dependencies/fuelup.html"><strong aria-hidden="true">1.1.</strong> fuelup</a></li><li class="chapter-item expanded "><a href="../getting-started/dependencies/database.html"><strong aria-hidden="true">1.2.</strong> Database</a></li><li class="chapter-item expanded "><a href="../getting-started/dependencies/wasm.html"><strong aria-hidden="true">1.3.</strong> WASM</a></li></ol></li><li class="chapter-item expanded "><a href="../quickstart/index.html" class="active"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../getting-started/starting-the-fuel-indexer.html"><strong aria-hidden="true">3.</strong> Starting the Fuel Indexer</a></li><li class="chapter-item expanded affix "><li class="part-title">Examples</li><li class="chapter-item expanded "><a href="../examples/hello-world.html"><strong aria-hidden="true">4.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="../examples/block-explorer.html"><strong aria-hidden="true">5.</strong> Block Explorer</a></li><li class="chapter-item expanded affix "><li class="part-title">Reference Guide</li><li class="chapter-item expanded "><a href="../reference-guide/components/fuel-indexer-project.html"><strong aria-hidden="true">6.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/components/assets/manifest.html"><strong aria-hidden="true">6.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/assets/schema.html"><strong aria-hidden="true">6.2.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/assets/module.html"><strong aria-hidden="true">6.3.</strong> Module</a></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/what-can-i-index.html"><strong aria-hidden="true">7.</strong> What Can I Index?</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/indexing/blocks-and-transactions.html"><strong aria-hidden="true">7.1.</strong> Blocks and Transactions</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts.html"><strong aria-hidden="true">7.2.</strong> Receipts</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/call.html"><strong aria-hidden="true">7.2.1.</strong> Call</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/log.html"><strong aria-hidden="true">7.2.2.</strong> Log</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/logdata.html"><strong aria-hidden="true">7.2.3.</strong> LogData</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/messageout.html"><strong aria-hidden="true">7.2.4.</strong> MessageOut</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/return.html"><strong aria-hidden="true">7.2.5.</strong> Return</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/returndata.html"><strong aria-hidden="true">7.2.6.</strong> ReturnData</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/transfer.html"><strong aria-hidden="true">7.2.7.</strong> Transfer</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/transferout.html"><strong aria-hidden="true">7.2.8.</strong> TransferOut</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/scriptresult.html"><strong aria-hidden="true">7.2.9.</strong> ScriptResult</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/data-types/types.html"><strong aria-hidden="true">8.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/graphql/index.html"><strong aria-hidden="true">9.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/components/graphql/schema.html"><strong aria-hidden="true">9.1.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/graphql/directives.html"><strong aria-hidden="true">9.2.</strong> Directives</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/graphql/api-server.html"><strong aria-hidden="true">9.3.</strong> API Server</a></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/components/database/index.html"><strong aria-hidden="true">10.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/components/database/foreign-keys.html"><strong aria-hidden="true">10.1.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/database/ids.html"><strong aria-hidden="true">10.2.</strong> ID Types</a></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/index.html"><strong aria-hidden="true">11.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/index.html"><strong aria-hidden="true">11.1.</strong> forc index</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/init.html"><strong aria-hidden="true">11.1.1.</strong> init</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/new.html"><strong aria-hidden="true">11.1.2.</strong> new</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/check.html"><strong aria-hidden="true">11.1.3.</strong> check</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/build.html"><strong aria-hidden="true">11.1.4.</strong> build</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/start.html"><strong aria-hidden="true">11.1.5.</strong> start</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/deploy.html"><strong aria-hidden="true">11.1.6.</strong> deploy</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/remove.html"><strong aria-hidden="true">11.1.7.</strong> remove</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/auth.html"><strong aria-hidden="true">11.1.8.</strong> auth</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/revert.html"><strong aria-hidden="true">11.1.9.</strong> revert</a></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/index.html"><strong aria-hidden="true">11.2.</strong> forc index postgres</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/create.html"><strong aria-hidden="true">11.2.1.</strong> create</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/start.html"><strong aria-hidden="true">11.2.2.</strong> start</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/stop.html"><strong aria-hidden="true">11.2.3.</strong> stop</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/drop.html"><strong aria-hidden="true">11.2.4.</strong> drop</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/authentication/index.html"><strong aria-hidden="true">12.</strong> Authentication</a></li><li class="chapter-item expanded affix "><li class="part-title">For Contributors</li><li class="chapter-item expanded "><a href="../for-contributors/index.html"><strong aria-hidden="true">13.</strong> Environment Setup</a></li><li class="chapter-item expanded "><a href="../for-contributors/contributing-standards.html"><strong aria-hidden="true">14.</strong> Contributing Standards</a></li><li class="chapter-item expanded "><a href="../for-contributors/release-schedule.html"><strong aria-hidden="true">15.</strong> Release Schedule</a></li><li class="chapter-item expanded affix "><li class="part-title">Appendix</li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">16.</strong> A: Glossary</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The Fuel Indexer Service</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/FuelLabs/fuel-indexer" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <!-- markdownlint-disable MD041 -->
+<h2 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h2>
+<p>In this tutorial you will:</p>
+<ol>
+<li>Bootstrap your development environment.</li>
+<li>Create, build, and deploy an index to an indexer service hooked up to Fuel's <code>beta-2</code> testnet.</li>
+<li>Query the indexer service for indexed data using GraphQL.</li>
+</ol>
+<h2 id="1-setting-up-your-environment"><a class="header" href="#1-setting-up-your-environment">1. Setting up your environment</a></h2>
+<p>In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a PostgreSQL database backend. We will also use Fuel's toolchain manager <a href="https://github.com/FuelLabs/fuelup"><code>fuelup</code></a> in order to install the <code>forc-index</code> binary that we'll use to develop our index.</p>
+<h3 id="11-install-fuelup"><a class="header" href="#11-install-fuelup">1.1 Install <code>fuelup</code></a></h3>
+<p>To Install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.</p>
+<pre><code class="language-bash">curl \
+  --proto '=https' \
+  --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+</code></pre>
+<blockquote>
+<p>If you require a non-default <code>fuelup</code> installation, please <a href="https://github.com/FuelLabs/fuelup">read the <code>fuelup</code> installation docs.</a></p>
+</blockquote>
+<h2 id="2-using-the-forc-index-plugin"><a class="header" href="#2-using-the-forc-index-plugin">2. Using the <code>forc-index</code> plugin</a></h2>
+<p>The primary means of interfacing with the Fuel indexer <strong>for index development</strong> is the <a href="https://crates.io/crates/forc-index"><code>forc-index</code> CLI tool</a>. <code>forc-index</code> is a <a href="https://github.com/FuelLabs/sway/tree/master/forc"><code>forc</code></a> plugin specifically created to interface with the Fuel indexer service. Since we already installed <code>fuelup</code> in a previous step <sup><a href="#11-install-fuelup">1.1</a></sup>, we should be able to check that our <code>forc-index</code> binary was successfully installed and added to our <code>PATH</code>.</p>
+<pre><code class="language-bash">which forc-index
+</code></pre>
+<pre><code class="language-text">/Users/me/.fuelup/bin/forc-index
+</code></pre>
+<blockquote>
+<p>IMPORTANT: <code>fuelup</code> will install several binaries from the Fuel ecosystem and add them into your <code>PATH</code>, including the <code>fuel-indexer</code> binary. The <code>fuel-indexer</code> binary is the primary binary that users can use to spin up a Fuel indexer service.</p>
+</blockquote>
+<pre><code class="language-bash">which fuel-indexer
+</code></pre>
+<pre><code class="language-text">/Users/me/.fuelup/bin/fuel-indexer
+</code></pre>
+<h3 id="21-check-for-components"><a class="header" href="#21-check-for-components">2.1 Check for components</a></h3>
+<p>Once the <code>forc-index</code> plugin is installed, let's go ahead and see what indexer components we have installed.</p>
+<blockquote>
+<p>Many of these components are required for development work (e.g., <code>fuel-core</code>, <code>psql</code>) but some are even required for non-development usage as well (e.g., <code>wasm-snip</code>, <code>fuelup</code>).</p>
+</blockquote>
+<pre><code class="language-bash">forc index check
+</code></pre>
+<pre><code class="language-text">+--------+------------------------+---------------------------------------------------------+
+| Status |       Component        |                         Details                         |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | fuel-indexer binary    |  /Users/me/.fuelup/bin/fuel-indexer                     |
++--------+------------------------+---------------------------------------------------------+
+|   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).               |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | psql                   |  /usr/local/bin/psql                                    |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | fuel-core              |  /Users/me/.fuelup/bin/fuel-core                        |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | docker                 |  /usr/local/bin/docker                                  |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | fuelup                 |  /Users/me/.fuelup/bin/fuelup                           |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | wasm-snip              |  /Users/me/.cargo/bin/wasm-snip                         |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | forc-postgres          |  /Users/me/.fuelup/bin/fuelup                           |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | rustc                  |  /Users/me/.cargo/bin/rustc                             |
++--------+------------------------+---------------------------------------------------------+
+</code></pre>
+<h3 id="22-setup-a-database-and-start-the-indexer-service"><a class="header" href="#22-setup-a-database-and-start-the-indexer-service">2.2 Setup a Database and Start the Indexer Service</a></h3>
+<p>To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll use <code>forc index</code> and its <code>forc index postgres</code> subcommand.</p>
+<p>We can quickly create a bootstrapped database and start the Fuel indexer service by running the following command:</p>
+<blockquote>
+<p>IMPORTANT: Ensure that any local PostgreSQL instance that is running on port <code>5432</code> is stopped.</p>
+</blockquote>
+<pre><code class="language-bash">forc index start \
+    --embedded-database                         # Setup and start a default database.
+    --fuel-node-host node-beta-2.fuel.network \ # Connect to a Fuel node at this host
+    --fuel-node-port 80                         # and port, and monitor the network.
+</code></pre>
+<p>You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:</p>
+<pre><code class="language-text">📦 Downloading, unpacking, and bootstrapping database...
+
+▹▹▸▹▹ ⏱  Setting up database...
+
+💡 Creating database at 'postgres://postgres:postgres@localhost:5432/postgres'
+
+✅ Successfully created database at 'postgres://postgres:postgres@localhost:5432/postgres'.
+
+✅ Successfully started database at 'postgres://postgres:postgres@localhost:5432/postgres'.
+
+✅ Successfully started the indexer service.
+</code></pre>
+<blockquote>
+<p>You can <code>Ctrl+C</code> to exit the <code>forc index start</code> process, and your indexer service and database should still be running in the background.</p>
+</blockquote>
+<h3 id="23-creating-a-new-indexer"><a class="header" href="#23-creating-a-new-indexer">2.3 Creating a new indexer</a></h3>
+<p>Now that we have our development environment set up, the next step is to create an indexer.</p>
+<pre><code class="language-bash">forc index new hello-indexer --namespace my_project &amp;&amp; cd hello-indexer
+</code></pre>
+<blockquote>
+<p>The <code>namespace</code> of your project is a required option. You can think of a <code>namespace</code> as your organization name or company name. Your project might contain one or many indexers all under the same <code>namespace</code>.</p>
+</blockquote>
+<pre><code class="language-text">forc index new hello-indexer --namespace my_project
+
+███████╗██╗   ██╗███████╗██╗         ██╗███╗   ██╗██████╗ ███████╗██╗  ██╗███████╗██████╗
+██╔════╝██║   ██║██╔════╝██║         ██║████╗  ██║██╔══██╗██╔════╝╚██╗██╔╝██╔════╝██╔══██╗
+█████╗  ██║   ██║█████╗  ██║         ██║██╔██╗ ██║██║  ██║█████╗   ╚███╔╝ █████╗  ██████╔╝
+██╔══╝  ██║   ██║██╔══╝  ██║         ██║██║╚██╗██║██║  ██║██╔══╝   ██╔██╗ ██╔══╝  ██╔══██╗
+██║     ╚██████╔╝███████╗███████╗    ██║██║ ╚████║██████╔╝███████╗██╔╝ ██╗███████╗██║  ██║
+╚═╝      ╚═════╝ ╚══════╝╚══════╝    ╚═╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
+
+An easy-to-use, flexible indexing service built to go fast. 🚗💨
+
+----
+
+Read the Docs:
+- Fuel Indexer: https://github.com/FuelLabs/fuel-indexer
+- Fuel Indexer Book: https://fuellabs.github.io/fuel-indexer/latest
+- Sway Book: https://fuellabs.github.io/sway/latest
+- Rust SDK Book: https://fuellabs.github.io/fuels-rs/latest
+
+Join the Community:
+- Follow us @SwayLang: https://twitter.com/fuellabs_
+- Ask questions in dev-chat on Discord: https://discord.com/invite/xfpK4Pe
+
+Report Bugs:
+- Fuel Indexer Issues: https://github.com/FuelLabs/fuel-indexer/issues/new
+
+Take a quick tour.
+`forc index check`
+    List indexer components.
+`forc index new`
+    Create a new index.
+`forc index init`
+    Create a new index in an existing directory.
+`forc index start`
+    Start a local indexer service.
+`forc index build`
+    Build your index.
+`forc index deploy`
+    Deploy your index.
+`forc index remove`
+    Stop a running index.
+</code></pre>
+<blockquote>
+<p>IMPORTANT: If you want more details on how this indexer works, check out our <a href="https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html">block explorer indexer example</a>.</p>
+</blockquote>
+<h3 id="24-deploying-our-indexer"><a class="header" href="#24-deploying-our-indexer">2.4 Deploying our indexer</a></h3>
+<p>At this point, we have a brand new indexer that will index some blocks and transactions. And with our database and Fuel indexer service up and running, all that's left is to build and deploy the indexer in order to see it in action. but now we need to build and deploy it in order to see it in action.</p>
+<pre><code class="language-bash">forc index deploy --manifest hello_index.manifest.yaml
+</code></pre>
+<p>If all goes well, you should see the following:</p>
+<pre><code class="language-text">▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
+▪▪▪▪▪ ✅ Build succeeded.
+
+Deploying indexer at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
+▹▸▹▹▹ 🚀 Deploying...
+{
+  &quot;assets&quot;: [
+    {
+      &quot;digest&quot;: &quot;79e74d6a7b68a35aeb9aa2dd7f6083dae5fdba5b6a2f199529b6c49624d1e27b&quot;,
+      &quot;id&quot;: 1,
+      &quot;index_id&quot;: 1,
+      &quot;version&quot;: 1
+    },
+    {
+      &quot;digest&quot;: &quot;4415628d9ea79b3c3f1e6f02b1af3416c4d0b261b75abe3cc81b77b7902549c5&quot;,
+      &quot;id&quot;: 1,
+      &quot;index_id&quot;: 1,
+      &quot;version&quot;: 1
+    },
+    {
+      &quot;digest&quot;: &quot;e901eba95ce8b4d1c159c5d66f24276dc911e87dbff55fb2c10d8b371528eacc&quot;,
+      &quot;id&quot;: 1,
+      &quot;index_id&quot;: 1,
+      &quot;version&quot;: 1
+    }
+  ],
+  &quot;success&quot;: &quot;true&quot;
+}
+▪▪▪▪▪ ✅ Successfully deployed indexer.
+</code></pre>
+<h2 id="3-querying-for-data"><a class="header" href="#3-querying-for-data">3. Querying for data</a></h2>
+<p>With our indexer deployed, we should be able to query for newly indexed data after a few seconds.</p>
+<p>Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.</p>
+<pre><code class="language-bash">curl -X POST http://127.0.0.1:29987/api/graph/my_project/hello_index \
+   -H 'content-type: application/json' \
+   -d '{&quot;query&quot;: &quot;query { tx { id hash block }}&quot;, &quot;params&quot;: &quot;b&quot;}' \
+| json_pp
+</code></pre>
+<pre><code class="language-text">[
+   {
+      &quot;block&quot; : 7017844286925529648,
+      &quot;hash&quot; : &quot;fb93ce9519866676813584eca79afe2d98466b3e2c8b787503b76b0b4718a565&quot;,
+      &quot;id&quot; : 7292230935510476086,
+   },
+   {
+      &quot;block&quot; : 3473793069188998756,
+      &quot;hash&quot; : &quot;5ea2577727aaadc331d5ae1ffcbc11ec4c2ba503410f8edfb22fc0a72a1d01eb&quot;,
+      &quot;id&quot; : 4136050720295695667,
+   },
+   {
+      &quot;block&quot; : 7221293542007912803,
+      &quot;hash&quot; : &quot;d2f638c26a313c681d75db2edfbc8081dbf5ecced87a41ec4199d221251b0578&quot;,
+      &quot;id&quot; : 4049687577184449589,
+   },
+]
+</code></pre>
+<h3 id="finished-"><a class="header" href="#finished-">Finished! 🥳</a></h3>
+<p>Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you <a href="https://fuellabs.github.io/fuel-indexer/master/"><strong>read the book</strong></a>.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../getting-started/dependencies/wasm.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../getting-started/starting-the-fuel-indexer.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../getting-started/dependencies/wasm.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../getting-started/starting-the-fuel-indexer.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
