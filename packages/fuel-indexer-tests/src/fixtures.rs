@@ -40,6 +40,7 @@ pub struct TestPostgresDb {
 
 impl TestPostgresDb {
     pub async fn new() -> Self {
+        // Generate a random string to serve as a unique name for a temporary database
         let rng = thread_rng();
         let db_name: String = rng
             .sample_iter(&Alphanumeric)
@@ -47,8 +48,15 @@ impl TestPostgresDb {
             .map(char::from)
             .collect();
 
-        let connection_config: DatabaseConfig =
-            std::env::var("DATABASE_URL").unwrap().parse().unwrap();
+        // The server connection string serves as a way to connect directly to the Postgres server.
+        // Example database URL: postgres://postgres:my-secret@localhost:5432
+        let connection_config: DatabaseConfig = match std::env::var("DATABASE_URL")
+            .expect("DATABASE_URL environment variable is not set")
+            .parse()
+        {
+            Ok(cc) => cc,
+            Err(e) => panic!("Could not parse DATABASE_URL: {e}"),
+        };
         let server_connection_str = connection_config.to_string();
 
         let DatabaseConfig::Postgres {
@@ -66,33 +74,41 @@ impl TestPostgresDb {
             database: db_name.clone(),
         };
 
-        let mut conn = PgConnection::connect(server_connection_str.as_str())
-            .await
-            .expect("Failed to connect to Postgres server");
+        // Connect directly to the Postgres server and create a database with the unique string
+        let mut conn = match PgConnection::connect(server_connection_str.as_str()).await {
+            Ok(conn) => conn,
+            Err(e) => panic!("Failed to connect to Postgres server: {e}"),
+        };
 
-        conn.execute(format!(r#"CREATE DATABASE "{}""#, &db_name).as_str())
+        if let Err(e) = conn
+            .execute(format!(r#"CREATE DATABASE "{}""#, &db_name).as_str())
             .await
-            .expect("Could not create database");
+        {
+            panic!("Could not create database: {e}")
+        };
 
+        // Instantiate a pool so that it can be stored in the struct for use in the tests
         let pool =
             match IndexerConnectionPool::connect(&test_db_config.clone().to_string())
                 .await
-                .unwrap_or_else(|_| {
-                    panic!(
-                        "Failed to forcefully drop test database {}",
-                        db_name.clone()
-                    )
-                }) {
-                IndexerConnectionPool::Postgres(p) => {
-                    let mut conn = p
-                        .acquire()
-                        .await
-                        .expect("Could not acquire connection from pool");
-                    fuel_indexer_postgres::run_migration(&mut conn)
-                        .await
-                        .expect("Could not run migrations for test database");
-                    p
-                }
+            {
+                Ok(pool) => match pool {
+                    IndexerConnectionPool::Postgres(p) => {
+                        let mut conn = match p.acquire().await {
+                            Ok(conn) => conn,
+                            Err(e) => {
+                                panic!("Could not acquire connection from pool: {e}")
+                            }
+                        };
+                        if let Err(e) =
+                            fuel_indexer_postgres::run_migration(&mut conn).await
+                        {
+                            panic!("Could not run migrations for test database: {e}")
+                        }
+                        p
+                    }
+                },
+                Err(e) => panic!("Failed to create IndexerConnectionPool: {e}"),
             };
 
         Self {
@@ -104,52 +120,68 @@ impl TestPostgresDb {
     }
 
     async fn teardown(&mut self) {
-        let mut conn = PgConnection::connect(&self.server_connection_str)
-            .await
-            .expect("Failed to connect to Postgres server");
+        let mut conn = match PgConnection::connect(&self.server_connection_str).await {
+            Ok(conn) => conn,
+            Err(e) => panic!("Failed to connect to Postgres server: {e}"),
+        };
 
-        conn.execute(
-            format!(
-                r#"
+        // Drop all connections to the test database so that resources are cleaned up
+        if let Err(e) = conn
+            .execute(
+                format!(
+                    r#"
                 SELECT pg_terminate_backend(pg_stat_activity.pid)
                 FROM pg_stat_activity
                 WHERE pg_stat_activity.datname = '{}'
                 AND pid <> pg_backend_pid()
                 "#,
-                self.db_name
+                    self.db_name
+                )
+                .as_str(),
             )
-            .as_str(),
-        )
-        .await
-        .unwrap_or_else(|_| {
+            .await
+        {
             panic!(
-                "Failed to terminate current connections to test database {}",
+                "Failed to terminate current connections to test database {}: {e}",
                 self.db_name
             )
-        });
+        };
 
-        conn.execute(
-            format!(
-                r#"DROP DATABASE IF EXISTS "{}" WITH (FORCE);"#,
+        // Forcefully drop the database. Connections should have been cleaned up by
+        // this point as we've awaited the prior query, but let's just do it by force.
+        if let Err(e) = conn
+            .execute(
+                format!(
+                    r#"DROP DATABASE IF EXISTS "{}" WITH (FORCE);"#,
+                    self.db_name
+                )
+                .as_str(),
+            )
+            .await
+        {
+            panic!(
+                "Faild to forcefully drop test database {}: {e}",
                 self.db_name
             )
-            .as_str(),
-        )
-        .await
-        .unwrap_or_else(|_| {
-            panic!("Failed to forcefully drop test database {}", self.db_name)
-        });
+        };
     }
 }
 
 impl Drop for TestPostgresDb {
     fn drop(&mut self) {
+        // drop() cannot be async. Thus, we create a blocking thread
+        // to await the teardown operation for the database.
         std::thread::scope(|s| {
             s.spawn(|| {
-                let runtime = tokio::runtime::Builder::new_multi_thread()
+                let runtime = match tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
                     .build()
-                    .unwrap();
+                {
+                    Ok(rt) => rt,
+                    Err(e) => {
+                        panic!("Failed to create runtime for database teardown: {e}")
+                    }
+                };
                 runtime.block_on(self.teardown());
             });
         });

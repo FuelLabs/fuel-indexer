@@ -8,8 +8,7 @@ use crate::{
 pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
-
-use super::IndexerConfigError;
+use url::{ParseError, Url};
 
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -117,33 +116,19 @@ impl From<DatabaseConfig> for Uri {
 }
 
 impl FromStr for DatabaseConfig {
-    type Err = IndexerConfigError;
+    type Err = ParseError;
 
     fn from_str(db_url: &str) -> Result<Self, Self::Err> {
-        let scheme_and_conn_details: Vec<&str> = db_url.split(r"://").collect();
+        let url = Url::parse(db_url).unwrap();
 
-        let (scheme, conn_details) =
-            (scheme_and_conn_details[0], scheme_and_conn_details[1]);
-
-        match scheme.to_lowercase().as_str() {
+        match url.scheme() {
             "postgres" => {
-                let conn_str_and_database: Vec<&str> = conn_details.split('/').collect();
-
-                let conn_str: Vec<&str> = conn_str_and_database[0].split('@').collect();
-                let credentials: Vec<&str> = conn_str[0].split(':').collect();
-
-                let user = credentials[0];
-                let password = if credentials.len() == 2 {
-                    credentials[1]
-                } else {
-                    ""
-                };
-
-                let host_str: Vec<&str> = conn_str[1].split(':').collect();
-                let (host, port) = (host_str[0], host_str[1]);
-
-                let database = if conn_str_and_database.len() == 2 {
-                    conn_str_and_database[1]
+                let user = url.username();
+                let password = url.password().unwrap_or_default();
+                let host = url.host().ok_or(ParseError::EmptyHost).unwrap();
+                let port = url.port().ok_or(ParseError::InvalidPort).unwrap();
+                let database = if url.path_segments().is_some() {
+                    url.path_segments().unwrap().next().unwrap()
                 } else {
                     ""
                 };
@@ -156,7 +141,10 @@ impl FromStr for DatabaseConfig {
                     database: database.to_string(),
                 })
             }
-            _ => Err(IndexerConfigError::DbUrlParseError),
+            _ => {
+                println!("Unsupported database. Please check your database URL.");
+                Err(ParseError::InvalidIpv4Address)
+            }
         }
     }
 }

@@ -34,8 +34,6 @@ pub enum IndexerConfigError {
     ConfigFileError(#[from] Error),
     #[error("Error processing YAML file: {0:?}")]
     SerdeYamlError(#[from] serde_yaml::Error),
-    #[error("Error parsing database connection string into DatabaseConfig")]
-    DbUrlParseError,
 }
 
 type IndexerConfigResult<T> = core::result::Result<T, IndexerConfigError>;
