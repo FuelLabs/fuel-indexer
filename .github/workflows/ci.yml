@@ -129,19 +129,6 @@ jobs:
 
   cargo-verifications:
     runs-on: buildjet-4vcpu-ubuntu-2204
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_PASSWORD: my-secret
-          POSTGRES_DB: postgres
-          POSTGRES_USER: postgres
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-        credentials:
-          username: fuellabs
-          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -150,7 +137,7 @@ jobs:
       matrix:
         command: [build]
         args: [--locked --all-features --all-targets]
-        package: [fuel-indexer-api-server, fuel-indexer-database, fuel-indexer-database-types, fuel-indexer-postgres, fuel-indexer-lib, fuel-indexer-macros, fuel-indexer-metrics, fuel-indexer-plugin, fuel-indexer-schema, fuel-indexer-types, forc-index, forc-postgres]
+        package: [fuel-indexer, fuel-indexer-api-server, fuel-indexer-database, fuel-indexer-database-types, fuel-indexer-postgres, fuel-indexer-lib, fuel-indexer-macros, fuel-indexer-metrics, fuel-indexer-plugin, fuel-indexer-schema, fuel-indexer-types, forc-index, forc-postgres]
 
     # disallow any job that takes longer than 45 minutes
     timeout-minutes: 45
@@ -660,6 +647,12 @@ jobs:
       - deploy
       - publish
       - cargo-verifications
+      - cargo-test-unit-tests
+      - cargo-test-e2e-and-integration-tests
+      - cargo-clippy
+      - cargo-fmt-check
+      - check-forc-index
+
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - run: true
