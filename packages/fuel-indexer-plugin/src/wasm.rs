@@ -9,6 +9,7 @@ use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 
+pub use bincode;
 pub use hex;
 pub use hex::FromHex;
 pub use std::collections::HashMap;
