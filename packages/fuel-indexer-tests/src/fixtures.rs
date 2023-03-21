@@ -68,7 +68,7 @@ impl TestPostgresDb {
 
         let mut conn = PgConnection::connect(server_connection_str.as_str())
             .await
-            .unwrap();
+            .expect("Failed to connect to Postgres server");
 
         conn.execute(format!(r#"CREATE DATABASE "{}""#, &db_name).as_str())
             .await
@@ -77,8 +77,12 @@ impl TestPostgresDb {
         let pool =
             match IndexerConnectionPool::connect(&test_db_config.clone().to_string())
                 .await
-                .unwrap()
-            {
+                .unwrap_or_else(|_| {
+                    panic!(
+                        "Failed to forcefully drop test database {}",
+                        db_name.clone()
+                    )
+                }) {
                 IndexerConnectionPool::Postgres(p) => {
                     let mut conn = p
                         .acquire()
