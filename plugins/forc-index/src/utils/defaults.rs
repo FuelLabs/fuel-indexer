@@ -8,7 +8,6 @@ pub const CARGO_CONFIG_FILENAME: &str = "config";
 pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
 pub const GRAPHQL_API_PORT: &str = defaults::GRAPHQL_API_PORT;
 pub const INDEXER_TARGET: &str = "wasm32-unknown-unknown";
-pub const BUILD_PROFILE: &str = "debug";
 
 pub fn default_native_index_cargo_toml(index_name: &str) -> String {
     format!(

@@ -27,8 +27,8 @@ pub struct Command {
     pub release: bool,
 
     /// Build with the given profile.
-    #[clap(long, default_value = defaults::BUILD_PROFILE, help = "Build with the given profile.")]
-    pub profile: String,
+    #[clap(long, help = "Build with the given profile.")]
+    pub profile: Option<String>,
 
     /// Ensure that the Cargo.lock file is up-to-date.
     #[clap(long, help = "Ensure that the Cargo.lock file is up-to-date.")]

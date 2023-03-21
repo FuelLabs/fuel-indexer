@@ -8,7 +8,6 @@ use serde::Deserialize;
 use std::{
     fs::File,
     io::{Read, Write},
-    path::Path,
     process::{Command, Stdio},
     time::Duration,
 };
@@ -78,8 +77,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     cmd.arg("build")
         .arg("--manifest-path")
         .arg(&cargo_manifest_path)
-        .arg("--profile")
-        .arg(&profile)
         .arg("--target")
         .arg(&target_triple);
 
@@ -93,6 +90,10 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         if *value {
             cmd.arg(flag);
         }
+    }
+
+    if let Some(profile) = profile {
+        cmd.arg("--profile").arg(profile);
     }
 
     // Do the build
@@ -168,21 +169,13 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     if !native {
         let binary = format!("{}.wasm", config.package.name);
         let profile = if release { "release" } else { "debug" };
-        let target_dir = target_dir.unwrap_or(root_dir);
-        let abs_artifact_path = target_dir
-            .join("target")
-            .join(&target_triple)
-            .join(&profile)
-            .join(&binary);
 
-        let target_root =
-            std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".into());
-        let target_root = Path::new(&target_root);
+        let target_dir = target_dir.unwrap_or(".".into()).join("target");
+        let abs_artifact_path =
+            target_dir.join(&target_triple).join(&profile).join(&binary);
 
-        let rel_artifact_path = target_root
-            .join(&target_triple)
-            .join(&profile)
-            .join(&binary);
+        let rel_artifact_path =
+            target_dir.join(&target_triple).join(&profile).join(&binary);
 
         let abs_wasm = abs_artifact_path.as_path().display().to_string();
         let relative_wasm = rel_artifact_path.as_path().display().to_string();
