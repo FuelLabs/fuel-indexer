@@ -35,18 +35,18 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
 
     if verbose {
         info!(
-            "\n🛑 Removing index '{}.{}' at {target}",
+            "\n🛑 Removing indexer'{}.{}' at {target}",
             &manifest.namespace, &manifest.identifier
         );
     } else {
-        info!("\n🛑 Removing index ")
+        info!("\n🛑 Removing indexer")
     }
 
     let res = Client::new()
         .delete(&target)
         .headers(headers)
         .send()
-        .expect("Failed to remove index.");
+        .expect("Failed to remove indexer.");
 
     if res.status() != StatusCode::OK {
         error!(
@@ -60,15 +60,16 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
 
-    info!("\n{}", to_string_pretty(&res_json)?);
-
     if verbose {
         info!(
-            "\n✅ Successfully removed index '{}.{}' at {} \n",
-            &manifest.namespace, &manifest.identifier, &target
+            "\n{}\n✅ Successfully removed indexer '{}.{}' at {} \n",
+            to_string_pretty(&res_json)?,
+            &manifest.namespace,
+            &manifest.identifier,
+            &target
         );
     } else {
-        info!("\n✅ Successfully removed index \n");
+        info!("\n✅ Successfully removed indexer\n");
     }
 
     Ok(())

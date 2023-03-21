@@ -62,13 +62,11 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         .expect("Failed to read JSON response.");
 
     if verbose {
-        info!("\n{}", to_string_pretty(&res_json)?);
-    }
-
-    if verbose {
         info!(
-            "\n✅ Indexer '{}'.'{}' reverted successfully.",
-            &manifest.namespace, &manifest.identifier
+            "\n{}\n✅ Indexer '{}'.'{}' reverted successfully.",
+            to_string_pretty(&res_json)?,
+            &manifest.namespace,
+            &manifest.identifier
         );
     } else {
         info!("\n✅ Indexer reverted successfully.")
