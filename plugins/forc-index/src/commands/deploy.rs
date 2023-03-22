@@ -60,7 +60,7 @@ pub struct Command {
     /// Enable verbose logging.
     #[clap(short, long, help = "Enable verbose logging.")]
     pub verbose: bool,
-    
+
     /// Do not build before deploying.
     #[clap(long, help = "Do not build before deploying.")]
     pub skip_build: bool,

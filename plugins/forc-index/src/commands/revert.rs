@@ -7,7 +7,6 @@ use std::path::PathBuf;
 /// Revert a running indexer to its previous version.
 #[derive(Debug, Parser)]
 pub struct Command {
-
     /// URL at which indexer is deployed.
     #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which indexer is deployed.")]
     pub url: String,
