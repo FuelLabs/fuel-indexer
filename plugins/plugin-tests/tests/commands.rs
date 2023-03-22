@@ -55,7 +55,7 @@ fn build_command_creates_artifact_at_expected_path() {
 
     std::env::set_current_dir(&temp_dir_path).expect("Failed to set current dir");
 
-    let manifest = temp_dir_name.clone() + ".manifest.yaml";
+    let manifest = temp_dir_name + ".manifest.yaml";
 
     forc_index::commands::build::exec(BuildCommand {
         target: None,
@@ -82,7 +82,7 @@ fn build_command_creates_artifact_at_expected_path() {
 fn new_command_initializes_project_at_new_directory() {
     let (_temp_dir, temp_dir_path, _temp_dir_name) = init_temp_dir();
 
-    std::env::set_current_dir(&temp_dir_path).expect("Failed to set current dir");
+    std::env::set_current_dir(temp_dir_path).expect("Failed to set current dir");
     let new_project_name = "new_project_dir";
     let new_project_path = PathBuf::from(new_project_name);
 
