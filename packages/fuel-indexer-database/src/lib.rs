@@ -3,8 +3,10 @@
 pub use fuel_indexer_database_types::DbType;
 use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
 use fuel_indexer_postgres as postgres;
-use sqlx::{pool::PoolConnection, postgres::PgConnectOptions, Error as SqlxError};
-use std::{cmp::Ordering, str::FromStr};
+use sqlx::{
+    pool::PoolConnection, postgres::PgConnectOptions, ConnectOptions, Error as SqlxError,
+};
+use std::{cmp::Ordering, collections::HashMap, str::FromStr};
 use thiserror::Error;
 
 pub mod queries;
@@ -53,14 +55,25 @@ impl IndexerConnectionPool {
             ));
         }
         let url = url.expect("Database URL should be correctly formed");
+        let params: HashMap<_, _> = url.query_pairs().into_owned().collect();
+        let verbose = params
+            .get("verbose")
+            .map(|x| x.to_string())
+            .unwrap_or("false".to_string());
+
         match url.scheme() {
             "postgres" => {
+                let opts = match verbose.as_ref() {
+                    "true" => PgConnectOptions::from_str(database_url)?,
+                    "false" => {
+                        let mut o = PgConnectOptions::from_str(database_url)?;
+                        o.disable_statement_logging().clone()
+                    }
+                    _ => unimplemented!(),
+                };
+
                 let pool = attempt_database_connection(|| {
-                    sqlx::postgres::PgPoolOptions::new().connect_with(
-                        PgConnectOptions::from_str(database_url).unwrap_or_else(|e| {
-                            panic!("Could not derive PgConnectOptions: {e}",)
-                        }),
-                    )
+                    sqlx::postgres::PgPoolOptions::new().connect_with(opts.clone())
                 })
                 .await;
 

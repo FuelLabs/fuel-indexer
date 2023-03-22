@@ -184,7 +184,7 @@ pub struct IndexerArgs {
 
     /// Enable verbose logging.
     #[clap(long, help = "Enable verbose logging.")]
-    pub verbose: bool,
+    pub verbose_logging: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -283,6 +283,10 @@ pub struct ApiServerArgs {
         help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
     )]
     pub jwt_expiry: Option<usize>,
+
+    /// Enable verbose logging.
+    #[clap(long, help = "Enable verbose logging.")]
+    pub verbose_logging: bool,
 }
 
 fn derive_http_url(host: &String, port: &String) -> String {
@@ -306,6 +310,8 @@ impl std::string::ToString for FuelNodeConfig {
 
 #[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
+    #[serde(default)]
+    pub verbose_logging: bool,
     #[serde(default)]
     pub fuel_node: FuelNodeConfig,
     #[serde(default)]
@@ -359,6 +365,7 @@ impl From<IndexerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            verbose_logging: args.verbose_logging,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -430,6 +437,7 @@ impl From<ApiServerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            verbose_logging: args.verbose_logging,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -503,6 +511,7 @@ impl IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            verbose_logging: args.verbose_logging,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,

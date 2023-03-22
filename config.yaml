@@ -14,6 +14,9 @@
 
 # # Run database migrations before starting service.
 # run_migrations: true
+#
+# # Enable verbose logging.
+# verbose_logging: false
 
 # # ***********************
 # # Fuel Node configuration
