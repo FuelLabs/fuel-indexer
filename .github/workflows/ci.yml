@@ -273,8 +273,7 @@ jobs:
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   check-forc-index:
-    # if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
-    if: false
+    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
     needs:
       - check-is-semver-branch
     runs-on: buildjet-4vcpu-ubuntu-2204
