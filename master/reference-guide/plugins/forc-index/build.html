@@ -148,21 +148,42 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="forc-index-build"><a class="header" href="#forc-index-build"><code>forc index build</code></a></h1>
-<p>Build an index</p>
-<pre><code class="language-bash">forc index build --release --manifest my_index.manifest.yaml
+<p>Build an indexer.</p>
+<pre><code class="language-bash">forc index build --release
 </code></pre>
 <pre><code class="language-text">USAGE:
-    forc-index build [OPTIONS] --manifest &lt;MANIFEST&gt;
+    forc-index build [OPTIONS]
 
 OPTIONS:
-    -h, --help                   Print help information
-        --locked                 Ensure that the Cargo.lock file is up-to-date.
-    -m, --manifest &lt;MANIFEST&gt;    Path of index manifest being built.
-        --native                 Building for native execution.
-        --profile &lt;PROFILE&gt;      Build with the given profile.
-    -r, --release                Build optimized artifacts with the release profile.
-        --target &lt;TARGET&gt;        Target at which to compile.
-    -v, --verbose                Verbose output.
+    -h, --help
+            Print help information
+
+        --locked
+            Ensure that the Cargo.lock file is up-to-date.
+
+    -m, --manifest &lt;MANIFEST&gt;
+            Manifest file name of indexer being built.
+
+        --native
+            Building for native execution.
+
+        --output-dir-root &lt;OUTPUT_DIR_ROOT&gt;
+            Path with which to prefix asset filepaths in the indexer manifest.
+
+    -p, --path &lt;PATH&gt;
+            Path to the indexer project.
+
+        --profile &lt;PROFILE&gt;
+            Build with the given profile.
+
+    -r, --release
+            Build optimized artifacts with the release profile.
+
+        --target &lt;TARGET&gt;
+            Target at which to compile.
+
+    -v, --verbose
+            Verbose output.
 </code></pre>
 
                     </main>

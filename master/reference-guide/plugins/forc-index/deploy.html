@@ -148,18 +148,49 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="forc-index-deploy"><a class="header" href="#forc-index-deploy"><code>forc index deploy</code></a></h1>
-<p>Deploy a given indexer project to a particular endpoint</p>
-<pre><code class="language-bash">forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
+<p>Deploy an indexer to an indexer service.</p>
+<pre><code class="language-bash">forc index deploy --url https://indexer.fuel.network
 </code></pre>
 <pre><code class="language-text">USAGE:
-    forc-index deploy [OPTIONS] --manifest &lt;MANIFEST&gt;
+    forc-index deploy [OPTIONS]
 
 OPTIONS:
-        --auth &lt;AUTH&gt;            Authentication header value.
-    -h, --help                   Print help information
-        --manifest &lt;MANIFEST&gt;    Path of the indexer manifest to upload.
-        --url &lt;URL&gt;              URL at which to upload indexer assets. [default:
-                                 http://127.0.0.1:29987]
+        --auth &lt;AUTH&gt;
+            Authentication header value.
+
+    -h, --help
+            Print help information
+
+        --locked
+            Ensure that the Cargo.lock file is up-to-date.
+
+    -m, --manifest &lt;MANIFEST&gt;
+            Path to the manifest of indexer project being deployed.
+
+        --native
+            Building for native execution.
+
+        --output-dir-root &lt;OUTPUT_DIR_ROOT&gt;
+            Path with which to prefix asset filepaths in the indexer manifest.
+
+    -p, --path &lt;PATH&gt;
+            Path to the indexer project.
+
+        --profile &lt;PROFILE&gt;
+            Build with the given profile.
+
+    -r, --release
+            Build optimized artifacts with the release profile.
+
+        --target &lt;TARGET&gt;
+            Target at which to compile.
+
+        --url &lt;URL&gt;
+            URL at which to deploy indexer assets. [default: http://127.0.0.1:29987]
+
+    -v, --verbose
+            Verbose output.
+
 </code></pre>
 
                     </main>

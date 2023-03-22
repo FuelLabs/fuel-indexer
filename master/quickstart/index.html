@@ -272,24 +272,26 @@ Take a quick tour.
 `forc index check`
     List indexer components.
 `forc index new`
-    Create a new index.
+    Create a new indexer.
 `forc index init`
     Create a new index in an existing directory.
 `forc index start`
     Start a local indexer service.
 `forc index build`
-    Build your index.
+    Build your indexer.
 `forc index deploy`
-    Deploy your index.
+    Deploy your indexer.
 `forc index remove`
-    Stop a running index.
+    Stop a running indexer.
+`forc index auth`
+    Authenticate against an indexer service.
 </code></pre>
 <blockquote>
 <p>IMPORTANT: If you want more details on how this indexer works, check out our <a href="https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html">block explorer indexer example</a>.</p>
 </blockquote>
 <h3 id="24-deploying-our-indexer"><a class="header" href="#24-deploying-our-indexer">2.4 Deploying our indexer</a></h3>
 <p>At this point, we have a brand new indexer that will index some blocks and transactions. And with our database and Fuel indexer service up and running, all that's left is to build and deploy the indexer in order to see it in action. but now we need to build and deploy it in order to see it in action.</p>
-<pre><code class="language-bash">forc index deploy --manifest hello_index.manifest.yaml
+<pre><code class="language-bash">forc index deploy
 </code></pre>
 <p>If all goes well, you should see the following:</p>
 <pre><code class="language-text">▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
@@ -348,8 +350,6 @@ Deploying indexer at hello_index.manifest.yaml to http://127.0.0.1:29987/api/ind
    },
 ]
 </code></pre>
-<h3 id="finished-"><a class="header" href="#finished-">Finished! 🥳</a></h3>
-<p>Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you <a href="https://fuellabs.github.io/fuel-indexer/master/"><strong>read the book</strong></a>.</p>
 
                     </main>
 

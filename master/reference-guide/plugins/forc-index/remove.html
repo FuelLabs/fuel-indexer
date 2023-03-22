@@ -148,18 +148,18 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="forc-index-remove"><a class="header" href="#forc-index-remove"><code>forc index remove</code></a></h1>
-<p>Stop and remove a running indexer</p>
-<pre><code class="language-bash">forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
+<p>Stop and remove a running indexer.</p>
+<pre><code class="language-bash">forc index remove --url https://indexer.fuel.network
 </code></pre>
 <pre><code class="language-text">USAGE:
-    forc-index remove [OPTIONS] --manifest &lt;MANIFEST&gt;
+    forc-index remove [OPTIONS]
 
 OPTIONS:
         --auth &lt;AUTH&gt;            Authentication header value.
     -h, --help                   Print help information
-        --manifest &lt;MANIFEST&gt;    Path of the indexer manifest to be parsed.
-        --url &lt;URL&gt;              URL at which to upload indexer assets. [default:
-                                 http://127.0.0.1:29987]
+    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of indexer project being deployed.
+    -p, --path &lt;PATH&gt;            Path to the indexer project.
+        --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://127.0.0.1:29987]
 </code></pre>
 
                     </main>

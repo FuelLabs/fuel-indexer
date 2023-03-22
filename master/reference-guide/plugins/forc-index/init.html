@@ -148,18 +148,19 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="forc-index-init"><a class="header" href="#forc-index-init"><code>forc index init</code></a></h1>
-<p>Create a new index project at the provided path. If no path is provided the current working directory will be used.</p>
+<p>Create a new indexer project at the provided path. If no path is provided the current working directory will be used.</p>
 <pre><code class="language-bash">forc index init --namespace fuel
 </code></pre>
 <pre><code class="language-text">USAGE:
-    forc-index init [OPTIONS]
+    forc-index init [OPTIONS] --namespace &lt;NAMESPACE&gt;
 
 OPTIONS:
+        --absolute-paths           Resolve indexer asset filepaths using absolute paths.
     -h, --help                     Print help information
-        --name &lt;NAME&gt;              Name of index.
-        --namespace &lt;NAMESPACE&gt;    Namespace in which index belongs.
-        --native                   Whether to initialize an index with native execution enabled.
-    -p, --path &lt;PATH&gt;              Path at which to create index.
+        --name &lt;NAME&gt;              Name of indexer.
+        --namespace &lt;NAMESPACE&gt;    Namespace in which indexer belongs.
+        --native                   Initialize an indexer with native execution enabled.
+    -p, --path &lt;PATH&gt;              Path at which to create indexer.
 </code></pre>
 
                     </main>

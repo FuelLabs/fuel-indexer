@@ -339,24 +339,26 @@ Take a quick tour.
 `forc index check`
     List indexer components.
 `forc index new`
-    Create a new index.
+    Create a new indexer.
 `forc index init`
     Create a new index in an existing directory.
 `forc index start`
     Start a local indexer service.
 `forc index build`
-    Build your index.
+    Build your indexer.
 `forc index deploy`
-    Deploy your index.
+    Deploy your indexer.
 `forc index remove`
-    Stop a running index.
+    Stop a running indexer.
+`forc index auth`
+    Authenticate against an indexer service.
 </code></pre>
 <blockquote>
 <p>IMPORTANT: If you want more details on how this indexer works, check out our <a href="https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html">block explorer indexer example</a>.</p>
 </blockquote>
 <h3 id="24-deploying-our-indexer"><a class="header" href="#24-deploying-our-indexer">2.4 Deploying our indexer</a></h3>
 <p>At this point, we have a brand new indexer that will index some blocks and transactions. And with our database and Fuel indexer service up and running, all that's left is to build and deploy the indexer in order to see it in action. but now we need to build and deploy it in order to see it in action.</p>
-<pre><code class="language-bash">forc index deploy --manifest hello_index.manifest.yaml
+<pre><code class="language-bash">forc index deploy
 </code></pre>
 <p>If all goes well, you should see the following:</p>
 <pre><code class="language-text">▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
@@ -415,8 +417,6 @@ Deploying indexer at hello_index.manifest.yaml to http://127.0.0.1:29987/api/ind
    },
 ]
 </code></pre>
-<h3 id="finished-"><a class="header" href="#finished-">Finished! 🥳</a></h3>
-<p>Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you <a href="https://fuellabs.github.io/fuel-indexer/master/"><strong>read the book</strong></a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="starting-the-fuel-indexer"><a class="header" href="#starting-the-fuel-indexer">Starting the Fuel Indexer</a></h1>
 <h2 id="using-cli-options"><a class="header" href="#using-cli-options">Using CLI options</a></h2>
 <pre><code class="language-text">Standalone binary for the fuel indexer service.
@@ -1944,34 +1944,37 @@ SUBCOMMANDS:
     start     Start a local indexer service
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-init"><a class="header" href="#forc-index-init"><code>forc index init</code></a></h1>
-<p>Create a new index project at the provided path. If no path is provided the current working directory will be used.</p>
+<p>Create a new indexer project at the provided path. If no path is provided the current working directory will be used.</p>
 <pre><code class="language-bash">forc index init --namespace fuel
 </code></pre>
 <pre><code class="language-text">USAGE:
-    forc-index init [OPTIONS]
+    forc-index init [OPTIONS] --namespace &lt;NAMESPACE&gt;
 
 OPTIONS:
+        --absolute-paths           Resolve indexer asset filepaths using absolute paths.
     -h, --help                     Print help information
-        --name &lt;NAME&gt;              Name of index.
-        --namespace &lt;NAMESPACE&gt;    Namespace in which index belongs.
-        --native                   Whether to initialize an index with native execution enabled.
-    -p, --path &lt;PATH&gt;              Path at which to create index.
+        --name &lt;NAME&gt;              Name of indexer.
+        --namespace &lt;NAMESPACE&gt;    Namespace in which indexer belongs.
+        --native                   Initialize an indexer with native execution enabled.
+    -p, --path &lt;PATH&gt;              Path at which to create indexer.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-new"><a class="header" href="#forc-index-new"><code>forc index new</code></a></h1>
 <p>Create new indexer project at the provided path.</p>
 <pre><code class="language-bash">forc index new --namespace fuel --path /home/fuel/projects
 </code></pre>
 <pre><code class="language-text">USAGE:
-    forc-index new [OPTIONS] &lt;PATH&gt;
+    forc-index new [OPTIONS] --namespace &lt;NAMESPACE&gt; &lt;PATH&gt;
 
 ARGS:
     &lt;PATH&gt;    Path at which to create indexer
 
 OPTIONS:
+        --absolute-paths           Resolve indexer asset filepaths using absolute paths.
     -h, --help                     Print help information
         --name &lt;NAME&gt;              Name of indexer.
         --namespace &lt;NAMESPACE&gt;    Namespace in which indexer belongs.
         --native                   Whether to initialize an indexer with native execution enabled.
+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-check"><a class="header" href="#forc-index-check"><code>forc index check</code></a></h1>
 <p>Check to see which indexer components you have installed.</p>
@@ -2014,21 +2017,42 @@ OPTIONS:
 +--------+------------------------+----------------------------------------------------------------------------+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-build"><a class="header" href="#forc-index-build"><code>forc index build</code></a></h1>
-<p>Build an index</p>
-<pre><code class="language-bash">forc index build --release --manifest my_index.manifest.yaml
+<p>Build an indexer.</p>
+<pre><code class="language-bash">forc index build --release
 </code></pre>
 <pre><code class="language-text">USAGE:
-    forc-index build [OPTIONS] --manifest &lt;MANIFEST&gt;
+    forc-index build [OPTIONS]
 
 OPTIONS:
-    -h, --help                   Print help information
-        --locked                 Ensure that the Cargo.lock file is up-to-date.
-    -m, --manifest &lt;MANIFEST&gt;    Path of index manifest being built.
-        --native                 Building for native execution.
-        --profile &lt;PROFILE&gt;      Build with the given profile.
-    -r, --release                Build optimized artifacts with the release profile.
-        --target &lt;TARGET&gt;        Target at which to compile.
-    -v, --verbose                Verbose output.
+    -h, --help
+            Print help information
+
+        --locked
+            Ensure that the Cargo.lock file is up-to-date.
+
+    -m, --manifest &lt;MANIFEST&gt;
+            Manifest file name of indexer being built.
+
+        --native
+            Building for native execution.
+
+        --output-dir-root &lt;OUTPUT_DIR_ROOT&gt;
+            Path with which to prefix asset filepaths in the indexer manifest.
+
+    -p, --path &lt;PATH&gt;
+            Path to the indexer project.
+
+        --profile &lt;PROFILE&gt;
+            Build with the given profile.
+
+    -r, --release
+            Build optimized artifacts with the release profile.
+
+        --target &lt;TARGET&gt;
+            Target at which to compile.
+
+    -v, --verbose
+            Verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-start"><a class="header" href="#forc-index-start"><code>forc index start</code></a></h1>
 <p>Start a local Fuel Indexer service.</p>
@@ -2100,32 +2124,63 @@ OPTIONS:
             Print version information
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-deploy"><a class="header" href="#forc-index-deploy"><code>forc index deploy</code></a></h1>
-<p>Deploy a given indexer project to a particular endpoint</p>
-<pre><code class="language-bash">forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
+<p>Deploy an indexer to an indexer service.</p>
+<pre><code class="language-bash">forc index deploy --url https://indexer.fuel.network
 </code></pre>
 <pre><code class="language-text">USAGE:
-    forc-index deploy [OPTIONS] --manifest &lt;MANIFEST&gt;
+    forc-index deploy [OPTIONS]
 
 OPTIONS:
-        --auth &lt;AUTH&gt;            Authentication header value.
-    -h, --help                   Print help information
-        --manifest &lt;MANIFEST&gt;    Path of the indexer manifest to upload.
-        --url &lt;URL&gt;              URL at which to upload indexer assets. [default:
-                                 http://127.0.0.1:29987]
+        --auth &lt;AUTH&gt;
+            Authentication header value.
+
+    -h, --help
+            Print help information
+
+        --locked
+            Ensure that the Cargo.lock file is up-to-date.
+
+    -m, --manifest &lt;MANIFEST&gt;
+            Path to the manifest of indexer project being deployed.
+
+        --native
+            Building for native execution.
+
+        --output-dir-root &lt;OUTPUT_DIR_ROOT&gt;
+            Path with which to prefix asset filepaths in the indexer manifest.
+
+    -p, --path &lt;PATH&gt;
+            Path to the indexer project.
+
+        --profile &lt;PROFILE&gt;
+            Build with the given profile.
+
+    -r, --release
+            Build optimized artifacts with the release profile.
+
+        --target &lt;TARGET&gt;
+            Target at which to compile.
+
+        --url &lt;URL&gt;
+            URL at which to deploy indexer assets. [default: http://127.0.0.1:29987]
+
+    -v, --verbose
+            Verbose output.
+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-remove"><a class="header" href="#forc-index-remove"><code>forc index remove</code></a></h1>
-<p>Stop and remove a running indexer</p>
-<pre><code class="language-bash">forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
+<p>Stop and remove a running indexer.</p>
+<pre><code class="language-bash">forc index remove --url https://indexer.fuel.network
 </code></pre>
 <pre><code class="language-text">USAGE:
-    forc-index remove [OPTIONS] --manifest &lt;MANIFEST&gt;
+    forc-index remove [OPTIONS]
 
 OPTIONS:
         --auth &lt;AUTH&gt;            Authentication header value.
     -h, --help                   Print help information
-        --manifest &lt;MANIFEST&gt;    Path of the indexer manifest to be parsed.
-        --url &lt;URL&gt;              URL at which to upload indexer assets. [default:
-                                 http://127.0.0.1:29987]
+    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of indexer project being deployed.
+    -p, --path &lt;PATH&gt;            Path to the indexer project.
+        --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://127.0.0.1:29987]
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-auth"><a class="header" href="#forc-index-auth"><code>forc index auth</code></a></h1>
 <p>Authenticate against an indexer operator.</p>
@@ -2146,7 +2201,7 @@ OPTIONS:
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-revert"><a class="header" href="#forc-index-revert"><code>forc index revert</code></a></h1>
 <p>Revert the running indexer to the previous version.</p>
-<pre><code class="language-bash">forc index revert --manifest my_indexer.manifest.yaml
+<pre><code class="language-bash">forc index revert
 </code></pre>
 <pre><code class="language-text">USAGE:
     forc-index revert [OPTIONS]
@@ -2154,7 +2209,7 @@ OPTIONS:
 OPTIONS:
         --auth &lt;AUTH&gt;            Authentication header value.
     -h, --help                   Print help information
-    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of indexer project being deployed.
+    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of indexer project being reverted.
     -p, --path &lt;PATH&gt;            Path of indexer project.
         --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://127.0.0.1:29987]
 </code></pre>
@@ -2281,14 +2336,14 @@ OPTIONS:
 <p>The Fuel indexer's authentication functionality offers users a range of options for verifying their identity. The system supports any arbitrary authentication scheme (in theory); however, in practice the service defaults to JWT authentication due to its stateless nature and popularity. To authenticate using JWT, users ask an index operator for a nonce, sign that nonce with their wallet, then send both the nonce and signature to the indexer operator for verification. Once the signature is confirmed as valid, a valid JWT is produced and returned to the user, and the user is authenticated.</p>
 <p>It is important to note that authentication is disabled by default. However, if authentication is enabled, users will need to authenticate before performing operations that involve modifying the state of the service, such as uploading, stopping, or reverting indexers. The new authentication functionality offers a flexible and secure way for users to authenticate and perform operations that affect the service's state.</p>
 <h2 id="usage-3"><a class="header" href="#usage-3">Usage</a></h2>
-<p>Below is a demonstration of basic JWT authentication using an indexer operator at &quot;https://index.swayswap.io&quot;</p>
-<pre><code class="language-bash">forc index auth --account 0 --url https://index.swayswap.io:29987
+<p>Below is a demonstration of basic JWT authentication using an indexer operator at &quot;https://indexer.fuel.network&quot;</p>
+<pre><code class="language-bash">forc index auth --url https://indexer.fuel.network:29987
 </code></pre>
 <p>You will first be prompted for the password for your wallet:</p>
 <pre><code class="language-text">Please enter your password:
 </code></pre>
 <p>After successfully entering your wallet password you should be presented with your new JWT token.</p>
-<pre><code class="language-text">✅ Successfully authenticated at https://index.swayswap.io:29987/api/auth/signature.
+<pre><code class="language-text">✅ Successfully authenticated at https://indexer.fuel.network:29987/api/auth/signature.
 
 Token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiODNlNjhiOTFmNDhjYWM4M....
 </code></pre>
