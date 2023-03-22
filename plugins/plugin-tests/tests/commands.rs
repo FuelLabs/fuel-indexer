@@ -7,7 +7,7 @@ use tempfile::{Builder, TempDir};
 
 #[test]
 fn init_command_creates_correct_project_tree() {
-    let (_temp_dir, temp_dir_path, temp_dir_name) = init_temp_dir();
+    let (temp_dir, temp_dir_path, temp_dir_name) = init_temp_dir();
 
     forc_index::commands::init::exec(InitCommand {
         name: Some(temp_dir_name.clone()),
@@ -38,11 +38,13 @@ fn init_command_creates_correct_project_tree() {
             full_path.to_string_lossy()
         )
     });
+    temp_dir.close().expect("Failed to close temp dir");
 }
 
 #[test]
 fn build_command_creates_artifact_at_expected_path() {
-    let (_temp_dir, temp_dir_path, temp_dir_name) = init_temp_dir();
+    let (temp_dir, temp_dir_path, temp_dir_name) = init_temp_dir();
+    println!("temp_dir_path: {}", temp_dir_path.to_string_lossy());
 
     forc_index::commands::init::exec(InitCommand {
         name: Some(temp_dir_name.clone()),
@@ -76,15 +78,16 @@ fn build_command_creates_artifact_at_expected_path() {
         Path::new(&wasm_artifact_path).exists(),
         "WASM artifact not found at expected path"
     );
+    temp_dir.close().expect("Failed to close temp dir");
 }
 
 #[test]
 fn new_command_initializes_project_at_new_directory() {
-    let (_temp_dir, temp_dir_path, _temp_dir_name) = init_temp_dir();
+    let (temp_dir, temp_dir_path, _temp_dir_name) = init_temp_dir();
 
-    std::env::set_current_dir(temp_dir_path).expect("Failed to set current dir");
+    std::env::set_current_dir(&temp_dir_path).expect("Failed to set current dir");
     let new_project_name = "new_project_dir";
-    let new_project_path = PathBuf::from(new_project_name);
+    let new_project_path = temp_dir_path.join(new_project_name);
 
     forc_index::commands::new::exec(NewCommand {
         name: Some(new_project_name.to_string()),
@@ -119,6 +122,7 @@ fn new_command_initializes_project_at_new_directory() {
             full_path.to_string_lossy()
         )
     });
+    temp_dir.close().expect("Failed to close temp dir");
 }
 
 fn init_temp_dir() -> (TempDir, PathBuf, String) {
