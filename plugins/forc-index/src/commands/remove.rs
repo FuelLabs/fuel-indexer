@@ -10,11 +10,11 @@ pub struct Command {
     #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which indexer is deployed.")]
     pub url: String,
 
-    /// Path to the manifest of indexer project being deployed.
+    /// Path to the manifest of the indexer project being removed.
     #[clap(
         short,
         long,
-        help = "Path to the manifest of indexer project being deployed."
+        help = "Path to the manifest of the indexer project being removed."
     )]
     pub manifest: Option<String>,
 

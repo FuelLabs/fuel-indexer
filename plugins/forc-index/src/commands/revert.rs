@@ -19,7 +19,7 @@ pub struct Command {
     #[clap(
         short,
         long,
-        help = "Path to the manifest of indexer project being reverted."
+        help = "Path to the manifest of the indexer project being reverted."
     )]
     pub manifest: Option<String>,
 

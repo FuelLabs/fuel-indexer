@@ -13,8 +13,8 @@ pub struct Command {
     /// Path at which to create indexer
     pub path: PathBuf,
 
-    /// Name of the indexer namespace
-    #[clap(long, help = "Namespace in which indexer belongs.")]
+    /// Namespace to which indexer belongs.
+    #[clap(long, help = "Namespace to which indexer belongs.")]
     pub namespace: String,
 
     /// Whether to initialize an indexer with native execution enabled

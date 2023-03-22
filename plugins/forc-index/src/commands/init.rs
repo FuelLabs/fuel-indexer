@@ -19,8 +19,8 @@ pub struct Command {
     )]
     pub path: Option<PathBuf>,
 
-    /// Namespace in which indexer belongs.
-    #[clap(long, help = "Namespace in which indexer belongs.")]
+    /// Namespace to which indexer belongs.
+    #[clap(long, help = "Namespace to which indexer belongs.")]
     pub namespace: String,
 
     /// Initialize an indexer with native execution enabled.
