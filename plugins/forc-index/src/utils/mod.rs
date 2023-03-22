@@ -8,7 +8,7 @@ pub(crate) fn dasherize_to_underscore(s: &str) -> String {
 
 pub(crate) fn extract_manifest_fields(
     manifest: serde_yaml::Value,
-    output_dir_root: Option<&PathBuf>,
+    target_dir: Option<&PathBuf>,
 ) -> anyhow::Result<(String, String, PathBuf, PathBuf)> {
     let namespace: String = manifest
         .get(&serde_yaml::Value::String("namespace".into()))
@@ -49,9 +49,9 @@ pub(crate) fn extract_manifest_fields(
             .unwrap(),
     );
 
-    if let Some(output_dir_root) = output_dir_root {
-        graphql_schema = output_dir_root.join(graphql_schema);
-        module_path = output_dir_root.join(module_path);
+    if let Some(target_dir) = target_dir {
+        graphql_schema = target_dir.join(graphql_schema);
+        module_path = target_dir.join(module_path);
     }
 
     Ok((namespace, identifier, graphql_schema, module_path))

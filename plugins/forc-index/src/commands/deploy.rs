@@ -27,8 +27,8 @@ pub struct Command {
     pub auth: Option<String>,
 
     /// Target at which to compile.
-    #[clap(long, help = "Target at which to compile.")]
-    pub target: Option<String>,
+    #[clap(long, default_value = defaults::INDEXER_TARGET, help = "Target at which to compile.")]
+    pub target: String,
 
     /// Build optimized artifacts with the release profile.
     #[clap(
@@ -50,16 +50,20 @@ pub struct Command {
     #[clap(long, help = "Building for native execution.")]
     pub native: bool,
 
-    /// Path with which to prefix asset filepaths in the indexer manifest.
+    /// Directory for all generated artifacts and intermediate files.
     #[clap(
         long,
-        help = "Path with which to prefix asset filepaths in the indexer manifest."
+        help = "Directory for all generated artifacts and intermediate files."
     )]
-    pub output_dir_root: Option<PathBuf>,
+    pub target_dir: Option<PathBuf>,
 
     /// Enable verbose logging.
     #[clap(short, long, help = "Enable verbose logging.")]
     pub verbose: bool,
+
+    /// Do not build before deploying.
+    #[clap(long, help = "Do not build before deploying.")]
+    pub skip_build: bool,
 }
 
 pub fn exec(command: Command) -> Result<()> {
