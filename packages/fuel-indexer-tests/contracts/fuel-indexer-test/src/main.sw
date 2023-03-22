@@ -61,6 +61,7 @@ abi FuelIndexer {
     fn trigger_ping() -> Ping;
     fn trigger_ping_for_optional() -> Ping;
     fn trigger_pong() -> Pong;
+    fn trigger_panic();
     #[payable]
     fn trigger_transfer();
     fn trigger_log();
@@ -126,6 +127,10 @@ impl FuelIndexer for Contract {
             value: 123,
         };
         p
+    }
+
+    fn trigger_panic() {
+        assert(1 == 0);
     }
 
     #[payable]

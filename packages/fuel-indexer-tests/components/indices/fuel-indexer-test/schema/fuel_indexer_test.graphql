@@ -231,3 +231,8 @@ type MessageEntity {
     id: ID!
     message: Charfield!
 }
+
+type Panic {
+        id: ID!
+        reason: UInt8!
+    } 

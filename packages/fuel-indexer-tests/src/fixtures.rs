@@ -536,6 +536,19 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_panic(state: web::Data<Arc<AppState>>) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_panic()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest,
     }
@@ -595,6 +608,7 @@ pub mod test_web {
                 "/pure_function",
                 web::post().to(fuel_indexer_test_pure_function),
             )
+            .route("/panic", web::post().to(fuel_indexer_test_panic))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {
