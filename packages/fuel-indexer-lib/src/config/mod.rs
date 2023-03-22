@@ -135,7 +135,7 @@ pub struct IndexerArgs {
     pub postgres_port: Option<String>,
 
     /// Run database migrations before starting service.
-    #[clap(long, default_value_t = defaults::RUN_MIGRATIONS, help = "Run database migrations before starting service.")]
+    #[clap(long, help = "Run database migrations before starting service.")]
     pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.
@@ -181,6 +181,10 @@ pub struct IndexerArgs {
         help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
     )]
     pub jwt_expiry: Option<usize>,
+
+    /// Enable verbose logging.
+    #[clap(long, help = "Enable verbose logging.")]
+    pub verbose: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -227,7 +231,7 @@ pub struct ApiServerArgs {
     pub max_body_size: usize,
 
     /// Run database migrations before starting service.
-    #[clap(long, default_value_t = defaults::RUN_MIGRATIONS, help = "Run database migrations before starting service.")]
+    #[clap(long, help = "Run database migrations before starting service.")]
     pub run_migrations: bool,
 
     /// Postgres username.

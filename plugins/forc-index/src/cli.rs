@@ -39,7 +39,6 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
     let tracing_options = TracingSubscriberOptions {
         ..Default::default()
     };
-
     init_tracing_subscriber(tracing_options);
 
     match opt.command {

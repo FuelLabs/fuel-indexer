@@ -6,7 +6,7 @@ use fuel_indexer_lib::{
 use reqwest::{blocking::Client, StatusCode};
 use serde_json::{to_string_pretty, value::Value, Map};
 use std::process::Command;
-use tracing::error;
+use tracing::{error, info};
 
 fn find_indexer_service_info(grpahql_api_port: &str) -> (String, String) {
     let (emoji, msg) = match Command::new("lsof")
@@ -81,7 +81,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
                 .json::<Map<String, Value>>()
                 .expect("Failed to read JSON response.");
 
-            println!(
+            info!(
                 "\n✅ Sucessfully fetched service health:\n\n{}",
                 to_string_pretty(&res_json).unwrap()
             );

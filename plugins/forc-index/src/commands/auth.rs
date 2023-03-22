@@ -3,7 +3,7 @@ use anyhow::Result;
 use clap::Parser;
 use fuel_indexer_lib::defaults::ACCOUNT_INDEX;
 
-/// Authenticate against an indexer operator.
+/// Authenticate against an indexer service.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// URL at which to deploy indexer assets.
