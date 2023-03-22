@@ -26,10 +26,10 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         target,
         release,
         profile,
-        verbose,
         locked,
         native,
         output_dir_root,
+        verbose,
     } = command;
 
     build::exec(BuildCommand {
@@ -66,11 +66,15 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let target = format!("{url}/api/index/{namespace}/{identifier}");
 
-    info!(
-        "Deploying indexer at {} to {}",
-        manifest_path.display(),
-        target
-    );
+    if verbose {
+        info!(
+            "Deploying indexer at {} to {}",
+            manifest_path.display(),
+            target
+        );
+    } else {
+        info!("Deploying indexer");
+    }
 
     let mut headers = HeaderMap::new();
     if let Some(auth) = auth {
@@ -114,7 +118,9 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!("\n{}", to_string_pretty(&res_json)?);
+    if verbose {
+        info!("\n{}", to_string_pretty(&res_json)?);
+    }
 
     pb.finish_with_message("✅ Successfully deployed indexer.");
 
