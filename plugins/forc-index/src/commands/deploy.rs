@@ -3,7 +3,7 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Deploy an index asset bundle to a remote or locally running indexer server.
+/// Deploy an indexer to an indexer service.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// URL at which to deploy indexer assets
@@ -18,7 +18,7 @@ pub struct Command {
     )]
     pub manifest: Option<String>,
 
-    /// Path of index project.
+    /// Path of indexer project.
     #[clap(short, long, help = "Path to the indexer project.")]
     pub path: Option<PathBuf>,
 
@@ -26,7 +26,6 @@ pub struct Command {
     #[clap(long, help = "Authentication header value.")]
     pub auth: Option<String>,
 
-    // The following args are passed to `forc index build`
     /// Target at which to compile.
     #[clap(long, help = "Target at which to compile.")]
     pub target: Option<String>,
@@ -51,10 +50,10 @@ pub struct Command {
     #[clap(long, help = "Building for native execution.")]
     pub native: bool,
 
-    /// Path with which to prefix asset filepaths in the index manifest.
+    /// Path with which to prefix asset filepaths in the indexer manifest.
     #[clap(
         long,
-        help = "Path with which to prefix asset filepaths in the index manifest."
+        help = "Path with which to prefix asset filepaths in the indexer manifest."
     )]
     pub output_dir_root: Option<PathBuf>,
 

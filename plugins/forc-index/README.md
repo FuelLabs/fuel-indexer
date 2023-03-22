@@ -33,7 +33,7 @@ forc index start
 Deploy a given indexer project to a particular endpoint
 
 ```bash
-forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
+forc index deploy --url https://indexer.fuel.network
 ```
 
 ### `forc index remove`
@@ -41,14 +41,15 @@ forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.y
 Kill a running indexer
 
 ```bash
-forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
+forc index remove --url https://indexer.fuel.network
 ```
 
 ### `forc index revert`
+
 Remove the current indexer and revert to the penultimate version of this indexer.
 
 ```bash
-forc index revert --url https://index.swayswap.io --manifest my_index.manifest.yaml
+forc index revert --url https://indexer.fuel.network
 ```
 
 ### `forc index check`
@@ -65,6 +66,14 @@ Build the indexer in the current directory.
 
 ```bash
 forc index build --verbose
+```
+
+### `forc index auth`
+
+Authenticate against an indexer service.
+
+```bash
+forc index auth --verbose
 ```
 
 ### `forc index postgres create`

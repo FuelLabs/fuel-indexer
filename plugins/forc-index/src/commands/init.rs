@@ -6,29 +6,29 @@ use std::path::PathBuf;
 /// Create a new indexer project in the current directory.
 #[derive(Debug, Parser)]
 pub struct Command {
-    /// Name of index
-    #[clap(long, help = "Name of index.")]
+    /// Name of indexer
+    #[clap(long, help = "Name of indexer.")]
     pub name: Option<String>,
 
-    /// Path at which to create index
+    /// Path at which to create indexer
     #[clap(
         short,
         long,
         parse(from_os_str),
-        help = "Path at which to create index."
+        help = "Path at which to create indexer."
     )]
     pub path: Option<PathBuf>,
 
-    /// Namespace in which index belongs.
-    #[clap(long, help = "Namespace in which index belongs.")]
+    /// Namespace to which indexer belongs.
+    #[clap(long, help = "Namespace to which indexer belongs.")]
     pub namespace: String,
 
-    /// Initialize an index with native execution enabled.
-    #[clap(long, help = "Initialize an index with native execution enabled.")]
+    /// Initialize an indexer with native execution enabled.
+    #[clap(long, help = "Initialize an indexer with native execution enabled.")]
     pub native: bool,
 
-    /// Resolve index asset filepaths using absolute paths.
-    #[clap(long, help = "Resolve index asset filepaths using absolute paths.")]
+    /// Resolve indexer asset filepaths using absolute paths.
+    #[clap(long, help = "Resolve indexer asset filepaths using absolute paths.")]
     pub absolute_paths: bool,
 
     /// Enable verbose output.

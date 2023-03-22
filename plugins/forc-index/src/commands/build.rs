@@ -3,14 +3,14 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Build an index.
+/// Build an indexer.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// Manifest file name of indexer being built.
     #[clap(short, long, help = "Manifest file name of indexer being built.")]
     pub manifest: Option<String>,
 
-    /// Path of index project.
+    /// Path of indexer project.
     #[clap(short, long, help = "Path to the indexer project.")]
     pub path: Option<PathBuf>,
 
@@ -38,10 +38,10 @@ pub struct Command {
     #[clap(long, help = "Building for native execution.")]
     pub native: bool,
 
-    /// Path with which to prefix asset filepaths in the index manifest.
+    /// Path with which to prefix asset filepaths in the indexer manifest.
     #[clap(
         long,
-        help = "Path with which to prefix asset filepaths in the index manifest."
+        help = "Path with which to prefix asset filepaths in the indexer manifest."
     )]
     pub output_dir_root: Option<PathBuf>,
 
