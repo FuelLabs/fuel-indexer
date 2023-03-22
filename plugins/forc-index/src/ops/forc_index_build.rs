@@ -64,7 +64,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     }
 
     let mut file = File::open(&cargo_manifest_path)?;
-    println!("file: {:?}", file);
     let mut content = String::new();
     file.read_to_string(&mut content)?;
     let config: Config = toml::from_str(&content)?;
