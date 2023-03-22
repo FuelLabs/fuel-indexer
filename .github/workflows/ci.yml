@@ -221,6 +221,7 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+          target: wasm32-unknown-unknown
 
       - uses: Swatinem/rust-cache@v1
 
