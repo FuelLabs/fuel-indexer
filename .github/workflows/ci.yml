@@ -221,6 +221,12 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: wasm-snip
+        run: cargo install wasm-snip
+
       - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
 
