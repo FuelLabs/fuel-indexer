@@ -126,6 +126,7 @@ impl NativeFuelType for MessageOut {
     }
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Return {
     pub contract_id: ContractId,
     pub val: u64,
@@ -136,5 +137,21 @@ pub struct Return {
 impl NativeFuelType for Return {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Return") as usize
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Call {
+    pub contract_id: ContractId,
+    pub to: ContractId,
+    pub amount: u64,
+    pub asset_id: AssetId,
+    pub gas: u64,
+    pub fn_name: String,
+}
+
+impl NativeFuelType for Call {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Call") as usize
     }
 }
