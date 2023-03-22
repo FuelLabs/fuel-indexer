@@ -6,7 +6,7 @@ use std::{
     constants::BASE_ASSET_ID,
     identity::Identity,
     logging::log,
-    message::send_message,
+    message::send_typed_message,
     revert::revert,
     token::transfer,
     bytes::Bytes,
@@ -42,19 +42,40 @@ pub struct SimpleTupleStruct {
     data: (u32, u64, str[12]),
 }
 
+pub struct ExplicitQueryStruct {
+    id: u64
+}
+
+pub struct SimpleQueryStruct {
+    id: u64
+}
+
+pub struct ExampleMessageStruct {
+    id: u64,
+    message: str[32]
+}
+
 abi FuelIndexer {
     fn trigger_multiargs() -> Ping;
     fn trigger_callreturn() -> Pung;
     fn trigger_ping() -> Ping;
     fn trigger_ping_for_optional() -> Ping;
     fn trigger_pong() -> Pong;
+    #[payable]
     fn trigger_transfer();
     fn trigger_log();
     fn trigger_logdata();
     fn trigger_scriptresult();
+    #[payable]
     fn trigger_transferout();
+    #[payable]
     fn trigger_messageout();
     fn trigger_tuple() -> ComplexTupleStruct;
+    fn trigger_explicit() -> ExplicitQueryStruct;
+    fn trigger_deeply_nested() -> SimpleQueryStruct;
+    fn trigger_vec_pong_calldata(v: Vec<u8>);
+    fn trigger_vec_pong_logdata();
+    fn trigger_pure_function();
 }
 
 impl FuelIndexer for Contract {
@@ -90,7 +111,6 @@ impl FuelIndexer for Contract {
         p
     }
 
-
     fn trigger_ping_for_optional() -> Ping {
         let p = Ping {
             id: 8675309,
@@ -100,7 +120,6 @@ impl FuelIndexer for Contract {
         p
     }
 
-
     fn trigger_pong() -> Pong {
         let p = Pong {
             id: 2,
@@ -109,6 +128,7 @@ impl FuelIndexer for Contract {
         p
     }
 
+    #[payable]
     fn trigger_transfer() {
         // Transfer the asset back to the originating contract
         transfer(1, BASE_ASSET_ID, Identity::ContractId(contract_id()));
@@ -132,22 +152,55 @@ impl FuelIndexer for Contract {
         log(0);
     }
 
+    #[payable]
     fn trigger_transferout() {
         const RECEIVER = Address::from(0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96);
         transfer(1, BASE_ASSET_ID, Identity::Address(RECEIVER));
     }
 
+    #[payable]
     fn trigger_messageout() {
-        let mut b = Bytes::new();
-        b.push(1u8);
-        b.push(2u8);
-        b.push(3u8);
         const RECEIVER = 0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96;
-        send_message(RECEIVER, b, 100);
+
+        let example = ExampleMessageStruct {
+            id: 1234,
+            message: "abcdefghijklmnopqrstuvwxyz123456"
+        };
+
+        send_typed_message(RECEIVER, example, 100);
     }
 
     fn trigger_tuple() -> ComplexTupleStruct {
         log(SimpleTupleStruct { data: (4u32, 5u64, "hello world!")});
         ComplexTupleStruct{ data: (1u32, (5u64, true, ("abcde", TupleStructItem { id: 54321 })))}
+    }
+
+    fn trigger_explicit() -> ExplicitQueryStruct {
+        ExplicitQueryStruct { id: 456 }
+    }
+
+    fn trigger_deeply_nested() -> SimpleQueryStruct {
+        SimpleQueryStruct { id: 789 }
+    }
+
+    // NOTE: Keeping this to ensure Vec in ABI JSON is ok, even though we don't support it yet
+    fn trigger_vec_pong_calldata(v: Vec<u8>) {
+        log("This does nothing as we don't handle CallData. But should implement this soon.");
+    }
+
+    // NOTE: Keeping this to ensure Vec in ABI JSON is ok, even though we don't support it yet
+    fn trigger_vec_pong_logdata() {
+        let mut v: Vec<Pong> = Vec::new();
+        v.push(Pong{ id: 5555, value: 5555 });
+        v.push(Pong{ id: 6666, value: 6666 });
+        v.push(Pong{ id: 7777, value: 7777 });
+        v.push(Pong{ id: 8888, value: 8888 });
+        v.push(Pong{ id: 9999, value: 9999 });
+    
+        log(v);
+    }
+
+    fn trigger_pure_function() {
+        let sum = 1 + 2;
     }
 }

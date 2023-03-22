@@ -6,13 +6,13 @@ publish = false
 
 [dependencies]
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
-fuel-indexer-lib = { version = "0.3", path = "../../../packages/fuel-indexer-lib" }
+fuel-indexer-lib = { workspace = true }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../packages/fuel-indexer-tests" }
-fuel-tx = "0.23"
-fuel-types = "0.5"
-fuels = { version = "0.32", features = ["fuel-core-lib"] }
-fuels-abigen-macro = "0.32"
-fuels-core = { version = "0.32", default-features = false }
+fuel-tx = "0.26.0"
+fuel-types = "0.26.0"
+fuels = { version = "0.37" }
+fuels-core = { version = "0.37", default-features = false }
+fuels-macros = { version = "0.37" }
 rand = "0.8"
 thiserror = "1.0"
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }

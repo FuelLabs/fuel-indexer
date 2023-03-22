@@ -3,11 +3,19 @@
 ## Using CLI options
 
 ```text
+Standalone binary for the fuel indexer service.
+
 USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
-    -c, --config <CONFIG>
+        --auth-enabled <auth-enabled>
+            Require users to authenticate for some operations. [default: false]
+
+        --auth-strategy <AUTH_STRATEGY>
+            Authentication scheme used.
+
+    -c, --config <FILE>
             Indexer service config file.
 
         --database <DATABASE>
@@ -28,12 +36,24 @@ OPTIONS:
     -h, --help
             Print help information
 
-        --log-level <LOG_LEVEL>
-            Log level passed to the Fuel Indexer service. [default: info]
-                [possible values: info, debug, error, warn]
+        --jwt-expiry <JWT_EXPIRY>
+            Amount of time (seconds) before expiring token (if JWT scheme is specified).
 
-    -m, --manifest <MANIFEST>
-            Index config file.
+        --jwt-issuer <JWT_ISSUER>
+            Issuer of JWT claims (if JWT scheme is specified).
+
+        --jwt-secret <JWT_SECRET>
+            Secret used for JWT scheme (if JWT scheme is specified).
+
+        --log-level <LOG_LEVEL>
+            Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
+            debug, error, warn]
+
+    -m, --manifest <FILE>
+            Indexer config file.
+
+        --max-body-size <MAX_BODY_SIZE>
+            Max body size for GraphQL API requests. [default: 5242880]
 
         --metrics <metrics>
             Use Prometheus metrics reporting. [default: true]
@@ -56,40 +76,16 @@ OPTIONS:
         --run-migrations <run-migrations>
             Run database migrations before starting service. [default: true]
 
+        --stop-idle-indexers
+            Prevent indexers from running without handling any blocks.
+
     -V, --version
             Print version information
+
 ```
 
 ## Using a configuration file
 
 ```yaml
-## The following is an example Fuel indexer configuration file.
-##
-## This configuration spec is intended to be used for a single instance
-## of a Fuel indexer node or service.
-
-## Fuel Node configuration
-
-fuel_node:
-    host: 127.0.0.1
-    port: 4000
-
-## GraphQL API configuration
-
-graphql_api:
-    host: 127.0.0.1
-    port: 29987
-    run_migrations: false
-
-## Database configuration options.
-
-database:
-    postgres:
-        user: postgres
-        database:
-        password:
-        host: 127.0.0.1
-        port: 5432
-
-metrics: true
+{{#include ../../../config.yaml}}
 ```

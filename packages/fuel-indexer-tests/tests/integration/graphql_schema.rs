@@ -1,3 +1,4 @@
+use fuel_indexer_database::types::{QueryElement, QueryFilter, UserQuery};
 use fuel_indexer_schema::db::{graphql::*, tables::Schema};
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
@@ -36,11 +37,12 @@ fn generate_schema() -> Schema {
         query: "Query".into(),
         types,
         fields,
+        foreign_keys: HashMap::new(),
     }
 }
 
 #[test]
-fn test_query_builder_generates_proper_sql() {
+fn test_query_builder_parses_correctly() {
     let good_query = r#"
         fragment otherfrag on Thing2 {
             id
@@ -77,30 +79,69 @@ fn test_query_builder_generates_proper_sql() {
     let q = query.expect("It's ok here").build();
     assert!(q.is_ok());
     let q = q.expect("It's ok");
-    let sql = q.as_sql(true);
 
-    assert_eq!(
-        vec![
-            "SELECT row_to_json(x) as row from (SELECT account, hash FROM test_namespace_index1.thing2 WHERE id = 1234) x".to_string(),
-            "SELECT row_to_json(x) as row from (SELECT account, hash, id FROM test_namespace_index1.thing2 WHERE id = 84848) x".to_string(),
-            "SELECT row_to_json(x) as row from (SELECT account FROM test_namespace_index1.thing1 WHERE id = 4321) x".to_string(),
-        ],
-        sql
-    );
+    let expected = vec![
+        UserQuery {
+            elements: vec![
+                QueryElement::Field {
+                    key: "account".to_string(),
+                    value: "test_namespace_index1.thing2.account".to_string(),
+                },
+                QueryElement::Field {
+                    key: "hash".to_string(),
+                    value: "test_namespace_index1.thing2.hash".to_string(),
+                },
+            ],
+            joins: HashMap::new(),
+            namespace_identifier: "test_namespace_index1".to_string(),
+            entity_name: "thing2".to_string(),
+            filters: vec![QueryFilter {
+                key: "id".to_string(),
+                relation: "=".to_string(),
+                value: "1234".to_string(),
+            }],
+        },
+        UserQuery {
+            elements: vec![
+                QueryElement::Field {
+                    key: "account".to_string(),
+                    value: "test_namespace_index1.thing2.account".to_string(),
+                },
+                QueryElement::Field {
+                    key: "hash".to_string(),
+                    value: "test_namespace_index1.thing2.hash".to_string(),
+                },
+                QueryElement::Field {
+                    key: "id".to_string(),
+                    value: "test_namespace_index1.thing2.id".to_string(),
+                },
+            ],
+            joins: HashMap::new(),
+            namespace_identifier: "test_namespace_index1".to_string(),
+            entity_name: "thing2".to_string(),
+            filters: vec![QueryFilter {
+                key: "id".to_string(),
+                relation: "=".to_string(),
+                value: "84848".to_string(),
+            }],
+        },
+        UserQuery {
+            elements: vec![QueryElement::Field {
+                key: "account".to_string(),
+                value: "test_namespace_index1.thing1.account".to_string(),
+            }],
+            joins: HashMap::new(),
+            namespace_identifier: "test_namespace_index1".to_string(),
+            entity_name: "thing1".to_string(),
+            filters: vec![QueryFilter {
+                key: "id".to_string(),
+                relation: "=".to_string(),
+                value: "4321".to_string(),
+            }],
+        },
+    ];
 
-    let sql = q.as_sql(false);
-
-    assert_eq!(
-        vec![
-            "SELECT account, hash FROM test_namespace_index1.thing2 WHERE id = 1234"
-                .to_string(),
-            "SELECT account, hash, id FROM test_namespace_index1.thing2 WHERE id = 84848"
-                .to_string(),
-            "SELECT account FROM test_namespace_index1.thing1 WHERE id = 4321"
-                .to_string(),
-        ],
-        sql
-    );
+    assert_eq!(q.parse(&schema), expected);
 
     let bad_query = r#"
         fragment frag1 on BadType{

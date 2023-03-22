@@ -64,7 +64,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .file("schema", graphql_schema)?
         .file("wasm", module_path)?;
 
-    let target = format!("{}/api/index/{}/{}", &url, &namespace, &identifier);
+    let target = format!("{url}/api/index/{namespace}/{identifier}");
 
     info!(
         "Deploying indexer at {} to {}",
@@ -73,10 +73,9 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     );
 
     let mut headers = HeaderMap::new();
-    headers.insert(
-        AUTHORIZATION,
-        auth.unwrap_or_else(|| "fuel".into()).parse()?,
-    );
+    if let Some(auth) = auth {
+        headers.insert(AUTHORIZATION, auth.parse()?);
+    }
 
     let pb = ProgressBar::new_spinner();
     pb.enable_steady_tick(Duration::from_millis(120));
@@ -102,18 +101,18 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .send()
         .expect("Failed to deploy indexer.");
 
-    if res.status() != StatusCode::OK {
-        error!(
-            "\n❌ {} returned a non-200 response code: {:?}",
-            &target,
-            res.status()
-        );
-        return Ok(());
-    }
-
+    let status = res.status();
     let res_json = res
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
+
+    if status != StatusCode::OK {
+        error!("\n❌ {target} returned a non-200 response code: {status:?}",);
+
+        println!("\n{}", to_string_pretty(&res_json)?);
+
+        return Ok(());
+    }
 
     println!("\n{}", to_string_pretty(&res_json)?);
 

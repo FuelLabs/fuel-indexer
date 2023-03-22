@@ -19,3 +19,5 @@ To install the `wasm32-unknown-unknown` target via `rustup`:
 ```bash
 rustup target add wasm32-unknown-unknown
 ```
+
+> Note for Apple Silicon macOS users: Due to the default architecture-specific libraries that are shipped with macOS, you may have trouble building WASM binaries. Please refer to [this section](../../reference-guide/components/assets/module.md#notes-on-wasm) of the _Module_ page for more information.

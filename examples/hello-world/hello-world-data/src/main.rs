@@ -1,17 +1,18 @@
 use clap::Parser;
-use fuel_indexer_tests::{
-    defaults,
-    fixtures::{get_contract_id_with_host, tx_params},
+use fuel_indexer_tests::{defaults, fixtures::tx_params};
+use fuels::{
+    prelude::{Bech32ContractId, Contract, Provider},
+    signers::WalletUnlocked,
+    types::SizedAsciiString,
 };
-use fuels::prelude::SizedAsciiString;
-use fuels_abigen_macro::abigen;
+use fuels_macros::abigen;
 use rand::{seq::SliceRandom, Rng};
 use std::path::{Path, PathBuf};
 
-abigen!(
-    Greet,
-    "examples/hello-world/contracts/greeting/out/debug/greeting-abi.json"
-);
+abigen!(Contract(
+    name = "Greet",
+    abi = "examples/hello-world/contracts/greeting/out/debug/greeting-abi.json"
+));
 
 #[derive(Debug, Parser, Clone)]
 #[clap(
@@ -57,11 +58,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .join("..")
             .join("packages")
             .join("fuel-indexer-tests")
-            .join("assets")
             .join("test-chain-config.json")
     });
 
-    let contract_bin = opts.contract_bin.unwrap_or_else(|| {
+    let contract_bin_path = opts.contract_bin.unwrap_or_else(|| {
         Path::new(&manifest_dir)
             .join("..")
             .join("contracts")
@@ -76,12 +76,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|| defaults::FUEL_NODE_ADDR.to_string());
     println!("Using Fuel node at {host}",);
 
-    let (wallet, contract_id) = get_contract_id_with_host(
-        chain_config.as_os_str().to_str().unwrap(),
-        contract_bin.as_os_str().to_str().unwrap(),
-        host,
-    )
-    .await?;
+    let wallet_path_str = chain_config.as_os_str().to_str().unwrap();
+    let mut wallet =
+        WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
+            .unwrap();
+
+    let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
+
+    wallet.set_provider(provider.clone());
+
+    let compiled =
+        Contract::load_contract(contract_bin_path.as_os_str().to_str().unwrap(), &None)
+            .unwrap();
+    let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
+
+    let contract_id = Bech32ContractId::from(id);
 
     let contract = Greet::new(contract_id, wallet.clone());
 

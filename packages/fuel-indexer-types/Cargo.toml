@@ -1,16 +1,19 @@
 [package]
 name = "fuel-indexer-types"
-version = "0.3.0"
-edition = "2021"
-license = "BUSL-1.1"
-repository = "https://github.com/FuelLabs/fuel-indexer"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
 description = "Fuel Indexer Types"
 
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
-fuel-tx = { version = "0.23", features = ["serde"] }
-fuel-types = "0.5"
-fuels-core = "0.30"
-fuels-types = "0.30"
+fuel-tx = { version = "0.26.0", features = ["serde"] }
+fuel-types = "0.26.0"
+fuels-core = { version = "0.37", default-features = false }
+fuels-types = { version = "0.37", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
 sha2 = "0.9"

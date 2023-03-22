@@ -1,9 +1,11 @@
+#![deny(unused_crate_dependencies)]
+
 extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
-    Address, AssetId, Blob, Bytes32, Bytes4, Bytes8, ContractId, Identity, Int16, Int4,
-    Int8, Json, MessageId, Salt, UInt16, UInt4, UInt8,
+    try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes8, ContractId,
+    Identity, Int16, Int4, Int8, Json, MessageId, Salt, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
 
@@ -150,8 +152,8 @@ impl FtColumn {
                 FtColumn::Charfield(Some(s))
             }
             ColumnType::Identity => {
-                let identity =
-                    Identity::try_from(&bytes[..size]).expect("Invalid slice length");
+                let identity: Identity =
+                    try_from_bytes(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Identity(Some(identity))
             }
             ColumnType::Boolean => {
@@ -248,8 +250,8 @@ impl FtColumn {
             },
             FtColumn::Identity(value) => match value {
                 Some(val) => match val {
-                    Identity::Address(v) => format!("'00{v:x}'",),
-                    Identity::ContractId(v) => format!("'01{v:x}'",),
+                    Identity::Address(v) => format!("'{v:x}'",),
+                    Identity::ContractId(v) => format!("'{v:x}'",),
                 },
                 None => String::from(NULL_VALUE),
             },

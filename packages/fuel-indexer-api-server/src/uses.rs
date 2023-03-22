@@ -1,23 +1,29 @@
-use crate::api::{ApiError, ApiResult, HttpError};
-use anyhow::Result;
+use crate::{
+    api::{ApiError, ApiResult, HttpError},
+    models::VerifySignatureRequest,
+};
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
     extract::{multipart::Multipart, Extension, Json, Path},
     http::{Request, StatusCode},
-    middleware::Next,
     response::{IntoResponse, Response},
 };
+use fuel_crypto::{Message, Signature};
 use fuel_indexer_database::{
     queries,
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
 use fuel_indexer_lib::{
-    config::IndexerConfig,
+    config::{
+        auth::{AuthenticationStrategy, Claims},
+        IndexerConfig,
+    },
+    defaults,
     utils::{
-        AssetReloadRequest, FuelNodeHealthResponse, IndexStopRequest, ServiceRequest,
-        ServiceStatus,
+        AssetReloadRequest, FuelNodeHealthResponse, IndexRevertRequest, IndexStopRequest,
+        ServiceRequest, ServiceStatus,
     },
 };
 use fuel_indexer_schema::db::{
@@ -25,10 +31,13 @@ use fuel_indexer_schema::db::{
 };
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
+use jsonwebtoken::{encode, EncodingKey, Header};
 use serde::Deserialize;
 use serde_json::{json, Value};
-use std::str::FromStr;
-use std::time::Instant;
+use std::{
+    str::FromStr,
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
 use tokio::sync::mpsc::Sender;
 use tracing::error;
 
@@ -44,9 +53,9 @@ pub struct Query {
 
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
-    Json(query): Json<Query>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
+    Json(query): Json<Query>,
 ) -> ApiResult<axum::Json<Value>> {
     match manager
         .read()
@@ -116,50 +125,68 @@ pub(crate) async fn health_check(
     })))
 }
 
-async fn authenticate_user(_signature: &str) -> Option<Result<bool, ApiError>> {
-    // TODO: Placeholder until actual authentication scheme is in place
-    Some(Ok(true))
-}
-
-pub(crate) async fn authorize_middleware<B>(
-    mut req: Request<B>,
-    next: Next<B>,
-) -> impl IntoResponse {
-    let header = req
-        .headers()
-        .get(http::header::AUTHORIZATION)
-        .and_then(|header| header.to_str().ok());
-    let auth_header = if let Some(auth_header) = header {
-        auth_header
-    } else {
-        return Err(StatusCode::UNAUTHORIZED);
-    };
-
-    if let Some(current_user) = authenticate_user(auth_header).await {
-        req.extensions_mut().insert(current_user);
-        Ok(next.run(req).await)
-    } else {
-        Err(StatusCode::UNAUTHORIZED)
-    }
-}
-
-pub(crate) async fn stop_index(
+pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
     let mut conn = pool.acquire().await?;
 
     let _ = queries::start_transaction(&mut conn).await?;
 
-    if let Err(_e) = queries::remove_index(&mut conn, &namespace, &identifier).await {
+    if let Err(e) = queries::remove_indexer(&mut conn, &namespace, &identifier).await {
         queries::revert_transaction(&mut conn).await?;
+
+        error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
+
+        return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
     } else {
         queries::commit_transaction(&mut conn).await?;
+
+        if let Some(tx) = tx {
+            tx.send(ServiceRequest::IndexStop(IndexStopRequest {
+                namespace,
+                identifier,
+            }))
+            .await?;
+
+            return Ok(Json(json!({
+                "success": "true"
+            })));
+        }
     }
 
+    Err(ApiError::default())
+}
+
+pub(crate) async fn revert_indexer(
+    Path((namespace, identifier)): Path<(String, String)>,
+    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(claims): Extension<Claims>,
+) -> ApiResult<axum::Json<Value>> {
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
+    let mut conn = pool.acquire().await?;
+    let asset = queries::penultimate_asset_for_index(
+        &mut conn,
+        &namespace,
+        &identifier,
+        IndexAssetType::Wasm,
+    )
+    .await?;
+
     if let Some(tx) = tx {
-        tx.send(ServiceRequest::IndexStop(IndexStopRequest {
+        tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
+            penultimate_asset_id: asset.id,
+            penultimate_asset_bytes: asset.bytes,
             namespace,
             identifier,
         }))
@@ -173,20 +200,20 @@ pub(crate) async fn stop_index(
     Err(ApiError::default())
 }
 
-pub(crate) async fn register_index_assets(
+pub(crate) async fn register_indexer_assets(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
+    Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
     multipart: Option<Multipart>,
 ) -> ApiResult<axum::Json<Value>> {
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
     if let Some(mut multipart) = multipart {
-        let mut conn = match pool.acquire().await {
-            Ok(conn) => conn,
-            Err(e) => {
-                return Err::<axum::Json<serde_json::Value>, ApiError>(e.into());
-            }
-        };
+        let mut conn = pool.acquire().await?;
 
         let _ = queries::start_transaction(&mut conn).await?;
 
@@ -206,6 +233,7 @@ pub(crate) async fn register_index_assets(
                         &identifier,
                         data.to_vec(),
                         asset_type,
+                        Some(&claims.sub),
                     )
                     .await?
                 }
@@ -216,6 +244,7 @@ pub(crate) async fn register_index_assets(
                         &identifier,
                         data.to_vec(),
                         IndexAssetType::Schema,
+                        Some(&claims.sub),
                     )
                     .await
                     {
@@ -262,6 +291,83 @@ pub(crate) async fn register_index_assets(
     Err(ApiError::default())
 }
 
+pub(crate) async fn get_nonce(
+    Extension(pool): Extension<IndexerConnectionPool>,
+) -> ApiResult<axum::Json<Value>> {
+    let mut conn = pool.acquire().await?;
+    let nonce = queries::create_nonce(&mut conn).await?;
+
+    Ok(Json(json!(nonce)))
+}
+
+pub(crate) async fn verify_signature(
+    Extension(config): Extension<IndexerConfig>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+    Json(payload): Json<VerifySignatureRequest>,
+) -> ApiResult<axum::Json<Value>> {
+    if config.authentication.enabled {
+        let mut conn = pool.acquire().await?;
+        match config.authentication.strategy {
+            Some(AuthenticationStrategy::JWT) => {
+                let nonce = queries::get_nonce(&mut conn, &payload.message).await?;
+
+                if nonce.is_expired() {
+                    return Err(ApiError::Http(HttpError::Unauthorized));
+                }
+
+                let mut buff: [u8; 64] = [0u8; 64];
+                buff.copy_from_slice(&payload.signature.as_bytes()[..64]);
+                let sig = Signature::from_bytes(buff);
+                let msg = Message::new(payload.message);
+                let pk = sig.recover(&msg)?;
+
+                let now = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs() as usize;
+
+                let claims = Claims {
+                    sub: pk.to_string(),
+                    iss: config.authentication.jwt_issuer.unwrap_or_default(),
+                    iat: now,
+                    exp: now
+                        + config
+                            .authentication
+                            .jwt_expiry
+                            .unwrap_or(defaults::JWT_EXPIRY_SECS),
+                };
+
+                if let Err(e) = sig.verify(&pk, &msg) {
+                    error!("Failed to verify signature: {e}.");
+                    return Err(ApiError::FuelCrypto(e));
+                }
+
+                let token = encode(
+                    &Header::default(),
+                    &claims,
+                    &EncodingKey::from_secret(
+                        config
+                            .authentication
+                            .jwt_secret
+                            .unwrap_or_default()
+                            .as_ref(),
+                    ),
+                )?;
+
+                queries::delete_nonce(&mut conn, &nonce).await?;
+
+                Ok(Json(json!({ "token": token })))
+            }
+            _ => {
+                error!("Unsupported authentication strategy.");
+                unimplemented!();
+            }
+        }
+    } else {
+        unreachable!()
+    }
+}
+
 pub async fn run_query(
     query: Query,
     schema: Schema,
@@ -270,7 +376,7 @@ pub async fn run_query(
     let builder = GraphqlQueryBuilder::new(&schema, &query.query)?;
     let query = builder.build()?;
 
-    let queries = query.as_sql(true).join(";\n");
+    let queries = query.as_sql(&schema, pool.database_type()).join(";\n");
 
     let mut conn = pool.acquire().await?;
 
@@ -297,7 +403,7 @@ pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
                 .unwrap(),
             Err(_e) => Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from("Error"))
+                .body(Body::from("Error."))
                 .unwrap(),
         }
     }

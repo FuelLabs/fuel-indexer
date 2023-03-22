@@ -1,0 +1,233 @@
+schema {
+    query: QueryRoot
+}
+
+# IMPORTANT: Appending 'Entity' to some object name's in order to avoid
+# naming collisions with the ABI JSON
+
+type QueryRoot {
+    pingentity: PingEntity
+    pungentity: PungEntity
+    pongentity: PongEntity
+    block: Block
+    tx: Tx
+    transfer: Transfer
+    transferout: TransferOut
+    log: Log
+    scriptresult: ScriptResult
+    messageout: MessageOut
+    optionentity: OptionEntity
+    tupleentity: TupleEntity
+    u16entity: U16Entity
+    messageentity: MessageEntity
+    callentity: CallEntity
+
+    # GraphQL API test entities
+    genre: Genre
+    person: Person
+    planet: Planet
+    continent: Continent
+    country: Country
+    region: Region
+    author: Author
+    city: City
+    library: Library
+    book: Book
+    sponsor: Sponsor
+    chapter: Chapter
+    bookclub: BookClub
+    municipality: Municipality
+    sportsteam: SportsTeam
+}
+
+type PingEntity {
+    id: ID!
+    value: UInt8!
+    message: Charfield!
+}
+
+type PungEntity {
+    id: ID!
+    value: UInt8!
+    is_pung: Boolean!
+    pung_from: Identity!
+}
+
+type U16Entity {
+    id: ID!
+    value1: UInt16!
+    value2: Int16!
+}
+
+type PongEntity {
+    id: ID!
+    value: UInt8!
+}
+
+type Block {
+    id: ID!
+    height: UInt8!
+    timestamp: Int8!
+}
+
+type Tx {
+    id: ID!
+    block: Block!
+    input_data: Json!
+    timestamp: Int8!
+}
+
+type Transfer {
+    id: ID!
+    contract_id: ContractId!
+    # 'to' is a reserved SQL word, so using 'recipient'
+    recipient: ContractId!
+    amount: UInt8!
+    asset_id: AssetId!
+}
+
+type TransferOut {
+    id: ID!
+    contract_id: ContractId!
+    recipient: Address!
+    amount: UInt8!
+    asset_id: AssetId!
+}
+
+type Log {
+    id: ID!
+    contract_id: ContractId!
+    ra: UInt8!
+    rb: UInt8!
+}
+
+type ScriptResult {
+    id: ID!
+    result: UInt8!
+    gas_used: UInt8!
+    blob: Blob!
+}
+
+type MessageOut {
+    id: ID!
+    sender: Address!
+    recipient: Address!
+    amount: UInt8!
+    nonce: Bytes32!
+    len: UInt8!
+    digest: Bytes32!
+}
+
+type OptionEntity {
+    id: ID!
+    int_required: UInt8!
+    int_optional_some: UInt8
+    addr_optional_none: Address
+}
+
+type TupleEntity {
+    id: ID!
+    complex_a: Charfield!
+    complex_b: UInt8!
+    simple_a: Charfield!
+}
+
+type CallEntity {
+    id: ID!
+    contract_id: ContractId!
+    callee: ContractId!
+    asset_id: AssetId!
+    gas: UInt8!
+    fn_name: Charfield!
+    amount: UInt8!
+}
+
+type Genre {
+    id: ID!
+    name: Charfield!
+}
+
+type Person {
+    id: ID!
+    name: Charfield!
+}
+
+type Planet {
+    id: ID!
+    name: Charfield!
+}
+
+type Continent {
+    id: ID!
+    name: Charfield!
+    planet: Planet!
+}
+
+type Country {
+    id: ID!
+    name: Charfield!
+    continent: Continent!
+}
+
+type Region {
+    id: ID!
+    name: Charfield!
+    country: Country!
+}
+
+type City {
+    id: ID!
+    name: Charfield!
+    region: Region!
+}
+
+type Author {
+    id: ID!
+    name: Charfield!
+    genre: Genre!
+}
+
+type Library {
+    id: ID!
+    name: Charfield!
+    city: City!
+}
+
+type Book {
+    id: ID!
+    name: Charfield!
+    author: Author!
+    library: Library!
+    genre: Genre!
+}
+
+type Sponsor {
+    id: ID!
+    name: Charfield! @unique
+    amount: UInt8!
+    representative: Person!
+}
+
+# TODO: Fix nullable foreign keys; there seems to be issues during codegen
+type BookClub {
+    id: ID!
+    book: Book!
+    member: Person!
+    corporate_sponsor: Sponsor! @join(on:name)
+}
+
+type Municipality {
+    id: ID!
+    name: Charfield! @unique
+}
+
+type SportsTeam {
+    id: ID!
+    name: Charfield!
+    municipality: Municipality! @join(on:name)
+}
+
+type MessageEntity {
+    id: ID!
+    message: Charfield!
+}

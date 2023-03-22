@@ -30,7 +30,7 @@ pub struct Command {
     #[clap(long, help = "Build with the given profile.")]
     pub profile: Option<String>,
 
-    /// Verbose output
+    /// Verbose output.
     #[clap(short, long, help = "Verbose output.")]
     pub verbose: bool,
 

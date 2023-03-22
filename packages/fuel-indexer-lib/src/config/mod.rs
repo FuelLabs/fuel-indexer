@@ -1,19 +1,26 @@
+pub mod auth;
 pub mod database;
 pub mod fuel_node;
 pub mod graphql;
 
 pub use crate::{
     config::{
-        database::DatabaseConfig, fuel_node::FuelNodeConfig, graphql::GraphQLConfig,
+        auth::{AuthenticationConfig, AuthenticationStrategy},
+        database::DatabaseConfig,
+        fuel_node::FuelNodeConfig,
+        graphql::GraphQLConfig,
     },
     defaults,
 };
-pub use clap::{Args, Parser};
+pub use clap::{Args, Parser, ValueEnum};
 use serde::Deserialize;
-use std::fs::File;
-use std::io::Error;
-use std::net::AddrParseError;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::File,
+    io::Error,
+    net::AddrParseError,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 use strum::{AsRefStr, EnumString};
 use thiserror::Error;
 
@@ -43,6 +50,8 @@ pub enum EnvVar {
     PostgresPort,
     #[strum(serialize = "POSTGRES_USER")]
     PostgresUser,
+    #[strum(serialize = "JWT_SECRET")]
+    JwtSecret,
 }
 
 pub fn env_or_default(var: EnvVar, default: String) -> String {
@@ -101,6 +110,10 @@ pub struct IndexerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
+    /// Max body size for GraphQL API requests.
+    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    pub max_body_size: usize,
+
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
     pub postgres_user: Option<String>,
@@ -122,19 +135,11 @@ pub struct IndexerArgs {
     pub postgres_port: Option<String>,
 
     /// Run database migrations before starting service.
-    #[clap(
-        long,
-        default_value = "true",
-        help = "Run database migrations before starting service."
-    )]
+    #[clap(long, default_value_t = defaults::RUN_MIGRATIONS, help = "Run database migrations before starting service.")]
     pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.
-    #[clap(
-        long,
-        default_value = "true",
-        help = "Use Prometheus metrics reporting."
-    )]
+    #[clap(long, help = "Use Prometheus metrics reporting.")]
     pub metrics: bool,
 
     /// Prevent indexers from running without handling any blocks.
@@ -143,6 +148,39 @@ pub struct IndexerArgs {
         help = "Prevent indexers from running without handling any blocks."
     )]
     pub stop_idle_indexers: bool,
+
+    /// Automatically create and start database using provided options or defaults.
+    #[clap(
+        long,
+        help = "Automatically create and start database using provided options or defaults."
+    )]
+    pub embedded_database: bool,
+
+    /// Require users to authenticate for some operations.
+    #[clap(long, help = "Require users to authenticate for some operations.")]
+    pub auth_enabled: bool,
+
+    /// Authentication scheme used.
+    #[clap(long, help = "Authentication scheme used.")]
+    pub auth_strategy: Option<String>,
+
+    /// Secret used for JWT scheme (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Secret used for JWT scheme (if JWT scheme is specified)."
+    )]
+    pub jwt_secret: Option<String>,
+
+    /// Issuer of JWT claims (if JWT scheme is specified).
+    #[clap(long, help = "Issuer of JWT claims (if JWT scheme is specified).")]
+    pub jwt_issuer: Option<String>,
+
+    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
+    )]
+    pub jwt_expiry: Option<usize>,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -156,6 +194,22 @@ pub struct ApiServerArgs {
     #[clap(short, long, help = "API server config file.")]
     pub config: Option<PathBuf>,
 
+    /// Host of the running Fuel node.
+    #[clap(
+        long,
+        help = "Host of the running Fuel node.",
+        default_value = defaults::FUEL_NODE_HOST
+    )]
+    pub fuel_node_host: String,
+
+    /// Listening port of the running Fuel node.
+    #[clap(
+        long,
+        help = "Listening port of the running Fuel node.",
+        default_value = defaults::FUEL_NODE_PORT
+    )]
+    pub fuel_node_port: String,
+
     /// GraphQL API host.
     #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
     pub graphql_api_host: String,
@@ -167,6 +221,14 @@ pub struct ApiServerArgs {
     /// Database type.
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
+
+    /// Max body size for GraphQL API requests.
+    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    pub max_body_size: usize,
+
+    /// Run database migrations before starting service.
+    #[clap(long, default_value_t = defaults::RUN_MIGRATIONS, help = "Run database migrations before starting service.")]
+    pub run_migrations: bool,
 
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
@@ -188,22 +250,35 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Postgres port.")]
     pub postgres_port: Option<String>,
 
-    /// Run database migrations before starting service.
-    #[clap(
-        long,
-        default_value = "false",
-        help = "Run database migrations before starting service."
-    )]
-    pub run_migrations: bool,
-
     /// Use Prometheus metrics reporting.
-    /// Note: Metrics are currently unimplemented for the API server.
+    #[clap(long, help = "Use Prometheus metrics reporting.")]
+    pub metrics: bool,
+
+    /// Require users to authenticate for some operations.
+    #[clap(long, help = "Require users to authenticate for some operations.")]
+    pub auth_enabled: bool,
+
+    /// Authentication scheme used.
+    #[clap(long, help = "Authentication scheme used.")]
+    pub auth_strategy: Option<String>,
+
+    /// Secret used for JWT scheme (if JWT scheme is specified).
     #[clap(
         long,
-        default_value = "true",
-        help = "Use Prometheus metrics reporting."
+        help = "Secret used for JWT scheme (if JWT scheme is specified)."
     )]
-    pub metrics: bool,
+    pub jwt_secret: Option<String>,
+
+    /// Issuer of JWT claims (if JWT scheme is specified).
+    #[clap(long, help = "Issuer of JWT claims (if JWT scheme is specified).")]
+    pub jwt_issuer: Option<String>,
+
+    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
+    )]
+    pub jwt_expiry: Option<usize>,
 }
 
 fn derive_http_url(host: &String, port: &String) -> String {
@@ -215,7 +290,7 @@ fn derive_http_url(host: &String, port: &String) -> String {
     format!("{protocol}://{host}:{port}")
 }
 
-pub trait MutConfig {
+pub trait Env {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()>;
 }
 
@@ -235,6 +310,8 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
     pub metrics: bool,
     pub stop_idle_indexers: bool,
+    pub run_migrations: bool,
+    pub authentication: AuthenticationConfig,
 }
 
 impl From<IndexerArgs> for IndexerConfig {
@@ -286,10 +363,20 @@ impl From<IndexerArgs> for IndexerConfig {
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
+                max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
+            run_migrations: args.run_migrations,
+            authentication: AuthenticationConfig {
+                enabled: args.auth_enabled,
+                strategy: args
+                    .auth_strategy
+                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
+                jwt_secret: args.jwt_secret,
+                jwt_issuer: args.jwt_issuer,
+                jwt_expiry: args.jwt_expiry,
+            },
         };
 
         config.inject_opt_env_vars();
@@ -341,16 +428,26 @@ impl From<ApiServerArgs> for IndexerConfig {
         let mut config = IndexerConfig {
             database,
             fuel_node: FuelNodeConfig {
-                host: defaults::FUEL_NODE_HOST.to_string(),
-                port: defaults::FUEL_NODE_PORT.to_string(),
+                host: args.fuel_node_host,
+                port: args.fuel_node_port,
             },
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
+                max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
-            stop_idle_indexers: false,
+            stop_idle_indexers: defaults::STOP_IDLE_INDEXERS,
+            run_migrations: args.run_migrations,
+            authentication: AuthenticationConfig {
+                enabled: args.auth_enabled,
+                strategy: args
+                    .auth_strategy
+                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
+                jwt_secret: args.jwt_secret,
+                jwt_issuer: args.jwt_issuer,
+                jwt_expiry: args.jwt_expiry,
+            },
         };
 
         config.inject_opt_env_vars();
@@ -410,10 +507,20 @@ impl IndexerConfig {
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
+                max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
+            run_migrations: args.run_migrations,
+            authentication: AuthenticationConfig {
+                enabled: args.auth_enabled,
+                strategy: args
+                    .auth_strategy
+                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
+                jwt_secret: args.jwt_secret,
+                jwt_issuer: args.jwt_issuer,
+                jwt_expiry: args.jwt_expiry,
+            },
         };
 
         config.inject_opt_env_vars();
@@ -423,7 +530,7 @@ impl IndexerConfig {
 
     // When building the config via a file, if any section (e.g., graphql, fuel_node, etc),
     // or if any individual setting in a section (e.g., fuel_node.host) is empty, replace it
-    // with its respective default value
+    // with its respective default value.
     pub fn from_file(path: &Path) -> IndexerConfigResult<Self> {
         let file = File::open(path)?;
 
@@ -434,6 +541,7 @@ impl IndexerConfig {
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());
         let graphql_config_key = serde_yaml::Value::String("graphql".into());
         let database_config_key = serde_yaml::Value::String("database".into());
+        let auth_config_key = serde_yaml::Value::String("authentication".into());
 
         if let Some(section) = content.get(fuel_config_key) {
             let fuel_node_host = section.get(&serde_yaml::Value::String("host".into()));
@@ -459,12 +567,12 @@ impl IndexerConfig {
                 config.graphql_api.port = graphql_api_port.as_u64().unwrap().to_string();
             }
 
-            let graphql_run_migrations =
-                section.get(&serde_yaml::Value::String("run_migrations".into()));
+            let max_body_size =
+                section.get(&serde_yaml::Value::String("max_body_size".into()));
 
-            if let Some(graphql_run_migrations) = graphql_run_migrations {
-                config.graphql_api.run_migrations =
-                    graphql_run_migrations.as_bool().unwrap();
+            if let Some(max_body_size) = max_body_size {
+                config.graphql_api.max_body_size =
+                    max_body_size.as_u64().unwrap() as usize;
             }
         }
 
@@ -515,6 +623,34 @@ impl IndexerConfig {
                     port: pg_port,
                     database: pg_db,
                 };
+            }
+        }
+
+        if let Some(section) = content.get(auth_config_key) {
+            let auth_enabled =
+                section.get(&serde_yaml::Value::String("auth_enabled".into()));
+            if let Some(auth_enabled) = auth_enabled {
+                config.authentication.enabled = auth_enabled.as_bool().unwrap();
+            }
+
+            let strategy =
+                section.get(&serde_yaml::Value::String("auth_strategy".into()));
+            if let Some(strategy) = strategy {
+                config.authentication.strategy = Some(
+                    AuthenticationStrategy::from_str(strategy.as_str().unwrap()).unwrap(),
+                );
+            }
+
+            let jwt_secret = section.get(&serde_yaml::Value::String("jwt_secret".into()));
+            if let Some(jwt_secret) = jwt_secret {
+                config.authentication.jwt_secret =
+                    Some(jwt_secret.as_str().unwrap().to_string());
+            }
+
+            let jwt_issuer = section.get(&serde_yaml::Value::String("jwt_issuer".into()));
+            if let Some(jwt_issuer) = jwt_issuer {
+                config.authentication.jwt_issuer =
+                    Some(jwt_issuer.as_str().unwrap().to_string());
             }
         }
 

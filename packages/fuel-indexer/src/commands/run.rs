@@ -7,10 +7,10 @@ use fuel_indexer_lib::{
 };
 use tracing::info;
 
-#[cfg(feature = "local-node")]
+#[cfg(feature = "fuel-core-lib")]
 use fuel_core::service::{Config, FuelService};
 
-#[cfg(feature = "local-node")]
+#[cfg(feature = "fuel-core-lib")]
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 #[cfg(feature = "api-server")]
@@ -22,7 +22,16 @@ use fuel_indexer_lib::defaults::SERVICE_REQUEST_CHANNEL_SIZE;
 #[cfg(feature = "api-server")]
 use tokio::sync::mpsc::channel;
 
-/// Start a local indexer service.
+#[cfg(feature = "fuel-core-lib")]
+async fn run_fuel_core_node() -> anyhow::Result<FuelService> {
+    let config = Config {
+        addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
+        ..Config::local_node()
+    };
+    let srvc = FuelService::new_node(config).await?;
+    Ok(srvc)
+}
+
 pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     let IndexerArgs { manifest, .. } = args.clone();
 
@@ -40,16 +49,12 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         (None, None)
     };
 
-    #[cfg(feature = "local-node")]
-    {
-        let mut config = Config::local_node();
-        config.addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000);
-        FuelService::new_node(config).await.unwrap();
-    }
+    #[cfg(feature = "fuel-core-lib")]
+    let _srvc = run_fuel_core_node().await?;
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
-    if config.graphql_api.run_migrations {
+    if config.run_migrations {
         let mut c = pool.acquire().await?;
         queries::run_migration(&mut c).await?;
     }

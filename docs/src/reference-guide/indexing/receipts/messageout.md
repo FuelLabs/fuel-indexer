@@ -14,6 +14,14 @@ pub struct MessageOut {
 }
 ```
 
-- A `MessageOut` receipt is generated as a result of the `send_message()` Sway method in which a message is sent to a recipient address along with a certain amount of coins.
-- The `data` field currently supports only a vector of non-reference types rather than something like a struct.
+- A `MessageOut` receipt is generated as a result of the `send_typed_message()` Sway method in which a message is sent to a recipient address along with a certain amount of coins.
+- The `data` field supports data of an arbitrary type `T` and will be decoded by the indexer upon receipt.
 - [Read more about `MessageOut` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#messageout-receipt)
+
+You can handle functions that produce a `MessageOut` receipt type by adding a parameter with the type `abi::MessageOut`.
+
+```rust, ignore
+fn handle_message_out(message_out: abi::MessageOut) {
+  // handle the message out
+}
+```

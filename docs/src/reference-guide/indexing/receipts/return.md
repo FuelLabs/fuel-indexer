@@ -14,3 +14,11 @@ pub struct Return {
   - Specifically `bool`, `u8`, `u16`, `u32`, and `u64`.
 - The `val` field includes the value being returned.
 - [Read more about `Log` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#return-receipt)
+
+You can handle functions that produce a `Return` receipt type by adding a parameter with the type `abi::Return`.
+
+```rust, ignore
+fn handle_return(data: abi::Return) {
+  // handle the returned data
+}
+```

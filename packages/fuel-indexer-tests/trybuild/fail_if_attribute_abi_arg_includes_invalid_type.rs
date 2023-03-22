@@ -4,7 +4,7 @@ use fuel_indexer_macros::indexer;
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
 
-#[indexer(manifest = "packages/fuel-indexer-tests/assets/macros/simple_wasm.yaml")]
+#[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
 mod indexer {
     fn function_one(event: BadType) {
         let SomeEvent { id, account } = event;
@@ -15,7 +15,8 @@ mod indexer {
 }
 
 fn main() {
-    use fuels_core::{abi_encoder::ABIEncoder, Tokenizable};
+    use fuels::types::traits::Tokenizable;
+    use fuels_core::abi_encoder::ABIEncoder;
 
     let s = SomeEvent {
         id: 9,

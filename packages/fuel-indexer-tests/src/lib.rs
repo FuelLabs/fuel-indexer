@@ -4,14 +4,17 @@ pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
 pub mod assets {
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
-        include_str!("./../assets/fuel_indexer_test.yaml");
-    pub const SIMPLE_WASM_MANIFEST: &str = include_str!("./../assets/simple_wasm.yaml");
+        include_str!("./../components/indices/fuel-indexer-test/fuel_indexer_test.yaml");
+    pub const SIMPLE_WASM_MANIFEST: &str =
+        include_str!("./../components/indices/simple-wasm/simple_wasm.yaml");
     pub const BAD_SIMPLE_WASM_MANIFEST: &str =
-        include_str!("./../assets/bad_simple_wasm.yaml");
+        include_str!("./../components/indices/simple-wasm/bad_simple_wasm.yaml");
     pub const BAD_SIMPLE_WASM_WASM: &[u8] =
-        include_bytes!("./../assets/bad_simple_wasm.wasm");
-    pub const SIMPLE_WASM_WASM: &[u8] = include_bytes!("./../assets/simple_wasm.wasm");
-    pub const SIMPLE_WASM_SCHEMA: &str = include_str!("./../assets/simple_wasm.graphql");
+        include_bytes!("./../components/indices/simple-wasm/bad_simple_wasm.wasm");
+    pub const SIMPLE_WASM_WASM: &[u8] =
+        include_bytes!("./../components/indices/simple-wasm/simple_wasm.wasm");
+    pub const SIMPLE_WASM_SCHEMA: &str =
+        include_str!("./../components/indices/simple-wasm/schema/simple_wasm.graphql");
 }
 
 pub mod defaults {
@@ -29,6 +32,7 @@ pub mod defaults {
     pub const WALLET_PASSWORD: &str = "password";
     pub const INDEXED_EVENT_WAIT: u64 = 2;
     pub const COIN_AMOUNT: u64 = 11;
+    pub const MAX_BODY_SIZE: usize = 5242880; // 5MB in bytes
 }
 
 pub mod utils {

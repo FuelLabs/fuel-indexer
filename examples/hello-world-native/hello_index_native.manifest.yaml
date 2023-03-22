@@ -1,8 +1,0 @@
-namespace: fuel_examples
-identifier: hello_index_native
-contract_id: ~
-report_metrics: true
-abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
-start_block: 1
-graphql_schema: examples/hello-world-native/schema/hello_index_native.schema.graphql
-module: native

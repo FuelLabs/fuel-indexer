@@ -1,9 +1,12 @@
 [package]
 name = "fuel-indexer-api-server"
-version = "0.3.0"
-edition = "2021"
-license = "BUSL-1.1"
-repository = "https://github.com/FuelLabs/fuel-indexer"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
 description = "Fuel Indexer API Server"
 
 [[bin]]
@@ -13,28 +16,26 @@ path = "src/bin/main.rs"
 [dependencies]
 anyhow = "1.0"
 async-std = "1"
-axum = { version = "0.5", features = ["multipart"] }
+axum = { version = "0.6", features = ["multipart", "macros"] }
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
-fuel-indexer-database = { version = "0.3", path = "../fuel-indexer-database" }
-fuel-indexer-database-types = { version = "0.3", path = "../fuel-indexer-database/database-types" }
-fuel-indexer-lib = { version = "0.3", path = "../fuel-indexer-lib" }
-fuel-indexer-metrics = { version = "0.3", path = "../fuel-indexer-metrics", optional = true }
-fuel-indexer-schema = { version = "0.3", path = "../fuel-indexer-schema", features = ["db-models"] }
+fuel-crypto = { version = "0.27", features = ["std"] }
+fuel-indexer-database = { workspace = true }
+fuel-indexer-lib = { workspace = true }
+fuel-indexer-metrics = { workspace = true, optional = true }
+fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 http = "0.2"
-hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ]}
+hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ] }
 hyper-rustls = { version = "0.23", features = ["http2"] }
-prometheus = { version = "0.13", optional = true }
+jsonwebtoken = "8"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0", features = ["raw_value"] }
-serde_yaml = "0.8"
-sqlx = { version = "0.6", features = ["postgres", "runtime-tokio-rustls", "sqlite", "bigdecimal"] }
+sqlx = { version = "0.6", features = ["postgres", "runtime-tokio-rustls", "bigdecimal"] }
 thiserror = "1.0"
 tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
-tower = "0.4"
+tower = { version = "0.4" }
 tower-http = { version = "0.3", features = ["fs", "trace", "cors", "limit"] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [features]
 default = ["metrics"]
-metrics = ["fuel-indexer-metrics", "prometheus"]
+metrics = ["fuel-indexer-metrics"]

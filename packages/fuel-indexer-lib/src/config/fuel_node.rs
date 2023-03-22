@@ -1,5 +1,5 @@
 use crate::{
-    config::{derive_http_url, IndexerConfigResult, MutConfig},
+    config::{derive_http_url, Env, IndexerConfigResult},
     defaults,
     utils::{is_opt_env_var, trim_opt_env_key},
 };
@@ -26,7 +26,7 @@ impl FuelNodeConfig {
     }
 }
 
-impl MutConfig for FuelNodeConfig {
+impl Env for FuelNodeConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         if is_opt_env_var(&self.host) {
             self.host = std::env::var(trim_opt_env_key(&self.host))?;

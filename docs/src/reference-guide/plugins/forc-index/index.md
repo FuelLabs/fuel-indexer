@@ -15,12 +15,13 @@ OPTIONS:
     -V, --version    Print version information
 
 SUBCOMMANDS:
-    build     Build an index
+    build     Build an indexer
     check     Get status checks on all indexer components
-    deploy    Deploy an index asset bundle to a remote or locally running indexer server
+    deploy    Deploy an indexer asset bundle to a remote or locally running indexer server
     help      Print this message or the help of the given subcommand(s)
     init      Create a new indexer project in the current directory
     new       Create a new indexer project in a new directory
-    remove    Stop and remove a running index
+    remove    Stop and remove a running indexer
+    revert    Revert a running indexer to its previous version
     start     Start a local indexer service
 ```

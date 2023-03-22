@@ -9,10 +9,10 @@ use fuel_indexer_database::{
     DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_types::type_id;
-use graphql_parser::parse_schema;
 use graphql_parser::schema::{
     Definition, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
 };
+use graphql_parser::{parse_schema, schema::Document};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
@@ -172,6 +172,7 @@ impl SchemaBuilder {
             query,
             types,
             fields,
+            foreign_keys: HashMap::new(),
         })
     }
 
@@ -317,7 +318,7 @@ impl SchemaBuilder {
                 }
 
                 let table_name = o.name.to_lowercase();
-                let type_id = type_id(&self.namespace, &o.name);
+                let type_id = type_id(&self.namespace(), &o.name);
                 let columns =
                     self.generate_columns(o, type_id, &o.fields, &table_name, types_map);
 
@@ -348,6 +349,7 @@ pub struct Schema {
     pub query: String,
     pub types: HashSet<String>,
     pub fields: HashMap<String, HashMap<String, String>>,
+    pub foreign_keys: HashMap<String, HashMap<String, (String, String)>>,
 }
 
 impl Schema {
@@ -391,6 +393,8 @@ impl Schema {
             );
         }
 
+        let foreign_keys = get_foreign_keys(&root.schema);
+
         Ok(Schema {
             version: root.version,
             namespace: root.schema_name,
@@ -398,6 +402,7 @@ impl Schema {
             query: root.query,
             types,
             fields,
+            foreign_keys,
         })
     }
 
@@ -416,6 +421,92 @@ impl Schema {
                 }
             }
         }
+    }
+}
+
+fn get_foreign_keys(schema: &str) -> HashMap<String, HashMap<String, (String, String)>> {
+    let (ast, primitives, types_map) = parse_schema_for_ast_data(schema);
+    let mut foreign_keys: HashMap<String, HashMap<String, (String, String)>> =
+        HashMap::new();
+
+    for def in ast.definitions.iter() {
+        if let Definition::TypeDefinition(TypeDefinition::Object(o)) = def {
+            if o.name.to_lowercase() == *"queryroot" {
+                continue;
+            }
+
+            for field in o.fields.iter() {
+                if let ColumnType::ForeignKey =
+                    get_column_type(&field.field_type, &primitives)
+                {
+                    let directives::Join {
+                        reference_field_name,
+                        ..
+                    } = get_join_directive_info(field, o, &types_map);
+
+                    match foreign_keys.get_mut(&o.name.to_lowercase()) {
+                        Some(foreign_keys_for_field) => {
+                            foreign_keys_for_field.insert(
+                                field.name.clone(),
+                                (
+                                    field_type_table_name(field),
+                                    reference_field_name.clone(),
+                                ),
+                            );
+                        }
+                        None => {
+                            let foreign_keys_for_field = HashMap::from([(
+                                field.name.clone(),
+                                (
+                                    field_type_table_name(field),
+                                    reference_field_name.clone(),
+                                ),
+                            )]);
+                            foreign_keys
+                                .insert(o.name.to_lowercase(), foreign_keys_for_field);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    foreign_keys
+}
+
+fn parse_schema_for_ast_data(
+    schema: &str,
+) -> (Document<String>, HashSet<String>, HashMap<String, String>) {
+    let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
+        Ok(ast) => ast,
+        Err(e) => {
+            panic!("Error parsing graphql schema {e:?}",)
+        }
+    };
+    let (primitives, _) = build_schema_objects_set(&base_ast);
+
+    let ast = match parse_schema::<String>(schema) {
+        Ok(ast) => ast,
+        Err(e) => panic!("Error parsing graphql schema {e:?}",),
+    };
+    let types_map = build_schema_fields_and_types_map(&ast);
+
+    (ast, primitives, types_map)
+}
+
+fn get_column_type(
+    field_type: &Type<String>,
+    primitives: &HashSet<String>,
+) -> ColumnType {
+    match field_type {
+        Type::NamedType(t) => {
+            if !primitives.contains(t.as_str()) {
+                return ColumnType::ForeignKey;
+            }
+            ColumnType::from(t.as_str())
+        }
+        Type::ListType(_) => panic!("List types not supported yet."),
+        Type::NonNullType(t) => get_column_type(t, primitives),
     }
 }
 
@@ -692,5 +783,108 @@ mod tests {
         assert_eq!(foreign_keys.len(), 2);
         assert_eq!(foreign_keys[0].create_statement(), "ALTER TABLE namespace_index1.message ADD CONSTRAINT fk_message_sender__account_id FOREIGN KEY (sender) REFERENCES namespace_index1.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
         assert_eq!(foreign_keys[1].create_statement(), "ALTER TABLE namespace_index1.message ADD CONSTRAINT fk_message_receiver__account_id FOREIGN KEY (receiver) REFERENCES namespace_index1.account(id) ON DELETE NO ACTION ON UPDATE NO ACTION INITIALLY DEFERRED;".to_string());
+    }
+
+    #[test]
+    fn test_get_implicit_foreign_keys_for_schema() {
+        let implicit_fk_graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+
+        type QueryRoot {
+            borrower: Borrower
+            lender: Lender
+            auditor: Auditor
+        }
+
+        type Borrower {
+            id: ID!
+            account: Address! @indexed
+        }
+
+        type Lender {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower!
+        }
+
+        type Auditor {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower!
+        }
+    "#;
+
+        let mut expected = HashMap::new();
+        expected.insert(
+            "lender".to_string(),
+            HashMap::from([(
+                "borrower".to_string(),
+                ("borrower".to_string(), "id".to_string()),
+            )]),
+        );
+        expected.insert(
+            "auditor".to_string(),
+            HashMap::from([(
+                "borrower".to_string(),
+                ("borrower".to_string(), "id".to_string()),
+            )]),
+        );
+
+        let implicit_fk_foreign_keys = get_foreign_keys(implicit_fk_graphql_schema);
+        assert_eq!(expected, implicit_fk_foreign_keys);
+    }
+
+    #[test]
+    fn test_get_explicit_foreign_keys_for_schema() {
+        let explicit_fk_graphql_schema: &str = r#"
+        schema {
+            query: QueryRoot
+        }
+
+        type QueryRoot {
+            borrower: Borrower
+            lender: Lender
+            auditor: Auditor
+        }
+
+        type Borrower {
+            account: Address! @indexed
+        }
+
+        type Lender {
+            id: ID!
+            borrower: Borrower! @join(on:account)
+        }
+
+        type Auditor {
+            id: ID!
+            account: Address!
+            hash: Bytes32! @indexed
+            borrower: Borrower! @join(on:account)
+        }
+    "#;
+
+        let mut expected = HashMap::new();
+        expected.insert(
+            "lender".to_string(),
+            HashMap::from([(
+                "borrower".to_string(),
+                ("borrower".to_string(), "account".to_string()),
+            )]),
+        );
+        expected.insert(
+            "auditor".to_string(),
+            HashMap::from([(
+                "borrower".to_string(),
+                ("borrower".to_string(), "account".to_string()),
+            )]),
+        );
+
+        let explicit_fk_foreign_keys = get_foreign_keys(explicit_fk_graphql_schema);
+        assert_eq!(expected, explicit_fk_foreign_keys);
     }
 }

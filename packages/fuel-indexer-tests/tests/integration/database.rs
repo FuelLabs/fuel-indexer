@@ -14,11 +14,13 @@ fn compiler() -> Cranelift {
     Cranelift::default()
 }
 
-const SIMPLE_WASM_MANIFEST: &str = include_str!("./../../assets/simple_wasm.yaml");
+const SIMPLE_WASM_MANIFEST: &str =
+    include_str!("./../../components/indices/simple-wasm/simple_wasm.yaml");
 const SIMPLE_WASM_GRAPHQL_SCHEMA: &str =
-    include_str!("./../../assets/simple_wasm.graphql");
-const SIMPLE_WASM_WASM: &[u8] = include_bytes!("./../../assets/simple_wasm.wasm");
-const THING1_TYPE: i64 = -6766053528336050638;
+    include_str!("./../../components/indices/simple-wasm/schema/simple_wasm.graphql");
+const SIMPLE_WASM_WASM: &[u8] =
+    include_bytes!("./../../components/indices/simple-wasm/simple_wasm.wasm");
+const THING1_TYPE: i64 = -4145438814509139062;
 const TEST_COLUMNS: [(&str, i32, &str); 10] = [
     ("thing2", 0, "id"),
     ("thing2", 1, "account"),
@@ -31,6 +33,8 @@ const TEST_COLUMNS: [(&str, i32, &str); 10] = [
     ("indexmetadataentity", 1, "time"),
     ("indexmetadataentity", 2, "object"),
 ];
+const TEST_NAMESPACE: &str = "test_namespace";
+const TEST_INDENTIFIER: &str = "simple_wasm_executor";
 
 async fn load_wasm_module(database_url: &str) -> IndexerResult<Instance> {
     let compiler = compiler();
@@ -85,9 +89,14 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
     assert!(result.is_ok());
 
     let version = schema_version(&schema);
-    let results = queries::columns_get_schema(&mut conn, "test_namespace", &version)
-        .await
-        .expect("Metadata query failed");
+    let results = queries::columns_get_schema(
+        &mut conn,
+        "test_namespace",
+        "simple_wasm_executor",
+        &version,
+    )
+    .await
+    .expect("Metadata query failed");
 
     for (index, result) in results.into_iter().enumerate() {
         assert_eq!(result.table_name, TEST_COLUMNS[index].0);
@@ -111,7 +120,8 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
     assert_eq!(db.version, version);
 
     for column in TEST_COLUMNS.iter() {
-        assert!(db.schema.contains_key(column.0));
+        let key = format!("{}_{}.{}", TEST_NAMESPACE, TEST_INDENTIFIER, column.0);
+        assert!(db.schema.contains_key(&key));
     }
 
     let object_id = 4;
