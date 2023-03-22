@@ -29,7 +29,7 @@ pub struct Command {
     pub auth: Option<String>,
 
     /// Enable verbose output.
-    #[clap(short, long, help = "Enable verbose output.", default_value = "true")]
+    #[clap(short, long, help = "Enable verbose output.")]
     pub verbose: bool,
 }
 
