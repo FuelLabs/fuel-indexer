@@ -40,6 +40,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
     - [`build`](#forc-index-build)
     - [`deploy`](#forc-index-new)
     - [`remove`](#forc-index-remove)
+    - [`auth`](#forc-index-auth)
   - [Schema](#schema)
   - [Modules](#modules)
     - [WASM module notes](#notes-on-wasm-modules)
@@ -256,6 +257,8 @@ Take a quick tour.
     Deploy your indexer.
 `forc index remove`
     Stop a running indexer.
+`forc index auth`
+    Authenticate against an indexer service.
 ```
 
 > IMPORTANT: If you want more details on how this indexer works, check out our [block explorer indexer example](https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html).
@@ -265,7 +268,7 @@ Take a quick tour.
 At this point, we have a brand new indexer that will index some blocks and transactions. And with our database and Fuel indexer service up and running, all that's left is to build and deploy the indexer in order to see it in action. but now we need to build and deploy it in order to see it in action.
 
 ```bash
-forc index deploy --manifest hello_index.manifest.yaml
+forc index deploy
 ```
 
 If all goes well, you should see the following:
@@ -376,7 +379,7 @@ forc index init --namespace my_org_name
 Build the indexer in the current directory.
 
 ```bash
-forc index build --manifest my_index.manifest.yaml
+forc index build
 ```
 
 ### `forc index deploy`
@@ -384,7 +387,7 @@ forc index build --manifest my_index.manifest.yaml
 Deploy a given indexer project to a particular endpoint
 
 ```bash
-forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
+forc index deploy --url https://indexer.fuel.network
 ```
 
 ### `forc index remove`
@@ -392,7 +395,15 @@ forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.y
 Kill a running indexer.
 
 ```bash
-forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
+forc index remove --url https://indexer.fuel.network
+```
+
+### `forc index auth`
+
+Authenticate against an indexer service.
+
+```bash
+forc index auth --url https://indexer.fuel.network
 ```
 
 ### `forc index start`

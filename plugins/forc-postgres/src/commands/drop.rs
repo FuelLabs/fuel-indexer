@@ -24,6 +24,10 @@ pub struct Command {
         help = "Remove all database files that might have been persisted to disk."
     )]
     pub remove_persisted: bool,
+
+    /// Verbose output.
+    #[clap(short, long, help = "Verbose output.")]
+    pub verbose: bool,
 }
 
 pub async fn exec(command: Command) -> Result<()> {
@@ -32,6 +36,7 @@ pub async fn exec(command: Command) -> Result<()> {
         database_dir,
         config,
         remove_persisted,
+        verbose,
     } = command;
 
     let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
@@ -41,6 +46,7 @@ pub async fn exec(command: Command) -> Result<()> {
         database_dir: Some(database_dir),
         config,
         remove_persisted,
+        verbose,
     })
     .await?;
 
