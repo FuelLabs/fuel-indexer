@@ -6,6 +6,7 @@ use std::path::PathBuf;
 /// Build an indexer.
 #[derive(Debug, Parser)]
 pub struct Command {
+
     /// Manifest file name of indexer being built.
     #[clap(short, long, help = "Manifest file name of indexer being built.")]
     pub manifest: Option<String>,
