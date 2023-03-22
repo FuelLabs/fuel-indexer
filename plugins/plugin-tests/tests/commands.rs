@@ -15,6 +15,7 @@ fn init_command_creates_correct_project_tree() {
         namespace: temp_dir_name.to_string(),
         native: false,
         absolute_paths: false,
+        verbose: false,
     })
     .expect("Init command failed");
 
@@ -52,6 +53,7 @@ fn build_command_creates_artifact_at_expected_path() {
         namespace: temp_dir_name.to_string(),
         native: false,
         absolute_paths: false,
+        verbose: false,
     })
     .expect("Init command failed");
 
@@ -60,7 +62,7 @@ fn build_command_creates_artifact_at_expected_path() {
     let manifest = temp_dir_name + ".manifest.yaml";
 
     forc_index::commands::build::exec(BuildCommand {
-        target: None,
+        target: "wasm32-unknown-unknown".to_string(),
         native: false,
         path: None,
         verbose: false,
@@ -68,7 +70,7 @@ fn build_command_creates_artifact_at_expected_path() {
         release: false,
         locked: false,
         manifest: Some(manifest),
-        output_dir_root: None,
+        target_dir: None,
     })
     .expect("Build command failed");
     let wasm_artifact_path =
@@ -95,6 +97,7 @@ fn new_command_initializes_project_at_new_directory() {
         namespace: new_project_name.to_string(),
         native: false,
         absolute_paths: false,
+        verbose: false,
     })
     .expect("New command failed");
 
