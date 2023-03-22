@@ -36,19 +36,21 @@ fn print_welcome_message() {
 `forc index check`
     List indexer components.
 `forc index new`
-    Create a new index.
+    Create a new indexer.
 `forc index init`
     Create a new index in an existing directory.
 `forc index start`
     Start a local indexer service.
 `forc index build`
-    Build your index.
+    Build your indexer.
 `forc index deploy`
-    Deploy your index.
+    Deploy your indexer.
 `forc index remove`
-    Stop a running index.
+    Stop a running indexer.
 `forc index revert`
-    Revert a deployed indexer."#;
+    Revert a deployed indexer.
+`forc index auth`
+    Authenticate against an indexer service."#;
 
     let ascii_tag = r#"
 ███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 
