@@ -1944,22 +1944,25 @@ SUBCOMMANDS:
     start     Start a local indexer service
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-init"><a class="header" href="#forc-index-init"><code>forc index init</code></a></h1>
-<p>Create a new indexer project at the provided path. If no path is provided the current working directory will be used.</p>
+<p>Create a new indexer project in the current directory.</p>
 <pre><code class="language-bash">forc index init --namespace fuel
 </code></pre>
-<pre><code class="language-text">USAGE:
+<pre><code class="language-text">Create a new indexer project in the current directory
+
+USAGE:
     forc-index init [OPTIONS] --namespace &lt;NAMESPACE&gt;
 
 OPTIONS:
         --absolute-paths           Resolve indexer asset filepaths using absolute paths.
     -h, --help                     Print help information
         --name &lt;NAME&gt;              Name of indexer.
-        --namespace &lt;NAMESPACE&gt;    Namespace in which indexer belongs.
+        --namespace &lt;NAMESPACE&gt;    Namespace to which indexer belongs.
         --native                   Initialize an indexer with native execution enabled.
     -p, --path &lt;PATH&gt;              Path at which to create indexer.
+    -v, --verbose                  Enable verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-new"><a class="header" href="#forc-index-new"><code>forc index new</code></a></h1>
-<p>Create new indexer project at the provided path.</p>
+<p>Create a new indexer project in a new directory.</p>
 <pre><code class="language-bash">forc index new --namespace fuel --path /home/fuel/projects
 </code></pre>
 <pre><code class="language-text">USAGE:
@@ -1972,8 +1975,9 @@ OPTIONS:
         --absolute-paths           Resolve indexer asset filepaths using absolute paths.
     -h, --help                     Print help information
         --name &lt;NAME&gt;              Name of indexer.
-        --namespace &lt;NAMESPACE&gt;    Namespace in which indexer belongs.
+        --namespace &lt;NAMESPACE&gt;    Namespace to which indexer belongs.
         --native                   Whether to initialize an indexer with native execution enabled.
+    -v, --verbose &lt;verbose&gt;        Enable verbose output. [default: true]
 
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-check"><a class="header" href="#forc-index-check"><code>forc index check</code></a></h1>
@@ -2024,35 +2028,17 @@ OPTIONS:
     forc-index build [OPTIONS]
 
 OPTIONS:
-    -h, --help
-            Print help information
+    -h, --help                       Print help information
+        --locked                     Ensure that the Cargo.lock file is up-to-date.
+    -m, --manifest &lt;MANIFEST&gt;        Manifest file name of indexer being built.
+        --native                     Building for native execution.
+    -p, --path &lt;PATH&gt;                Path to the indexer project.
+        --profile &lt;PROFILE&gt;          Build with the given profile.
+    -r, --release                    Build optimized artifacts with the release profile.
+        --target &lt;TARGET&gt;            Target at which to compile. [default: wasm32-unknown-unknown]
+        --target-dir &lt;TARGET_DIR&gt;    Directory for all generated artifacts and intermediate files.
+    -v, --verbose                    Enable verbose output.
 
-        --locked
-            Ensure that the Cargo.lock file is up-to-date.
-
-    -m, --manifest &lt;MANIFEST&gt;
-            Manifest file name of indexer being built.
-
-        --native
-            Building for native execution.
-
-        --output-dir-root &lt;OUTPUT_DIR_ROOT&gt;
-            Path with which to prefix asset filepaths in the indexer manifest.
-
-    -p, --path &lt;PATH&gt;
-            Path to the indexer project.
-
-        --profile &lt;PROFILE&gt;
-            Build with the given profile.
-
-    -r, --release
-            Build optimized artifacts with the release profile.
-
-        --target &lt;TARGET&gt;
-            Target at which to compile.
-
-    -v, --verbose
-            Verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-start"><a class="header" href="#forc-index-start"><code>forc index start</code></a></h1>
 <p>Start a local Fuel Indexer service.</p>
@@ -2062,6 +2048,12 @@ OPTIONS:
     forc-index start [OPTIONS]
 
 OPTIONS:
+        --auth-enabled
+            Require users to authenticate for some operations.
+
+        --auth-strategy &lt;AUTH_STRATEGY&gt;
+            Authentication scheme used.
+
     -c, --config &lt;FILE&gt;
             Indexer service config file.
 
@@ -2086,6 +2078,15 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --jwt-expiry &lt;JWT_EXPIRY&gt;
+            Amount of time (seconds) before expiring token (if JWT scheme is specified).
+
+        --jwt-issuer &lt;JWT_ISSUER&gt;
+            Issuer of JWT claims (if JWT scheme is specified).
+
+        --jwt-secret &lt;JWT_SECRET&gt;
+            Secret used for JWT scheme (if JWT scheme is specified).
+
         --log-level &lt;LOG_LEVEL&gt;
             Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
             debug, error, warn]
@@ -2093,11 +2094,11 @@ OPTIONS:
     -m, --manifest &lt;FILE&gt;
             Index config file.
 
-        --max-body &lt;MAX_BODY&gt;
-            Max body size for the GraphQL API [default: 5242880]
+        --max-body-size &lt;MAX_BODY_SIZE&gt;
+            Max body size for GraphQL API requests. [default: 5242880]
 
-        --metrics &lt;metrics&gt;
-            Use Prometheus metrics reporting. [default: true]
+        --metrics
+            Use Prometheus metrics reporting.
 
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
@@ -2114,14 +2115,17 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
-        --run-migrations &lt;run-migrations&gt;
-            Run database migrations before starting service. [default: true]
+        --run-migrations
+            Run database migrations before starting service.
 
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
 
     -V, --version
             Print version information
+
+        --verbose
+            Enable verbose logging.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-deploy"><a class="header" href="#forc-index-deploy"><code>forc index deploy</code></a></h1>
 <p>Deploy an indexer to an indexer service.</p>
@@ -2131,42 +2135,20 @@ OPTIONS:
     forc-index deploy [OPTIONS]
 
 OPTIONS:
-        --auth &lt;AUTH&gt;
-            Authentication header value.
-
-    -h, --help
-            Print help information
-
-        --locked
-            Ensure that the Cargo.lock file is up-to-date.
-
-    -m, --manifest &lt;MANIFEST&gt;
-            Path to the manifest of indexer project being deployed.
-
-        --native
-            Building for native execution.
-
-        --output-dir-root &lt;OUTPUT_DIR_ROOT&gt;
-            Path with which to prefix asset filepaths in the indexer manifest.
-
-    -p, --path &lt;PATH&gt;
-            Path to the indexer project.
-
-        --profile &lt;PROFILE&gt;
-            Build with the given profile.
-
-    -r, --release
-            Build optimized artifacts with the release profile.
-
-        --target &lt;TARGET&gt;
-            Target at which to compile.
-
-        --url &lt;URL&gt;
-            URL at which to deploy indexer assets. [default: http://127.0.0.1:29987]
-
-    -v, --verbose
-            Verbose output.
-
+        --auth &lt;AUTH&gt;                Authentication header value.
+    -h, --help                       Print help information
+        --locked                     Ensure that the Cargo.lock file is up-to-date.
+    -m, --manifest &lt;MANIFEST&gt;        Path to the manifest of indexer project being deployed.
+        --native                     Building for native execution.
+    -p, --path &lt;PATH&gt;                Path to the indexer project.
+        --profile &lt;PROFILE&gt;          Build with the given profile.
+    -r, --release                    Build optimized artifacts with the release profile.
+        --skip-build                 Do not build before deploying.
+        --target &lt;TARGET&gt;            Target at which to compile. [default: wasm32-unknown-unknown]
+        --target-dir &lt;TARGET_DIR&gt;    Directory for all generated artifacts and intermediate files.
+        --url &lt;URL&gt;                  URL at which to deploy indexer assets. [default:
+                                     http://127.0.0.1:29987]
+    -v, --verbose                    Enable verbose logging.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-remove"><a class="header" href="#forc-index-remove"><code>forc index remove</code></a></h1>
 <p>Stop and remove a running indexer.</p>
@@ -2178,9 +2160,10 @@ OPTIONS:
 OPTIONS:
         --auth &lt;AUTH&gt;            Authentication header value.
     -h, --help                   Print help information
-    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of indexer project being deployed.
+    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of the indexer project being removed.
     -p, --path &lt;PATH&gt;            Path to the indexer project.
         --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://127.0.0.1:29987]
+    -v, --verbose                Enable verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-auth"><a class="header" href="#forc-index-auth"><code>forc index auth</code></a></h1>
 <p>Authenticate against an indexer operator.</p>
@@ -2209,9 +2192,10 @@ OPTIONS:
 OPTIONS:
         --auth &lt;AUTH&gt;            Authentication header value.
     -h, --help                   Print help information
-    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of indexer project being reverted.
+    -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of the indexer project being reverted.
     -p, --path &lt;PATH&gt;            Path of indexer project.
         --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://127.0.0.1:29987]
+    -v, --verbose                Enable verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-postgres"><a class="header" href="#forc-index-postgres">forc index postgres</a></h1>
 <p><code>forc index postgres</code> is provided as a way to simplify the setup and management of an embedded Postgres database. After you have installed <code>fuelup</code>, you can run the <code>forc index postgres help</code> command in your terminal to view the available commands.</p>

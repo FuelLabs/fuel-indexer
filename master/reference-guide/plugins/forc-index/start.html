@@ -155,6 +155,12 @@
     forc-index start [OPTIONS]
 
 OPTIONS:
+        --auth-enabled
+            Require users to authenticate for some operations.
+
+        --auth-strategy &lt;AUTH_STRATEGY&gt;
+            Authentication scheme used.
+
     -c, --config &lt;FILE&gt;
             Indexer service config file.
 
@@ -179,6 +185,15 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --jwt-expiry &lt;JWT_EXPIRY&gt;
+            Amount of time (seconds) before expiring token (if JWT scheme is specified).
+
+        --jwt-issuer &lt;JWT_ISSUER&gt;
+            Issuer of JWT claims (if JWT scheme is specified).
+
+        --jwt-secret &lt;JWT_SECRET&gt;
+            Secret used for JWT scheme (if JWT scheme is specified).
+
         --log-level &lt;LOG_LEVEL&gt;
             Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
             debug, error, warn]
@@ -186,11 +201,11 @@ OPTIONS:
     -m, --manifest &lt;FILE&gt;
             Index config file.
 
-        --max-body &lt;MAX_BODY&gt;
-            Max body size for the GraphQL API [default: 5242880]
+        --max-body-size &lt;MAX_BODY_SIZE&gt;
+            Max body size for GraphQL API requests. [default: 5242880]
 
-        --metrics &lt;metrics&gt;
-            Use Prometheus metrics reporting. [default: true]
+        --metrics
+            Use Prometheus metrics reporting.
 
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
@@ -207,14 +222,17 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
-        --run-migrations &lt;run-migrations&gt;
-            Run database migrations before starting service. [default: true]
+        --run-migrations
+            Run database migrations before starting service.
 
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
 
     -V, --version
             Print version information
+
+        --verbose
+            Enable verbose logging.
 </code></pre>
 
                     </main>
