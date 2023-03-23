@@ -185,7 +185,7 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 ```bash
 forc index start \
     --embedded-database
-    --fuel-node-host beta-3.fuel.network \
+    --fuel-node-host node-beta-2.fuel.network \
     --fuel-node-port 80
 ```
 
