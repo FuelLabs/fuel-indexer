@@ -1,15 +1,25 @@
 # Call
 
 ```rust, ignore
-use fuel_types::ContractId;
+use fuel_types::{AssetId, ContractId};
 pub struct Call {
-    id: ContractId,
-    param1: u64,
+    pub contract_id: ContractId,
+    pub to: ContractId,
+    pub amount: u64,
+    pub asset_id: AssetId,
+    pub gas: u64,
+    pub fn_name: String,
 }
 ```
 
 - A `Call` receipt is generated whenever a function is called in a Sway contract.
-- The `param1` field holds the function selector value as a hexadecimal.
+- The `fn_name` field contains the name of the called function from the aforementioned contract.
 - [Read more about `Call` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#return-receipt)
 
-At this time, you must use the `BlockData` and `TransactionData` data structures to access a `Call` receipt as shown in the [Block Explorer](../../../examples/block-explorer.md) example.
+You can handle functions that produce a `Call` receipt type by adding a parameter with the type `abi::Call`.
+
+```rust, ignore
+fn handle_log(call: abi::Call) {
+  // handle all functions that produce a Call receipt
+}
+```
