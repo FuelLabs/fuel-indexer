@@ -219,7 +219,7 @@
 <p>In this tutorial you will:</p>
 <ol>
 <li>Bootstrap your development environment.</li>
-<li>Create, build, and deploy an index to an indexer service hooked up to Fuel's <code>beta-2</code> testnet.</li>
+<li>Create, build, and deploy an index to an indexer service hooked up to Fuel's <code>beta-3</code> testnet.</li>
 <li>Query the indexer service for indexed data using GraphQL.</li>
 </ol>
 <h2 id="1-setting-up-your-environment"><a class="header" href="#1-setting-up-your-environment">1. Setting up your environment</a></h2>
@@ -283,7 +283,7 @@
 </blockquote>
 <pre><code class="language-bash">forc index start \
     --embedded-database                         # Setup and start a default database.
-    --fuel-node-host node-beta-2.fuel.network \ # Connect to a Fuel node at this host
+    --fuel-node-host node-beta-3.fuel.network \ # Connect to a Fuel node at this host
     --fuel-node-port 80                         # and port, and monitor the network.
 </code></pre>
 <p>You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:</p>
@@ -341,7 +341,7 @@ Take a quick tour.
 `forc index new`
     Create a new indexer.
 `forc index init`
-    Create a new index in an existing directory.
+    Create a new indexer in an existing directory.
 `forc index start`
     Start a local indexer service.
 `forc index build`
