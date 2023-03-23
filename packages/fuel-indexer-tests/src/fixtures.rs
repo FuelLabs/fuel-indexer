@@ -50,7 +50,9 @@ impl TestPostgresDb {
 
         // The server connection string serves as a way to connect directly to the Postgres server.
         // Example database URL: postgres://postgres:my-secret@localhost:5432
-        let connection_config: DatabaseConfig = std::env::var("DATABASE_URL")?.parse()?;
+        let connection_config: DatabaseConfig = std::env::var("DATABASE_URL")
+            .unwrap_or(defaults::POSTGRES_URL.to_string())
+            .parse()?;
         let server_connection_str = connection_config.to_string();
 
         let DatabaseConfig::Postgres {
