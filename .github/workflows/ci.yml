@@ -228,8 +228,8 @@ jobs:
       - name: wasm-snip
         run: cargo install wasm-snip
 
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
+      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
+        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
 
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'

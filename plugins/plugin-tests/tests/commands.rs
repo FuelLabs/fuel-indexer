@@ -131,7 +131,7 @@ fn new_command_initializes_project_at_new_directory() {
 fn init_temp_dir() -> (TempDir, PathBuf, String) {
     let name = "plugin_test";
     let temp_dir = Builder::new()
-        .prefix(name)
+        .prefix(&name)
         .tempdir()
         .expect("Failed to create temp dir");
     let temp_dir_path = temp_dir.path().to_path_buf();
