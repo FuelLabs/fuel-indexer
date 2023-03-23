@@ -148,17 +148,24 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="call"><a class="header" href="#call">Call</a></h1>
-<pre><code class="language-rust  ignore">use fuel_types::ContractId;
+<pre><code class="language-rust  ignore">use fuel_types::{AssetId, ContractId};
 pub struct Call {
-    id: ContractId,
-    param1: u64,
+    pub contract_id: ContractId,
+    pub to: ContractId,
+    pub amount: u64,
+    pub asset_id: AssetId,
+    pub gas: u64,
+    pub fn_name: String,
 }</code></pre>
 <ul>
 <li>A <code>Call</code> receipt is generated whenever a function is called in a Sway contract.</li>
-<li>The <code>param1</code> field holds the function selector value as a hexadecimal.</li>
+<li>The <code>fn_name</code> field contains the name of the called function from the aforementioned contract.</li>
 <li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#return-receipt">Read more about <code>Call</code> in the Fuel protocol ABI spec</a></li>
 </ul>
-<p>At this time, you must use the <code>BlockData</code> and <code>TransactionData</code> data structures to access a <code>Call</code> receipt as shown in the <a href="../../../examples/block-explorer.html">Block Explorer</a> example.</p>
+<p>You can handle functions that produce a <code>Call</code> receipt type by adding a parameter with the type <code>abi::Call</code>.</p>
+<pre><code class="language-rust  ignore">fn handle_log(call: abi::Call) {
+  // handle all functions that produce a Call receipt
+}</code></pre>
 
                     </main>
 
