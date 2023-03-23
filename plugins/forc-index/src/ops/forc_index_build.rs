@@ -53,8 +53,6 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
 
     let (root_dir, manifest, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
-    println!("root_dir: {:?}", root_dir);
-    println!("manifest: {:?}", manifest);
 
     // Must be in the directory of the index being built
     let cargo_manifest_path = root_dir.join(defaults::CARGO_MANIFEST_FILE_NAME);
