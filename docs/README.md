@@ -97,7 +97,7 @@ rustup target add wasm32-unknown-unknown
 In this tutorial you will:
 
 1. Bootstrap your development environment.
-2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-2` testnet.
+2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-3` testnet.
 3. Query the indexer service for indexed data using GraphQL.
 
 ## 1. Setting up your environment
@@ -183,7 +183,7 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 ```bash
 forc index start \
     --embedded-database                         # Setup and start a default database.
-    --fuel-node-host node-beta-2.fuel.network \ # Connect to a Fuel node at this host
+    --fuel-node-host node-beta-3.fuel.network \ # Connect to a Fuel node at this host
     --fuel-node-port 80                         # and port, and monitor the network.
 ```
 
@@ -248,7 +248,7 @@ Take a quick tour.
 `forc index new`
     Create a new indexer.
 `forc index init`
-    Create a new index in an existing directory.
+    Create a new indexer in an existing directory.
 `forc index start`
     Start a local indexer service.
 `forc index build`
