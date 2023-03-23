@@ -197,7 +197,7 @@
 <p>On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add PostgreSQL to your system by running <code>brew install postgresql</code>. You can then start the service through <code>brew services start postgresql</code>. You'll need to create a database for your index data, which you can do by running <code>createdb [DATABASE_NAME]</code>. You may also need to create the <code>postgres</code> role; you can do so by running <code>createuser -s postgres</code>.</p>
 <h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
 <p>For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new <code>postgres</code> user account; you can switch to that account by running <code>sudo -i -u postgres</code>. After you have switched accounts, you may need to create a <code>postgres</code> database role by running <code>createuser --interactive</code>. You will be asked a few questions; the name of the role should be <code>postgres</code> and you should elect for the new role to be a superuser. Finally, you can create a database by running <code>createdb [DATABASE_NAME]</code>.</p>
-<p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]</code>.</p>
+<p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@localhost:5432/[DATABASE_NAME]</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="wasm"><a class="header" href="#wasm">WASM</a></h1>
 <p>Two additonal cargo components will be required to build your indexers: <code>wasm-snip</code> and the <code>wasm32-unknown-unknown</code> target.</p>
 <blockquote>
@@ -256,23 +256,25 @@
 <pre><code class="language-text">+--------+------------------------+---------------------------------------------------------+
 | Status |       Component        |                         Details                         |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-indexer binary    |  /Users/me/.fuelup/bin/fuel-indexer                     |
+|   ⛔️   | fuel-indexer binary    |  Can't locate fuel-indexer.                             |
 +--------+------------------------+---------------------------------------------------------+
-|   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).               |
+|   ✅   | fuel-indexer service   |  Local service found: PID(63967) | Port(29987).         |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | psql                   |  /usr/local/bin/psql                                    |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-core              |  /Users/me/.fuelup/bin/fuel-core                        |
+|   ✅   | fuel-core              |  /Users/me/.cargo/bin/fuel-core                         |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | docker                 |  /usr/local/bin/docker                                  |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuelup                 |  /Users/me/.fuelup/bin/fuelup                           |
+|   ⛔️   | fuelup                 |  Can't locate fuelup.                                   |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | wasm-snip              |  /Users/me/.cargo/bin/wasm-snip                         |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | forc-postgres          |  /Users/me/.fuelup/bin/fuelup                           |
+|   ⛔️   | forc-postgres          |  Can't locate fuelup.                                   |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | rustc                  |  /Users/me/.cargo/bin/rustc                             |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | forc-wallet            |  /Users/me/.cargo/bin/forc-wallet                       |
 +--------+------------------------+---------------------------------------------------------+
 </code></pre>
 <h3 id="22-setup-a-database-and-start-the-indexer-service"><a class="header" href="#22-setup-a-database-and-start-the-indexer-service">2.2 Setup a Database and Start the Indexer Service</a></h3>
@@ -282,9 +284,9 @@
 <p>IMPORTANT: Ensure that any local PostgreSQL instance that is running on port <code>5432</code> is stopped.</p>
 </blockquote>
 <pre><code class="language-bash">forc index start \
-    --embedded-database                         # Setup and start a default database.
-    --fuel-node-host node-beta-3.fuel.network \ # Connect to a Fuel node at this host
-    --fuel-node-port 80                         # and port, and monitor the network.
+    --embedded-database
+    --fuel-node-host beta-3.fuel.network \
+    --fuel-node-port 80
 </code></pre>
 <p>You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:</p>
 <pre><code class="language-text">📦 Downloading, unpacking, and bootstrapping database...
@@ -350,6 +352,8 @@ Take a quick tour.
     Deploy your indexer.
 `forc index remove`
     Stop a running indexer.
+`forc index revert`
+    Revert a deployed indexer.
 `forc index auth`
     Authenticate against an indexer service.
 </code></pre>
@@ -361,40 +365,14 @@ Take a quick tour.
 <pre><code class="language-bash">forc index deploy
 </code></pre>
 <p>If all goes well, you should see the following:</p>
-<pre><code class="language-text">▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
-▪▪▪▪▪ ✅ Build succeeded.
-
-Deploying indexer at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
-▹▸▹▹▹ 🚀 Deploying...
-{
-  &quot;assets&quot;: [
-    {
-      &quot;digest&quot;: &quot;79e74d6a7b68a35aeb9aa2dd7f6083dae5fdba5b6a2f199529b6c49624d1e27b&quot;,
-      &quot;id&quot;: 1,
-      &quot;index_id&quot;: 1,
-      &quot;version&quot;: 1
-    },
-    {
-      &quot;digest&quot;: &quot;4415628d9ea79b3c3f1e6f02b1af3416c4d0b261b75abe3cc81b77b7902549c5&quot;,
-      &quot;id&quot;: 1,
-      &quot;index_id&quot;: 1,
-      &quot;version&quot;: 1
-    },
-    {
-      &quot;digest&quot;: &quot;e901eba95ce8b4d1c159c5d66f24276dc911e87dbff55fb2c10d8b371528eacc&quot;,
-      &quot;id&quot;: 1,
-      &quot;index_id&quot;: 1,
-      &quot;version&quot;: 1
-    }
-  ],
-  &quot;success&quot;: &quot;true&quot;
-}
+<pre><code class="language-text">▹▹▹▹▹ ⏰ Building...                         Finished dev [unoptimized + debuginfo] target(s) in 0.96s
+▪▪▪▪▪ ✅ Build succeeded.                    Deploying indexer
 ▪▪▪▪▪ ✅ Successfully deployed indexer.
 </code></pre>
 <h2 id="3-querying-for-data"><a class="header" href="#3-querying-for-data">3. Querying for data</a></h2>
 <p>With our indexer deployed, we should be able to query for newly indexed data after a few seconds.</p>
 <p>Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.</p>
-<pre><code class="language-bash">curl -X POST http://127.0.0.1:29987/api/graph/my_project/hello_index \
+<pre><code class="language-bash">curl -X POST http://localhost:29987/api/graph/my_project/hello_indexer \
    -H 'content-type: application/json' \
    -d '{&quot;query&quot;: &quot;query { tx { id hash block }}&quot;, &quot;params&quot;: &quot;b&quot;}' \
 | json_pp
@@ -417,6 +395,8 @@ Deploying indexer at hello_index.manifest.yaml to http://127.0.0.1:29987/api/ind
    },
 ]
 </code></pre>
+<h3 id="finished-"><a class="header" href="#finished-">Finished! 🥳</a></h3>
+<p>Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you <a href="https://fuellabs.github.io/fuel-indexer/master/"><strong>read the book</strong></a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="starting-the-fuel-indexer"><a class="header" href="#starting-the-fuel-indexer">Starting the Fuel Indexer</a></h1>
 <h2 id="using-cli-options"><a class="header" href="#using-cli-options">Using CLI options</a></h2>
 <pre><code class="language-text">Standalone binary for the fuel indexer service.
@@ -438,13 +418,13 @@ OPTIONS:
             Database type. [default: postgres] [possible values: postgres]
 
         --fuel-node-host &lt;FUEL_NODE_HOST&gt;
-            Host of the running Fuel node. [default: 127.0.0.1]
+            Host of the running Fuel node. [default: localhost]
 
         --fuel-node-port &lt;FUEL_NODE_PORT&gt;
             Listening port of the running Fuel node. [default: 4000]
 
         --graphql-api-host &lt;GRAPHQL_API_HOST&gt;
-            GraphQL API host. [default: 127.0.0.1]
+            GraphQL API host. [default: localhost]
 
         --graphql-api-port &lt;GRAPHQL_API_PORT&gt;
             GraphQL API port. [default: 29987]
@@ -524,7 +504,7 @@ OPTIONS:
 # fuel_node:
 
 #   # Host of the running Fuel node.
-#   host: 127.0.0.1
+#   host: localhost
 
 #   # Listening port of the running Fuel node.
 #   port: 4000
@@ -535,7 +515,7 @@ OPTIONS:
 
 # graphql_api:
 #   # GraphQL API host.
-#   host: 127.0.0.1
+#   host: localhost
 
 #   # GraphQL API port.
 #   port: 29987
@@ -560,7 +540,7 @@ OPTIONS:
 #     password: password
 
 #     # Postgres host.
-#     host: 127.0.0.1
+#     host: localhost
 
 #     # Postgres port.
 #     port: 5432
@@ -1026,7 +1006,7 @@ mod explorer_index {
     }
 }</code></pre>
 <p>Once blocks have been added to the database by the indexer, you can query for them by using a query similar to the following:</p>
-<pre><code class="language-sh">curl -X POST http://127.0.0.1:29987/api/graph/fuel_examples/explorer_index \
+<pre><code class="language-sh">curl -X POST http://localhost:29987/api/graph/fuel_examples/explorer_indexer \
    -H 'content-type: application/json' \
    -d '{&quot;query&quot;: &quot;query { block { id height timestamp }}&quot;, &quot;params&quot;: &quot;b&quot;}' \
 | json_pp
@@ -1790,7 +1770,7 @@ OPTIONS:
             Database type. [default: postgres] [possible values: postgres]
 
         --graphql-api-host &lt;GRAPHQL_API_HOST&gt;
-            GraphQL API host. [default: 127.0.0.1]
+            GraphQL API host. [default: localhost]
 
         --graphql-api-port &lt;GRAPHQL_API_PORT&gt;
             GraphQL API port. [default: 29987]
@@ -2002,12 +1982,12 @@ OPTIONS:
             Print help information
 
         --url &lt;URL&gt;
-            URL at which to find indexer service. [default: http://127.0.0.1:29987]
+            URL at which to find indexer service. [default: http://localhost:29987]
 </code></pre>
 <p>You can expect the command output to look something like this example in which the requisite components are installed but the indexer service is not running:</p>
 <pre><code class="language-text">➜  forc index check
 
-❌ Could not connect to indexer service: error sending request for url (http://127.0.0.1:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
+❌ Could not connect to indexer service: error sending request for url (http://localhost:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
 
 +--------+------------------------+----------------------------------------------------------------------------+
 | Status |       Component        |                                  Details                                   |
@@ -2071,13 +2051,13 @@ OPTIONS:
             Automatically create and start database using provided options or defaults.
 
         --fuel-node-host &lt;FUEL_NODE_HOST&gt;
-            Host of the running Fuel node. [default: 127.0.0.1]
+            Host of the running Fuel node. [default: localhost]
 
         --fuel-node-port &lt;FUEL_NODE_PORT&gt;
             Listening port of the running Fuel node. [default: 4000]
 
         --graphql-api-host &lt;GRAPHQL_API_HOST&gt;
-            GraphQL API host. [default: 127.0.0.1]
+            GraphQL API host. [default: localhost]
 
         --graphql-api-port &lt;GRAPHQL_API_PORT&gt;
             GraphQL API port. [default: 29987]
@@ -2154,7 +2134,7 @@ OPTIONS:
         --target &lt;TARGET&gt;            Target at which to compile. [default: wasm32-unknown-unknown]
         --target-dir &lt;TARGET_DIR&gt;    Directory for all generated artifacts and intermediate files.
         --url &lt;URL&gt;                  URL at which to deploy indexer assets. [default:
-                                     http://127.0.0.1:29987]
+                                     http://localhost:29987]
     -v, --verbose                    Enable verbose logging.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-remove"><a class="header" href="#forc-index-remove"><code>forc index remove</code></a></h1>
@@ -2169,7 +2149,7 @@ OPTIONS:
     -h, --help                   Print help information
     -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of the indexer project being removed.
     -p, --path &lt;PATH&gt;            Path to the indexer project.
-        --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://127.0.0.1:29987]
+        --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://localhost:29987]
     -v, --verbose                Enable verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-auth"><a class="header" href="#forc-index-auth"><code>forc index auth</code></a></h1>
@@ -2186,7 +2166,7 @@ OPTIONS:
         --account &lt;ACCOUNT&gt;    Index of account to use for signing.
     -h, --help                 Print help information
         --url &lt;URL&gt;            URL at which to deploy indexer assets. [default:
-                               http://127.0.0.1:29987]
+                               http://localhost:29987]
     -v, --verbose              Verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-revert"><a class="header" href="#forc-index-revert"><code>forc index revert</code></a></h1>
@@ -2201,7 +2181,7 @@ OPTIONS:
     -h, --help                   Print help information
     -m, --manifest &lt;MANIFEST&gt;    Path to the manifest of the indexer project being reverted.
     -p, --path &lt;PATH&gt;            Path of indexer project.
-        --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://127.0.0.1:29987]
+        --url &lt;URL&gt;              URL at which indexer is deployed. [default: http://localhost:29987]
     -v, --verbose                Enable verbose output.
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="forc-index-postgres"><a class="header" href="#forc-index-postgres">forc index postgres</a></h1>
@@ -2378,7 +2358,7 @@ Token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiODNlNjhiOTFmNDhjYWM4M....
 </blockquote>
 <p>On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add PostgreSQL to your system by running <code>brew install postgresql</code>. You can then start the service through <code>brew services start postgresql</code>. You'll need to create a database for your indexed data, which you can do by running <code>createdb [DATABASE_NAME]</code>. You may also need to create the <code>postgres</code> role; you can do so by running <code>createuser -s postgres</code>.</p>
 <p>For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new <code>postgres</code> user account; you can switch to that account by running <code>sudo -i -u postgres</code>. After you have switched accounts, you may need to create a <code>postgres</code> database role by running <code>createuser --interactive</code>. You will be asked a few questions; the name of the role should be <code>postgres</code> and you should elect for the new role to be a superuser. Finally, you can create a database by running <code>createdb [DATABASE_NAME]</code>.</p>
-<p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]</code>.</p>
+<p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@localhost:5432/[DATABASE_NAME]</code>.</p>
 <h3 id="sqlx"><a class="header" href="#sqlx">SQLx</a></h3>
 <p>After setting up your database, you should install <code>sqlx-cli</code> in order to run migrations for your indexer service. You can do so by running <code>cargo install sqlx-cli --features postgres</code>. Once installed, you can run the migrations by running the following command after changing <code>DATABASE_URL</code> to match your setup.</p>
 <h2 id="building-from-source"><a class="header" href="#building-from-source">Building from Source</a></h2>

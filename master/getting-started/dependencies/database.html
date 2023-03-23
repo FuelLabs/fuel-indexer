@@ -157,7 +157,7 @@
 <p>On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add PostgreSQL to your system by running <code>brew install postgresql</code>. You can then start the service through <code>brew services start postgresql</code>. You'll need to create a database for your index data, which you can do by running <code>createdb [DATABASE_NAME]</code>. You may also need to create the <code>postgres</code> role; you can do so by running <code>createuser -s postgres</code>.</p>
 <h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
 <p>For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new <code>postgres</code> user account; you can switch to that account by running <code>sudo -i -u postgres</code>. After you have switched accounts, you may need to create a <code>postgres</code> database role by running <code>createuser --interactive</code>. You will be asked a few questions; the name of the role should be <code>postgres</code> and you should elect for the new role to be a superuser. Finally, you can create a database by running <code>createdb [DATABASE_NAME]</code>.</p>
-<p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]</code>.</p>
+<p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@localhost:5432/[DATABASE_NAME]</code>.</p>
 
                     </main>
 
