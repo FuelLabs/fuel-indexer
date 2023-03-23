@@ -17,7 +17,7 @@ forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.35.0" }
 fuel-indexer-lib = { workspace = true }
 fuel-tx = { version = "0.26.0", features = ["builder"] }
-fuels-types = { version = "0.37", default-features = false }
+fuels-types = { version = "0.38.1", default-features = false }
 hex = "0.4.3"
 hyper-rustls = { version = "0.23", features = ["http2"] }
 indicatif = "0.17"
