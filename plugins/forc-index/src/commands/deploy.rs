@@ -3,7 +3,7 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Deploy an index asset bundle to a remote or locally running indexer server.
+/// Deploy an indexer to an indexer service.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// URL at which to deploy indexer assets
@@ -18,7 +18,7 @@ pub struct Command {
     )]
     pub manifest: Option<String>,
 
-    /// Path of index project.
+    /// Path of indexer project.
     #[clap(short, long, help = "Path to the indexer project.")]
     pub path: Option<PathBuf>,
 
@@ -26,10 +26,9 @@ pub struct Command {
     #[clap(long, help = "Authentication header value.")]
     pub auth: Option<String>,
 
-    // The following args are passed to `forc index build`
     /// Target at which to compile.
-    #[clap(long, help = "Target at which to compile.")]
-    pub target: Option<String>,
+    #[clap(long, default_value = defaults::INDEXER_TARGET, help = "Target at which to compile.")]
+    pub target: String,
 
     /// Build optimized artifacts with the release profile.
     #[clap(
@@ -43,10 +42,6 @@ pub struct Command {
     #[clap(long, help = "Build with the given profile.")]
     pub profile: Option<String>,
 
-    /// Verbose output.
-    #[clap(short, long, help = "Verbose output.")]
-    pub verbose: bool,
-
     /// Ensure that the Cargo.lock file is up-to-date.
     #[clap(long, help = "Ensure that the Cargo.lock file is up-to-date.")]
     pub locked: bool,
@@ -55,12 +50,20 @@ pub struct Command {
     #[clap(long, help = "Building for native execution.")]
     pub native: bool,
 
-    /// Path with which to prefix asset filepaths in the index manifest.
+    /// Directory for all generated artifacts and intermediate files.
     #[clap(
         long,
-        help = "Path with which to prefix asset filepaths in the index manifest."
+        help = "Directory for all generated artifacts and intermediate files."
     )]
-    pub output_dir_root: Option<PathBuf>,
+    pub target_dir: Option<PathBuf>,
+
+    /// Enable verbose logging.
+    #[clap(short, long, help = "Enable verbose logging.")]
+    pub verbose: bool,
+
+    /// Do not build before deploying.
+    #[clap(long, help = "Do not build before deploying.")]
+    pub skip_build: bool,
 }
 
 pub fn exec(command: Command) -> Result<()> {

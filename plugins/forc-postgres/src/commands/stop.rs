@@ -17,6 +17,10 @@ pub struct Command {
     /// Fuel indexer configuration file.
     #[clap(short, long, help = "Fuel indexer configuration file.")]
     pub config: Option<PathBuf>,
+
+    /// Verbose output.
+    #[clap(short, long, help = "Verbose output.")]
+    pub verbose: bool,
 }
 
 pub async fn exec(command: Command) -> Result<()> {
@@ -24,6 +28,7 @@ pub async fn exec(command: Command) -> Result<()> {
         name,
         database_dir,
         config,
+        verbose,
     } = command;
 
     let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
@@ -32,6 +37,7 @@ pub async fn exec(command: Command) -> Result<()> {
         name,
         database_dir: Some(database_dir),
         config,
+        verbose,
     })
     .await?;
 

@@ -1,19 +1,28 @@
 # `forc index deploy`
 
-Deploy a given indexer project to a particular endpoint
+Deploy an indexer to an indexer service.
 
 ```bash
-forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
+forc index deploy --url https://indexer.fuel.network
 ```
 
 ```text
 USAGE:
-    forc-index deploy [OPTIONS] --manifest <MANIFEST>
+    forc-index deploy [OPTIONS]
 
 OPTIONS:
-        --auth <AUTH>            Authentication header value.
-    -h, --help                   Print help information
-        --manifest <MANIFEST>    Path of the indexer manifest to upload.
-        --url <URL>              URL at which to upload indexer assets. [default:
-                                 http://127.0.0.1:29987]
+        --auth <AUTH>                Authentication header value.
+    -h, --help                       Print help information
+        --locked                     Ensure that the Cargo.lock file is up-to-date.
+    -m, --manifest <MANIFEST>        Path to the manifest of indexer project being deployed.
+        --native                     Building for native execution.
+    -p, --path <PATH>                Path to the indexer project.
+        --profile <PROFILE>          Build with the given profile.
+    -r, --release                    Build optimized artifacts with the release profile.
+        --skip-build                 Do not build before deploying.
+        --target <TARGET>            Target at which to compile. [default: wasm32-unknown-unknown]
+        --target-dir <TARGET_DIR>    Directory for all generated artifacts and intermediate files.
+        --url <URL>                  URL at which to deploy indexer assets. [default:
+                                     http://127.0.0.1:29987]
+    -v, --verbose                    Enable verbose logging.
 ```

@@ -6,10 +6,10 @@ It is important to note that authentication is disabled by default. However, if 
 
 ## Usage
 
-Below is a demonstration of basic JWT authentication using an indexer operator at "https://index.swayswap.io"
+Below is a demonstration of basic JWT authentication using an indexer operator at "https://indexer.fuel.network"
 
 ```bash
-forc index auth --account 0 --url https://index.swayswap.io:29987
+forc index auth --url https://indexer.fuel.network:29987
 ```
 
 You will first be prompted for the password for your wallet:
@@ -22,7 +22,7 @@ After successfully entering your wallet password you should be presented with yo
 
 
 ```text
-✅ Successfully authenticated at https://index.swayswap.io:29987/api/auth/signature.
+✅ Successfully authenticated at https://indexer.fuel.network:29987/api/auth/signature.
 
 Token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiODNlNjhiOTFmNDhjYWM4M....
 ```

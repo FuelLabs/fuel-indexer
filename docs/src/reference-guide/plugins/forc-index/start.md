@@ -11,6 +11,12 @@ USAGE:
     forc-index start [OPTIONS]
 
 OPTIONS:
+        --auth-enabled
+            Require users to authenticate for some operations.
+
+        --auth-strategy <AUTH_STRATEGY>
+            Authentication scheme used.
+
     -c, --config <FILE>
             Indexer service config file.
 
@@ -35,6 +41,15 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --jwt-expiry <JWT_EXPIRY>
+            Amount of time (seconds) before expiring token (if JWT scheme is specified).
+
+        --jwt-issuer <JWT_ISSUER>
+            Issuer of JWT claims (if JWT scheme is specified).
+
+        --jwt-secret <JWT_SECRET>
+            Secret used for JWT scheme (if JWT scheme is specified).
+
         --log-level <LOG_LEVEL>
             Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
             debug, error, warn]
@@ -42,11 +57,11 @@ OPTIONS:
     -m, --manifest <FILE>
             Index config file.
 
-        --max-body <MAX_BODY>
-            Max body size for the GraphQL API [default: 5242880]
+        --max-body-size <MAX_BODY_SIZE>
+            Max body size for GraphQL API requests. [default: 5242880]
 
-        --metrics <metrics>
-            Use Prometheus metrics reporting. [default: true]
+        --metrics
+            Use Prometheus metrics reporting.
 
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.
@@ -63,12 +78,15 @@ OPTIONS:
         --postgres-user <POSTGRES_USER>
             Postgres username.
 
-        --run-migrations <run-migrations>
-            Run database migrations before starting service. [default: true]
+        --run-migrations
+            Run database migrations before starting service.
 
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
 
     -V, --version
             Print version information
+
+        --verbose
+            Enable verbose logging.
 ```

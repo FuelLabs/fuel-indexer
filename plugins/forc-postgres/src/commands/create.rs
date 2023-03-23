@@ -63,6 +63,10 @@ pub struct Command {
     /// Fuel indexer configuration file.
     #[clap(short, long, help = "Fuel indexer configuration file.")]
     pub config: Option<PathBuf>,
+
+    /// Verbose output.
+    #[clap(short, long, help = "Verbose output.")]
+    pub verbose: bool,
 }
 
 impl Default for Command {
@@ -80,6 +84,7 @@ impl Default for Command {
             timeout: None,
             migration_dir: None,
             postgres_version: PostgresVersion::V14,
+            verbose: false,
         }
     }
 }
@@ -98,6 +103,7 @@ pub async fn exec(command: Box<Command>) -> Result<()> {
         postgres_version,
         start,
         config,
+        verbose,
     } = *command;
 
     let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
@@ -115,6 +121,7 @@ pub async fn exec(command: Box<Command>) -> Result<()> {
         postgres_version,
         start,
         config,
+        verbose,
     })
     .await?;
     Ok(())

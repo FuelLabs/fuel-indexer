@@ -27,7 +27,11 @@ fn derive_signature_from_output(o: &str) -> String {
 }
 
 pub fn init(command: AuthCommand) -> anyhow::Result<()> {
-    let AuthCommand { url, account, .. } = command;
+    let AuthCommand {
+        url,
+        account,
+        verbose,
+    } = command;
 
     let target = format!("{url}/api/auth/nonce");
 
@@ -95,10 +99,14 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
     let response: SignatureResponse = res.json().unwrap();
 
     if let Some(token) = response.token {
-        info!(
-            "\n✅ Successfully authenticated at {target}.\n\nToken: {}",
-            token
-        );
+        if verbose {
+            info!(
+                "\n✅ Successfully authenticated at {target}.\n\nToken: {}",
+                token
+            );
+        } else {
+            info!("\n✅ Authenticated successfully.");
+        }
     } else {
         error!("\n❌ Failed to produce a token.");
     }
