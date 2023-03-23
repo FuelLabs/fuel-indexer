@@ -105,6 +105,15 @@ fn process_fn_items(
                 }
             }
         })
+        // Add an arm for a unit struct in case of empty data fields
+        .chain(
+            vec![quote! {
+                u64::MAX => {
+                    {}
+                }
+            }]
+            .into_iter(),
+        )
         .collect::<Vec<proc_macro2::TokenStream>>();
 
     let abi_type_decoders = abi_types
@@ -463,10 +472,20 @@ fn process_fn_items(
                                 }
                             }
                             Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
-                                let mut buf = [0u8; 8];
-                                buf.copy_from_slice(&data[0..8]);
-                                let type_id = u64::from_be_bytes(buf);
-                                let receipt = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data: data[8..].to_vec() };
+                                // It's possible that the data field was generated from an empty Sway `Bytes` array
+                                // in the send_message() instruction in which case the data field in the receipt will
+                                // have no type information or data to decode, so we decode an empty vector to a unit struct
+                                let type_id = match data.get(..8) {
+                                    Some(buffer) => u64::from_be_bytes(<[u8; 8]>::try_from(&buffer[..]).expect("Could not get type ID for data in MessageOut receipt")),
+                                    None => u64::MAX,
+                                };
+
+                                let data = match data.get(8..) {
+                                    Some(buffer) => buffer.to_vec(),
+                                    None => Vec::<u8>::new(),
+                                };
+
+                                let receipt = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
                                 decoder.decode_messageout(type_id, receipt);
                             }
                             Receipt::ScriptResult { result, gas_used } => {
