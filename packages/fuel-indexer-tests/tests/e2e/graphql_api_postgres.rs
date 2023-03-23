@@ -63,7 +63,7 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .body(r#"{"query": "query { block { id height timestamp }}", "params": "b"}"#)
         .send()
@@ -107,7 +107,7 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .body(r#"{"query": "query { optionentity { int_required int_optional_some addr_optional_none }}", "params": "b"}"#)
         .send()
@@ -152,7 +152,7 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .body(
             r#"{"query": "query { tx { block { id height } id timestamp }}", "params": "b"}"#,
@@ -268,7 +268,7 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
         .json(&deeply_nested_query)
         .send()
         .await
@@ -356,7 +356,7 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .post("http://localhost:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .body(
             r#"{"query": "query { sportsteam { id name municipality { id name } } }", "params": "b"}"#,

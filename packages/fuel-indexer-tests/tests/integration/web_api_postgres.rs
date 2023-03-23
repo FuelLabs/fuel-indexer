@@ -32,13 +32,13 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
 
     let client = http_client();
     let _ = client
-        .get("http://127.0.0.1:29987/api/health")
+        .get("http://localhost:29987/api/health")
         .send()
         .await
         .unwrap();
 
     let resp = client
-        .get("http://127.0.0.1:29987/api/metrics")
+        .get("http://localhost:29987/api/metrics")
         .send()
         .await
         .unwrap()
@@ -69,13 +69,13 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 
     let client = http_client();
     let _ = client
-        .get("http://127.0.0.1:29987/api/health")
+        .get("http://localhost:29987/api/health")
         .send()
         .await
         .unwrap();
 
     let resp = client
-        .get("http://127.0.0.1:29987/api/metrics")
+        .get("http://localhost:29987/api/metrics")
         .send()
         .await
         .unwrap()
@@ -138,7 +138,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/index/test_namespace/simple_wasm_executor")
+        .post("http://localhost:29987/api/index/test_namespace/simple_wasm_executor")
         .multipart(form)
         .header(CONTENT_TYPE, "multipart/form-data".to_owned())
         .header(AUTHORIZATION, "foo".to_owned())
@@ -199,7 +199,7 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
     let server_handle = tokio::spawn(server);
 
     let resp = http_client()
-        .post("http://127.0.0.1:29987/api/auth/signature")
+        .post("http://localhost:29987/api/auth/signature")
         .header(CONTENT_TYPE, "application/json".to_owned())
         .json(&SignatureRequest {
             signature: SIGNATURE.to_string(),

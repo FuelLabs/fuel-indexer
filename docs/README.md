@@ -277,7 +277,7 @@ If all goes well, you should see the following:
 ▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
 ▪▪▪▪▪ ✅ Build succeeded.
 
-Deploying indexer at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
+Deploying indexer at hello_index.manifest.yaml to http://localhost:29987/api/index/my_project/hello_index
 ▹▸▹▹▹ 🚀 Deploying...
 {
   "assets": [
@@ -312,7 +312,7 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```bash
-curl -X POST http://127.0.0.1:29987/api/graph/my_project/hello_index \
+curl -X POST http://localhost:29987/api/graph/my_project/hello_index \
    -H 'content-type: application/json' \
    -d '{"query": "query { tx { id hash block }}", "params": "b"}' \
 | json_pp
@@ -477,7 +477,7 @@ On macOS systems, you can install PostgreSQL through Homebrew. If it isn't prese
 
 For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new `postgres` user account; you can switch to that account by running `sudo -i -u postgres`. After you have switched accounts, you may need to create a `postgres` database role by running `createuser --interactive`. You will be asked a few questions; the name of the role should be `postgres` and you should elect for the new role to be a superuser. Finally, you can create a database by running `createdb [DATABASE_NAME]`.
 
-In either case, your PostgreSQL database should now be accessible at `postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]`.
+In either case, your PostgreSQL database should now be accessible at `postgres://postgres@localhost:5432/[DATABASE_NAME]`.
 
 ### SQLx
 
