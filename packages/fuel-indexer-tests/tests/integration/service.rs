@@ -67,7 +67,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
     let _ = contract.methods().gimme_someevent(78).call().await;
     let _ = contract.methods().gimme_anotherevent(899).call().await;
 
-    let mut srvc = indexer_service_postgres().await;
+    let mut srvc = indexer_service_postgres(None).await;
 
     let manifest: Manifest =
         serde_yaml::from_str(SIMPLE_WASM_MANIFEST).expect("Bad yaml file.");

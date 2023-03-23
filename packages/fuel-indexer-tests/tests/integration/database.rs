@@ -64,12 +64,15 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         .await
         .expect("Connection pool error");
 
-    let manager = SchemaManager::new(pool.clone());
-
     let mut conn = pool
         .acquire()
         .await
         .expect("Failed to acquire indexer connection");
+    queries::run_migration(&mut conn)
+        .await
+        .expect("Failed to run migrations");
+
+    let manager = SchemaManager::new(pool.clone());
 
     let manifest = Manifest::from_str(SIMPLE_WASM_MANIFEST).unwrap();
 

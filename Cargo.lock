@@ -2851,6 +2851,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.16",
+ "url",
 ]
 
 [[package]]
@@ -2985,9 +2986,11 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "sqlx",
+ "thiserror",
  "tokio",
  "tracing",
  "tracing-subscriber 0.2.25",
+ "url",
  "wasmer",
  "wasmer-compiler-cranelift",
  "wasmer-engine-universal",

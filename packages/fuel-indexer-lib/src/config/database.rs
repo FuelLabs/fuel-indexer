@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     config::{Env, IndexerConfigResult},
     defaults,
@@ -6,6 +8,7 @@ use crate::{
 pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
+use url::{ParseError, Url};
 
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -109,5 +112,38 @@ impl Default for DatabaseConfig {
 impl From<DatabaseConfig> for Uri {
     fn from(_: DatabaseConfig) -> Self {
         unimplemented!()
+    }
+}
+
+impl FromStr for DatabaseConfig {
+    type Err = ParseError;
+
+    fn from_str(db_url: &str) -> Result<Self, Self::Err> {
+        let url = Url::parse(db_url)?;
+
+        match url.scheme() {
+            "postgres" => {
+                let user = url.username();
+                let password = url.password().unwrap_or_default();
+                let host = url.host().ok_or(ParseError::EmptyHost).unwrap();
+                let port = url.port().ok_or(ParseError::InvalidPort).unwrap();
+                let database = if url.path_segments().is_some() {
+                    url.path_segments().unwrap().next().unwrap()
+                } else {
+                    ""
+                };
+
+                Ok(DatabaseConfig::Postgres {
+                    user: user.to_string(),
+                    password: password.to_string(),
+                    host: host.to_string(),
+                    port: port.to_string(),
+                    database: database.to_string(),
+                })
+            }
+            _ => {
+                unimplemented!("Unsupported database. Please check your database URL.")
+            }
+        }
     }
 }
