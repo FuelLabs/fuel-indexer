@@ -158,19 +158,19 @@ forc index check
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | psql                   |  /usr/local/bin/psql                                    |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-core              |  /Users/rashad/.cargo/bin/fuel-core                     |
+|   ✅   | fuel-core              |  /Users/me/.cargo/bin/fuel-core                         |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | docker                 |  /usr/local/bin/docker                                  |
 +--------+------------------------+---------------------------------------------------------+
 |   ⛔️   | fuelup                 |  Can't locate fuelup.                                   |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | wasm-snip              |  /Users/rashad/.cargo/bin/wasm-snip                     |
+|   ✅   | wasm-snip              |  /Users/me/.cargo/bin/wasm-snip                         |
 +--------+------------------------+---------------------------------------------------------+
 |   ⛔️   | forc-postgres          |  Can't locate fuelup.                                   |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | rustc                  |  /Users/rashad/.cargo/bin/rustc                         |
+|   ✅   | rustc                  |  /Users/me/.cargo/bin/rustc                             |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | forc-wallet            |  /Users/rashad/.cargo/bin/forc-wallet                   |
+|   ✅   | forc-wallet            |  /Users/me/.cargo/bin/forc-wallet                       |
 +--------+------------------------+---------------------------------------------------------+
 ```
 
@@ -184,9 +184,9 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 
 ```bash
 forc index start \
-    --embedded-database                         # Setup and start a default database.
-    --fuel-node-host beta-3.fuel.network \ # Connect to a Fuel node at this host
-    --fuel-node-port 80                         # and port, and monitor the network.
+    --embedded-database
+    --fuel-node-host beta-3.fuel.network \
+    --fuel-node-port 80
 ```
 
 You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:
@@ -290,7 +290,7 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```bash
-curl -X POST http://localhost:29987/api/graph/my_project/hello_index \
+curl -X POST http://localhost:29987/api/graph/my_project/hello_indexer \
    -H 'content-type: application/json' \
    -d '{"query": "query { tx { id hash block }}", "params": "b"}' \
 | json_pp
