@@ -13,6 +13,7 @@ pub async fn init(command: DropDbCommand) -> anyhow::Result<()> {
         database_dir,
         config,
         remove_persisted,
+        ..
     } = command;
 
     let pg_config =

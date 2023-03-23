@@ -26,23 +26,26 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         target,
         release,
         profile,
-        verbose,
         locked,
         native,
-        output_dir_root,
+        target_dir,
+        verbose,
+        skip_build,
     } = command;
 
-    build::exec(BuildCommand {
-        manifest: manifest.clone(),
-        path: path.clone(),
-        target,
-        release,
-        profile,
-        verbose,
-        locked,
-        native,
-        output_dir_root: output_dir_root.clone(),
-    })?;
+    if !skip_build {
+        build::exec(BuildCommand {
+            manifest: manifest.clone(),
+            path: path.clone(),
+            target,
+            release,
+            profile,
+            verbose,
+            locked,
+            native,
+            target_dir: target_dir.clone(),
+        })?;
+    }
 
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
@@ -53,7 +56,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let manifest: serde_yaml::Value = serde_yaml::from_str(&manifest_contents)?;
 
     let (namespace, identifier, graphql_schema, module_path) =
-        extract_manifest_fields(manifest, output_dir_root.as_ref())?;
+        extract_manifest_fields(manifest, target_dir.as_ref())?;
 
     let mut manifest_buff = Vec::new();
     let mut manifest_reader = BufReader::new(manifest_file);
@@ -66,11 +69,15 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     let target = format!("{url}/api/index/{namespace}/{identifier}");
 
-    info!(
-        "Deploying indexer at {} to {}",
-        manifest_path.display(),
-        target
-    );
+    if verbose {
+        info!(
+            "Deploying indexer at {} to {}",
+            manifest_path.display(),
+            target
+        );
+    } else {
+        info!("Deploying indexer");
+    }
 
     let mut headers = HeaderMap::new();
     if let Some(auth) = auth {
@@ -114,7 +121,9 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    println!("\n{}", to_string_pretty(&res_json)?);
+    if verbose {
+        info!("\n{}", to_string_pretty(&res_json)?);
+    }
 
     pb.finish_with_message("✅ Successfully deployed indexer.");
 
