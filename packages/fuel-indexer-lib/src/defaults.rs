@@ -1,13 +1,13 @@
-pub const FUEL_NODE_HOST: &str = "127.0.0.1";
+pub const FUEL_NODE_HOST: &str = "localhost";
 pub const FUEL_NODE_PORT: &str = "4000";
 
-pub const GRAPHQL_API_HOST: &str = "127.0.0.1";
+pub const GRAPHQL_API_HOST: &str = "localhost";
 pub const GRAPHQL_API_PORT: &str = "29987";
 
 pub const DATABASE: &str = "postgres";
 pub const POSTGRES_DATABASE: &str = "postgres";
 pub const POSTGRES_USER: &str = "postgres";
-pub const POSTGRES_HOST: &str = "127.0.0.1";
+pub const POSTGRES_HOST: &str = "localhost";
 pub const POSTGRES_PORT: &str = "5432";
 pub const POSTGRES_PASSWORD: &str = "postgres";
 

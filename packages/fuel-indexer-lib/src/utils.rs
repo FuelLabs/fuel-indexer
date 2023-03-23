@@ -96,7 +96,7 @@ pub fn is_opt_env_var(key: &str) -> bool {
     key.starts_with('$') || (key.starts_with("${") && key.ends_with('}'))
 }
 
-pub fn derive_socket_addr(host: &String, port: &String) -> SocketAddr {
+pub fn derive_socket_addr(host: &str, port: &str) -> SocketAddr {
     let host = format!("{host}:{port}");
     SocketAddr::from_str(&host).unwrap_or_else(|e| {
             warn!(

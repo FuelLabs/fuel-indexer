@@ -22,7 +22,7 @@
 # fuel_node:
 
 #   # Host of the running Fuel node.
-#   host: 127.0.0.1
+#   host: localhost
 
 #   # Listening port of the running Fuel node.
 #   port: 4000
@@ -33,7 +33,7 @@
 
 # graphql_api:
 #   # GraphQL API host.
-#   host: 127.0.0.1
+#   host: localhost
 
 #   # GraphQL API port.
 #   port: 29987
@@ -58,7 +58,7 @@
 #     password: password
 
 #     # Postgres host.
-#     host: 127.0.0.1
+#     host: localhost
 
 #     # Postgres port.
 #     port: 5432
