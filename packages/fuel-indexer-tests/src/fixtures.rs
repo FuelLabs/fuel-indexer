@@ -3,9 +3,12 @@ use axum::routing::Router;
 use fuel_indexer::IndexerService;
 use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
-use fuel_indexer_lib::config::{
-    auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
-    DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
+use fuel_indexer_lib::{
+    config::{
+        auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
+        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
+    },
+    utils::derive_socket_addr,
 };
 use fuel_indexer_postgres;
 use fuels::{
@@ -196,11 +199,15 @@ pub async fn setup_test_fuel_node(
         DEFAULT_COIN_AMOUNT,
     );
 
-    let addr = if host_str.is_some() {
-        host_str.unwrap().parse::<SocketAddr>().unwrap()
-    } else {
-        defaults::FUEL_NODE_ADDR.parse::<SocketAddr>().unwrap()
-    };
+    let addr = host_str
+        .map(|x| x.parse::<SocketAddr>())
+        .unwrap_or_else(|| {
+            Ok(derive_socket_addr(
+                defaults::FUEL_NODE_HOST,
+                defaults::FUEL_NODE_PORT,
+            ))
+        })
+        .unwrap();
 
     let config = Config {
         utxo_validation: false,
