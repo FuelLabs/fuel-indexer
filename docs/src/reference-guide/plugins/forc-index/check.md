@@ -18,7 +18,7 @@ OPTIONS:
             Print help information
 
         --url <URL>
-            URL at which to find indexer service. [default: http://127.0.0.1:29987]
+            URL at which to find indexer service. [default: http://localhost:29987]
 ```
 
 You can expect the command output to look something like this example in which the requisite components are installed but the indexer service is not running:
@@ -26,7 +26,7 @@ You can expect the command output to look something like this example in which t
 ```text
 ➜  forc index check
 
-❌ Could not connect to indexer service: error sending request for url (http://127.0.0.1:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
+❌ Could not connect to indexer service: error sending request for url (http://localhost:29987/api/health): error trying to connect: tcp connect error: Connection refused (os error 61)
 
 +--------+------------------------+----------------------------------------------------------------------------+
 | Status |       Component        |                                  Details                                   |

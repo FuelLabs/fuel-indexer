@@ -36,10 +36,10 @@ pub mod assets {
 pub mod defaults {
     use std::time::Duration;
 
-    pub const FUEL_NODE_ADDR: &str = "127.0.0.1:4000";
-    pub const FUEL_NODE_HOST: &str = "127.0.0.1";
+    pub const FUEL_NODE_ADDR: &str = "localhost:4000";
+    pub const FUEL_NODE_HOST: &str = "localhost";
     pub const FUEL_NODE_PORT: &str = "4000";
-    pub const WEB_API_ADDR: &str = "127.0.0.1:8000";
+    pub const WEB_API_ADDR: &str = "localhost:8000";
     pub const PING_CONTRACT_ID: &str =
         "68518c3ba3768c863e0d945aa18249f9516d3aa1338083ba79467aa393de109c";
     pub const TRANSFER_BASE_ASSET_ID: &str =

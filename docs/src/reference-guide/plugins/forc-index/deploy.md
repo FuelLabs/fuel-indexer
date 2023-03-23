@@ -23,6 +23,6 @@ OPTIONS:
         --target <TARGET>            Target at which to compile. [default: wasm32-unknown-unknown]
         --target-dir <TARGET_DIR>    Directory for all generated artifacts and intermediate files.
         --url <URL>                  URL at which to deploy indexer assets. [default:
-                                     http://127.0.0.1:29987]
+                                     http://localhost:29987]
     -v, --verbose                    Enable verbose logging.
 ```

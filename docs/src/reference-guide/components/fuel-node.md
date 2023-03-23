@@ -16,10 +16,10 @@ You can run a local Fuel node through the use of `fuel-core`. Once you've instal
 2022-12-21T21:23:46.092853Z  INFO fuel_chain_config::config::chain: 71: PrivateKey(0x7f8a325504e7315eda997db7861c9447f5c3eff26333b20180475d94443a10c6), Address(0xc36be0e14d3eaf5d8d233e0f4a40b3b4e48427d25f84c460d2b03b242a38479e), Balance(10000000)
 2022-12-21T21:23:46.096489Z  WARN fuel_core::cli::run: 158: Fuel Core is using an insecure test key for consensus. Public key: 73dc6cc8cc0041e4924954b35a71a22ccb520664c522198a6d31dc6c945347bb854a39382d296ec64c70d7cea1db75601595e29729f3fbdc7ee9dae66705beb4
 2022-12-21T21:23:46.096673Z  INFO fuel_core::cli::run: 212: Fuel Core version v0.14.1
-2022-12-21T21:23:46.121974Z  INFO new_node: fuel_core::service::graph_api: 111: Binding GraphQL provider to 127.0.0.1:4000
+2022-12-21T21:23:46.121974Z  INFO new_node: fuel_core::service::graph_api: 111: Binding GraphQL provider to localhost:4000
 ```
 
-If you started the node with no additional options (as done in this example), it will be accessible on the default address of `127.0.0.1:4000`. The Fuel indexer will attempt to connect to a Fuel node on this address unless instructed otherwise through a configuration file; you can find an [example configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml) in the Fuel indexer repository. To start the indexer service with a custom configuration, you can run `forc index --config [CONFIG_FILE_PATH]`.
+If you started the node with no additional options (as done in this example), it will be accessible on the default address of `localhost:4000`. The Fuel indexer will attempt to connect to a Fuel node on this address unless instructed otherwise through a configuration file; you can find an [example configuration file](https://github.com/FuelLabs/fuel-indexer/blob/master/config.yaml) in the Fuel indexer repository. To start the indexer service with a custom configuration, you can run `forc index --config [CONFIG_FILE_PATH]`.
 
 ## Remote Node
 
@@ -29,7 +29,7 @@ You can also connect the Fuel indexer to a remote Fuel node. To do so, use the e
 ## Fuel Node configuration
 #
 # fuel_node:
-#   host: https://node-beta-3.fuel.network
+#   host: https://beta-3.fuel.network
 #   port: 4000
 ```
 
