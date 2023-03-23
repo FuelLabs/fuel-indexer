@@ -550,9 +550,23 @@ mod fuel_indexer_test {
         team.save();
     }
 
-    fn fuel_indexer_trigger_panic(data: abi::Panic) {
-        Logger::info("fuel_indexer_trigger_panic handling Panic event.");
+    fn fuel_indexer_trigger_panic(panic: abi::Panic) {
+        Logger::info("fuel_indexer_trigger_panic handling TriggerPanic event.");
 
-        panic!("Panic triggered by Fuel Indexer.");
+        let abi::Panic {
+            contract_id,
+            pc,
+            is,
+            reason,
+        };
+
+        let entity = Panic {
+            contract_id,
+            pc,
+            is,
+            reason,
+        };
+
+        entity.save();
     }
 }

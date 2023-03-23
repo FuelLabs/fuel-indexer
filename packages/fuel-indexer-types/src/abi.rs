@@ -155,3 +155,17 @@ impl NativeFuelType for Call {
         type_id(FUEL_TYPES_NAMESPACE, "Call") as usize
     }
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Panic {
+    pub contract_id: ContractId,
+    pub pc: u64,
+    pub is: u64,
+    pub reason: u64,
+}
+
+impl NativeFuelType for Panic {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Panic") as usize
+    }
+}
