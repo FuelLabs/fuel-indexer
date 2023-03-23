@@ -41,6 +41,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         let user = postgres_user
             .clone()
             .unwrap_or(defaults::POSTGRES_USER.to_string());
+
         let port = postgres_port
             .clone()
             .unwrap_or(defaults::POSTGRES_PORT.to_string());
