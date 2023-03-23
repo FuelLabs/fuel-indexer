@@ -29,7 +29,7 @@ You can also connect the Fuel indexer to a remote Fuel node. To do so, use the e
 ## Fuel Node configuration
 #
 # fuel_node:
-#   host: https://node-beta-3.fuel.network
+#   host: https://beta-3.fuel.network
 #   port: 4000
 ```
 
