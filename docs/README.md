@@ -152,23 +152,25 @@ forc index check
 +--------+------------------------+---------------------------------------------------------+
 | Status |       Component        |                         Details                         |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-indexer binary    |  /Users/me/.fuelup/bin/fuel-indexer                     |
+|   ⛔️   | fuel-indexer binary    |  Can't locate fuel-indexer.                             |
 +--------+------------------------+---------------------------------------------------------+
-|   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).               |
+|   ✅   | fuel-indexer service   |  Local service found: PID(63967) | Port(29987).         |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | psql                   |  /usr/local/bin/psql                                    |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-core              |  /Users/me/.fuelup/bin/fuel-core                        |
+|   ✅   | fuel-core              |  /Users/rashad/.cargo/bin/fuel-core                     |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | docker                 |  /usr/local/bin/docker                                  |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuelup                 |  /Users/me/.fuelup/bin/fuelup                           |
+|   ⛔️   | fuelup                 |  Can't locate fuelup.                                   |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | wasm-snip              |  /Users/me/.cargo/bin/wasm-snip                         |
+|   ✅   | wasm-snip              |  /Users/rashad/.cargo/bin/wasm-snip                     |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | forc-postgres          |  /Users/me/.fuelup/bin/fuelup                           |
+|   ⛔️   | forc-postgres          |  Can't locate fuelup.                                   |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | rustc                  |  /Users/me/.cargo/bin/rustc                             |
+|   ✅   | rustc                  |  /Users/rashad/.cargo/bin/rustc                         |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | forc-wallet            |  /Users/rashad/.cargo/bin/forc-wallet                   |
 +--------+------------------------+---------------------------------------------------------+
 ```
 
@@ -257,6 +259,8 @@ Take a quick tour.
     Deploy your indexer.
 `forc index remove`
     Stop a running indexer.
+`forc index revert`
+    Revert a deployed indexer.
 `forc index auth`
     Authenticate against an indexer service.
 ```
@@ -274,34 +278,8 @@ forc index deploy
 If all goes well, you should see the following:
 
 ```text
-▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
-▪▪▪▪▪ ✅ Build succeeded.
-
-Deploying indexer at hello_index.manifest.yaml to http://localhost:29987/api/index/my_project/hello_index
-▹▸▹▹▹ 🚀 Deploying...
-{
-  "assets": [
-    {
-      "digest": "79e74d6a7b68a35aeb9aa2dd7f6083dae5fdba5b6a2f199529b6c49624d1e27b",
-      "id": 1,
-      "index_id": 1,
-      "version": 1
-    },
-    {
-      "digest": "4415628d9ea79b3c3f1e6f02b1af3416c4d0b261b75abe3cc81b77b7902549c5",
-      "id": 1,
-      "index_id": 1,
-      "version": 1
-    },
-    {
-      "digest": "e901eba95ce8b4d1c159c5d66f24276dc911e87dbff55fb2c10d8b371528eacc",
-      "id": 1,
-      "index_id": 1,
-      "version": 1
-    }
-  ],
-  "success": "true"
-}
+▹▹▹▹▹ ⏰ Building...                         Finished dev [unoptimized + debuginfo] target(s) in 0.96s
+▪▪▪▪▪ ✅ Build succeeded.                    Deploying indexer
 ▪▪▪▪▪ ✅ Successfully deployed indexer.
 ```
 
