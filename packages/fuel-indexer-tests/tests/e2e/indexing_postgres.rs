@@ -21,22 +21,25 @@ use sqlx::{
     Postgres, Row,
 };
 use std::str::FromStr;
-use tokio::time::{sleep, Duration};
+use tokio::{
+    task::JoinHandle,
+    time::{sleep, Duration},
+};
 
-async fn setup_test_components() -> (TestPostgresDb, IndexerService) {
-    let test_db = TestPostgresDb::new().await;
+async fn setup_test_components(
+) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
+    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url)).await;
 
-    (test_db, srvc)
+    (fuel_node_handle, test_db, srvc)
 }
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
 {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -109,9 +112,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_callreturn_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -156,9 +157,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -212,9 +211,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_ping_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -270,9 +267,7 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transfer_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -307,9 +302,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -344,9 +337,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -390,9 +381,7 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -436,9 +425,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -478,9 +465,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -532,9 +517,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_index_event_with_optional_fields_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -579,9 +562,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -616,9 +597,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_respects_start_block_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -695,9 +674,7 @@ async fn test_index_respects_start_block_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
@@ -735,9 +712,7 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_pure_function_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let (test_db, mut srvc) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");

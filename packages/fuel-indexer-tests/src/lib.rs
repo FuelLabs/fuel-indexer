@@ -2,6 +2,22 @@ pub mod fixtures;
 
 pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum TestError {
+    #[error("Database error: {0:?}")]
+    DatabaseError(#[from] sqlx::Error),
+    #[error("Error retrieving DATABASE_URL environment variable: {0:?}")]
+    DatabaseUrlEnvVarError(#[from] std::env::VarError),
+    #[error("Error parsing DATABASE_URL environment variable: {0:?}")]
+    DatabaseUrlParseError(#[from] url::ParseError),
+    #[error("Error creating database pool {0:?}")]
+    PoolCreationError(#[from] fuel_indexer_database::IndexerDatabaseError),
+    #[error("Error tearing down database {0:?}")]
+    IoError(#[from] std::io::Error),
+}
+
 pub mod assets {
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
         include_str!("./../components/indices/fuel-indexer-test/fuel_indexer_test.yaml");

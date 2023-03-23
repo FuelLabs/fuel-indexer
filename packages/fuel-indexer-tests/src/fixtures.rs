@@ -1,4 +1,4 @@
-use crate::{defaults, WORKSPACE_ROOT};
+use crate::{defaults, TestError, WORKSPACE_ROOT};
 use axum::routing::Router;
 use fuel_indexer::IndexerService;
 use fuel_indexer_api_server::api::GraphQlApi;
@@ -39,7 +39,7 @@ pub struct TestPostgresDb {
 }
 
 impl TestPostgresDb {
-    pub async fn new() -> Self {
+    pub async fn new() -> Result<Self, TestError> {
         // Generate a random string to serve as a unique name for a temporary database
         let rng = thread_rng();
         let db_name: String = rng
@@ -50,13 +50,7 @@ impl TestPostgresDb {
 
         // The server connection string serves as a way to connect directly to the Postgres server.
         // Example database URL: postgres://postgres:my-secret@localhost:5432
-        let connection_config: DatabaseConfig = match std::env::var("DATABASE_URL")
-            .expect("DATABASE_URL environment variable is not set")
-            .parse()
-        {
-            Ok(cc) => cc,
-            Err(e) => panic!("Could not parse DATABASE_URL: {e}"),
-        };
+        let connection_config: DatabaseConfig = std::env::var("DATABASE_URL")?.parse()?;
         let server_connection_str = connection_config.to_string();
 
         let DatabaseConfig::Postgres {
@@ -75,17 +69,10 @@ impl TestPostgresDb {
         };
 
         // Connect directly to the Postgres server and create a database with the unique string
-        let mut conn = match PgConnection::connect(server_connection_str.as_str()).await {
-            Ok(conn) => conn,
-            Err(e) => panic!("Failed to connect to Postgres server: {e}"),
-        };
+        let mut conn = PgConnection::connect(server_connection_str.as_str()).await?;
 
-        if let Err(e) = conn
-            .execute(format!(r#"CREATE DATABASE "{}""#, &db_name).as_str())
-            .await
-        {
-            panic!("Could not create database: {e}")
-        };
+        conn.execute(format!(r#"CREATE DATABASE "{}""#, &db_name).as_str())
+            .await?;
 
         // Instantiate a pool so that it can be stored in the struct for use in the tests
         let pool =
@@ -94,76 +81,53 @@ impl TestPostgresDb {
             {
                 Ok(pool) => match pool {
                     IndexerConnectionPool::Postgres(p) => {
-                        let mut conn = match p.acquire().await {
-                            Ok(conn) => conn,
-                            Err(e) => {
-                                panic!("Could not acquire connection from pool: {e}")
-                            }
-                        };
-                        if let Err(e) =
-                            fuel_indexer_postgres::run_migration(&mut conn).await
-                        {
-                            panic!("Could not run migrations for test database: {e}")
-                        }
+                        let mut conn = p.acquire().await?;
+
+                        fuel_indexer_postgres::run_migration(&mut conn).await?;
                         p
                     }
                 },
-                Err(e) => panic!("Failed to create IndexerConnectionPool: {e}"),
+                Err(e) => return Err(TestError::PoolCreationError(e)),
             };
 
-        Self {
+        Ok(Self {
             db_name,
             url: test_db_config.to_string(),
             pool,
             server_connection_str,
-        }
+        })
     }
 
-    async fn teardown(&mut self) {
-        let mut conn = match PgConnection::connect(&self.server_connection_str).await {
-            Ok(conn) => conn,
-            Err(e) => panic!("Failed to connect to Postgres server: {e}"),
-        };
+    async fn teardown(&mut self) -> Result<(), TestError> {
+        let mut conn = PgConnection::connect(&self.server_connection_str).await?;
 
         // Drop all connections to the test database so that resources are cleaned up
-        if let Err(e) = conn
-            .execute(
-                format!(
-                    r#"
+        conn.execute(
+            format!(
+                r#"
                 SELECT pg_terminate_backend(pg_stat_activity.pid)
                 FROM pg_stat_activity
                 WHERE pg_stat_activity.datname = '{}'
                 AND pid <> pg_backend_pid()
                 "#,
-                    self.db_name
-                )
-                .as_str(),
-            )
-            .await
-        {
-            panic!(
-                "Failed to terminate current connections to test database {}: {e}",
                 self.db_name
             )
-        };
+            .as_str(),
+        )
+        .await?;
 
         // Forcefully drop the database. Connections should have been cleaned up by
         // this point as we've awaited the prior query, but let's just do it by force.
-        if let Err(e) = conn
-            .execute(
-                format!(
-                    r#"DROP DATABASE IF EXISTS "{}" WITH (FORCE);"#,
-                    self.db_name
-                )
-                .as_str(),
-            )
-            .await
-        {
-            panic!(
-                "Faild to forcefully drop test database {}: {e}",
+        conn.execute(
+            format!(
+                r#"DROP DATABASE IF EXISTS "{}" WITH (FORCE);"#,
                 self.db_name
             )
-        };
+            .as_str(),
+        )
+        .await?;
+
+        Ok(())
     }
 }
 
@@ -173,16 +137,11 @@ impl Drop for TestPostgresDb {
         // to await the teardown operation for the database.
         std::thread::scope(|s| {
             s.spawn(|| {
-                let runtime = match tokio::runtime::Builder::new_multi_thread()
+                let runtime = tokio::runtime::Builder::new_multi_thread()
                     .enable_all()
                     .build()
-                {
-                    Ok(rt) => rt,
-                    Err(e) => {
-                        panic!("Failed to create runtime for database teardown: {e}")
-                    }
-                };
-                runtime.block_on(self.teardown());
+                    .unwrap();
+                runtime.block_on(self.teardown()).unwrap();
             });
         });
     }
@@ -307,11 +266,11 @@ pub fn get_test_contract_id() -> Bech32ContractId {
 }
 
 pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
-    let database: DatabaseConfig = if database_url.is_some() {
-        DatabaseConfig::from_str(database_url.unwrap()).unwrap()
-    } else {
-        DatabaseConfig::default()
-    };
+    let database: DatabaseConfig = database_url
+        .map_or(DatabaseConfig::default(), |url| {
+            DatabaseConfig::from_str(url).unwrap()
+        });
+
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::default(),
         database,
@@ -330,11 +289,11 @@ pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
 }
 
 pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -> Router {
-    let database: DatabaseConfig = if database_url.is_some() {
-        DatabaseConfig::from_str(database_url.unwrap()).unwrap()
-    } else {
-        DatabaseConfig::default()
-    };
+    let database: DatabaseConfig = database_url
+        .map_or(DatabaseConfig::default(), |url| {
+            DatabaseConfig::from_str(url).unwrap()
+        });
+
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::default(),
         database,
@@ -359,11 +318,11 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
 }
 
 pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerService {
-    let database: DatabaseConfig = if database_url.is_some() {
-        DatabaseConfig::from_str(database_url.unwrap()).unwrap()
-    } else {
-        DatabaseConfig::default()
-    };
+    let database: DatabaseConfig = database_url
+        .map_or(DatabaseConfig::default(), |url| {
+            DatabaseConfig::from_str(url).unwrap()
+        });
+
     let config = IndexerConfig {
         fuel_node: FuelNodeConfig::default(),
         database,

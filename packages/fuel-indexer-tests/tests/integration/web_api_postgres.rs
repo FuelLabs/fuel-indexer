@@ -21,7 +21,7 @@ const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
-    let test_db = TestPostgresDb::new().await;
+    let test_db = TestPostgresDb::new().await.unwrap();
     let _srvc = indexer_service_postgres(Some(&test_db.url)).await;
     let app = api_server_app_postgres(Some(&test_db.url)).await;
 
@@ -54,7 +54,7 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
 #[cfg(all(feature = "postgres"))]
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
-    let test_db = TestPostgresDb::new().await;
+    let test_db = TestPostgresDb::new().await.unwrap();
     let _ = indexer_service_postgres(Some(&test_db.url)).await;
     let app = api_server_app_postgres(Some(&test_db.url)).await;
 
@@ -106,7 +106,7 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() {
-    let test_db = TestPostgresDb::new().await;
+    let test_db = TestPostgresDb::new().await.unwrap();
     let app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
@@ -175,7 +175,7 @@ struct SignatureResponse {
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt() {
-    let test_db = TestPostgresDb::new().await;
+    let test_db = TestPostgresDb::new().await.unwrap();
     let app = authenticated_api_server_app_postgres(Some(&test_db.url)).await;
 
     let now = SystemTime::now()

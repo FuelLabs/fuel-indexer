@@ -119,7 +119,7 @@ impl FromStr for DatabaseConfig {
     type Err = ParseError;
 
     fn from_str(db_url: &str) -> Result<Self, Self::Err> {
-        let url = Url::parse(db_url).unwrap();
+        let url = Url::parse(db_url)?;
 
         match url.scheme() {
             "postgres" => {
@@ -142,8 +142,7 @@ impl FromStr for DatabaseConfig {
                 })
             }
             _ => {
-                println!("Unsupported database. Please check your database URL.");
-                unimplemented!()
+                unimplemented!("Unsupported database. Please check your database URL.")
             }
         }
     }
