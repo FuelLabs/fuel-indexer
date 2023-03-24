@@ -129,7 +129,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             debug!("Processing {} results", results.len());
 
             let mut block_info = Vec::new();
-            for block in results.into_iter().rev() {
+            for block in results.into_iter() {
                 let producer = block.block_producer().map(|pk| pk.hash());
 
                 // NOTE: for now assuming we have a single contract instance,

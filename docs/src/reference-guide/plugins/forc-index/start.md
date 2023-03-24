@@ -27,13 +27,13 @@ OPTIONS:
             Automatically create and start database using provided options or defaults.
 
         --fuel-node-host <FUEL_NODE_HOST>
-            Host of the running Fuel node. [default: 127.0.0.1]
+            Host of the running Fuel node. [default: localhost]
 
         --fuel-node-port <FUEL_NODE_PORT>
             Listening port of the running Fuel node. [default: 4000]
 
         --graphql-api-host <GRAPHQL_API_HOST>
-            GraphQL API host. [default: 127.0.0.1]
+            GraphQL API host. [default: localhost]
 
         --graphql-api-port <GRAPHQL_API_PORT>
             GraphQL API port. [default: 29987]

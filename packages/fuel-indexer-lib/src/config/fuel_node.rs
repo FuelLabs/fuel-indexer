@@ -7,7 +7,6 @@ pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
 use std::net::SocketAddr;
-// use url::Url;
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct FuelNodeConfig {
@@ -44,7 +43,7 @@ impl From<FuelNodeConfig> for Uri {
     fn from(config: FuelNodeConfig) -> Self {
         let uri = derive_http_url(&config.host, &config.port);
         uri.parse().unwrap_or_else(|e| {
-            panic!("Failed to parse Uri from FuelNodeConfig {uri:?}: {e}")
+            panic!("Cannot parse HTTP URI from Fuel node config {config:?}: {e}")
         })
     }
 }

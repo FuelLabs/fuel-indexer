@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use tempfile::{Builder, TempDir};
 
 #[test]
-fn init_command_creates_correct_project_tree() {
+fn test_init_command_creates_correct_project_tree() {
     let (temp_dir, temp_dir_path, temp_dir_name) = init_temp_dir();
 
     forc_index::commands::init::exec(InitCommand {
@@ -43,9 +43,8 @@ fn init_command_creates_correct_project_tree() {
 }
 
 #[test]
-fn build_command_creates_artifact_at_expected_path() {
+fn test_build_command_creates_artifact_at_expected_path() {
     let (temp_dir, temp_dir_path, temp_dir_name) = init_temp_dir();
-    println!("temp_dir_path: {}", temp_dir_path.to_string_lossy());
 
     forc_index::commands::init::exec(InitCommand {
         name: Some(temp_dir_name.clone()),
@@ -84,7 +83,7 @@ fn build_command_creates_artifact_at_expected_path() {
 }
 
 #[test]
-fn new_command_initializes_project_at_new_directory() {
+fn test_new_command_initializes_project_at_new_directory() {
     let (temp_dir, temp_dir_path, _temp_dir_name) = init_temp_dir();
 
     std::env::set_current_dir(&temp_dir_path).expect("Failed to set current dir");

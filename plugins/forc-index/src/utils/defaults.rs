@@ -5,7 +5,7 @@ pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
 pub const INDEX_LIB_FILENAME: &str = "lib.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
-pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
+pub const INDEXER_SERVICE_HOST: &str = "http://localhost:29987";
 pub const GRAPHQL_API_PORT: &str = defaults::GRAPHQL_API_PORT;
 pub const INDEXER_TARGET: &str = "wasm32-unknown-unknown";
 
@@ -21,9 +21,9 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.5", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.5", features = ["native-execution"] }}
-fuel-indexer-schema = {{ version = "0.5", default-features = false }}
+fuel-indexer-macros = {{ version = "0.6", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.6", features = ["native-execution"] }}
+fuel-indexer-schema = {{ version = "0.6", default-features = false }}
 fuel-tx = "0.26"
 fuels = {{ version = "0.37" }}
 fuels-core = {{ version = "0.37" }}
@@ -46,9 +46,9 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.5", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.5" }}
-fuel-indexer-schema = {{ version = "0.5", default-features = false }}
+fuel-indexer-macros = {{ version = "0.6", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.6" }}
+fuel-indexer-schema = {{ version = "0.6", default-features = false }}
 fuel-tx = "0.26"
 fuels-core = {{ version = "0.37", default-features = false }}
 fuels-macros = {{ version = "0.37" }}

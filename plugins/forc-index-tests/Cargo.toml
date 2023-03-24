@@ -12,6 +12,6 @@ description = "Tests for the Forc Index plugins"
 [dependencies]
 
 forc-index = { workspace = true }
-fuel-indexer-plugin = { version = "0.5" }
+fuel-indexer-plugin = { workspace = true }
 tempfile = "3.4.0" 
 

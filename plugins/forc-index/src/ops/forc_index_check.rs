@@ -99,7 +99,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let (service_emoji, service_msg) = find_indexer_service_info(&graphql_api_port);
     let (docker_emoji, _docker_path, docker_msg) = find_executable_with_msg(docker);
     let (fuelup_emoji, _fuelup_path, fuelup_msg) = find_executable_with_msg(fuelup);
-    let (forc_pg_emoji, _forc_pg_path, forc_pg_msg) = find_executable_with_msg(fuelup);
+    let (forc_pg_emoji, _forc_pg_path, forc_pg_msg) = find_executable_with_msg(forc_pg);
     let (wasm_snip_emoji, _wasm_snip_path, wasm_snip_msg) =
         find_executable_with_msg(wasm_snip);
     let (rustc_emoji, _rustc_path, rustc_msg) = find_executable_with_msg(rustc);

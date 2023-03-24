@@ -29,7 +29,7 @@ OPTIONS:
             Database type. [default: postgres] [possible values: postgres]
 
         --graphql-api-host <GRAPHQL_API_HOST>
-            GraphQL API host. [default: 127.0.0.1]
+            GraphQL API host. [default: localhost]
 
         --graphql-api-port <GRAPHQL_API_PORT>
             GraphQL API port. [default: 29987]
