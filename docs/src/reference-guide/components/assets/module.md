@@ -1,6 +1,6 @@
 # WASM Modules
 
-WebAssembly (WASM) modules are compiled binaries that are registered into a Fuel indexer at runtime. The WASM bytes are read in by the indexer and _executors_ are created which will implement blocking calls the to the WASM runtime.
+WebAssembly (WASM) modules are compiled binaries that are registered into a Fuel indexer at runtime. The WASM bytes are read in by the indexer and _executors_ are created which will implement blocking calls to the WASM runtime.
 
 The WASM module is generated based on your manifest, schema, and your `lib.rs` file.
 
