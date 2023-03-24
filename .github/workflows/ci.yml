@@ -221,8 +221,8 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
+      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
+        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
 
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
@@ -269,7 +269,7 @@ jobs:
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
 
       - name: Run E2E and integration tests
-        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
+        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests --workspace --exclude forc-index-tests -- --test-threads=1
        
   cargo-test-forc-index-plugins:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
