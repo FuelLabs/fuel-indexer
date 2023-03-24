@@ -10,6 +10,8 @@ rust-version = { workspace = true }
 description = "Fuel Indexer forc plugin"
 
 [dependencies]
+
+actix-web = { version = "4", default-features = false, features = ["macros"] }
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
 forc-postgres = { workspace = true }
@@ -27,6 +29,7 @@ serde_json = "1.0.73"
 serde_yaml = "0.8"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "process"] }
 toml = "0.5"
+tempfile = "3.4.0"
 tracing = "0.1"
 
 [[bin]]
