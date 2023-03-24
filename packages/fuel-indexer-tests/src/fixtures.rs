@@ -199,15 +199,12 @@ pub async fn setup_test_fuel_node(
         DEFAULT_COIN_AMOUNT,
     );
 
-    let addr = host_str
-        .map(|x| x.parse::<SocketAddr>())
-        .unwrap_or_else(|| {
-            Ok(derive_socket_addr(
-                defaults::FUEL_NODE_HOST,
-                defaults::FUEL_NODE_PORT,
-            ))
-        })
-        .unwrap();
+    let addr = match host_str {
+        Some(h) => h.parse::<SocketAddr>().unwrap_or_else(|_| {
+            derive_socket_addr(defaults::FUEL_NODE_HOST, defaults::FUEL_NODE_PORT)
+        }),
+        None => derive_socket_addr(defaults::FUEL_NODE_HOST, defaults::FUEL_NODE_PORT),
+    };
 
     let config = Config {
         utxo_validation: false,
