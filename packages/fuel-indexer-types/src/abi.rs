@@ -157,15 +157,12 @@ impl NativeFuelType for Call {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Panic {
+pub struct Revert {
     pub contract_id: ContractId,
-    pub pc: u64,
-    pub is: u64,
-    pub reason: u64,
 }
 
-impl NativeFuelType for Panic {
+impl NativeFuelType for Revert {
     fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, "Panic") as usize
+        type_id(FUEL_TYPES_NAMESPACE, "Revert") as usize
     }
 }

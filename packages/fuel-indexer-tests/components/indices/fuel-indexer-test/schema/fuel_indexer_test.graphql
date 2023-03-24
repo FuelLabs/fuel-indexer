@@ -21,7 +21,7 @@ type QueryRoot {
     u16entity: U16Entity
     messageentity: MessageEntity
     callentity: CallEntity
-    panicentity: PanicEntity
+    revertentity: RevertEntity 
 
     # GraphQL API test entities
     genre: Genre
@@ -233,8 +233,7 @@ type MessageEntity {
     message: Charfield!
 }
 
-type PanicEntity {
+type RevertEntity {
     id: ID!
     contract_id: ContractId!
-    reason: UInt8!
 }

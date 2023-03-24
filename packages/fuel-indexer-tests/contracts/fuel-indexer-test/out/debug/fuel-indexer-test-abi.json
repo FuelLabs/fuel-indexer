@@ -457,16 +457,6 @@
     },
     {
       "inputs": [],
-      "name": "trigger_panic",
-      "output": {
-        "name": "",
-        "type": 0,
-        "typeArguments": null
-      },
-      "attributes": null
-    },
-    {
-      "inputs": [],
       "name": "trigger_ping",
       "output": {
         "name": "",
@@ -498,6 +488,16 @@
     {
       "inputs": [],
       "name": "trigger_pure_function",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": null
+    },
+    {
+      "inputs": [],
+      "name": "trigger_revert",
       "output": {
         "name": "",
         "type": 0,

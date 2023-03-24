@@ -754,7 +754,7 @@ async fn test_can_trigger_and_index_pure_function_postgres() {
 }
 
 #[actix_web::test]
-async fn test_can_trigger_and_index_panic_function_postgres() {
+async fn test_can_trigger_and_index_revert_function_postgres() {
     let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
@@ -768,7 +768,7 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/panic").to_request();
+    let req = test::TestRequest::post().uri("/revert").to_request();
     let res = app.call(req).await;
 
     let status = res.unwrap().status();
@@ -778,10 +778,10 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
     fuel_node_handle.abort();
 
     let mut conn = test_db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.panicentity LIMIT 1")
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.revertentity LIMIT 1")
         .fetch_one(&mut conn)
         .await
-        .unwrap_or_else(|e| panic!("Failed to fetch panicentity: {:?}", e));
+        .unwrap();
 
     let id: i64 = row.get(123);
     assert_eq!(id, 123);

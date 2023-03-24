@@ -644,13 +644,13 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_trigger_panic(
+    async fn fuel_indexer_test_trigger_revert(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let result = state
             .contract
             .methods()
-            .trigger_panic()
+            .trigger_revert()
             .tx_params(tx_params())
             .call()
             .await;
@@ -723,7 +723,7 @@ pub mod test_web {
                 "/pure_function",
                 web::post().to(fuel_indexer_test_pure_function),
             )
-            .route("/panic", web::post().to(fuel_indexer_test_trigger_panic))
+            .route("/revert", web::post().to(fuel_indexer_test_trigger_revert))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

@@ -76,7 +76,7 @@ abi FuelIndexer {
     fn trigger_vec_pong_calldata(v: Vec<u8>);
     fn trigger_vec_pong_logdata();
     fn trigger_pure_function();
-    fn trigger_panic();
+    fn trigger_revert();
 }
 
 impl FuelIndexer for Contract {
@@ -205,7 +205,7 @@ impl FuelIndexer for Contract {
         let sum = 1 + 2;
     }
 
-    fn trigger_panic() {
+    fn trigger_revert() {
         assert(1 == 0);
     }
 }
