@@ -655,6 +655,8 @@ pub mod test_web {
             .call()
             .await;
 
+        println!("Result: {:?}", result);
+
         match result {
             Ok(_) => HttpResponse::Ok(),
             Err(_) => {

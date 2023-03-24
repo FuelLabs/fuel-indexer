@@ -509,6 +509,12 @@ fn process_fn_items(
                                 let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
+                            Receipt::Revert { id, .. } => {
+                                #contract
+                                let ty_id = abi::Revert::type_id();
+                                let data = bincode::serialize(&abi::Revert{ contract_id: id }).expect("Bad encoding,");
+                                decoder.decode_type(ty_id, data);
+                            }
                             _ => {
                                 Logger::info("This type is not handled yet. (>'.')>");
                             }
