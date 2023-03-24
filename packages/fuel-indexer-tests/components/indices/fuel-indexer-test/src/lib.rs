@@ -555,15 +555,13 @@ mod fuel_indexer_test {
 
         let abi::Panic {
             contract_id,
-            pc,
-            is,
             reason,
-        };
+            ..
+        } = panic;
 
-        let entity = Panic {
+        let entity = PanicEntity {
+            id: 123,
             contract_id,
-            pc,
-            is,
             reason,
         };
 

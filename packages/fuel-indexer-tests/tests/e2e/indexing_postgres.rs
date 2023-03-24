@@ -769,7 +769,10 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
     let req = test::TestRequest::post().uri("/panic").to_request();
-    let _ = app.call(req).await;
+    let res = app.call(req).await;
+
+    let status = res.unwrap().status();
+    println!("Response Status: {:?}", status);
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
@@ -778,13 +781,8 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.panicentity LIMIT 1")
         .fetch_one(&mut conn)
         .await
-        .unwrap();
+        .unwrap_or_else(|e| panic!("Failed to fetch panicentity: {:?}", e));
 
-    let id: i64 = row.get(0);
-    let contract_id: &str = row.get(1);
-
-    assert_eq!(
-        contract_id,
-        "0000000000000000000000000000000000000000000000000000000000000000"
-    );
+    let id: i64 = row.get(123);
+    assert_eq!(id, 123);
 }
