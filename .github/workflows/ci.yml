@@ -98,6 +98,51 @@ jobs:
             echo "Not a release branch ^(^.^)^"
           fi
 
+  name: Check Fuel Version
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-fuel-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+
+      - name: Install cargo-edit
+        run: cargo install cargo-edit
+
+      - name: Check latest fuels version
+        run: |
+        # Get the latest version of fuels from GitHub
+        LATEST_FUELS_VERSION=$(curl -s https://api.github.com/repos/FuelLabs/fuels-rs/releases/latest | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+        echo "Latest fuels version: $LATEST_FUELS_VERSION"
+
+        # Extract the version from packages/fuel-indexer-tests/Cargo.toml
+        CURRENT_FUELS_VERSION=$(grep -E '^fuels = "([^"]+)"' packages/fuel-indexer-tests/Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+        echo "Current fuels version: $CURRENT_FUELS_VERSION"
+
+        # Compare versions and exit with non-zero status if they don't match
+        if [ "$LATEST_FUELS_VERSION" != "$CURRENT_FUELS_VERSION" ]; then
+            echo "The current fuels version ($CURRENT_FUELS_VERSION) does not match the latest version ($LATEST_FUELS_VERSION)"
+            exit 1
+        else
+          echo "The current fuels version ($CURRENT_FUELS_VERSION) matches the latest version ($LATEST_FUELS_VERSION)"
+        fi
+
   mdbook-lint:
     needs:
       - check-rustc
