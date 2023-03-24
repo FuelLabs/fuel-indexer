@@ -1,7 +1,7 @@
 use clap::Parser;
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
 use fuels::{
-    prelude::{Bech32ContractId, Contract, Provider},
+    prelude::{Bech32ContractId, Contract, DeployConfiguration, Provider},
     signers::WalletUnlocked,
     types::SizedAsciiString,
 };
@@ -85,9 +85,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     wallet.set_provider(provider.clone());
 
-    let compiled =
-        Contract::load_contract(contract_bin_path.as_os_str().to_str().unwrap(), &None)
-            .unwrap();
+    let compiled = Contract::load_contract(
+        contract_bin_path.as_os_str().to_str().unwrap(),
+        DeployConfiguration::default(),
+    )
+    .expect("Failed to load contract");
     let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
 
     let contract_id = Bech32ContractId::from(id);

@@ -15,7 +15,7 @@ use fuels::{
     macros::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
-        Contract, Provider, StorageConfiguration, TxParameters, WalletUnlocked,
+        Contract, DeployConfiguration, Provider, TxParameters, WalletUnlocked,
         DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
@@ -163,7 +163,7 @@ pub fn tx_params() -> TxParameters {
     let gas_price = 0;
     let gas_limit = 1_000_000;
     let byte_price = 0;
-    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
+    TxParameters::new(gas_price, gas_limit, byte_price)
 }
 
 pub async fn setup_test_fuel_node(
@@ -224,18 +224,17 @@ pub async fn setup_test_fuel_node(
     if let Some(contract_bin_path) = contract_bin_path {
         let _compiled = Contract::load_contract(
             contract_bin_path.as_os_str().to_str().unwrap(),
-            &None,
+            DeployConfiguration::default(),
         )
-        .unwrap();
+        .expect("Failed to load contract");
 
         let contract_id = Contract::deploy(
             contract_bin_path.as_os_str().to_str().unwrap(),
             &wallet,
-            tx_params(),
-            StorageConfiguration::default(),
+            DeployConfiguration::default(),
         )
         .await
-        .unwrap();
+        .expect("Failed to deploy contract");
 
         let contract_id = contract_id.to_string();
 
@@ -266,9 +265,11 @@ pub fn get_test_contract_id() -> Bech32ContractId {
         .join("debug")
         .join("fuel-indexer-test.bin");
 
-    let compiled =
-        Contract::load_contract(contract_bin_path.as_os_str().to_str().unwrap(), &None)
-            .unwrap();
+    let compiled = Contract::load_contract(
+        contract_bin_path.as_os_str().to_str().unwrap(),
+        DeployConfiguration::default(),
+    )
+    .expect("Failed to load compiled contract");
     let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
 
     Bech32ContractId::from(id)
@@ -387,7 +388,7 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
-    use fuel_indexer_types::Bech32ContractId;
+    use fuel_indexer_types::{AssetId, Bech32ContractId};
     use fuels::{
         prelude::{CallParameters, Provider},
         signers::WalletUnlocked,
@@ -420,7 +421,7 @@ pub mod test_web {
     async fn fuel_indexer_test_transfer(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(Some(1_000_000), None, None);
+        let call_params = CallParameters::new(1_000_000, AssetId::default(), 0);
 
         let _ = state
             .contract
@@ -479,7 +480,7 @@ pub mod test_web {
     async fn fuel_indexer_test_transferout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(Some(1_000_000), None, None);
+        let call_params = CallParameters::new(1_000_000, AssetId::default(), 0);
 
         let _ = state
             .contract
@@ -498,7 +499,7 @@ pub mod test_web {
     async fn fuel_indexer_test_messageout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(Some(1_000_000), None, None);
+        let call_params = CallParameters::new(1_000_000, AssetId::default(), 0);
 
         let _ = state
             .contract
