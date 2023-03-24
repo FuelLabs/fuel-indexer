@@ -16,6 +16,6 @@ OPTIONS:
         --account <ACCOUNT>    Index of account to use for signing.
     -h, --help                 Print help information
         --url <URL>            URL at which to deploy indexer assets. [default:
-                               http://127.0.0.1:29987]
+                               http://localhost:29987]
     -v, --verbose              Verbose output.
 ```

@@ -152,23 +152,25 @@ forc index check
 +--------+------------------------+---------------------------------------------------------+
 | Status |       Component        |                         Details                         |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-indexer binary    |  /Users/me/.fuelup/bin/fuel-indexer                     |
+|   ⛔️   | fuel-indexer binary    |  Can't locate fuel-indexer.                             |
 +--------+------------------------+---------------------------------------------------------+
-|   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).               |
+|   ✅   | fuel-indexer service   |  Local service found: PID(63967) | Port(29987).         |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | psql                   |  /usr/local/bin/psql                                    |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-core              |  /Users/me/.fuelup/bin/fuel-core                        |
+|   ✅   | fuel-core              |  /Users/me/.cargo/bin/fuel-core                         |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | docker                 |  /usr/local/bin/docker                                  |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuelup                 |  /Users/me/.fuelup/bin/fuelup                           |
+|   ⛔️   | fuelup                 |  Can't locate fuelup.                                   |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | wasm-snip              |  /Users/me/.cargo/bin/wasm-snip                         |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | forc-postgres          |  /Users/me/.fuelup/bin/fuelup                           |
+|   ⛔️   | forc-postgres          |  Can't locate fuelup.                                   |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | rustc                  |  /Users/me/.cargo/bin/rustc                             |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | forc-wallet            |  /Users/me/.cargo/bin/forc-wallet                       |
 +--------+------------------------+---------------------------------------------------------+
 ```
 
@@ -182,9 +184,9 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 
 ```bash
 forc index start \
-    --embedded-database                         # Setup and start a default database.
-    --fuel-node-host node-beta-3.fuel.network \ # Connect to a Fuel node at this host
-    --fuel-node-port 80                         # and port, and monitor the network.
+    --embedded-database
+    --fuel-node-host node-beta-2.fuel.network \
+    --fuel-node-port 80
 ```
 
 You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:
@@ -257,6 +259,8 @@ Take a quick tour.
     Deploy your indexer.
 `forc index remove`
     Stop a running indexer.
+`forc index revert`
+    Revert a deployed indexer.
 `forc index auth`
     Authenticate against an indexer service.
 ```
@@ -274,34 +278,8 @@ forc index deploy
 If all goes well, you should see the following:
 
 ```text
-▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
-▪▪▪▪▪ ✅ Build succeeded.
-
-Deploying indexer at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
-▹▸▹▹▹ 🚀 Deploying...
-{
-  "assets": [
-    {
-      "digest": "79e74d6a7b68a35aeb9aa2dd7f6083dae5fdba5b6a2f199529b6c49624d1e27b",
-      "id": 1,
-      "index_id": 1,
-      "version": 1
-    },
-    {
-      "digest": "4415628d9ea79b3c3f1e6f02b1af3416c4d0b261b75abe3cc81b77b7902549c5",
-      "id": 1,
-      "index_id": 1,
-      "version": 1
-    },
-    {
-      "digest": "e901eba95ce8b4d1c159c5d66f24276dc911e87dbff55fb2c10d8b371528eacc",
-      "id": 1,
-      "index_id": 1,
-      "version": 1
-    }
-  ],
-  "success": "true"
-}
+▹▹▹▹▹ ⏰ Building...                         Finished dev [unoptimized + debuginfo] target(s) in 0.96s
+▪▪▪▪▪ ✅ Build succeeded.                    Deploying indexer
 ▪▪▪▪▪ ✅ Successfully deployed indexer.
 ```
 
@@ -312,7 +290,7 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```bash
-curl -X POST http://127.0.0.1:29987/api/graph/my_project/hello_index \
+curl -X POST http://localhost:29987/api/graph/my_project/hello_indexer \
    -H 'content-type: application/json' \
    -d '{"query": "query { tx { id hash block }}", "params": "b"}' \
 | json_pp
@@ -477,7 +455,7 @@ On macOS systems, you can install PostgreSQL through Homebrew. If it isn't prese
 
 For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new `postgres` user account; you can switch to that account by running `sudo -i -u postgres`. After you have switched accounts, you may need to create a `postgres` database role by running `createuser --interactive`. You will be asked a few questions; the name of the role should be `postgres` and you should elect for the new role to be a superuser. Finally, you can create a database by running `createdb [DATABASE_NAME]`.
 
-In either case, your PostgreSQL database should now be accessible at `postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]`.
+In either case, your PostgreSQL database should now be accessible at `postgres://postgres@localhost:5432/[DATABASE_NAME]`.
 
 ### SQLx
 

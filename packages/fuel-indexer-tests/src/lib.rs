@@ -2,6 +2,22 @@ pub mod fixtures;
 
 pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum TestError {
+    #[error("Database error: {0:?}")]
+    DatabaseError(#[from] sqlx::Error),
+    #[error("Error retrieving DATABASE_URL environment variable: {0:?}")]
+    DatabaseUrlEnvVarError(#[from] std::env::VarError),
+    #[error("Error parsing DATABASE_URL environment variable: {0:?}")]
+    DatabaseUrlParseError(#[from] url::ParseError),
+    #[error("Error creating database pool {0:?}")]
+    PoolCreationError(#[from] fuel_indexer_database::IndexerDatabaseError),
+    #[error("Error tearing down database {0:?}")]
+    IoError(#[from] std::io::Error),
+}
+
 pub mod assets {
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
         include_str!("./../components/indices/fuel-indexer-test/fuel_indexer_test.yaml");
@@ -20,10 +36,10 @@ pub mod assets {
 pub mod defaults {
     use std::time::Duration;
 
-    pub const FUEL_NODE_ADDR: &str = "127.0.0.1:4000";
-    pub const FUEL_NODE_HOST: &str = "127.0.0.1";
+    pub const FUEL_NODE_ADDR: &str = "localhost:4000";
+    pub const FUEL_NODE_HOST: &str = "localhost";
     pub const FUEL_NODE_PORT: &str = "4000";
-    pub const WEB_API_ADDR: &str = "127.0.0.1:8000";
+    pub const WEB_API_ADDR: &str = "localhost:8000";
     pub const PING_CONTRACT_ID: &str =
         "68518c3ba3768c863e0d945aa18249f9516d3aa1338083ba79467aa393de109c";
     pub const TRANSFER_BASE_ASSET_ID: &str =
@@ -33,6 +49,7 @@ pub mod defaults {
     pub const INDEXED_EVENT_WAIT: u64 = 2;
     pub const COIN_AMOUNT: u64 = 11;
     pub const MAX_BODY_SIZE: usize = 5242880; // 5MB in bytes
+    pub const POSTGRES_URL: &str = "postgres://postgres:my-secret@localhost:5432";
 }
 
 pub mod utils {

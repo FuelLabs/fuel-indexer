@@ -695,7 +695,7 @@ mod tests {
 
         assert_eq!(config.fuel_node.host, "1.1.1.1".to_string());
         assert_eq!(config.fuel_node.port, "9999".to_string());
-        assert_eq!(config.graphql_api.host, "127.0.0.1".to_string());
+        assert_eq!(config.graphql_api.host, "localhost".to_string());
 
         fs::remove_file(tmp_file_path).unwrap();
     }
@@ -718,9 +718,9 @@ mod tests {
         fs::write(tmp_file_path, config_str).expect("Unable to write file");
         let config = IndexerConfig::from_file(Path::new(tmp_file_path)).unwrap();
 
-        assert_eq!(config.fuel_node.host, "127.0.0.1".to_string());
+        assert_eq!(config.fuel_node.host, "localhost".to_string());
         assert_eq!(config.fuel_node.port, "4000".to_string());
-        assert_eq!(config.graphql_api.host, "127.0.0.1".to_string());
+        assert_eq!(config.graphql_api.host, "localhost".to_string());
 
         match config.database {
             DatabaseConfig::Postgres {

@@ -49,9 +49,11 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.8"
 sqlx = { version = "0.6", features = ["bigdecimal"] }
+thiserror = "1.0"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.2", features = ["env-filter"] }
+url = "2.3"
 wasmer = "2.0"
 wasmer-compiler-cranelift = { version = "2.0" }
 wasmer-engine-universal = "2.0"

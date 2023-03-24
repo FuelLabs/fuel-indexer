@@ -41,6 +41,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         let user = postgres_user
             .clone()
             .unwrap_or(defaults::POSTGRES_USER.to_string());
+
         let port = postgres_port
             .clone()
             .unwrap_or(defaults::POSTGRES_PORT.to_string());
@@ -125,12 +126,14 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         info!("{cmd:?}");
     }
 
-    let _proc = cmd
-        .spawn()
-        .expect("❌ Failed to spawn fuel-indexer child process.");
-
-    // TODO: check stats code of process before saying ok
-    info!("\n✅ Successfully started the indexer service.");
+    if let Ok(child) = cmd.spawn() {
+        info!(
+            "\n✅ Successfully started the indexer service at PID {}.",
+            child.id()
+        );
+    } else {
+        anyhow::bail!("❌ Failed to spawn fuel-indexer child process.");
+    }
 
     Ok(())
 }
