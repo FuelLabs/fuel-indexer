@@ -14,14 +14,14 @@ use forc_tracing::{init_tracing_subscriber, TracingSubscriberOptions};
 
 #[derive(Debug, Parser)]
 #[clap(name = "forc index", about = "Fuel Index Orchestrator", version)]
-struct Opt {
+pub struct Opt {
     /// The command to run
     #[clap(subcommand)]
-    command: ForcIndex,
+    pub command: ForcIndex,
 }
 
 #[derive(Subcommand, Debug)]
-enum ForcIndex {
+pub enum ForcIndex {
     Init(InitCommand),
     New(NewCommand),
     Deploy(DeployCommand),
