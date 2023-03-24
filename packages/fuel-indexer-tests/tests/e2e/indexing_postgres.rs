@@ -751,8 +751,4 @@ async fn test_can_trigger_and_index_pure_function_postgres() {
     );
     assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
     assert_eq!(fn_name, "trigger_pure_function");
-    let data = data
-        .get(8..)
-        .map(|buffer| buffer.to_vec())
-        .unwrap_or(Vec::<u8>::new());
 }
