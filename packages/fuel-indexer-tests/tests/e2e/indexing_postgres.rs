@@ -754,6 +754,7 @@ async fn test_can_trigger_and_index_pure_function_postgres() {
 }
 
 #[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_revert_function_postgres() {
     let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -772,7 +773,6 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
     let res = app.call(req).await;
 
     let status = res.unwrap().status();
-    println!("Response Status: {:?}", status);
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
