@@ -509,10 +509,10 @@ fn process_fn_items(
                                 let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::Revert { id, .. } => {
+                            Receipt::Revert { id, val, .. } => {
                                 #contract
                                 let ty_id = abi::Revert::type_id();
-                                let data = bincode::serialize(&abi::Revert{ contract_id: id }).expect("Bad encoding,");
+                                let data = bincode::serialize(&abi::Revert{ contract_id: id, val }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             _ => {

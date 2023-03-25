@@ -159,6 +159,7 @@ impl NativeFuelType for Call {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Revert {
     pub contract_id: ContractId,
+    pub val: u64,
 }
 
 impl NativeFuelType for Revert {
