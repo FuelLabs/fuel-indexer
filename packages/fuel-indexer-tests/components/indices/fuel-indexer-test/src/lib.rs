@@ -556,7 +556,7 @@ mod fuel_indexer_test {
         let abi::Revert { contract_id, ra } = revert;
 
         let val = match ra {
-            // we can't store the ra value as postgres bigint because of overflow,
+            // We can't store the ra value as postgres bigint because of overflow,
             // so we convert return the VM revert value if it matches: 0x01
             // https://github.com/FuelLabs/fuel-vm/blob/master/fuel-asm/src/panic_reason.rs
             ra if ra == abi::FuelError::FailedAssert as u64 => 0x01,
