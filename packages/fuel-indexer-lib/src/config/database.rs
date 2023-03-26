@@ -19,6 +19,7 @@ pub enum DatabaseConfig {
         host: String,
         port: String,
         database: String,
+        verbose_logging: String,
     },
 }
 
@@ -31,6 +32,7 @@ impl Env for DatabaseConfig {
                 host,
                 port,
                 database,
+                ..
             } => {
                 if is_opt_env_var(user) {
                     *user = std::env::var(trim_opt_env_key(user))?;
@@ -65,8 +67,14 @@ impl std::string::ToString for DatabaseConfig {
                 host,
                 port,
                 database,
+                verbose_logging,
             } => {
-                format!("postgres://{user}:{password}@{host}:{port}/{database}")
+                let params = [("verbose_logging", verbose_logging)]
+                    .iter()
+                    .map(|(k, v)| format!("{k}={v}"))
+                    .collect::<Vec<String>>()
+                    .join("&");
+                format!("postgres://{user}:{password}@{host}:{port}/{database}?{params}")
             }
         }
     }
@@ -80,6 +88,7 @@ impl std::fmt::Debug for DatabaseConfig {
                 host,
                 port,
                 database,
+                verbose_logging,
                 ..
             } => {
                 let _ = f
@@ -89,6 +98,7 @@ impl std::fmt::Debug for DatabaseConfig {
                     .field("host", &host)
                     .field("port", &port)
                     .field("database", &database)
+                    .field("verbose_logging", &verbose_logging)
                     .finish();
             }
         }
@@ -105,6 +115,7 @@ impl Default for DatabaseConfig {
             host: defaults::POSTGRES_HOST.into(),
             port: defaults::POSTGRES_PORT.into(),
             database: defaults::POSTGRES_DATABASE.into(),
+            verbose_logging: defaults::VERBOSE_DB_LOGGING.into(),
         }
     }
 }

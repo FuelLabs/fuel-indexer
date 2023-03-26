@@ -66,6 +66,9 @@
 #     # Postgres port.
 #     port: 5432
 
+#     # Enable verbose database logging.
+#     verbose_logging: false
+
 # # ******************************
 # # Indexer service authentication
 # # ******************************

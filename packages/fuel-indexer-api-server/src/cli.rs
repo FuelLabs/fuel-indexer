@@ -1,7 +1,6 @@
 pub(crate) use crate::commands::run;
 use clap::{Parser, Subcommand};
 use fuel_indexer_lib::config::ApiServerArgs;
-use fuel_indexer_lib::utils::bin_utils::init_logging;
 
 #[derive(Parser, Debug)]
 #[clap(
@@ -23,8 +22,6 @@ pub enum ApiServer {
 }
 
 pub async fn run_cli() -> anyhow::Result<()> {
-    init_logging().await?;
-
     let opt = Opt::try_parse();
 
     match opt {

@@ -185,6 +185,10 @@ pub struct IndexerArgs {
     /// Enable verbose logging.
     #[clap(long, help = "Enable verbose logging.")]
     pub verbose_logging: bool,
+
+    /// Enable verbose database logging.
+    #[clap(long, default_value = defaults::VERBOSE_DB_LOGGING, help = "Enable verbose database logging.")]
+    pub verbose_db_logging: String,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -287,6 +291,10 @@ pub struct ApiServerArgs {
     /// Enable verbose logging.
     #[clap(long, help = "Enable verbose logging.")]
     pub verbose_logging: bool,
+
+    /// Enable verbose database logging.
+    #[clap(long, default_value = defaults::VERBOSE_DB_LOGGING, help = "Enable verbose database logging.")]
+    pub verbose_db_logging: String,
 }
 
 fn derive_http_url(host: &String, port: &String) -> String {
@@ -358,6 +366,7 @@ impl From<IndexerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
+                verbose_logging: args.verbose_db_logging,
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -430,6 +439,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
+                verbose_logging: args.verbose_db_logging,
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -504,6 +514,7 @@ impl IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
+                verbose_logging: args.verbose_db_logging,
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -598,6 +609,7 @@ impl IndexerConfig {
                 let mut pg_host = defaults::POSTGRES_HOST.to_string();
                 let mut pg_port = defaults::POSTGRES_PORT.to_string();
                 let mut pg_db = defaults::POSTGRES_DATABASE.to_string();
+                let mut verbose = defaults::VERBOSE_DB_LOGGING.to_string();
 
                 let pg_host_value =
                     pg_section.get(&serde_yaml::Value::String("host".into()));
@@ -629,12 +641,19 @@ impl IndexerConfig {
                     pg_db = pg_database_value.as_str().unwrap().to_string();
                 }
 
+                let verbose_db_logging =
+                    pg_section.get(&serde_yaml::Value::String("verbose_logging".into()));
+                if let Some(verbose_db_logging) = verbose_db_logging {
+                    verbose = verbose_db_logging.as_str().unwrap().to_string();
+                }
+
                 config.database = DatabaseConfig::Postgres {
                     user: pg_user,
                     password: pg_password,
                     host: pg_host,
                     port: pg_port,
                     database: pg_db,
+                    verbose_logging: verbose,
                 };
             }
         }

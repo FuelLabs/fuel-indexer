@@ -71,6 +71,7 @@ impl TestPostgresDb {
             host,
             port,
             database: db_name.clone(),
+            verbose_logging: "true".to_string(),
         };
 
         // Connect directly to the Postgres server and create a database with the unique string

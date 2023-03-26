@@ -3,7 +3,7 @@ use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig},
     manifest::Manifest,
-    utils::ServiceRequest,
+    utils::{init_logging, ServiceRequest},
 };
 use tracing::info;
 
@@ -39,6 +39,8 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         Some(path) => IndexerConfig::from_file(path)?,
         None => IndexerConfig::from(args.clone()),
     };
+
+    init_logging(&config).await?;
 
     info!("Configuration: {:?}", config);
 
