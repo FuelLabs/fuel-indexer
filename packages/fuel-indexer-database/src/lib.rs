@@ -1,5 +1,10 @@
 #![deny(unused_crate_dependencies)]
 
+pub mod queries;
+pub mod types {
+    pub use fuel_indexer_database_types::*;
+}
+
 pub use fuel_indexer_database_types::DbType;
 use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
 use fuel_indexer_postgres as postgres;
@@ -8,11 +13,6 @@ use sqlx::{
 };
 use std::{cmp::Ordering, collections::HashMap, str::FromStr};
 use thiserror::Error;
-
-pub mod queries;
-pub mod types {
-    pub use fuel_indexer_database_types::*;
-}
 
 #[derive(Debug, Error)]
 pub enum IndexerDatabaseError {

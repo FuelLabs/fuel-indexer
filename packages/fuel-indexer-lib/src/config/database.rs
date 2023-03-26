@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{
     config::{Env, IndexerConfigResult},
     defaults,
@@ -8,6 +6,7 @@ use crate::{
 pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
+use std::{collections::HashMap, str::FromStr};
 use url::{ParseError, Url};
 
 #[derive(Clone, Deserialize)]
@@ -131,6 +130,11 @@ impl FromStr for DatabaseConfig {
 
     fn from_str(db_url: &str) -> Result<Self, Self::Err> {
         let url = Url::parse(db_url)?;
+        let params: HashMap<_, _> = url.query_pairs().into_owned().collect();
+        let value = params
+            .get("verbose_logging")
+            .unwrap_or(&"false".into())
+            .to_owned();
 
         match url.scheme() {
             "postgres" => {
@@ -150,6 +154,7 @@ impl FromStr for DatabaseConfig {
                     host: host.to_string(),
                     port: port.to_string(),
                     database: database.to_string(),
+                    verbose_logging: value,
                 })
             }
             _ => {

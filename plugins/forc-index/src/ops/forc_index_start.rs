@@ -27,7 +27,8 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         jwt_secret,
         jwt_issuer,
         jwt_expiry,
-        verbose,
+        verbose_logging,
+        verbose_db_logging,
         ..
     } = command;
 
@@ -75,12 +76,14 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         cmd.arg("--graphql-api-host").arg(&graphql_api_host);
         cmd.arg("--graphql-api-port").arg(&graphql_api_port);
         cmd.arg("--log-level").arg(&log_level);
+        cmd.arg("--verbose-db-logging").arg(&verbose_db_logging);
 
         // Bool options
         let options = vec![
             ("--run-migrations", run_migrations),
             ("--metrics", metrics),
             ("--auth-enabled", auth_enabled),
+            ("--verbose-logging", verbose_logging),
         ];
         for (opt, value) in options.iter() {
             if *value {
@@ -122,7 +125,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         }
     }
 
-    if verbose {
+    if verbose_logging {
         info!("{cmd:?}");
     }
 
