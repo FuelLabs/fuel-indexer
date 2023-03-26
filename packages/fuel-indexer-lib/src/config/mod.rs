@@ -740,8 +740,8 @@ mod tests {
         let config = IndexerConfig::from_file(FILE).unwrap();
 
         assert!(config.stop_idle_indexers);
-        assert_eq!(config.run_migrations, false);
-        assert_eq!(config.verbose, false);
+        assert!(!config.run_migrations);
+        assert!(!config.verbose);
 
         let DatabaseConfig::Postgres { verbose, .. } = config.database;
         assert_eq!(verbose.as_str(), "false");

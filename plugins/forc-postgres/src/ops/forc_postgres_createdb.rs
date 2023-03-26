@@ -92,7 +92,7 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
     } = command.clone();
 
     let pg_config: PgEmbedConfig = if config.is_some() {
-        IndexerConfig::from_file(&config.clone().unwrap())?.into()
+        IndexerConfig::from_file(config.clone().unwrap())?.into()
     } else {
         command.into()
     };
