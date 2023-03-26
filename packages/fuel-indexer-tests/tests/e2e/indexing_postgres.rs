@@ -784,5 +784,6 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
         .unwrap();
 
     let id: i64 = row.get(0);
-    assert!(id > 0);
+    println!("id: {}", id);
+    assert!(id == 123);
 }

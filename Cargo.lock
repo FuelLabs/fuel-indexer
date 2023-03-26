@@ -2949,6 +2949,7 @@ dependencies = [
 name = "fuel-indexer-test"
 version = "0.0.0"
 dependencies = [
+ "fuel-abi-types 0.2.1",
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
@@ -2969,6 +2970,7 @@ dependencies = [
  "async-std",
  "axum 0.6.12",
  "chrono",
+ "fuel-abi-types 0.2.1",
  "fuel-indexer",
  "fuel-indexer-api-server",
  "fuel-indexer-database",
@@ -3007,6 +3009,7 @@ name = "fuel-indexer-types"
 version = "0.6.1"
 dependencies = [
  "chrono",
+ "fuel-abi-types 0.2.1",
  "fuel-tx",
  "fuel-types 0.26.1",
  "fuels-core",

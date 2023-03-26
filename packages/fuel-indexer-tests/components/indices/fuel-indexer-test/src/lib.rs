@@ -553,7 +553,12 @@ mod fuel_indexer_test {
     fn fuel_indexer_trigger_revert(revert: abi::Revert) {
         Logger::info("fuel_indexer_trigger_revert handling trigger_revert event.");
 
-        let abi::Revert { contract_id, val } = revert;
+        let abi::Revert { contract_id, ra } = revert;
+
+        let val = match ra {
+            ra if ra == abi::FuelError::FailedAssertEq as u64 => ra,
+            _ => 0,
+        };
 
         let entity = RevertEntity {
             id: 123,
