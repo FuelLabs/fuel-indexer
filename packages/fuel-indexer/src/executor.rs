@@ -1,41 +1,41 @@
-use crate::ffi;
-use crate::{database::Database, IndexerConfig, IndexerError, IndexerResult};
-use async_std::sync::{Arc, Mutex};
-use async_trait::async_trait;
-use fuel_indexer_schema::utils::serialize;
-use fuel_indexer_types::abi::BlockData;
-use futures::Future;
-use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
-use thiserror::Error;
-use tokio::task::spawn_blocking;
-use tracing::error;
-use wasmer::{
-    imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store,
-    WasmerEnv,
+use crate::{database::Database, ffi, IndexerConfig, IndexerError, IndexerResult};
+use async_std::{
+    fs::File,
+    io::ReadExt,
+    sync::{Arc, Mutex},
 };
-use wasmer_compiler_cranelift::Cranelift;
-use wasmer_engine_universal::Universal;
-
-use async_std::{fs::File, io::ReadExt};
+use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
 use fuel_core_client::client::{
     types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest};
+use fuel_indexer_schema::utils::serialize;
 use fuel_indexer_types::{
-    abi::TransactionData,
+    abi::{BlockData, TransactionData},
     tx::{TransactionStatus, TxId},
     Bytes32,
 };
-use std::marker::{Send, Sync};
-use std::str::FromStr;
+use futures::Future;
+use std::{
+    marker::{Send, Sync},
+    path::Path,
+    str::FromStr,
+    sync::atomic::{AtomicBool, Ordering},
+};
+use thiserror::Error;
 use tokio::{
-    task::JoinHandle,
+    task::{spawn_blocking, JoinHandle},
     time::{sleep, Duration},
 };
-use tracing::{debug, info};
+use tracing::{debug, error, info};
+use wasmer::{
+    imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store,
+    WasmerEnv,
+};
+use wasmer_compiler_cranelift::Cranelift;
+use wasmer_engine_universal::Universal;
 
 fn compiler() -> Cranelift {
     Cranelift::default()
@@ -72,8 +72,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     kill_switch: Arc<AtomicBool>,
 ) -> impl Future<Output = ()> {
     let fuel_node_addr = config.fuel_node.to_string();
-    // TODO: do whatever start block calculation (or bring the prev calculation forward)
-    let start_block = manifest.start_block.unwrap_or_default();
+    let start_block = manifest.start_block.expect("Failed to detect start_block.");
     let stop_idle_indexers = config.stop_idle_indexers;
 
     let mut next_cursor = if start_block > 1 {
@@ -84,15 +83,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     };
     info!("Subscribing to Fuel node at {fuel_node_addr}");
 
-    let client = FuelClient::from_str(&fuel_node_addr).unwrap_or_else(|e| {
-        panic!("Unable to connect to Fuel node at '{fuel_node_addr}': {e}",)
-    });
+    let client = FuelClient::from_str(&fuel_node_addr)
+        .map_err(|e| panic!("Node connection failed: {e}."))
+        .unwrap();
 
     async move {
         let mut retry_count = 0;
 
         // If we're testing or running on CI, we don't want indexers to run forever. But in production
-        // let the index operators decide if they way to stop idle indexers. Maybe we can eventually
+        // let the index operators decide if they want to stop idle indexers. Maybe we can eventually
         // make this MAX_EMPTY_BLOCK_REQUESTS value configurable
         let max_empty_block_reqs = if stop_idle_indexers {
             MAX_EMPTY_BLOCK_REQUESTS
@@ -109,7 +108,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             } = client
                 .blocks(PaginationRequest {
                     cursor: next_cursor.clone(),
-                    results: 10,
+                    results: NODE_GRAPHQL_PAGE_SIZE,
                     direction: PageDirection::Forward,
                 })
                 .await
@@ -123,15 +122,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     }
                 });
 
-            debug!("Processing {} results", results.len());
-
             let mut block_info = Vec::new();
             for block in results.into_iter() {
                 let producer = block.block_producer().map(|pk| pk.hash());
 
-                // NOTE: for now assuming we have a single contract instance,
-                // we'll need to watch contract creation events here in
-                // case an indexer would be interested in processing it.
                 let mut transactions = Vec::new();
 
                 for trans in block.transactions {
@@ -143,18 +137,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 status,
                             }) = result
                             {
-                                let receipts = match client
+                                let receipts = client
                                     .receipts(&trans.id.to_string())
                                     .await
-                                {
-                                    Ok(r) => r,
-                                    Err(e) => {
-                                        error!(
-                                            "Client communication error fetching receipts: {e:?}",
-                                        );
-                                        vec![]
-                                    }
-                                };
+                                    .unwrap_or_else(|e| {
+                                        error!("Client communication error fetching receipts: {e:?}");
+                                        Vec::new()
+                                    });
 
                                 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
                                 let status = match status {
@@ -167,9 +156,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                         time: Utc
                                             .timestamp_opt(time.to_unix(), 0)
                                             .single()
-                                            .expect(
-                                                "Failed to parse transaction timestamp",
-                                            ),
+                                            .unwrap(),
                                     },
                                     GqlTransactionStatus::Failure {
                                         block_id,
@@ -181,9 +168,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                         time: Utc
                                             .timestamp_opt(time.to_unix(), 0)
                                             .single()
-                                            .expect(
-                                                "Failed to parse transaction timestamp",
-                                            ),
+                                            .unwrap(),
                                         reason,
                                     },
                                     GqlTransactionStatus::Submitted { submitted_at } => {
@@ -191,9 +176,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                             submitted_at: Utc
                                                 .timestamp_opt(submitted_at.to_unix(), 0)
                                                 .single()
-                                                .expect(
-                                                    "Failed to parse transaction timestamp"
-                                                ),
+                                                .unwrap(),
                                         }
                                     }
                                     GqlTransactionStatus::SqueezedOut { reason } => {
@@ -211,9 +194,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             }
                         }
                         Err(e) => {
-                            error!(
-                                "Client communication error fetching transactions: {e:?}",
-                            )
+                            error!("Error fetching transactions: {e:?}.",)
                         }
                     };
                 }
