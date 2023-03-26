@@ -2784,7 +2784,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "futures",
- "serde_yaml",
  "sqlx",
  "thiserror",
  "tokio",

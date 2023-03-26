@@ -28,7 +28,6 @@ fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
 futures = "0.3"
-serde_yaml = "0.8"
 sqlx = { version = "0.6", features = ["bigdecimal"] }
 thiserror = "1.0"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "sync", "process"] }
