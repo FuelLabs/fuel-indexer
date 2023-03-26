@@ -9,8 +9,8 @@ USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
-        --auth-enabled <auth-enabled>
-            Require users to authenticate for some operations. [default: false]
+        --auth-enabled
+            Require users to authenticate for some operations.
 
         --auth-strategy <AUTH_STRATEGY>
             Authentication scheme used.
@@ -20,6 +20,9 @@ OPTIONS:
 
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
+
+        --embedded-database
+            Automatically create and start database using provided options or defaults.
 
         --fuel-node-host <FUEL_NODE_HOST>
             Host of the running Fuel node. [default: localhost]
@@ -50,13 +53,13 @@ OPTIONS:
             debug, error, warn]
 
     -m, --manifest <FILE>
-            Indexer config file.
+            Index config file.
 
         --max-body-size <MAX_BODY_SIZE>
             Max body size for GraphQL API requests. [default: 5242880]
 
-        --metrics <metrics>
-            Use Prometheus metrics reporting. [default: true]
+        --metrics
+            Use Prometheus metrics reporting.
 
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.
@@ -73,8 +76,8 @@ OPTIONS:
         --postgres-user <POSTGRES_USER>
             Postgres username.
 
-        --run-migrations <run-migrations>
-            Run database migrations before starting service. [default: true]
+        --run-migrations
+            Run database migrations before starting service.
 
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
@@ -82,6 +85,11 @@ OPTIONS:
     -V, --version
             Print version information
 
+        --verbose-db-logging
+            Enable verbose database logging.
+
+        --verbose-logging
+            Enable verbose logging.
 ```
 
 ## Using a configuration file

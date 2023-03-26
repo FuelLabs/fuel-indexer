@@ -11,6 +11,7 @@ pub use crate::{
         graphql::GraphQLConfig,
     },
     defaults,
+    utils::bool_to_str,
 };
 pub use clap::{Args, Parser, ValueEnum};
 use serde::Deserialize;
@@ -187,8 +188,8 @@ pub struct IndexerArgs {
     pub verbose_logging: bool,
 
     /// Enable verbose database logging.
-    #[clap(long, default_value = defaults::VERBOSE_DB_LOGGING, help = "Enable verbose database logging.")]
-    pub verbose_db_logging: String,
+    #[clap(long, help = "Enable verbose database logging.")]
+    pub verbose_db_logging: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -293,8 +294,8 @@ pub struct ApiServerArgs {
     pub verbose_logging: bool,
 
     /// Enable verbose database logging.
-    #[clap(long, default_value = defaults::VERBOSE_DB_LOGGING, help = "Enable verbose database logging.")]
-    pub verbose_db_logging: String,
+    #[clap(long, help = "Enable verbose database logging.")]
+    pub verbose_db_logging: bool,
 }
 
 fn derive_http_url(host: &String, port: &String) -> String {
@@ -366,7 +367,7 @@ impl From<IndexerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
-                verbose_logging: args.verbose_db_logging,
+                verbose_logging: bool_to_str(args.verbose_db_logging),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -439,7 +440,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
-                verbose_logging: args.verbose_db_logging,
+                verbose_logging: bool_to_str(args.verbose_db_logging),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -514,7 +515,7 @@ impl IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
-                verbose_logging: args.verbose_db_logging,
+                verbose_logging: bool_to_str(args.verbose_db_logging),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
