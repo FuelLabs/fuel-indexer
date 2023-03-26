@@ -16,7 +16,7 @@
 # run_migrations: true
 #
 # # Enable verbose logging.
-# verbose_logging: false
+# verbose: false
 
 # # ***********************
 # # Fuel Node configuration
@@ -65,9 +65,6 @@
 
 #     # Postgres port.
 #     port: 5432
-
-#     # Enable verbose database logging.
-#     verbose_logging: false
 
 # # ******************************
 # # Indexer service authentication

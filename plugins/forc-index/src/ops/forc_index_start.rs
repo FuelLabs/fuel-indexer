@@ -27,8 +27,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         jwt_secret,
         jwt_issuer,
         jwt_expiry,
-        verbose_logging,
-        verbose_db_logging,
+        verbose,
         ..
     } = command;
 
@@ -82,8 +81,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             ("--run-migrations", run_migrations),
             ("--metrics", metrics),
             ("--auth-enabled", auth_enabled),
-            ("--verbose-logging", verbose_logging),
-            ("--verbose-db-logging", verbose_db_logging),
+            ("--verbose", verbose),
         ];
         for (opt, value) in options.iter() {
             if *value {
@@ -125,7 +123,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         }
     }
 
-    if verbose_logging {
+    if verbose {
         info!("{cmd:?}");
     }
 

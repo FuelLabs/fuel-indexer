@@ -18,7 +18,7 @@ pub enum DatabaseConfig {
         host: String,
         port: String,
         database: String,
-        verbose_logging: String,
+        verbose: String,
     },
 }
 
@@ -66,9 +66,9 @@ impl std::string::ToString for DatabaseConfig {
                 host,
                 port,
                 database,
-                verbose_logging,
+                verbose,
             } => {
-                let params = [("verbose_logging", verbose_logging)]
+                let params = [("verbose", verbose)]
                     .iter()
                     .map(|(k, v)| format!("{k}={v}"))
                     .collect::<Vec<String>>()
@@ -87,7 +87,7 @@ impl std::fmt::Debug for DatabaseConfig {
                 host,
                 port,
                 database,
-                verbose_logging,
+                verbose,
                 ..
             } => {
                 let _ = f
@@ -97,7 +97,7 @@ impl std::fmt::Debug for DatabaseConfig {
                     .field("host", &host)
                     .field("port", &port)
                     .field("database", &database)
-                    .field("verbose_logging", &verbose_logging)
+                    .field("verbose", &verbose)
                     .finish();
             }
         }
@@ -114,7 +114,7 @@ impl Default for DatabaseConfig {
             host: defaults::POSTGRES_HOST.into(),
             port: defaults::POSTGRES_PORT.into(),
             database: defaults::POSTGRES_DATABASE.into(),
-            verbose_logging: defaults::VERBOSE_DB_LOGGING.into(),
+            verbose: defaults::VERBOSE_DB_LOGGING.into(),
         }
     }
 }
@@ -131,10 +131,7 @@ impl FromStr for DatabaseConfig {
     fn from_str(db_url: &str) -> Result<Self, Self::Err> {
         let url = Url::parse(db_url)?;
         let params: HashMap<_, _> = url.query_pairs().into_owned().collect();
-        let value = params
-            .get("verbose_logging")
-            .unwrap_or(&"false".into())
-            .to_owned();
+        let value = params.get("verbose").unwrap_or(&"false".into()).to_owned();
 
         match url.scheme() {
             "postgres" => {
@@ -154,7 +151,7 @@ impl FromStr for DatabaseConfig {
                     host: host.to_string(),
                     port: port.to_string(),
                     database: database.to_string(),
-                    verbose_logging: value,
+                    verbose: value,
                 })
             }
             _ => {

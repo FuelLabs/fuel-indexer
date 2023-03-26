@@ -181,7 +181,7 @@ pub async fn init_logging(config: &IndexerConfig) -> anyhow::Result<()> {
         .map(|x| x.into_string().unwrap())
         .unwrap_or("info".to_string());
 
-    if !config.verbose_logging {
+    if !config.verbose {
         std::env::set_var(RUST_LOG, format!("{level},wasmer_compiler_cranelift=warn"));
     }
 

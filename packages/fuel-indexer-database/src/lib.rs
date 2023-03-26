@@ -57,7 +57,7 @@ impl IndexerConnectionPool {
         let url = url.expect("Database URL should be correctly formed");
         let params: HashMap<_, _> = url.query_pairs().into_owned().collect();
         let verbose = params
-            .get("verbose_logging")
+            .get("verbose")
             .map(|x| x.to_string())
             .unwrap_or("false".to_string());
 

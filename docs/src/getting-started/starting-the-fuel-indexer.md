@@ -53,7 +53,7 @@ OPTIONS:
             debug, error, warn]
 
     -m, --manifest <FILE>
-            Index config file.
+            Indexer config file.
 
         --max-body-size <MAX_BODY_SIZE>
             Max body size for GraphQL API requests. [default: 5242880]
@@ -85,11 +85,9 @@ OPTIONS:
     -V, --version
             Print version information
 
-        --verbose-db-logging
-            Enable verbose database logging.
-
-        --verbose-logging
+    -v, --verbose
             Enable verbose logging.
+
 ```
 
 ## Using a configuration file
