@@ -1,7 +1,9 @@
 use actix_service::Service;
 use actix_web::test;
+use fuel_abi_types::error_codes::FAILED_ASSERT_EQ_SIGNAL;
 use fuel_indexer::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnection};
+
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
@@ -756,6 +758,8 @@ async fn test_can_trigger_and_index_pure_function_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_revert_function_postgres() {
+    use fuel_abi_types::error_codes::FAILED_REQUIRE_SIGNAL;
+
     let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest: Manifest =
@@ -783,7 +787,15 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
         .await
         .unwrap();
 
+    let revert_vm_code = 0x01;
+
     let id: i64 = row.get(0);
-    println!("id: {}", id);
-    assert!(id == 123);
+    let contract_id: &str = row.get(1);
+    let val: i64 = row.get(2);
+    assert_eq!(id, 123);
+    assert_eq!(
+        contract_id,
+        "ebc8aac793173278d6cc4524ca003ff5aa2ddd7a1aff27533dea01cff8d75b7d"
+    );
+    assert_eq!(val, revert_vm_code);
 }
