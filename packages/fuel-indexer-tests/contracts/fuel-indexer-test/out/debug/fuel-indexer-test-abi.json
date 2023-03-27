@@ -456,7 +456,13 @@
       "attributes": null
     },
     {
-      "inputs": [],
+      "inputs": [
+        {
+          "name": "n",
+          "type": 29,
+          "typeArguments": null
+        }
+      ],
       "name": "trigger_panic",
       "output": {
         "name": "",
