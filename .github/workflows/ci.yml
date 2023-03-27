@@ -33,8 +33,6 @@ jobs:
           access_token: ${{ github.token }}
 
   cargo-toml-fmt-check:
-    needs:
-      - check-rustc
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
@@ -49,8 +47,6 @@ jobs:
         run: cargo sort -w --check packages/**/Cargo.toml
 
   set-env-vars:
-    needs:
-      - check-rustc
     runs-on: buildjet-4vcpu-ubuntu-2204
     outputs:
       IS_MASTER: ${{ steps.set-env.outputs.IS_MASTER }}
@@ -84,8 +80,6 @@ jobs:
           fi
 
   mdbook-lint:
-    needs:
-      - check-rustc
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
