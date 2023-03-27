@@ -2,21 +2,42 @@ use crate::{
     tx::{Transaction, TransactionStatus, TxId},
     type_id, Address, AssetId, Bytes32, ContractId, MessageId,
 };
-use fuel_abi_types::error_codes::{
-    FAILED_ASSERT_EQ_SIGNAL, FAILED_ASSERT_SIGNAL, FAILED_REQUIRE_SIGNAL,
-    FAILED_SEND_MESSAGE_SIGNAL, FAILED_TRANSFER_TO_ADDRESS_SIGNAL,
-};
 pub use fuel_tx::Receipt;
 pub use fuels_types::Identity;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
+#[repr(u64)]
 pub enum FuelError {
-    FailedRequire = FAILED_REQUIRE_SIGNAL as isize,
-    FailedTransferToAddress = FAILED_TRANSFER_TO_ADDRESS_SIGNAL as isize,
-    FailedSendMessage = FAILED_SEND_MESSAGE_SIGNAL as isize,
-    FailedAssertEq = FAILED_ASSERT_EQ_SIGNAL as isize,
-    FailedAssert = FAILED_ASSERT_SIGNAL as isize,
+    FailedRequire = 0xffff_ffff_ffff_0000_u64,
+    FailedTransferToAddress = 0xffff_ffff_ffff_0001_u64,
+    FailedSendMessage = 0xffff_ffff_ffff_0002_u64,
+    FailedAssertEq = 0xffff_ffff_ffff_0003_u64,
+    FailedAssert = 0xffff_ffff_ffff_0004_u64,
+}
+
+impl From<u64> for FuelError {
+    fn from(val: u64) -> Self {
+        match val {
+            0xffff_ffff_ffff_0000_u64 => FuelError::FailedRequire,
+            0xffff_ffff_ffff_0001_u64 => FuelError::FailedTransferToAddress,
+            0xffff_ffff_ffff_0002_u64 => FuelError::FailedSendMessage,
+            0xffff_ffff_ffff_0003_u64 => FuelError::FailedAssertEq,
+            0xffff_ffff_ffff_0004_u64 => FuelError::FailedAssert,
+            _ => panic!("Invalid FuelError value: {}", val),
+        }
+    }
+}
+
+impl FuelError {
+    pub fn unmask(&self) -> u64 {
+        match self {
+            FuelError::FailedRequire => 0x0000,
+            FuelError::FailedTransferToAddress => 0x0001,
+            FuelError::FailedSendMessage => 0x00002,
+            FuelError::FailedAssertEq => 0x0003,
+            FuelError::FailedAssert => 0x0004,
+        }
+    }
 }
 
 pub const FUEL_TYPES_NAMESPACE: &str = "fuel";

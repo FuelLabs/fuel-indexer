@@ -554,14 +554,7 @@ mod fuel_indexer_test {
         Logger::info("fuel_indexer_trigger_revert handling trigger_revert event.");
 
         let abi::Revert { contract_id, ra } = revert;
-
-        let val = match ra {
-            // We can't store the ra value as postgres bigint because of overflow,
-            // so we convert return the VM revert value if it matches: 0x01
-            // https://github.com/FuelLabs/fuel-vm/blob/master/fuel-asm/src/panic_reason.rs
-            ra if ra == abi::FuelError::FailedAssert as u64 => 0x01,
-            _ => 0,
-        };
+        let val = FuelError::from(ra).unmask();
 
         let entity = RevertEntity {
             id: 123,
