@@ -236,5 +236,5 @@ type MessageEntity {
 type RevertEntity {
     id: ID!
     contract_id: ContractId!
-    val: UInt8!
+    error_val: UInt8!
 }

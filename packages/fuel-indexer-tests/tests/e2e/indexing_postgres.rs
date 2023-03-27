@@ -788,11 +788,11 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
 
     let id: i64 = row.get(0);
     let contract_id: &str = row.get(1);
-    let val: i64 = row.get(2);
+    let error_val: i64 = row.get(2);
     assert_eq!(id, 123);
     assert_eq!(
         contract_id,
         "ebc8aac793173278d6cc4524ca003ff5aa2ddd7a1aff27533dea01cff8d75b7d"
     );
-    assert_eq!(val, revert_vm_code);
+    assert_eq!(error_val, revert_vm_code);
 }

@@ -655,14 +655,8 @@ pub mod test_web {
             .call()
             .await;
 
-        println!("Result: {:?}", result);
-
         match result {
-            Ok(_) => HttpResponse::Ok(),
-            Err(_) => {
-                //Force 200 on err response here, because we have successfully triggered a panic
-                HttpResponse::Ok()
-            }
+            _ => HttpResponse::Ok(),
         }
     }
 

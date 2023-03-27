@@ -3007,7 +3007,6 @@ name = "fuel-indexer-types"
 version = "0.6.1"
 dependencies = [
  "chrono",
- "fuel-abi-types 0.2.1",
  "fuel-tx",
  "fuel-types 0.26.1",
  "fuels-core",

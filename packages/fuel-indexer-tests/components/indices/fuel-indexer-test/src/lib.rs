@@ -553,13 +553,15 @@ mod fuel_indexer_test {
     fn fuel_indexer_trigger_revert(revert: abi::Revert) {
         Logger::info("fuel_indexer_trigger_revert handling trigger_revert event.");
 
-        let abi::Revert { contract_id, ra } = revert;
-        let val = FuelError::from(ra).unmask();
+        let abi::Revert {
+            contract_id,
+            error_val,
+        } = revert;
 
         let entity = RevertEntity {
             id: 123,
             contract_id,
-            val,
+            error_val,
         };
 
         entity.save();
