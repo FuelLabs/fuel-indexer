@@ -17,7 +17,7 @@ env:
   REGISTRY: ghcr.io
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   SQLX_OFFLINE: true
-  RUSTC_VERSION: 1.67
+  RUSTC_VERSION: 1.68.1
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   IS_MASTER: ${{ github.ref == 'refs/heads/master' }}
   IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
