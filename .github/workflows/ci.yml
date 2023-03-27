@@ -248,7 +248,29 @@ jobs:
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
 
       - name: Run E2E and integration tests
-        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
+        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests --workspace --exclude forc-index-tests -- --test-threads=1
+
+  cargo-test-forc-index-plugins:
+    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
+    needs: 
+      - cargo-toml-fmt-check
+      - set-env-vars
+    runs-on: buildjet-4vcpu-ubuntu-2204
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          target: wasm32-unknown-unknown
+
+      - uses: Swatinem/rust-cache@v1
+
+      - name: wasm-snip
+        run: cargo install wasm-snip
+
+      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
+        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
 
   check-forc-index:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
