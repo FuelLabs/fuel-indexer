@@ -418,7 +418,7 @@ pub mod test_web {
     async fn fuel_indexer_test_transfer(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(1_000_000, AssetId::default(), 0);
+        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
 
         let _ = state
             .contract
@@ -477,7 +477,7 @@ pub mod test_web {
     async fn fuel_indexer_test_transferout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(1_000_000, AssetId::default(), 0);
+        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
 
         let _ = state
             .contract
@@ -496,7 +496,7 @@ pub mod test_web {
     async fn fuel_indexer_test_messageout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(1_000_000, AssetId::default(), 0);
+        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
 
         let _ = state
             .contract

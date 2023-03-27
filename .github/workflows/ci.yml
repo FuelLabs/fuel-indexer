@@ -200,8 +200,8 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
+      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
+        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
 
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
