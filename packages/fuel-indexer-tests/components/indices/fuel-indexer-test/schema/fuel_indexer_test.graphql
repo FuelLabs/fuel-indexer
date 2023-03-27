@@ -21,6 +21,7 @@ type QueryRoot {
     u16entity: U16Entity
     messageentity: MessageEntity
     callentity: CallEntity
+    panicentity: PanicEntity
 
     # GraphQL API test entities
     genre: Genre
@@ -230,4 +231,9 @@ type SportsTeam {
 type MessageEntity {
     id: ID!
     message: Charfield!
+}
+
+type PanicEntity {
+    id: ID!
+    contract_id: ContractId!
 }
