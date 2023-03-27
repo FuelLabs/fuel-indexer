@@ -98,51 +98,6 @@ jobs:
             echo "Not a release branch ^(^.^)^"
           fi
 
-  name: Check Fuel Version
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-jobs:
-  check-fuel-version:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-
-      - name: Install cargo-edit
-        run: cargo install cargo-edit
-
-      - name: Check latest fuels version
-        run: |
-        # Get the latest version of fuels from GitHub
-        LATEST_FUELS_VERSION=$(curl -s https://api.github.com/repos/FuelLabs/fuels-rs/releases/latest | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
-        echo "Latest fuels version: $LATEST_FUELS_VERSION"
-
-        # Extract the version from packages/fuel-indexer-tests/Cargo.toml
-        CURRENT_FUELS_VERSION=$(grep -E '^fuels = "([^"]+)"' packages/fuel-indexer-tests/Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
-        echo "Current fuels version: $CURRENT_FUELS_VERSION"
-
-        # Compare versions and exit with non-zero status if they don't match
-        if [ "$LATEST_FUELS_VERSION" != "$CURRENT_FUELS_VERSION" ]; then
-            echo "The current fuels version ($CURRENT_FUELS_VERSION) does not match the latest version ($LATEST_FUELS_VERSION)"
-            exit 1
-        else
-          echo "The current fuels version ($CURRENT_FUELS_VERSION) matches the latest version ($LATEST_FUELS_VERSION)"
-        fi
-
   mdbook-lint:
     needs:
       - check-rustc
@@ -211,6 +166,24 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
 
+      - name: Check latest fuels version
+        run: |
+          # Get the latest version of fuels from GitHub
+          LATEST_FUELS_VERSION=$(curl -s https://api.github.com/repos/FuelLabs/fuels-rs/releases/latest | grep '"tag_name":' | sed -E 's/.*"tag_name": "([^"]+)".*/\1/')
+          echo "Latest fuels version: $LATEST_FUELS_VERSION"
+
+          # Extract the version from packages/fuel-indexer-tests/Cargo.toml
+          CURRENT_FUELS_VERSION=$(grep -E '^fuels = "([^"]+)"' packages/fuel-indexer-tests/Cargo.toml | sed -E 's/.*"([^"]+)".*/\1/')
+          echo "Current fuels version: $CURRENT_FUELS_VERSION"
+
+          # Compare versions and exit with non-zero status if they don't match
+          if [ "$LATEST_FUELS_VERSION" != "$CURRENT_FUELS_VERSION" ]; then
+            echo "The current fuels version ($CURRENT_FUELS_VERSION) does not match the latest version ($LATEST_FUELS_VERSION)"
+            exit 1
+          else
+            echo "The current fuels version ($CURRENT_FUELS_VERSION) matches the latest version ($LATEST_FUELS_VERSION)"
+          fi
+
   cargo-clippy:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
@@ -266,8 +239,8 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
+      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
+        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests
 
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
@@ -314,29 +287,7 @@ jobs:
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
 
       - name: Run E2E and integration tests
-        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests --workspace --exclude forc-index-tests -- --test-threads=1
-       
-  cargo-test-forc-index-plugins:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
-    needs: 
-      - cargo-toml-fmt-check
-      - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v1
-
-      - name: wasm-snip
-        run: cargo install wasm-snip
-
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
+        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   check-forc-index:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
