@@ -54,14 +54,10 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     wallet.set_provider(provider.clone());
 
-    let contract_id = Contract::deploy(
-        bin_path_str,
-        &wallet,
-        tx_params(),
-        StorageConfiguration::default(),
-    )
-    .await
-    .unwrap();
+    let contract_id =
+        Contract::deploy(bin_path_str, &wallet, DeployConfiguration::default())
+            .await
+            .unwrap();
 
     let contract = Simple::new(contract_id, wallet);
 
