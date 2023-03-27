@@ -647,7 +647,7 @@ pub mod test_web {
     async fn fuel_indexer_test_trigger_revert(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let result = state
+        let _ = state
             .contract
             .methods()
             .trigger_revert()
@@ -655,9 +655,7 @@ pub mod test_web {
             .call()
             .await;
 
-        match result {
-            _ => HttpResponse::Ok(),
-        }
+        HttpResponse::Ok()
     }
 
     pub struct AppState {
