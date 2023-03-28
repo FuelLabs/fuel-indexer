@@ -513,6 +513,7 @@ fn process_fn_items(
                                 #contract
                                 let ty_id = abi::Panic::type_id();
                                 let data = bincode::serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() }).expect("Bad encoding,");
+                            }
                             Receipt::Revert { id, ra, .. } => {
                                 #contract
                                 let ty_id = abi::Revert::type_id();
@@ -523,6 +524,7 @@ fn process_fn_items(
                                 Logger::info("This type is not handled yet. (>'.')>");
                             }
                         }
+
                     }
 
                     decoder.dispatch()#awaitness;
