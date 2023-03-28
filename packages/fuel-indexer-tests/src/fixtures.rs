@@ -645,6 +645,20 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_trigger_revert(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_revert()
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest,
     }
@@ -704,6 +718,7 @@ pub mod test_web {
                 "/pure_function",
                 web::post().to(fuel_indexer_test_pure_function),
             )
+            .route("/revert", web::post().to(fuel_indexer_test_trigger_revert))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

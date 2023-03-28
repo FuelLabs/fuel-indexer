@@ -2,6 +2,7 @@ use actix_service::Service;
 use actix_web::test;
 use fuel_indexer::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnection};
+
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
@@ -751,4 +752,47 @@ async fn test_can_trigger_and_index_pure_function_postgres() {
     );
     assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
     assert_eq!(fn_name, "trigger_pure_function");
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_revert_function_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/revert").to_request();
+    let res = app.call(req).await;
+
+    let status = res.unwrap().status();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.revertentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let revert_vm_code = 0x0004;
+
+    let id: i64 = row.get(0);
+    let contract_id: &str = row.get(1);
+    let error_val: i64 = row.get(2);
+    assert_eq!(id, 123);
+    assert_eq!(
+        contract_id,
+        "ebc8aac793173278d6cc4524ca003ff5aa2ddd7a1aff27533dea01cff8d75b7d"
+    );
+    assert_eq!(error_val, revert_vm_code);
 }

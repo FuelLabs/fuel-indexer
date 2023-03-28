@@ -155,3 +155,15 @@ impl NativeFuelType for Call {
         type_id(FUEL_TYPES_NAMESPACE, "Call") as usize
     }
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Revert {
+    pub contract_id: ContractId,
+    pub error_val: u64,
+}
+
+impl NativeFuelType for Revert {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Revert") as usize
+    }
+}

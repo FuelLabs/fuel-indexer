@@ -13,3 +13,4 @@ There are several types of receipts that can be attached to a transaction and in
 - [**Transfer**](./receipts/transfer.md)
 - [**TransferOut**](./receipts/transferout.md)
 - [**ScriptResult**](./receipts/scriptresult.md)
+- [**Revert**](./receipts/revert.md)

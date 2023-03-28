@@ -132,6 +132,7 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "ScriptResult" => quote! { abi::ScriptResult },
             "Transfer" => quote! { abi::Transfer },
             "TransferOut" => quote! { abi::TransferOut },
+            "Revert" => quote! { abi::Revert },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!(
