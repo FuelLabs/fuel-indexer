@@ -9,8 +9,8 @@ pub struct Revert {
 ```
 
 - A Revert receipt is produced when a Sway smart contract function call fails. 
-The table below lists possible reasons for the failure and their values. 
-The `error_val` field records these values, enabling your indexer to identify the specific cause of the reversion 
+- The table below lists possible reasons for the failure and their values. 
+- The `error_val` field records these values, enabling your indexer to identify the specific cause of the reversion.
 
 | Reason                | Value |
 |-----------------------|-------|
@@ -26,6 +26,6 @@ You can handle functions that could produce a `Revert` receipt by adding a param
 
 ```rust, ignore
 fn handle_revert(revert: abi::Revert) {
-  // handle the transfer out
+  // handle the revert 
 }
 ```

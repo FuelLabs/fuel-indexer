@@ -162,8 +162,6 @@ pub struct Revert {
     pub error_val: u64,
 }
 
-pub struct SomeThing();
-
 impl NativeFuelType for Revert {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Revert") as usize
