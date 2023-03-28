@@ -8,6 +8,7 @@ pub struct Panic {
     pub reason: PanicReason, 
 }
 ```
+
 - A Panic receipt is produced when a Sway smart contract call 
 fails for a reason that doesn't produce a revert. 
 - The reason is type PanicReason, which is an enum of `u8` variants, you can see the reason values 
