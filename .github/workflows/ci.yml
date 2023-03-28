@@ -17,7 +17,7 @@ env:
   REGISTRY: ghcr.io
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   SQLX_OFFLINE: true
-  RUSTC_VERSION: 1.67
+  RUSTC_VERSION: 1.68.1
   BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
   IS_MASTER: ${{ github.ref == 'refs/heads/master' }}
   IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
@@ -32,24 +32,7 @@ jobs:
         with:
           access_token: ${{ github.token }}
 
-  check-rustc:
-    needs:
-      - cancel-previous-runs
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    steps:
-      - name: Check rustc version
-        run: |
-          # Check rustc version, log message and exit if it doesnt match env
-          CURRENT_RUSTC_VERSION=$(rustc --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | cut -c -4)
-          if [ "$CURRENT_RUSTC_VERSION" != "$RUSTC_VERSION" ]; then
-            echo "Rustc version ($CURRENT_RUSTC_VERSION) does not match the required version ($RUSTC_VERSION)"
-            exit 1
-          fi
-          echo "Rustc version ($CURRENT_RUSTC_VERSION) matches the required version ($RUSTC_VERSION)"
-
   cargo-toml-fmt-check:
-    needs:
-      - check-rustc
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
@@ -64,8 +47,6 @@ jobs:
         run: cargo sort -w --check packages/**/Cargo.toml
 
   set-env-vars:
-    needs:
-      - check-rustc
     runs-on: buildjet-4vcpu-ubuntu-2204
     outputs:
       IS_MASTER: ${{ steps.set-env.outputs.IS_MASTER }}
@@ -99,8 +80,6 @@ jobs:
           fi
 
   mdbook-lint:
-    needs:
-      - check-rustc
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
       - uses: actions/checkout@v3
@@ -270,7 +249,7 @@ jobs:
 
       - name: Run E2E and integration tests
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests --workspace --exclude forc-index-tests -- --test-threads=1
-       
+
   cargo-test-forc-index-plugins:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
     needs: 

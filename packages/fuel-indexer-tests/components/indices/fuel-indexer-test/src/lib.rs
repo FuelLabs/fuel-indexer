@@ -565,4 +565,21 @@ mod fuel_indexer_test {
         };
         panic.save();
     }
+
+    fn fuel_indexer_trigger_revert(revert: abi::Revert) {
+        Logger::info("fuel_indexer_trigger_revert handling trigger_revert event.");
+
+        let abi::Revert {
+            contract_id,
+            error_val,
+        } = revert;
+
+        let entity = RevertEntity {
+            id: 123,
+            contract_id,
+            error_val,
+        };
+
+        entity.save();
+    }
 }

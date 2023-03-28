@@ -19,9 +19,9 @@ fuel-indexer-lib = { workspace = true, default-features = false }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
 fuel-tx = "0.26.0"
-fuels-code-gen = { version = "0.37", default-features = false }
-fuels-core = { version = "0.37", default-features = false }
-fuels-types = { version = "0.37", default-features = false }
+fuels-code-gen = { version = "0.38.1", default-features = false }
+fuels-core = { version = "0.38.1", default-features = false }
+fuels-types = { version = "0.38.1", default-features = false }
 graphql-parser = "0.3"
 lazy_static = "1.4"
 proc-macro-error = "1.0"
@@ -34,9 +34,9 @@ syn = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
 fuel-indexer-plugin = { workspace = true }
-fuels = { version = "0.37" }
-fuels-macros = { version = "0.37", default-features = false }
-fuels-types = { version = "0.37", default-features = false }
+fuels = { version = "0.38.1" }
+fuels-macros = { version = "0.38.1", default-features = false }
+fuels-types = { version = "0.38.1", default-features = false }
 trybuild = "1.0"
 
 [features]

@@ -168,3 +168,14 @@ impl NativeFuelType for Panic {
         type_id(FUEL_TYPES_NAMESPACE, "Panic") as usize
     }
 }
+
+pub struct Revert {
+    pub contract_id: ContractId,
+    pub error_val: u64,
+}
+
+impl NativeFuelType for Revert {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Revert") as usize
+    }
+}

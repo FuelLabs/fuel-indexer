@@ -507,6 +507,16 @@
     },
     {
       "inputs": [],
+      "name": "trigger_revert",
+      "output": {
+        "name": "",
+        "type": 0,
+        "typeArguments": null
+      },
+      "attributes": null
+    },
+    {
+      "inputs": [],
       "name": "trigger_scriptresult",
       "output": {
         "name": "",
