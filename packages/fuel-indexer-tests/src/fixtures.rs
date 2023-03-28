@@ -645,11 +645,10 @@ pub mod test_web {
     }
 
     async fn fuel_indexer_test_panic(state: web::Data<Arc<AppState>>) -> impl Responder {
-        let arg: u8 = 100;
         let result = state
             .contract
             .methods()
-            .trigger_panic(arg)
+            .trigger_panic()
             .tx_params(tx_params())
             .call()
             .await;

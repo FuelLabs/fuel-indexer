@@ -76,7 +76,7 @@ abi FuelIndexer {
     fn trigger_vec_pong_calldata(v: Vec<u8>);
     fn trigger_vec_pong_logdata();
     fn trigger_pure_function();
-    fn trigger_panic(n: u8);
+    fn trigger_panic() -> u64;
 }
 
 impl FuelIndexer for Contract {
@@ -206,30 +206,12 @@ impl FuelIndexer for Contract {
     }
 
 
-fn overflow_example(a: u64, b: u64) -> u64 {
-    let result: u64;
-    asm(result: r0, r1: a, r2: b) {
-        // Load the maximum possible u64 value into r3
-        movi r3 0xFFFFFFFFFFFFFFFF;
-
-        // Subtract a from the maximum u64 value, and store the result in r4
-        sub r4 r3 r1;
-
-        // Add 1 to r4, causing an overflow if r4 equals r2
-        addi r4 r4 1;
-
-        // If r2 is less than or equal to r4, jump to the `no_overflow` label
-        lt r5 r2 r4;
-        jnzf r5 no_overflow;
-
-        // Force an integer overflow by adding a and b
-        add r0 r1 r2;
-
-        // Return from the assembly block
-        ret;
-
-    fn trigger_panic(n: u8) {
-        let base: u8 = 255;
-        let result = base * n; 
+    fn trigger_panic() -> u64 {
+        let r0: u64 = 18_446_744_073_709_551_615u64;
+        // add r0 & r0 (which is the maximum u64 value) and put the result in r1
+        asm(r0: r0, r1) {
+            add r1 r0 r0; 
+            r1: u64
+        }
     }
 }

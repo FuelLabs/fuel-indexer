@@ -456,17 +456,11 @@
       "attributes": null
     },
     {
-      "inputs": [
-        {
-          "name": "n",
-          "type": 29,
-          "typeArguments": null
-        }
-      ],
+      "inputs": [],
       "name": "trigger_panic",
       "output": {
         "name": "",
-        "type": 0,
+        "type": 28,
         "typeArguments": null
       },
       "attributes": null
