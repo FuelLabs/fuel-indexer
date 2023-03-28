@@ -213,6 +213,8 @@ impl FuelIndexer for Contract {
             add r1 r0 r0; 
             r1: u64
         }
+    }
+
     fn trigger_revert() {
         assert(1 == 0);
     }

@@ -563,6 +563,7 @@ mod fuel_indexer_test {
             contract_id,
             reason: reason as u64,
         };
+
         panic.save();
     }
 

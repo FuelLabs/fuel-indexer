@@ -36,6 +36,9 @@ async fn setup_test_components(
     (fuel_node_handle, test_db, srvc)
 }
 
+const EXPECTED_CONTRACT_ID: &str =
+    "59d8f46aea962725fc3d78622556a0c02583ac2a4693c4ea3cc1e5ddeb359578";
+
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
@@ -790,10 +793,7 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
     let contract_id: &str = row.get(1);
     let error_val: i64 = row.get(2);
     assert_eq!(id, 123);
-    assert_eq!(
-        contract_id,
-        "ebc8aac793173278d6cc4524ca003ff5aa2ddd7a1aff27533dea01cff8d75b7d"
-    );
+    assert_eq!(contract_id, EXPECTED_CONTRACT_ID);
     assert_eq!(error_val, revert_vm_code);
 }
 
@@ -814,7 +814,7 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
     let req = test::TestRequest::post().uri("/panic").to_request();
-    let _ = app.call(req).await;
+    let res = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
@@ -825,14 +825,13 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
         .await
         .unwrap();
 
-    let expected_contract_id =
-        "522e813b7c17eb399aaca0a3ee7293d7a93191b0a40e7baec97d1b5e0f1637dd";
     let expected_reason = 5;
-
     let id: i64 = row.get(0);
     let contract_id: &str = row.get(1);
+    println!("contract_id: {}", contract_id);
+
     let reason: i64 = row.get(2);
     assert_eq!(id, 123);
-    assert_eq!(contract_id, expected_contract_id);
+    assert_eq!(contract_id, EXPECTED_CONTRACT_ID);
     assert_eq!(reason, expected_reason);
 }
