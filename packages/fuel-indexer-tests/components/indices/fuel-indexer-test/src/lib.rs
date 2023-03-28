@@ -553,11 +553,15 @@ mod fuel_indexer_test {
     fn fuel_indexer_test_panic(panic: abi::Panic) {
         Logger::info("fuel_indexer_test_panic handling Panic event.");
 
-        let abi::Panic { contract_id } = panic;
+        let abi::Panic {
+            contract_id,
+            reason,
+        } = panic;
 
         let panic = PanicEntity {
             id: 123,
             contract_id,
+            reason: reason as u64,
         };
         panic.save();
     }

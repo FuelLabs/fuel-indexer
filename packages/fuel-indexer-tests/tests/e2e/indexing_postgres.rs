@@ -781,8 +781,14 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
         .await
         .unwrap();
 
+    let expected_contract_id =
+        "522e813b7c17eb399aaca0a3ee7293d7a93191b0a40e7baec97d1b5e0f1637dd";
+    let expected_reason = 5;
+
     let id: i64 = row.get(0);
     let contract_id: &str = row.get(1);
     let reason: i64 = row.get(2);
     assert_eq!(id, 123);
+    assert_eq!(contract_id, expected_contract_id);
+    assert_eq!(reason, expected_reason);
 }

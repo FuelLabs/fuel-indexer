@@ -233,7 +233,14 @@ type MessageEntity {
     message: Charfield!
 }
 
+type InstructionResult{
+    id: ID!
+    reason: UInt8!,
+    instruction: UInt8!,
+}
+
 type PanicEntity {
     id: ID!
     contract_id: ContractId!
+    reason: UInt8! 
 }
