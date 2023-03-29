@@ -76,6 +76,7 @@ abi FuelIndexer {
     fn trigger_vec_pong_calldata(v: Vec<u8>);
     fn trigger_vec_pong_logdata();
     fn trigger_pure_function();
+    fn trigger_panic() -> u64;
     fn trigger_revert();
 }
 
@@ -203,6 +204,15 @@ impl FuelIndexer for Contract {
 
     fn trigger_pure_function() {
         let sum = 1 + 2;
+    }
+
+    fn trigger_panic() -> u64 {
+        let r0: u64 = 18_446_744_073_709_551_615u64;
+        // add r0 & r0 (which is the maximum u64 value) and put the result in r1
+        asm(r0: r0, r1) {
+            add r1 r0 r0; 
+            r1: u64
+        }
     }
 
     fn trigger_revert() {
