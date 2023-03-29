@@ -2,7 +2,6 @@ use crate::{
     tx::{Transaction, TransactionStatus, TxId},
     type_id, Address, AssetId, Bytes32, ContractId, MessageId,
 };
-use fuel_tx::PanicReason;
 pub use fuel_tx::Receipt;
 pub use fuels_types::Identity;
 use serde::{Deserialize, Serialize};
@@ -160,7 +159,7 @@ impl NativeFuelType for Call {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Panic {
     pub contract_id: ContractId,
-    pub reason: PanicReason,
+    pub reason: u32,
 }
 
 impl NativeFuelType for Panic {

@@ -237,7 +237,7 @@ type MessageEntity {
 type PanicEntity {
     id: ID!
     contract_id: ContractId!
-    reason: UInt8! 
+    reason: UInt4! 
 }
 
 type RevertEntity {

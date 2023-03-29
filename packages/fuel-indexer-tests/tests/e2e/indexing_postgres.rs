@@ -826,11 +826,11 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
         .unwrap();
 
     let expected_reason = 5;
+
     let id: i64 = row.get(0);
     let contract_id: &str = row.get(1);
-    println!("contract_id: {}", contract_id);
+    let reason: i32 = row.get(2);
 
-    let reason: i64 = row.get(2);
     assert_eq!(id, 123);
     assert_eq!(contract_id, EXPECTED_CONTRACT_ID);
     assert_eq!(reason, expected_reason);

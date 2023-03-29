@@ -561,7 +561,7 @@ mod fuel_indexer_test {
         let panic = PanicEntity {
             id: 123,
             contract_id,
-            reason: reason as u64,
+            reason,
         };
 
         panic.save();
