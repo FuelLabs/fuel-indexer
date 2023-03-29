@@ -30,6 +30,7 @@
     - [Log](./reference-guide/indexing/receipts/log.md)
     - [LogData](./reference-guide/indexing/receipts/logdata.md)
     - [MessageOut](./reference-guide/indexing/receipts/messageout.md)
+    - [Panic](./reference-guide/indexing/receipts/panic.md)
     - [Return](./reference-guide/indexing/receipts/return.md)
     - [ReturnData](./reference-guide/indexing/receipts/returndata.md)
     - [Revert](./reference-guide/indexing/receipts/revert.md)

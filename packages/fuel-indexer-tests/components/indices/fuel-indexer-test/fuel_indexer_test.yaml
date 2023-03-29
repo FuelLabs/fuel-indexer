@@ -2,7 +2,7 @@ namespace: fuel_indexer_test
 graphql_schema: packages/fuel-indexer-tests/components/indices/fuel-indexer-test/schema/fuel_indexer_test.graphql
 abi: packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json
 start_block: 1
-contract_id: fuel1a0y243unzue834kvg5jv5qpl7k4zmht6rtljw5eaagqul7xhtd7sjagmfy
+contract_id: fuel1t8v0g6h2jcnjtlpa0p3z244qcqjc8tp2g6fuf63uc8jam6e4j4uqen2kpu
 identifier: index1
 module:
   wasm: target/wasm32-unknown-unknown/release/fuel_indexer_test.wasm

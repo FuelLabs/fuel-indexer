@@ -645,6 +645,19 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_trigger_panic(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_panic()
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
     async fn fuel_indexer_test_trigger_revert(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
@@ -718,6 +731,7 @@ pub mod test_web {
                 "/pure_function",
                 web::post().to(fuel_indexer_test_pure_function),
             )
+            .route("/panic", web::post().to(fuel_indexer_test_trigger_panic))
             .route("/revert", web::post().to(fuel_indexer_test_trigger_revert))
     }
 
