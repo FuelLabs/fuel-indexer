@@ -54,9 +54,9 @@ tokio = { version = "1.8", features = ["macros", "rt-multi-thread"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.2", features = ["env-filter"] }
 url = "2.3"
-wasmer = "2.0"
-wasmer-compiler-cranelift = { version = "2.0" }
-wasmer-engine-universal = "2.0"
+wasmer = "2.3"
+wasmer-compiler-cranelift = { version = "2.3" }
+wasmer-engine-universal = "2.3"
 
 [features]
 e2e = []
