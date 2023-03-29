@@ -15,6 +15,7 @@ path = "src/bin/main.rs"
 
 [dependencies]
 anyhow = "1.0"
+async-graphql = "5.0.7"
 async-std = "1"
 axum = { version = "0.6", features = ["multipart", "macros"] }
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }

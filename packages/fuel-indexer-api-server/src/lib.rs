@@ -7,4 +7,3 @@ mod uses;
 
 pub mod cli;
 pub(crate) mod commands;
-pub(crate) mod playground_source;

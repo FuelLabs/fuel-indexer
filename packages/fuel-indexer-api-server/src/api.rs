@@ -1,9 +1,8 @@
 use crate::{
     auth::AuthenticationMiddleware,
-    playground_source::{playground_source, GraphQLPlaygroundConfig},
     uses::{
-        get_nonce, health_check, metrics, query_graph, register_indexer_assets,
-        revert_indexer, stop_indexer, verify_signature,
+        get_nonce, gql_playground, health_check, metrics, query_graph,
+        register_indexer_assets, revert_indexer, stop_indexer, verify_signature,
     },
 };
 use async_std::sync::{Arc, RwLock};
@@ -154,7 +153,8 @@ impl GraphQlApi {
             .layer(Extension(config.clone()))
             .layer(Extension(pool.clone()))
             .layer(Extension(start_time))
-            .route("/metrics", get(metrics));
+            .route("/metrics", get(metrics))
+            .route("/graphql", get(gql_playground));
 
         let auth_routes = Router::new()
             .route("/nonce", get(get_nonce))

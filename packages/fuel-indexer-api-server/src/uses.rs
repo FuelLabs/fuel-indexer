@@ -2,6 +2,7 @@ use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::VerifySignatureRequest,
 };
+use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
@@ -390,6 +391,18 @@ pub async fn run_query(
             Err(e.into())
         }
     }
+}
+
+pub async fn gql_playground() -> impl IntoResponse {
+    let html = playground_source(
+        GraphQLPlaygroundConfig::new("/graphql").subscription_endpoint("/graphql"),
+    );
+
+    Response::builder()
+        .status(StatusCode::OK)
+        .header(http::header::CONTENT_TYPE, "text/html; charset=utf-8")
+        .body(Body::from(html))
+        .expect("Failed to build gql playground response.")
 }
 
 pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
