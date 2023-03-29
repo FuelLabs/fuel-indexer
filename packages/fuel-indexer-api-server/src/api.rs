@@ -1,5 +1,6 @@
 use crate::{
     auth::AuthenticationMiddleware,
+    playground_source::{playground_source, GraphQLPlaygroundConfig},
     uses::{
         get_nonce, health_check, metrics, query_graph, register_indexer_assets,
         revert_indexer, stop_indexer, verify_signature,
@@ -32,7 +33,6 @@ use tower_http::{
     LatencyUnit,
 };
 use tracing::{error, Level};
-
 pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
 #[derive(Debug, Error)]
