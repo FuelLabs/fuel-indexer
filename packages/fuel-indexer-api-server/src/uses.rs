@@ -390,7 +390,7 @@ pub async fn run_query(
 
 pub async fn gql_playground() -> impl IntoResponse {
     let html = playground_source(GraphQLPlaygroundConfig::new(
-        "/api/playground/fuel_indexer_test/index1",
+        "/api/graph/fuel_indexer_test/index1",
     ));
 
     AxumResponse::builder()

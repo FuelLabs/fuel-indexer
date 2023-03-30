@@ -162,7 +162,7 @@ impl GraphQlApi {
             .layer(Extension(pool.clone()))
             .layer(Extension(config));
 
-        let playround_route = Router::new()
+        let playground_route = Router::new()
             .route("/:namespace/:identifier", get(gql_playground))
             .layer(Extension(schema_manager))
             .layer(Extension(pool))
@@ -170,7 +170,7 @@ impl GraphQlApi {
 
         let api_routes = Router::new()
             .nest("/", root_routes)
-            .nest("/playground", playround_route)
+            .nest("/playground", playground_route)
             .nest("/index", index_routes)
             .nest("/graph", graph_route)
             .nest("/auth", auth_routes);
