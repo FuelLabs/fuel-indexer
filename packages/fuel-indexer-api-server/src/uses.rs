@@ -3,12 +3,14 @@ use crate::{
     models::VerifySignatureRequest,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
+use async_graphql::{Request, Response};
+use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
     extract::{multipart::Multipart, Extension, Json, Path},
-    http::{Request, StatusCode},
-    response::{IntoResponse, Response},
+    http::{Request as AxumRequest, StatusCode},
+    response::{IntoResponse, Response as AxumResponse},
 };
 use fuel_crypto::{Message, Signature};
 use fuel_indexer_database::{
@@ -48,7 +50,7 @@ pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
-    query: String,
+    req: GraphQLRequest,
 ) -> ApiResult<axum::Json<Value>> {
     match manager
         .read()
@@ -56,7 +58,7 @@ pub(crate) async fn query_graph(
         .load_schema(&namespace, &identifier)
         .await
     {
-        Ok(schema) => match run_query(query, schema, &pool).await {
+        Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
             Ok(response) => Ok(axum::Json(response)),
             Err(e) => {
                 error!("query_graph error: {e}");
@@ -387,26 +389,27 @@ pub async fn run_query(
 
 pub async fn gql_playground() -> impl IntoResponse {
     let html = playground_source(
-        GraphQLPlaygroundConfig::new("/playground").subscription_endpoint("/graphql"),
+        GraphQLPlaygroundConfig::new("/playground/:namespace/:identifier")
+            .subscription_endpoint("/graphql"),
     );
 
-    Response::builder()
+    AxumResponse::builder()
         .status(StatusCode::OK)
         .header(http::header::CONTENT_TYPE, "text/html; charset=utf-8")
         .body(Body::from(html))
         .expect("Failed to build gql playground response.")
 }
 
-pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
+pub async fn metrics(_req: AxumRequest<Body>) -> impl IntoResponse {
     #[cfg(feature = "metrics")]
     {
         match encode_metrics_response() {
-            Ok((buff, fmt_type)) => Response::builder()
+            Ok((buff, fmt_type)) => AxumResponse::builder()
                 .status(StatusCode::OK)
                 .header(http::header::CONTENT_TYPE, &fmt_type)
                 .body(Body::from(buff))
                 .unwrap(),
-            Err(_e) => Response::builder()
+            Err(_e) => AxumResponse::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .body(Body::from("Error."))
                 .unwrap(),
