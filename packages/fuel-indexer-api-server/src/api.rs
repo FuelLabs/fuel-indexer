@@ -154,7 +154,7 @@ impl GraphQlApi {
             .layer(Extension(pool.clone()))
             .layer(Extension(start_time))
             .route("/metrics", get(metrics))
-            .route("/graphql", get(gql_playground));
+            .route("/playground/:namespace/:identifier", get(gql_playground));
 
         let auth_routes = Router::new()
             .route("/nonce", get(get_nonce))

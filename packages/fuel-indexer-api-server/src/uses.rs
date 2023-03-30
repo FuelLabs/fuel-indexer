@@ -387,7 +387,7 @@ pub async fn run_query(
 
 pub async fn gql_playground() -> impl IntoResponse {
     let html = playground_source(
-        GraphQLPlaygroundConfig::new("/graphql").subscription_endpoint("/graphql"),
+        GraphQLPlaygroundConfig::new("/playground").subscription_endpoint("/graphql"),
     );
 
     Response::builder()

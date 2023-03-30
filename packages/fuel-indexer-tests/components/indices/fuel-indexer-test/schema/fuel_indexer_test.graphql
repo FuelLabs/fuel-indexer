@@ -234,11 +234,6 @@ type SportsTeam {
     municipality: Municipality! @join(on:name)
 }
 
-type MessageEntity {
-    id: ID!
-    message: Charfield!
-}
-
 type PanicEntity {
     id: ID!
     contract_id: ContractId!
