@@ -168,7 +168,7 @@ pub fn tx_params() -> TxParameters {
 
 pub async fn setup_test_fuel_node(
     wallet_path: PathBuf,
-    contract_bin_path: Option<PathBuf>,
+    contract_bin_paths: Vec<Option<PathBuf>>,
     host_str: Option<String>,
 ) -> Result<(), ()> {
     let filter = match std::env::var_os("RUST_LOG") {
@@ -218,40 +218,61 @@ pub async fn setup_test_fuel_node(
 
     wallet.set_provider(provider.clone());
 
-    if let Some(contract_bin_path) = contract_bin_path {
-        let _compiled = Contract::load_contract(
-            contract_bin_path.as_os_str().to_str().unwrap(),
-            DeployConfiguration::default(),
-        )
-        .expect("Failed to load contract");
+    for contract_bin_path in contract_bin_paths {
+        if let Some(contract_bin_path) = contract_bin_path {
+            let _compiled = Contract::load_contract(
+                contract_bin_path.as_os_str().to_str().unwrap(),
+                DeployConfiguration::default(),
+            )
+            .expect("Failed to load contract");
 
-        let contract_id = Contract::deploy(
-            contract_bin_path.as_os_str().to_str().unwrap(),
-            &wallet,
-            DeployConfiguration::default(),
-        )
-        .await
-        .expect("Failed to deploy contract");
+            let contract_id = Contract::deploy(
+                contract_bin_path.as_os_str().to_str().unwrap(),
+                &wallet,
+                DeployConfiguration::default(),
+            )
+            .await
+            .expect("Failed to deploy contract");
 
-        let contract_id = contract_id.to_string();
+            let contract_id = contract_id.to_string();
 
-        println!("Contract deployed at: {}", &contract_id);
+            println!("Contract deployed at: {}", &contract_id);
+        }
     }
 
     Ok(())
 }
 
-pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
+pub async fn setup_example_test_fuel_node(contracts: u8) -> Result<(), ()> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
 
-    let contract_bin_path = Path::new(WORKSPACE_ROOT)
-        .join("contracts")
-        .join("fuel-indexer-test")
-        .join("out")
-        .join("debug")
-        .join("fuel-indexer-test.bin");
+    let contract_bin_paths = (1..=contracts)
+        .map(|i| {
+            Path::new(WORKSPACE_ROOT)
+                .join("contracts")
+                .join(format!(
+                    "fuel-indexer-test{}",
+                    if i == 1 {
+                        String::new()
+                    } else {
+                        format!("-{}", i)
+                    }
+                ))
+                .join("out")
+                .join("debug")
+                .join(format!(
+                    "fuel-indexer-test{}.bin",
+                    if i == 1 {
+                        String::new()
+                    } else {
+                        format!("-{}", i)
+                    }
+                ))
+        })
+        .map(Some)
+        .collect::<Vec<_>>();
 
-    setup_test_fuel_node(wallet_path, Some(contract_bin_path), None).await
+    setup_test_fuel_node(wallet_path, contract_bin_paths, None).await
 }
 
 pub fn get_test_contract_id() -> Bech32ContractId {
