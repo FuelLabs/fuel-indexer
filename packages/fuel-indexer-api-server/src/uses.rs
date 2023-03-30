@@ -368,6 +368,7 @@ pub async fn run_query(
     schema: Schema,
     pool: &IndexerConnectionPool,
 ) -> ApiResult<Value> {
+    println!("Query: {query}.");
     let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
 
@@ -388,10 +389,9 @@ pub async fn run_query(
 }
 
 pub async fn gql_playground() -> impl IntoResponse {
-    let html = playground_source(
-        GraphQLPlaygroundConfig::new("/playground/:namespace/:identifier")
-            .subscription_endpoint("/graphql"),
-    );
+    let html = playground_source(GraphQLPlaygroundConfig::new(
+        "/api/playground/fuel_indexer_test/index1",
+    ));
 
     AxumResponse::builder()
         .status(StatusCode::OK)

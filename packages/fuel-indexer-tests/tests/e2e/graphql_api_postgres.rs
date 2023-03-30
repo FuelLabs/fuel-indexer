@@ -594,4 +594,3 @@ async fn test_can_return_query_response_with_comparison_filter_postgres() {
     assert_eq!(v[1]["potentially_null_value"].as_i64(), None);
     assert_eq!(v[1]["value"].as_i64(), Some(5));
 }
->>>>>>> bcd678a (Move from JSON-based query to GraphQL header type)

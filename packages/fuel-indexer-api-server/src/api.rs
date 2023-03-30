@@ -139,7 +139,7 @@ impl GraphQlApi {
             .route("/:namespace/:identifier", post(register_indexer_assets))
             .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx.clone()))
-            .layer(Extension(schema_manager))
+            .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
             .route("/:namespace/:identifier", delete(stop_indexer))
             .route("/:namespace/:identifier", put(revert_indexer))
@@ -153,18 +153,24 @@ impl GraphQlApi {
             .layer(Extension(config.clone()))
             .layer(Extension(pool.clone()))
             .layer(Extension(start_time))
-            .route("/metrics", get(metrics))
-            .route("/playground/:namespace/:identifier", get(gql_playground));
+            .route("/metrics", get(metrics));
 
         let auth_routes = Router::new()
             .route("/nonce", get(get_nonce))
             .layer(Extension(pool.clone()))
             .route("/signature", post(verify_signature))
-            .layer(Extension(pool))
+            .layer(Extension(pool.clone()))
             .layer(Extension(config));
+
+        let playround_route = Router::new()
+            .route("/:namespace/:identifier", get(gql_playground))
+            .layer(Extension(schema_manager))
+            .layer(Extension(pool))
+            .layer(RequestBodyLimitLayer::new(max_body_size));
 
         let api_routes = Router::new()
             .nest("/", root_routes)
+            .nest("/playground", playround_route)
             .nest("/index", index_routes)
             .nest("/graph", graph_route)
             .nest("/auth", auth_routes);
