@@ -251,7 +251,7 @@ pub async fn setup_example_test_fuel_node(number_of_contracts: u8) -> Result<(),
             Path::new(WORKSPACE_ROOT)
                 .join("contracts")
                 .join(format!(
-                    "fuel-indexer-test{}",
+                    "two-contracts-test{}",
                     if i == 1 {
                         String::new()
                     } else {
@@ -261,7 +261,7 @@ pub async fn setup_example_test_fuel_node(number_of_contracts: u8) -> Result<(),
                 .join("out")
                 .join("debug")
                 .join(format!(
-                    "fuel-indexer-test{}.bin",
+                    "two-contracts-test{}.bin",
                     if i == 1 {
                         String::new()
                     } else {
