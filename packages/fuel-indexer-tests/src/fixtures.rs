@@ -243,10 +243,10 @@ pub async fn setup_test_fuel_node(
     Ok(())
 }
 
-pub async fn setup_example_test_fuel_node(contracts: u8) -> Result<(), ()> {
+pub async fn setup_example_test_fuel_node(number_of_contracts: u8) -> Result<(), ()> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
 
-    let contract_bin_paths = (1..=contracts)
+    let contract_bin_paths = (1..=number_of_contracts)
         .map(|i| {
             Path::new(WORKSPACE_ROOT)
                 .join("contracts")

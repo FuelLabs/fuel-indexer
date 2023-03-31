@@ -1,0 +1,7 @@
+[project]
+authors = ["Richard Melkonian"]
+entry = "main.sw"
+license = "Apache-2.0"
+name = "two-contracts-test-1"
+
+[dependencies]

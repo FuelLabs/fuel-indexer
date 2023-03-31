@@ -21,13 +21,16 @@ use std::collections::HashMap;
 use tokio::task::{spawn, JoinHandle};
 use tokio::time::{sleep, Duration};
 
-async fn setup_test_components() -> (
+async fn setup_test_components(
+    number_of_contracts: u8,
+) -> (
     JoinHandle<Result<(), ()>>,
     TestPostgresDb,
     IndexerService,
     Router,
 ) {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let fuel_node_handle =
+        tokio::spawn(setup_example_test_fuel_node(number_of_contracts));
     let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url)).await;
     let api_app = api_server_app_postgres(Some(&test_db.url)).await;
@@ -38,7 +41,7 @@ async fn setup_test_components() -> (
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components(1).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
@@ -82,7 +85,7 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components(1).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
@@ -127,7 +130,7 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components(1).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
@@ -179,7 +182,7 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components(1).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
@@ -331,7 +334,7 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
+    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components(1).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
@@ -340,7 +343,9 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
+    println!("manifest: {:#?}", manifest);
     update_test_manifest_asset_paths(&mut manifest);
+    println!("successfully updated manifest asset paths");
 
     srvc.register_index_from_manifest(manifest)
         .await
