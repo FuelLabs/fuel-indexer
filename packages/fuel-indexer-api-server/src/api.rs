@@ -7,7 +7,7 @@ use crate::{
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
-    extract::{Extension, Json, Path},
+    extract::{Extension, Json},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post, put},
