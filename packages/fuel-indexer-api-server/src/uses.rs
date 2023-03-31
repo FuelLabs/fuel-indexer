@@ -8,8 +8,8 @@ use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
     extract::{multipart::Multipart, Extension, Json, Path},
-    http::{Request as AxumRequest, StatusCode},
-    response::{IntoResponse, Response as AxumResponse},
+    http::{Request, StatusCode},
+    response::{IntoResponse, Response},
 };
 use fuel_crypto::{Message, Signature};
 use fuel_indexer_database::{
@@ -367,7 +367,6 @@ pub async fn run_query(
     schema: Schema,
     pool: &IndexerConnectionPool,
 ) -> ApiResult<Value> {
-    println!("Query: {query}.");
     let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
 
@@ -395,23 +394,23 @@ pub async fn gql_playground(
         namespace, identifier
     )));
 
-    AxumResponse::builder()
+    Response::builder()
         .status(StatusCode::OK)
         .header(http::header::CONTENT_TYPE, "text/html; charset=utf-8")
         .body(Body::from(html))
         .expect("Failed to build gql playground response.")
 }
 
-pub async fn metrics(_req: AxumRequest<Body>) -> impl IntoResponse {
+pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
     #[cfg(feature = "metrics")]
     {
         match encode_metrics_response() {
-            Ok((buff, fmt_type)) => AxumResponse::builder()
+            Ok((buff, fmt_type)) => Response::builder()
                 .status(StatusCode::OK)
                 .header(http::header::CONTENT_TYPE, &fmt_type)
                 .body(Body::from(buff))
                 .unwrap(),
-            Err(_e) => AxumResponse::builder()
+            Err(_e) => Response::builder()
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .body(Body::from("Error."))
                 .unwrap(),
