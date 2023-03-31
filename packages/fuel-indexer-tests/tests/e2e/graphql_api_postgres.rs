@@ -1,49 +1,50 @@
 use actix_service::Service;
 use actix_web::test;
-use axum::Router;
 use fuel_indexer::IndexerService;
-use fuel_indexer_lib::config::GraphQLConfig;
+use fuel_indexer_database::{queries, IndexerConnection};
+
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
-        api_server_app_postgres, connect_to_deployed_contract, http_client,
-        indexer_service_postgres, setup_example_test_fuel_node, test_web::app,
-        TestPostgresDb,
+        connect_to_deployed_contract, indexer_service_postgres,
+        setup_example_test_fuel_node, test_web::app, TestPostgresDb,
     },
     utils::update_test_manifest_asset_paths,
     WORKSPACE_ROOT,
 };
-use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
+use fuel_indexer_types::{Address, ContractId, Identity};
+use hex::FromHex;
 use lazy_static::lazy_static;
-use serde_json::{Number, Value};
-use std::collections::HashMap;
-use tokio::task::{spawn, JoinHandle};
-use tokio::time::{sleep, Duration};
+use sqlx::{
+    pool::{Pool, PoolConnection},
+    types::BigDecimal,
+    Postgres, Row,
+};
+use std::str::FromStr;
+use tokio::{
+    task::JoinHandle,
+    time::{sleep, Duration},
+};
 
-async fn setup_test_components() -> (
-    JoinHandle<Result<(), ()>>,
-    TestPostgresDb,
-    IndexerService,
-    Router,
-) {
+async fn setup_test_components(
+) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
     let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url)).await;
-    let api_app = api_server_app_postgres(Some(&test_db.url)).await;
 
-    (fuel_node_handle, test_db, srvc, api_app)
+    (fuel_node_handle, test_db, srvc)
 }
+
+const EXPECTED_CONTRACT_ID: &str =
+    "59d8f46aea962725fc3d78622556a0c02583ac2a4693c4ea3cc1e5ddeb359578";
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_return_query_response_with_all_fields_required_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
+async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
+{
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -55,39 +56,473 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/block").to_request();
+    let req = test::TestRequest::post().uri("/multiarg").to_request();
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let client = http_client();
-    let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(r#"query { block { id height timestamp }}"#)
-        .send()
-        .await
-        .unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let block_row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.block ORDER BY height DESC LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
 
-    server_handle.abort();
+    let height: i64 = block_row.get(1);
+    let timestamp: i64 = block_row.get(2);
+    assert!(height >= 1);
+    assert!(timestamp > 0);
 
-    let body = resp.text().await.unwrap();
-    let v: Value = serde_json::from_str(&body).unwrap();
+    let ping_row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pingentity WHERE id = 12345")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
-    assert!(v[0]["height"].as_u64().unwrap() > 0);
-    assert!(v[0]["timestamp"].as_u64().unwrap() > 0);
+    let ping_value: i64 = ping_row.get(1);
+    assert_eq!(ping_value, 12345);
+
+    let pong_row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pongentity WHERE id = 45678")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let pong_value: i64 = pong_row.get(1);
+    assert_eq!(pong_value, 45678);
+
+    let pung_row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 123")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let pung_from: String = pung_row.get(3);
+    let from_buff = ContractId::from_str(&pung_from).unwrap();
+
+    let contract_buff = ContractId::from_str(
+        "0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    )
+    .unwrap();
+
+    assert_eq!(
+        Identity::ContractId(from_buff),
+        Identity::ContractId(contract_buff),
+    );
 }
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_return_query_response_with_nullable_fields_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
+async fn test_can_trigger_and_index_callreturn_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(api_app.into_make_service());
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
-    let server_handle = tokio::spawn(server);
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/callreturn").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 3")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let value: i64 = row.get(1);
+    let is_pung: bool = row.get(2);
+    let pung_from: String = row.get(3);
+    println!("{}", &pung_from);
+    let from_buff = Address::from_str(&pung_from).unwrap();
+
+    let addr_buff = Address::from_str(
+        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    )
+    .unwrap();
+
+    assert_eq!(value, 12345);
+    assert!(is_pung);
+    assert_eq!(Identity::Address(from_buff), Identity::Address(addr_buff),);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::get().uri("/block_height").to_request();
+    let res = test::call_and_read_body(&app, req).await;
+    let block_height = String::from_utf8(res.to_vec())
+        .unwrap()
+        .parse::<i64>()
+        .unwrap();
+
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = app.call(req).await;
+    fuel_node_handle.abort();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.block ORDER BY timestamp DESC LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    let id: i64 = row.get(0);
+    let height: i64 = row.get(1);
+    let timestamp: i64 = row.get(2);
+
+    assert_eq!(height, block_height + 1);
+    assert!(timestamp > 0);
+
+    let row = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.tx WHERE block = {id}",
+    ))
+    .fetch_all(&mut conn)
+    .await
+    .unwrap();
+
+    assert_eq!(row.len(), 2);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_ping_event_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pingentity WHERE id = 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let id: i64 = row.get(0);
+    let value: i64 = row.get(1);
+
+    assert_eq!(id, 1);
+    assert_eq!(value, 123);
+
+    // Ping also triggers the 128-bit integer test as well
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.u16entity WHERE id = 9999")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let id: i64 = row.get(0);
+    let value1: BigDecimal = row.get(1);
+    let value2: BigDecimal = row.get(2);
+
+    assert_eq!(
+        value1,
+        BigDecimal::from_str("340282366920938463463374607431768211454").unwrap()
+    );
+    assert_eq!(
+        value2,
+        BigDecimal::from_str("170141183460469231731687303715884105727").unwrap()
+    );
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_transfer_event_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/transfer").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transfer LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let amount: i64 = row.get(3);
+    let asset_id: &str = row.get(4);
+
+    assert_eq!(amount, 1); // value is defined in test contract
+    assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+async fn test_can_trigger_and_index_log_event_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/log").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.log WHERE ra = 8675309 LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    let ra: i64 = row.get(2);
+
+    assert_eq!(ra, 8675309);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+async fn test_can_trigger_and_index_logdata_event_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/logdata").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.pungentity WHERE id = 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let value: i64 = row.get(1);
+    let is_pung: bool = row.get(2);
+    let pung_from: String = row.get(3);
+    let from_buff = Address::from_str(&pung_from).unwrap();
+
+    let addr_buff = Address::from_str(
+        "0x532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96",
+    )
+    .unwrap();
+
+    assert_eq!(value, 456);
+    assert!(is_pung);
+    assert_eq!(Identity::Address(from_buff), Identity::Address(addr_buff));
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_scriptresult_event_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/scriptresult").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.scriptresult LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let result: i64 = row.get(1);
+    let gas_used: i64 = row.get(2);
+    let data: String = row.get(3);
+
+    let expected = hex::decode(data)
+        .unwrap()
+        .into_iter()
+        .map(|x| x.to_string())
+        .collect::<Vec<String>>()
+        .join(",");
+
+    assert!((0..=1).contains(&result));
+    assert!(gas_used > 0);
+    assert_eq!(expected, "1,1,1,1,1".to_string());
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+async fn test_can_trigger_and_index_transferout_event_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/transferout").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferout LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let recipient: &str = row.get(2);
+    let amount: i64 = row.get(3);
+    let asset_id: &str = row.get(4);
+
+    assert_eq!(
+        recipient,
+        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
+    );
+    assert_eq!(amount, 1);
+    assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+async fn test_can_trigger_and_index_messageout_event_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/messageout").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageout LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let message_id: i64 = row.get(0);
+    let recipient: &str = row.get(2);
+    let amount: i64 = row.get(3);
+    let len: i64 = row.get(5);
+
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let example_message_id: i64 = row.get(0);
+    let message: &str = row.get(1);
+
+    assert!((message_id > 0 && message_id < i64::MAX));
+    assert_eq!(
+        recipient,
+        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
+    );
+    assert_eq!(amount, 100);
+
+    assert_eq!(example_message_id, 1234);
+    assert_eq!(message, "abcdefghijklmnopqrstuvwxyz123456");
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+async fn test_can_index_event_with_optional_fields_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -105,283 +540,34 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let client = http_client();
-    let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(r#"query { optionentity { int_required int_optional_some addr_optional_none }}"#)
-        .send()
-        .await
-        .unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.optionentity WHERE id = 8675309",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
 
-    server_handle.abort();
+    let id: i64 = row.get(0);
+    let req_int: i64 = row.get(1);
+    let opt_int_some: Option<i64> = row.get(2);
+    let opt_addr_none: Option<&str> = row.get(3);
 
-    let body = resp.text().await.unwrap();
-    let v: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(id, 8675309);
+    assert_eq!(req_int, 100);
+    assert!(opt_int_some.is_some());
 
-    assert_eq!(v[0]["int_required"], Value::from(Number::from(100)));
-    assert_eq!(v[0]["int_optional_some"], Value::from(Number::from(999)));
-    assert_eq!(v[0]["addr_optional_none"], Value::from(None::<&str>));
+    let opt_int = opt_int_some.unwrap();
+    assert_eq!(opt_int, 999);
+
+    assert!(opt_addr_none.is_none());
 }
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
+async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_index_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/block").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-
-    let client = http_client();
-    let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(r#"query { tx { block { id height } id timestamp }}"#)
-        .send()
-        .await
-        .unwrap();
-
-    server_handle.abort();
-
-    let body = resp.text().await.unwrap();
-    let v: Value = serde_json::from_str(&body).unwrap();
-
-    assert!(v[0]["id"].as_i64().is_some());
-    assert!(v[0]["id"].as_i64().unwrap() > 0);
-    assert!(v[0]["timestamp"].as_i64().is_some());
-    assert!(v[0]["timestamp"].as_i64().unwrap() > 0);
-    assert!(v[0]["block"]["id"].as_i64().is_some());
-    assert!(v[0]["block"]["id"].as_i64().unwrap() > 0);
-    assert!(v[0]["block"]["height"].as_i64().is_some());
-    assert!(v[0]["block"]["height"].as_i64().unwrap() > 0);
-}
-
-#[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_index_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/deeply_nested").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-
-    let deeply_nested_query = r#"query {
-        bookclub {
-            id
-            book {
-                id
-                name
-                author {
-                    name
-                    genre {
-                        id
-                        name
-                    }
-                }
-                library {
-                    id
-                    name
-                    city {
-                        id
-                        name
-                        region {
-                            id
-                            name
-                            country {
-                                id
-                                name
-                                continent {
-                                    id
-                                    name
-                                    planet {
-                                        id
-                                        name
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                genre {
-                    id
-                    name
-                }
-            }
-            member {
-                name
-                id
-            }
-            corporate_sponsor {
-                id
-                name
-                amount
-                representative {
-                    id
-                    name
-                }
-            }
-        }
-    }"#;
-
-    let client = http_client();
-    let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(deeply_nested_query)
-        .send()
-        .await
-        .unwrap();
-
-    server_handle.abort();
-
-    let body = resp.text().await.unwrap();
-    let v: Value = serde_json::from_str(&body).unwrap();
-
-    // Multiple reference to same foreign key table
-    assert_eq!(
-        v[0]["book"]["author"]["genre"]["name"].as_str(),
-        Some("horror")
-    );
-    assert_eq!(v[0]["book"]["genre"]["name"].as_str(), Some("horror"));
-
-    // Deeply nested foreign keys
-    assert_eq!(
-        v[0]["book"]["library"]["name"].as_str(),
-        Some("Scholar Library")
-    );
-    assert_eq!(
-        v[0]["book"]["library"]["city"]["name"].as_str(),
-        Some("Savanna-la-Mar")
-    );
-    assert_eq!(
-        v[0]["book"]["library"]["city"]["region"]["name"].as_str(),
-        Some("Westmoreland")
-    );
-    assert_eq!(
-        v[0]["book"]["library"]["city"]["region"]["country"]["name"].as_str(),
-        Some("Jamaica")
-    );
-    assert_eq!(
-        v[0]["book"]["library"]["city"]["region"]["country"]["continent"]["name"]
-            .as_str(),
-        Some("North America")
-    );
-    assert_eq!(
-        v[0]["book"]["library"]["city"]["region"]["country"]["continent"]["planet"]
-            ["name"]
-            .as_str(),
-        Some("Earth")
-    );
-
-    // Mix of implicit and explicit foreign keys as well as
-    // field name being different from underlying database table
-    assert_eq!(
-        v[0]["corporate_sponsor"]["name"].as_str(),
-        Some("Fuel Labs")
-    );
-    assert_eq!(v[0]["corporate_sponsor"]["amount"].as_i64(), Some(100));
-    assert_eq!(
-        v[0]["corporate_sponsor"]["representative"]["name"].as_str(),
-        Some("Ava")
-    );
-}
-
-#[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgres() {
-    let (fuel_node_handle, test_db, mut srvc, api_app) = setup_test_components().await;
-
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
-    update_test_manifest_asset_paths(&mut manifest);
-
-    srvc.register_index_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/explicit").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
-
-    let client = http_client();
-    let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(r#"query { sportsteam { id name municipality { id name } } }"#)
-        .send()
-        .await
-        .unwrap();
-
-    server_handle.abort();
-
-    let body = resp.text().await.unwrap();
-    let v: Value = serde_json::from_str(&body).unwrap();
-
-    assert_eq!(v[0]["name"].as_str(), Some("The Indexers"));
-    assert!(v[0]["municipality"]["id"].as_i64().is_some());
-    assert!(v[0]["municipality"]["id"].as_i64().unwrap() > 0);
-    assert_eq!(
-        v[0]["municipality"]["name"].as_str(),
-        Some("Republic of Indexia")
-    );
-}
-
-#[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_return_query_response_with_equivalence_relation_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
-
-    let mut srvc = indexer_service_postgres().await;
-    let api_app = api_server_app_postgres().await;
-
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -399,45 +585,37 @@ async fn test_can_return_query_response_with_equivalence_relation_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let client = http_client();
-    let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(
-            r#"query { filterentity(id: "1") { id member potentially_null_value value } }"#,
-        )
-        .send()
-        .await
-        .unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.indexmetadataentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+    let block_height: i64 = row.get(0);
+    let time: i64 = row.get(1);
 
-    server_handle.abort();
-
-    let body = resp.text().await.unwrap();
-    println!("{body:#?}");
-    let v: Value = serde_json::from_str(&body).unwrap();
-
-    assert_eq!(v[1], Value::Null);
-
-    assert_eq!(v[0]["id"].as_i64(), Some(1));
-    assert_eq!(v[0]["member"].as_str(), Some("foo"));
-    assert_eq!(v[0]["potentially_null_value"].as_i64(), Some(123));
-    assert_eq!(v[0]["value"].as_i64(), Some(1));
+    assert!(block_height >= 1);
+    assert!(time >= 1);
 }
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_return_query_response_with_membership_relation_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+async fn test_index_respects_start_block_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
-    let mut srvc = indexer_service_postgres().await;
-    let api_app = api_server_app_postgres().await;
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::get().uri("/block_height").to_request();
+    let res = test::call_and_read_body(&app, req).await;
+    let block_height = String::from_utf8(res.to_vec())
+        .unwrap()
+        .parse::<u64>()
+        .unwrap();
 
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    manifest.start_block = Some(block_height + 2);
 
     update_test_manifest_asset_paths(&mut manifest);
 
@@ -445,54 +623,63 @@ async fn test_can_return_query_response_with_membership_relation_postgres() {
         .await
         .expect("Failed to initialize indexer.");
 
-    let contract = connect_to_deployed_contract().await.unwrap();
-    let app = test::init_service(app(contract)).await;
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let pre_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height + 1,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
+
+    assert!(pre_check.is_none());
+
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let first_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height + 1,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
+
+    assert!(first_check.is_none());
+
     let req = test::TestRequest::post().uri("/ping").to_request();
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let client = http_client();
-    let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(
-            r#"query { filterentity(filter: { member: [foo, bar] } ) { id member potentially_null_value value } }"#,
-        )
-        .send()
-        .await
-        .unwrap();
+    let final_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height + 2,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
 
-    server_handle.abort();
+    assert!(final_check.is_some());
 
-    let body = resp.text().await.unwrap();
-    let v: Value = serde_json::from_str(&body).unwrap();
+    let row = final_check.unwrap();
 
-    assert_eq!(v[2], Value::Null);
+    let id: i64 = row.get(0);
+    let height: i64 = row.get(1);
+    let timestamp: i64 = row.get(2);
 
-    assert_eq!(v[0]["id"].as_i64(), Some(1));
-    assert_eq!(v[0]["member"].as_str(), Some("foo"));
-    assert_eq!(v[0]["potentially_null_value"].as_i64(), Some(123));
-    assert_eq!(v[0]["value"].as_i64(), Some(1));
-    assert_eq!(v[1]["id"].as_i64(), Some(2));
-    assert_eq!(v[1]["member"].as_str(), Some("bar"));
-    assert_eq!(v[1]["potentially_null_value"].as_i64(), None);
-    assert_eq!(v[1]["value"].as_i64(), Some(5));
+    assert_eq!(height, (block_height + 2) as i64);
+    assert!(timestamp > 0);
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_return_query_response_with_non_null_filter_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+async fn test_can_trigger_and_index_tuple_events_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
-    let mut srvc = indexer_service_postgres().await;
-    let api_app = api_server_app_postgres().await;
-
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -504,52 +691,33 @@ async fn test_can_return_query_response_with_non_null_filter_postgres() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/explicit").to_request();
+    let req = test::TestRequest::post().uri("/tuples").to_request();
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let client = http_client();
-    let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(
-            r#"query { filterentity(filter: { has: [potentially_null_value] } ) { id member potentially_null_value value } }"#,
-        )
-        .send()
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.tupleentity LIMIT 1")
+        .fetch_one(&mut conn)
         .await
         .unwrap();
 
-    server_handle.abort();
+    let _id: i64 = row.get(0);
+    let complex_a: &str = row.get(1);
+    let complex_b: i64 = row.get(2);
+    let simple_a: &str = row.get(3);
 
-    let body = resp.text().await.unwrap();
-    let v: Value = serde_json::from_str(&body).unwrap();
-
-    assert_eq!(v[2], Value::Null);
-
-    assert_eq!(v[0]["id"].as_i64(), Some(1));
-    assert_eq!(v[0]["member"].as_str(), Some("foo"));
-    assert_eq!(v[0]["potentially_null_value"].as_i64(), Some(123));
-    assert_eq!(v[0]["value"].as_i64(), Some(1));
-    assert_eq!(v[1]["id"].as_i64(), Some(3));
-    assert_eq!(v[1]["member"].as_str(), Some("baz"));
-    assert_eq!(v[1]["potentially_null_value"].as_i64(), Some(456));
-    assert_eq!(v[1]["value"].as_i64(), Some(1000));
+    assert_eq!(complex_a, "abcde");
+    assert_eq!(complex_b, 54321);
+    assert_eq!(simple_a, "hello world!");
 }
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_return_query_response_with_comparison_filter_postgres() {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+async fn test_can_trigger_and_index_pure_function_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
-    let mut srvc = indexer_service_postgres().await;
-    let api_app = api_server_app_postgres().await;
-
-    let server = axum::Server::bind(&GraphQLConfig::default().into())
-        .serve(api_app.into_make_service());
-
-    let server_handle = tokio::spawn(server);
     let mut manifest: Manifest =
         serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
 
@@ -561,36 +729,109 @@ async fn test_can_return_query_response_with_comparison_filter_postgres() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/explicit").to_request();
+    let req = test::TestRequest::post().uri("/pure_function").to_request();
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
 
-    let client = http_client();
-    let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
-        .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(
-            r#"query { filterentity(filter: { value: between: { min: 0, max: 10 } } ) { id member potentially_null_value value } }"#,
-        )
-        .send()
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.callentity LIMIT 1")
+        .fetch_one(&mut conn)
         .await
         .unwrap();
 
-    server_handle.abort();
+    let id: i64 = row.get(0);
+    let contract_id: &str = row.get(1);
+    let _callee: &str = row.get(2);
+    let asset_id: &str = row.get(3);
+    let _gas: i64 = row.get(4);
+    let fn_name: &str = row.get(5);
 
-    let body = resp.text().await.unwrap();
-    let v: Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(id, 123);
+    assert_eq!(
+        contract_id,
+        "0000000000000000000000000000000000000000000000000000000000000000"
+    );
+    assert_eq!(asset_id, defaults::TRANSFER_BASE_ASSET_ID);
+    assert_eq!(fn_name, "trigger_pure_function");
+}
 
-    assert_eq!(v[2], Value::Null);
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_revert_function_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
 
-    assert_eq!(v[0]["id"].as_i64(), Some(1));
-    assert_eq!(v[0]["member"].as_str(), Some("foo"));
-    assert_eq!(v[0]["potentially_null_value"].as_i64(), Some(123));
-    assert_eq!(v[0]["value"].as_i64(), Some(1));
-    assert_eq!(v[1]["id"].as_i64(), Some(2));
-    assert_eq!(v[1]["member"].as_str(), Some("bar"));
-    assert_eq!(v[1]["potentially_null_value"].as_i64(), None);
-    assert_eq!(v[1]["value"].as_i64(), Some(5));
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/revert").to_request();
+    let res = app.call(req).await;
+
+    let status = res.unwrap().status();
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.revertentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let revert_vm_code = 0x0004;
+
+    let id: i64 = row.get(0);
+    let contract_id: &str = row.get(1);
+    let error_val: i64 = row.get(2);
+    assert_eq!(id, 123);
+    assert_eq!(contract_id, EXPECTED_CONTRACT_ID);
+    assert_eq!(error_val, revert_vm_code);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_panic_function_postgres() {
+    let (fuel_node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/panic").to_request();
+    let res = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.panicentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let expected_reason = 5;
+
+    let id: i64 = row.get(0);
+    let contract_id: &str = row.get(1);
+    let reason: i32 = row.get(2);
+
+    assert_eq!(id, 123);
+    assert_eq!(contract_id, EXPECTED_CONTRACT_ID);
+    assert_eq!(reason, expected_reason);
 }

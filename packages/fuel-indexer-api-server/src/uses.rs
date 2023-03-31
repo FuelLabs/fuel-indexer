@@ -3,8 +3,7 @@ use crate::{
     models::VerifySignatureRequest,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-use async_graphql::{Request, Response};
-use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
+use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
@@ -388,10 +387,13 @@ pub async fn run_query(
     }
 }
 
-pub async fn gql_playground() -> impl IntoResponse {
-    let html = playground_source(GraphQLPlaygroundConfig::new(
-        "/api/graph/fuel_indexer_test/index1",
-    ));
+pub async fn gql_playground(
+    Path((namespace, identifier)): Path<(String, String)>,
+) -> impl IntoResponse {
+    let html = playground_source(GraphQLPlaygroundConfig::new(&format!(
+        "/api/graph/{}/{}",
+        namespace, identifier
+    )));
 
     AxumResponse::builder()
         .status(StatusCode::OK)
