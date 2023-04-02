@@ -93,6 +93,7 @@ impl IndexerConnectionPool {
             err => Err(IndexerDatabaseError::BackendNotSupported(err.into())),
         }
     }
+    
 
     pub async fn is_connected(&self) -> sqlx::Result<ServiceStatus> {
         match self {
