@@ -59,7 +59,9 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
     }
 
-    let mut cmd = Command::new("fuel-indexer");
+    let mut cmd = Command::new(
+        "/Users/rashad/development/repos/fuel-indexer/target/release/fuel-indexer",
+    );
     cmd.arg("run");
 
     if let Some(m) = &manifest {
@@ -119,7 +121,9 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
                     }
                 }
             }
-            _ => unreachable!(),
+            _ => unreachable!(
+                "'postgres' is currently the only supported database option."
+            ),
         }
     }
 
@@ -133,7 +137,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             child.id()
         );
     } else {
-        anyhow::bail!("❌ Failed to spawn fuel-indexer child process.");
+        panic!("❌ Failed to spawn fuel-indexer child process.");
     }
 
     Ok(())
