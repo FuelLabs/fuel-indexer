@@ -84,8 +84,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     info!("Subscribing to Fuel node at {fuel_node_addr}");
 
     let client = FuelClient::from_str(&fuel_node_addr)
-        .map_err(|e| panic!("Node connection failed: {e}."))
-        .unwrap();
+        .unwrap_or_else(|e| panic!("Node connection failed: {e}."));
 
     async move {
         let mut retry_count = 0;
