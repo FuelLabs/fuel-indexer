@@ -6,7 +6,10 @@ pub mod types {
 }
 
 pub use fuel_indexer_database_types::DbType;
-use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
+use fuel_indexer_lib::{
+    defaults,
+    utils::{attempt_database_connection, ServiceStatus},
+};
 use fuel_indexer_postgres as postgres;
 use sqlx::{
     pool::PoolConnection, postgres::PgConnectOptions, ConnectOptions, Error as SqlxError,
@@ -54,19 +57,27 @@ impl IndexerConnectionPool {
                 database_url.into(),
             ));
         }
-        let url = url.expect("Database URL should be correctly formed");
-        let params: HashMap<_, _> = url.query_pairs().into_owned().collect();
-        let verbose = params
-            .get("verbose")
-            .map(|x| x.to_string())
-            .unwrap_or("false".to_string());
+        let mut url = url.expect("Database URL should be correctly formed");
+        let mut query: HashMap<_, _> = url.query_pairs().into_owned().collect();
+
+        let verbose = query
+            .remove("verbose")
+            .unwrap_or(defaults::VERBOSE_DB_LOGGING.to_string());
+
+        let query = query
+            .iter()
+            .map(|(k, v)| format!("{k}={v}"))
+            .collect::<Vec<String>>()
+            .join("&");
+
+        url.set_query(Some(&query));
 
         match url.scheme() {
             "postgres" => {
                 let opts = match verbose.as_ref() {
-                    "true" => PgConnectOptions::from_str(database_url)?,
+                    "true" => PgConnectOptions::from_str(url.as_str())?,
                     "false" => {
-                        let mut o = PgConnectOptions::from_str(database_url)?;
+                        let mut o = PgConnectOptions::from_str(url.as_str())?;
                         o.disable_statement_logging().clone()
                     }
                     _ => unimplemented!(),

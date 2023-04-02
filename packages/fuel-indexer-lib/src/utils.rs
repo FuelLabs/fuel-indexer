@@ -328,11 +328,3 @@ pub fn host_triple() -> String {
         .expect("Failed to determine host triple via rustc.")[6..]
         .to_owned()
 }
-
-pub fn bool_to_str(b: bool) -> String {
-    if b {
-        "true".to_string()
-    } else {
-        "false".to_string()
-    }
-}

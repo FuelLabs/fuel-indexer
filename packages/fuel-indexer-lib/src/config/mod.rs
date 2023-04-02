@@ -11,7 +11,6 @@ pub use crate::{
         graphql::GraphQLConfig,
     },
     defaults,
-    utils::bool_to_str,
 };
 pub use clap::{Args, Parser, ValueEnum};
 use serde::Deserialize;
@@ -359,7 +358,7 @@ impl From<IndexerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
-                verbose: bool_to_str(args.verbose),
+                verbose: args.verbose.to_string(),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -434,7 +433,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
-                verbose: bool_to_str(args.verbose),
+                verbose: args.verbose.to_string(),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -511,7 +510,7 @@ impl IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
-                verbose: bool_to_str(args.verbose),
+                verbose: args.verbose.to_string(),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -667,7 +666,7 @@ impl IndexerConfig {
                     host: pg_host,
                     port: pg_port,
                     database: pg_db,
-                    verbose: bool_to_str(config.verbose),
+                    verbose: config.verbose.to_string(),
                 };
             }
         }

@@ -59,9 +59,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
     }
 
-    let mut cmd = Command::new(
-        "/Users/rashad/development/repos/fuel-indexer/target/release/fuel-indexer",
-    );
+    let mut cmd = Command::new("fuel-indexer");
     cmd.arg("run");
 
     if let Some(m) = &manifest {
@@ -131,13 +129,16 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         info!("{cmd:?}");
     }
 
-    if let Ok(child) = cmd.spawn() {
-        info!(
-            "\n✅ Successfully started the indexer service at PID {}.",
-            child.id()
-        );
-    } else {
-        panic!("❌ Failed to spawn fuel-indexer child process.");
+    match cmd.spawn() {
+        Ok(child) => {
+            info!(
+                "\n✅ Successfully started the indexer service at PID {}.",
+                child.id()
+            );
+        }
+        Err(e) => {
+            panic!("❌ Failed to spawn fuel-indexer child process: {e:?}.");
+        }
     }
 
     Ok(())
