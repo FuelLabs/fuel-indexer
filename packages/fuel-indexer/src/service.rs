@@ -100,7 +100,7 @@ impl IndexerService {
 
         while let Some((asset_type, bytes)) = items.pop() {
             info!(
-                "Registering Asset({:?}) for Index({})",
+                "Registering Asset({:?}) for Indexer({})",
                 asset_type,
                 index.uid()
             );
@@ -118,7 +118,7 @@ impl IndexerService {
             }
         }
 
-        info!("Registered Index({})", &manifest.uid());
+        info!("Registered Indexer({})", &manifest.uid());
         self.handles.insert(manifest.uid(), handle);
         self.killers.insert(manifest.uid(), killer);
 
@@ -143,7 +143,7 @@ impl IndexerService {
             )
             .await?;
 
-            info!("Registered Index({})", manifest.uid());
+            info!("Registered Indexer({})", manifest.uid());
             self.handles.insert(manifest.uid(), handle);
             self.killers.insert(manifest.uid(), killer);
         }
@@ -306,7 +306,9 @@ async fn create_service_task(
                         if let Some(killer) = killers.remove(&uid) {
                             killer.store(true, Ordering::SeqCst);
                         } else {
-                            warn!("Stop Indexer: No indexer with the name Index({uid})");
+                            warn!(
+                                "Stop Indexer: No indexer with the name Indexer({uid})"
+                            );
                         }
                     }
                     ServiceRequest::IndexRevert(request) => {

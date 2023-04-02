@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::{
     config::{Env, IndexerConfigResult},
     defaults,
@@ -8,6 +6,7 @@ use crate::{
 pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
+use std::{collections::HashMap, str::FromStr};
 use url::{ParseError, Url};
 
 #[derive(Clone, Deserialize)]
@@ -19,6 +18,7 @@ pub enum DatabaseConfig {
         host: String,
         port: String,
         database: String,
+        verbose: String,
     },
 }
 
@@ -31,6 +31,7 @@ impl Env for DatabaseConfig {
                 host,
                 port,
                 database,
+                ..
             } => {
                 if is_opt_env_var(user) {
                     *user = std::env::var(trim_opt_env_key(user))?;
@@ -65,8 +66,14 @@ impl std::string::ToString for DatabaseConfig {
                 host,
                 port,
                 database,
+                verbose,
             } => {
-                format!("postgres://{user}:{password}@{host}:{port}/{database}")
+                let params = [("verbose", verbose)]
+                    .iter()
+                    .map(|(k, v)| format!("{k}={v}"))
+                    .collect::<Vec<String>>()
+                    .join("&");
+                format!("postgres://{user}:{password}@{host}:{port}/{database}?{params}")
             }
         }
     }
@@ -80,6 +87,7 @@ impl std::fmt::Debug for DatabaseConfig {
                 host,
                 port,
                 database,
+                verbose,
                 ..
             } => {
                 let _ = f
@@ -89,6 +97,7 @@ impl std::fmt::Debug for DatabaseConfig {
                     .field("host", &host)
                     .field("port", &port)
                     .field("database", &database)
+                    .field("verbose", &verbose)
                     .finish();
             }
         }
@@ -105,6 +114,7 @@ impl Default for DatabaseConfig {
             host: defaults::POSTGRES_HOST.into(),
             port: defaults::POSTGRES_PORT.into(),
             database: defaults::POSTGRES_DATABASE.into(),
+            verbose: defaults::VERBOSE_DB_LOGGING.into(),
         }
     }
 }
@@ -120,6 +130,8 @@ impl FromStr for DatabaseConfig {
 
     fn from_str(db_url: &str) -> Result<Self, Self::Err> {
         let url = Url::parse(db_url)?;
+        let params: HashMap<_, _> = url.query_pairs().into_owned().collect();
+        let value = params.get("verbose").unwrap_or(&"false".into()).to_owned();
 
         match url.scheme() {
             "postgres" => {
@@ -139,6 +151,7 @@ impl FromStr for DatabaseConfig {
                     host: host.to_string(),
                     port: port.to_string(),
                     database: database.to_string(),
+                    verbose: value,
                 })
             }
             _ => {

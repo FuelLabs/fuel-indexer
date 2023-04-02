@@ -44,3 +44,7 @@ pub const AUTH_ENABLED: bool = false;
 pub const JWT_EXPIRY_SECS: usize = 2592000; // 30 days
 
 pub const ACCOUNT_INDEX: &str = "0";
+
+pub const VERBOSE_LOGGING: bool = false;
+
+pub const VERBOSE_DB_LOGGING: &str = "false";
