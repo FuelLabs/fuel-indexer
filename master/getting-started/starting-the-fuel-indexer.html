@@ -155,8 +155,8 @@ USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
-        --auth-enabled &lt;auth-enabled&gt;
-            Require users to authenticate for some operations. [default: false]
+        --auth-enabled
+            Require users to authenticate for some operations.
 
         --auth-strategy &lt;AUTH_STRATEGY&gt;
             Authentication scheme used.
@@ -166,6 +166,9 @@ OPTIONS:
 
         --database &lt;DATABASE&gt;
             Database type. [default: postgres] [possible values: postgres]
+
+        --embedded-database
+            Automatically create and start database using provided options or defaults.
 
         --fuel-node-host &lt;FUEL_NODE_HOST&gt;
             Host of the running Fuel node. [default: localhost]
@@ -201,8 +204,8 @@ OPTIONS:
         --max-body-size &lt;MAX_BODY_SIZE&gt;
             Max body size for GraphQL API requests. [default: 5242880]
 
-        --metrics &lt;metrics&gt;
-            Use Prometheus metrics reporting. [default: true]
+        --metrics
+            Use Prometheus metrics reporting.
 
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
@@ -219,14 +222,17 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
-        --run-migrations &lt;run-migrations&gt;
-            Run database migrations before starting service. [default: true]
+        --run-migrations
+            Run database migrations before starting service.
 
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
 
     -V, --version
             Print version information
+
+    -v, --verbose
+            Enable verbose logging.
 
 </code></pre>
 <h2 id="using-a-configuration-file"><a class="header" href="#using-a-configuration-file">Using a configuration file</a></h2>
@@ -246,6 +252,9 @@ OPTIONS:
 
 # # Run database migrations before starting service.
 # run_migrations: true
+#
+# # Enable verbose logging.
+# verbose: false
 
 # # ***********************
 # # Fuel Node configuration

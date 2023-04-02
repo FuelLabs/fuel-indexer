@@ -405,8 +405,8 @@ USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
-        --auth-enabled &lt;auth-enabled&gt;
-            Require users to authenticate for some operations. [default: false]
+        --auth-enabled
+            Require users to authenticate for some operations.
 
         --auth-strategy &lt;AUTH_STRATEGY&gt;
             Authentication scheme used.
@@ -416,6 +416,9 @@ OPTIONS:
 
         --database &lt;DATABASE&gt;
             Database type. [default: postgres] [possible values: postgres]
+
+        --embedded-database
+            Automatically create and start database using provided options or defaults.
 
         --fuel-node-host &lt;FUEL_NODE_HOST&gt;
             Host of the running Fuel node. [default: localhost]
@@ -451,8 +454,8 @@ OPTIONS:
         --max-body-size &lt;MAX_BODY_SIZE&gt;
             Max body size for GraphQL API requests. [default: 5242880]
 
-        --metrics &lt;metrics&gt;
-            Use Prometheus metrics reporting. [default: true]
+        --metrics
+            Use Prometheus metrics reporting.
 
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
@@ -469,14 +472,17 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
-        --run-migrations &lt;run-migrations&gt;
-            Run database migrations before starting service. [default: true]
+        --run-migrations
+            Run database migrations before starting service.
 
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
 
     -V, --version
             Print version information
+
+    -v, --verbose
+            Enable verbose logging.
 
 </code></pre>
 <h2 id="using-a-configuration-file"><a class="header" href="#using-a-configuration-file">Using a configuration file</a></h2>
@@ -496,6 +502,9 @@ OPTIONS:
 
 # # Run database migrations before starting service.
 # run_migrations: true
+#
+# # Enable verbose logging.
+# verbose: false
 
 # # ***********************
 # # Fuel Node configuration
@@ -1805,11 +1814,23 @@ type Library {
     fuel-indexer-api-server run [OPTIONS]
 
 OPTIONS:
+        --auth-enabled
+            Require users to authenticate for some operations.
+
+        --auth-strategy &lt;AUTH_STRATEGY&gt;
+            Authentication scheme used.
+
     -c, --config &lt;CONFIG&gt;
             API server config file.
 
         --database &lt;DATABASE&gt;
             Database type. [default: postgres] [possible values: postgres]
+
+        --fuel-node-host &lt;FUEL_NODE_HOST&gt;
+            Host of the running Fuel node. [default: localhost]
+
+        --fuel-node-port &lt;FUEL_NODE_PORT&gt;
+            Listening port of the running Fuel node. [default: 4000]
 
         --graphql-api-host &lt;GRAPHQL_API_HOST&gt;
             GraphQL API host. [default: localhost]
@@ -1820,12 +1841,20 @@ OPTIONS:
     -h, --help
             Print help information
 
-        --log-level &lt;LOG_LEVEL&gt;
-            Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
-            debug, error, warn]
+        --jwt-expiry &lt;JWT_EXPIRY&gt;
+            Amount of time (seconds) before expiring token (if JWT scheme is specified).
 
-        --metrics &lt;metrics&gt;
-            Use Prometheus metrics reporting. [default: true]
+        --jwt-issuer &lt;JWT_ISSUER&gt;
+            Issuer of JWT claims (if JWT scheme is specified).
+
+        --jwt-secret &lt;JWT_SECRET&gt;
+            Secret used for JWT scheme (if JWT scheme is specified).
+
+        --max-body-size &lt;MAX_BODY_SIZE&gt;
+            Max body size for GraphQL API requests. [default: 5242880]
+
+        --metrics
+            Use Prometheus metrics reporting.
 
         --postgres-database &lt;POSTGRES_DATABASE&gt;
             Postgres database.
@@ -1842,11 +1871,15 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
-        --run-migrations &lt;run-migrations&gt;
-            Run database migrations before starting service. [default: true]
+        --run-migrations
+            Run database migrations before starting service.
 
     -V, --version
             Print version information
+
+    -v, --verbose
+            Enable verbose logging.
+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="database-1"><a class="header" href="#database-1">Database</a></h1>
 <p>The Fuel indexer uses <a href="https://github.com/docker-library/postgres/blob/2f6878ca854713264ebb27c1ba8530c884bcbca5/14/bullseye/Dockerfile">PostgreSQL</a> as the primary database. We're open to supporting other storage solutions in the future.</p>
