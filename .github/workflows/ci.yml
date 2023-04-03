@@ -200,8 +200,8 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
+      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests plugin-tests
+        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests plugin-tests
 
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
@@ -248,7 +248,7 @@ jobs:
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
 
       - name: Run E2E and integration tests
-        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests --workspace --exclude forc-index-tests -- --test-threads=1
+        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   cargo-test-forc-index-plugins:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
@@ -269,40 +269,8 @@ jobs:
       - name: wasm-snip
         run: cargo install wasm-snip
 
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
-
-  check-forc-index:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
-    needs:
-      - check-is-semver-branch
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v1
-
-      - name: Install wasm-snip
-        run: cargo install wasm-snip
-
-      - name: Build forc index
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -p forc-index
-
-      - name: Create new index
-        run: |
-          mkdir ../forc_index_test && cd ../forc_index_test && ../fuel-indexer/target/debug/forc-index init --namespace fuel
-
-      - name: Build new index
-        working-directory: ../forc_index_test
-        run: ../fuel-indexer/target/debug/forc-index build
+      - name: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
+        run: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
 
   publish-docker-image:
     needs:
@@ -641,7 +609,7 @@ jobs:
       - cargo-test-e2e-and-integration-tests
       - cargo-clippy
       - cargo-fmt-check
-      - check-forc-index
+      - cargo-test-forc-index-plugins
 
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
