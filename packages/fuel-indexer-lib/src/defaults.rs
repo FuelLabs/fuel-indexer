@@ -48,3 +48,4 @@ pub const ACCOUNT_INDEX: &str = "0";
 pub const VERBOSE_LOGGING: bool = false;
 
 pub const VERBOSE_DB_LOGGING: &str = "false";
+pub const NODE_GRAPHQL_PAGE_SIZE: usize = 10;

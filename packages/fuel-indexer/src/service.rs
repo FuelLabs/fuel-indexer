@@ -27,7 +27,6 @@ pub struct IndexerService {
     config: IndexerConfig,
     pool: IndexerConnectionPool,
     manager: SchemaManager,
-    database_url: String,
     handles: HashMap<String, JoinHandle<()>>,
     rx: Option<Receiver<ServiceRequest>>,
     killers: HashMap<String, Arc<AtomicBool>>,
@@ -39,15 +38,12 @@ impl IndexerService {
         pool: IndexerConnectionPool,
         rx: Option<Receiver<ServiceRequest>>,
     ) -> IndexerResult<IndexerService> {
-        let database_url = config.database.to_string();
-
         let manager = SchemaManager::new(pool.clone());
 
         Ok(IndexerService {
             config,
             pool,
             manager,
-            database_url,
             handles: HashMap::default(),
             killers: HashMap::default(),
             rx,
@@ -56,9 +52,8 @@ impl IndexerService {
 
     pub async fn register_index_from_manifest(
         &mut self,
-        manifest: Manifest,
+        mut manifest: Manifest,
     ) -> IndexerResult<()> {
-        let database_url = self.database_url.clone();
         let mut conn = self.pool.acquire().await?;
         let index = queries::register_index(
             &mut conn,
@@ -82,15 +77,10 @@ impl IndexerService {
 
         let mut conn = self.pool.acquire().await?;
         let start_block = get_start_block(&mut conn, &manifest).await?;
-        let (handle, exec_source, killer) = WasmIndexExecutor::create(
-            &self.config.fuel_node.clone(),
-            &database_url,
-            &manifest,
-            ExecutorSource::Manifest,
-            self.config.stop_idle_indexers,
-            &start_block,
-        )
-        .await?;
+        manifest.start_block = Some(start_block);
+        let (handle, exec_source, killer) =
+            WasmIndexExecutor::create(&self.config, &manifest, ExecutorSource::Manifest)
+                .await?;
 
         let mut items = vec![
             (IndexAssetType::Wasm, exec_source.to_vec()),
@@ -130,16 +120,14 @@ impl IndexerService {
         let indices = queries::registered_indices(&mut conn).await?;
         for index in indices {
             let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
-            let manifest = Manifest::from_slice(&assets.manifest.bytes)?;
+            let mut manifest = Manifest::from_slice(&assets.manifest.bytes)?;
 
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
+            manifest.start_block = Some(start_block);
             let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
-                &self.config.fuel_node,
-                &self.config.database.to_string(),
+                &self.config,
                 &manifest,
                 ExecutorSource::Registry(assets.wasm.bytes),
-                self.config.stop_idle_indexers,
-                &start_block,
             )
             .await?;
 
@@ -155,7 +143,7 @@ impl IndexerService {
         T: Future<Output = IndexerResult<()>> + Send + 'static,
     >(
         &mut self,
-        manifest: Manifest,
+        mut manifest: Manifest,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
@@ -179,16 +167,11 @@ impl IndexerService {
             .await?;
 
         let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
+        manifest.start_block = Some(start_block);
         let uid = manifest.uid();
-        let (handle, _module_bytes, killer) = NativeIndexExecutor::<T>::create(
-            &self.database_url,
-            &self.config.fuel_node,
-            manifest,
-            self.config.stop_idle_indexers,
-            start_block,
-            handle_events,
-        )
-        .await?;
+        let (handle, _module_bytes, killer) =
+            NativeIndexExecutor::<T>::create(&self.config, &manifest, handle_events)
+                .await?;
 
         info!("Registered NativeIndex({})", uid);
 
@@ -260,24 +243,19 @@ async fn create_service_task(
                                             "Could not get latest assets for indexer",
                                         );
 
-                                let manifest: Manifest =
-                                    serde_yaml::from_slice(&assets.manifest.bytes)
-                                        .expect("Failed to deserialize manifest");
+                                let mut manifest =
+                                    Manifest::from_slice(&assets.manifest.bytes)?;
 
                                 let start_block =
                                     get_start_block(&mut conn, &manifest).await?;
-                                let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
-                                    &config.fuel_node,
-                                    &config.database.to_string(),
-                                    &manifest,
-                                    ExecutorSource::Registry(assets.wasm.bytes),
-                                    config.stop_idle_indexers,
-                                    &start_block,
-                                )
-                                .await
-                                .expect(
-                                    "Failed to spawn executor from index asset registry",
-                                );
+                                manifest.start_block = Some(start_block);
+                                let (handle, _module_bytes, killer) =
+                                    WasmIndexExecutor::create(
+                                        &config,
+                                        &manifest,
+                                        ExecutorSource::Registry(assets.wasm.bytes),
+                                    )
+                                    .await?;
 
                                 futs.push(handle);
 
@@ -354,28 +332,25 @@ async fn create_service_task(
                                 .expect("Failed to commit transaction");
                         }
 
-                        let manifest =
-                            Manifest::from_slice(&latest_assets.manifest.bytes)
-                                .expect("Failed to deserialize manifest");
+                        let mut manifest =
+                            Manifest::from_slice(&latest_assets.manifest.bytes)?;
 
                         let start_block = get_start_block(&mut conn, &manifest).await?;
+                        manifest.start_block = Some(start_block);
                         let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
-                            &config.fuel_node,
-                            &config.database.to_string(),
+                            &config,
                             &manifest,
                             ExecutorSource::Registry(request.penultimate_asset_bytes),
-                            config.stop_idle_indexers,
-                            &start_block,
                         )
                         .await
-                        .expect("Failed to spawn executor from index asset registry");
+                        .expect("Failed to spawn executor from index asset registry.");
 
                         futs.push(handle);
                         killers.insert(manifest.uid(), killer);
                     }
                 },
                 Err(e) => {
-                    debug!("No service request to handle: {e:?}");
+                    debug!("No service request to handle: {e:?}.");
                     sleep(Duration::from_secs(defaults::IDLE_SERVICE_WAIT_SECS)).await;
                 }
             }
