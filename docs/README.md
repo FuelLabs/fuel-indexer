@@ -32,7 +32,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
   - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
     - [`wasm`](#wasm)
-  - [Quickstart](#quickstart)
+  - [Quickstart](./QUICKSTART.md)
   - [`forc index` Plugin](#forc-index-plugin)
     - [`check`](#forc-index-check)
     - [`new`](#forc-index-new)
@@ -92,9 +92,7 @@ rustup target add wasm32-unknown-unknown
 > - `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
 > - `CC=/opt/homebrew/opt/llvm/bin/clang`
 
-## Quickstart
-
-[Checkout our Quickstart](./QUICKSTART.md)
+## [Quickstart](./QUICKSTART.md)
 
 ## `forc-index` Plugin
 
