@@ -272,38 +272,6 @@ jobs:
       - name: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
         run: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
 
-  check-forc-index:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
-    needs:
-      - check-is-semver-branch
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v1
-
-      - name: Install wasm-snip
-        run: cargo install wasm-snip
-
-      - name: Build forc index
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -p forc-index
-
-      - name: Create new index
-        run: |
-          mkdir ../forc_index_test && cd ../forc_index_test && ../fuel-indexer/target/debug/forc-index init --namespace fuel
-
-      - name: Build new index
-        working-directory: ../forc_index_test
-        run: ../fuel-indexer/target/debug/forc-index build
-
   publish-docker-image:
     needs:
       - set-env-vars
@@ -641,7 +609,7 @@ jobs:
       - cargo-test-e2e-and-integration-tests
       - cargo-clippy
       - cargo-fmt-check
-      - check-forc-index
+      - cargo-test-forc-index-plugins
 
     runs-on: buildjet-4vcpu-ubuntu-2204
     steps:
