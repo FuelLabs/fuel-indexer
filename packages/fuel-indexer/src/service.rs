@@ -68,7 +68,10 @@ impl IndexerService {
         )
         .await?;
 
+        println!("Registered Index({})", &manifest.uid());
+
         let schema = manifest.graphql_schema()?;
+        println!("Schema: {}", schema);
         let schema_bytes = schema.as_bytes().to_vec();
 
         self.manager

@@ -250,27 +250,15 @@ pub async fn setup_example_test_fuel_node(number_of_contracts: u8) -> Result<(),
         .map(|i| {
             Path::new(WORKSPACE_ROOT)
                 .join("contracts")
-                .join(format!(
-                    "two-contracts-test{}",
-                    if i == 1 {
-                        String::new()
-                    } else {
-                        format!("-{}", i)
-                    }
-                ))
+                .join(format!("two-contracts-test-{}", i))
                 .join("out")
                 .join("debug")
-                .join(format!(
-                    "two-contracts-test{}.bin",
-                    if i == 1 {
-                        String::new()
-                    } else {
-                        format!("-{}", i)
-                    }
-                ))
+                .join(format!("two-contracts-test-{}.bin", i))
         })
         .map(Some)
         .collect::<Vec<_>>();
+
+    println!("contract_bin_paths: {:?}", contract_bin_paths);
 
     setup_test_fuel_node(wallet_path, contract_bin_paths, None).await
 }

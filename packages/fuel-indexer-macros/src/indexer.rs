@@ -255,19 +255,21 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let contract = match &manifest.contract_id {
-        Some(contract_id) => {
-            quote! {
-                let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
-                let receipt_contract_id = Bech32ContractId::from(id);
-                if receipt_contract_id != manifest_contract_id {
-                    Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
-                    continue;
-                }
+    let contracts = manifest.contract_ids.iter().find_map(|id| {
+        match id {
+            Some(contract_id) => {
+                Some(quote! {
+                    let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
+                    let receipt_contract_id = Bech32ContractId::from(id);
+                    if receipt_contract_id != manifest_contract_id {
+                        Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
+                        continue;
+                    }   
+                })
             }
+            None => None, 
         }
-        None => quote! {},
-    };
+    }).unwrap_or(quote! {});
 
     let asyncness = if is_native {
         quote! {async}
@@ -431,11 +433,16 @@ fn process_fn_items(
                     let mut return_types = Vec::new();
                     let mut callees = HashSet::new();
 
-                    for receipt in tx.receipts {
+                    for contract_data in contracts {
+                        // we have to assign this var explicitally 
+                        // so the macro can use it with #contract 
+                        let contract = contract_data;
+                        for receipt in tx.receipts {
+                        quote! {
+                            #contract
                         match receipt {
                             Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
                                 #contract
-
                                 let fn_name = decoder.selector_to_fn_name(param1);
                                 return_types.push(param1);
                                 callees.insert(id);
@@ -445,18 +452,18 @@ fn process_fn_items(
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::Log::type_id();
                                 let data = bincode::serialize(&abi::Log{ contract_id: id, ra, rb }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
-                                #contract
+                                #contracts
                                 decoder.decode_logdata(rb as usize, data);
 
                             }
                             Receipt::Return { id, val, pc, is } => {
-                                #contract
+                                #contracts
                                 if callees.contains(&id) {
                                     let ty_id = abi::Return::type_id();
                                     let data = bincode::serialize(&abi::Return{ contract_id: id, val, pc, is }).expect("Bad encoding,");
@@ -464,7 +471,7 @@ fn process_fn_items(
                                 }
                             }
                             Receipt::ReturnData { data, id, .. } => {
-                                #contract
+                                #contracts 
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
                                     decoder.decode_return_type(selector, data);
@@ -498,19 +505,19 @@ fn process_fn_items(
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::Transfer::type_id();
                                 let data = bincode::serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::TransferOut::type_id();
                                 let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Panic { id, reason, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::Panic::type_id();
                                 let data = bincode::serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() as u32 }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
@@ -525,7 +532,11 @@ fn process_fn_items(
                                 Logger::info("This type is not handled yet. (>'.')>");
                             }
                         }
+                        }
                     }
+                    }
+
+                    
 
                     decoder.dispatch()#awaitness;
                 }

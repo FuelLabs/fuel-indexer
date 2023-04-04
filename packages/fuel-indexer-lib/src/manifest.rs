@@ -15,7 +15,7 @@ pub struct Manifest {
     pub graphql_schema: String,
     pub module: Module,
     pub metrics: Option<bool>,
-    pub contract_id: Option<String>,
+    pub contract_ids: Vec<Option<String>>,
     pub start_block: Option<u64>,
     #[serde(default)]
     pub resumable: Option<bool>,

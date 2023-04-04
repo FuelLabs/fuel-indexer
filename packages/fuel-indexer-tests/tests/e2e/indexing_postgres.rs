@@ -840,7 +840,7 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_trigger_and_index_events_from_two_contracts() {
+async fn test_can_trigger_and_index_events_from_two_contracts_single_manifest() {
     let number_of_contracts = 2;
     let (fuel_node_handle, test_db, mut srvc) =
         setup_test_components(number_of_contracts).await;
@@ -848,6 +848,7 @@ async fn test_can_trigger_and_index_events_from_two_contracts() {
     let mut two_contract_manifest: Manifest =
         serde_yaml::from_str(assets::TWO_CONTRACTS_MANIFEST).expect("Bad yaml file.");
 
+    println!("Manifest: {:?}", two_contract_manifest);
     update_test_manifest_asset_paths(&mut two_contract_manifest);
 
     srvc.register_index_from_manifest(two_contract_manifest)
