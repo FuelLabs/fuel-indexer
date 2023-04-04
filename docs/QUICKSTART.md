@@ -12,7 +12,7 @@ In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service
 
 ### 1.1 Install `fuelup`
 
-To Install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.
+To install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.
 
 ```bash
 curl \
@@ -21,6 +21,20 @@ curl \
 ```
 
 > If you require a non-default `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
+
+### 1.2 WebAssembly (WASM) Setup
+
+Indexers are typically compiled to WASM and thus you'll need to have the proper WASM compilation target available on your system. You can install it through `rustup`:
+
+```
+rustup target add wasm32-unknown-unknown
+```
+
+Additionally, you'll need the `wasm-snip` utility in order to shrink the WASM binary size and cut out errant symbols. You can install it through `cargo`:
+
+```
+cargo install wasm-snip
+```
 
 ## 2. Using the `forc-index` plugin
 
