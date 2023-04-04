@@ -30,11 +30,12 @@ pub struct Command {
     #[clap(long, default_value = defaults::INDEXER_TARGET, help = "Target at which to compile.")]
     pub target: String,
 
-    /// Build optimized artifacts with the release profile.
+    /// Build optimized artifacts with the release profile. Set to true by default.
     #[clap(
         short,
         long,
-        help = "Build optimized artifacts with the release profile."
+        help = "Build optimized artifacts with the release profile.",
+        default_value = "true"
     )]
     pub release: bool,
 
