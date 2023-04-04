@@ -1,8 +1,9 @@
 use crate::{
     cli::{BuildCommand, DeployCommand},
     commands::build,
-    utils::{extract_manifest_fields, project_dir_info},
+    utils::project_dir_info,
 };
+use fuel_indexer_lib::manifest::Manifest;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{
     blocking::{multipart::Form, Client},
@@ -10,11 +11,7 @@ use reqwest::{
     StatusCode,
 };
 use serde_json::{to_string_pretty, value::Value, Map};
-use std::{
-    fs,
-    io::{BufReader, Read},
-    time::Duration,
-};
+use std::time::Duration;
 use tracing::{error, info};
 
 pub fn init(command: DeployCommand) -> anyhow::Result<()> {
@@ -43,29 +40,27 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
             verbose,
             locked,
             native,
-            target_dir: target_dir.clone(),
+            target_dir,
         })?;
     }
 
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
-    let mut manifest_file = fs::File::open(&manifest_path)?;
-    let mut manifest_contents = String::new();
-    manifest_file.read_to_string(&mut manifest_contents)?;
-    let manifest: serde_yaml::Value = serde_yaml::from_str(&manifest_contents)?;
+    let manifest = Manifest::from_file(&manifest_path)?;
 
-    let (namespace, identifier, graphql_schema, module_path) =
-        extract_manifest_fields(manifest, target_dir.as_ref())?;
-
-    let mut manifest_buff = Vec::new();
-    let mut manifest_reader = BufReader::new(manifest_file);
-    manifest_reader.read_to_end(&mut manifest_buff)?;
+    let Manifest {
+        graphql_schema,
+        namespace,
+        identifier,
+        module,
+        ..
+    } = manifest;
 
     let form = Form::new()
         .file("manifest", &manifest_path)?
         .file("schema", graphql_schema)?
-        .file("wasm", module_path)?;
+        .file("wasm", module.path())?;
 
     let target = format!("{url}/api/index/{namespace}/{identifier}");
 
