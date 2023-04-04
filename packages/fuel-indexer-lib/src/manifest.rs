@@ -57,6 +57,7 @@ pub struct Manifest {
     pub namespace: String,
     pub abi: Option<String>,
     pub identifier: String,
+    pub fuel_client: Option<String>,
     pub graphql_schema: String,
     pub module: Module,
     pub metrics: Option<bool>,
@@ -72,7 +73,22 @@ impl Manifest {
         let mut file = File::open(path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
-        Manifest::try_from(content.as_str())
+        Self::from_str(&content)
+    }
+
+    pub fn fuel_client(&self) -> String {
+        self
+            .fuel_client
+            .clone()
+            .expect("`fuel_client` is required in indexer manifest when `indexer_net_config` is specified in indexer config.")
+    }
+
+    pub fn from_slice(s: &[u8]) -> ManifestResult<Self> {
+        Ok(serde_yaml::from_slice(s)?)
+    }
+
+    pub fn to_bytes(&self) -> ManifestResult<Vec<u8>> {
+        Ok(serde_yaml::to_string(&self)?.as_bytes().to_vec())
     }
 
     /// Return the raw GraphQL schema string for an indexer manifest.
