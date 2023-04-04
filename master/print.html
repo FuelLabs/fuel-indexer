@@ -215,7 +215,7 @@
 <p>Note for Apple Silicon macOS users: Due to the default architecture-specific libraries that are shipped with macOS, you may have trouble building WASM binaries. Please refer to <a href="getting-started/dependencies/../../reference-guide/components/assets/module.html#notes-on-wasm">this section</a> of the <em>Module</em> page for more information.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><!-- markdownlint-disable MD041 -->
-<h2 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h2>
+<h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
 <p>In this tutorial you will:</p>
 <ol>
 <li>Bootstrap your development environment.</li>
@@ -225,7 +225,7 @@
 <h2 id="1-setting-up-your-environment"><a class="header" href="#1-setting-up-your-environment">1. Setting up your environment</a></h2>
 <p>In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a PostgreSQL database backend. We will also use Fuel's toolchain manager <a href="https://github.com/FuelLabs/fuelup"><code>fuelup</code></a> in order to install the <code>forc-index</code> binary that we'll use to develop our index.</p>
 <h3 id="11-install-fuelup"><a class="header" href="#11-install-fuelup">1.1 Install <code>fuelup</code></a></h3>
-<p>To Install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.</p>
+<p>To install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.</p>
 <pre><code class="language-bash">curl \
   --proto '=https' \
   --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
@@ -233,6 +233,13 @@
 <blockquote>
 <p>If you require a non-default <code>fuelup</code> installation, please <a href="https://github.com/FuelLabs/fuelup">read the <code>fuelup</code> installation docs.</a></p>
 </blockquote>
+<h3 id="12-webassembly-wasm-setup"><a class="header" href="#12-webassembly-wasm-setup">1.2 WebAssembly (WASM) Setup</a></h3>
+<p>Indexers are typically compiled to WASM and thus you'll need to have the proper WASM compilation target available on your system. You can install it through <code>rustup</code>:</p>
+<pre><code>rustup target add wasm32-unknown-unknown
+</code></pre>
+<p>Additionally, you'll need the <code>wasm-snip</code> utility in order to shrink the WASM binary size and cut out errant symbols. You can install it through <code>cargo</code>:</p>
+<pre><code>cargo install wasm-snip
+</code></pre>
 <h2 id="2-using-the-forc-index-plugin"><a class="header" href="#2-using-the-forc-index-plugin">2. Using the <code>forc-index</code> plugin</a></h2>
 <p>The primary means of interfacing with the Fuel indexer <strong>for index development</strong> is the <a href="https://crates.io/crates/forc-index"><code>forc-index</code> CLI tool</a>. <code>forc-index</code> is a <a href="https://github.com/FuelLabs/sway/tree/master/forc"><code>forc</code></a> plugin specifically created to interface with the Fuel indexer service. Since we already installed <code>fuelup</code> in a previous step <sup><a href="quickstart/index.html#11-install-fuelup">1.1</a></sup>, we should be able to check that our <code>forc-index</code> binary was successfully installed and added to our <code>PATH</code>.</p>
 <pre><code class="language-bash">which forc-index
