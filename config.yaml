@@ -18,6 +18,9 @@
 # # Enable verbose logging.
 # verbose: false
 
+# # Start a local Fuel node.
+# local_fuel_node: false
+
 # # ***********************
 # # Fuel Node configuration
 # # ************************

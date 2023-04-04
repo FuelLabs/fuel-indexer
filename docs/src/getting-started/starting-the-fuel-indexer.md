@@ -48,6 +48,9 @@ OPTIONS:
         --jwt-secret <JWT_SECRET>
             Secret used for JWT scheme (if JWT scheme is specified).
 
+        --local-fuel-node
+            Start a local Fuel node.
+
         --log-level <LOG_LEVEL>
             Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
             debug, error, warn]
@@ -82,12 +85,11 @@ OPTIONS:
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
 
-    -V, --version
-            Print version information
-
     -v, --verbose
             Enable verbose logging.
 
+    -V, --version
+            Print version information
 ```
 
 ## Using a configuration file

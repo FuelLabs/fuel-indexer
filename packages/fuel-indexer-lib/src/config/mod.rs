@@ -185,6 +185,10 @@ pub struct IndexerArgs {
     /// Enable verbose logging.
     #[clap(short, long, help = "Enable verbose logging.")]
     pub verbose: bool,
+
+    /// Start a local Fuel node.
+    #[clap(long, help = "Start a local Fuel node.")]
+    pub local_fuel_node: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -313,6 +317,8 @@ pub struct IndexerConfig {
     #[serde(default)]
     pub verbose: bool,
     #[serde(default)]
+    pub local_fuel_node: bool,
+    #[serde(default)]
     pub fuel_node: FuelNodeConfig,
     #[serde(default)]
     pub graphql_api: GraphQLConfig,
@@ -367,6 +373,7 @@ impl From<IndexerArgs> for IndexerConfig {
 
         let mut config = IndexerConfig {
             verbose: args.verbose,
+            local_fuel_node: args.local_fuel_node,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -442,6 +449,7 @@ impl From<ApiServerArgs> for IndexerConfig {
 
         let mut config = IndexerConfig {
             verbose: args.verbose,
+            local_fuel_node: defaults::LOCAL_FUEL_NODE,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -519,6 +527,7 @@ impl IndexerConfig {
 
         let mut config = IndexerConfig {
             verbose: args.verbose,
+            local_fuel_node: args.local_fuel_node,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -565,6 +574,7 @@ impl IndexerConfig {
             serde_yaml::Value::String("stop_idle_indexers".into());
         let run_migrations_key = serde_yaml::Value::String("run_migrations".into());
         let verbose_key = serde_yaml::Value::String("verbose".into());
+        let local_fuel_node_key = serde_yaml::Value::String("local_fuel_node".into());
 
         if let Some(metrics) = content.get(metrics_key) {
             config.metrics = metrics.as_bool().unwrap();
@@ -580,6 +590,10 @@ impl IndexerConfig {
 
         if let Some(verbose) = content.get(verbose_key) {
             config.verbose = verbose.as_bool().unwrap();
+        }
+
+        if let Some(local_fuel_node) = content.get(local_fuel_node_key) {
+            config.local_fuel_node = local_fuel_node.as_bool().unwrap();
         }
 
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());
