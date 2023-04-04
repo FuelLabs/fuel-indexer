@@ -51,6 +51,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             password,
             user,
             port,
+            persistent: true,
             config: config.clone(),
             start: true,
             ..Default::default()
@@ -132,7 +133,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
     match cmd.spawn() {
         Ok(child) => {
             info!(
-                "\n✅ Successfully started the indexer service at PID {}.",
+                "\n✅ Successfully started the indexer service at PID {}",
                 child.id()
             );
         }
