@@ -1,4 +1,5 @@
 namespace: fuel_indexer_test
+fuel_client: ~
 graphql_schema: packages/fuel-indexer-tests/components/indices/fuel-indexer-test/schema/fuel_indexer_test.graphql
 abi: packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json
 start_block: 1
