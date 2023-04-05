@@ -25,7 +25,7 @@ env:
 
 jobs:
   cancel-previous-runs:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.9.1
@@ -33,7 +33,7 @@ jobs:
           access_token: ${{ github.token }}
 
   cargo-toml-fmt-check:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
@@ -47,7 +47,7 @@ jobs:
         run: cargo sort -w --check packages/**/Cargo.toml
 
   set-env-vars:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     outputs:
       IS_MASTER: ${{ steps.set-env.outputs.IS_MASTER }}
       IS_RELEASE: ${{ steps.set-env.outputs.IS_RELEASE }}
@@ -65,7 +65,7 @@ jobs:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
     needs:
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     outputs:
       is_semver_branch: ${{ steps.semver-branch-check.outputs.is_semver_branch }}
     steps:
@@ -80,7 +80,7 @@ jobs:
           fi
 
   mdbook-lint:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -93,7 +93,7 @@ jobs:
   mdbook-build:
     needs:
       - mdbook-lint
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -107,7 +107,7 @@ jobs:
           mdbook-version: 'latest'
 
   cargo-verifications:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -150,7 +150,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -165,7 +165,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -180,7 +180,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:latest
@@ -208,7 +208,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:latest
@@ -255,7 +255,7 @@ jobs:
     needs: 
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -276,7 +276,7 @@ jobs:
     needs:
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -526,7 +526,7 @@ jobs:
     needs:
       - publish-docker-image
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - name: Set Environment Variables
         run: |
@@ -555,7 +555,7 @@ jobs:
       - publish-docker-image
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -610,7 +610,7 @@ jobs:
       - cargo-fmt-check
       - cargo-test-forc-index-plugins
 
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - run: true
 
@@ -618,7 +618,7 @@ jobs:
     needs:
       - validation-complete
     if: always()
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - name: Notify Slack On Failure
         uses: ravsamhq/notify-slack-action@v2
