@@ -35,7 +35,7 @@ pub struct Command {
         short,
         long,
         help = "Build optimized artifacts with the release profile.",
-        default_value = defaults::BUILD_RELEASE_PROFILE 
+        default_value = defaults::BUILD_RELEASE_PROFILE,
     )]
     pub release: bool,
 
