@@ -267,7 +267,7 @@ pub struct ApiServerArgs {
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
-    #[clap(long, help = "Authentication scheme used.")]
+    #[clap(long, help = "Authentication scheme used.", value_parser(["jwt"]))]
     pub auth_strategy: Option<String>,
 
     /// Secret used for JWT scheme (if JWT scheme is specified).

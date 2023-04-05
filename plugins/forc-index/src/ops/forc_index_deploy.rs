@@ -66,12 +66,12 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
 
     if verbose {
         info!(
-            "Deploying indexer at {} to {}",
+            "Deploying indexer at {} to {}.",
             manifest_path.display(),
             target
         );
     } else {
-        info!("Deploying indexer");
+        info!("Deploying indexer...");
     }
 
     let mut headers = HeaderMap::new();
@@ -109,9 +109,13 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .expect("Failed to read JSON response.");
 
     if status != StatusCode::OK {
-        error!("\n❌ {target} returned a non-200 response code: {status:?}",);
+        if verbose {
+            error!("\n❌ {target} returned a non-200 response code: {status:?}",);
 
-        println!("\n{}", to_string_pretty(&res_json)?);
+            info!("\n{}", to_string_pretty(&res_json)?);
+        } else {
+            info!("\n{}", to_string_pretty(&res_json)?);
+        }
 
         return Ok(());
     }
