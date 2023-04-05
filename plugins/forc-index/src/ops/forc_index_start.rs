@@ -18,6 +18,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         postgres_database,
         postgres_host,
         postgres_port,
+        local_fuel_node,
         run_migrations,
         metrics,
         manifest,
@@ -83,6 +84,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             ("--metrics", metrics),
             ("--auth-enabled", auth_enabled),
             ("--verbose", verbose),
+            ("--local-fuel-node", local_fuel_node),
         ];
         for (opt, value) in options.iter() {
             if *value {

@@ -38,4 +38,5 @@ tracing = "0.1"
 
 [features]
 default = ["metrics"]
+fuel-core-lib = []
 metrics = ["fuel-indexer-metrics"]
