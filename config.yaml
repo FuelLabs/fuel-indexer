@@ -47,9 +47,9 @@
 #   # Max body size for GraphQL API requests.
 #   max_body_size: "5242880"
 
-# # *******************************
-# # Database configuration options.
-# # *******************************
+# # ******************************
+# # Database configuration options
+# # ******************************
 
 # database:
 
