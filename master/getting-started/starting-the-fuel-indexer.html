@@ -194,6 +194,9 @@ OPTIONS:
         --jwt-secret &lt;JWT_SECRET&gt;
             Secret used for JWT scheme (if JWT scheme is specified).
 
+        --local-fuel-node
+            Start a local Fuel node.
+
         --log-level &lt;LOG_LEVEL&gt;
             Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
             debug, error, warn]
@@ -228,12 +231,11 @@ OPTIONS:
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
 
-    -V, --version
-            Print version information
-
     -v, --verbose
             Enable verbose logging.
 
+    -V, --version
+            Print version information
 </code></pre>
 <h2 id="using-a-configuration-file"><a class="header" href="#using-a-configuration-file">Using a configuration file</a></h2>
 <pre><code class="language-yaml"># # The following is an example Fuel indexer configuration file.
@@ -255,6 +257,9 @@ OPTIONS:
 #
 # # Enable verbose logging.
 # verbose: false
+
+# # Start a local Fuel node.
+# local_fuel_node: false
 
 # # ***********************
 # # Fuel Node configuration
@@ -282,9 +287,9 @@ OPTIONS:
 #   # Max body size for GraphQL API requests.
 #   max_body_size: &quot;5242880&quot;
 
-# # *******************************
-# # Database configuration options.
-# # *******************************
+# # ******************************
+# # Database configuration options
+# # ******************************
 
 # database:
 
