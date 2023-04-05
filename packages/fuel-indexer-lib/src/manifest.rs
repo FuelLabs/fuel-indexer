@@ -76,13 +76,6 @@ impl Manifest {
         Self::from_str(&content)
     }
 
-    pub fn fuel_client(&self) -> String {
-        self
-            .fuel_client
-            .clone()
-            .expect("`fuel_client` is required in indexer manifest when `indexer_net_config` is specified in indexer config.")
-    }
-
     pub fn from_slice(s: &[u8]) -> ManifestResult<Self> {
         Ok(serde_yaml::from_slice(s)?)
     }

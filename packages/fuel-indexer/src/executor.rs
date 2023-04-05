@@ -75,7 +75,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     let stop_idle_indexers = config.stop_idle_indexers;
 
     let fuel_node_addr = if config.indexer_net_config {
-        manifest.fuel_client()
+        manifest
+            .fuel_client
+            .clone()
+            .unwrap_or(config.fuel_node.to_string())
     } else {
         config.fuel_node.to_string()
     };
