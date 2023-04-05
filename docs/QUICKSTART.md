@@ -238,3 +238,4 @@ http://127.0.0.1:29987/api/graph/my_project/hello_indexer
 ### Finished! 🥳
 
 Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
+

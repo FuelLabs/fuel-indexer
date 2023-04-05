@@ -73,15 +73,7 @@ impl Manifest {
         let mut file = File::open(path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
-        Self::from_str(&content)
-    }
-
-    pub fn from_slice(s: &[u8]) -> ManifestResult<Self> {
-        Ok(serde_yaml::from_slice(s)?)
-    }
-
-    pub fn to_bytes(&self) -> ManifestResult<Vec<u8>> {
-        Ok(serde_yaml::to_string(&self)?.as_bytes().to_vec())
+        Self::try_from(content.as_str())
     }
 
     /// Return the raw GraphQL schema string for an indexer manifest.
