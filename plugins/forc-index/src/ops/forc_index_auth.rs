@@ -41,11 +41,15 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
         .expect("Failed to deploy indexer.");
 
     if res.status() != StatusCode::OK {
-        error!(
-            "\n❌ {} returned a non-200 response code: {:?}",
-            &target,
-            res.status()
-        );
+        if verbose {
+            error!(
+                "\n❌ {} returned a non-200 response code: {:?}",
+                &target,
+                res.status()
+            );
+        } else {
+            error!("\n❌ Action failed (Status({}))", res.status());
+        }
         return Ok(());
     }
 
@@ -105,7 +109,7 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
                 token
             );
         } else {
-            info!("\n✅ Authenticated successfully.");
+            info!("\n✅ Authenticated successfully.\n\nToken: {}", token);
         }
     } else {
         error!("\n❌ Failed to produce a token.");

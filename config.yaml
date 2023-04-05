@@ -75,7 +75,7 @@
 #   enabled: false
 
 #   # Which authentication scheme to use.
-#   strategy: JWT
+#   strategy: jwt
 
 #   # Secret used if JWT authentication is specified.
 #   jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890*
