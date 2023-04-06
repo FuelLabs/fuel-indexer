@@ -9,6 +9,7 @@ on:
   release:
     types: [published]
 
+
 env:
   DATABASE_URL: postgres://postgres:my-secret@localhost:5432
   DASEL_VERSION: https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64
@@ -254,7 +255,7 @@ jobs:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
     needs: 
       - cargo-toml-fmt-check
-      - set-env-vars
+      - check-is-semver-branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

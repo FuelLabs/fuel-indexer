@@ -21,9 +21,9 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.6", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.6", features = ["native-execution"] }}
-fuel-indexer-schema = {{ version = "0.6", default-features = false }}
+fuel-indexer-macros = {{ version = "0.7", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.7", features = ["native-execution"] }}
+fuel-indexer-schema = {{ version = "0.7", default-features = false }}
 fuel-tx = "0.26"
 fuels = {{ version = "0.38.1" }}
 fuels-core = {{ version = "0.38.1" }}
@@ -46,9 +46,9 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.6", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.6" }}
-fuel-indexer-schema = {{ version = "0.6", default-features = false }}
+fuel-indexer-macros = {{ version = "0.7", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.7" }}
+fuel-indexer-schema = {{ version = "0.7", default-features = false }}
 fuel-tx = "0.26"
 fuels-core = {{ version = "0.38.1", default-features = false }}
 fuels-macros = {{ version = "0.38.1" }}
