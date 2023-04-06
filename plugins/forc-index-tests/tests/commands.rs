@@ -66,7 +66,7 @@ fn test_build_command_creates_artifact_at_expected_path() {
         path: None,
         verbose: false,
         profile: None,
-        release: true.to_string(),
+        release: false.to_string(),
         locked: false,
         manifest: Some(manifest),
         target_dir: None,
