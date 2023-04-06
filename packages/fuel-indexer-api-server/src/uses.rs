@@ -3,7 +3,8 @@ use crate::{
     models::VerifySignatureRequest,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-use async_graphql_axum::GraphQLRequest;
+use async_graphql::Result as GraphQLResult;
+use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
@@ -34,8 +35,9 @@ use fuel_indexer_schema::db::{
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
-use serde_json::{json, Value};
+use serde_json::{from_value, json, Value};
 use std::{
+    convert::From,
     str::FromStr,
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
@@ -58,7 +60,7 @@ pub(crate) async fn query_graph(
         .await
     {
         Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
-            Ok(response) => Ok(axum::Json(response)),
+            Ok(query_res) => Ok(axum::Json(query_res)),
             Err(e) => {
                 error!("query_graph error: {e}");
                 Err(e)
@@ -376,8 +378,8 @@ pub async fn run_query(
 
     match queries::run_query(&mut conn, queries).await {
         Ok(ans) => {
-            let row: Value = serde_json::from_value(ans)?;
-            Ok(row)
+            let ans_json: Value = serde_json::from_value(ans)?;
+            Ok(serde_json::json!({ "data": ans_json }))
         }
         Err(e) => {
             error!("Error querying database: {e}.");
