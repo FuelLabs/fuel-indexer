@@ -255,7 +255,7 @@ jobs:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
     needs: 
       - cargo-toml-fmt-check
-      - set-env-vars
+      - check-is-semver-branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
