@@ -3,8 +3,7 @@ use crate::{
     models::VerifySignatureRequest,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-use async_graphql::Result as GraphQLResult;
-use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
+use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
@@ -35,7 +34,7 @@ use fuel_indexer_schema::db::{
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
-use serde_json::{from_value, json, Value};
+use serde_json::{json, Value};
 use std::{
     convert::From,
     str::FromStr,
@@ -391,10 +390,10 @@ pub async fn run_query(
 pub async fn gql_playground(
     Path((namespace, identifier)): Path<(String, String)>,
 ) -> impl IntoResponse {
-    let html = playground_source(GraphQLPlaygroundConfig::new(&format!(
-        "/api/graph/{}/{}",
-        namespace, identifier
-    )));
+    let html = playground_source(
+        GraphQLPlaygroundConfig::new(&format!("/api/graph/{}/{}", namespace, identifier))
+            .with_setting("scehma.polling.enable", false),
+    );
 
     Response::builder()
         .status(StatusCode::OK)
