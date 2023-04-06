@@ -1,0 +1,334 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Contributing Standards - The Fuel Indexer Service</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = null;
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../the-fuel-indexer.html">The Fuel Indexer</a></li><li class="chapter-item expanded affix "><li class="part-title">Getting Started</li><li class="chapter-item expanded "><a href="../getting-started/dependencies/index.html"><strong aria-hidden="true">1.</strong> Dependencies</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/dependencies/fuelup.html"><strong aria-hidden="true">1.1.</strong> fuelup</a></li><li class="chapter-item expanded "><a href="../getting-started/dependencies/database.html"><strong aria-hidden="true">1.2.</strong> Database</a></li><li class="chapter-item expanded "><a href="../getting-started/dependencies/wasm.html"><strong aria-hidden="true">1.3.</strong> WASM</a></li></ol></li><li class="chapter-item expanded "><a href="../quickstart/index.html"><strong aria-hidden="true">2.</strong> Quickstart</a></li><li class="chapter-item expanded "><a href="../getting-started/starting-the-fuel-indexer.html"><strong aria-hidden="true">3.</strong> Starting the Fuel Indexer</a></li><li class="chapter-item expanded affix "><li class="part-title">Examples</li><li class="chapter-item expanded "><a href="../examples/hello-world.html"><strong aria-hidden="true">4.</strong> Hello World</a></li><li class="chapter-item expanded "><a href="../examples/block-explorer.html"><strong aria-hidden="true">5.</strong> Block Explorer</a></li><li class="chapter-item expanded affix "><li class="part-title">Reference Guide</li><li class="chapter-item expanded "><a href="../reference-guide/components/fuel-indexer-project.html"><strong aria-hidden="true">6.</strong> A Fuel Indexer Project</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/components/assets/manifest.html"><strong aria-hidden="true">6.1.</strong> Manifest</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/assets/schema.html"><strong aria-hidden="true">6.2.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/assets/module.html"><strong aria-hidden="true">6.3.</strong> Module</a></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/what-can-i-index.html"><strong aria-hidden="true">7.</strong> What Can I Index?</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/indexing/blocks-and-transactions.html"><strong aria-hidden="true">7.1.</strong> Blocks and Transactions</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts.html"><strong aria-hidden="true">7.2.</strong> Receipts</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/call.html"><strong aria-hidden="true">7.2.1.</strong> Call</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/log.html"><strong aria-hidden="true">7.2.2.</strong> Log</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/logdata.html"><strong aria-hidden="true">7.2.3.</strong> LogData</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/messageout.html"><strong aria-hidden="true">7.2.4.</strong> MessageOut</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/panic.html"><strong aria-hidden="true">7.2.5.</strong> Panic</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/return.html"><strong aria-hidden="true">7.2.6.</strong> Return</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/returndata.html"><strong aria-hidden="true">7.2.7.</strong> ReturnData</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/revert.html"><strong aria-hidden="true">7.2.8.</strong> Revert</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/scriptresult.html"><strong aria-hidden="true">7.2.9.</strong> ScriptResult</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/transfer.html"><strong aria-hidden="true">7.2.10.</strong> Transfer</a></li><li class="chapter-item expanded "><a href="../reference-guide/indexing/receipts/transferout.html"><strong aria-hidden="true">7.2.11.</strong> TransferOut</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/data-types/types.html"><strong aria-hidden="true">8.</strong> Data Types</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/graphql/index.html"><strong aria-hidden="true">9.</strong> GraphQL</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/components/graphql/schema.html"><strong aria-hidden="true">9.1.</strong> Schema</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/graphql/directives.html"><strong aria-hidden="true">9.2.</strong> Directives</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/graphql/api-server.html"><strong aria-hidden="true">9.3.</strong> API Server</a></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/components/database/index.html"><strong aria-hidden="true">10.</strong> Database</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/components/database/foreign-keys.html"><strong aria-hidden="true">10.1.</strong> Foreign Keys</a></li><li class="chapter-item expanded "><a href="../reference-guide/components/database/ids.html"><strong aria-hidden="true">10.2.</strong> ID Types</a></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/index.html"><strong aria-hidden="true">11.</strong> Plugins</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/index.html"><strong aria-hidden="true">11.1.</strong> forc index</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/init.html"><strong aria-hidden="true">11.1.1.</strong> init</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/new.html"><strong aria-hidden="true">11.1.2.</strong> new</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/check.html"><strong aria-hidden="true">11.1.3.</strong> check</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/build.html"><strong aria-hidden="true">11.1.4.</strong> build</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/start.html"><strong aria-hidden="true">11.1.5.</strong> start</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/deploy.html"><strong aria-hidden="true">11.1.6.</strong> deploy</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/remove.html"><strong aria-hidden="true">11.1.7.</strong> remove</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/auth.html"><strong aria-hidden="true">11.1.8.</strong> auth</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-index/revert.html"><strong aria-hidden="true">11.1.9.</strong> revert</a></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/index.html"><strong aria-hidden="true">11.2.</strong> forc index postgres</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/create.html"><strong aria-hidden="true">11.2.1.</strong> create</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/start.html"><strong aria-hidden="true">11.2.2.</strong> start</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/stop.html"><strong aria-hidden="true">11.2.3.</strong> stop</a></li><li class="chapter-item expanded "><a href="../reference-guide/plugins/forc-postgres/drop.html"><strong aria-hidden="true">11.2.4.</strong> drop</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../reference-guide/authentication/index.html"><strong aria-hidden="true">12.</strong> Authentication</a></li><li class="chapter-item expanded affix "><li class="part-title">For Contributors</li><li class="chapter-item expanded "><a href="../for-contributors/index.html"><strong aria-hidden="true">13.</strong> Environment Setup</a></li><li class="chapter-item expanded "><a href="../for-contributors/contributing-standards.html" class="active"><strong aria-hidden="true">14.</strong> Contributing Standards</a></li><li class="chapter-item expanded "><a href="../for-contributors/release-schedule.html"><strong aria-hidden="true">15.</strong> Release Schedule</a></li><li class="chapter-item expanded affix "><li class="part-title">Appendix</li><li class="chapter-item expanded "><a href="../glossary.html"><strong aria-hidden="true">16.</strong> A: Glossary</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">The Fuel Indexer Service</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/FuelLabs/fuel-indexer" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <!-- markdownlint-disable MD041 -->
+<h1 id="contributing-to-fuel-indexer"><a class="header" href="#contributing-to-fuel-indexer">Contributing to Fuel Indexer</a></h1>
+<p>Thanks for your interest in contributing to Fuel Indexer! This document outlines some the conventions on building, running, and testing Fuel Indexer.</p>
+<p>Fuel Indexer has many dependent repositories. If you need any help or mentoring getting started, understanding the codebase, or anything else, please ask on our <a href="https://discord.gg/xfpK4Pe">Discord</a>.</p>
+<h2 id="code-standards"><a class="header" href="#code-standards">Code Standards</a></h2>
+<p>We use an RFC process to maintain our code standards. They currently live in the RFC repo: <a href="https://github.com/FuelLabs/rfcs/tree/master/text/code-standards">https://github.com/FuelLabs/rfcs/tree/master/text/code-standards</a></p>
+<h2 id="building-and-setting-up-a-development-workspace"><a class="header" href="#building-and-setting-up-a-development-workspace">Building and setting up a development workspace</a></h2>
+<p>Fuel Core is mostly written in Rust, but includes components written in C++ (RocksDB).
+We are currently using the latest Rust stable toolchain to build the project.
+But for <code>rustfmt</code>, we use Rust nightly toolchain because it provides more code style features(you can check <a href=".rustfmt.toml"><code>rustfmt.toml</code></a>).</p>
+<h3 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h3>
+<p>To build Fuel Core you'll need to at least have the following installed:</p>
+<ul>
+<li><code>git</code> - version control</li>
+<li><a href="https://rustup.rs/"><code>rustup</code></a> - Rust installer and toolchain manager</li>
+<li><a href="http://releases.llvm.org/download.html"><code>clang</code></a> - Used to build system libraries (required for rocksdb).</li>
+<li><a href="https://grpc.io/docs/protoc-installation/"><code>postgresql/libpq</code></a> - Used for Postgres backend.</li>
+</ul>
+<p>See the <a href="README.html#system-requirements">README.md</a> for platform specific setup steps.</p>
+<h3 id="getting-the-repository"><a class="header" href="#getting-the-repository">Getting the repository</a></h3>
+<blockquote>
+<p>Future instructions assume you are in this repository</p>
+</blockquote>
+<pre><code class="language-sh">git clone https://github.com/FuelLabs/fuel-indexer
+cd fuel-indexer
+</code></pre>
+<h3 id="configuring-your-rust-toolchain"><a class="header" href="#configuring-your-rust-toolchain">Configuring your Rust toolchain</a></h3>
+<p><code>rustup</code> is the official toolchain manager for Rust.</p>
+<p>We use some additional components such as <code>clippy</code> and <code>rustfmt</code>, to install those:</p>
+<pre><code class="language-sh">rustup component add clippy
+rustup component add rustfmt
+</code></pre>
+<p>Fuel Indexer also uses a few other tools installed via <code>cargo</code></p>
+<pre><code class="language-sh">cargo install sqlx-cli
+cargo install wasm-snip
+</code></pre>
+<h3 id="building-and-testing"><a class="header" href="#building-and-testing">Building and testing</a></h3>
+<p>Fuel Indexer's two primary crates are <code>fuel-indexer</code> and <code>fuel-indexer-api-server</code>.</p>
+<p>You can build Fuel Indexer:</p>
+<pre><code class="language-sh">cargo build -p fuel-indexer -p fuel-indexer-api-server
+</code></pre>
+<p>This command will run <code>cargo build</code> and also dump the latest schema into <code>/assets/</code> folder.</p>
+<p>Linting is done using rustfmt and clippy, which are each separate commands:</p>
+<pre><code class="language-sh">cargo fmt --all --check
+</code></pre>
+<pre><code class="language-sh">cargo clippy --all-features --all-targets -- -D warnings
+</code></pre>
+<p>The test suite follows the Rust cargo standards. The GraphQL service will be instantiated by
+Tower and will emulate a server/client structure.</p>
+<p>Testing is simply done using Cargo:</p>
+<pre><code class="language-sh">RUSTFLAGS='-D warnings' SQLX_OFFLINE=1 cargo test --locked --all-targets --all-features
+</code></pre>
+<h4 id="build-options"><a class="header" href="#build-options">Build Options</a></h4>
+<p>For optimal performance, we recommend using native builds. The generated binary will be optimized for your CPU and may contain specific instructions supported only in your hardware.</p>
+<p>To build, run:</p>
+<pre><code class="language-sh">cargo build --release --bin fuel-indexer
+</code></pre>
+<p>The generated binary will be located in <code>./target/release/fuel-indexer</code></p>
+<h3 id="build-issues"><a class="header" href="#build-issues">Build issues</a></h3>
+<ul>
+<li>Due to dependencies on external components such as RocksDb, build times can be large without caching.
+We currently use <a href="https://github.com/mozilla/sccache">sccache</a></li>
+</ul>
+<pre><code class="language-sh">cargo build -p fuel-indexer --no-default-features
+</code></pre>
+<h2 id="contribution-flow"><a class="header" href="#contribution-flow">Contribution flow</a></h2>
+<p>This is a rough outline of what a contributor's workflow looks like:</p>
+<ul>
+<li>Make sure what you want to contribute is already tracked as an issue.
+We may discuss the problem and solution in the issue.
+⚠️ <strong>DO NOT submit PRs that do not have an associated issue</strong> ⚠️</li>
+<li>Create a Git branch from where you want to base your work.
+<ul>
+<li>Most work is usually branched off of <code>master</code></li>
+<li>Give your branch a name related to the work you're doing</li>
+</ul>
+</li>
+<li>Write code, add test cases, and commit your work.</li>
+<li>Run tests and make sure all tests pass.</li>
+<li>Your commit message should be formatted as <code>[commit type]: [short commit blurb]</code>
+<ul>
+<li>Examples:
+<ul>
+<li>If you fixed a bug, your message is <code>fix: database locking issue</code></li>
+<li>If you added new functionality, your message would be <code>enhancement: i add something super cool</code></li>
+<li>If you just did a chore your message is: <code>chore: i did somthing not fun</code></li>
+</ul>
+</li>
+<li>Keeping commit messages short and consistent helps users parse release
+notes</li>
+</ul>
+</li>
+<li>Push up your branch to Github then (on the right hand side of the Github UI):
+<ul>
+<li>Assign yourself as the owner of the PR</li>
+<li>Add any and all necessary labels to your PR</li>
+<li>Link the issue your PR solves, to your PR</li>
+</ul>
+</li>
+<li>If you are part of the FuelLabs Github org, please open a PR from the repository itself.</li>
+<li>Otherwise, push your changes to a branch in your fork of the repository and submit a pull request.
+<ul>
+<li>Make sure mention the issue, which is created at step 1, in the commit message.</li>
+</ul>
+</li>
+<li>Your PR will be reviewed and some changes may be requested.
+<ul>
+<li>Once you've made changes, your PR must be re-reviewed and approved.</li>
+<li>If the PR becomes out of date, you can use GitHub's 'update branch' button.</li>
+<li>If there are conflicts, you can merge and resolve them locally. Then push to your PR branch.
+<ul>
+<li>Any changes to the branch will require a re-review.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Our CI (Github Actions) automatically tests all authorized pull requests.</li>
+<li>Use Github to merge the PR once approved.</li>
+</ul>
+<h3 id="commit-categories"><a class="header" href="#commit-categories">Commit categories</a></h3>
+<ul>
+<li><code>bug</code>: If fixing broken functionality</li>
+<li><code>enhancement</code>: If adding new functionality</li>
+<li><code>chore</code>: If finishing valuable work (that's no fun!)</li>
+<li><code>testing</code>: If only updating/writing tests</li>
+<li><code>docs</code>: If just updating docs</li>
+<li><code>feat</code>: If adding a non-trivial new feature</li>
+<li>There will be categories not covered in this doc - use your best judgement!</li>
+</ul>
+<p>Thanks for your contributions!</p>
+<h2 id="finding-something-to-work-on"><a class="header" href="#finding-something-to-work-on">Finding something to work on</a></h2>
+<p>For beginners, we have prepared many suitable tasks for you. Checkout our <a href="https://github.com/FuelLabs/fuel-indexer/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22">Good First Issues</a> for a list.</p>
+<p>If you are planning something that relates to multiple components or changes current behaviors, make sure to open an issue to discuss with us before continuing.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../for-contributors/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next" href="../for-contributors/release-schedule.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../for-contributors/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next" href="../for-contributors/release-schedule.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>
