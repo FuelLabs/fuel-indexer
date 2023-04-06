@@ -61,7 +61,8 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
     }
 
-    let mut cmd = Command::new("fuel-indexer");
+    let mut cmd =
+        Command::new("/Users/rashad/dev/repos/fuel-indexer/target/release/fuel-indexer");
     cmd.arg("run");
 
     if let Some(m) = &manifest {

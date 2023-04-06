@@ -1,8 +1,6 @@
 use actix_service::Service;
 use actix_web::test;
 use fuel_indexer::IndexerService;
-use fuel_indexer_database::{queries, IndexerConnection};
-
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{
     assets, defaults,
@@ -11,16 +9,9 @@ use fuel_indexer_tests::{
         setup_example_test_fuel_node, test_web::app, TestPostgresDb,
     },
     utils::update_test_manifest_asset_paths,
-    WORKSPACE_ROOT,
 };
 use fuel_indexer_types::{Address, ContractId, Identity};
-use hex::FromHex;
-use lazy_static::lazy_static;
-use sqlx::{
-    pool::{Pool, PoolConnection},
-    types::BigDecimal,
-    Postgres, Row,
-};
+use sqlx::{types::BigDecimal, Row};
 use std::str::FromStr;
 use tokio::{
     task::JoinHandle,
@@ -254,7 +245,7 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
             .await
             .unwrap();
 
-    let id: i64 = row.get(0);
+    let _id: i64 = row.get(0);
     let value1: BigDecimal = row.get(1);
     let value2: BigDecimal = row.get(2);
 
@@ -497,7 +488,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     let message_id: i64 = row.get(0);
     let recipient: &str = row.get(2);
     let amount: i64 = row.get(3);
-    let len: i64 = row.get(5);
+    let _len: i64 = row.get(5);
 
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
         .fetch_one(&mut conn)
@@ -667,7 +658,7 @@ async fn test_index_respects_start_block_postgres() {
 
     let row = final_check.unwrap();
 
-    let id: i64 = row.get(0);
+    let _id: i64 = row.get(0);
     let height: i64 = row.get(1);
     let timestamp: i64 = row.get(2);
 
@@ -776,7 +767,7 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
     let req = test::TestRequest::post().uri("/revert").to_request();
     let res = app.call(req).await;
 
-    let status = res.unwrap().status();
+    let _status = res.unwrap().status();
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();
@@ -814,7 +805,7 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
     let req = test::TestRequest::post().uri("/panic").to_request();
-    let res = app.call(req).await;
+    let _res = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     fuel_node_handle.abort();

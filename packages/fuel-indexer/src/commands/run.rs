@@ -24,6 +24,7 @@ use tokio::sync::mpsc::channel;
 
 #[cfg(feature = "fuel-core-lib")]
 async fn run_fuel_core_node() -> anyhow::Result<FuelService> {
+    // TODO: This should accept what ever is in FuelNodeConfig
     let config = Config {
         addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
         ..Config::local_node()
