@@ -106,7 +106,8 @@ impl NewColumn {
 
     fn sql_type(&self) -> &str {
         match ColumnType::from(self.column_type.as_str()) {
-            ColumnType::ID => "bigint primary key",
+            // unsigned 64-bit integer
+            ColumnType::ID => "numeric(20, 0) primary key",
             ColumnType::Address => "varchar(64)",
             ColumnType::Bytes4 => "varchar(8)",
             ColumnType::Bytes8 => "varchar(16)",
@@ -114,12 +115,18 @@ impl NewColumn {
             ColumnType::AssetId => "varchar(64)",
             ColumnType::ContractId => "varchar(64)",
             ColumnType::Salt => "varchar(64)",
-            ColumnType::Int4 => "integer",
-            ColumnType::Int8 => "bigint",
-            ColumnType::Int16 => "numeric",
-            ColumnType::UInt4 => "integer",
-            ColumnType::UInt8 => "bigint",
-            ColumnType::UInt16 => "numeric",
+            // signed 32-bit integer
+            ColumnType::Int4 => "numeric(10, 0)",
+            // signed 64-bit integer
+            ColumnType::Int8 => "numeric(19, 0)",
+            // signed 128-bit integer
+            ColumnType::Int16 => "numeric(39, 0)",
+            // unsigned 32-bit integer
+            ColumnType::UInt4 => "numeric(10, 0)",
+            // unsigned 64-bit integer
+            ColumnType::UInt8 => "numeric(20, 0)",
+            // unsigned 128-bit integer
+            ColumnType::UInt16 => "numeric(39, 0)",
             ColumnType::Timestamp => "timestamp",
             ColumnType::Object => "bytea",
             ColumnType::Blob => "varchar(10485760)",
