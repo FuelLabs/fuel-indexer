@@ -561,7 +561,7 @@ pub async fn register_index_asset(
         asset_already_exists(conn, &asset_type, &bytes, &index.id).await?
     {
         info!(
-            "Asset({asset_type:?}) for Index({}) already registered.",
+            "Asset({asset_type:?}) for Indexer({}) already registered.",
             index.uid()
         );
         return Ok(asset);
@@ -585,7 +585,7 @@ pub async fn register_index_asset(
         .await?;
 
     info!(
-        "Registered Asset({:?}) to Index({}).",
+        "Registered Asset({:?}) to Indexer({}).",
         asset_type,
         index.uid()
     );

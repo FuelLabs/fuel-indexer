@@ -14,6 +14,12 @@
 
 # # Run database migrations before starting service.
 # run_migrations: true
+#
+# # Enable verbose logging.
+# verbose: false
+
+# # Start a local Fuel node.
+# local_fuel_node: false
 
 # # ***********************
 # # Fuel Node configuration
@@ -41,9 +47,9 @@
 #   # Max body size for GraphQL API requests.
 #   max_body_size: "5242880"
 
-# # *******************************
-# # Database configuration options.
-# # *******************************
+# # ******************************
+# # Database configuration options
+# # ******************************
 
 # database:
 
@@ -72,7 +78,7 @@
 #   enabled: false
 
 #   # Which authentication scheme to use.
-#   strategy: JWT
+#   strategy: jwt
 
 #   # Secret used if JWT authentication is specified.
 #   jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890*

@@ -3,7 +3,7 @@ use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig},
     manifest::Manifest,
-    utils::ServiceRequest,
+    utils::{init_logging, ServiceRequest},
 };
 use tracing::info;
 
@@ -40,6 +40,8 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         None => IndexerConfig::from(args.clone()),
     };
 
+    init_logging(&config).await?;
+
     info!("Configuration: {:?}", config);
 
     let (tx, rx) = if cfg!(feature = "api-server") {
@@ -50,7 +52,9 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     };
 
     #[cfg(feature = "fuel-core-lib")]
-    let _srvc = run_fuel_core_node().await?;
+    if config.local_fuel_node {
+        let _srvc = run_fuel_core_node().await?;
+    }
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 

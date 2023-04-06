@@ -1,2 +1,2 @@
 <!-- markdownlint-disable MD041 -->
-{{#include ../../README.md:95:321}}
+{{#include ../../QUICKSTART.md}}

@@ -78,8 +78,8 @@ pub struct IndexerArgs {
     )]
     pub config: Option<PathBuf>,
 
-    /// Index config file.
-    #[clap(short, long, value_name = "FILE", help = "Index config file.")]
+    /// Indexer config file.
+    #[clap(short, long, value_name = "FILE", help = "Indexer config file.")]
     pub manifest: Option<PathBuf>,
 
     /// Host of the running Fuel node.
@@ -183,8 +183,12 @@ pub struct IndexerArgs {
     pub jwt_expiry: Option<usize>,
 
     /// Enable verbose logging.
-    #[clap(long, help = "Enable verbose logging.")]
+    #[clap(short, long, help = "Enable verbose logging.")]
     pub verbose: bool,
+
+    /// Start a local Fuel node.
+    #[clap(long, help = "Start a local Fuel node.")]
+    pub local_fuel_node: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -263,7 +267,7 @@ pub struct ApiServerArgs {
     pub auth_enabled: bool,
 
     /// Authentication scheme used.
-    #[clap(long, help = "Authentication scheme used.")]
+    #[clap(long, help = "Authentication scheme used.", value_parser(["jwt"]))]
     pub auth_strategy: Option<String>,
 
     /// Secret used for JWT scheme (if JWT scheme is specified).
@@ -283,6 +287,10 @@ pub struct ApiServerArgs {
         help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
     )]
     pub jwt_expiry: Option<usize>,
+
+    /// Enable verbose logging.
+    #[clap(short, long, help = "Enable verbose logging.")]
+    pub verbose: bool,
 }
 
 fn derive_http_url(host: &String, port: &String) -> String {
@@ -306,6 +314,10 @@ impl std::string::ToString for FuelNodeConfig {
 
 #[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
+    #[serde(default)]
+    pub verbose: bool,
+    #[serde(default)]
+    pub local_fuel_node: bool,
     #[serde(default)]
     pub fuel_node: FuelNodeConfig,
     #[serde(default)]
@@ -352,6 +364,7 @@ impl From<IndexerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
+                verbose: args.verbose.to_string(),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -359,6 +372,8 @@ impl From<IndexerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            verbose: args.verbose,
+            local_fuel_node: args.local_fuel_node,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -383,7 +398,9 @@ impl From<IndexerArgs> for IndexerConfig {
             },
         };
 
-        config.inject_opt_env_vars();
+        config
+            .inject_opt_env_vars()
+            .expect("Failed to inject env vars.");
 
         config
     }
@@ -423,6 +440,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
+                verbose: args.verbose.to_string(),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -430,6 +448,8 @@ impl From<ApiServerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            verbose: args.verbose,
+            local_fuel_node: defaults::LOCAL_FUEL_NODE,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -454,7 +474,9 @@ impl From<ApiServerArgs> for IndexerConfig {
             },
         };
 
-        config.inject_opt_env_vars();
+        config
+            .inject_opt_env_vars()
+            .expect("Failed to inject env vars.");
 
         config
     }
@@ -496,6 +518,7 @@ impl IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
+                verbose: args.verbose.to_string(),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -503,6 +526,8 @@ impl IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            verbose: args.verbose,
+            local_fuel_node: args.local_fuel_node,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -527,7 +552,9 @@ impl IndexerConfig {
             },
         };
 
-        config.inject_opt_env_vars();
+        config
+            .inject_opt_env_vars()
+            .expect("Failed to inject env vars.");
 
         config
     }
@@ -535,12 +562,39 @@ impl IndexerConfig {
     // When building the config via a file, if any section (e.g., graphql, fuel_node, etc),
     // or if any individual setting in a section (e.g., fuel_node.host) is empty, replace it
     // with its respective default value.
-    pub fn from_file(path: &Path) -> IndexerConfigResult<Self> {
+    pub fn from_file(path: impl AsRef<Path>) -> IndexerConfigResult<Self> {
         let file = File::open(path)?;
 
         let mut config = IndexerConfig::default();
 
         let content: serde_yaml::Value = serde_yaml::from_reader(file)?;
+
+        let metrics_key = serde_yaml::Value::String("metrics".into());
+        let stop_idle_indexers_key =
+            serde_yaml::Value::String("stop_idle_indexers".into());
+        let run_migrations_key = serde_yaml::Value::String("run_migrations".into());
+        let verbose_key = serde_yaml::Value::String("verbose".into());
+        let local_fuel_node_key = serde_yaml::Value::String("local_fuel_node".into());
+
+        if let Some(metrics) = content.get(metrics_key) {
+            config.metrics = metrics.as_bool().unwrap();
+        }
+
+        if let Some(stop_idle_indexers) = content.get(stop_idle_indexers_key) {
+            config.stop_idle_indexers = stop_idle_indexers.as_bool().unwrap();
+        }
+
+        if let Some(run_migrations) = content.get(run_migrations_key) {
+            config.run_migrations = run_migrations.as_bool().unwrap();
+        }
+
+        if let Some(verbose) = content.get(verbose_key) {
+            config.verbose = verbose.as_bool().unwrap();
+        }
+
+        if let Some(local_fuel_node) = content.get(local_fuel_node_key) {
+            config.local_fuel_node = local_fuel_node.as_bool().unwrap();
+        }
 
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());
         let graphql_config_key = serde_yaml::Value::String("graphql".into());
@@ -626,6 +680,7 @@ impl IndexerConfig {
                     host: pg_host,
                     port: pg_port,
                     database: pg_db,
+                    verbose: config.verbose.to_string(),
                 };
             }
         }
@@ -658,16 +713,18 @@ impl IndexerConfig {
             }
         }
 
-        config.inject_opt_env_vars();
+        config.inject_opt_env_vars()?;
 
         Ok(config)
     }
 
     // Inject env vars into each section of the config
-    pub fn inject_opt_env_vars(&mut self) {
-        let _ = self.fuel_node.inject_opt_env_vars();
-        let _ = self.database.inject_opt_env_vars();
-        let _ = self.graphql_api.inject_opt_env_vars();
+    pub fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
+        self.fuel_node.inject_opt_env_vars()?;
+        self.database.inject_opt_env_vars()?;
+        self.graphql_api.inject_opt_env_vars()?;
+
+        Ok(())
     }
 }
 
@@ -677,6 +734,33 @@ mod tests {
     use super::DatabaseConfig;
     use super::*;
     use std::fs;
+
+    const FILE: &str = "foo.yaml";
+
+    #[test]
+    fn test_indexer_config_will_supplement_top_level_config_vars() {
+        let config_str = r#"
+    stop_idle_indexers: true
+
+    ## Fuel Node configuration
+    #
+    fuel_node:
+      host: 1.1.1.1
+      port: 9999
+    "#;
+
+        fs::write(FILE, config_str).unwrap();
+        let config = IndexerConfig::from_file(FILE).unwrap();
+
+        assert!(config.stop_idle_indexers);
+        assert!(!config.run_migrations);
+        assert!(!config.verbose);
+
+        let DatabaseConfig::Postgres { verbose, .. } = config.database;
+        assert_eq!(verbose.as_str(), "false");
+
+        fs::remove_file(FILE).unwrap();
+    }
 
     #[test]
     fn test_indexer_config_will_supplement_entire_config_sections() {
@@ -688,16 +772,14 @@ mod tests {
       port: 9999
     "#;
 
-        let tmp_file_path = "./foo.yaml";
-
-        fs::write(tmp_file_path, config_str).expect("Unable to write file");
-        let config = IndexerConfig::from_file(Path::new(tmp_file_path)).unwrap();
+        fs::write(FILE, config_str).unwrap();
+        let config = IndexerConfig::from_file(FILE).unwrap();
 
         assert_eq!(config.fuel_node.host, "1.1.1.1".to_string());
         assert_eq!(config.fuel_node.port, "9999".to_string());
         assert_eq!(config.graphql_api.host, "localhost".to_string());
 
-        fs::remove_file(tmp_file_path).unwrap();
+        fs::remove_file(FILE).unwrap();
     }
 
     #[test]
@@ -713,10 +795,8 @@ mod tests {
 
         "#;
 
-        let tmp_file_path = "./bar.yaml";
-
-        fs::write(tmp_file_path, config_str).expect("Unable to write file");
-        let config = IndexerConfig::from_file(Path::new(tmp_file_path)).unwrap();
+        fs::write(FILE, config_str).unwrap();
+        let config = IndexerConfig::from_file(FILE).unwrap();
 
         assert_eq!(config.fuel_node.host, "localhost".to_string());
         assert_eq!(config.fuel_node.port, "4000".to_string());
@@ -733,7 +813,7 @@ mod tests {
                 assert_eq!(database, "my_fancy_db".to_string());
                 assert_eq!(password, "super_secret_password".to_string());
 
-                fs::remove_file(tmp_file_path).unwrap();
+                fs::remove_file(FILE).unwrap();
             }
         }
     }

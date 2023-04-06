@@ -605,7 +605,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         .map(|x| Path::new(&x).join(&manifest))
         .unwrap_or_else(|| PathBuf::from(&manifest));
 
-    let manifest = Manifest::from_file(&path).expect("Could not parse manifest.");
+    let manifest = Manifest::from_file(path).expect("Could not parse manifest.");
 
     let Manifest {
         abi,

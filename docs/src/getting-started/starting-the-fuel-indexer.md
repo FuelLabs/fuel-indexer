@@ -9,8 +9,8 @@ USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
-        --auth-enabled <auth-enabled>
-            Require users to authenticate for some operations. [default: false]
+        --auth-enabled
+            Require users to authenticate for some operations.
 
         --auth-strategy <AUTH_STRATEGY>
             Authentication scheme used.
@@ -20,6 +20,9 @@ OPTIONS:
 
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
+
+        --embedded-database
+            Automatically create and start database using provided options or defaults.
 
         --fuel-node-host <FUEL_NODE_HOST>
             Host of the running Fuel node. [default: localhost]
@@ -45,6 +48,9 @@ OPTIONS:
         --jwt-secret <JWT_SECRET>
             Secret used for JWT scheme (if JWT scheme is specified).
 
+        --local-fuel-node
+            Start a local Fuel node.
+
         --log-level <LOG_LEVEL>
             Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
             debug, error, warn]
@@ -55,8 +61,8 @@ OPTIONS:
         --max-body-size <MAX_BODY_SIZE>
             Max body size for GraphQL API requests. [default: 5242880]
 
-        --metrics <metrics>
-            Use Prometheus metrics reporting. [default: true]
+        --metrics
+            Use Prometheus metrics reporting.
 
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.
@@ -73,15 +79,17 @@ OPTIONS:
         --postgres-user <POSTGRES_USER>
             Postgres username.
 
-        --run-migrations <run-migrations>
-            Run database migrations before starting service. [default: true]
+        --run-migrations
+            Run database migrations before starting service.
 
         --stop-idle-indexers
             Prevent indexers from running without handling any blocks.
 
+    -v, --verbose
+            Enable verbose logging.
+
     -V, --version
             Print version information
-
 ```
 
 ## Using a configuration file

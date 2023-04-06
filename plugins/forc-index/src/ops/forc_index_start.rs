@@ -18,6 +18,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         postgres_database,
         postgres_host,
         postgres_port,
+        local_fuel_node,
         run_migrations,
         metrics,
         manifest,
@@ -51,6 +52,7 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             password,
             user,
             port,
+            persistent: true,
             config: config.clone(),
             start: true,
             ..Default::default()
@@ -81,6 +83,8 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             ("--run-migrations", run_migrations),
             ("--metrics", metrics),
             ("--auth-enabled", auth_enabled),
+            ("--verbose", verbose),
+            ("--local-fuel-node", local_fuel_node),
         ];
         for (opt, value) in options.iter() {
             if *value {
@@ -118,7 +122,9 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
                     }
                 }
             }
-            _ => unreachable!(),
+            _ => unreachable!(
+                "'postgres' is currently the only supported database option."
+            ),
         }
     }
 
@@ -126,13 +132,16 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         info!("{cmd:?}");
     }
 
-    if let Ok(child) = cmd.spawn() {
-        info!(
-            "\n✅ Successfully started the indexer service at PID {}.",
-            child.id()
-        );
-    } else {
-        anyhow::bail!("❌ Failed to spawn fuel-indexer child process.");
+    match cmd.spawn() {
+        Ok(child) => {
+            info!(
+                "\n✅ Successfully started the indexer service at PID {}",
+                child.id()
+            );
+        }
+        Err(e) => {
+            panic!("❌ Failed to spawn fuel-indexer child process: {e:?}.");
+        }
     }
 
     Ok(())
