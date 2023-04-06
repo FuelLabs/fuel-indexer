@@ -17,7 +17,8 @@ OPTIONS:
         --native                     Building for native execution.
     -p, --path <PATH>                Path to the indexer project.
         --profile <PROFILE>          Build with the given profile.
-    -r, --release                    Build optimized artifacts with the release profile. Set to true by default.
+    -r, --release                    Build optimized artifacts with the release profile. [default:
+                                     true] 
         --target <TARGET>            Target at which to compile. [default: wasm32-unknown-unknown]
         --target-dir <TARGET_DIR>    Directory for all generated artifacts and intermediate files.
     -v, --verbose                    Enable verbose output.
