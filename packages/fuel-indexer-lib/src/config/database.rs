@@ -1,11 +1,13 @@
 use crate::{
-    config::{IndexerConfigResult, MutConfig},
+    config::{Env, IndexerConfigResult},
     defaults,
     utils::{is_opt_env_var, trim_opt_env_key},
 };
 pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
+use std::{collections::HashMap, str::FromStr};
+use url::{ParseError, Url};
 
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -16,10 +18,11 @@ pub enum DatabaseConfig {
         host: String,
         port: String,
         database: String,
+        verbose: String,
     },
 }
 
-impl MutConfig for DatabaseConfig {
+impl Env for DatabaseConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         match self {
             DatabaseConfig::Postgres {
@@ -28,6 +31,7 @@ impl MutConfig for DatabaseConfig {
                 host,
                 port,
                 database,
+                ..
             } => {
                 if is_opt_env_var(user) {
                     *user = std::env::var(trim_opt_env_key(user))?;
@@ -62,8 +66,14 @@ impl std::string::ToString for DatabaseConfig {
                 host,
                 port,
                 database,
+                verbose,
             } => {
-                format!("postgres://{user}:{password}@{host}:{port}/{database}")
+                let params = [("verbose", verbose)]
+                    .iter()
+                    .map(|(k, v)| format!("{k}={v}"))
+                    .collect::<Vec<String>>()
+                    .join("&");
+                format!("postgres://{user}:{password}@{host}:{port}/{database}?{params}")
             }
         }
     }
@@ -77,6 +87,7 @@ impl std::fmt::Debug for DatabaseConfig {
                 host,
                 port,
                 database,
+                verbose,
                 ..
             } => {
                 let _ = f
@@ -86,6 +97,7 @@ impl std::fmt::Debug for DatabaseConfig {
                     .field("host", &host)
                     .field("port", &port)
                     .field("database", &database)
+                    .field("verbose", &verbose)
                     .finish();
             }
         }
@@ -102,6 +114,7 @@ impl Default for DatabaseConfig {
             host: defaults::POSTGRES_HOST.into(),
             port: defaults::POSTGRES_PORT.into(),
             database: defaults::POSTGRES_DATABASE.into(),
+            verbose: defaults::VERBOSE_DB_LOGGING.into(),
         }
     }
 }
@@ -109,5 +122,41 @@ impl Default for DatabaseConfig {
 impl From<DatabaseConfig> for Uri {
     fn from(_: DatabaseConfig) -> Self {
         unimplemented!()
+    }
+}
+
+impl FromStr for DatabaseConfig {
+    type Err = ParseError;
+
+    fn from_str(db_url: &str) -> Result<Self, Self::Err> {
+        let url = Url::parse(db_url)?;
+        let params: HashMap<_, _> = url.query_pairs().into_owned().collect();
+        let value = params.get("verbose").unwrap_or(&"false".into()).to_owned();
+
+        match url.scheme() {
+            "postgres" => {
+                let user = url.username();
+                let password = url.password().unwrap_or_default();
+                let host = url.host().ok_or(ParseError::EmptyHost).unwrap();
+                let port = url.port().ok_or(ParseError::InvalidPort).unwrap();
+                let database = if url.path_segments().is_some() {
+                    url.path_segments().unwrap().next().unwrap()
+                } else {
+                    ""
+                };
+
+                Ok(DatabaseConfig::Postgres {
+                    user: user.to_string(),
+                    password: password.to_string(),
+                    host: host.to_string(),
+                    port: port.to_string(),
+                    database: database.to_string(),
+                    verbose: value,
+                })
+            }
+            _ => {
+                unimplemented!("Unsupported database. Please check your database URL.")
+            }
+        }
     }
 }

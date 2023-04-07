@@ -1,22 +1,26 @@
-use crate::uses::{
-    authorize_middleware, health_check, metrics, query_graph, register_index_assets,
-    stop_index,
+use crate::{
+    auth::AuthenticationMiddleware,
+    uses::{
+        get_nonce, health_check, metrics, query_graph, register_indexer_assets,
+        revert_indexer, stop_indexer, verify_signature,
+    },
 };
 use async_std::sync::{Arc, RwLock};
 use axum::{
     extract::{Extension, Json},
     http::StatusCode,
-    middleware,
     response::{IntoResponse, Response},
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Error as AxumError, Router,
 };
-use fuel_indexer_database::{queries, IndexerConnectionPool, IndexerDatabaseError};
+use fuel_crypto::Error as FuelCryptoError;
+use fuel_indexer_database::{IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
 };
 use hyper::{Error as HyperError, Method};
+use jsonwebtoken::errors::Error as JsonWebTokenError;
 use serde_json::json;
 use std::{net::SocketAddr, time::Instant};
 use thiserror::Error;
@@ -63,6 +67,10 @@ pub enum ApiError {
     AxumError(#[from] AxumError),
     #[error("Hyper error: {0:?}")]
     HyperError(#[from] HyperError),
+    #[error("FuelCrypto error: {0:?}")]
+    FuelCrypto(#[from] FuelCryptoError),
+    #[error("JsonWebTokenError: {0:?}")]
+    JsonWebTokenError(#[from] JsonWebTokenError),
 }
 
 impl Default for ApiError {
@@ -71,32 +79,38 @@ impl Default for ApiError {
     }
 }
 
-impl From<StatusCode> for ApiError {
-    fn from(status: StatusCode) -> Self {
-        match status {
-            StatusCode::BAD_REQUEST => ApiError::Http(HttpError::BadRequest),
-            StatusCode::UNAUTHORIZED => ApiError::Http(HttpError::Unauthorized),
-            _ => ApiError::Http(HttpError::InternalServer),
-        }
-    }
-}
-
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
-        let generic_err_msg = "Internal server error.".to_string();
-        // NOTE: Free to add more specific messaging/handing here as needed
-        #[allow(clippy::match_single_binding)]
-        let (status, err_msg) = match self {
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_err_msg),
+        let generic_details = "Internal server error.".to_string();
+        let (status, details) = match self {
+            Self::JsonWebTokenError(e) => (
+                StatusCode::BAD_REQUEST,
+                format!("Could not process JWT: {e}"),
+            ),
+            ApiError::Http(HttpError::Unauthorized) => {
+                (StatusCode::UNAUTHORIZED, "Unauthorized.".to_string())
+            }
+            ApiError::Sqlx(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {e}."),
+            ),
+            ApiError::Database(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Database error: {e}."),
+            ),
+            ApiError::FuelCrypto(e) => {
+                (StatusCode::BAD_REQUEST, format!("Crypto error: {e}."))
+            }
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };
 
-        error!("{:?} - {}", status, err_msg);
+        error!("{status:?} - {details}");
 
         (
             status,
             Json(json!({
                 "success": "false",
-                "details": err_msg,
+                "details": details,
             })),
         )
             .into_response()
@@ -113,44 +127,47 @@ impl GraphQlApi {
     ) -> ApiResult<Router> {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
-        let config = config.clone();
-        let max_body = config.max_body;
+        let max_body_size = config.graphql_api.max_body_size;
         let start_time = Arc::new(Instant::now());
-
-        if config.graphql_api.run_migrations {
-            let mut c = pool.acquire().await?;
-            queries::run_migration(&mut c).await?;
-        }
 
         let graph_route = Router::new()
             .route("/:namespace/:identifier", post(query_graph))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
-            .layer(RequestBodyLimitLayer::new(max_body));
+            .layer(RequestBodyLimitLayer::new(max_body_size));
 
         let index_routes = Router::new()
-            .route("/:namespace/:identifier", post(register_index_assets))
-            .route_layer(middleware::from_fn(authorize_middleware))
+            .route("/:namespace/:identifier", post(register_indexer_assets))
+            .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager))
             .layer(Extension(pool.clone()))
-            .route("/:namespace/:identifier", delete(stop_index))
-            .route_layer(middleware::from_fn(authorize_middleware))
+            .route("/:namespace/:identifier", delete(stop_indexer))
+            .route("/:namespace/:identifier", put(revert_indexer))
+            .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx))
             .layer(Extension(pool.clone()))
-            .layer(RequestBodyLimitLayer::new(max_body));
+            .layer(RequestBodyLimitLayer::new(max_body_size));
 
         let root_routes = Router::new()
             .route("/health", get(health_check))
-            .layer(Extension(config))
-            .layer(Extension(pool))
+            .layer(Extension(config.clone()))
+            .layer(Extension(pool.clone()))
             .layer(Extension(start_time))
             .route("/metrics", get(metrics));
+
+        let auth_routes = Router::new()
+            .route("/nonce", get(get_nonce))
+            .layer(Extension(pool.clone()))
+            .route("/signature", post(verify_signature))
+            .layer(Extension(pool))
+            .layer(Extension(config));
 
         let api_routes = Router::new()
             .nest("/", root_routes)
             .nest("/index", index_routes)
-            .nest("/graph", graph_route);
+            .nest("/graph", graph_route)
+            .nest("/auth", auth_routes);
 
         let app = Router::new()
             .nest("/api", api_routes)

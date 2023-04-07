@@ -17,6 +17,8 @@ pub struct Manifest {
     pub metrics: Option<bool>,
     pub contract_id: Option<String>,
     pub start_block: Option<u64>,
+    #[serde(default)]
+    pub resumable: Option<bool>,
 }
 
 type ManifestResult<T> = Result<T, ManifestError>;
@@ -54,7 +56,7 @@ impl Manifest {
         Ok(manifest)
     }
 
-    pub fn from_file(path: &Path) -> ManifestResult<Self> {
+    pub fn from_file(path: impl AsRef<Path>) -> ManifestResult<Self> {
         let mut file = File::open(path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;

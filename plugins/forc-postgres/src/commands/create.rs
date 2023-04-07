@@ -63,6 +63,30 @@ pub struct Command {
     /// Fuel indexer configuration file.
     #[clap(short, long, help = "Fuel indexer configuration file.")]
     pub config: Option<PathBuf>,
+
+    /// Verbose output.
+    #[clap(short, long, help = "Verbose output.")]
+    pub verbose: bool,
+}
+
+impl Default for Command {
+    fn default() -> Self {
+        Command {
+            name: defaults::POSTGRES_DATABASE.to_string(),
+            password: defaults::POSTGRES_PASSWORD.to_string(),
+            user: defaults::POSTGRES_USER.to_string(),
+            port: defaults::POSTGRES_PORT.to_string(),
+            database_dir: None,
+            auth_method: "plain".to_string(),
+            persistent: true,
+            start: false,
+            config: None,
+            timeout: None,
+            migration_dir: None,
+            postgres_version: PostgresVersion::V14,
+            verbose: false,
+        }
+    }
 }
 
 pub async fn exec(command: Box<Command>) -> Result<()> {
@@ -79,6 +103,7 @@ pub async fn exec(command: Box<Command>) -> Result<()> {
         postgres_version,
         start,
         config,
+        verbose,
     } = *command;
 
     let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
@@ -96,6 +121,7 @@ pub async fn exec(command: Box<Command>) -> Result<()> {
         postgres_version,
         start,
         config,
+        verbose,
     })
     .await?;
     Ok(())

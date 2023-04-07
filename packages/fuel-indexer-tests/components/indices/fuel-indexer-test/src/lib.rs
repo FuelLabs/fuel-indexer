@@ -7,6 +7,28 @@ use fuel_indexer_plugin::prelude::*;
 )]
 mod fuel_indexer_test {
 
+    fn fuel_indexer_test_blocks(block_data: BlockData) {
+        let block = Block {
+            id: first8_bytes_to_u64(block_data.id),
+            height: block_data.height,
+            timestamp: block_data.time,
+        };
+
+        block.save();
+
+        let input_data = r#"{"foo":"bar"}"#.to_string();
+
+        for tx in block_data.transactions.iter() {
+            let tx = Tx {
+                id: first8_bytes_to_u64(tx.id),
+                block: block.id,
+                timestamp: block_data.time,
+                input_data: Json(input_data.clone()),
+            };
+            tx.save();
+        }
+    }
+
     fn fuel_indexer_test_ping(ping: Ping) {
         Logger::info("fuel_indexer_test_ping handling a Ping event.");
 
@@ -28,28 +50,6 @@ mod fuel_indexer_test {
         };
 
         u16entity.save();
-    }
-
-    fn fuel_indexer_test_blocks(block_data: BlockData) {
-        let block = Block {
-            id: first8_bytes_to_u64(block_data.id),
-            height: block_data.height,
-            timestamp: block_data.time,
-        };
-
-        block.save();
-
-        let input_data = r#"{"foo":"bar"}"#.to_string();
-
-        for tx in block_data.transactions.iter() {
-            let tx = Tx {
-                id: first8_bytes_to_u64(tx.id),
-                block: block.id,
-                timestamp: block_data.time,
-                input_data: Json(input_data.clone()),
-            };
-            tx.save();
-        }
     }
 
     fn fuel_indexer_test_transfer(transfer: abi::Transfer) {
@@ -261,6 +261,31 @@ mod fuel_indexer_test {
             complex_b: data.1 .2 .1.id,
             simple_a: logdata_entity.data.2.to_string(),
         };
+        entity.save();
+    }
+
+    fn fuel_indexer_test_pure_function(call: abi::Call) {
+        Logger::info("fuel_indexer_test_tuple handling Call event.");
+
+        let abi::Call {
+            contract_id,
+            to,
+            asset_id,
+            gas,
+            fn_name,
+            amount,
+        } = call;
+
+        let entity = CallEntity {
+            id: 123,
+            contract_id,
+            callee: to,
+            asset_id,
+            gas,
+            fn_name,
+            amount,
+        };
+
         entity.save();
     }
 
@@ -523,5 +548,39 @@ mod fuel_indexer_test {
         };
 
         team.save();
+    }
+
+    fn fuel_indexer_test_panic(panic: abi::Panic) {
+        Logger::info("fuel_indexer_test_panic handling Panic event.");
+
+        let abi::Panic {
+            contract_id,
+            reason,
+        } = panic;
+
+        let panic = PanicEntity {
+            id: 123,
+            contract_id,
+            reason,
+        };
+
+        panic.save();
+    }
+
+    fn fuel_indexer_trigger_revert(revert: abi::Revert) {
+        Logger::info("fuel_indexer_trigger_revert handling trigger_revert event.");
+
+        let abi::Revert {
+            contract_id,
+            error_val,
+        } = revert;
+
+        let entity = RevertEntity {
+            id: 123,
+            contract_id,
+            error_val,
+        };
+
+        entity.save();
     }
 }

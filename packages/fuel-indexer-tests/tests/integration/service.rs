@@ -1,12 +1,9 @@
 extern crate alloc;
 use fuel_indexer_lib::manifest::Manifest;
-use fuel_indexer_tests::{
-    defaults,
-    fixtures::{indexer_service_postgres, tx_params},
-};
+use fuel_indexer_tests::{defaults, fixtures::indexer_service_postgres};
 use fuels::prelude::{
-    setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
-    StorageConfiguration, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+    setup_single_asset_coins, setup_test_client, AssetId, Contract, DeployConfiguration,
+    Provider, WalletUnlocked, DEFAULT_COIN_AMOUNT,
 };
 use fuels::signers::Signer;
 use fuels_macros::abigen;
@@ -36,7 +33,8 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     let bin_path = workdir.join("contracts/simple-wasm/out/debug/contracts.bin");
     let bin_path_str = bin_path.as_os_str().to_str().unwrap();
-    let _compiled = Contract::load_contract(bin_path_str, &None).unwrap();
+    let _compiled =
+        Contract::load_contract(bin_path_str, DeployConfiguration::default()).unwrap();
 
     let number_of_coins = 11;
     let asset_id = AssetId::zeroed();
@@ -53,21 +51,17 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     wallet.set_provider(provider.clone());
 
-    let contract_id = Contract::deploy(
-        bin_path_str,
-        &wallet,
-        tx_params(),
-        StorageConfiguration::default(),
-    )
-    .await
-    .unwrap();
+    let contract_id =
+        Contract::deploy(bin_path_str, &wallet, DeployConfiguration::default())
+            .await
+            .unwrap();
 
     let contract = Simple::new(contract_id, wallet);
 
     let _ = contract.methods().gimme_someevent(78).call().await;
     let _ = contract.methods().gimme_anotherevent(899).call().await;
 
-    let mut srvc = indexer_service_postgres().await;
+    let mut srvc = indexer_service_postgres(None).await;
 
     let manifest: Manifest =
         serde_yaml::from_str(SIMPLE_WASM_MANIFEST).expect("Bad yaml file.");

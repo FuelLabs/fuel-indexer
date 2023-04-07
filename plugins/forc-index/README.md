@@ -6,7 +6,7 @@ A `forc` plugin for basic Fuel Indexer interaction.
 
 ### `forc index init`
 
-Create a new index project at the provided path. If no path is provided the current working directory will be used.
+Create a new indexer project at the provided path. If no path is provided the current working directory will be used.
 
 ```bash
 forc index init --namespace fuel
@@ -14,7 +14,7 @@ forc index init --namespace fuel
 
 ### `forc index new`
 
-Create new index project at the provided path.
+Create new indexer project at the provided path.
 
 ```bash
 forc index new --namespace my_org_name
@@ -25,15 +25,15 @@ forc index new --namespace my_org_name
 Start a local Fuel Indexer service.
 
 ```bash
-forc index start --background
+forc index start
 ```
 
 ### `forc index deploy`
 
-Deploy a given index project to a particular endpoint
+Deploy a given indexer project to a particular endpoint
 
 ```bash
-forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
+forc index deploy --url https://indexer.fuel.network
 ```
 
 ### `forc index remove`
@@ -41,7 +41,15 @@ forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.y
 Kill a running indexer
 
 ```bash
-forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
+forc index remove --url https://indexer.fuel.network
+```
+
+### `forc index revert`
+
+Remove the current indexer and revert to the penultimate version of this indexer.
+
+```bash
+forc index revert --url https://indexer.fuel.network
 ```
 
 ### `forc index check`
@@ -54,10 +62,18 @@ forc index check
 
 ### `forc index build`
 
-Build the index in the current directory.
+Build the indexer in the current directory.
 
 ```bash
 forc index build --verbose
+```
+
+### `forc index auth`
+
+Authenticate against an indexer service.
+
+```bash
+forc index auth --verbose
 ```
 
 ### `forc index postgres create`

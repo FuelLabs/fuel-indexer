@@ -26,13 +26,16 @@ pub struct PostgreQueries {
     pub register_index_asset_calls: IntCounter,
     pub latest_asset_for_index_calls: IntCounter,
     pub latest_assets_for_index_calls: IntCounter,
+    pub last_block_height_for_indexer_calls: IntCounter,
     pub asset_already_exists_calls: IntCounter,
     pub index_id_for_calls: IntCounter,
+    pub penultimate_asset_for_index_calls: IntCounter,
     pub start_transaction_calls: IntCounter,
     pub commit_transaction_calls: IntCounter,
     pub revert_transaction_calls: IntCounter,
     pub run_migration_calls: IntCounter,
-    pub remove_index: IntCounter,
+    pub remove_asset_by_version_calls: IntCounter,
+    pub remove_indexer: IntCounter,
 }
 
 impl Metric for PostgreQueries {
@@ -148,6 +151,11 @@ impl Metric for PostgreQueries {
                 "Count of calls to postgres latest_assets_for_index_calls."
             )
             .unwrap(),
+            last_block_height_for_indexer_calls: register_int_counter!(
+                "postgres_last_block_height_for_indexer_calls",
+                "Count of calls to postgres last_block_height_for_indexer_calls."
+            )
+            .unwrap(),
             asset_already_exists_calls: register_int_counter!(
                 "postgres_asset_already_exists_calls",
                 "Count of calls to postgres asset_already_exists_calls."
@@ -156,6 +164,11 @@ impl Metric for PostgreQueries {
             index_id_for_calls: register_int_counter!(
                 "postgres_index_id_for_calls",
                 "Count of calls to postgres index_id_for_calls."
+            )
+            .unwrap(),
+            penultimate_asset_for_index_calls: register_int_counter!(
+                "postgres_penultimate_asset_id_for_calls",
+                "Count of calls to postgres penultimate_index_id_for_calls."
             )
             .unwrap(),
             start_transaction_calls: register_int_counter!(
@@ -178,9 +191,14 @@ impl Metric for PostgreQueries {
                 "Count of calls to postgres run_migration_calls."
             )
             .unwrap(),
-            remove_index: register_int_counter!(
-                "postgres_remove_index",
-                "Count of calls to postgres remove_index."
+            remove_indexer: register_int_counter!(
+                "postgres_remove_indexer",
+                "Count of calls to postgres remove_indexer."
+            )
+            .unwrap(),
+            remove_asset_by_version_calls: register_int_counter!(
+                "postgres_remove_asset_by_version",
+                "Count of calls to postgres remove_asset_by_version."
             )
             .unwrap(),
         }

@@ -2,11 +2,12 @@
 # Use the new resolver to prevent dev-deps and build-deps from enabling debugging or test features in production.
 resolver = "2"
 members = [
-   "examples/block-explorer/explorer-index",
-   "examples/hello-world-native/hello-index-native",
-   "examples/hello-world/hello-index",
+   "examples/block-explorer/explorer-indexer",
+   "examples/hello-world-native/hello-indexer-native",
+   "examples/hello-world/hello-indexer",
    "examples/hello-world/hello-world-data",
    "examples/hello-world/hello-world-node",
+   "packages/fuel-indexer",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-database",
    "packages/fuel-indexer-database/database-types",
@@ -22,9 +23,9 @@ members = [
    "packages/fuel-indexer-tests/components/indices/simple-wasm/simple-wasm",
    "packages/fuel-indexer-tests/components/web-api",
    "packages/fuel-indexer-types",
-   "packages/fuel-indexer",
    "plugins/forc-index",
    "plugins/forc-postgres",
+   "plugins/forc-index-tests",
 ]
 
 [profile.release]
@@ -38,21 +39,20 @@ edition = "2021"
 homepage = "https://fuel.network/"
 license = "Apache-2.0"
 repository = "https://github.com/FuelLabs/fuel-indexer"
-rust-version = "1.67.0"
-version = "0.4.0"
+rust-version = "1.68.1"
+version = "0.7.0"
 
 [workspace.dependencies]
-forc-index = { version = "0.4.0", path = "./plugins/forc-index" }
-forc-postgres = { version = "0.4.0", path = "./plugins/forc-postgres" }
-fuel-indexer = { version = "0.4.0", path = "./packages/fuel-indexer" }
-fuel-indexer-api-server = { version = "0.4.0", path = "./packages/fuel-indexer-api-server" }
-fuel-indexer-database = { version = "0.4.0", path = "./packages/fuel-indexer-database" }
-fuel-indexer-database-types = { version = "0.4.0", path = "./packages/fuel-indexer-database/database-types" }
-fuel-indexer-lib = { version = "0.4.0", path = "./packages/fuel-indexer-lib" }
-fuel-indexer-macros = { version = "0.4.0", path = "./packages/fuel-indexer-macros", default-features = false }
-fuel-indexer-metrics = { version = "0.4.0", path = "./packages/fuel-indexer-metrics" }
-fuel-indexer-plugin = { version = "0.4.0", path = "./packages/fuel-indexer-plugin", default-features = false }
-fuel-indexer-postgres = { version = "0.4.0", path = "./packages/fuel-indexer-database/postgres", default-features = false }
-fuel-indexer-schema = { version = "0.4.0", path = "./packages/fuel-indexer-schema", default-features = false }
-fuel-indexer-types = { version = "0.4.0", path = "./packages/fuel-indexer-types" }
-
+forc-index = { version = "0.7.0", path = "./plugins/forc-index" }
+forc-postgres = { version = "0.7.0", path = "./plugins/forc-postgres" }
+fuel-indexer = { version = "0.7.0", path = "./packages/fuel-indexer" }
+fuel-indexer-api-server = { version = "0.7.0", path = "./packages/fuel-indexer-api-server" }
+fuel-indexer-database = { version = "0.7.0", path = "./packages/fuel-indexer-database" }
+fuel-indexer-database-types = { version = "0.7.0", path = "./packages/fuel-indexer-database/database-types" }
+fuel-indexer-lib = { version = "0.7.0", path = "./packages/fuel-indexer-lib" }
+fuel-indexer-macros = { version = "0.7.0", path = "./packages/fuel-indexer-macros", default-features = false }
+fuel-indexer-metrics = { version = "0.7.0", path = "./packages/fuel-indexer-metrics" }
+fuel-indexer-plugin = { version = "0.7.0", path = "./packages/fuel-indexer-plugin", default-features = false }
+fuel-indexer-postgres = { version = "0.7.0", path = "./packages/fuel-indexer-database/postgres", default-features = false }
+fuel-indexer-schema = { version = "0.7.0", path = "./packages/fuel-indexer-schema", default-features = false }
+fuel-indexer-types = { version = "0.7.0", path = "./packages/fuel-indexer-types" }

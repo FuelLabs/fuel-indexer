@@ -1,19 +1,20 @@
 # `forc index remove`
 
-Stop and remove a running index
+Stop and remove a running indexer.
 
 ```bash
-forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
+forc index remove --url https://indexer.fuel.network
 ```
 
 ```text
 USAGE:
-    forc-index remove [OPTIONS] --manifest <MANIFEST>
+    forc-index remove [OPTIONS]
 
 OPTIONS:
         --auth <AUTH>            Authentication header value.
     -h, --help                   Print help information
-        --manifest <MANIFEST>    Path of the index manifest to be parsed.
-        --url <URL>              URL at which to upload index assets. [default:
-                                 http://127.0.0.1:29987]
+    -m, --manifest <MANIFEST>    Path to the manifest of the indexer project being removed.
+    -p, --path <PATH>            Path to the indexer project.
+        --url <URL>              URL at which indexer is deployed. [default: http://localhost:29987]
+    -v, --verbose                Enable verbose output.
 ```

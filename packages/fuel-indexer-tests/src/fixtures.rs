@@ -1,27 +1,32 @@
-use crate::defaults::CURRENT_TEST_CONTRACT_ID_STR;
-use crate::{defaults, WORKSPACE_ROOT};
-use axum::Router;
+use crate::{defaults, TestError, WORKSPACE_ROOT};
+use axum::routing::Router;
 use fuel_indexer::IndexerService;
 use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
-use fuel_indexer_lib::config::{
-    DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
+use fuel_indexer_lib::{
+    config::{
+        auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
+        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
+    },
+    utils::derive_socket_addr,
 };
+use fuel_indexer_postgres;
 use fuels::{
     macros::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
-        Contract, Provider, StorageConfiguration, TxParameters, WalletUnlocked,
+        Contract, DeployConfiguration, Provider, TxParameters, WalletUnlocked,
         DEFAULT_COIN_AMOUNT,
     },
     signers::Signer,
 };
-use sqlx::{
-    pool::{Pool, PoolConnection},
-    Postgres,
-};
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use sqlx::{pool::Pool, PgConnection, Postgres};
+use sqlx::{Connection, Executor};
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use tracing_subscriber::filter::EnvFilter;
 
 abigen!(Contract(
@@ -29,35 +34,122 @@ abigen!(Contract(
     abi = "packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json"
 ));
 
-pub async fn postgres_connection_pool() -> Pool<Postgres> {
-    let config = DatabaseConfig::Postgres {
-        user: "postgres".into(),
-        password: "my-secret".into(),
-        host: "127.0.0.1".into(),
-        port: "5432".into(),
-        database: "postgres".to_string(),
-    };
-    match IndexerConnectionPool::connect(&config.to_string())
-        .await
-        .unwrap()
-    {
-        IndexerConnectionPool::Postgres(p) => p,
+pub struct TestPostgresDb {
+    pub db_name: String,
+    pub url: String,
+    pub pool: Pool<Postgres>,
+    server_connection_str: String,
+}
+
+impl TestPostgresDb {
+    pub async fn new() -> Result<Self, TestError> {
+        // Generate a random string to serve as a unique name for a temporary database
+        let rng = thread_rng();
+        let db_name: String = rng
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
+
+        // The server connection string serves as a way to connect directly to the Postgres server.
+        // Example database URL: postgres://postgres:my-secret@localhost:5432
+        let connection_config: DatabaseConfig = std::env::var("DATABASE_URL")
+            .unwrap_or(defaults::POSTGRES_URL.to_string())
+            .parse()?;
+        let server_connection_str = connection_config.to_string();
+
+        let DatabaseConfig::Postgres {
+            user,
+            password,
+            host,
+            port,
+            ..
+        } = connection_config;
+        let test_db_config = DatabaseConfig::Postgres {
+            user,
+            password,
+            host,
+            port,
+            database: db_name.clone(),
+            verbose: "true".to_string(),
+        };
+
+        // Connect directly to the Postgres server and create a database with the unique string
+        let mut conn = PgConnection::connect(server_connection_str.as_str()).await?;
+
+        conn.execute(format!(r#"CREATE DATABASE "{}""#, &db_name).as_str())
+            .await?;
+
+        // Instantiate a pool so that it can be stored in the struct for use in the tests
+        let pool =
+            match IndexerConnectionPool::connect(&test_db_config.clone().to_string())
+                .await
+            {
+                Ok(pool) => match pool {
+                    IndexerConnectionPool::Postgres(p) => {
+                        let mut conn = p.acquire().await?;
+
+                        fuel_indexer_postgres::run_migration(&mut conn).await?;
+                        p
+                    }
+                },
+                Err(e) => return Err(TestError::PoolCreationError(e)),
+            };
+
+        Ok(Self {
+            db_name,
+            url: test_db_config.to_string(),
+            pool,
+            server_connection_str,
+        })
+    }
+
+    async fn teardown(&mut self) -> Result<(), TestError> {
+        let mut conn = PgConnection::connect(&self.server_connection_str).await?;
+
+        // Drop all connections to the test database so that resources are cleaned up
+        conn.execute(
+            format!(
+                r#"
+                SELECT pg_terminate_backend(pg_stat_activity.pid)
+                FROM pg_stat_activity
+                WHERE pg_stat_activity.datname = '{}'
+                AND pid <> pg_backend_pid()
+                "#,
+                self.db_name
+            )
+            .as_str(),
+        )
+        .await?;
+
+        // Forcefully drop the database. Connections should have been cleaned up by
+        // this point as we've awaited the prior query, but let's just do it by force.
+        conn.execute(
+            format!(
+                r#"DROP DATABASE IF EXISTS "{}" WITH (FORCE);"#,
+                self.db_name
+            )
+            .as_str(),
+        )
+        .await?;
+
+        Ok(())
     }
 }
 
-pub async fn postgres_connection() -> PoolConnection<Postgres> {
-    let config = DatabaseConfig::Postgres {
-        user: "postgres".into(),
-        password: "my-secret".into(),
-        host: "127.0.0.1".into(),
-        port: "5432".into(),
-        database: "postgres".to_string(),
-    };
-    match IndexerConnectionPool::connect(&config.to_string())
-        .await
-        .unwrap()
-    {
-        IndexerConnectionPool::Postgres(p) => p.acquire().await.unwrap(),
+impl Drop for TestPostgresDb {
+    fn drop(&mut self) {
+        // drop() cannot be async. Thus, we create a blocking thread
+        // to await the teardown operation for the database.
+        std::thread::scope(|s| {
+            s.spawn(|| {
+                let runtime = tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()
+                    .unwrap();
+                runtime.block_on(self.teardown()).unwrap();
+            });
+        });
     }
 }
 
@@ -72,7 +164,7 @@ pub fn tx_params() -> TxParameters {
     let gas_price = 0;
     let gas_limit = 1_000_000;
     let byte_price = 0;
-    TxParameters::new(Some(gas_price), Some(gas_limit), Some(byte_price))
+    TxParameters::new(gas_price, gas_limit, byte_price)
 }
 
 pub async fn setup_test_fuel_node(
@@ -108,10 +200,11 @@ pub async fn setup_test_fuel_node(
         DEFAULT_COIN_AMOUNT,
     );
 
-    let addr = if host_str.is_some() {
-        host_str.unwrap().parse::<SocketAddr>().unwrap()
-    } else {
-        defaults::FUEL_NODE_ADDR.parse::<SocketAddr>().unwrap()
+    let addr = match host_str {
+        Some(h) => h.parse::<SocketAddr>().unwrap_or_else(|_| {
+            derive_socket_addr(defaults::FUEL_NODE_HOST, defaults::FUEL_NODE_PORT)
+        }),
+        None => derive_socket_addr(defaults::FUEL_NODE_HOST, defaults::FUEL_NODE_PORT),
     };
 
     let config = Config {
@@ -129,18 +222,17 @@ pub async fn setup_test_fuel_node(
     if let Some(contract_bin_path) = contract_bin_path {
         let _compiled = Contract::load_contract(
             contract_bin_path.as_os_str().to_str().unwrap(),
-            &None,
+            DeployConfiguration::default(),
         )
-        .unwrap();
+        .expect("Failed to load contract");
 
         let contract_id = Contract::deploy(
             contract_bin_path.as_os_str().to_str().unwrap(),
             &wallet,
-            tx_params(),
-            StorageConfiguration::default(),
+            DeployConfiguration::default(),
         )
         .await
-        .unwrap();
+        .expect("Failed to deploy contract");
 
         let contract_id = contract_id.to_string();
 
@@ -163,77 +255,40 @@ pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
     setup_test_fuel_node(wallet_path, Some(contract_bin_path), None).await
 }
 
-pub async fn get_contract_id(
-    wallet_path: &str,
-    contract_bin_path: &str,
-) -> Result<(WalletUnlocked, Bech32ContractId), Box<dyn std::error::Error>> {
-    get_contract_id_with_host(
-        wallet_path,
-        contract_bin_path,
-        defaults::FUEL_NODE_ADDR.to_string(),
+pub fn get_test_contract_id() -> Bech32ContractId {
+    let contract_bin_path = Path::new(WORKSPACE_ROOT)
+        .join("contracts")
+        .join("fuel-indexer-test")
+        .join("out")
+        .join("debug")
+        .join("fuel-indexer-test.bin");
+
+    let compiled = Contract::load_contract(
+        contract_bin_path.as_os_str().to_str().unwrap(),
+        DeployConfiguration::default(),
     )
-    .await
+    .expect("Failed to load compiled contract");
+    let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
+
+    Bech32ContractId::from(id)
 }
 
-pub async fn get_contract_id_with_host(
-    wallet_path: &str,
-    contract_bin_path: &str,
-    host: String,
-) -> Result<(WalletUnlocked, Bech32ContractId), Box<dyn std::error::Error>> {
-    let filter = match std::env::var_os("RUST_LOG") {
-        Some(_) => {
-            EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
-        }
-        None => EnvFilter::new("info"),
-    };
+pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
+    let database: DatabaseConfig = database_url
+        .map_or(DatabaseConfig::default(), |url| {
+            DatabaseConfig::from_str(url).unwrap()
+        });
 
-    let _ = tracing_subscriber::fmt::Subscriber::builder()
-        .with_writer(std::io::stderr)
-        .with_env_filter(filter)
-        .try_init();
-
-    let mut wallet =
-        WalletUnlocked::load_keystore(wallet_path, defaults::WALLET_PASSWORD, None)
-            .unwrap();
-
-    let provider = Provider::connect(&host).await.unwrap();
-
-    wallet.set_provider(provider.clone());
-
-    let _compiled = Contract::load_contract(contract_bin_path, &None).unwrap();
-
-    let contract_id = Contract::deploy(
-        contract_bin_path,
-        &wallet,
-        tx_params(),
-        StorageConfiguration::default(),
-    )
-    .await
-    .unwrap();
-
-    println!("Using contract at {:?}", &contract_id);
-
-    Ok((wallet, contract_id))
-}
-
-pub async fn api_server_app_postgres() -> Router {
     let config = IndexerConfig {
-        fuel_node: FuelNodeConfig::from(
-            defaults::FUEL_NODE_ADDR
-                .parse::<std::net::SocketAddr>()
-                .unwrap(),
-        ),
-        database: DatabaseConfig::Postgres {
-            user: "postgres".into(),
-            password: "my-secret".into(),
-            host: "127.0.0.1".into(),
-            port: "5432".into(),
-            database: "postgres".to_string(),
-        },
+        verbose: true,
+        local_fuel_node: false,
+        fuel_node: FuelNodeConfig::default(),
+        database,
         graphql_api: GraphQLConfig::default(),
-        metrics: true,
+        metrics: false,
         stop_idle_indexers: true,
-        max_body: defaults::MAX_BODY,
+        run_migrations: false,
+        authentication: AuthenticationConfig::default(),
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -243,24 +298,53 @@ pub async fn api_server_app_postgres() -> Router {
     GraphQlApi::build(config, pool, None).await.unwrap()
 }
 
-pub async fn indexer_service_postgres() -> IndexerService {
+pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -> Router {
+    let database: DatabaseConfig = database_url
+        .map_or(DatabaseConfig::default(), |url| {
+            DatabaseConfig::from_str(url).unwrap()
+        });
+
     let config = IndexerConfig {
-        fuel_node: FuelNodeConfig::from(
-            defaults::FUEL_NODE_ADDR
-                .parse::<std::net::SocketAddr>()
-                .unwrap(),
-        ),
-        database: DatabaseConfig::Postgres {
-            user: "postgres".into(),
-            password: "my-secret".into(),
-            host: "127.0.0.1".into(),
-            port: "5432".into(),
-            database: "postgres".to_string(),
-        },
+        verbose: true,
+        local_fuel_node: false,
+        fuel_node: FuelNodeConfig::default(),
+        database,
         graphql_api: GraphQLConfig::default(),
         metrics: false,
         stop_idle_indexers: true,
-        max_body: defaults::MAX_BODY,
+        run_migrations: false,
+        authentication: AuthenticationConfig{
+            enabled: true,
+            strategy: Some(AuthenticationStrategy::JWT),
+            jwt_secret: Some("6906573247652854078288872150120717701634680141358560585446649749925714230966".to_string()),
+            jwt_issuer: Some("FuelLabs".to_string()),
+            jwt_expiry: Some(config_defaults::JWT_EXPIRY_SECS)
+        },
+    };
+
+    let pool = IndexerConnectionPool::connect(&config.database.to_string())
+        .await
+        .expect("Failed to create connection pool");
+
+    GraphQlApi::build(config, pool, None).await.unwrap()
+}
+
+pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerService {
+    let database: DatabaseConfig = database_url
+        .map_or(DatabaseConfig::default(), |url| {
+            DatabaseConfig::from_str(url).unwrap()
+        });
+
+    let config = IndexerConfig {
+        verbose: true,
+        local_fuel_node: false,
+        fuel_node: FuelNodeConfig::default(),
+        database,
+        graphql_api: GraphQLConfig::default(),
+        metrics: false,
+        stop_idle_indexers: true,
+        run_migrations: false,
+        authentication: AuthenticationConfig::default(),
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -288,9 +372,7 @@ pub async fn connect_to_deployed_contract(
         wallet_path.display()
     );
 
-    let contract_id: Bech32ContractId = CURRENT_TEST_CONTRACT_ID_STR
-        .parse()
-        .expect("Invalid ID for test contract");
+    let contract_id: Bech32ContractId = get_test_contract_id();
 
     let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
 
@@ -302,7 +384,7 @@ pub async fn connect_to_deployed_contract(
 pub mod test_web {
 
     use super::{tx_params, FuelIndexerTest};
-    use crate::defaults::{self, CURRENT_TEST_CONTRACT_ID_STR};
+    use crate::{defaults, fixtures::get_test_contract_id};
     use actix_service::ServiceFactory;
     use actix_web::{
         body::MessageBody,
@@ -310,13 +392,12 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
-    use fuel_indexer_types::Bech32ContractId;
+    use fuel_indexer_types::{AssetId, Bech32ContractId};
     use fuels::{
         prelude::{CallParameters, Provider},
         signers::WalletUnlocked,
     };
     use std::path::Path;
-
     async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
             .contract
@@ -344,7 +425,7 @@ pub mod test_web {
     async fn fuel_indexer_test_transfer(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(Some(1_000_000), None, None);
+        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
 
         let _ = state
             .contract
@@ -403,7 +484,7 @@ pub mod test_web {
     async fn fuel_indexer_test_transferout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(Some(1_000_000), None, None);
+        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
 
         let _ = state
             .contract
@@ -422,7 +503,7 @@ pub mod test_web {
     async fn fuel_indexer_test_messageout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(Some(1_000_000), None, None);
+        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
 
         let _ = state
             .contract
@@ -530,6 +611,74 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_vec_calldata(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_vec_pong_calldata(vec![1, 2, 3, 4, 5, 6, 7, 8])
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_vec_logdata(state: web::Data<Arc<AppState>>) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_vec_pong_logdata()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_pure_function(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_pure_function()
+            .tx_params(tx_params())
+            .call()
+            .await
+            .unwrap();
+
+        HttpResponse::Ok()
+    }
+
+    async fn fuel_indexer_test_trigger_panic(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_panic()
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+    async fn fuel_indexer_test_trigger_revert(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_revert()
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest,
     }
@@ -583,6 +732,14 @@ pub mod test_web {
                     fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields,
                 ),
             )
+            .route("/vec-calldata", web::post().to(fuel_indexer_vec_calldata))
+            .route("/vec-logdata", web::post().to(fuel_indexer_vec_logdata))
+            .route(
+                "/pure_function",
+                web::post().to(fuel_indexer_test_pure_function),
+            )
+            .route("/panic", web::post().to(fuel_indexer_test_trigger_panic))
+            .route("/revert", web::post().to(fuel_indexer_test_trigger_revert))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {
@@ -613,9 +770,7 @@ pub mod test_web {
             wallet_path.display()
         );
 
-        let contract_id: Bech32ContractId = CURRENT_TEST_CONTRACT_ID_STR
-            .parse()
-            .expect("Invalid ID for test contract");
+        let contract_id: Bech32ContractId = get_test_contract_id();
 
         println!("Starting server at {}", defaults::WEB_API_ADDR);
 

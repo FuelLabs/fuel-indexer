@@ -3,24 +3,35 @@
 ## Using CLI options
 
 ```text
+Standalone binary for the fuel indexer service.
+
 USAGE:
     fuel-indexer run [OPTIONS]
 
 OPTIONS:
-    -c, --config <CONFIG>
+        --auth-enabled
+            Require users to authenticate for some operations.
+
+        --auth-strategy <AUTH_STRATEGY>
+            Authentication scheme used.
+
+    -c, --config <FILE>
             Indexer service config file.
 
         --database <DATABASE>
             Database type. [default: postgres] [possible values: postgres]
 
+        --embedded-database
+            Automatically create and start database using provided options or defaults.
+
         --fuel-node-host <FUEL_NODE_HOST>
-            Host of the running Fuel node. [default: 127.0.0.1]
+            Host of the running Fuel node. [default: localhost]
 
         --fuel-node-port <FUEL_NODE_PORT>
             Listening port of the running Fuel node. [default: 4000]
 
         --graphql-api-host <GRAPHQL_API_HOST>
-            GraphQL API host. [default: 127.0.0.1]
+            GraphQL API host. [default: localhost]
 
         --graphql-api-port <GRAPHQL_API_PORT>
             GraphQL API port. [default: 29987]
@@ -28,18 +39,30 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --jwt-expiry <JWT_EXPIRY>
+            Amount of time (seconds) before expiring token (if JWT scheme is specified).
+
+        --jwt-issuer <JWT_ISSUER>
+            Issuer of JWT claims (if JWT scheme is specified).
+
+        --jwt-secret <JWT_SECRET>
+            Secret used for JWT scheme (if JWT scheme is specified).
+
+        --local-fuel-node
+            Start a local Fuel node.
+
         --log-level <LOG_LEVEL>
-            Log level passed to the Fuel Indexer service. [default: info]
-                [possible values: info, debug, error, warn]
+            Log level passed to the Fuel Indexer service. [default: info] [possible values: info,
+            debug, error, warn]
 
-    -m, --manifest <MANIFEST>
-            Index config file.
-        
-        --max-body <MAX_BODY> 
-            Max body size for WASM binary uploads in bytes. [default: 5242880]
+    -m, --manifest <FILE>
+            Indexer config file.
 
-        --metrics <metrics>
-            Use Prometheus metrics reporting. [default: true]
+        --max-body-size <MAX_BODY_SIZE>
+            Max body size for GraphQL API requests. [default: 5242880]
+
+        --metrics
+            Use Prometheus metrics reporting.
 
         --postgres-database <POSTGRES_DATABASE>
             Postgres database.
@@ -56,8 +79,14 @@ OPTIONS:
         --postgres-user <POSTGRES_USER>
             Postgres username.
 
-        --run-migrations <run-migrations>
-            Run database migrations before starting service. [default: true]
+        --run-migrations
+            Run database migrations before starting service.
+
+        --stop-idle-indexers
+            Prevent indexers from running without handling any blocks.
+
+    -v, --verbose
+            Enable verbose logging.
 
     -V, --version
             Print version information
@@ -66,33 +95,5 @@ OPTIONS:
 ## Using a configuration file
 
 ```yaml
-## The following is an example Fuel indexer configuration file.
-##
-## This configuration spec is intended to be used for a single instance
-## of a Fuel indexer node or service.
-
-## Fuel Node configuration
-
-fuel_node:
-    host: 127.0.0.1
-    port: 4000
-
-## GraphQL API configuration
-
-graphql_api:
-    host: 127.0.0.1
-    port: 29987
-    run_migrations: false
-
-## Database configuration options.
-
-database:
-    postgres:
-        user: postgres
-        database:
-        password:
-        host: 127.0.0.1
-        port: 5432
-
-metrics: true
+{{#include ../../../config.yaml}}
 ```

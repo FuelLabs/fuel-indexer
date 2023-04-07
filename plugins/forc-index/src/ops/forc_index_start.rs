@@ -1,8 +1,10 @@
 use crate::cli::StartCommand;
+use forc_postgres::cli::CreateDbCommand;
+use fuel_indexer_lib::defaults;
 use std::process::Command;
 use tracing::info;
 
-pub fn init(command: StartCommand) -> anyhow::Result<()> {
+pub async fn init(command: StartCommand) -> anyhow::Result<()> {
     let StartCommand {
         log_level,
         config,
@@ -16,24 +18,50 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
         postgres_database,
         postgres_host,
         postgres_port,
+        local_fuel_node,
         run_migrations,
         metrics,
         manifest,
+        embedded_database,
+        auth_enabled,
+        auth_strategy,
+        jwt_secret,
+        jwt_issuer,
+        jwt_expiry,
+        verbose,
         ..
     } = command;
 
-    let stdout = Command::new("which")
-        .arg("fuel-indexer")
-        .output()
-        .expect("❌ Failed to locate fuel-indexer binary.")
-        .stdout;
+    if embedded_database {
+        let name = postgres_database
+            .clone()
+            .unwrap_or(defaults::POSTGRES_DATABASE.to_string());
+        let password = postgres_password
+            .clone()
+            .unwrap_or(defaults::POSTGRES_PASSWORD.to_string());
+        let user = postgres_user
+            .clone()
+            .unwrap_or(defaults::POSTGRES_USER.to_string());
 
-    let exec = String::from_utf8_lossy(&stdout)
-        .strip_suffix('\n')
-        .expect("Failed to detect fuel-indexer binary in $PATH.")
-        .to_string();
+        let port = postgres_port
+            .clone()
+            .unwrap_or(defaults::POSTGRES_PORT.to_string());
 
-    let mut cmd = Command::new(&exec);
+        let create_db_cmd = CreateDbCommand {
+            name,
+            password,
+            user,
+            port,
+            persistent: true,
+            config: config.clone(),
+            start: true,
+            ..Default::default()
+        };
+
+        forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
+    }
+
+    let mut cmd = Command::new("fuel-indexer");
     cmd.arg("run");
 
     if let Some(m) = &manifest {
@@ -51,10 +79,29 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
         cmd.arg("--log-level").arg(&log_level);
 
         // Bool options
-        let options = vec![("--run-migrations", run_migrations), ("--metrics", metrics)];
+        let options = vec![
+            ("--run-migrations", run_migrations),
+            ("--metrics", metrics),
+            ("--auth-enabled", auth_enabled),
+            ("--verbose", verbose),
+            ("--local-fuel-node", local_fuel_node),
+        ];
         for (opt, value) in options.iter() {
             if *value {
-                cmd.arg(opt).arg("true");
+                cmd.arg(opt);
+            }
+        }
+
+        // Nullable options
+        let options = vec![
+            ("--auth-strategy", auth_strategy),
+            ("--jwt-secret", jwt_secret),
+            ("--jwt-issuer", jwt_issuer),
+            ("--jwt-expiry", jwt_expiry.map(|x| x.to_string())),
+        ];
+        for (opt, value) in options.iter() {
+            if let Some(value) = value {
+                cmd.arg(opt).arg(value);
             }
         }
 
@@ -75,15 +122,27 @@ pub fn init(command: StartCommand) -> anyhow::Result<()> {
                     }
                 }
             }
-            _ => unreachable!(),
+            _ => unreachable!(
+                "'postgres' is currently the only supported database option."
+            ),
         }
     }
 
-    let _proc = cmd
-        .spawn()
-        .expect("❌ Failed to spawn fuel-indexer child process.");
+    if verbose {
+        info!("{cmd:?}");
+    }
 
-    info!("\n✅ Successfully started the indexer service.");
+    match cmd.spawn() {
+        Ok(child) => {
+            info!(
+                "\n✅ Successfully started the indexer service at PID {}",
+                child.id()
+            );
+        }
+        Err(e) => {
+            panic!("❌ Failed to spawn fuel-indexer child process: {e:?}.");
+        }
+    }
 
     Ok(())
 }

@@ -18,10 +18,11 @@ docker compose up
 
 ```bash
 forc-index deploy \
-   --path explorer-index \
-   --output-dir-root /Users/rashad/development/repos/fuel-indexer \
+   --path explorer-indexer \
+   --target-dir /path/to/repository/fuel-indexer \
    --url http://0.0.0.0:29987 \
    --target wasm32-unknown-unknown
+   --release
 ```
 
 ### Validate
@@ -29,7 +30,7 @@ forc-index deploy \
 Ensure that test data was indexed via a GraphQL query.
 
 ```bash
-curl -X POST http://0.0.0.0:29987/api/graph/fuel_examples \
+curl -X POST http://0.0.0.0:29987/api/graph/fuel_examples/explorer_indexer \
    -H 'content-type: application/json' \
    -d '{"query": "query { tx { id hash status block }}", "params": "b"}' \
 | json_pp

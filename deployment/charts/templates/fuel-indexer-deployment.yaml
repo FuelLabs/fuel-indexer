@@ -26,6 +26,7 @@ spec:
           image: {{ .Values.fuelIndexerImage }} 
           command: ["./fuel-indexer"]
           args:
+            - "run"
             - "--fuel-node-host"
             - "{{ .Values.app.fuel_node_host }}"
             - "--fuel-node-port"
@@ -42,6 +43,8 @@ spec:
             - "postgres"
             - "--graphql-api-host"
             - "0.0.0.0"
+            - "--run-migrations"
+            - "--verbose"
           env:
           - name: POSTGRES_PASSWORD
             valueFrom:

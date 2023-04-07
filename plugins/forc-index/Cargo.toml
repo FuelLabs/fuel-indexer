@@ -10,6 +10,8 @@ rust-version = { workspace = true }
 description = "Fuel Indexer forc plugin"
 
 [dependencies]
+
+actix-web = { version = "4", default-features = false, features = ["macros"] }
 anyhow = "1"
 clap = { version = "3", features = ["derive", "env"] }
 forc-postgres = { workspace = true }
@@ -17,7 +19,7 @@ forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.35.0" }
 fuel-indexer-lib = { workspace = true }
 fuel-tx = { version = "0.26.0", features = ["builder"] }
-fuels-types = { version = "0.37" , default-features = false }
+fuels-types = { version = "0.38.1", default-features = false }
 hex = "0.4.3"
 hyper-rustls = { version = "0.23", features = ["http2"] }
 indicatif = "0.17"
@@ -29,6 +31,7 @@ serde_json = "1.0.73"
 serde_yaml = "0.8"
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "process"] }
 toml = "0.5"
+tempfile = "3.4.0"
 tracing = "0.1"
 walkdir = "2"
 

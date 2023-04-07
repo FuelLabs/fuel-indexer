@@ -1,21 +1,18 @@
 use crate::ops::{
     forc_index_build::init as build, forc_index_deploy::init as deploy,
     forc_index_init::create_indexer as create, forc_index_start::init as start,
-    forc_index_tree::init as render_tree,
 };
 use crate::{
-    cli::{
-        BuildCommand, DeployCommand, InitCommand, StartCommand, TreeCommand,
-        WelcomeCommand,
-    },
+    cli::{BuildCommand, DeployCommand, InitCommand, StartCommand, WelcomeCommand},
     utils::defaults,
 };
 use forc_util::{kebab_to_snake_case, validate_name};
 use owo_colors::OwoColorize;
-use rand::{thread_rng, Rng};
+use rand::Rng;
 use std::fs;
 use std::{
     io::{self, Write},
+    process::Command,
     thread, time,
 };
 
@@ -61,15 +58,26 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
                 namespace: "default".to_string(),
                 native: false,
                 absolute_paths: true,
+                verbose: true,
             })?;
             humanize_message(PROJECT_INITIALIZED.to_string());
             if verbose {
-                render_tree(TreeCommand { verbose: true })?;
+                let output = Command::new("tree")
+                    .output()
+                    .expect("failed to execute tree command");
+
+                if output.status.success() {
+                    let tree = String::from_utf8(output.stdout).unwrap();
+                    humanize_message(tree);
+                } else {
+                    let error = String::from_utf8(output.stderr).unwrap();
+                    humanize_message(error);
+                }
             }
             humanize_message(DEPLOY_QUESTION.to_string());
 
             input = process_std(input);
-            deploy_to_network(input, WELCOME_MANIFEST_PATH.to_string())?;
+            deploy_to_network(input, WELCOME_MANIFEST_PATH.to_string()).await?;
         }
         "n" | "no" => {
             humanize_message(
@@ -101,6 +109,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
                 namespace,
                 native: false,
                 absolute_paths: true,
+                verbose: true,
             })?;
             humanize_message(PROJECT_INITIALIZED.to_string());
             humanize_message("\n Here is the manifest file we created: \n\n".to_string());
@@ -117,7 +126,7 @@ pub async fn init(command: WelcomeCommand) -> anyhow::Result<()> {
             humanize_message(DEPLOY_QUESTION.to_string());
 
             input = process_std(input);
-            deploy_to_network(input, manifest_path)?;
+            deploy_to_network(input, manifest_path).await?;
         }
         _ => {
             println!("Invalid input. Please enter Y or n");
@@ -140,7 +149,7 @@ fn render_greeter() {
     thread::sleep(time::Duration::from_millis(500));
 }
 
-fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Result<()> {
+async fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Result<()> {
     match input.trim().to_lowercase().as_str() {
         "y" | "yes" => {
             humanize_message(
@@ -168,7 +177,7 @@ fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Result<()> 
                         graphql_api_port: defaults::GRAPHQL_API_PORT.to_string(),
                         ..Default::default()
                     };
-                    start(start_command)?;
+                    start(start_command).await?;
                     build(build_command)?;
                     deploy(deploy_command)?;
                 }
@@ -182,7 +191,7 @@ fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Result<()> 
                         graphql_api_port: "80".to_string(),
                         ..Default::default()
                     };
-                    start(start_command)?;
+                    start(start_command).await?;
                     build(build_command)?;
                     deploy(deploy_command)?;
                 }

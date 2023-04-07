@@ -1,18 +1,23 @@
-use crate::defaults;
+use crate::{config::IndexerConfig, defaults};
 use anyhow::Result;
 use fuel_indexer_types::Bytes32;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::str::FromStr;
 use std::{
+    env,
     fs::canonicalize,
     future::Future,
     net::{SocketAddr, ToSocketAddrs},
     path::Path,
     process::Command,
+    str::FromStr,
 };
 use tokio::time::{sleep, Duration};
 use tracing::{info, warn};
+use tracing_subscriber::filter::EnvFilter;
+
+const RUST_LOG: &str = "RUST_LOG";
+const HUMAN_LOGGING: &str = "HUMAN_LOGGING";
 
 // Testing assets use relative paths, while production assets will use absolute paths
 //
@@ -63,9 +68,18 @@ pub struct IndexStopRequest {
 }
 
 #[derive(Debug)]
+pub struct IndexRevertRequest {
+    pub penultimate_asset_id: i64,
+    pub penultimate_asset_bytes: Vec<u8>,
+    pub namespace: String,
+    pub identifier: String,
+}
+
+#[derive(Debug)]
 pub enum ServiceRequest {
     AssetReload(AssetReloadRequest),
     IndexStop(IndexStopRequest),
+    IndexRevert(IndexRevertRequest),
 }
 
 pub fn sha256_digest<T: AsRef<[u8]>>(blob: &T) -> String {
@@ -87,7 +101,7 @@ pub fn is_opt_env_var(key: &str) -> bool {
     key.starts_with('$') || (key.starts_with("${") && key.ends_with('}'))
 }
 
-pub fn derive_socket_addr(host: &String, port: &String) -> SocketAddr {
+pub fn derive_socket_addr(host: &str, port: &str) -> SocketAddr {
     let host = format!("{host}:{port}");
     SocketAddr::from_str(&host).unwrap_or_else(|e| {
             warn!(
@@ -162,51 +176,49 @@ pub struct FuelNodeHealthResponse {
     up: bool,
 }
 
-pub mod bin_utils {
-    use std::env;
-    use std::str::FromStr;
-    use tracing_subscriber::filter::EnvFilter;
+pub async fn init_logging(config: &IndexerConfig) -> anyhow::Result<()> {
+    let level = env::var_os(RUST_LOG)
+        .map(|x| x.into_string().unwrap())
+        .unwrap_or("info".to_string());
 
-    const LOG_FILTER: &str = "RUST_LOG";
-    const HUMAN_LOGGING: &str = "HUMAN_LOGGING";
-
-    pub async fn init_logging() -> anyhow::Result<()> {
-        let filter = match env::var_os(LOG_FILTER) {
-            Some(_) => {
-                EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
-            }
-            None => EnvFilter::new("info"),
-        };
-
-        let human_logging = env::var_os(HUMAN_LOGGING)
-            .map(|s| {
-                bool::from_str(s.to_str().unwrap()).expect(
-                    "Expected `true` or `false` to be provided for `HUMAN_LOGGING`",
-                )
-            })
-            .unwrap_or(true);
-
-        let sub = tracing_subscriber::fmt::Subscriber::builder()
-            .with_writer(std::io::stderr)
-            .with_env_filter(filter);
-
-        if human_logging {
-            sub.with_ansi(true)
-                .with_level(true)
-                .with_line_number(true)
-                .init();
-        } else {
-            sub.with_ansi(false)
-                .with_level(true)
-                .with_line_number(true)
-                .json()
-                .init();
-        }
-        Ok(())
+    if !config.verbose {
+        std::env::set_var(RUST_LOG, format!("{level},wasmer_compiler_cranelift=warn"));
     }
+
+    let filter = match env::var_os(RUST_LOG) {
+        Some(_) => {
+            EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided")
+        }
+        None => EnvFilter::new("info"),
+    };
+
+    let human_logging = env::var_os(HUMAN_LOGGING)
+        .map(|s| {
+            bool::from_str(s.to_str().unwrap())
+                .expect("Expected `true` or `false` to be provided for `HUMAN_LOGGING`")
+        })
+        .unwrap_or(true);
+
+    let sub = tracing_subscriber::fmt::Subscriber::builder()
+        .with_writer(std::io::stderr)
+        .with_env_filter(filter);
+
+    if human_logging {
+        sub.with_ansi(true)
+            .with_level(true)
+            .with_line_number(true)
+            .init();
+    } else {
+        sub.with_ansi(false)
+            .with_level(true)
+            .with_line_number(true)
+            .json()
+            .init();
+    }
+    Ok(())
 }
 
-pub mod index_utils {
+pub mod indexer_utils {
     use fuel_indexer_types::SizedAsciiString;
 
     use super::{sha256_digest, Bytes32};

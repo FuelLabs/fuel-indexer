@@ -1,9 +1,6 @@
-use crate::{
-    cli::StartDbCommand,
-    pg::{get_pgembed_home_dir, PgEmbedConfig},
-};
+use crate::{cli::StartDbCommand, pg::PgEmbedConfig};
 use pg_embed::{pg_fetch::PgFetchSettings, postgres::PgEmbed};
-use std::process::Command;
+use std::mem::ManuallyDrop;
 use tracing::info;
 
 pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
@@ -11,6 +8,8 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
         name,
         database_dir,
         config,
+        verbose,
+        ..
     } = command;
 
     let pg_config =
@@ -23,9 +22,11 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
         ..Default::default()
     };
 
-    let mut pg = PgEmbed::new(pg_config.clone().into(), fetch_settings).await?;
+    // Disabling Drop trait behavior as PgEmbed shuts down when going out of scope
+    let mut pg =
+        ManuallyDrop::new(PgEmbed::new(pg_config.clone().into(), fetch_settings).await?);
 
-    info!("\nStarting PostgreSQL.\n");
+    info!("\nStarting PostgreSQL...\n");
     pg.start_db().await?;
 
     let pg_db_uri = pg.full_db_uri(&name);
@@ -33,19 +34,10 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
     match pg.database_exists(&name).await {
         Ok(exists) => {
             if exists {
-                info!("\n✅ Successfully started database at '{pg_db_uri}'.");
-
-                let executable = get_pgembed_home_dir(version);
-
-                if let Err(e) = Command::new(executable)
-                    .arg("-D")
-                    .arg(&pg_config.database_dir.unwrap())
-                    .arg("-l")
-                    .arg("logfile")
-                    .arg("start")
-                    .spawn()
-                {
-                    anyhow::bail!("❌ Failed to invoke pg_ctl: {e}.");
+                if verbose {
+                    info!("\n✅ Successfully started database at '{pg_db_uri}'.");
+                } else {
+                    info!("\n✅ Successfully started database.");
                 }
             } else {
                 anyhow::bail!("❌ Database at '{pg_db_uri}' does not exist.");

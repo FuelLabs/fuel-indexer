@@ -3,20 +3,20 @@ use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;
 
-/// Build an index.
+/// Build an indexer.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// Manifest file name of indexer being built.
     #[clap(short, long, help = "Manifest file name of indexer being built.")]
     pub manifest: Option<String>,
 
-    /// Path of index project.
+    /// Path of indexer project.
     #[clap(short, long, help = "Path to the indexer project.")]
     pub path: Option<PathBuf>,
 
     /// Target at which to compile.
-    #[clap(long, help = "Target at which to compile.")]
-    pub target: Option<String>,
+    #[clap(long, default_value = defaults::INDEXER_TARGET, help = "Target at which to compile.")]
+    pub target: String,
 
     /// Build optimized artifacts with the release profile.
     #[clap(
@@ -30,10 +30,6 @@ pub struct Command {
     #[clap(long, help = "Build with the given profile.")]
     pub profile: Option<String>,
 
-    /// Verbose output
-    #[clap(short, long, help = "Verbose output.")]
-    pub verbose: bool,
-
     /// Ensure that the Cargo.lock file is up-to-date.
     #[clap(long, help = "Ensure that the Cargo.lock file is up-to-date.")]
     pub locked: bool,
@@ -42,12 +38,16 @@ pub struct Command {
     #[clap(long, help = "Building for native execution.")]
     pub native: bool,
 
-    /// Path with which to prefix asset filepaths in the index manifest.
+    /// Directory for all generated artifacts and intermediate files.
     #[clap(
         long,
-        help = "Path with which to prefix asset filepaths in the index manifest."
+        help = "Directory for all generated artifacts and intermediate files."
     )]
-    pub output_dir_root: Option<PathBuf>,
+    pub target_dir: Option<PathBuf>,
+
+    /// Enable verbose output.
+    #[clap(short, long, help = "Enable verbose output.")]
+    pub verbose: bool,
 }
 
 impl Default for Command {
@@ -55,13 +55,13 @@ impl Default for Command {
         Command {
             manifest: Some(String::new()),
             path: None,
-            target: Some(defaults::WASM_TARGET.to_string()),
+            target: defaults::WASM_TARGET.to_string(),
             release: true,
             profile: Some("release".to_string()),
             verbose: false,
             locked: false,
             native: false,
-            output_dir_root: Some(std::path::PathBuf::from(".")),
+            target_dir: Some(std::path::PathBuf::from(".")),
         }
     }
 }

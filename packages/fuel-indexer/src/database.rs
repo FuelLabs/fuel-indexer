@@ -71,10 +71,6 @@ impl Database {
         inserts: Vec<String>,
         updates: Vec<String>,
     ) -> String {
-        let sql_table = self
-            .pool
-            .database_type()
-            .table_name(&self.namespace(), table);
         format!(
             "INSERT INTO {}
                 ({})
@@ -82,7 +78,7 @@ impl Database {
                 ({}, $1)
              ON CONFLICT(id)
              DO UPDATE SET {}",
-            sql_table,
+            table,
             columns.join(", "),
             inserts.join(", "),
             updates.join(", "),
@@ -94,11 +90,7 @@ impl Database {
     }
 
     fn get_query(&self, table: &str, object_id: u64) -> String {
-        let sql_table = self
-            .pool
-            .database_type()
-            .table_name(&self.namespace(), table);
-        format!("SELECT object from {sql_table} where id = {object_id}")
+        format!("SELECT object from {table} where id = {object_id}")
     }
 
     pub async fn put_object(
@@ -168,17 +160,19 @@ impl Database {
 
                 let mut conn = self.pool.acquire().await?;
                 self.version =
-                    queries::type_id_latest(&mut conn, &self.namespace).await?;
+                    queries::type_id_latest(&mut conn, &self.namespace, &self.identifier)
+                        .await?;
 
                 let results = queries::columns_get_schema(
                     &mut conn,
                     &self.namespace,
+                    &self.identifier,
                     &self.version,
                 )
                 .await?;
 
                 for column in results {
-                    let table = &column.table_name;
+                    let table = &format!("{}.{}", self.namespace(), &column.table_name);
 
                     self.tables
                         .entry(column.type_id)
@@ -203,12 +197,13 @@ impl Database {
                 let results = queries::columns_get_schema(
                     &mut conn,
                     &self.namespace,
+                    &self.identifier,
                     &self.version,
                 )
                 .await?;
 
                 for column in results {
-                    let table = &column.table_name;
+                    let table = &format!("{}.{}", self.namespace(), &column.table_name);
 
                     self.tables
                         .entry(column.type_id)

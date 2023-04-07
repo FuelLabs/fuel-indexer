@@ -3,7 +3,7 @@ use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig},
     manifest::Manifest,
-    utils::ServiceRequest,
+    utils::{init_logging, ServiceRequest},
 };
 use tracing::info;
 
@@ -24,6 +24,7 @@ use tokio::sync::mpsc::channel;
 
 #[cfg(feature = "fuel-core-lib")]
 async fn run_fuel_core_node() -> anyhow::Result<FuelService> {
+    // TODO: This should accept what ever is in FuelNodeConfig
     let config = Config {
         addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
         ..Config::local_node()
@@ -35,10 +36,13 @@ async fn run_fuel_core_node() -> anyhow::Result<FuelService> {
 pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     let IndexerArgs { manifest, .. } = args.clone();
 
-    let config = match &args.config {
-        Some(path) => IndexerConfig::from_file(path)?,
-        None => IndexerConfig::from(args.clone()),
-    };
+    let config = args
+        .clone()
+        .config
+        .map(IndexerConfig::from_file)
+        .unwrap_or(Ok(IndexerConfig::from(args)))?;
+
+    init_logging(&config).await?;
 
     info!("Configuration: {:?}", config);
 
@@ -49,12 +53,9 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         (None, None)
     };
 
-    #[cfg(feature = "fuel-core-lib")]
-    let _srvc = run_fuel_core_node().await?;
-
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
-    if config.graphql_api.run_migrations {
+    if config.run_migrations {
         let mut c = pool.acquire().await?;
         queries::run_migration(&mut c).await?;
     }
@@ -76,9 +77,26 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     let service_handle = tokio::spawn(service.run());
 
     if cfg!(feature = "api-server") {
-        let _ = tokio::join!(service_handle, GraphQlApi::build_and_run(config, pool, tx));
+        let gql_handle =
+            tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
+
+        #[cfg(feature = "fuel-core-lib")]
+        if config.local_fuel_node {
+            let fuel_node_handle = tokio::spawn(run_fuel_core_node());
+            let _ = tokio::join!(service_handle, gql_handle, fuel_node_handle);
+        }
+
+        #[cfg(not(feature = "fuel-core-lib"))]
+        let _ = tokio::join!(service_handle, gql_handle);
     } else {
-        service_handle.await?;
+        #[cfg(feature = "fuel-core-lib")]
+        if config.local_fuel_node {
+            let fuel_node_handle = tokio::spawn(run_fuel_core_node());
+            let _ = tokio::join!(service_handle, fuel_node_handle);
+        }
+
+        #[cfg(not(feature = "fuel-core-lib"))]
+        service_handle.await?
     };
 
     Ok(())

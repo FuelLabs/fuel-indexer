@@ -9,7 +9,14 @@ use serde_json::{to_string_pretty, value::Value, Map};
 use tracing::{error, info};
 
 pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
-    let RemoveCommand { path, manifest, .. } = command;
+    let RemoveCommand {
+        path,
+        manifest,
+        url,
+        auth,
+        verbose,
+        ..
+    } = command;
 
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
@@ -17,31 +24,33 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
     let manifest: Manifest = Manifest::from_file(manifest_path.as_path())?;
 
     let target = format!(
-        "{}/api/index/{}/{}",
-        &command.url, &manifest.namespace, &manifest.identifier
+        "{url}/api/index/{}/{}",
+        &manifest.namespace, &manifest.identifier
     );
 
     let mut headers = HeaderMap::new();
-    headers.insert(
-        AUTHORIZATION,
-        command.auth.unwrap_or_else(|| "fuel".into()).parse()?,
-    );
+    if let Some(auth) = auth {
+        headers.insert(AUTHORIZATION, auth.parse()?);
+    }
 
-    info!(
-        "\n🛑 Removing index '{}.{}' at {}",
-        &manifest.namespace, &manifest.identifier, &target
-    );
+    if verbose {
+        info!(
+            "\n🛑 Removing indexer'{}.{}' at {target}",
+            &manifest.namespace, &manifest.identifier
+        );
+    } else {
+        info!("\n🛑 Removing indexer")
+    }
 
     let res = Client::new()
         .delete(&target)
         .headers(headers)
         .send()
-        .expect("Failed to remove index.");
+        .expect("Failed to remove indexer.");
 
     if res.status() != StatusCode::OK {
         error!(
-            "\n❌ {} returned a non-200 response code: {:?}",
-            &target,
+            "\n❌ {target} returned a non-200 response code: {:?}",
             res.status()
         );
         return Ok(());
@@ -51,12 +60,17 @@ pub fn init(command: RemoveCommand) -> anyhow::Result<()> {
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
 
-    println!("\n{}", to_string_pretty(&res_json)?);
-
-    info!(
-        "\n✅ Successfully removed index '{}.{}' at {} \n",
-        &manifest.namespace, &manifest.identifier, &target
-    );
+    if verbose {
+        info!(
+            "\n{}\n✅ Successfully removed indexer '{}.{}' at {} \n",
+            to_string_pretty(&res_json)?,
+            &manifest.namespace,
+            &manifest.identifier,
+            &target
+        );
+    } else {
+        info!("\n✅ Successfully removed indexer\n");
+    }
 
     Ok(())
 }

@@ -20,6 +20,9 @@ type QueryRoot {
     tupleentity: TupleEntity
     u16entity: U16Entity
     messageentity: MessageEntity
+    callentity: CallEntity
+    panicentity: PanicEntity
+    revertentity: RevertEntity 
 
     # GraphQL API test entities
     genre: Genre
@@ -131,6 +134,16 @@ type TupleEntity {
     simple_a: Charfield!
 }
 
+type CallEntity {
+    id: ID!
+    contract_id: ContractId!
+    callee: ContractId!
+    asset_id: AssetId!
+    gas: UInt8!
+    fn_name: Charfield!
+    amount: UInt8!
+}
+
 type Genre {
     id: ID!
     name: Charfield!
@@ -219,4 +232,16 @@ type SportsTeam {
 type MessageEntity {
     id: ID!
     message: Charfield!
+}
+
+type PanicEntity {
+    id: ID!
+    contract_id: ContractId!
+    reason: UInt4! 
+}
+
+type RevertEntity {
+    id: ID!
+    contract_id: ContractId!
+    error_val: UInt8!
 }

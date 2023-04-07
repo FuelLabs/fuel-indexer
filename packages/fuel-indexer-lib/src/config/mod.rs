@@ -1,19 +1,26 @@
+pub mod auth;
 pub mod database;
 pub mod fuel_node;
 pub mod graphql;
 
 pub use crate::{
     config::{
-        database::DatabaseConfig, fuel_node::FuelNodeConfig, graphql::GraphQLConfig,
+        auth::{AuthenticationConfig, AuthenticationStrategy},
+        database::DatabaseConfig,
+        fuel_node::FuelNodeConfig,
+        graphql::GraphQLConfig,
     },
     defaults,
 };
-pub use clap::{Args, Parser};
+pub use clap::{Args, Parser, ValueEnum};
 use serde::Deserialize;
-use std::fs::File;
-use std::io::Error;
-use std::net::AddrParseError;
-use std::path::{Path, PathBuf};
+use std::{
+    fs::File,
+    io::Error,
+    net::AddrParseError,
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 use strum::{AsRefStr, EnumString};
 use thiserror::Error;
 
@@ -43,6 +50,8 @@ pub enum EnvVar {
     PostgresPort,
     #[strum(serialize = "POSTGRES_USER")]
     PostgresUser,
+    #[strum(serialize = "JWT_SECRET")]
+    JwtSecret,
 }
 
 pub fn env_or_default(var: EnvVar, default: String) -> String {
@@ -69,8 +78,8 @@ pub struct IndexerArgs {
     )]
     pub config: Option<PathBuf>,
 
-    /// Index config file.
-    #[clap(short, long, value_name = "FILE", help = "Index config file.")]
+    /// Indexer config file.
+    #[clap(short, long, value_name = "FILE", help = "Indexer config file.")]
     pub manifest: Option<PathBuf>,
 
     /// Host of the running Fuel node.
@@ -101,9 +110,9 @@ pub struct IndexerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Max body size for WASM binary uploads.
-    #[clap(long, help = "Max body size for the GraphQL API", default_value = defaults::MAX_BODY)]
-    pub max_body: String,
+    /// Max body size for GraphQL API requests.
+    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    pub max_body_size: usize,
 
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
@@ -126,19 +135,11 @@ pub struct IndexerArgs {
     pub postgres_port: Option<String>,
 
     /// Run database migrations before starting service.
-    #[clap(
-        long,
-        default_value = "true",
-        help = "Run database migrations before starting service."
-    )]
+    #[clap(long, help = "Run database migrations before starting service.")]
     pub run_migrations: bool,
 
     /// Use Prometheus metrics reporting.
-    #[clap(
-        long,
-        default_value = "true",
-        help = "Use Prometheus metrics reporting."
-    )]
+    #[clap(long, help = "Use Prometheus metrics reporting.")]
     pub metrics: bool,
 
     /// Prevent indexers from running without handling any blocks.
@@ -147,6 +148,47 @@ pub struct IndexerArgs {
         help = "Prevent indexers from running without handling any blocks."
     )]
     pub stop_idle_indexers: bool,
+
+    /// Automatically create and start database using provided options or defaults.
+    #[clap(
+        long,
+        help = "Automatically create and start database using provided options or defaults."
+    )]
+    pub embedded_database: bool,
+
+    /// Require users to authenticate for some operations.
+    #[clap(long, help = "Require users to authenticate for some operations.")]
+    pub auth_enabled: bool,
+
+    /// Authentication scheme used.
+    #[clap(long, help = "Authentication scheme used.")]
+    pub auth_strategy: Option<String>,
+
+    /// Secret used for JWT scheme (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Secret used for JWT scheme (if JWT scheme is specified)."
+    )]
+    pub jwt_secret: Option<String>,
+
+    /// Issuer of JWT claims (if JWT scheme is specified).
+    #[clap(long, help = "Issuer of JWT claims (if JWT scheme is specified).")]
+    pub jwt_issuer: Option<String>,
+
+    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
+    )]
+    pub jwt_expiry: Option<usize>,
+
+    /// Enable verbose logging.
+    #[clap(short, long, help = "Enable verbose logging.")]
+    pub verbose: bool,
+
+    /// Start a local Fuel node.
+    #[clap(long, help = "Start a local Fuel node.")]
+    pub local_fuel_node: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -160,6 +202,22 @@ pub struct ApiServerArgs {
     #[clap(short, long, help = "API server config file.")]
     pub config: Option<PathBuf>,
 
+    /// Host of the running Fuel node.
+    #[clap(
+        long,
+        help = "Host of the running Fuel node.",
+        default_value = defaults::FUEL_NODE_HOST
+    )]
+    pub fuel_node_host: String,
+
+    /// Listening port of the running Fuel node.
+    #[clap(
+        long,
+        help = "Listening port of the running Fuel node.",
+        default_value = defaults::FUEL_NODE_PORT
+    )]
+    pub fuel_node_port: String,
+
     /// GraphQL API host.
     #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
     pub graphql_api_host: String,
@@ -172,9 +230,13 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
     pub database: String,
 
-    /// Max body size for the WASM binary uploads.
-    #[clap(long, help = "Max body size for the GraphQL API", default_value = defaults::MAX_BODY)]
-    pub max_body: String,
+    /// Max body size for GraphQL API requests.
+    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
+    pub max_body_size: usize,
+
+    /// Run database migrations before starting service.
+    #[clap(long, help = "Run database migrations before starting service.")]
+    pub run_migrations: bool,
 
     /// Postgres username.
     #[clap(long, help = "Postgres username.")]
@@ -196,22 +258,39 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Postgres port.")]
     pub postgres_port: Option<String>,
 
-    /// Run database migrations before starting service.
-    #[clap(
-        long,
-        default_value = "false",
-        help = "Run database migrations before starting service."
-    )]
-    pub run_migrations: bool,
-
     /// Use Prometheus metrics reporting.
-    /// Note: Metrics are currently unimplemented for the API server.
+    #[clap(long, help = "Use Prometheus metrics reporting.")]
+    pub metrics: bool,
+
+    /// Require users to authenticate for some operations.
+    #[clap(long, help = "Require users to authenticate for some operations.")]
+    pub auth_enabled: bool,
+
+    /// Authentication scheme used.
+    #[clap(long, help = "Authentication scheme used.", value_parser(["jwt"]))]
+    pub auth_strategy: Option<String>,
+
+    /// Secret used for JWT scheme (if JWT scheme is specified).
     #[clap(
         long,
-        default_value = "true",
-        help = "Use Prometheus metrics reporting."
+        help = "Secret used for JWT scheme (if JWT scheme is specified)."
     )]
-    pub metrics: bool,
+    pub jwt_secret: Option<String>,
+
+    /// Issuer of JWT claims (if JWT scheme is specified).
+    #[clap(long, help = "Issuer of JWT claims (if JWT scheme is specified).")]
+    pub jwt_issuer: Option<String>,
+
+    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
+    #[clap(
+        long,
+        help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
+    )]
+    pub jwt_expiry: Option<usize>,
+
+    /// Enable verbose logging.
+    #[clap(short, long, help = "Enable verbose logging.")]
+    pub verbose: bool,
 }
 
 impl Default for IndexerArgs {
@@ -225,7 +304,7 @@ impl Default for IndexerArgs {
             graphql_api_host: String::new(),
             graphql_api_port: String::new(),
             database: defaults::DATABASE.to_string(),
-            max_body: defaults::MAX_BODY.to_string(),
+            max_body_size: defaults::MAX_BODY_SIZE,
             postgres_user: None,
             postgres_database: None,
             postgres_password: None,
@@ -234,6 +313,14 @@ impl Default for IndexerArgs {
             run_migrations: true,
             metrics: false,
             stop_idle_indexers: false,
+            embedded_database: false,
+            auth_enabled: false,
+            auth_strategy: None,
+            jwt_secret: None,
+            jwt_issuer: None,
+            jwt_expiry: None,
+            verbose: false,
+            local_fuel_node: false,
         }
     }
 }
@@ -247,7 +334,7 @@ fn derive_http_url(host: &String, port: &String) -> String {
     format!("{protocol}://{host}:{port}")
 }
 
-pub trait MutConfig {
+pub trait Env {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()>;
 }
 
@@ -260,6 +347,10 @@ impl std::string::ToString for FuelNodeConfig {
 #[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
     #[serde(default)]
+    pub verbose: bool,
+    #[serde(default)]
+    pub local_fuel_node: bool,
+    #[serde(default)]
     pub fuel_node: FuelNodeConfig,
     #[serde(default)]
     pub graphql_api: GraphQLConfig,
@@ -267,7 +358,8 @@ pub struct IndexerConfig {
     pub database: DatabaseConfig,
     pub metrics: bool,
     pub stop_idle_indexers: bool,
-    pub max_body: usize,
+    pub run_migrations: bool,
+    pub authentication: AuthenticationConfig,
 }
 
 impl From<IndexerArgs> for IndexerConfig {
@@ -304,6 +396,7 @@ impl From<IndexerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
+                verbose: args.verbose.to_string(),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -311,6 +404,8 @@ impl From<IndexerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            verbose: args.verbose,
+            local_fuel_node: args.local_fuel_node,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -319,14 +414,25 @@ impl From<IndexerArgs> for IndexerConfig {
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
+                max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
-            max_body: args.max_body.parse::<usize>().unwrap(),
+            run_migrations: args.run_migrations,
+            authentication: AuthenticationConfig {
+                enabled: args.auth_enabled,
+                strategy: args
+                    .auth_strategy
+                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
+                jwt_secret: args.jwt_secret,
+                jwt_issuer: args.jwt_issuer,
+                jwt_expiry: args.jwt_expiry,
+            },
         };
 
-        config.inject_opt_env_vars();
+        config
+            .inject_opt_env_vars()
+            .expect("Failed to inject env vars.");
 
         config
     }
@@ -366,6 +472,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
+                verbose: args.verbose.to_string(),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -373,22 +480,35 @@ impl From<ApiServerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            verbose: args.verbose,
+            local_fuel_node: defaults::LOCAL_FUEL_NODE,
             database,
             fuel_node: FuelNodeConfig {
-                host: defaults::FUEL_NODE_HOST.to_string(),
-                port: defaults::FUEL_NODE_PORT.to_string(),
+                host: args.fuel_node_host,
+                port: args.fuel_node_port,
             },
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
+                max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
-            stop_idle_indexers: false,
-            max_body: args.max_body.parse::<usize>().unwrap(),
+            stop_idle_indexers: defaults::STOP_IDLE_INDEXERS,
+            run_migrations: args.run_migrations,
+            authentication: AuthenticationConfig {
+                enabled: args.auth_enabled,
+                strategy: args
+                    .auth_strategy
+                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
+                jwt_secret: args.jwt_secret,
+                jwt_issuer: args.jwt_issuer,
+                jwt_expiry: args.jwt_expiry,
+            },
         };
 
-        config.inject_opt_env_vars();
+        config
+            .inject_opt_env_vars()
+            .expect("Failed to inject env vars.");
 
         config
     }
@@ -430,6 +550,7 @@ impl IndexerConfig {
                         defaults::POSTGRES_DATABASE.to_string(),
                     )
                 }),
+                verbose: args.verbose.to_string(),
             },
             _ => {
                 panic!("Unrecognized database type in options.");
@@ -437,6 +558,8 @@ impl IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            verbose: args.verbose,
+            local_fuel_node: args.local_fuel_node,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -445,31 +568,70 @@ impl IndexerConfig {
             graphql_api: GraphQLConfig {
                 host: args.graphql_api_host,
                 port: args.graphql_api_port,
-                run_migrations: args.run_migrations,
+                max_body_size: args.max_body_size,
             },
             metrics: args.metrics,
             stop_idle_indexers: args.stop_idle_indexers,
-            max_body: args.max_body.parse::<usize>().unwrap(),
+            run_migrations: args.run_migrations,
+            authentication: AuthenticationConfig {
+                enabled: args.auth_enabled,
+                strategy: args
+                    .auth_strategy
+                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
+                jwt_secret: args.jwt_secret,
+                jwt_issuer: args.jwt_issuer,
+                jwt_expiry: args.jwt_expiry,
+            },
         };
 
-        config.inject_opt_env_vars();
+        config
+            .inject_opt_env_vars()
+            .expect("Failed to inject env vars.");
 
         config
     }
 
     // When building the config via a file, if any section (e.g., graphql, fuel_node, etc),
     // or if any individual setting in a section (e.g., fuel_node.host) is empty, replace it
-    // with its respective default value
-    pub fn from_file(path: &Path) -> IndexerConfigResult<Self> {
+    // with its respective default value.
+    pub fn from_file(path: impl AsRef<Path>) -> IndexerConfigResult<Self> {
         let file = File::open(path)?;
 
         let mut config = IndexerConfig::default();
 
         let content: serde_yaml::Value = serde_yaml::from_reader(file)?;
 
+        let metrics_key = serde_yaml::Value::String("metrics".into());
+        let stop_idle_indexers_key =
+            serde_yaml::Value::String("stop_idle_indexers".into());
+        let run_migrations_key = serde_yaml::Value::String("run_migrations".into());
+        let verbose_key = serde_yaml::Value::String("verbose".into());
+        let local_fuel_node_key = serde_yaml::Value::String("local_fuel_node".into());
+
+        if let Some(metrics) = content.get(metrics_key) {
+            config.metrics = metrics.as_bool().unwrap();
+        }
+
+        if let Some(stop_idle_indexers) = content.get(stop_idle_indexers_key) {
+            config.stop_idle_indexers = stop_idle_indexers.as_bool().unwrap();
+        }
+
+        if let Some(run_migrations) = content.get(run_migrations_key) {
+            config.run_migrations = run_migrations.as_bool().unwrap();
+        }
+
+        if let Some(verbose) = content.get(verbose_key) {
+            config.verbose = verbose.as_bool().unwrap();
+        }
+
+        if let Some(local_fuel_node) = content.get(local_fuel_node_key) {
+            config.local_fuel_node = local_fuel_node.as_bool().unwrap();
+        }
+
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());
         let graphql_config_key = serde_yaml::Value::String("graphql".into());
         let database_config_key = serde_yaml::Value::String("database".into());
+        let auth_config_key = serde_yaml::Value::String("authentication".into());
 
         if let Some(section) = content.get(fuel_config_key) {
             let fuel_node_host = section.get(&serde_yaml::Value::String("host".into()));
@@ -495,12 +657,12 @@ impl IndexerConfig {
                 config.graphql_api.port = graphql_api_port.as_u64().unwrap().to_string();
             }
 
-            let graphql_run_migrations =
-                section.get(&serde_yaml::Value::String("run_migrations".into()));
+            let max_body_size =
+                section.get(&serde_yaml::Value::String("max_body_size".into()));
 
-            if let Some(graphql_run_migrations) = graphql_run_migrations {
-                config.graphql_api.run_migrations =
-                    graphql_run_migrations.as_bool().unwrap();
+            if let Some(max_body_size) = max_body_size {
+                config.graphql_api.max_body_size =
+                    max_body_size.as_u64().unwrap() as usize;
             }
         }
 
@@ -550,20 +712,51 @@ impl IndexerConfig {
                     host: pg_host,
                     port: pg_port,
                     database: pg_db,
+                    verbose: config.verbose.to_string(),
                 };
             }
         }
 
-        config.inject_opt_env_vars();
+        if let Some(section) = content.get(auth_config_key) {
+            let auth_enabled =
+                section.get(&serde_yaml::Value::String("auth_enabled".into()));
+            if let Some(auth_enabled) = auth_enabled {
+                config.authentication.enabled = auth_enabled.as_bool().unwrap();
+            }
+
+            let strategy =
+                section.get(&serde_yaml::Value::String("auth_strategy".into()));
+            if let Some(strategy) = strategy {
+                config.authentication.strategy = Some(
+                    AuthenticationStrategy::from_str(strategy.as_str().unwrap()).unwrap(),
+                );
+            }
+
+            let jwt_secret = section.get(&serde_yaml::Value::String("jwt_secret".into()));
+            if let Some(jwt_secret) = jwt_secret {
+                config.authentication.jwt_secret =
+                    Some(jwt_secret.as_str().unwrap().to_string());
+            }
+
+            let jwt_issuer = section.get(&serde_yaml::Value::String("jwt_issuer".into()));
+            if let Some(jwt_issuer) = jwt_issuer {
+                config.authentication.jwt_issuer =
+                    Some(jwt_issuer.as_str().unwrap().to_string());
+            }
+        }
+
+        config.inject_opt_env_vars()?;
 
         Ok(config)
     }
 
     // Inject env vars into each section of the config
-    pub fn inject_opt_env_vars(&mut self) {
-        let _ = self.fuel_node.inject_opt_env_vars();
-        let _ = self.database.inject_opt_env_vars();
-        let _ = self.graphql_api.inject_opt_env_vars();
+    pub fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
+        self.fuel_node.inject_opt_env_vars()?;
+        self.database.inject_opt_env_vars()?;
+        self.graphql_api.inject_opt_env_vars()?;
+
+        Ok(())
     }
 }
 
@@ -573,6 +766,33 @@ mod tests {
     use super::DatabaseConfig;
     use super::*;
     use std::fs;
+
+    const FILE: &str = "foo.yaml";
+
+    #[test]
+    fn test_indexer_config_will_supplement_top_level_config_vars() {
+        let config_str = r#"
+    stop_idle_indexers: true
+
+    ## Fuel Node configuration
+    #
+    fuel_node:
+      host: 1.1.1.1
+      port: 9999
+    "#;
+
+        fs::write(FILE, config_str).unwrap();
+        let config = IndexerConfig::from_file(FILE).unwrap();
+
+        assert!(config.stop_idle_indexers);
+        assert!(!config.run_migrations);
+        assert!(!config.verbose);
+
+        let DatabaseConfig::Postgres { verbose, .. } = config.database;
+        assert_eq!(verbose.as_str(), "false");
+
+        fs::remove_file(FILE).unwrap();
+    }
 
     #[test]
     fn test_indexer_config_will_supplement_entire_config_sections() {
@@ -584,16 +804,14 @@ mod tests {
       port: 9999
     "#;
 
-        let tmp_file_path = "./foo.yaml";
-
-        fs::write(tmp_file_path, config_str).expect("Unable to write file");
-        let config = IndexerConfig::from_file(Path::new(tmp_file_path)).unwrap();
+        fs::write(FILE, config_str).unwrap();
+        let config = IndexerConfig::from_file(FILE).unwrap();
 
         assert_eq!(config.fuel_node.host, "1.1.1.1".to_string());
         assert_eq!(config.fuel_node.port, "9999".to_string());
-        assert_eq!(config.graphql_api.host, "127.0.0.1".to_string());
+        assert_eq!(config.graphql_api.host, "localhost".to_string());
 
-        fs::remove_file(tmp_file_path).unwrap();
+        fs::remove_file(FILE).unwrap();
     }
 
     #[test]
@@ -609,14 +827,12 @@ mod tests {
 
         "#;
 
-        let tmp_file_path = "./bar.yaml";
+        fs::write(FILE, config_str).unwrap();
+        let config = IndexerConfig::from_file(FILE).unwrap();
 
-        fs::write(tmp_file_path, config_str).expect("Unable to write file");
-        let config = IndexerConfig::from_file(Path::new(tmp_file_path)).unwrap();
-
-        assert_eq!(config.fuel_node.host, "127.0.0.1".to_string());
+        assert_eq!(config.fuel_node.host, "localhost".to_string());
         assert_eq!(config.fuel_node.port, "4000".to_string());
-        assert_eq!(config.graphql_api.host, "127.0.0.1".to_string());
+        assert_eq!(config.graphql_api.host, "localhost".to_string());
 
         match config.database {
             DatabaseConfig::Postgres {
@@ -629,7 +845,7 @@ mod tests {
                 assert_eq!(database, "my_fancy_db".to_string());
                 assert_eq!(password, "super_secret_password".to_string());
 
-                fs::remove_file(tmp_file_path).unwrap();
+                fs::remove_file(FILE).unwrap();
             }
         }
     }

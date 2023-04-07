@@ -6,31 +6,85 @@
 # # For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
 # # or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
-# # Fuel Node configuration
-
-# fuel_node:
-#   host: 127.0.0.1
-#   port: 4000
-
-# # GraphQL API configuration
-
-# graphql_api:
-#   host: 127.0.0.1
-#   port: 29987
-#   run_migrations: false
-
-# # Database configuration options.
-
-# database:
-#   postgres:
-#     user: postgres
-#     database:
-#     password:
-#     host: 127.0.0.1
-#     port: 5432
-
 # # Use Prometheus metrics reporting.
 # metrics: true
 
 # # Prevent indexers from running without handling any blocks.
 # stop_idle_indexers: true
+
+# # Run database migrations before starting service.
+# run_migrations: true
+#
+# # Enable verbose logging.
+# verbose: false
+
+# # Start a local Fuel node.
+# local_fuel_node: false
+
+# # ***********************
+# # Fuel Node configuration
+# # ************************
+
+# fuel_node:
+
+#   # Host of the running Fuel node.
+#   host: localhost
+
+#   # Listening port of the running Fuel node.
+#   port: 4000
+
+# # *************************
+# # GraphQL API configuration
+# # *************************
+
+# graphql_api:
+#   # GraphQL API host.
+#   host: localhost
+
+#   # GraphQL API port.
+#   port: 29987
+
+#   # Max body size for GraphQL API requests.
+#   max_body_size: "5242880"
+
+# # ******************************
+# # Database configuration options
+# # ******************************
+
+# database:
+
+#   postgres:
+#     # Postgres username.
+#     user: postgres
+
+#     # Postgres database.
+#     database: postgres
+
+#     # Postgres password.
+#     password: password
+
+#     # Postgres host.
+#     host: localhost
+
+#     # Postgres port.
+#     port: 5432
+
+# # ******************************
+# # Indexer service authentication
+# # ******************************
+
+# authentication:
+#   # Require users to authenticate for some operations.
+#   enabled: false
+
+#   # Which authentication scheme to use.
+#   strategy: jwt
+
+#   # Secret used if JWT authentication is specified.
+#   jwt_secret: abcdefghijklmnopqrstuvwxyz1234567890*
+
+#   # JWT issuer if JWT authentication is specified.
+#   # jwt_issuer: FuelLabs
+
+#   # Amount of time (seconds) before expiring token if JWT authentication is specified.
+#   # jwt_expiry: 2592000

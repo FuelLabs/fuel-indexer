@@ -8,7 +8,7 @@ use std::{
     fs,
     path::{Path, PathBuf},
 };
-use tracing::{debug, info};
+use tracing::info;
 
 fn print_welcome_message() {
     let read_the_docs = format!(
@@ -36,17 +36,21 @@ fn print_welcome_message() {
 `forc index check`
     List indexer components.
 `forc index new`
-    Create a new index.
+    Create a new indexer.
 `forc index init`
-    Create a new index in an existing directory.
+    Create a new indexer in an existing directory.
 `forc index start`
     Start a local indexer service.
 `forc index build`
-    Build your index.
+    Build your indexer.
 `forc index deploy`
-    Deploy your index.
+    Deploy your indexer.
 `forc index remove`
-    Stop a running index."#;
+    Stop a running indexer.
+`forc index revert`
+    Revert a deployed indexer.
+`forc index auth`
+    Authenticate against an indexer service."#;
 
     let ascii_tag = r#"
 ███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 
@@ -72,6 +76,7 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
         namespace,
         native,
         absolute_paths,
+        verbose,
     } = command;
 
     let project_dir = match &path {
@@ -94,10 +99,12 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
         );
     }
 
-    debug!(
-        "\nUsing project directory at {}",
-        project_dir.canonicalize()?.display()
-    );
+    if verbose {
+        info!(
+            "\nUsing project directory at {}",
+            project_dir.canonicalize()?.display()
+        );
+    }
 
     let project_name = match name {
         Some(name) => name,
@@ -183,10 +190,13 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
         );
     }
 
-    debug!("\n✅ nSuccessfully created index {project_name}");
+    if verbose {
+        info!("\n✅ Successfully created indexer {project_name}");
+    } else {
+        info!("\n✅ Successfully created indexer");
+    }
     Ok(())
 }
-
 pub fn init(command: InitCommand) -> anyhow::Result<()> {
     create_indexer(command)?;
     print_welcome_message();

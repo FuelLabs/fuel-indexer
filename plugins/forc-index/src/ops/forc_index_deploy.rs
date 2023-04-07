@@ -1,8 +1,9 @@
 use crate::{
     cli::{BuildCommand, DeployCommand},
     commands::build,
-    utils::{extract_manifest_fields, project_dir_info},
+    utils::project_dir_info,
 };
+use fuel_indexer_lib::manifest::Manifest;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{
     blocking::{multipart::Form, Client},
@@ -10,11 +11,7 @@ use reqwest::{
     StatusCode,
 };
 use serde_json::{to_string_pretty, value::Value, Map};
-use std::{
-    fs,
-    io::{BufReader, Read},
-    time::Duration,
-};
+use std::time::Duration;
 use tracing::{error, info};
 
 pub fn init(command: DeployCommand) -> anyhow::Result<()> {
@@ -26,57 +23,61 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         target,
         release,
         profile,
-        verbose,
         locked,
         native,
-        output_dir_root,
+        target_dir,
+        verbose,
+        skip_build,
     } = command;
 
-    build::exec(BuildCommand {
-        manifest: manifest.clone(),
-        path: path.clone(),
-        target,
-        release,
-        profile,
-        verbose,
-        locked,
-        native,
-        output_dir_root: output_dir_root.clone(),
-    })?;
+    if !skip_build {
+        build::exec(BuildCommand {
+            manifest: manifest.clone(),
+            path: path.clone(),
+            target,
+            release,
+            profile,
+            verbose,
+            locked,
+            native,
+            target_dir,
+        })?;
+    }
 
     let (_root_dir, manifest_path, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
-    let mut manifest_file = fs::File::open(&manifest_path)?;
-    let mut manifest_contents = String::new();
-    manifest_file.read_to_string(&mut manifest_contents)?;
-    let manifest: serde_yaml::Value = serde_yaml::from_str(&manifest_contents)?;
+    let manifest = Manifest::from_file(&manifest_path)?;
 
-    let (namespace, identifier, graphql_schema, module_path) =
-        extract_manifest_fields(manifest, output_dir_root.as_ref())?;
-
-    let mut manifest_buff = Vec::new();
-    let mut manifest_reader = BufReader::new(manifest_file);
-    manifest_reader.read_to_end(&mut manifest_buff)?;
+    let Manifest {
+        graphql_schema,
+        namespace,
+        identifier,
+        module,
+        ..
+    } = manifest;
 
     let form = Form::new()
         .file("manifest", &manifest_path)?
         .file("schema", graphql_schema)?
-        .file("wasm", module_path)?;
+        .file("wasm", module.path())?;
 
-    let target = format!("{}/api/index/{}/{}", &url, &namespace, &identifier);
+    let target = format!("{url}/api/index/{namespace}/{identifier}");
 
-    info!(
-        "Deploying indexer at {} to {}",
-        manifest_path.display(),
-        target
-    );
+    if verbose {
+        info!(
+            "Deploying indexer at {} to {}.",
+            manifest_path.display(),
+            target
+        );
+    } else {
+        info!("Deploying indexer...");
+    }
 
     let mut headers = HeaderMap::new();
-    headers.insert(
-        AUTHORIZATION,
-        auth.unwrap_or_else(|| "fuel".into()).parse()?,
-    );
+    if let Some(auth) = auth {
+        headers.insert(AUTHORIZATION, auth.parse()?);
+    }
 
     let pb = ProgressBar::new_spinner();
     pb.enable_steady_tick(Duration::from_millis(120));
@@ -102,20 +103,26 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .send()
         .expect("Failed to deploy indexer.");
 
-    if res.status() != StatusCode::OK {
-        error!(
-            "\n❌ {} returned a non-200 response code: {:?}",
-            &target,
-            res.status()
-        );
-        return Ok(());
-    }
-
+    let status = res.status();
     let res_json = res
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
 
-    println!("\n{}", to_string_pretty(&res_json)?);
+    if status != StatusCode::OK {
+        if verbose {
+            error!("\n❌ {target} returned a non-200 response code: {status:?}",);
+
+            info!("\n{}", to_string_pretty(&res_json)?);
+        } else {
+            info!("\n{}", to_string_pretty(&res_json)?);
+        }
+
+        return Ok(());
+    }
+
+    if verbose {
+        info!("\n{}", to_string_pretty(&res_json)?);
+    }
 
     pb.finish_with_message("✅ Successfully deployed indexer.");
 

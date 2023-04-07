@@ -1,23 +1,39 @@
-# 🗃 Fuel Indexer
 <!-- markdownlint-disable MD033 -->
 <!-- markdownlint-disable MD025 -->
-![Fuel Logo](./src/img/fuel.png "Fuel Logo")
+<!-- markdownlint-disable MD041 -->
+<p align="center">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="./src/img/fuel-indexer-logo-dark.png">
+        <img alt="Fuel Indexer logo" width="400px" src="./src/img/fuel-indexer-logo-light.png">
+    </picture>
 
-[![build](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg)](https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/v/fuel-indexer?label=latest)](https://crates.io/crates/fuel-indexer)
-[![docs](https://docs.rs/fuel-indexer/badge.svg)](https://docs.rs/fuel-indexer/)
-[![discord](https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/xfpK4Pe)
+</p>
+<p align="center">
+    <a href="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml" alt="CI">
+        <img src="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg" />
+    </a>
+    <a href="https://crates.io/crates/fuel-indexer" alt="crates.io">
+        <img src="https://img.shields.io/crates/v/fuel-indexer?label=latest" />
+    </a>
+    <a href="https://docs.rs/fuel-indexer/" alt="docs.rs">
+        <img src="https://docs.rs/fuel-indexer/badge.svg" />
+    </a>
+    <a href="https://discord.gg/xfpK4Pe" alt="Discord">
+        <img src="https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" />
+    </a>
+</p>
 
 The Fuel indexer is a standalone service that can be used to index various components of the blockchain. These indexable components include blocks, transactions, receipts, and state within the Fuel network, allowing for high-performance read-only access to the blockchain for advanced dApp use-cases.
 
 <!-- Using an <img> so we can size it -->
-<img src="https://i.imgur.com/8K14p9h.png" alt="diagram" width="500"/>
+<p align="center"><img src="https://i.imgur.com/8K14p9h.png" alt="diagram" width="500"/></align></p>
+
+<font size="4">Want to get started right away? Check out our [Quickstart](./QUICKSTART.md)!</font>
 
 - [**For Users**](#for-users)
   - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
     - [`wasm`](#wasm)
-  - [Quickstart](#quickstart)
   - [`forc index` Plugin](#forc-index-plugin)
     - [`check`](#forc-index-check)
     - [`new`](#forc-index-new)
@@ -25,6 +41,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
     - [`build`](#forc-index-build)
     - [`deploy`](#forc-index-new)
     - [`remove`](#forc-index-remove)
+    - [`auth`](#forc-index-auth)
   - [Schema](#schema)
   - [Modules](#modules)
     - [WASM module notes](#notes-on-wasm-modules)
@@ -71,339 +88,10 @@ To install the `wasm32-unknown-unknown` target via `rustup`:
 rustup target add wasm32-unknown-unknown
 ```
 
-## Quickstart
-
-In this tutorial you will:
-
-1. Bootstrap your development environment.
-2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-2` testnet.
-3. Query the indexer service for indexed data using GraphQL.
-
-## 1. Setting up your environment
-
-In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a PostgreSQL database backend. We will also use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` binary that we'll use to develop our index.
-
-### 1.1 Install `fuelup`
-
-To Install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.
-
-```bash
-curl \
-  --proto '=https' \
-  --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
-```
-
-> If you require a non-default `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
-
-
-## 2. Using the `forc-index` plugin
-
-- The primary means of interfacing with the Fuel indexer **for index development** is the [`forc-index` CLI tool](https://crates.io/crates/forc-index).
-- `forc-index` is a [`forc`](https://github.com/FuelLabs/sway/tree/master/forc) plugin specifically created to interface with the Fuel indexer service.
-- Since we already installed `fuelup` in a previous step [1.1], we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
-
-```bash
-which forc-index
-```
-
-```text
-/Users/me/.fuelup/bin/forc-index
-```
-
-> IMPORTANT: `fuelup` will install several binaries from the Fuel ecosystem and add them into your `PATH`, including the `fuel-indexer` binary. The `fuel-indexer` binary is the primary binary that users can use to spin up a Fuel indexer service.
-
-```bash
-which fuel-indexer
-```
-
-```text
-/Users/me/.fuelup/bin/fuel-indexer
-```
-
-### 2.1 Check for components
-
-Once the `forc-index` plugin is installed, let's go ahead and see what indexer components we have installed.
-
-> Many of these components are required for development work (e.g., `fuel-core`, `psql`) but some are even required for non-development usage as well (e.g., `wasm-snip`, `fuelup`).
-
-```bash
-forc index check
-```
-
-```text
-+--------+------------------------+---------------------------------------------------------+
-| Status |       Component        |                         Details                         |
-+--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-indexer binary    |  /Users/rashad/.fuelup/bin/fuel-indexer                 |
-+--------+------------------------+---------------------------------------------------------+
-|   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).               |
-+--------+------------------------+---------------------------------------------------------+
-|   ✅   | psql                   |  /usr/local/bin/psql                                    |
-+--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-core              |  /Users/rashad/.fuelup/bin/fuel-core                    |
-+--------+------------------------+---------------------------------------------------------+
-|   ✅   | docker                 |  /usr/local/bin/docker                                  |
-+--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuelup                 |  /Users/rashad/.fuelup/bin/fuelup                       |
-+--------+------------------------+---------------------------------------------------------+
-|   ✅   | wasm-snip              |  /Users/rashad/.cargo/bin/wasm-snip                     |
-+--------+------------------------+---------------------------------------------------------+
-|   ✅   | forc-postgres          |  /Users/rashad/.fuelup/bin/fuelup                       |
-+--------+------------------------+---------------------------------------------------------+
-|   ✅   | rustc                  |  /Users/rashad/.cargo/bin/rustc                         |
-+--------+------------------------+---------------------------------------------------------+
-```
-
-### 2.2 Database setup
-
-To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll use the `forc-postgres` plugin that is included in `fuelup`.
-
-> IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped.
-
-```bash
-forc index postgres create postgres --persistent
-```
-
-```text
-Downloading, unpacking, and bootstrapping database.
-▹▸▹▹▹ ⏱  Setting up database...
-
-This user must also own the server process.
-
-The database cluster will be initialized with locale "en_US.UTF-8".
-The default database encoding has accordingly been set to "UTF8".
-The default text search configuration will be set to "english".
-
-Data page checksums are disabled.
-
-fixing permissions on existing directory /Users/rashad/.fuel/indexer/postgres ... ok
-creating subdirectories ... ok
-selecting dynamic shared memory implementation ... posix
-selecting default max_connections ... 100
-selecting default shared_buffers ... 128MB
-selecting default time zone ... America/New_York
-creating configuration files ... ok
-running bootstrap script ... ok
-performing post-bootstrap initialization ... ok
-syncing data to disk ... ok
-
-Success. You can now start the database server using:
-
-    /Users/rashad/Library/Caches/pg-embed/darwin/amd64/14.6.0/bin/pg_ctl -D /Users/rashad/.fuel/indexer/postgres -l logfile start
-▹▹▸▹▹ ⏱  Setting up database...
-
-💡 Creating database at 'postgres://postgres:postgres@localhost:5432/postgres'.(clang-1200.0.32.29), 64-bit
-2023-02-10 11:30:45.325 EST [30902] LOG:  listening on IPv6 address "::1", port 5432
-2023-02-10 11:30:45.325 EST [30902] LOG:  listening on IPv4 address "127.0.0.1", port 5432
-2023-02-10 11:30:45.326 EST [30902] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
-2023-02-10 11:30:45.328 EST [30903] LOG:  database system was shut down at 2023-02-10 11:30:45 EST
-2023-02-10 11:30:45.331 EST [30902] LOG:  database system is ready to accept connections
- done
-server started
-2023-02-10 11:30:45.421 EST [30910] ERROR:  database "postgres" already exists
-2023-02-10 11:30:45.421 EST [30910] STATEMENT:  CREATE DATABASE "postgres"
-CREATE DATABASE "postgres"; rows affected: 0, rows returned: 0, elapsed: 325.683µs
-
-Default database postgres already exists.
-
-
-Writing PgEmbedConfig to "/Users/rashad/.fuel/indexer/postgres/postgres-db.json"
-▪▪▪▪▪ ⏱  Setting up database...
-
-✅ Successfully created database at 'postgres://postgres:postgres@localhost:5432/postgres'.
-2023-02-10 11:30:45.424 EST [30902] LOG:  received fast shutdown request
-2023-02-10 11:30:45.424 EST [30902] LOG:  aborting any active transactions
-2023-02-10 11:30:45.424 EST [30902] LOG:  background worker "logical replication launcher" (PID 30909) exited with exit code 1
-2023-02-10 11:30:45.424 EST [30904] LOG:  shutting down
-2023-02-10 11:30:45.428 EST [30902] LOG:  database system is shut down
-waiting for server to shut down.... done
-server stopped
-```
-
-Then we can start our database with
-
-```bash
-forc index postgres start postgres
-```
-
-```text
-Using database directory at "/Users/rashad/.fuel/indexer/postgres"
-
-Starting PostgreSQL.
-
-waiting for server to start....2023-02-09 16:11:37.360 EST [86873] LOG:  starting PostgreSQL 14.6 on x86_64-apple-darwin20.6.0, compiled by Apple clang version 12.0.0 (clang-1200.0.32.29), 64-bit
-2023-02-09 16:11:37.362 EST [86873] LOG:  listening on IPv6 address "::1", port 5432
-2023-02-09 16:11:37.362 EST [86873] LOG:  listening on IPv4 address "127.0.0.1", port 5432
-2023-02-09 16:11:37.362 EST [86873] LOG:  listening on Unix socket "/tmp/.s.PGSQL.5432"
-2023-02-09 16:11:37.365 EST [86874] LOG:  database system was shut down at 2023-02-09 16:11:25 EST
-2023-02-09 16:11:37.368 EST [86873] LOG:  database system is ready to accept connections
- done
-server started
-select exists(SELECT 1 from …; rows affected: 0, rows returned: 1, elapsed: 2.860ms
-
-select
-  exists(
-    SELECT
-      1
-    from
-      pg_database
-    WHERE
-      datname = $1
-  )
-
-✅ Successfully started database at 'postgres://postgres:postgres@localhost:5432/postgres'.
-2023-02-09 16:11:37.460 EST [86881] LOG:  could not receive data from client: Connection reset by peer
-```
-
-> You can `Ctrl+C` to exit the `forc index postgres start` process, and your database should still be running in the background.
-
-### 2.3 Creating a new index
-
-Now that we have our development environment set up, the next step is to create an index.
-
-```bash
-forc index new hello-index --namespace my_project && cd hello-index
-```
-
-> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your index project might contain one or many indices all under the same `namespace`.
-
-```text
-forc index new hello-index --namespace my_project
-
-███████╗██╗   ██╗███████╗██╗         ██╗███╗   ██╗██████╗ ███████╗██╗  ██╗███████╗██████╗
-██╔════╝██║   ██║██╔════╝██║         ██║████╗  ██║██╔══██╗██╔════╝╚██╗██╔╝██╔════╝██╔══██╗
-█████╗  ██║   ██║█████╗  ██║         ██║██╔██╗ ██║██║  ██║█████╗   ╚███╔╝ █████╗  ██████╔╝
-██╔══╝  ██║   ██║██╔══╝  ██║         ██║██║╚██╗██║██║  ██║██╔══╝   ██╔██╗ ██╔══╝  ██╔══██╗
-██║     ╚██████╔╝███████╗███████╗    ██║██║ ╚████║██████╔╝███████╗██╔╝ ██╗███████╗██║  ██║
-╚═╝      ╚═════╝ ╚══════╝╚══════╝    ╚═╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝
-
-An easy-to-use, flexible indexing service built to go fast. 🚗💨
-
-----
-
-Read the Docs:
-- Fuel Indexer: https://github.com/FuelLabs/fuel-indexer
-- Fuel Indexer Book: https://fuellabs.github.io/fuel-indexer/latest
-- Sway Book: https://fuellabs.github.io/sway/latest
-- Rust SDK Book: https://fuellabs.github.io/fuels-rs/latest
-
-Join the Community:
-- Follow us @SwayLang: https://twitter.com/fuellabs_
-- Ask questions in dev-chat on Discord: https://discord.com/invite/xfpK4Pe
-
-Report Bugs:
-- Fuel Indexer Issues: https://github.com/FuelLabs/fuel-indexer/issues/new
-
-Take a quick tour.
-`forc index check`
-    List indexer components.
-`forc index new`
-    Create a new index.
-`forc index init`
-    Create a new index in an existing directory.
-`forc index start`
-    Start a local indexer service.
-`forc index build`
-    Build your index.
-`forc index deploy`
-    Deploy your index.
-`forc index remove`
-    Stop a running index.
-```
-
-> IMPORTANT: If you want more details on how this index works, checkout our [block explorer index example](https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html).
-
-### 2.4 Deploying our index
-
-By now we have a brand new index that will index some blocks and transactions, but now we need to build and deploy it in order to see it in action.
-
-#### 2.4.1 Starting an indexer service
-
-```bash
-forc index start \
-    --fuel-node-host node-beta-2.fuel.network \
-    --fuel-node-port 80
-```
-
-#### 2.4.2 Deploying your index to your Fuel indexer service
-
-With our database and Fuel indexer containers up and running, we'll deploy the index that we previously created. If all goes well, you should see the following:
-
-```bash
-forc index deploy --manifest hello_index.manifest.yaml
-```
-
-```text
-▹▹▸▹▹ ⏰ Building...                                                                                         Finished dev [unoptimized + debuginfo] target(s) in 0.87s
-▪▪▪▪▪ ✅ Build succeeded.
-
-Deploying index at hello_index.manifest.yaml to http://127.0.0.1:29987/api/index/my_project/hello_index
-▹▸▹▹▹ 🚀 Deploying...
-{
-  "assets": [
-    {
-      "digest": "79e74d6a7b68a35aeb9aa2dd7f6083dae5fdba5b6a2f199529b6c49624d1e27b",
-      "id": 1,
-      "index_id": 1,
-      "version": 1
-    },
-    {
-      "digest": "4415628d9ea79b3c3f1e6f02b1af3416c4d0b261b75abe3cc81b77b7902549c5",
-      "id": 1,
-      "index_id": 1,
-      "version": 1
-    },
-    {
-      "digest": "e901eba95ce8b4d1c159c5d66f24276dc911e87dbff55fb2c10d8b371528eacc",
-      "id": 1,
-      "index_id": 1,
-      "version": 1
-    }
-  ],
-  "success": "true"
-}
-▪▪▪▪▪ ✅ Successfully deployed index.
-```
-
-## 3. Querying for data
-
-With our index deployed, after a few seconds, we should be able to query for newly indexed data.
-
-Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
-
-```bash
-curl -X POST http://127.0.0.1:29987/api/graph/my_project/hello_index \
-   -H 'content-type: application/json' \
-   -d '{"query": "query { tx { id hash block }}", "params": "b"}' \
-| json_pp
-```
-
-```text
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-100   364  100   287  100    77   6153   1650 --:--:-- --:--:-- --:--:--  9100
-[
-   {
-      "block" : 7017844286925529648,
-      "hash" : "fb93ce9519866676813584eca79afe2d98466b3e2c8b787503b76b0b4718a565",
-      "id" : 7292230935510476086,
-   },
-   {
-      "block" : 3473793069188998756,
-      "hash" : "5ea2577727aaadc331d5ae1ffcbc11ec4c2ba503410f8edfb22fc0a72a1d01eb",
-      "id" : 4136050720295695667,
-   },
-   {
-      "block" : 7221293542007912803,
-      "hash" : "d2f638c26a313c681d75db2edfbc8081dbf5ecced87a41ec4199d221251b0578",
-      "id" : 4049687577184449589,
-   },
-]
-```
-
-### Finished! 🥳
-
-Congrats, you just created, built, and deployed your first index on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
+> IMPORTANT: Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its `clang` binary not supporting WASM targets. If encountered, you can install a binary with better support from Homebrew (`brew install llvm`) and instruct `rustc` to leverage it by setting the following environment variables:
+>
+> - `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
+> - `CC=/opt/homebrew/opt/llvm/bin/clang`
 
 ## `forc-index` Plugin
 
@@ -423,7 +111,7 @@ forc index check
 
 ### `forc index new`
 
-Create new index project at the provided path.
+Create new indexer project at the provided path.
 
 ```bash
 forc index new --namespace my_org_name
@@ -431,7 +119,7 @@ forc index new --namespace my_org_name
 
 ### `forc index init`
 
-Create a new index project at the provided path. If no path is provided the current working directory will be used.
+Create a new indexer project at the provided path. If no path is provided the current working directory will be used.
 
 ```bash
 forc index init --namespace my_org_name
@@ -439,18 +127,18 @@ forc index init --namespace my_org_name
 
 ### `forc index build`
 
-Build the index in the current directory.
+Build the indexer in the current directory.
 
 ```bash
-forc index build --manifest my_index.manifest.yaml
+forc index build
 ```
 
 ### `forc index deploy`
 
-Deploy a given index project to a particular endpoint
+Deploy a given indexer project to a particular endpoint
 
 ```bash
-forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.yaml
+forc index deploy --url https://indexer.fuel.network
 ```
 
 ### `forc index remove`
@@ -458,7 +146,23 @@ forc index deploy --url https://index.swaysway.io --manifest my_index.manifest.y
 Kill a running indexer.
 
 ```bash
-forc index remove --url https://index.swayswap.io --manifest my_index.manifest.yaml
+forc index remove --url https://indexer.fuel.network
+```
+
+### `forc index auth`
+
+Authenticate against an indexer service.
+
+```bash
+forc index auth --url https://indexer.fuel.network
+```
+
+### `forc index start`
+
+Start the indexer service.
+
+```bash
+forc index start
 ```
 
 ## Schema
@@ -520,11 +224,11 @@ At this time, the Fuel indexer requires the use of a database. We currently supp
 
 > Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.
 
-On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add PostgreSQL to your system by running `brew install postgresql`. You can then start the service through `brew services start postgresql`. You'll need to create a database for your index data, which you can do by running `createdb [DATABASE_NAME]`. You may also need to create the `postgres` role; you can do so by running `createuser -s postgres`.
+On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add PostgreSQL to your system by running `brew install postgresql`. You can then start the service through `brew services start postgresql`. You'll need to create a database for your indexed data, which you can do by running `createdb [DATABASE_NAME]`. You may also need to create the `postgres` role; you can do so by running `createuser -s postgres`.
 
 For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new `postgres` user account; you can switch to that account by running `sudo -i -u postgres`. After you have switched accounts, you may need to create a `postgres` database role by running `createuser --interactive`. You will be asked a few questions; the name of the role should be `postgres` and you should elect for the new role to be a superuser. Finally, you can create a database by running `createdb [DATABASE_NAME]`.
 
-In either case, your PostgreSQL database should now be accessible at `postgres://postgres@127.0.0.1:5432/[DATABASE_NAME]`.
+In either case, your PostgreSQL database should now be accessible at `postgres://postgres@localhost:5432/[DATABASE_NAME]`.
 
 ### SQLx
 

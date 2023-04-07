@@ -1,16 +1,15 @@
-use crate::utils::{db_config_file_name, db_dir_or_default, home_dir};
+use crate::utils::{db_config_file_name, db_dir_or_default};
 use anyhow::Result;
 use clap::ArgEnum;
-use fuel_indexer_lib::{config::IndexerConfig, utils::host_triple};
+use fuel_indexer_lib::config::IndexerConfig;
 use pg_embed::{
-    pg_enums::{Architecture, OperationSystem, PgAuthMethod},
+    pg_enums::PgAuthMethod,
     pg_fetch::{
         PostgresVersion as PgEmbedPostgresVersion, PG_V10, PG_V11, PG_V12, PG_V13,
         PG_V14, PG_V15, PG_V9,
     },
     postgres::PgSettings,
 };
-use platforms::{Arch, Platform, OS};
 use serde::{Deserialize, Serialize};
 use std::{fs, fs::File, io::Read, path::PathBuf, time::Duration};
 use tracing::info;
@@ -161,40 +160,4 @@ impl From<PostgresVersion> for PgEmbedPostgresVersion {
             PostgresVersion::V9 => PG_V9,
         }
     }
-}
-
-pub fn get_pgembed_home_dir(version: PostgresVersion) -> PathBuf {
-    let version = version.into_semver();
-    let platform = Platform::find(&host_triple()).unwrap();
-    let arch = match platform.target_arch {
-        Arch::AArch64 => Architecture::Arm64v8,
-        Arch::X86_64 => Architecture::Amd64,
-        _ => unimplemented!(),
-    };
-
-    // https://docs.rs/pg-embed/latest/pg_embed/index.html#info
-    let path = match platform.target_os {
-        OS::Linux => {
-            let default = home_dir()
-                .join(".cache")
-                .into_os_string()
-                .into_string()
-                .expect("Failed to get $HOME.");
-            PathBuf::from(std::env::var("XDG_CACHE_HOME").unwrap_or(default))
-                .join("pg-embed")
-                .join(OperationSystem::Linux.to_string())
-                .join(arch.to_string())
-                .join(version)
-        }
-        OS::MacOS => home_dir()
-            .join("Library")
-            .join("Caches")
-            .join("pg-embed")
-            .join(OperationSystem::Darwin.to_string())
-            .join(arch.to_string())
-            .join(version),
-        _ => unimplemented!(),
-    };
-
-    path.join("bin").join("pg_ctl")
 }

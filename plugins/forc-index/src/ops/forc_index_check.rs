@@ -6,7 +6,7 @@ use fuel_indexer_lib::{
 use reqwest::{blocking::Client, StatusCode};
 use serde_json::{to_string_pretty, value::Value, Map};
 use std::process::Command;
-use tracing::error;
+use tracing::{error, info};
 
 fn find_indexer_service_info(grpahql_api_port: &str) -> (String, String) {
     let (emoji, msg) = match Command::new("lsof")
@@ -53,7 +53,7 @@ fn find_indexer_service_info(grpahql_api_port: &str) -> (String, String) {
 pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let CheckCommand {
         url,
-        grpahql_api_port,
+        graphql_api_port,
     } = command;
 
     let target = format!("{url}/api/health");
@@ -65,6 +65,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let wasm_snip = "wasm-snip";
     let forc_pg = "forc-postgres";
     let rustc = "rustc";
+    let forc_wallet = "forc-wallet";
 
     match Client::new().get(&target).send() {
         Ok(res) => {
@@ -80,7 +81,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
                 .json::<Map<String, Value>>()
                 .expect("Failed to read JSON response.");
 
-            println!(
+            info!(
                 "\n✅ Sucessfully fetched service health:\n\n{}",
                 to_string_pretty(&res_json).unwrap()
             );
@@ -95,13 +96,15 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let (psql_emoji, _psql_path, psql_msg) = find_executable_with_msg(psql);
     let (fuel_core_emoji, _fuelcore_path, fuel_core_msg) =
         find_executable_with_msg(fuel_core);
-    let (service_emoji, service_msg) = find_indexer_service_info(&grpahql_api_port);
+    let (service_emoji, service_msg) = find_indexer_service_info(&graphql_api_port);
     let (docker_emoji, _docker_path, docker_msg) = find_executable_with_msg(docker);
     let (fuelup_emoji, _fuelup_path, fuelup_msg) = find_executable_with_msg(fuelup);
-    let (forc_pg_emoji, _forc_pg_path, forc_pg_msg) = find_executable_with_msg(fuelup);
+    let (forc_pg_emoji, _forc_pg_path, forc_pg_msg) = find_executable_with_msg(forc_pg);
     let (wasm_snip_emoji, _wasm_snip_path, wasm_snip_msg) =
         find_executable_with_msg(wasm_snip);
     let (rustc_emoji, _rustc_path, rustc_msg) = find_executable_with_msg(rustc);
+    let (forc_wallet_emoji, _forc_wallet_path, forc_wallet_msg) =
+        find_executable_with_msg(forc_wallet);
 
     // Padding here is done on an as-needed basis
     let status_padding = 5;
@@ -119,6 +122,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let wasm_snip_header = rightpad_whitespace(wasm_snip, defaults::HEADER_PADDING);
     let forc_pg_header = rightpad_whitespace(forc_pg, defaults::HEADER_PADDING);
     let rustc_header = rightpad_whitespace(rustc, defaults::HEADER_PADDING);
+    let forc_wallet_header = rightpad_whitespace(forc_wallet, defaults::HEADER_PADDING);
 
     let stdout = format!(
         r#"
@@ -142,6 +146,8 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
 |  {forc_pg_emoji}  | {forc_pg_header}   |  {forc_pg_msg}|
 +--------+------------------------+---------------------------------------------------------+
 |  {rustc_emoji}  | {rustc_header}   |  {rustc_msg}|
++--------+------------------------+---------------------------------------------------------+
+|  {forc_wallet_emoji}  | {forc_wallet_header}   |  {forc_wallet_msg}|
 +--------+------------------------+---------------------------------------------------------+
 "#
     );

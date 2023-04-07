@@ -42,12 +42,13 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         target: target_triple,
         native,
         path,
-        verbose,
         profile,
         release,
         locked,
         manifest,
-        output_dir_root,
+        target_dir,
+        verbose,
+        ..
     } = command;
 
     let (root_dir, manifest, _index_name) =
@@ -67,8 +68,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     file.read_to_string(&mut content)?;
     let config: Config = toml::from_str(&content)?;
 
-    let index_manifest_path = root_dir.join(manifest);
-    let mut manifest = Manifest::from_file(&index_manifest_path)?;
+    let indexer_manifest_path = root_dir.join(manifest);
+    let mut manifest = Manifest::from_file(&indexer_manifest_path)?;
 
     // Construct our build command
     //
@@ -76,25 +77,24 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
     cmd.arg("build")
         .arg("--manifest-path")
-        .arg(&cargo_manifest_path);
+        .arg(&cargo_manifest_path)
+        .arg("--target")
+        .arg(&target_triple);
 
-    let optional_opts = [(target_triple.clone(), "--target"), (profile, "--profile")];
     let bool_opts = [
         (release, "--release"),
         (verbose, "--verbose"),
         (locked, "--locked"),
     ];
 
-    for (value, flag) in optional_opts.iter() {
-        if let Some(v) = value {
-            cmd.arg(flag).arg(v);
-        }
-    }
-
     for (value, flag) in bool_opts.iter() {
         if *value {
             cmd.arg(flag);
         }
+    }
+
+    if let Some(profile) = profile {
+        cmd.arg("--profile").arg(profile);
     }
 
     // Do the build
@@ -166,27 +166,17 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         }
     }
 
-    // Write the build artifact to the index manifest
+    // Write the build artifacts to the indexer manifest
     if !native {
         let binary = format!("{}.wasm", config.package.name);
         let profile = if release { "release" } else { "debug" };
-        let output_dir_root = output_dir_root.unwrap_or(root_dir);
-        let abs_artifact_path = output_dir_root
-            .join("target")
-            .join(
-                target_triple
-                    .clone()
-                    .unwrap_or_else(|| defaults::INDEX_TARGET.into()),
-            )
-            .join(profile)
-            .join(&binary);
 
-        let target_root =
-            std::env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target".into());
-        let target_root = Path::new(&target_root);
+        let target_dir = target_dir.unwrap_or(".".into()).join("target");
+        let abs_artifact_path =
+            target_dir.join(&target_triple).join(profile).join(&binary);
 
-        let rel_artifact_path = target_root
-            .join(target_triple.unwrap_or_else(|| defaults::INDEX_TARGET.into()))
+        let rel_artifact_path = Path::new("target")
+            .join(&target_triple)
             .join(profile)
             .join(&binary);
 
@@ -211,7 +201,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
         }
 
-        manifest.write_to(&index_manifest_path)?;
+        manifest.write_to(&indexer_manifest_path)?;
     }
 
     Ok(())

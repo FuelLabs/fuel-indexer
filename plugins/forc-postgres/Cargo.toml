@@ -8,7 +8,6 @@ license = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
 description = "Fuel Indexer forc Postgres plugin"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
@@ -26,7 +25,6 @@ fuel-indexer-lib = { workspace = true }
 home = "0.5"
 indicatif = "0.17"
 pg-embed = { version = "0.7" }
-platforms = "3.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1.0" }
 tokio = { version = "1.8", features = ["macros", "rt-multi-thread", "process"] }

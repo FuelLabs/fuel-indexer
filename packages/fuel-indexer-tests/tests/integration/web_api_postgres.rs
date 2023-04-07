@@ -1,22 +1,26 @@
-use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_lib::config::GraphQLConfig;
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_tests::assets::{
     SIMPLE_WASM_MANIFEST, SIMPLE_WASM_SCHEMA, SIMPLE_WASM_WASM,
 };
 use fuel_indexer_tests::fixtures::{
-    api_server_app_postgres, http_client, indexer_service_postgres,
-    postgres_connection_pool,
+    api_server_app_postgres, authenticated_api_server_app_postgres, http_client,
+    indexer_service_postgres, TestPostgresDb,
 };
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
-use reqwest::{multipart, Body};
-use tokio::task::spawn;
+use reqwest::multipart;
+use serde::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+const SIGNATURE: &str = "cb19384361af5dd7fec2a0052ca49d289f997238ea90590baf47f16ff0a33fb20170a43bd20208ce16daf443bad06dd66c1d1bf73f48b5ae53de682a5731d7d9";
+const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
-    let _ = indexer_service_postgres().await;
-    let app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await.unwrap();
+    let _srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
@@ -25,13 +29,13 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
 
     let client = http_client();
     let _ = client
-        .get("http://127.0.0.1:29987/api/health")
+        .get("http://localhost:29987/api/health")
         .send()
         .await
         .unwrap();
 
     let resp = client
-        .get("http://127.0.0.1:29987/api/metrics")
+        .get("http://localhost:29987/api/metrics")
         .send()
         .await
         .unwrap()
@@ -40,36 +44,35 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
         .unwrap();
 
     server_handle.abort();
-
-    assert_eq!(resp.split('\n').count(), 103);
+    assert_eq!(resp.split('\n').count(), 112);
 }
 
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
-    let _ = indexer_service_postgres().await;
-    let app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await.unwrap();
+    let _ = indexer_service_postgres(Some(&test_db.url)).await;
+    let app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
+    let _srv = tokio::spawn(server);
 
-    let pool = postgres_connection_pool().await;
-    let mut conn = pool.acquire().await.unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
 
     let client = http_client();
     let _ = client
-        .get("http://127.0.0.1:29987/api/health")
+        .get("http://localhost:29987/api/health")
         .send()
         .await
         .unwrap();
 
     let resp = client
-        .get("http://127.0.0.1:29987/api/metrics")
+        .get("http://localhost:29987/api/metrics")
         .send()
         .await
         .unwrap()
@@ -100,16 +103,15 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 #[tokio::test]
 #[cfg(all(feature = "postgres"))]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() {
-    let pool = postgres_connection_pool().await;
-    let mut conn = pool.acquire().await.unwrap();
-
-    let app = api_server_app_postgres().await;
+    let test_db = TestPostgresDb::new().await.unwrap();
+    let app = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
 
     let server_handle = tokio::spawn(server);
 
+    let mut conn = test_db.pool.acquire().await.unwrap();
     let is_index_registered = postgres::index_is_registered(
         &mut conn,
         "test_namespace",
@@ -133,7 +135,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/index/test_namespace/simple_wasm_executor")
+        .post("http://localhost:29987/api/index/test_namespace/simple_wasm_executor")
         .multipart(form)
         .header(CONTENT_TYPE, "multipart/form-data".to_owned())
         .header(AUTHORIZATION, "foo".to_owned())
@@ -154,4 +156,65 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
     .unwrap();
 
     assert!(is_index_registered.is_some());
+}
+
+#[derive(Serialize, Debug)]
+struct SignatureRequest {
+    signature: String,
+    message: String,
+}
+
+#[derive(Deserialize, Debug)]
+struct SignatureResponse {
+    token: Option<String>,
+}
+
+#[tokio::test]
+#[cfg(all(feature = "postgres"))]
+async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt() {
+    let test_db = TestPostgresDb::new().await.unwrap();
+    let app = authenticated_api_server_app_postgres(Some(&test_db.url)).await;
+
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_secs();
+    let expiry = now + 3600;
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let _ = sqlx::QueryBuilder::new("INSERT INTO nonce (uid, expiry) VALUES ($1, $2)")
+        .build()
+        .bind(NONCE)
+        .bind(expiry as i64)
+        .execute(&mut conn)
+        .await
+        .unwrap();
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(app.into_make_service());
+
+    let _srv = tokio::spawn(server);
+
+    let resp = http_client()
+        .post("http://localhost:29987/api/auth/signature")
+        .header(CONTENT_TYPE, "application/json".to_owned())
+        .json(&SignatureRequest {
+            signature: SIGNATURE.to_string(),
+            message: NONCE.to_string(),
+        })
+        .send()
+        .await
+        .unwrap();
+
+    let res: SignatureResponse = resp.json().await.unwrap();
+
+    assert!(res.token.is_some());
+    assert!(res.token.unwrap().len() > 300);
+
+    let _ = sqlx::QueryBuilder::new("DELETE FROM nonce WHERE uid = $1")
+        .build()
+        .bind(NONCE)
+        .execute(&mut conn)
+        .await
+        .unwrap();
 }
