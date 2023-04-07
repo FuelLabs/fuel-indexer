@@ -1,8 +1,8 @@
 use crate::{
     auth::AuthenticationMiddleware,
     uses::{
-        get_nonce, health_check, metrics, query_graph, register_indexer_assets,
-        revert_indexer, stop_indexer, verify_signature,
+        get_nonce, gql_playground, health_check, metrics, query_graph,
+        register_indexer_assets, revert_indexer, stop_indexer, verify_signature,
     },
 };
 use async_std::sync::{Arc, RwLock};
@@ -32,7 +32,6 @@ use tower_http::{
     LatencyUnit,
 };
 use tracing::{error, Level};
-
 pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
 #[derive(Debug, Error)]
@@ -45,6 +44,14 @@ pub enum HttpError {
     NotFound(String),
     #[error("Error.")]
     InternalServer,
+    #[error("HTTP error: {0:?}")]
+    Http(http::Error),
+}
+
+impl From<http::Error> for HttpError {
+    fn from(err: http::Error) -> Self {
+        HttpError::Http(err)
+    }
 }
 
 #[derive(Debug, Error)]
@@ -117,6 +124,12 @@ impl IntoResponse for ApiError {
     }
 }
 
+impl From<http::Error> for ApiError {
+    fn from(err: http::Error) -> Self {
+        ApiError::Http(HttpError::from(err))
+    }
+}
+
 pub struct GraphQlApi;
 
 impl GraphQlApi {
@@ -140,7 +153,7 @@ impl GraphQlApi {
             .route("/:namespace/:identifier", post(register_indexer_assets))
             .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx.clone()))
-            .layer(Extension(schema_manager))
+            .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
             .route("/:namespace/:identifier", delete(stop_indexer))
             .route("/:namespace/:identifier", put(revert_indexer))
@@ -160,11 +173,18 @@ impl GraphQlApi {
             .route("/nonce", get(get_nonce))
             .layer(Extension(pool.clone()))
             .route("/signature", post(verify_signature))
-            .layer(Extension(pool))
+            .layer(Extension(pool.clone()))
             .layer(Extension(config));
+
+        let playground_route = Router::new()
+            .route("/:namespace/:identifier", get(gql_playground))
+            .layer(Extension(schema_manager))
+            .layer(Extension(pool))
+            .layer(RequestBodyLimitLayer::new(max_body_size));
 
         let api_routes = Router::new()
             .nest("/", root_routes)
+            .nest("/playground", playground_route)
             .nest("/index", index_routes)
             .nest("/graph", graph_route)
             .nest("/auth", auth_routes);

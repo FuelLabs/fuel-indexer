@@ -72,9 +72,10 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
+    let data = v["data"].as_array().expect("data is not an array");
 
-    assert!(v[0]["height"].as_u64().unwrap() > 0);
-    assert!(v[0]["timestamp"].as_u64().unwrap() > 0);
+    assert!(data[0]["height"].as_u64().unwrap() > 0);
+    assert!(data[0]["timestamp"].as_u64().unwrap() > 0);
 }
 
 #[actix_web::test]
@@ -116,10 +117,11 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
+    let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(v[0]["int_required"], Value::from(Number::from(100)));
-    assert_eq!(v[0]["int_optional_some"], Value::from(Number::from(999)));
-    assert_eq!(v[0]["addr_optional_none"], Value::from(None::<&str>));
+    assert_eq!(data[0]["int_required"], Value::from(Number::from(100)));
+    assert_eq!(data[0]["int_optional_some"], Value::from(Number::from(999)));
+    assert_eq!(data[0]["addr_optional_none"], Value::from(None::<&str>));
 }
 
 #[actix_web::test]
@@ -163,15 +165,16 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
+    let data = v["data"].as_array().expect("data is not an array");
 
-    assert!(v[0]["id"].as_i64().is_some());
-    assert!(v[0]["id"].as_i64().unwrap() > 0);
-    assert!(v[0]["timestamp"].as_i64().is_some());
-    assert!(v[0]["timestamp"].as_i64().unwrap() > 0);
-    assert!(v[0]["block"]["id"].as_i64().is_some());
-    assert!(v[0]["block"]["id"].as_i64().unwrap() > 0);
-    assert!(v[0]["block"]["height"].as_i64().is_some());
-    assert!(v[0]["block"]["height"].as_i64().unwrap() > 0);
+    assert!(data[0]["id"].as_i64().is_some());
+    assert!(data[0]["id"].as_i64().unwrap() > 0);
+    assert!(data[0]["timestamp"].as_i64().is_some());
+    assert!(data[0]["timestamp"].as_i64().unwrap() > 0);
+    assert!(data[0]["block"]["id"].as_i64().is_some());
+    assert!(data[0]["block"]["id"].as_i64().unwrap() > 0);
+    assert!(data[0]["block"]["height"].as_i64().is_some());
+    assert!(data[0]["block"]["height"].as_i64().unwrap() > 0);
 }
 
 #[actix_web::test]
@@ -276,38 +279,39 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
+    let data = v["data"].as_array().expect("data is not an array");
 
     // Multiple reference to same foreign key table
     assert_eq!(
-        v[0]["book"]["author"]["genre"]["name"].as_str(),
+        data[0]["book"]["author"]["genre"]["name"].as_str(),
         Some("horror")
     );
-    assert_eq!(v[0]["book"]["genre"]["name"].as_str(), Some("horror"));
+    assert_eq!(data[0]["book"]["genre"]["name"].as_str(), Some("horror"));
 
     // Deeply nested foreign keys
     assert_eq!(
-        v[0]["book"]["library"]["name"].as_str(),
+        data[0]["book"]["library"]["name"].as_str(),
         Some("Scholar Library")
     );
     assert_eq!(
-        v[0]["book"]["library"]["city"]["name"].as_str(),
+        data[0]["book"]["library"]["city"]["name"].as_str(),
         Some("Savanna-la-Mar")
     );
     assert_eq!(
-        v[0]["book"]["library"]["city"]["region"]["name"].as_str(),
+        data[0]["book"]["library"]["city"]["region"]["name"].as_str(),
         Some("Westmoreland")
     );
     assert_eq!(
-        v[0]["book"]["library"]["city"]["region"]["country"]["name"].as_str(),
+        data[0]["book"]["library"]["city"]["region"]["country"]["name"].as_str(),
         Some("Jamaica")
     );
     assert_eq!(
-        v[0]["book"]["library"]["city"]["region"]["country"]["continent"]["name"]
+        data[0]["book"]["library"]["city"]["region"]["country"]["continent"]["name"]
             .as_str(),
         Some("North America")
     );
     assert_eq!(
-        v[0]["book"]["library"]["city"]["region"]["country"]["continent"]["planet"]
+        data[0]["book"]["library"]["city"]["region"]["country"]["continent"]["planet"]
             ["name"]
             .as_str(),
         Some("Earth")
@@ -316,12 +320,12 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
     // Mix of implicit and explicit foreign keys as well as
     // field name being different from underlying database table
     assert_eq!(
-        v[0]["corporate_sponsor"]["name"].as_str(),
+        data[0]["corporate_sponsor"]["name"].as_str(),
         Some("Fuel Labs")
     );
-    assert_eq!(v[0]["corporate_sponsor"]["amount"].as_i64(), Some(100));
+    assert_eq!(data[0]["corporate_sponsor"]["amount"].as_i64(), Some(100));
     assert_eq!(
-        v[0]["corporate_sponsor"]["representative"]["name"].as_str(),
+        data[0]["corporate_sponsor"]["representative"]["name"].as_str(),
         Some("Ava")
     );
 }
@@ -367,12 +371,13 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
+    let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(v[0]["name"].as_str(), Some("The Indexers"));
-    assert!(v[0]["municipality"]["id"].as_i64().is_some());
-    assert!(v[0]["municipality"]["id"].as_i64().unwrap() > 0);
+    assert_eq!(data[0]["name"].as_str(), Some("The Indexers"));
+    assert!(data[0]["municipality"]["id"].as_i64().is_some());
+    assert!(data[0]["municipality"]["id"].as_i64().unwrap() > 0);
     assert_eq!(
-        v[0]["municipality"]["name"].as_str(),
+        data[0]["municipality"]["name"].as_str(),
         Some("Republic of Indexia")
     );
 }

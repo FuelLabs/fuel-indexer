@@ -2,6 +2,8 @@ use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::VerifySignatureRequest,
 };
+use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
+use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
@@ -32,9 +34,9 @@ use fuel_indexer_schema::db::{
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
-use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
+    convert::From,
     str::FromStr,
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
@@ -44,18 +46,11 @@ use tracing::error;
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::{encode_metrics_response, METRICS};
 
-#[derive(Clone, Debug, Deserialize)]
-pub struct Query {
-    pub query: String,
-    #[allow(unused)] // TODO
-    pub params: String,
-}
-
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
-    Json(query): Json<Query>,
+    req: GraphQLRequest,
 ) -> ApiResult<axum::Json<Value>> {
     match manager
         .read()
@@ -63,8 +58,8 @@ pub(crate) async fn query_graph(
         .load_schema(&namespace, &identifier)
         .await
     {
-        Ok(schema) => match run_query(query, schema, &pool).await {
-            Ok(response) => Ok(axum::Json(response)),
+        Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
+            Ok(query_res) => Ok(axum::Json(query_res)),
             Err(e) => {
                 error!("query_graph error: {e}");
                 Err(e)
@@ -369,11 +364,11 @@ pub(crate) async fn verify_signature(
 }
 
 pub async fn run_query(
-    query: Query,
+    query: String,
     schema: Schema,
     pool: &IndexerConnectionPool,
 ) -> ApiResult<Value> {
-    let builder = GraphqlQueryBuilder::new(&schema, &query.query)?;
+    let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
 
     let queries = query.as_sql(&schema, pool.database_type()).join(";\n");
@@ -382,14 +377,30 @@ pub async fn run_query(
 
     match queries::run_query(&mut conn, queries).await {
         Ok(ans) => {
-            let row: Value = serde_json::from_value(ans)?;
-            Ok(row)
+            let ans_json: Value = serde_json::from_value(ans)?;
+            Ok(serde_json::json!({ "data": ans_json }))
         }
         Err(e) => {
             error!("Error querying database: {e}.");
             Err(e.into())
         }
     }
+}
+
+pub async fn gql_playground(
+    Path((namespace, identifier)): Path<(String, String)>,
+) -> ApiResult<impl IntoResponse> {
+    let html = playground_source(
+        GraphQLPlaygroundConfig::new(&format!("/api/graph/{namespace}/{identifier}"))
+            .with_setting("scehma.polling.enable", false),
+    );
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(http::header::CONTENT_TYPE, "text/html; charset=utf-8")
+        .body(Body::from(html))?;
+
+    Ok(response)
 }
 
 pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
