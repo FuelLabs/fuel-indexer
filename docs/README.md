@@ -8,18 +8,33 @@
     </picture>
 
 </p>
-<p align="center">
+<p align="left">
     <a href="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml" alt="CI">
         <img src="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg" />
     </a>
+    <a href="https://docs.rs/fuel-indexer/" alt="docs.rs">
+      <img src="https://docs.rs/fuel-indexer/badge.svg" />
+    </a>
+    <br/>
     <a href="https://crates.io/crates/fuel-indexer" alt="crates.io">
         <img src="https://img.shields.io/crates/v/fuel-indexer?label=latest" />
     </a>
-    <a href="https://docs.rs/fuel-indexer/" alt="docs.rs">
-        <img src="https://docs.rs/fuel-indexer/badge.svg" />
+    <a href="https://crates.io/crates/fuel-indexer" alt="img-shields">
+      <img alt="GitHub commits since latest release (by date including pre-releases)" src="https://img.shields.io/github/commits-since/FuelLabs/fuel-indexer/latest?include_prereleases">
     </a>
+    <br/>
+      <a href="https://crates.io/crates/forc/0.35.3" alt="forc">
+        <img src="https://img.shields.io/badge/forc-v0.35.3-orange" />
+    </a>
+    <a href="https://crates.io/crates/fuel-core/0.17.3" alt="fuel-core">
+      <img src="https://img.shields.io/badge/fuel--core-v0.17.3-yellow" />
+    </a>
+    <a href="https://crates.io/crates/fuels/0.37.1" alt="forc">
+      <img src="https://img.shields.io/badge/fuels-v0.37.1-blue" />
+    </a>
+    <br/>
     <a href="https://discord.gg/xfpK4Pe" alt="Discord">
-        <img src="https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" />
+      <img src="https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" />
     </a>
 </p>
 
