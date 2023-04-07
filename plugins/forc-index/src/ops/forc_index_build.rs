@@ -51,6 +51,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         ..
     } = command;
 
+    let release = release.parse::<bool>().unwrap();
+
     let (root_dir, manifest, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
