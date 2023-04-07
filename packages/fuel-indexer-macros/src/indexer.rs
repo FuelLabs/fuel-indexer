@@ -656,8 +656,8 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
 
                 let config = args
-                .clone()
                 .config
+                .as_ref()
                 .map(IndexerConfig::from_file)
                 .unwrap_or(Ok(IndexerConfig::from(args)))?;
 
