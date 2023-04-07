@@ -25,31 +25,27 @@ async fn setup_test_components() -> (
     IndexerService,
     Router,
 ) {
-    let fuel_node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url)).await;
     let api_app = api_server_app_postgres(Some(&test_db.url)).await;
 
-    (fuel_node_handle, test_db, srvc, api_app)
+    (node_handle, test_db, srvc, api_app)
 }
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_all_fields_required_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
+    let srv = tokio::spawn(server);
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
+    srvc.register_index_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -57,7 +53,7 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
+    node_handle.abort();
 
     let client = http_client();
     let resp = client
@@ -68,7 +64,7 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
         .await
         .unwrap();
 
-    server_handle.abort();
+    srv.abort();
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
@@ -80,20 +76,16 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_nullable_fields_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
+    let srv = tokio::spawn(server);
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
+    srvc.register_index_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -101,7 +93,7 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
+    node_handle.abort();
 
     let client = http_client();
     let resp = client
@@ -112,7 +104,7 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
         .await
         .unwrap();
 
-    server_handle.abort();
+    srv.abort();
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
@@ -125,20 +117,16 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
+    let srv = tokio::spawn(server);
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
+    srvc.register_index_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -146,7 +134,7 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
+    node_handle.abort();
 
     let client = http_client();
     let resp = client
@@ -159,7 +147,7 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
         .await
         .unwrap();
 
-    server_handle.abort();
+    srv.abort();
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
@@ -177,20 +165,16 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
+    let srv = tokio::spawn(server);
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
+    srvc.register_index_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -198,7 +182,7 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
+    node_handle.abort();
 
     let deeply_nested_query = HashMap::from([
         (
@@ -272,7 +256,7 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
         .await
         .unwrap();
 
-    server_handle.abort();
+    srv.abort();
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
@@ -329,20 +313,16 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgres() {
-    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+    let (node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(api_app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
-    let mut manifest: Manifest =
-        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
-
+    let srv = tokio::spawn(server);
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
-        .await
-        .expect("Failed to initialize indexer.");
+    srvc.register_index_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -350,7 +330,7 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    fuel_node_handle.abort();
+    node_handle.abort();
 
     let client = http_client();
     let resp = client
@@ -363,7 +343,7 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
         .await
         .unwrap();
 
-    server_handle.abort();
+    srv.abort();
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
