@@ -74,7 +74,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
 
     let manager = SchemaManager::new(pool.clone());
 
-    let manifest = Manifest::from_str(SIMPLE_WASM_MANIFEST).unwrap();
+    let manifest = Manifest::try_from(SIMPLE_WASM_MANIFEST).unwrap();
 
     // SchemaManager.new_schema calls inject_native_entities_into_schema so since we're using
     // `version` later in this test we need to manually call `inject_native_entities_into_schema` here

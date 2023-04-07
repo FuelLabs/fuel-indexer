@@ -381,7 +381,7 @@ fn process_fn_items(
                 match ty_id {
                     #(#decoders),*
                     _ => {
-                        Logger::warn("Unknown type ID; check ABI to make sure types are well-formed");
+                        Logger::warn("Unknown type ID; check ABI to make sure types are correct.");
                     },
                 }
             }
@@ -398,14 +398,14 @@ fn process_fn_items(
             pub fn decode_logdata(&mut self, rb: usize, data: Vec<u8>) {
                 match rb {
                     #(#log_type_decoders),*
-                    _ => Logger::warn("Unknown logged type ID; check ABI to make sure that logged types are well-formed")
+                    _ => Logger::warn("Unknown logged type ID; check ABI to make sure that logged types are correct.")
                 }
             }
 
             pub fn decode_messageout(&mut self, type_id: u64, data: abi::MessageOut) {
                 match type_id {
                     #(#message_types_decoders),*
-                    _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are well-formed")
+                    _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are correct.")
                 }
             }
 
@@ -650,24 +650,18 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             #[tokio::main]
             async fn main() -> anyhow::Result<()> {
 
-                let filter = match std::env::var_os("RUST_LOG") {
-                    Some(_) => {
-                        EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided.")
-                    }
-                    None => EnvFilter::new("info"),
-                };
+                let args = IndexerArgs::parse();
 
-                tracing_subscriber::fmt::Subscriber::builder()
-                    .with_writer(std::io::stderr)
-                    .with_env_filter(filter)
-                    .init();
+                let IndexerArgs { manifest, .. } = args.clone();
 
-                let opt = IndexerArgs::parse();
 
-                let config = match &opt.config {
-                    Some(path) => IndexerConfig::from_file(path)?,
-                    None => IndexerConfig::from_opts(opt.clone()),
-                };
+                let config = args
+                .config
+                .as_ref()
+                .map(IndexerConfig::from_file)
+                .unwrap_or(Ok(IndexerConfig::from(args)))?;
+
+                init_logging(&config).await?;
 
                 info!("Configuration: {:?}", config);
 
@@ -680,17 +674,21 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
                 let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
-                let mut c = pool.acquire().await?;
-                queries::run_migration(&mut c).await?;
+                if config.run_migrations {
+                    let mut c = pool.acquire().await?;
+                    queries::run_migration(&mut c).await?;
+                }
 
                 let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
-                if opt.manifest.is_none() {
+                if manifest.is_none() {
                     panic!("Manifest required to use native execution.");
                 }
 
-                let p = opt.manifest.unwrap();
-                info!("Using manifest file located at '{}'.", p.display());
+                let p = manifest.unwrap();
+                if config.verbose {
+                    info!("Using manifest file located at '{}'", p.display());
+                }
                 let manifest = Manifest::from_file(&p)?;
                 service.register_native_index(manifest, handle_events).await?;
                 let service_handle = tokio::spawn(service.run());

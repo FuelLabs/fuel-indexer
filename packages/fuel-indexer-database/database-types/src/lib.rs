@@ -104,9 +104,17 @@ impl NewColumn {
         .to_string()
     }
 
+    /// Derive the respective PostgreSQL field type for a given `NewColumn`
+    ///
+    /// Here we're essentially matching `ColumnType`s to PostgreSQL field
+    /// types. Note that we're using `numeric` field types for integer-like
+    /// fields due to the ability to specify custom scale and precision. Some
+    /// crates don't play well with unsigned integers (e.g., `sqlx`), so we
+    /// just define these types as `numeric`, then convert them into their base
+    /// types (e.g., u64) using `BigDecimal`.
     fn sql_type(&self) -> &str {
         match ColumnType::from(self.column_type.as_str()) {
-            ColumnType::ID => "bigint primary key",
+            ColumnType::ID => "numeric(20, 0) primary key",
             ColumnType::Address => "varchar(64)",
             ColumnType::Bytes4 => "varchar(8)",
             ColumnType::Bytes8 => "varchar(16)",
@@ -116,10 +124,10 @@ impl NewColumn {
             ColumnType::Salt => "varchar(64)",
             ColumnType::Int4 => "integer",
             ColumnType::Int8 => "bigint",
-            ColumnType::Int16 => "numeric",
+            ColumnType::Int16 => "numeric(39, 0)",
             ColumnType::UInt4 => "integer",
-            ColumnType::UInt8 => "bigint",
-            ColumnType::UInt16 => "numeric",
+            ColumnType::UInt8 => "numeric(20, 0)",
+            ColumnType::UInt16 => "numeric(39, 0)",
             ColumnType::Timestamp => "timestamp",
             ColumnType::Object => "bytea",
             ColumnType::Blob => "varchar(10485760)",
