@@ -92,11 +92,15 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
         .expect("Failed post signature.");
 
     if res.status() != StatusCode::OK {
-        error!(
-            "\n❌ {} returned a non-200 response code: {:?}",
-            &target,
-            res.status()
-        );
+        if verbose {
+            error!(
+                "\n❌ {} returned a non-200 response code: {:?}",
+                &target,
+                res.status()
+            );
+        } else {
+            error!("\n❌ Authentication failed.");
+        }
         return Ok(());
     }
 
