@@ -1,6 +1,4 @@
-use fuel_indexer_api_server::api::GraphQlApi;
-use fuel_indexer_database::queries;
-use fuel_indexer_lib::{config::GraphQLConfig, defaults};
+use fuel_indexer_lib::config::GraphQLConfig;
 use fuel_indexer_postgres as postgres;
 use fuel_indexer_tests::assets::{
     SIMPLE_WASM_MANIFEST, SIMPLE_WASM_SCHEMA, SIMPLE_WASM_WASM,
@@ -10,10 +8,9 @@ use fuel_indexer_tests::fixtures::{
     indexer_service_postgres, TestPostgresDb,
 };
 use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
-use reqwest::{multipart, Body};
+use reqwest::multipart;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-use tokio::task::spawn;
 
 const SIGNATURE: &str = "cb19384361af5dd7fec2a0052ca49d289f997238ea90590baf47f16ff0a33fb20170a43bd20208ce16daf443bad06dd66c1d1bf73f48b5ae53de682a5731d7d9";
 const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
@@ -61,7 +58,7 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
+    let _srv = tokio::spawn(server);
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let _ = postgres::execute_query(&mut conn, "SELECT 1;".into()).await;
@@ -196,7 +193,7 @@ async fn test_signature_route_validates_signature_expires_nonce_and_creates_jwt(
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
+    let _srv = tokio::spawn(server);
 
     let resp = http_client()
         .post("http://localhost:29987/api/auth/signature")

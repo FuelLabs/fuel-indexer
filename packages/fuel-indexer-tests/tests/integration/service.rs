@@ -1,12 +1,9 @@
 extern crate alloc;
 use fuel_indexer_lib::manifest::Manifest;
-use fuel_indexer_tests::{
-    defaults,
-    fixtures::{indexer_service_postgres, tx_params},
-};
+use fuel_indexer_tests::{defaults, fixtures::indexer_service_postgres};
 use fuels::prelude::{
     setup_single_asset_coins, setup_test_client, AssetId, Contract, DeployConfiguration,
-    Provider, StorageConfiguration, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+    Provider, WalletUnlocked, DEFAULT_COIN_AMOUNT,
 };
 use fuels::signers::Signer;
 use fuels_macros::abigen;
