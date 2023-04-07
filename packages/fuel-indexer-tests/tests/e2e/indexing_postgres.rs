@@ -674,7 +674,6 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
     );
 }
 
-
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_panic_function_postgres() {

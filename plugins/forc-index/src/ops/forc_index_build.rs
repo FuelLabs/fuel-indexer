@@ -201,7 +201,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
         }
 
-        manifest.write_to(&indexer_manifest_path)?;
+        manifest.write(&indexer_manifest_path)?;
     }
 
     Ok(())
