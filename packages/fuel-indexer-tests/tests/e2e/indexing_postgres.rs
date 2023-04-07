@@ -264,7 +264,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -293,7 +293,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -365,7 +365,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -396,57 +396,55 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
     assert_eq!(row.get::<&str, usize>(4), defaults::TRANSFER_BASE_ASSET_ID);
 }
 
-// #[actix_web::test]
-// #[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
-// async fn test_can_trigger_and_index_messageout_event_postgres() {
-//     let (node_handle, test_db, mut srvc) = setup_test_components().await;
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_messageout_event_postgres() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
-//     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-//     update_test_manifest_asset_paths(&mut manifest);
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
 
-//     srvc.register_index_from_manifest(manifest)
-//         .await
-//         .unwrap();
+    srvc.register_index_from_manifest(manifest).await.unwrap();
 
-//     let contract = connect_to_deployed_contract().await.unwrap();
-//     let app = test::init_service(app(contract)).await;
-//     let req = test::TestRequest::post().uri("/messageout").to_request();
-//     let _ = app.call(req).await;
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/messageout").to_request();
+    let _ = app.call(req).await;
 
-//     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-//     node_handle.abort();
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
 
-//     let mut conn = test_db.pool.acquire().await.unwrap();
-//     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageout LIMIT 1")
-//         .fetch_one(&mut conn)
-//         .await
-//         .unwrap();
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    // let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageout LIMIT 1")
+    //     .fetch_one(&mut conn)
+    //     .await
+    //     .unwrap();
 
-//     let message_id: i64 = row.get(0);
-//     let recipient: &str = row.get(2);
-//     let amount: i64 = row.get(3);
+    // let message_id: i64 = row.get(0);
+    // let recipient: &str = row.get(2);
+    // let amount: i64 = row.get(3);
 
-//     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
-//         .fetch_one(&mut conn)
-//         .await
-//         .unwrap();
+    // assert!((message_id > 0 && message_id < i64::MAX));
+    // assert_eq!(
+    //     recipient,
+    //     "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
+    // );
+    // assert_eq!(amount, 100);
 
-//     let example_message_id: i64 = row.get(0);
-//     let message: &str = row.get(1);
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
 
-//     assert!((message_id > 0 && message_id < i64::MAX));
-//     assert_eq!(
-//         recipient,
-//         "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
-//     );
-//     assert_eq!(amount, 100);
-
-//     assert_eq!(example_message_id, 1234);
-//     assert_eq!(message, "abcdefghijklmnopqrstuvwxyz123456");
-// }
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1234);
+    assert_eq!(
+        row.get::<&str, usize>(1),
+        "abcdefghijklmnopqrstuvwxyz123456"
+    );
+}
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_index_event_with_optional_fields_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -581,7 +579,7 @@ async fn test_index_respects_start_block_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres", feature = "pg-embed-skip"))]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 

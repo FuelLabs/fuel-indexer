@@ -381,7 +381,7 @@ fn process_fn_items(
                 match ty_id {
                     #(#decoders),*
                     _ => {
-                        Logger::warn("Unknown type ID; check ABI to make sure types are well-formed");
+                        Logger::warn("Unknown type ID; check ABI to make sure types are correct.");
                     },
                 }
             }
@@ -398,14 +398,14 @@ fn process_fn_items(
             pub fn decode_logdata(&mut self, rb: usize, data: Vec<u8>) {
                 match rb {
                     #(#log_type_decoders),*
-                    _ => Logger::warn("Unknown logged type ID; check ABI to make sure that logged types are well-formed")
+                    _ => Logger::warn("Unknown logged type ID; check ABI to make sure that logged types are correct.")
                 }
             }
 
             pub fn decode_messageout(&mut self, type_id: u64, data: abi::MessageOut) {
                 match type_id {
                     #(#message_types_decoders),*
-                    _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are well-formed")
+                    _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are correct.")
                 }
             }
 
