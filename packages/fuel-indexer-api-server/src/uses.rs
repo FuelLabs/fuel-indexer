@@ -389,17 +389,18 @@ pub async fn run_query(
 
 pub async fn gql_playground(
     Path((namespace, identifier)): Path<(String, String)>,
-) -> impl IntoResponse {
+) -> ApiResult<impl IntoResponse> {
     let html = playground_source(
-        GraphQLPlaygroundConfig::new(&format!("/api/graph/{}/{}", namespace, identifier))
+        GraphQLPlaygroundConfig::new(&format!("/api/graph/{namespace}/{identifier}"))
             .with_setting("scehma.polling.enable", false),
     );
 
-    Response::builder()
+    let response = Response::builder()
         .status(StatusCode::OK)
         .header(http::header::CONTENT_TYPE, "text/html; charset=utf-8")
-        .body(Body::from(html))
-        .expect("Failed to build gql playground response.")
+        .body(Body::from(html))?;
+
+    Ok(response)
 }
 
 pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {

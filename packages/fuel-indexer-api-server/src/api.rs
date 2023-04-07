@@ -44,6 +44,14 @@ pub enum HttpError {
     NotFound(String),
     #[error("Error.")]
     InternalServer,
+    #[error("HTTP error: {0:?}")]
+    Http(http::Error),
+}
+
+impl From<http::Error> for HttpError {
+    fn from(err: http::Error) -> Self {
+        HttpError::Http(err)
+    }
 }
 
 #[derive(Debug, Error)]
@@ -113,6 +121,12 @@ impl IntoResponse for ApiError {
             })),
         )
             .into_response()
+    }
+}
+
+impl From<http::Error> for ApiError {
+    fn from(err: http::Error) -> Self {
+        ApiError::Http(HttpError::from(err))
     }
 }
 

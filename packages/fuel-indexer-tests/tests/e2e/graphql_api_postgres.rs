@@ -72,9 +72,7 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
 
     server_handle.abort();
 
-    println!("status: {}", resp.status());
     let body = resp.text().await.unwrap();
-    println!("body: {}", body);
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_array().expect("data is not an array");
 
