@@ -415,22 +415,6 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     node_handle.abort();
 
     let mut conn = test_db.pool.acquire().await.unwrap();
-    // let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageout LIMIT 1")
-    //     .fetch_one(&mut conn)
-    //     .await
-    //     .unwrap();
-
-    // let message_id: i64 = row.get(0);
-    // let recipient: &str = row.get(2);
-    // let amount: i64 = row.get(3);
-
-    // assert!((message_id > 0 && message_id < i64::MAX));
-    // assert_eq!(
-    //     recipient,
-    //     "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
-    // );
-    // assert_eq!(amount, 100);
-
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
         .fetch_one(&mut conn)
         .await
