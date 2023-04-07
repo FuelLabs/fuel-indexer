@@ -90,6 +90,9 @@ impl IntoResponse for ApiError {
             ApiError::Http(HttpError::Unauthorized) => {
                 (StatusCode::UNAUTHORIZED, "Unauthorized.".to_string())
             }
+            ApiError::Http(HttpError::NotFound(e)) => {
+                (StatusCode::NOT_FOUND, format!("Not found: {e}."))
+            }
             ApiError::Sqlx(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Database error: {e}."),
