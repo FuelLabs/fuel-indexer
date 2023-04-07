@@ -1,16 +1,21 @@
 #![deny(unused_crate_dependencies)]
 
-pub use fuel_indexer_database_types::DbType;
-use fuel_indexer_lib::utils::{attempt_database_connection, ServiceStatus};
-use fuel_indexer_postgres as postgres;
-use sqlx::{pool::PoolConnection, postgres::PgConnectOptions, Error as SqlxError};
-use std::{cmp::Ordering, str::FromStr};
-use thiserror::Error;
-
 pub mod queries;
 pub mod types {
     pub use fuel_indexer_database_types::*;
 }
+
+pub use fuel_indexer_database_types::DbType;
+use fuel_indexer_lib::{
+    defaults,
+    utils::{attempt_database_connection, ServiceStatus},
+};
+use fuel_indexer_postgres as postgres;
+use sqlx::{
+    pool::PoolConnection, postgres::PgConnectOptions, ConnectOptions, Error as SqlxError,
+};
+use std::{cmp::Ordering, collections::HashMap, str::FromStr};
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum IndexerDatabaseError {
@@ -52,15 +57,34 @@ impl IndexerConnectionPool {
                 database_url.into(),
             ));
         }
-        let url = url.expect("Database URL should be correctly formed");
+        let mut url = url.expect("Database URL should be correctly formed");
+        let mut query: HashMap<_, _> = url.query_pairs().into_owned().collect();
+
+        let verbose = query
+            .remove("verbose")
+            .unwrap_or(defaults::VERBOSE_DB_LOGGING.to_string());
+
+        let query = query
+            .iter()
+            .map(|(k, v)| format!("{k}={v}"))
+            .collect::<Vec<String>>()
+            .join("&");
+
+        url.set_query(Some(&query));
+
         match url.scheme() {
             "postgres" => {
+                let opts = match verbose.as_ref() {
+                    "true" => PgConnectOptions::from_str(url.as_str())?,
+                    "false" => {
+                        let mut o = PgConnectOptions::from_str(url.as_str())?;
+                        o.disable_statement_logging().clone()
+                    }
+                    _ => unimplemented!(),
+                };
+
                 let pool = attempt_database_connection(|| {
-                    sqlx::postgres::PgPoolOptions::new().connect_with(
-                        PgConnectOptions::from_str(database_url).unwrap_or_else(|e| {
-                            panic!("Could not derive PgConnectOptions: {e}",)
-                        }),
-                    )
+                    sqlx::postgres::PgPoolOptions::new().connect_with(opts.clone())
                 })
                 .await;
 

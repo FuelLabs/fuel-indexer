@@ -68,8 +68,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     file.read_to_string(&mut content)?;
     let config: Config = toml::from_str(&content)?;
 
-    let index_manifest_path = root_dir.join(manifest);
-    let mut manifest = Manifest::from_file(&index_manifest_path)?;
+    let indexer_manifest_path = root_dir.join(manifest);
+    let mut manifest = Manifest::from_file(&indexer_manifest_path)?;
 
     // Construct our build command
     //
@@ -201,7 +201,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
         }
 
-        manifest.write_to(&index_manifest_path)?;
+        manifest.write_to(&indexer_manifest_path)?;
     }
 
     Ok(())

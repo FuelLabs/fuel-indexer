@@ -9,6 +9,7 @@ on:
   release:
     types: [published]
 
+
 env:
   DATABASE_URL: postgres://postgres:my-secret@localhost:5432
   DASEL_VERSION: https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64
@@ -25,7 +26,7 @@ env:
 
 jobs:
   cancel-previous-runs:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.9.1
@@ -33,7 +34,7 @@ jobs:
           access_token: ${{ github.token }}
 
   cargo-toml-fmt-check:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
@@ -47,7 +48,7 @@ jobs:
         run: cargo sort -w --check packages/**/Cargo.toml
 
   set-env-vars:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     outputs:
       IS_MASTER: ${{ steps.set-env.outputs.IS_MASTER }}
       IS_RELEASE: ${{ steps.set-env.outputs.IS_RELEASE }}
@@ -65,7 +66,7 @@ jobs:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
     needs:
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     outputs:
       is_semver_branch: ${{ steps.semver-branch-check.outputs.is_semver_branch }}
     steps:
@@ -80,7 +81,7 @@ jobs:
           fi
 
   mdbook-lint:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -93,7 +94,7 @@ jobs:
   mdbook-build:
     needs:
       - mdbook-lint
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -107,7 +108,7 @@ jobs:
           mdbook-version: 'latest'
 
   cargo-verifications:
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
@@ -150,7 +151,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -165,7 +166,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -180,7 +181,7 @@ jobs:
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:latest
@@ -200,15 +201,15 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests forc-index-tests
+      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests plugin-tests
+        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests plugin-tests
 
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
       - cargo-toml-fmt-check
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:latest
@@ -248,14 +249,14 @@ jobs:
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
 
       - name: Run E2E and integration tests
-        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests --workspace --exclude forc-index-tests -- --test-threads=1
+        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   cargo-test-forc-index-plugins:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
     needs: 
       - cargo-toml-fmt-check
-      - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+      - check-is-semver-branch
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -269,46 +270,14 @@ jobs:
       - name: wasm-snip
         run: cargo install wasm-snip
 
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests -- --test-threads=1
-
-  check-forc-index:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
-    needs:
-      - check-is-semver-branch
-    runs-on: buildjet-4vcpu-ubuntu-2204
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
-
-      - uses: Swatinem/rust-cache@v1
-
-      - name: Install wasm-snip
-        run: cargo install wasm-snip
-
-      - name: Build forc index
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: -p forc-index
-
-      - name: Create new index
-        run: |
-          mkdir ../forc_index_test && cd ../forc_index_test && ../fuel-indexer/target/debug/forc-index init --namespace fuel
-
-      - name: Build new index
-        working-directory: ../forc_index_test
-        run: ../fuel-indexer/target/debug/forc-index build
+      - name: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
+        run: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
 
   publish-docker-image:
     needs:
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
@@ -355,7 +324,6 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          build-args: BUILD_TARGET=--all-targets
 
       - name: Notify if Job Fails
         uses: ravsamhq/notify-slack-action@v2
@@ -559,7 +527,7 @@ jobs:
     needs:
       - publish-docker-image
       - set-env-vars
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - name: Set Environment Variables
         run: |
@@ -588,7 +556,7 @@ jobs:
       - publish-docker-image
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -641,9 +609,9 @@ jobs:
       - cargo-test-e2e-and-integration-tests
       - cargo-clippy
       - cargo-fmt-check
-      - check-forc-index
+      - cargo-test-forc-index-plugins
 
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - run: true
 
@@ -651,7 +619,7 @@ jobs:
     needs:
       - validation-complete
     if: always()
-    runs-on: buildjet-4vcpu-ubuntu-2204
+    runs-on: ubuntu-latest
     steps:
       - name: Notify Slack On Failure
         uses: ravsamhq/notify-slack-action@v2

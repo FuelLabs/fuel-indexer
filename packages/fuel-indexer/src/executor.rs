@@ -1,48 +1,41 @@
-use crate::ffi;
-use crate::{database::Database, IndexerError, IndexerResult};
-use async_std::sync::{Arc, Mutex};
+use crate::{database::Database, ffi, IndexerConfig, IndexerError, IndexerResult};
+use async_std::{
+    fs::File,
+    io::ReadExt,
+    sync::{Arc, Mutex},
+};
 use async_trait::async_trait;
+use chrono::{TimeZone, Utc};
+use fuel_core_client::client::{
+    types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
+    FuelClient, PageDirection, PaginatedResult, PaginationRequest,
+};
+use fuel_indexer_lib::{defaults::*, manifest::Manifest};
 use fuel_indexer_schema::utils::serialize;
-use fuel_indexer_types::abi::BlockData;
+use fuel_indexer_types::{
+    abi::{BlockData, TransactionData},
+    tx::{TransactionStatus, TxId},
+    Bytes32,
+};
 use futures::Future;
-use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::{
+    marker::{Send, Sync},
+    path::Path,
+    str::FromStr,
+    sync::atomic::{AtomicBool, Ordering},
+};
 use thiserror::Error;
-use tokio::task::spawn_blocking;
-use tracing::error;
+use tokio::{
+    task::{spawn_blocking, JoinHandle},
+    time::{sleep, Duration},
+};
+use tracing::{debug, error, info};
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store,
     WasmerEnv,
 };
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_universal::Universal;
-
-use async_std::{fs::File, io::ReadExt};
-use chrono::{TimeZone, Utc};
-use fuel_core_client::client::{
-    types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
-    FuelClient, PageDirection, PaginatedResult, PaginationRequest,
-};
-use fuel_indexer_lib::{
-    config::FuelNodeConfig,
-    defaults::{
-        DELAY_FOR_EMPTY_PAGE, DELAY_FOR_SERVICE_ERR, INDEX_FAILED_CALLS,
-        MAX_EMPTY_BLOCK_REQUESTS,
-    },
-    manifest::Manifest,
-};
-use fuel_indexer_types::{
-    abi::TransactionData,
-    tx::{TransactionStatus, TxId},
-    Bytes32,
-};
-use std::marker::{Send, Sync};
-use std::str::FromStr;
-use tokio::{
-    task::JoinHandle,
-    time::{sleep, Duration},
-};
-use tracing::{debug, info};
 
 fn compiler() -> Cranelift {
     Cranelift::default()
@@ -73,13 +66,16 @@ impl ExecutorSource {
 }
 
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
-    fuel_node_addr: &str,
+    config: &IndexerConfig,
+    manifest: &Manifest,
     mut executor: T,
-    start_block: &u64,
     kill_switch: Arc<AtomicBool>,
-    stop_idle_indexers: bool,
 ) -> impl Future<Output = ()> {
-    let mut next_cursor = if *start_block > 1 {
+    let fuel_node_addr = config.fuel_node.to_string();
+    let start_block = manifest.start_block.expect("Failed to detect start_block.");
+    let stop_idle_indexers = config.stop_idle_indexers;
+
+    let mut next_cursor = if start_block > 1 {
         let decremented = start_block - 1;
         Some(decremented.to_string())
     } else {
@@ -87,15 +83,14 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     };
     info!("Subscribing to Fuel node at {fuel_node_addr}");
 
-    let client = FuelClient::from_str(fuel_node_addr).unwrap_or_else(|e| {
-        panic!("Unable to connect to Fuel node at '{fuel_node_addr}': {e}",)
-    });
+    let client = FuelClient::from_str(&fuel_node_addr)
+        .unwrap_or_else(|e| panic!("Node connection failed: {e}."));
 
     async move {
         let mut retry_count = 0;
 
         // If we're testing or running on CI, we don't want indexers to run forever. But in production
-        // let the index operators decide if they way to stop idle indexers. Maybe we can eventually
+        // let the index operators decide if they want to stop idle indexers. Maybe we can eventually
         // make this MAX_EMPTY_BLOCK_REQUESTS value configurable
         let max_empty_block_reqs = if stop_idle_indexers {
             MAX_EMPTY_BLOCK_REQUESTS
@@ -112,7 +107,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             } = client
                 .blocks(PaginationRequest {
                     cursor: next_cursor.clone(),
-                    results: 10,
+                    results: NODE_GRAPHQL_PAGE_SIZE,
                     direction: PageDirection::Forward,
                 })
                 .await
@@ -126,15 +121,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     }
                 });
 
-            debug!("Processing {} results", results.len());
-
             let mut block_info = Vec::new();
             for block in results.into_iter() {
                 let producer = block.block_producer().map(|pk| pk.hash());
 
-                // NOTE: for now assuming we have a single contract instance,
-                // we'll need to watch contract creation events here in
-                // case an indexer would be interested in processing it.
                 let mut transactions = Vec::new();
 
                 for trans in block.transactions {
@@ -146,18 +136,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 status,
                             }) = result
                             {
-                                let receipts = match client
+                                let receipts = client
                                     .receipts(&trans.id.to_string())
                                     .await
-                                {
-                                    Ok(r) => r,
-                                    Err(e) => {
-                                        error!(
-                                            "Client communication error fetching receipts: {e:?}",
-                                        );
-                                        vec![]
-                                    }
-                                };
+                                    .unwrap_or_else(|e| {
+                                        error!("Client communication error fetching receipts: {e:?}");
+                                        Vec::new()
+                                    });
 
                                 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
                                 let status = match status {
@@ -170,9 +155,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                         time: Utc
                                             .timestamp_opt(time.to_unix(), 0)
                                             .single()
-                                            .expect(
-                                                "Failed to parse transaction timestamp",
-                                            ),
+                                            .unwrap(),
                                     },
                                     GqlTransactionStatus::Failure {
                                         block_id,
@@ -184,9 +167,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                         time: Utc
                                             .timestamp_opt(time.to_unix(), 0)
                                             .single()
-                                            .expect(
-                                                "Failed to parse transaction timestamp",
-                                            ),
+                                            .unwrap(),
                                         reason,
                                     },
                                     GqlTransactionStatus::Submitted { submitted_at } => {
@@ -194,9 +175,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                             submitted_at: Utc
                                                 .timestamp_opt(submitted_at.to_unix(), 0)
                                                 .single()
-                                                .expect(
-                                                    "Failed to parse transaction timestamp"
-                                                ),
+                                                .unwrap(),
                                         }
                                     }
                                     GqlTransactionStatus::SqueezedOut { reason } => {
@@ -214,9 +193,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             }
                         }
                         Err(e) => {
-                            error!(
-                                "Client communication error fetching transactions: {e:?}",
-                            )
+                            error!("Error fetching transactions: {e:?}.",)
                         }
                     };
                 }
@@ -296,8 +273,8 @@ pub struct IndexEnv {
 }
 
 impl IndexEnv {
-    pub async fn new(db_conn: String) -> IndexerResult<IndexEnv> {
-        let db = Arc::new(Mutex::new(Database::new(&db_conn).await?));
+    pub async fn new(db_url: String) -> IndexerResult<IndexEnv> {
+        let db = Arc::new(Mutex::new(Database::new(&db_url).await?));
         Ok(IndexEnv {
             memory: Default::default(),
             alloc: Default::default(),
@@ -317,12 +294,12 @@ unsafe impl<F: Future<Output = IndexerResult<()>> + Send> Send
 {
 }
 
-#[allow(dead_code)]
 pub struct NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
     db: Arc<Mutex<Database>>,
+    #[allow(unused)]
     manifest: Manifest,
     handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
 }
@@ -332,35 +309,32 @@ where
     F: Future<Output = IndexerResult<()>> + Send,
 {
     pub async fn new(
-        db_conn: &str,
-        manifest: Manifest,
+        config: &IndexerConfig,
+        manifest: &Manifest,
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
-        let db = Arc::new(Mutex::new(Database::new(db_conn).await?));
-        db.lock().await.load_schema(&manifest, None).await?;
+        let db_url = config.database.to_string();
+        let db = Arc::new(Mutex::new(Database::new(&db_url).await?));
+        db.lock().await.load_schema(manifest, None).await?;
         Ok(Self {
             db,
-            manifest,
+            manifest: manifest.to_owned(),
             handle_events_fn,
         })
     }
 
     pub async fn create<T: Future<Output = IndexerResult<()>> + Send + 'static>(
-        db_url: &str,
-        fuel_node: &FuelNodeConfig,
-        manifest: Manifest,
-        stop_idle_indexers: bool,
-        start_block: u64,
+        config: &IndexerConfig,
+        manifest: &Manifest,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
-        let executor = NativeIndexExecutor::new(db_url, manifest, handle_events).await?;
+        let executor = NativeIndexExecutor::new(config, manifest, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
         let handle = tokio::spawn(run_executor(
-            &fuel_node.to_string(),
+            config,
+            manifest,
             executor,
-            &start_block,
             kill_switch.clone(),
-            stop_idle_indexers,
         ));
         Ok((handle, ExecutorSource::Manifest, kill_switch))
     }
@@ -396,16 +370,17 @@ pub struct WasmIndexExecutor {
 
 impl WasmIndexExecutor {
     pub async fn new(
-        db_conn: String,
-        manifest: Manifest,
+        config: &IndexerConfig,
+        manifest: &Manifest,
         wasm_bytes: impl AsRef<[u8]>,
     ) -> IndexerResult<Self> {
+        let db_url = config.database.to_string();
         let store = Store::new(&Universal::new(compiler()).engine());
         let module = Module::new(&store, &wasm_bytes)?;
 
         let mut import_object = imports! {};
 
-        let mut env = IndexEnv::new(db_conn).await?;
+        let mut env = IndexEnv::new(db_url).await?;
         let exports = ffi::get_exports(&env, &store);
 
         import_object.register("env", exports);
@@ -415,7 +390,7 @@ impl WasmIndexExecutor {
         env.db
             .lock()
             .await
-            .load_schema(&manifest, Some(&instance))
+            .load_schema(manifest, Some(&instance))
             .await?;
 
         if !instance
@@ -434,19 +409,20 @@ impl WasmIndexExecutor {
     }
 
     /// Restore index from wasm file
-    pub async fn from_file(db_conn: String, manifest_path: &Path) -> IndexerResult<Self> {
-        let manifest = Manifest::from_file(manifest_path)?;
+    pub async fn from_file(
+        p: impl AsRef<Path>,
+        config: Option<IndexerConfig>,
+    ) -> IndexerResult<Self> {
+        let config = config.unwrap_or_default();
+        let manifest = Manifest::from_file(p)?;
         let bytes = manifest.module_bytes()?;
-        Self::new(db_conn, manifest, bytes).await
+        Self::new(&config, &manifest, bytes).await
     }
 
     pub async fn create(
-        fuel_node: &FuelNodeConfig,
-        db_url: &str,
+        config: &IndexerConfig,
         manifest: &Manifest,
         exec_source: ExecutorSource,
-        stop_idle_indexers: bool,
-        start_block: &u64,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
 
@@ -457,18 +433,13 @@ impl WasmIndexExecutor {
                     let mut file = File::open(module).await?;
                     file.read_to_end(&mut bytes).await?;
 
-                    let executor = WasmIndexExecutor::new(
-                        db_url.to_string(),
-                        manifest.to_owned(),
-                        bytes.clone(),
-                    )
-                    .await?;
+                    let executor =
+                        WasmIndexExecutor::new(config, manifest, bytes.clone()).await?;
                     let handle = tokio::spawn(run_executor(
-                        &fuel_node.to_string(),
+                        config,
+                        manifest,
                         executor,
-                        start_block,
                         killer.clone(),
-                        stop_idle_indexers,
                     ));
 
                     Ok((handle, ExecutorSource::Registry(bytes), killer))
@@ -478,15 +449,12 @@ impl WasmIndexExecutor {
                 }
             },
             ExecutorSource::Registry(bytes) => {
-                let executor =
-                    WasmIndexExecutor::new(db_url.into(), manifest.to_owned(), bytes)
-                        .await?;
+                let executor = WasmIndexExecutor::new(config, manifest, bytes).await?;
                 let handle = tokio::spawn(run_executor(
-                    &fuel_node.to_string(),
+                    config,
+                    manifest,
                     executor,
-                    start_block,
                     killer.clone(),
-                    stop_idle_indexers,
                 ));
 
                 Ok((handle, exec_source, killer))

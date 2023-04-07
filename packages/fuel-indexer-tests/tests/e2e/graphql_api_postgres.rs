@@ -12,13 +12,11 @@ use fuel_indexer_tests::{
         TestPostgresDb,
     },
     utils::update_test_manifest_asset_paths,
-    WORKSPACE_ROOT,
 };
-use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
-use lazy_static::lazy_static;
+use hyper::header::CONTENT_TYPE;
 use serde_json::{Number, Value};
 use std::collections::HashMap;
-use tokio::task::{spawn, JoinHandle};
+use tokio::task::JoinHandle;
 use tokio::time::{sleep, Duration};
 
 async fn setup_test_components(
