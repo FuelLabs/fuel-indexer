@@ -255,21 +255,23 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let contracts = manifest.contract_ids.iter().find_map(|id| {
-        match id {
-            Some(contract_id) => {
-                Some(quote! {
-                    let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
-                    let receipt_contract_id = Bech32ContractId::from(id);
-                    if receipt_contract_id != manifest_contract_id {
-                        Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
-                        continue;
-                    }   
-                })
+    let contracts = {
+        quote! {
+            let receipt_contract_id = Bech32ContractId::from(id);
+            let mut found = false;
+            for contract_id in &manifest.contract_ids.iter().filter_map(|x| x.as_ref()) {
+                let manifest_contract_id = Bech32ContractId::from_str(contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
+                if receipt_contract_id == manifest_contract_id {
+                    found = true;
+                    break;
+                }
             }
-            None => None, 
+            if !found {
+                Logger::info("Skipping receipt from contract not in manifest");
+                continue;
+            }
         }
-    }).unwrap_or(quote! {});
+    };
 
     let asyncness = if is_native {
         quote! {async}
@@ -383,7 +385,7 @@ fn process_fn_items(
                 match ty_id {
                     #(#decoders),*
                     _ => {
-                        Logger::warn("Unknown type ID; check ABI to make sure types are well-formed");
+                        Logger::warn("Unknown type ID; check ABI to make sure types are correct.");
                     },
                 }
             }
@@ -400,14 +402,14 @@ fn process_fn_items(
             pub fn decode_logdata(&mut self, rb: usize, data: Vec<u8>) {
                 match rb {
                     #(#log_type_decoders),*
-                    _ => Logger::warn("Unknown logged type ID; check ABI to make sure that logged types are well-formed")
+                    _ => Logger::warn("Unknown logged type ID; check ABI to make sure that logged types are correct.")
                 }
             }
 
             pub fn decode_messageout(&mut self, type_id: u64, data: abi::MessageOut) {
                 match type_id {
                     #(#message_types_decoders),*
-                    _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are well-formed")
+                    _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are correct.")
                 }
             }
 
@@ -433,16 +435,11 @@ fn process_fn_items(
                     let mut return_types = Vec::new();
                     let mut callees = HashSet::new();
 
-                    for contract_data in contracts {
-                        // we have to assign this var explicitally 
-                        // so the macro can use it with #contract 
-                        let contract = contract_data;
-                        for receipt in tx.receipts {
-                        quote! {
-                            #contract
+                    for receipt in tx.receipts {
                         match receipt {
                             Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
-                                #contract
+                                #contracts
+
                                 let fn_name = decoder.selector_to_fn_name(param1);
                                 return_types.push(param1);
                                 callees.insert(id);
@@ -471,7 +468,7 @@ fn process_fn_items(
                                 }
                             }
                             Receipt::ReturnData { data, id, .. } => {
-                                #contracts 
+                                #contracts
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
                                     decoder.decode_return_type(selector, data);
@@ -523,7 +520,7 @@ fn process_fn_items(
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Revert { id, ra, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::Revert::type_id();
                                 let data = bincode::serialize(&abi::Revert{ contract_id: id, error_val: u64::from(ra & 0xF) }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
@@ -532,11 +529,7 @@ fn process_fn_items(
                                 Logger::info("This type is not handled yet. (>'.')>");
                             }
                         }
-                        }
                     }
-                    }
-
-                    
 
                     decoder.dispatch()#awaitness;
                 }
@@ -661,24 +654,18 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
             #[tokio::main]
             async fn main() -> anyhow::Result<()> {
 
-                let filter = match std::env::var_os("RUST_LOG") {
-                    Some(_) => {
-                        EnvFilter::try_from_default_env().expect("Invalid `RUST_LOG` provided.")
-                    }
-                    None => EnvFilter::new("info"),
-                };
+                let args = IndexerArgs::parse();
 
-                tracing_subscriber::fmt::Subscriber::builder()
-                    .with_writer(std::io::stderr)
-                    .with_env_filter(filter)
-                    .init();
+                let IndexerArgs { manifest, .. } = args.clone();
 
-                let opt = IndexerArgs::parse();
 
-                let config = match &opt.config {
-                    Some(path) => IndexerConfig::from_file(path)?,
-                    None => IndexerConfig::from_opts(opt.clone()),
-                };
+                let config = args
+                .config
+                .as_ref()
+                .map(IndexerConfig::from_file)
+                .unwrap_or(Ok(IndexerConfig::from(args)))?;
+
+                init_logging(&config).await?;
 
                 info!("Configuration: {:?}", config);
 
@@ -691,17 +678,21 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
 
                 let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
-                let mut c = pool.acquire().await?;
-                queries::run_migration(&mut c).await?;
+                if config.run_migrations {
+                    let mut c = pool.acquire().await?;
+                    queries::run_migration(&mut c).await?;
+                }
 
                 let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
 
-                if opt.manifest.is_none() {
+                if manifest.is_none() {
                     panic!("Manifest required to use native execution.");
                 }
 
-                let p = opt.manifest.unwrap();
-                info!("Using manifest file located at '{}'.", p.display());
+                let p = manifest.unwrap();
+                if config.verbose {
+                    info!("Using manifest file located at '{}'", p.display());
+                }
                 let manifest = Manifest::from_file(&p)?;
                 service.register_native_index(manifest, handle_events).await?;
                 let service_handle = tokio::spawn(service.run());
