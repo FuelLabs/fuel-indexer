@@ -140,7 +140,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
+async fn w() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
@@ -415,19 +415,6 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     node_handle.abort();
 
     let mut conn = test_db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageout LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    let recipient = row.get::<&str, usize>(3);
-    let amount = row.get::<BigDecimal, usize>(4).to_u64().unwrap();
-    assert_eq!(
-        recipient,
-        "532ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96"
-    );
-    assert_eq!(amount, 100);
-
     let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageentity LIMIT 1")
         .fetch_one(&mut conn)
         .await

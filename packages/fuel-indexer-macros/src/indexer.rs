@@ -96,12 +96,12 @@ fn process_fn_items(
         .iter()
         .flatten()
         .map(|typ| {
-            let message_type_id = typ.message_id;
+            let message_id = typ.message_id;
             let ty_id = typ.application.type_id;
 
             quote! {
-                #message_type_id => {
-                    self.decode_type(#ty_id, data);
+                #message_id => {
+                    self.decode_type(#ty_id, data.data.clone());
                 }
             }
         })
@@ -377,21 +377,6 @@ fn process_fn_items(
                 }
             }
 
-            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Bytes32, amount: Word, data: &[u8]) -> MessageId {
-
-                let raw_message_id = Sha256::new()
-                    .chain_update(sender)
-                    .chain_update(recipient)
-                    .chain_update(nonce)
-                    .chain_update(amount.to_be_bytes())
-                    .chain_update(data)
-                    .finalize();
-
-                let message_id = <[u8; 32]>::try_from(&raw_message_id[..]).expect("Could not calculate message ID from receipt fields");
-
-                message_id.into()
-            }
-
             fn decode_type(&mut self, ty_id: usize, data: Vec<u8>) {
                 match ty_id {
                     #(#decoders),*
@@ -417,7 +402,7 @@ fn process_fn_items(
                 }
             }
 
-            pub fn decode_messagedata(&mut self, type_id: u64, data: Vec<u8>) {
+            pub fn decode_messageout(&mut self, type_id: u64, data: abi::MessageOut) {
                 match type_id {
                     #(#message_types_decoders),*
                     _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are correct.")
@@ -485,9 +470,7 @@ fn process_fn_items(
                                     decoder.decode_return_type(selector, data);
                                 }
                             }
-                            Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
-                                let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, &data[..]);
-
+                            Receipt::MessageOut { message_id, sender, recipient, amount, nonce, len, digest, data } => {
                                 // It's possible that the data field was generated from an empty Sway `Bytes` array
                                 // in the send_message() instruction in which case the data field in the receipt will
                                 // have no type information or data to decode, so we decode an empty vector to a unit struct
@@ -506,11 +489,8 @@ fn process_fn_items(
                                     .map(|buffer| buffer.to_vec())
                                     .unwrap_or(Vec::<u8>::new());
 
-                                decoder.decode_messagedata(type_id, data.clone());
-
-                                let ty_id = abi::MessageOut::type_id();
-                                let data = bincode::serialize(&abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data }).expect("Bad encoding");
-                                decoder.decode_type(ty_id, data);
+                                let receipt = abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data };
+                                decoder.decode_messageout(type_id, receipt);
                             }
                             Receipt::ScriptResult { result, gas_used } => {
                                 let ty_id = abi::ScriptResult::type_id();
