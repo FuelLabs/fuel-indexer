@@ -18,3 +18,4 @@ fuels-types = { version = "0.38.1", default-features = false }
 getrandom = { version = "0.2", features = ["js"] }
 instant = { version = "0.1", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
+sha2 = { version = "0.10" }

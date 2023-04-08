@@ -33,6 +33,7 @@ fn native_prelude() -> proc_macro2::TokenStream {
         use fuels_types::traits::{Parameterize, Tokenizable};
         use fuels_macros::{Parameterize, Tokenizable};
         use fuel_indexer_plugin::native::bincode;
+        use sha2::{Sha256, Digest};
 
         type B256 = [u8; 32];
 

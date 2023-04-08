@@ -171,6 +171,7 @@ mod fuel_indexer_test {
 
         let entity = MessageOut {
             id: first8_bytes_to_u64(message_id),
+            message_id,
             sender,
             recipient,
             amount,

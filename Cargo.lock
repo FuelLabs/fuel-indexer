@@ -2267,6 +2267,7 @@ dependencies = [
  "getrandom",
  "serde",
  "serde_json",
+ "sha2 0.10.6",
 ]
 
 [[package]]
@@ -3068,6 +3069,7 @@ dependencies = [
  "fuels-types",
  "getrandom",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]
@@ -3799,6 +3801,7 @@ dependencies = [
  "getrandom",
  "instant",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]
@@ -3818,6 +3821,7 @@ dependencies = [
  "getrandom",
  "instant",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]
@@ -6113,6 +6117,7 @@ dependencies = [
  "fuels-types",
  "getrandom",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]
