@@ -7,7 +7,7 @@ use std::{
 };
 use thiserror::Error;
 
-/// Result returned from Manifest operations.
+/// Result type returned from Manifest operations.
 type ManifestResult<T> = Result<T, ManifestError>;
 
 /// Error type returned from Manifest operations.
@@ -35,10 +35,8 @@ pub enum Module {
     Native,
 }
 
-impl Module {
-    /// Return the path at which this module exists. Note that native execution
-    /// does not compile a module, thus no path exists for this execution method.
-    pub fn path(&self) -> String {
+impl ToString for Module {
+    fn to_string(&self) -> String {
         match self {
             Self::Wasm(o) => o.clone(),
             Self::Native => {

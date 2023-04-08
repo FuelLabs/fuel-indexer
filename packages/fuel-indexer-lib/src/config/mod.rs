@@ -2,6 +2,7 @@ pub mod auth;
 pub mod database;
 pub mod fuel_node;
 pub mod graphql;
+pub mod utils;
 
 pub use crate::{
     config::{
@@ -17,27 +18,31 @@ use serde::Deserialize;
 use std::{
     fs::File,
     io::Error,
-    net::AddrParseError,
     path::{Path, PathBuf},
     str::FromStr,
 };
 use strum::{AsRefStr, EnumString};
 use thiserror::Error;
 
+/// Error type returned by configuration operations.
 #[derive(Error, Debug)]
 pub enum IndexerConfigError {
-    #[error("Invalid address: {0:?}")]
-    InvalidSocketAddr(#[from] AddrParseError),
     #[error("Error parsing env variables from config")]
     EnvVarParseError(#[from] std::env::VarError),
     #[error("Error processing file: {0:?}")]
     ConfigFileError(#[from] Error),
     #[error("Error processing YAML file: {0:?}")]
     SerdeYamlError(#[from] serde_yaml::Error),
+    #[error("Error processing URI: {0:?}")]
+    InvalidUriError(#[from] http::uri::InvalidUri),
+    #[error("URL parser error: {0:?}")]
+    ParseError(#[from] url::ParseError),
 }
 
+/// Result type returned by configuration operations.
 type IndexerConfigResult<T> = core::result::Result<T, IndexerConfigError>;
 
+/// Set of PostgresQL configuration constants.
 #[derive(Debug, EnumString, AsRefStr)]
 pub enum EnvVar {
     #[strum(serialize = "POSTGRES_HOST")]
@@ -54,6 +59,7 @@ pub enum EnvVar {
     JwtSecret,
 }
 
+/// Return the value of an environment variable or a default value.
 pub fn env_or_default(var: EnvVar, default: String) -> String {
     std::env::var(var.as_ref()).unwrap_or(default)
 }
@@ -293,25 +299,11 @@ pub struct ApiServerArgs {
     pub verbose: bool,
 }
 
-fn derive_http_url(host: &String, port: &String) -> String {
-    let protocol = match port.as_str() {
-        "443" | "4443" => "https",
-        _ => "http",
-    };
-
-    format!("{protocol}://{host}:{port}")
-}
-
 pub trait Env {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()>;
 }
 
-impl std::string::ToString for FuelNodeConfig {
-    fn to_string(&self) -> String {
-        format!("{}:{}", self.host, self.port)
-    }
-}
-
+/// Fuel indexer service configuration.
 #[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
     #[serde(default)]
@@ -483,82 +475,6 @@ impl From<ApiServerArgs> for IndexerConfig {
 }
 
 impl IndexerConfig {
-    // Construct a config from args passed to the program. Even if the opt is not passed
-    // it could exist as an environment variable, thus the use of `env_or_default`
-    pub fn from_opts(args: IndexerArgs) -> IndexerConfig {
-        let database = match args.database.as_str() {
-            "postgres" => DatabaseConfig::Postgres {
-                user: args.postgres_user.unwrap_or_else(|| {
-                    env_or_default(
-                        EnvVar::PostgresUser,
-                        defaults::POSTGRES_USER.to_string(),
-                    )
-                }),
-                password: args.postgres_password.unwrap_or_else(|| {
-                    env_or_default(
-                        EnvVar::PostgresPassword,
-                        defaults::POSTGRES_PASSWORD.to_string(),
-                    )
-                }),
-                host: args.postgres_host.unwrap_or_else(|| {
-                    env_or_default(
-                        EnvVar::PostgresHost,
-                        defaults::POSTGRES_HOST.to_string(),
-                    )
-                }),
-                port: args.postgres_port.unwrap_or_else(|| {
-                    env_or_default(
-                        EnvVar::PostgresPort,
-                        defaults::POSTGRES_PORT.to_string(),
-                    )
-                }),
-                database: args.postgres_database.unwrap_or_else(|| {
-                    env_or_default(
-                        EnvVar::PostgresDatabase,
-                        defaults::POSTGRES_DATABASE.to_string(),
-                    )
-                }),
-                verbose: args.verbose.to_string(),
-            },
-            _ => {
-                panic!("Unrecognized database type in options.");
-            }
-        };
-
-        let mut config = IndexerConfig {
-            verbose: args.verbose,
-            local_fuel_node: args.local_fuel_node,
-            database,
-            fuel_node: FuelNodeConfig {
-                host: args.fuel_node_host,
-                port: args.fuel_node_port,
-            },
-            graphql_api: GraphQLConfig {
-                host: args.graphql_api_host,
-                port: args.graphql_api_port,
-                max_body_size: args.max_body_size,
-            },
-            metrics: args.metrics,
-            stop_idle_indexers: args.stop_idle_indexers,
-            run_migrations: args.run_migrations,
-            authentication: AuthenticationConfig {
-                enabled: args.auth_enabled,
-                strategy: args
-                    .auth_strategy
-                    .map(|x| AuthenticationStrategy::from_str(&x).unwrap()),
-                jwt_secret: args.jwt_secret,
-                jwt_issuer: args.jwt_issuer,
-                jwt_expiry: args.jwt_expiry,
-            },
-        };
-
-        config
-            .inject_opt_env_vars()
-            .expect("Failed to inject env vars.");
-
-        config
-    }
-
     // When building the config via a file, if any section (e.g., graphql, fuel_node, etc),
     // or if any individual setting in a section (e.g., fuel_node.host) is empty, replace it
     // with its respective default value.
