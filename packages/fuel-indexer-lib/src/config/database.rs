@@ -6,7 +6,11 @@ use crate::{
 pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Formatter},
+    str::FromStr,
+};
 use url::{ParseError, Url};
 
 /// Indexer database configuration.
@@ -59,7 +63,7 @@ impl Env for DatabaseConfig {
     }
 }
 
-impl std::string::ToString for DatabaseConfig {
+impl ToString for DatabaseConfig {
     fn to_string(&self) -> String {
         match self {
             DatabaseConfig::Postgres {
@@ -81,8 +85,8 @@ impl std::string::ToString for DatabaseConfig {
     }
 }
 
-impl std::fmt::Debug for DatabaseConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Debug for DatabaseConfig {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             DatabaseConfig::Postgres {
                 user,

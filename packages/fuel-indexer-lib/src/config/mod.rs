@@ -1,15 +1,15 @@
 pub mod auth;
 pub mod database;
-pub mod fuel_node;
 pub mod graphql;
+pub mod node;
 pub mod utils;
 
 pub use crate::{
     config::{
         auth::{AuthenticationConfig, AuthenticationStrategy},
         database::DatabaseConfig,
-        fuel_node::FuelNodeConfig,
         graphql::GraphQLConfig,
+        node::FuelNodeConfig,
     },
     defaults,
 };
