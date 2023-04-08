@@ -25,6 +25,7 @@ actix-service = { version = "2", default-features = false }
 actix-web = { version = "4", default-features = false, features = ["macros"] }
 async-std = "1"
 axum = { version = "0.6", features = ["multipart"] }
+bigdecimal = { version = "0.3" }
 chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { workspace = true }
 fuel-indexer-api-server = { workspace = true }
@@ -61,6 +62,3 @@ wasmer-engine-universal = "2.3"
 [features]
 e2e = []
 postgres = []
-
-# TODO: https://github.com/FuelLabs/fuel-indexer/issues/583
-pg-embed-skip = []

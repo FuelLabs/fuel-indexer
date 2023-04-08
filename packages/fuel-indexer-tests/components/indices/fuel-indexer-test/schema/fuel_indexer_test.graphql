@@ -134,6 +134,11 @@ type TupleEntity {
     simple_a: Charfield!
 }
 
+type MessageEntity {
+    id: ID!
+    message: Charfield!
+}
+
 type CallEntity {
     id: ID!
     contract_id: ContractId!
@@ -227,11 +232,6 @@ type SportsTeam {
     id: ID!
     name: Charfield!
     municipality: Municipality! @join(on:name)
-}
-
-type MessageEntity {
-    id: ID!
-    message: Charfield!
 }
 
 type PanicEntity {

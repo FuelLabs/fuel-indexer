@@ -22,9 +22,10 @@ pub struct Command {
     #[clap(
         short,
         long,
-        help = "Build optimized artifacts with the release profile."
+        help = "Build optimized artifacts with the release profile.",
+        default_value = defaults::BUILD_RELEASE_PROFILE,
     )]
-    pub release: bool,
+    pub release: String,
 
     /// Build with the given profile.
     #[clap(long, help = "Build with the given profile.")]

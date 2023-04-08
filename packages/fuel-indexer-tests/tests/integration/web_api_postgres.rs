@@ -25,7 +25,7 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
+    let srv = tokio::spawn(server);
 
     let client = http_client();
     let _ = client
@@ -43,7 +43,7 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
         .await
         .unwrap();
 
-    server_handle.abort();
+    srv.abort();
     assert_eq!(resp.split('\n').count(), 112);
 }
 
@@ -109,7 +109,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
 
-    let server_handle = tokio::spawn(server);
+    let srv = tokio::spawn(server);
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let is_index_registered = postgres::index_is_registered(
@@ -143,7 +143,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
         .await
         .unwrap();
 
-    server_handle.abort();
+    srv.abort();
 
     assert!(resp.status().is_success());
 
