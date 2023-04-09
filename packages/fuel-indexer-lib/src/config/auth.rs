@@ -56,7 +56,7 @@ impl Env for AuthenticationConfig {
     }
 }
 
-/// List of autnetication strategies.
+/// List of authentication strategies.
 #[derive(Serialize, Deserialize, EnumString, AsRefStr, Clone, Debug, Eq, PartialEq)]
 pub enum AuthenticationStrategy {
     #[strum(ascii_case_insensitive)]
@@ -77,7 +77,7 @@ pub struct Claims {
 
 /// JWT authentication claims.
 ///
-/// The payload of the JWT token if JWt authentication is enabled.
+/// The payload of the JWT token if JWT authentication is enabled.
 /// Note that `Claims` are _only_ used by JWT authentication.
 impl Claims {
     /// Like `Claims::new`, but with `iat` and `exp` values that indicate
