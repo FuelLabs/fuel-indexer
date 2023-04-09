@@ -1,0 +1,11 @@
+---
+namespace: fuel_examples
+abi: examples/escrow/contracts/out/debug/escrow-contract-abi.json
+identifier: escrow 
+graphql_schema: examples/escrow/escrow-indexer/schema/escrow_indexer.schema.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/release/escrow_indexer.wasm
+metrics: ~
+contract_id: findme 
+start_block: 1
+resumable: ~

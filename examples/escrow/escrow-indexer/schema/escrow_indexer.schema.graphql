@@ -1,0 +1,20 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    foo: Foo 
+    bar: Bar 
+}
+
+# Calling this `Greeter` so as to not clash with `Person` in the contract
+type Foo {
+    id: ID!
+    name: Charfield!
+}
+
+# Calling this `Salutation` so as to not clash with `Greeting` in the contract
+type Bar {
+    id: ID!
+    message_hash: Bytes32!
+}

@@ -29,4 +29,9 @@ bash scripts/stripper.bash hello_indexer.wasm
 cp hello_indexer.wasm target/wasm32-unknown-unknown/release/
 rm -fv hello_indexer.wasm
 
+cargo build -p escrow-indexer --release --target wasm32-unknown-unknown
+bash scripts/stripper.bash escrow_indexer.wasm
+cp escrow_indexer.wasm target/wasm32-unknown-unknown/release/
+rm -fv escrow_indexer.wasm
+
 set +ex
