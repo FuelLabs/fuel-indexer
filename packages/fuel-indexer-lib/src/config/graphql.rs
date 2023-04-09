@@ -1,5 +1,5 @@
 use crate::{
-    config::{Env, IndexerConfigResult},
+    config::{utils::derive_http_url, Env, IndexerConfigResult},
     defaults,
     utils::{derive_socket_addr, is_opt_env_var, trim_opt_env_key},
 };
@@ -7,8 +7,6 @@ pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
 use std::net::SocketAddr;
-
-use super::derive_http_url;
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct GraphQLConfig {
