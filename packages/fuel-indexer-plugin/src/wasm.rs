@@ -12,6 +12,7 @@ use fuel_indexer_types::ffi::{
 pub use bincode;
 pub use hex;
 pub use hex::FromHex;
+pub use sha2;
 pub use std::collections::HashMap;
 pub use std::collections::HashSet;
 
