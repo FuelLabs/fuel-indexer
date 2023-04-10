@@ -4,5 +4,17 @@ use fuel_indexer_plugin::prelude::*;
 
 #[indexer(manifest = "examples/escrow/escrow-indexer/escrow_indexer.manifest.yaml")]
 mod escrow_indexer {
-    fn log_something() {}
+    fn index_accepted_arbiter_event(event: AcceptedArbiterEvent, block_data: BlockData) {
+        let identifier = event.identifier;
+
+        let block = Block {
+            id: first8_bytes_to_u64(block_data.id),
+            height: block_data.height,
+            timestamp: block_data.time,
+        };
+
+        block.save();
+
+        //index LogData for accepted arbiter
+    }
 }
