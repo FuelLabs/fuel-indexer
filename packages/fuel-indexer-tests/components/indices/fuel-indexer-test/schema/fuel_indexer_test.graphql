@@ -40,6 +40,8 @@ type QueryRoot {
     bookclub: BookClub
     municipality: Municipality
     sportsteam: SportsTeam
+    innerfilterentity: InnerFilterEntity
+    filterentity: FilterEntity
 }
 
 type PingEntity {
@@ -150,6 +152,18 @@ type CallEntity {
     amount: UInt8!
 }
 
+type PanicEntity {
+    id: ID!
+    contract_id: ContractId!
+    reason: UInt4!
+}
+
+type RevertEntity {
+    id: ID!
+    contract_id: ContractId!
+    error_val: UInt8!
+}
+
 type Genre {
     id: ID!
     name: Charfield!
@@ -235,14 +249,17 @@ type SportsTeam {
     municipality: Municipality! @join(on:name)
 }
 
-type PanicEntity {
+type InnerFilterEntity {
     id: ID!
-    contract_id: ContractId!
-    reason: UInt4! 
+    inner_foo: Charfield!
+    inner_bar: UInt8!
+    inner_baz: UInt8!
 }
 
-type RevertEntity {
+type FilterEntity {
     id: ID!
-    contract_id: ContractId!
-    error_val: UInt8!
+    foola: Charfield!
+    maybe_null_bar: UInt8
+    bazoo: UInt8!
+    inner_entity: InnerFilterEntity!
 }
