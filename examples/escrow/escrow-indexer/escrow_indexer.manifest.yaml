@@ -6,6 +6,6 @@ graphql_schema: examples/escrow/escrow-indexer/schema/escrow_indexer.schema.grap
 module:
   wasm: target/wasm32-unknown-unknown/release/escrow_indexer.wasm
 metrics: ~
-contract_id: findme 
+contract_id: fueldd986ee21b68cefd531617ef1ca0554807e257e1cac57c19f39f4cdf9ecface1
 start_block: 1
 resumable: ~
