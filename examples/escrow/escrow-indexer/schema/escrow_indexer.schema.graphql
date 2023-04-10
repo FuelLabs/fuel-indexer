@@ -1,20 +1,139 @@
+
 schema {
     query: QueryRoot
 }
 
 type QueryRoot {
-    foo: Foo 
-    bar: Bar 
+    acceptedArbiterEvent: AcceptedArbiterEvent
+    createdEscrowEvent: CreatedEscrowEvent
+    depositEvent: DepositEvent
+    disputeEvent: DisputeEvent
+    paymentTakenEvent: PaymentTakenEvent
+    proposedArbiterEvent: ProposedArbiterEvent
+    resolvedDisputeEvent: ResolvedDisputeEvent
+    returnedDepositEvent: ReturnedDepositEvent
+    transferredToSellerEvent: TransferredToSellerEvent
+    withdrawnCollateralEvent: WithdrawnCollateralEvent
+    arbiterInputError(id: ID!): ArbiterInputError
+    assetInputError(id: ID!): AssetInputError
+    deadlineInputError(id: ID!): DeadlineInputError
+    depositError(id: ID!): DepositError
+    stateError(id: ID!): StateError
+    userError(id: ID!): UserError
+    userInputError(id: ID!): UserInputError
 }
 
-# Calling this `Greeter` so as to not clash with `Person` in the contract
-type Foo {
+type Arbiter {
     id: ID!
-    name: Charfield!
+    address: String!
+    asset: ContractId
+    fee_amount: UInt64!
 }
 
-# Calling this `Salutation` so as to not clash with `Greeting` in the contract
-type Bar {
+type Buyer {
     id: ID!
-    message_hash: Bytes32!
+    address: String!
+    asset: ContractId
+    deposited_amount: UInt8!
+}
+
+type EscrowInfo {
+    id: ID!
+    arbiter: Arbiter!
+    asset_count: UInt8!
+    buyer: Buyer!
+    deadline: UInt64!
+    disputed: Boolean!
+    first_asset_index: UInt8!
+    seller: Seller!
+    state: String!
+}
+
+type AcceptedArbiterEvent {
+    id: ID!
+    identifier: UInt64!
+}
+
+type CreatedEscrowEvent {
+    id: ID!
+    escrow: EscrowInfo!
+    identifier: UInt64!
+}
+
+type DepositEvent {
+    id: ID!
+    asset: ContractId!
+    identifier: UInt64!
+}
+
+type DisputeEvent {
+    id: ID!
+    identifier: UInt64!
+}
+
+type PaymentTakenEvent {
+    id: ID!
+    identifier: UInt64!
+}
+
+type ProposedArbiterEvent {
+    id: ID!
+    arbiter: Arbiter!
+    identifier: UInt64!
+}
+
+type ResolvedDisputeEvent {
+    id: ID!
+    identifier: UInt64!
+    user: Identity!
+}
+
+type ReturnedDepositEvent {
+    id: ID!
+    identifier: UInt64!
+}
+
+type TransferredToSellerEvent {
+    id: ID!
+    identifier: UInt64!
+}
+
+type WithdrawnCollateralEvent {
+    id: ID!
+    identifier: UInt64!
+}
+
+type ArbiterInputError {
+    id: ID!
+    error: String!
+}
+
+type AssetInputError {
+    id: ID!
+    error: String!
+}
+
+type DeadlineInputError {
+    id: ID!
+    error: String!
+}
+
+type DepositError {
+    id: ID!
+    error: String!
+}
+
+type StateError {
+    id: ID!
+    error: String!
+}
+
+type UserError {
+    id: ID!
+    error: String!
+}
+
+type UserInputError {
+    id: ID!
+    error: String!
 }
