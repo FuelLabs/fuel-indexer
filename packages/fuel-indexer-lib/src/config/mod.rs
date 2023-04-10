@@ -195,6 +195,10 @@ pub struct IndexerArgs {
     /// Start a local Fuel node.
     #[clap(long, help = "Start a local Fuel node.")]
     pub local_fuel_node: bool,
+
+    /// Allow network configuration via indexer manifests.
+    #[clap(long, help = "Allow network configuration via indexer manifests.")]
+    pub indexer_net_config: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -311,6 +315,8 @@ pub struct IndexerConfig {
     #[serde(default)]
     pub local_fuel_node: bool,
     #[serde(default)]
+    pub indexer_net_config: bool,
+    #[serde(default)]
     pub fuel_node: FuelNodeConfig,
     #[serde(default)]
     pub graphql_api: GraphQLConfig,
@@ -366,6 +372,7 @@ impl From<IndexerArgs> for IndexerConfig {
         let mut config = IndexerConfig {
             verbose: args.verbose,
             local_fuel_node: args.local_fuel_node,
+            indexer_net_config: args.indexer_net_config,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -442,6 +449,7 @@ impl From<ApiServerArgs> for IndexerConfig {
         let mut config = IndexerConfig {
             verbose: args.verbose,
             local_fuel_node: defaults::LOCAL_FUEL_NODE,
+            indexer_net_config: defaults::INDEXER_NET_CONFIG,
             database,
             fuel_node: FuelNodeConfig {
                 host: args.fuel_node_host,
@@ -491,6 +499,8 @@ impl IndexerConfig {
         let run_migrations_key = serde_yaml::Value::String("run_migrations".into());
         let verbose_key = serde_yaml::Value::String("verbose".into());
         let local_fuel_node_key = serde_yaml::Value::String("local_fuel_node".into());
+        let indexer_net_config_key =
+            serde_yaml::Value::String("indexer_net_config".into());
 
         if let Some(metrics) = content.get(metrics_key) {
             config.metrics = metrics.as_bool().unwrap();
@@ -510,6 +520,10 @@ impl IndexerConfig {
 
         if let Some(local_fuel_node) = content.get(local_fuel_node_key) {
             config.local_fuel_node = local_fuel_node.as_bool().unwrap();
+        }
+
+        if let Some(indexer_net_config) = content.get(indexer_net_config_key) {
+            config.indexer_net_config = indexer_net_config.as_bool().unwrap();
         }
 
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());

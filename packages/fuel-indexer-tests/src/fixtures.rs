@@ -282,6 +282,7 @@ pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
     let config = IndexerConfig {
         verbose: true,
         local_fuel_node: false,
+        indexer_net_config: false,
         fuel_node: FuelNodeConfig::default(),
         database,
         graphql_api: GraphQLConfig::default(),
@@ -307,6 +308,7 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
     let config = IndexerConfig {
         verbose: true,
         local_fuel_node: false,
+        indexer_net_config: false,
         fuel_node: FuelNodeConfig::default(),
         database,
         graphql_api: GraphQLConfig::default(),
@@ -338,6 +340,7 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
     let config = IndexerConfig {
         verbose: true,
         local_fuel_node: false,
+        indexer_net_config: false,
         fuel_node: FuelNodeConfig::default(),
         database,
         graphql_api: GraphQLConfig::default(),
