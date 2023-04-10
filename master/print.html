@@ -441,6 +441,9 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --indexer-net-config
+            Allow network configuration via indexer manifests.
+
         --jwt-expiry &lt;JWT_EXPIRY&gt;
             Amount of time (seconds) before expiring token (if JWT scheme is specified).
 
@@ -510,12 +513,15 @@ OPTIONS:
 
 # # Run database migrations before starting service.
 # run_migrations: true
-#
+
 # # Enable verbose logging.
 # verbose: false
 
 # # Start a local Fuel node.
 # local_fuel_node: false
+
+# # Allow network configuration via indexer manifests.
+# indexer_net_config: false
 
 # # ***********************
 # # Fuel Node configuration
@@ -1103,6 +1109,7 @@ http://127.0.0.1:29987/api/graph/fuel_examples/explorer_indexer
 <p>A manifest serves as the YAML configuration file for a given indexer. A proper manifest has the following structure:</p>
 <pre><code class="language-yaml">namespace: fuel
 identifier: index1
+fuel_client: beta-3.fuel.network:80
 abi: path/to/my/contract-abi.json
 contract_id: &quot;0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051&quot;
 graphql_schema: path/to/my/schema.graphql
@@ -1112,31 +1119,43 @@ module:
 report_metrics: true
 </code></pre>
 <h2 id="namespace"><a class="header" href="#namespace"><code>namespace</code></a></h2>
+<p><em>Required.</em></p>
 <p>The <code>namespace</code> is the topmost organizational level of an indexer. You can think of different namespaces as separate and distinct collections comprised of indexers. A namespace is unique to a given indexer operator -- i.e., indexer operators will not be able to support more than one namespace of the same name.</p>
 <h2 id="identifier"><a class="header" href="#identifier"><code>identifier</code></a></h2>
+<p><em>Required.</em></p>
 <p>The <code>identifier</code> field is used to (quite literally) identify the given indexer. If a namespace describes a collection of indexers, then an identifier describes a unique indexer inside that collection. As an example, if a provided <code>namespace</code> is <code>&quot;fuel&quot;</code> and a provided <code>identifier</code> is <code>&quot;index1&quot;</code>, then the full identifier for the given indexer will be <code>fuel.index1</code>.</p>
+<h2 id="fuel_client"><a class="header" href="#fuel_client"><code>fuel_client</code></a></h2>
+<p><em>Optional.</em></p>
+<p>The <code>fuel_client</code> denotes the address (host, port combination) of the running Fuel client that you would like your indexer to index events from. In order to use this per-indexer <code>fuel_client</code> option, the indexer service at which your indexer is deployed will have to run with the <code>--indexer_net_config</code> option.</p>
 <h2 id="abi"><a class="header" href="#abi"><code>abi</code></a></h2>
+<p><em>Optional.</em></p>
 <p>The <code>abi</code> option is used to provide a link to the Sway JSON application binary interface (ABI) that is generated when you build your Sway project. This generated ABI contains all types, type IDs, logged types, and message types used in your Sway contract.</p>
 <h2 id="contract_id"><a class="header" href="#contract_id"><code>contract_id</code></a></h2>
+<p><em>Optional.</em></p>
 <p>The <code>contract_id</code> specifies the particular contract to which you would like an indexer to subscribe. Setting this field to an empty string will index events from any contract that is currently executing on the network.</p>
 <blockquote>
 <p>Important: Contract IDs are unique to the content of a contract. If you are subscribing to a certain contract and then the contract itself is changed or updated, you will need to change the <code>contract_id</code> field of the manifest to the new ID.</p>
 </blockquote>
 <h2 id="graphql_schema"><a class="header" href="#graphql_schema"><code>graphql_schema</code></a></h2>
+<p><em>Required.</em></p>
 <p>The <code>graphql_schema</code> field contains the file path pointing to the corresponding GraphQL schema for a given indexer. This schema file holds the structures of the data that will eventually reside in your database. You can read more about the format of the schema file <a href="reference-guide/components/assets/./schema.html">here</a>.</p>
 <blockquote>
 <p>Important: The objects defined in your GraphQL schema are called 'entities'. These entities are what will be eventually be stored in the database.</p>
 </blockquote>
 <h2 id="start_block"><a class="header" href="#start_block"><code>start_block</code></a></h2>
+<p><em>Optional.</em></p>
 <p>The <code>start_block</code> field indicates the block height after which you'd like your indexer to start indexing events.</p>
 <h2 id="module"><a class="header" href="#module"><code>module</code></a></h2>
+<p><em>Required.</em></p>
 <p>The <code>module</code> field contains a file path that points to code that will be run as an <em>executor</em> inside of the indexer. There are two available options for modules/execution: <code>wasm</code> and <code>native</code>. Note that when specifying a <code>wasm</code> module, the provided path must lead to a compiled WASM binary.</p>
 <blockquote>
 <p>Important: At this time, <code>wasm</code> is the preferred method of execution.</p>
 </blockquote>
 <h2 id="report_metrics"><a class="header" href="#report_metrics"><code>report_metrics</code></a></h2>
+<p><em>Optional.</em></p>
 <p>The <code>report_metrics</code> field indicates whether to report Prometheus metrics to the Fuel backend.</p>
 <h2 id="resumable"><a class="header" href="#resumable"><code>resumable</code></a></h2>
+<p><em>Optional.</em></p>
 <p>The <code>resumable</code> field contains a boolean value and specifies whether the indexer should synchronise with the latest block if it has fallen out of sync.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h1>
 <p>The GraphQL schema is a required component of the Fuel indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the schema.</p>

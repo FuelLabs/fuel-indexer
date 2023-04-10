@@ -185,6 +185,9 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --indexer-net-config
+            Allow network configuration via indexer manifests.
+
         --jwt-expiry &lt;JWT_EXPIRY&gt;
             Amount of time (seconds) before expiring token (if JWT scheme is specified).
 
@@ -254,12 +257,15 @@ OPTIONS:
 
 # # Run database migrations before starting service.
 # run_migrations: true
-#
+
 # # Enable verbose logging.
 # verbose: false
 
 # # Start a local Fuel node.
 # local_fuel_node: false
+
+# # Allow network configuration via indexer manifests.
+# indexer_net_config: false
 
 # # ***********************
 # # Fuel Node configuration
