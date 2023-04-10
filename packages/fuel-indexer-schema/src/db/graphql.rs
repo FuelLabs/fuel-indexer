@@ -1,7 +1,9 @@
-use crate::db::tables::Schema;
-use crate::sql_types::{
-    DbType, JoinCondition, QueryElement, QueryFilter, QueryJoinNode, UserQuery,
+use crate::db::arguments::{parse_arguments, Filter};
+use crate::db::queries::{
+    EntityFilter, JoinCondition, QueryElement, QueryJoinNode, UserQuery,
 };
+use crate::db::tables::Schema;
+use crate::sql_types::DbType;
 use graphql_parser::query as gql;
 use std::collections::HashMap;
 use thiserror::Error;
@@ -28,28 +30,22 @@ pub enum GraphqlError {
     FragmentResolverFailed,
     #[error("Selection not supported.")]
     SelectionNotSupported,
+    #[error("Unsupported negation for filter type: {0:?}")]
+    UnsupportedNegation(String),
+    #[error("Filters should have at least one predicate")]
+    NoPredicatesInFilter,
+    #[error("Unsupported filter operation type: {0:?}")]
+    UnsupportedFilterOperation(String),
+    #[error("Unable to parse value into string, bool, or i64: {0:?}")]
+    UnableToParseValue(String),
+    #[error("No available predicates to associate with logical operator")]
+    MissingPartnerForBinaryLogicalOperator,
 }
 
 #[derive(Clone, Debug)]
 pub enum Selection {
     Field(String, Vec<Filter>, Selections),
     Fragment(String),
-}
-
-#[derive(Clone, Debug)]
-pub struct Filter {
-    name: String,
-    value: String,
-}
-
-impl Filter {
-    pub fn new(name: String, value: String) -> Filter {
-        Filter { name, value }
-    }
-
-    pub fn as_sql(&self, _jsonify: bool) -> String {
-        format!("{} = {}", self.name, self.value)
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -89,32 +85,10 @@ impl Selections {
 
                     let mut filters = vec![];
                     for (arg, value) in arguments {
-                        if schema.field_type(subfield_type, arg).is_none() {
-                            return Err(GraphqlError::UnrecognizedArgument(
-                                subfield_type.into(),
-                                arg.to_string(),
-                            ));
-                        }
+                        let filter =
+                            parse_arguments(subfield_type, arg, value.clone(), schema)?;
 
-                        let val = match value {
-                            gql::Value::Int(val) => {
-                                format!(
-                                    "{}",
-                                    val.as_i64().expect("Failed to parse value as i64")
-                                )
-                            }
-                            gql::Value::Float(val) => format!("{val}",),
-                            gql::Value::String(val) => val.to_string(),
-                            gql::Value::Boolean(val) => format!("{val}",),
-                            gql::Value::Null => String::from("NULL"),
-                            o => {
-                                return Err(GraphqlError::UnsupportedValueType(format!(
-                                    "{o:#?}",
-                                )))
-                            }
-                        };
-
-                        filters.push(Filter::new(arg.to_string(), val));
+                        filters.push(filter);
                     }
 
                     let sub_selections =
@@ -269,6 +243,7 @@ impl Operation {
             let mut entities: Vec<String> = Vec::new();
 
             let mut joins: HashMap<String, QueryJoinNode> = HashMap::new();
+            let mut query_filters: Vec<EntityFilter> = Vec::new();
 
             let mut nested_entity_stack: Vec<String> = Vec::new();
 
@@ -296,6 +271,15 @@ impl Operation {
                         .collect::<Vec<Selection>>(),
                 );
 
+                if !filters.is_empty() {
+                    query_filters.push(EntityFilter {
+                        fully_qualified_table_name: format!(
+                            "{namespace}_{identifier}.{entity_name}"
+                        ),
+                        filters,
+                    });
+                }
+
                 let mut last_seen_entities_len = entities.len();
 
                 while let Some(current) = queue.pop() {
@@ -316,7 +300,8 @@ impl Operation {
 
                     last_seen_entities_len = entities.len();
 
-                    if let Selection::Field(field_name, _f, subselections) = current {
+                    if let Selection::Field(field_name, filters, subselections) = current
+                    {
                         if subselections.selections.is_empty() {
                             elements.push(QueryElement::Field {
                                 key: field_name.clone(),
@@ -324,6 +309,14 @@ impl Operation {
                                     "{namespace}_{identifier}.{entity_name}.{field_name}"
                                 ),
                             });
+                            if !filters.is_empty() {
+                                query_filters.push(EntityFilter {
+                                    fully_qualified_table_name: format!(
+                                        "{namespace}_{identifier}.{entity_name}"
+                                    ),
+                                    filters,
+                                });
+                            }
                         } else {
                             let mut new_entity = field_name.clone();
                             // If the current entity has a foreign key on the current
@@ -405,6 +398,14 @@ impl Operation {
                                             );
                                         }
                                     };
+                                    if !filters.is_empty() {
+                                        query_filters.push(EntityFilter {
+                                            fully_qualified_table_name: format!(
+                                                "{namespace}_{identifier}.{foreign_key_table}"
+                                            ),
+                                            filters,
+                                        });
+                                    }
                                 }
                             }
 
@@ -418,7 +419,7 @@ impl Operation {
                             nested_entity_stack.push(new_entity.clone());
 
                             elements.push(QueryElement::ObjectOpeningBoundary {
-                                key: field_name,
+                                key: field_name.clone(),
                             });
 
                             queue.append(&mut subselections.get_selections());
@@ -436,23 +437,15 @@ impl Operation {
                     ]);
                 }
 
-                // TODO: Support filtering operations, e.g. <, >, set membership, etc.
-                let filters: Vec<QueryFilter> = filters
-                    .into_iter()
-                    .map(|f| QueryFilter {
-                        key: f.name,
-                        relation: "=".to_string(),
-                        value: f.value,
-                    })
-                    .collect();
-
                 let query = UserQuery {
                     elements,
                     joins,
                     namespace_identifier: format!("{namespace}_{identifier}"),
                     entity_name,
-                    filters,
+                    filters: query_filters,
                 };
+
+                // println!("{query:#?}");
 
                 queries.push(query)
             }

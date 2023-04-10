@@ -1,5 +1,7 @@
+pub mod arguments;
 pub mod graphql;
 pub mod manager;
+pub mod queries;
 pub mod tables;
 
 use fuel_indexer_database::IndexerDatabaseError;
