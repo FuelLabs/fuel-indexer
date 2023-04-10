@@ -1780,7 +1780,7 @@ checksum = "70a1bb05cc554f46079d0fa72abe995a2d32d0737d410a41da75b31e3f7ef768"
 dependencies = [
  "counter",
  "darling 0.13.4",
- "graphql-parser 0.4.0",
+ "graphql-parser 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "once_cell",
  "proc-macro2",
  "quote",
@@ -2987,7 +2987,7 @@ dependencies = [
  "fuels-core",
  "fuels-macros",
  "fuels-types",
- "graphql-parser 0.3.0",
+ "graphql-parser 0.4.0 (git+https://github.com/FuelLabs/graphql-parser.git)",
  "lazy_static",
  "proc-macro-error",
  "proc-macro2",
@@ -3048,7 +3048,7 @@ dependencies = [
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-types",
- "graphql-parser 0.3.0",
+ "graphql-parser 0.4.0 (git+https://github.com/FuelLabs/graphql-parser.git)",
  "hex",
  "insta",
  "serde",
@@ -3598,9 +3598,9 @@ dependencies = [
 
 [[package]]
 name = "graphql-parser"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1abd4ce5247dfc04a03ccde70f87a048458c9356c7e41d21ad8c407b3dde6f2"
+checksum = "d2ebc8013b4426d5b81a4364c419a95ed0b404af2b82e2457de52d9348f0e474"
 dependencies = [
  "combine",
  "thiserror",
@@ -3609,8 +3609,7 @@ dependencies = [
 [[package]]
 name = "graphql-parser"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2ebc8013b4426d5b81a4364c419a95ed0b404af2b82e2457de52d9348f0e474"
+source = "git+https://github.com/FuelLabs/graphql-parser.git#c37eddb9a12a7f7e5a2c7b07f8cd16645e909e9f"
 dependencies = [
  "combine",
  "thiserror",
