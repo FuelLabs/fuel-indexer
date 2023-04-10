@@ -100,16 +100,10 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     );
     pb.set_message("🚀 Deploying...");
 
-    let client = if verbose {
-        Client::builder()
-            .tcp_keepalive(Duration::from_secs(TCP_TIMEOUT))
-            .connection_verbose(true)
-            .build()?
-    } else {
-        Client::builder()
-            .tcp_keepalive(Duration::from_secs(TCP_TIMEOUT))
-            .build()?
-    };
+    let client = Client::builder()
+        .tcp_keepalive(Duration::from_secs(TCP_TIMEOUT))
+        .connection_verbose(verbose)
+        .build()?;
 
     let res = client
         .post(&target)
