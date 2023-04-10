@@ -2184,6 +2184,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "escrow-indexer"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels-core",
+ "fuels-macros",
+ "fuels-types",
+ "getrandom",
+ "instant",
+ "serde",
+]
+
+[[package]]
 name = "eth-keystore"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
