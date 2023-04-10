@@ -12,6 +12,10 @@ use std::{
     bytes::Bytes,
 };
 
+pub enum UserError {
+    Unauthorized: (),
+}
+
 pub struct Pong {
     id: u64,
     value: u64,
@@ -78,6 +82,7 @@ abi FuelIndexer {
     fn trigger_pure_function();
     fn trigger_panic() -> u64;
     fn trigger_revert();
+    fn trigger_enum_error(num: u64);
 }
 
 impl FuelIndexer for Contract {
@@ -218,4 +223,8 @@ impl FuelIndexer for Contract {
     fn trigger_revert() {
         assert(1 == 0);
     }
+
+    fn trigger_enum_error(num: u64) {
+            require(num != 69, UserError::Unauthorized);
+        }
 }
