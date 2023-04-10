@@ -7,7 +7,7 @@ use std::{
 };
 use thiserror::Error;
 
-/// Result returned from Manifest operations.
+/// Result type returned from Manifest operations.
 type ManifestResult<T> = Result<T, ManifestError>;
 
 /// Error type returned from Manifest operations.
@@ -35,10 +35,8 @@ pub enum Module {
     Native,
 }
 
-impl Module {
-    /// Return the path at which this module exists. Note that native execution
-    /// does not compile a module, thus no path exists for this execution method.
-    pub fn path(&self) -> String {
+impl ToString for Module {
+    fn to_string(&self) -> String {
         match self {
             Self::Wasm(o) => o.clone(),
             Self::Native => {
@@ -59,6 +57,7 @@ pub struct Manifest {
     pub namespace: String,
     pub abi: Option<String>,
     pub identifier: String,
+    pub fuel_client: Option<String>,
     pub graphql_schema: String,
     pub module: Module,
     pub metrics: Option<bool>,
@@ -74,7 +73,7 @@ impl Manifest {
         let mut file = File::open(path)?;
         let mut content = String::new();
         file.read_to_string(&mut content)?;
-        Manifest::try_from(content.as_str())
+        Self::try_from(content.as_str())
     }
 
     /// Return the raw GraphQL schema string for an indexer manifest.

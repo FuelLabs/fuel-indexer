@@ -2,6 +2,7 @@
 namespace: fuel_examples
 abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json
 identifier: hello_indexer
+fuel_client: ~
 graphql_schema: examples/hello-world/hello-indexer/schema/hello_indexer.schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/hello_indexer.wasm

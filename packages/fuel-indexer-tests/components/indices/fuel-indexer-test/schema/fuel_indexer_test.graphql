@@ -112,6 +112,7 @@ type ScriptResult {
 
 type MessageOut {
     id: ID!
+    message_id: MessageId!
     sender: Address!
     recipient: Address!
     amount: UInt8!

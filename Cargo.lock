@@ -3037,6 +3037,7 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "hex",
+ "sha2 0.10.6",
  "tokio",
  "tracing",
  "tracing-subscriber 0.2.25",
@@ -3084,6 +3085,7 @@ dependencies = [
  "fuels-types",
  "getrandom",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]
@@ -6129,6 +6131,7 @@ dependencies = [
  "fuels-types",
  "getrandom",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]

@@ -51,3 +51,5 @@ pub const VERBOSE_DB_LOGGING: &str = "false";
 pub const NODE_GRAPHQL_PAGE_SIZE: usize = 10;
 
 pub const LOCAL_FUEL_NODE: bool = false;
+
+pub const INDEXER_NET_CONFIG: bool = false;
