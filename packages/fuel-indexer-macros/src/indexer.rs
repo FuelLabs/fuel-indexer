@@ -256,22 +256,33 @@ fn process_fn_items(
     };
 
     let contracts = {
+        let contract_id_checks = manifest.contract_ids.iter().map(|contract_id| {
+        match contract_id {
+            Some(contract_id) => {
+                quote! {
+                    let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
+                    if receipt_contract_id == manifest_contract_id {
+                        found = true;
+                    }
+                }
+            }
+            None => quote! {},
+        }
+    });
+
         quote! {
             let receipt_contract_id = Bech32ContractId::from(id);
             let mut found = false;
-            for contract_id in &manifest.contract_ids.iter().filter_map(|x| x.as_ref()) {
-                let manifest_contract_id = Bech32ContractId::from_str(contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
-                if receipt_contract_id == manifest_contract_id {
-                    found = true;
-                    break;
-                }
-            }
+
+            #(#contract_id_checks)*
+
             if !found {
-                Logger::info("Skipping receipt from contract not in manifest");
+                Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                 continue;
             }
         }
     };
+
 
     let asyncness = if is_native {
         quote! {async}
