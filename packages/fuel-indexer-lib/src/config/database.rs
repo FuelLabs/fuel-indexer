@@ -1,14 +1,19 @@
 use crate::{
-    config::{Env, IndexerConfigResult},
+    config::{Env, IndexerConfigError, IndexerConfigResult},
     defaults,
     utils::{is_opt_env_var, trim_opt_env_key},
 };
 pub use clap::Parser;
 use http::Uri;
 use serde::Deserialize;
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Formatter},
+    str::FromStr,
+};
 use url::{ParseError, Url};
 
+/// Indexer database configuration.
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DatabaseConfig {
@@ -23,6 +28,7 @@ pub enum DatabaseConfig {
 }
 
 impl Env for DatabaseConfig {
+    /// Inject environment variables into `DatabaseConfig`.
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         match self {
             DatabaseConfig::Postgres {
@@ -57,7 +63,7 @@ impl Env for DatabaseConfig {
     }
 }
 
-impl std::string::ToString for DatabaseConfig {
+impl ToString for DatabaseConfig {
     fn to_string(&self) -> String {
         match self {
             DatabaseConfig::Postgres {
@@ -79,8 +85,8 @@ impl std::string::ToString for DatabaseConfig {
     }
 }
 
-impl std::fmt::Debug for DatabaseConfig {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Debug for DatabaseConfig {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             DatabaseConfig::Postgres {
                 user,
@@ -119,16 +125,17 @@ impl Default for DatabaseConfig {
     }
 }
 
-impl From<DatabaseConfig> for Uri {
-    fn from(_: DatabaseConfig) -> Self {
-        unimplemented!()
+impl TryFrom<DatabaseConfig> for Uri {
+    type Error = IndexerConfigError;
+    fn try_from(val: DatabaseConfig) -> IndexerConfigResult<Uri> {
+        let uri = Uri::from_str(&val.to_string())?;
+        Ok(uri)
     }
 }
 
 impl FromStr for DatabaseConfig {
-    type Err = ParseError;
-
-    fn from_str(db_url: &str) -> Result<Self, Self::Err> {
+    type Err = IndexerConfigError;
+    fn from_str(db_url: &str) -> IndexerConfigResult<Self> {
         let url = Url::parse(db_url)?;
         let params: HashMap<_, _> = url.query_pairs().into_owned().collect();
         let value = params.get("verbose").unwrap_or(&"false".into()).to_owned();

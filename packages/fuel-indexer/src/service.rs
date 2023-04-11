@@ -87,7 +87,10 @@ impl IndexerService {
 
         let mut items = vec![
             (IndexAssetType::Wasm, exec_source.to_vec()),
-            (IndexAssetType::Manifest, manifest.to_bytes()?),
+            (
+                IndexAssetType::Manifest,
+                Manifest::try_into(manifest.clone())?,
+            ),
             (IndexAssetType::Schema, schema_bytes),
         ];
 
@@ -123,7 +126,7 @@ impl IndexerService {
         let indices = queries::registered_indices(&mut conn).await?;
         for index in indices {
             let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
-            let mut manifest = Manifest::from_slice(&assets.manifest.bytes)?;
+            let mut manifest = Manifest::try_from(&assets.manifest.bytes)?;
 
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
             manifest.start_block = Some(start_block);
@@ -247,7 +250,7 @@ async fn create_service_task(
                                         );
 
                                 let mut manifest =
-                                    Manifest::from_slice(&assets.manifest.bytes)?;
+                                    Manifest::try_from(&assets.manifest.bytes)?;
 
                                 let start_block =
                                     get_start_block(&mut conn, &manifest).await?;
@@ -336,7 +339,7 @@ async fn create_service_task(
                         }
 
                         let mut manifest =
-                            Manifest::from_slice(&latest_assets.manifest.bytes)?;
+                            Manifest::try_from(&latest_assets.manifest.bytes)?;
 
                         let start_block = get_start_block(&mut conn, &manifest).await?;
                         manifest.start_block = Some(start_block);

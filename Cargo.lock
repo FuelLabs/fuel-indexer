@@ -330,6 +330,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eab1c04a571841102f5345a8fc0f6bb3d31c315dec879b5c6e42e40ce7ffa34e"
 
 [[package]]
+name = "ascii_utils"
+version = "0.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "71938f30533e4d95a6d17aa530939da3842c2ab6f4f84b9dae68447e4129f74a"
+
+[[package]]
 name = "async-channel"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -375,9 +381,9 @@ version = "4.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9ed522678d412d77effe47b3c82314ac36952a35e6e852093dd48287c421f80"
 dependencies = [
- "async-graphql-derive",
- "async-graphql-parser",
- "async-graphql-value",
+ "async-graphql-derive 4.0.16",
+ "async-graphql-parser 4.0.16",
+ "async-graphql-value 4.0.16",
  "async-stream",
  "async-trait",
  "base64 0.13.1",
@@ -403,13 +409,79 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-graphql"
+version = "5.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f0ed623e2503b45d875461e5de88a1b3466cf2ed3e43cf189a102a641b93f19"
+dependencies = [
+ "async-graphql-derive 5.0.7",
+ "async-graphql-parser 5.0.7",
+ "async-graphql-value 5.0.7",
+ "async-stream",
+ "async-trait",
+ "base64 0.13.1",
+ "bytes",
+ "fast_chemail",
+ "fnv",
+ "futures-util",
+ "handlebars",
+ "http",
+ "indexmap",
+ "mime",
+ "multer",
+ "num-traits",
+ "once_cell",
+ "pin-project-lite",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "static_assertions",
+ "tempfile",
+ "thiserror",
+]
+
+[[package]]
+name = "async-graphql-axum"
+version = "5.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "396ebdb8f6444ed430c6869cbf9f6bc018a8a95d0e5759952ae5f4bec144d79c"
+dependencies = [
+ "async-graphql 5.0.7",
+ "async-trait",
+ "axum 0.6.12",
+ "bytes",
+ "futures-util",
+ "http-body",
+ "serde_json",
+ "tokio-util",
+ "tower-service",
+]
+
+[[package]]
 name = "async-graphql-derive"
 version = "4.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c121a894495d7d3fc3d4e15e0a9843e422e4d1d9e3c514d8062a1c94b35b005d"
 dependencies = [
  "Inflector",
- "async-graphql-parser",
+ "async-graphql-parser 4.0.16",
+ "darling 0.14.4",
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+ "thiserror",
+]
+
+[[package]]
+name = "async-graphql-derive"
+version = "5.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cebcf27112b969c4ff2a003b318ab5efde96055f9d0ee3344a3b3831fa2932ba"
+dependencies = [
+ "Inflector",
+ "async-graphql-parser 5.0.7",
  "darling 0.14.4",
  "proc-macro-crate",
  "proc-macro2",
@@ -424,7 +496,19 @@ version = "4.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b6c386f398145c6180206c1869c2279f5a3d45db5be4e0266148c6ac5c6ad68"
 dependencies = [
- "async-graphql-value",
+ "async-graphql-value 4.0.16",
+ "pest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "async-graphql-parser"
+version = "5.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "631770464ad2492da9af6b70048e9e477ef7c1e55fdbfb0719f3330cfa87d8e9"
+dependencies = [
+ "async-graphql-value 5.0.7",
  "pest",
  "serde",
  "serde_json",
@@ -435,6 +519,18 @@ name = "async-graphql-value"
 version = "4.0.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a941b499fead4a3fb5392cabf42446566d18c86313f69f2deab69560394d65f"
+dependencies = [
+ "bytes",
+ "indexmap",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "async-graphql-value"
+version = "5.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b59633f68ae4b858e14ec761e02455c575327249cbefed3af067a0b26d76daa9"
 dependencies = [
  "bytes",
  "indexmap",
@@ -617,9 +713,11 @@ dependencies = [
  "async-trait",
  "axum-core 0.3.3",
  "axum-macros",
+ "base64 0.21.0",
  "bitflags",
  "bytes",
  "futures-util",
+ "headers",
  "http",
  "http-body",
  "hyper",
@@ -635,8 +733,10 @@ dependencies = [
  "serde_json",
  "serde_path_to_error",
  "serde_urlencoded",
+ "sha1",
  "sync_wrapper",
  "tokio",
+ "tokio-tungstenite",
  "tower",
  "tower-layer",
  "tower-service",
@@ -2193,6 +2293,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7"
 
 [[package]]
+name = "fast_chemail"
+version = "0.9.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "495a39d30d624c2caabe6312bfead73e7717692b44e0b32df168c275a2e8e9e4"
+dependencies = [
+ "ascii_utils",
+]
+
+[[package]]
 name = "fastrand"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2269,7 +2378,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "forc-index"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -2295,7 +2404,7 @@ dependencies = [
 
 [[package]]
 name = "forc-postgres"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -2418,7 +2527,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "da7622da4c0671c89b61cf575d71f1d28416770b913188e3fcf47611bb52da54"
 dependencies = [
  "anyhow",
- "async-graphql",
+ "async-graphql 4.0.16",
  "async-trait",
  "axum 0.5.17",
  "clap 4.1.13",
@@ -2768,7 +2877,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2795,9 +2904,11 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
+ "async-graphql 5.0.7",
+ "async-graphql-axum",
  "async-std",
  "axum 0.6.12",
  "clap 3.2.23",
@@ -2822,7 +2933,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2834,7 +2945,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "serde",
  "strum 0.24.1",
@@ -2842,7 +2953,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-lib"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -2861,7 +2972,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macros"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "fuel-abi-types 0.2.1",
  "fuel-indexer-database-types",
@@ -2889,7 +3000,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-metrics"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "lazy_static",
  "prometheus",
@@ -2898,7 +3009,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-plugin"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2910,6 +3021,7 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "hex",
+ "sha2 0.10.6",
  "tokio",
  "tracing",
  "tracing-subscriber 0.2.25",
@@ -2917,7 +3029,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2929,7 +3041,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-schema"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bincode",
  "fuel-indexer-database",
@@ -2957,6 +3069,7 @@ dependencies = [
  "fuels-types",
  "getrandom",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]
@@ -2967,6 +3080,7 @@ dependencies = [
  "actix-web",
  "async-std",
  "axum 0.6.12",
+ "bigdecimal",
  "chrono",
  "fuel-indexer",
  "fuel-indexer-api-server",
@@ -3003,7 +3117,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-types"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "chrono",
  "fuel-tx",
@@ -3532,6 +3646,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "handlebars"
+version = "4.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "035ef95d03713f2c347a72547b7cd38cbc9af7cd51e6099fb62d586d4a6dee3a"
+dependencies = [
+ "log",
+ "pest",
+ "pest_derive",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "hash32"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3574,6 +3702,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "69fe1fcf8b4278d860ad0548329f892a3631fb63f82574df68275f34cdbe0ffa"
 dependencies = [
  "hashbrown 0.12.3",
+]
+
+[[package]]
+name = "headers"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f3e372db8e5c0d213e0cd0b9be18be2aca3d44cf2fe30a9d46a65581cd454584"
+dependencies = [
+ "base64 0.13.1",
+ "bitflags",
+ "bytes",
+ "headers-core",
+ "http",
+ "httpdate",
+ "mime",
+ "sha1",
+]
+
+[[package]]
+name = "headers-core"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e7f66481bfee273957b1f20485a4ff3362987f85b2c236580d81b4eb7a326429"
+dependencies = [
+ "http",
 ]
 
 [[package]]
@@ -4972,7 +5125,7 @@ checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 
 [[package]]
 name = "plugin-tests"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "forc-index",
  "fuel-indexer-plugin",
@@ -5962,6 +6115,7 @@ dependencies = [
  "fuels-types",
  "getrandom",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]
@@ -6658,6 +6812,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "tokio-tungstenite"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54319c93411147bced34cb5609a80e0a8e44c5999c93903a81cd866630ec0bfd"
+dependencies = [
+ "futures-util",
+ "log",
+ "tokio",
+ "tungstenite",
+]
+
+[[package]]
 name = "tokio-util"
 version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6665,6 +6831,7 @@ checksum = "5427d89453009325de0d8f342c9490009f76e999cb7672d77e46267448f7e6b2"
 dependencies = [
  "bytes",
  "futures-core",
+ "futures-io",
  "futures-sink",
  "pin-project-lite",
  "tokio",
@@ -6883,6 +7050,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "tungstenite"
+version = "0.18.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "30ee6ab729cd4cf0fd55218530c4522ed30b7b6081752839b68fcec8d0960788"
+dependencies = [
+ "base64 0.13.1",
+ "byteorder",
+ "bytes",
+ "http",
+ "httparse",
+ "log",
+ "rand",
+ "sha1",
+ "thiserror",
+ "url",
+ "utf-8",
+]
+
+[[package]]
 name = "typenum"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6985,6 +7171,12 @@ dependencies = [
  "idna 0.3.0",
  "percent-encoding",
 ]
+
+[[package]]
+name = "utf-8"
+version = "0.7.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "09cc8ee72d2a9becf2f2febe0205bbed8fc6615b7cb429ad062dc7b7ddd036a9"
 
 [[package]]
 name = "uuid"

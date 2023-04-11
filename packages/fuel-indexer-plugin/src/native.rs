@@ -14,9 +14,10 @@ pub use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig, Parser},
     defaults::SERVICE_REQUEST_CHANNEL_SIZE,
     manifest::Manifest,
-    utils::ServiceRequest,
+    utils::{init_logging, ServiceRequest},
 };
 use fuel_indexer_schema::FtColumn;
+pub use sha2;
 pub use std::collections::HashMap;
 pub use std::collections::HashSet;
 pub use tokio;

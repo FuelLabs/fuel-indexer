@@ -145,7 +145,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_messageout_data(example_message: ExampleMessageStruct) {
-        Logger::info("fuel_indexer_test_messageout handling MessageOut event");
+        Logger::info("fuel_indexer_test_messageout_data handling MessageOut data event");
 
         let entity = MessageEntity {
             id: example_message.id,
@@ -171,6 +171,7 @@ mod fuel_indexer_test {
 
         let entity = MessageOut {
             id: first8_bytes_to_u64(message_id),
+            message_id,
             sender,
             recipient,
             amount,

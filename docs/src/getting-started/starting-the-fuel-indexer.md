@@ -39,6 +39,9 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --indexer-net-config
+            Allow network configuration via indexer manifests.
+
         --jwt-expiry <JWT_EXPIRY>
             Amount of time (seconds) before expiring token (if JWT scheme is specified).
 

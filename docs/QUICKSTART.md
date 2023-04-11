@@ -210,10 +210,9 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```bash
-curl -X POST http://localhost:29987/api/graph/my_project/hello_indexer \
-   -H 'content-type: application/json' \
-   -d '{"query": "query { tx { id hash block }}", "params": "b"}' \
-| json_pp
+curl -X POST -H "Content-Type: application/graphql" 
+--data '{ "query": "query { tx { id, hash, block } }" }' 
+http://127.0.0.1:29987/api/graph/my_project/hello_indexer
 ```
 
 ```text
@@ -239,3 +238,4 @@ curl -X POST http://localhost:29987/api/graph/my_project/hello_indexer \
 ### Finished! 🥳
 
 Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
+

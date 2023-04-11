@@ -51,6 +51,8 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
         ..
     } = command;
 
+    let release = release.parse::<bool>().unwrap();
+
     let (root_dir, manifest, _index_name) =
         project_dir_info(path.as_ref(), manifest.as_ref())?;
 
@@ -201,7 +203,7 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
             anyhow::bail!("❌ Failed to execute wasm-snip: (Code: {code:?})",)
         }
 
-        manifest.write_to(&indexer_manifest_path)?;
+        manifest.write(&indexer_manifest_path)?;
     }
 
     Ok(())

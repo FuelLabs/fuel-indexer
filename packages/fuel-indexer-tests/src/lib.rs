@@ -2,6 +2,7 @@ pub mod fixtures;
 
 pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
+use fuel_indexer_lib::config::IndexerConfigError;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -16,6 +17,8 @@ pub enum TestError {
     PoolCreationError(#[from] fuel_indexer_database::IndexerDatabaseError),
     #[error("Error tearing down database {0:?}")]
     IoError(#[from] std::io::Error),
+    #[error("IndexerConfigError: {0:?}")]
+    IndexerConfigError(#[from] IndexerConfigError),
 }
 
 pub mod assets {
@@ -98,7 +101,7 @@ pub mod utils {
                 .unwrap()
                 .parent()
                 .unwrap()
-                .join(manifest.module.path())
+                .join(manifest.module.to_string())
                 .into_os_string()
                 .to_str()
                 .unwrap()
