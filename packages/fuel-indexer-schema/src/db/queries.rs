@@ -1,7 +1,11 @@
 use super::arguments::Filter;
 use fuel_indexer_database::DbType;
-use std::collections::{HashMap, HashSet};
+use std::{collections::HashMap, fmt::Display};
 
+/// Represents a part of a user query. Each part can be a key-value pair
+/// describing a entity field and its corresponding database table, or a
+/// boundary for a nested object; opening boundaries contain a string to
+/// be used as a JSON key in the final database query.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum QueryElement {
     Field { key: String, value: String },
@@ -9,12 +13,14 @@ pub enum QueryElement {
     ObjectClosingBoundary,
 }
 
+/// Represents one or more predicates that can be used to filter records.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EntityFilter {
     pub fully_qualified_table_name: String,
     pub filters: Vec<Filter>,
 }
 
+/// Represents the tables and columns used in a particular database join.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct JoinCondition {
     pub referencing_key_table: String,
@@ -23,12 +29,34 @@ pub struct JoinCondition {
     pub primary_key_col: String,
 }
 
+impl Display for JoinCondition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}.{} = {}.{}",
+            self.referencing_key_table,
+            self.referencing_key_col,
+            self.primary_key_table,
+            self.primary_key_col
+        )
+    }
+}
+
+/// Represents a node in a directed acyclic graph (DAG) and used to
+/// allow for the sorting of table joins.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct QueryJoinNode {
     pub dependencies: HashMap<String, JoinCondition>,
     pub dependents: HashMap<String, JoinCondition>,
 }
 
+/// Represents the full amount of requested information from a user query.
+///
+/// - `elements`: the individal parts or tokens of what will become a selection statement
+/// - `joins`: contains information about the dependents and dependencies of a particular table join
+/// - `namespace_identifier`: the full isolated namespace in which an indexer's entity tables reside
+/// - `entity_name`: the top-level entity contained in a query
+/// - `filters`: contains filters for each requested entity in a query
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UserQuery {
     pub elements: Vec<QueryElement>,
@@ -44,35 +72,30 @@ impl UserQuery {
         // constructing JSON-formatted queries and results.
         match db_type {
             DbType::Postgres => {
-                let elements = self.parse_query_elements(db_type);
+                let selections = self.parse_query_elements_into_selections(db_type);
 
-                let elements_string = elements.join("");
+                let selections_str = selections.join("");
 
                 let sorted_joins = self.get_topologically_sorted_joins();
 
                 let mut last_seen_primary_key_table = "".to_string();
                 let mut joins: Vec<String> = Vec::new();
 
+                // For each clause in the list of topologically-sorted joins,
+                // check if the clause's primary key table matches the last primary key
+                // key table that was seen in this loop. If so, add the join condition to
+                // the last join condition; if not, push this clause into the list of joins.
+                // This is required because Postgres does not allow for joined primary key tables
+                // to be mentioned multiple times.
                 for sj in sorted_joins {
                     if sj.primary_key_table == last_seen_primary_key_table {
                         if let Some(elem) = joins.last_mut() {
-                            let join_condition = format!(
-                                "{}.{} = {}.{}",
-                                sj.referencing_key_table,
-                                sj.referencing_key_col,
-                                sj.primary_key_table,
-                                sj.primary_key_col
-                            );
-                            *elem = format!("{elem} AND {join_condition}")
+                            *elem = format!("{elem} AND {sj}")
                         }
                     } else {
                         joins.push(format!(
-                            "INNER JOIN {} ON {}.{} = {}.{}",
-                            sj.primary_key_table,
-                            sj.referencing_key_table,
-                            sj.referencing_key_col,
-                            sj.primary_key_table,
-                            sj.primary_key_col
+                            "INNER JOIN {} ON {}",
+                            sj.primary_key_table, sj
                         ));
                         last_seen_primary_key_table = sj.primary_key_table;
                     }
@@ -80,9 +103,10 @@ impl UserQuery {
 
                 let mut query = format!(
                     "SELECT json_build_object({}) FROM {}.{}",
-                    elements_string, self.namespace_identifier, self.entity_name,
+                    selections_str, self.namespace_identifier, self.entity_name,
                 );
 
+                // If there are table joins present, add them to the query string.
                 if !joins.is_empty() {
                     query = format!("{query} {}", joins.join(" "))
                 }
@@ -101,16 +125,19 @@ impl UserQuery {
                     query = format!("{query} WHERE {filter_str}");
                 }
 
-                println!("{query}");
                 query
             }
         }
     }
 
-    fn parse_query_elements(&self, db_type: &DbType) -> Vec<String> {
+    /// Parses QueryElements into a list of strings that can be used to create a selection statement.
+    ///
+    /// Each database type should have a way to return result sets as a JSON-friendly structure,
+    /// as JSON is the most used format for GraphQL responses.
+    fn parse_query_elements_into_selections(&self, db_type: &DbType) -> Vec<String> {
         let mut peekable_elements = self.elements.iter().peekable();
 
-        let mut elements = Vec::new();
+        let mut selections = Vec::new();
 
         match db_type {
             DbType::Postgres => {
@@ -120,7 +147,7 @@ impl UserQuery {
                         // and the value to the corresponding database table so that it can
                         // be successfully retrieved.
                         QueryElement::Field { key, value } => {
-                            elements.push(format!("'{key}', {value}"));
+                            selections.push(format!("'{key}', {value}"));
 
                             // If the next element is not a closing boundary, then a comma should
                             // be added so that the resultant SQL query can be properly constructed.
@@ -128,26 +155,27 @@ impl UserQuery {
                                 match next_element {
                                     QueryElement::Field { .. }
                                     | QueryElement::ObjectOpeningBoundary { .. } => {
-                                        elements.push(", ".to_string());
+                                        selections.push(", ".to_string());
                                     }
                                     _ => {}
                                 }
                             }
                         }
 
-                        // Set a nested JSON object as the value for this entity field.
+                        // If the element is an object opener boundary, then we need to set a
+                        // key so that the recipient can properly refer to the nested object.
                         QueryElement::ObjectOpeningBoundary { key } => {
-                            elements.push(format!("'{key}', json_build_object("))
+                            selections.push(format!("'{key}', json_build_object("))
                         }
 
                         QueryElement::ObjectClosingBoundary => {
-                            elements.push(")".to_string());
+                            selections.push(")".to_string());
 
                             if let Some(next_element) = peekable_elements.peek() {
                                 match next_element {
                                     QueryElement::Field { .. }
                                     | QueryElement::ObjectOpeningBoundary { .. } => {
-                                        elements.push(", ".to_string());
+                                        selections.push(", ".to_string());
                                     }
                                     _ => {}
                                 }
@@ -158,12 +186,15 @@ impl UserQuery {
             }
         }
 
-        elements
+        selections
     }
 
+    /// Returns table joins sorted in topological order.
+    ///
+    /// Some databases (i.e Postgres) require that dependent tables be joined after the tables
+    /// the tables they depend upon, i.e. the tables needs to be topologically sorted. This
+    /// is the primary reason for modelling a user query as a DAG.
     fn get_topologically_sorted_joins(&mut self) -> Vec<JoinCondition> {
-        let mut yet_to_process =
-            self.joins.clone().into_keys().collect::<HashSet<String>>();
         let mut start_nodes: Vec<String> = self
             .joins
             .iter()
@@ -173,6 +204,9 @@ impl UserQuery {
 
         let mut sorted_joins: Vec<JoinCondition> = Vec::new();
 
+        // For each node that does not depend on another node, iterate through their dependents
+        // and remove current_node from their dependencies. If all the dependencies of a node
+        // have been removed, add it to start_nodes and start the process again.
         while let Some(current_node) = start_nodes.pop() {
             if let Some(node) = self.joins.get_mut(&current_node) {
                 for (dependent_node, _) in node.clone().dependents.iter() {
@@ -186,8 +220,6 @@ impl UserQuery {
                     }
                 }
             }
-
-            yet_to_process.remove(&current_node);
         }
 
         sorted_joins.into_iter().rev().collect()
@@ -232,7 +264,10 @@ mod tests {
             ")".to_string(),
         ];
 
-        assert_eq!(expected, uq.parse_query_elements(&DbType::Postgres));
+        assert_eq!(
+            expected,
+            uq.parse_query_elements_into_selections(&DbType::Postgres)
+        );
     }
 
     #[test]

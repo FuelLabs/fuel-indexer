@@ -13,6 +13,7 @@ pub enum ParsedValue {
     String(String),
     Boolean(bool),
 }
+
 /// Display trait implementation, mainly to be able to use `.to_string()`.
 ///
 /// Databases may support several value types in a filtering clause, e.g.
@@ -123,7 +124,9 @@ impl Filter {
                         r1.to_sql(fully_qualified_table.clone(), db_type),
                         r2.to_sql(fully_qualified_table, db_type)
                     ),
-                    // NOT cases are handled elsewhere
+                    // The NOT logical operator does not get turned into a string as
+                    // it will have already been used to transform a filter into its
+                    // inverse equivalent.
                     _ => "".to_string(),
                 },
                 Self::Membership(m) => match m {
@@ -171,17 +174,13 @@ impl Filter {
     }
 }
 
-/// Negate a filter into its inverse or opposite filter.
+/// Invert a filter into its opposite filter.
 ///
-/// Each filter should have a inverse type when negated in order to minimize
+/// Each filter should have a inverse type when inverted in order to minimize
 /// disruption to the user. When adding a new filter type, special consideration
 /// should be given as to if and how it can be represented in the inverse.
-trait Negatable {
-    fn negate(&self) -> Result<Filter, GraphqlError>;
-}
-
-impl Negatable for Filter {
-    fn negate(&self) -> Result<Filter, GraphqlError> {
+impl Filter {
+    fn invert(&self) -> Result<Filter, GraphqlError> {
         match self {
             Filter::IdSelection(_) => Err(GraphqlError::UnsupportedNegation(
                 "ID selection".to_string(),
@@ -236,12 +235,12 @@ impl Negatable for Filter {
             },
             Filter::LogicOp(lo) => match lo {
                 LogicOp::And(r1, r2) => Ok(Filter::LogicOp(LogicOp::And(
-                    Box::new(r1.clone().negate()?),
-                    Box::new(r2.clone().negate()?),
+                    Box::new(r1.clone().invert()?),
+                    Box::new(r2.clone().invert()?),
                 ))),
                 LogicOp::Or(r1, r2) => Ok(Filter::LogicOp(LogicOp::Or(
-                    Box::new(r1.clone().negate()?),
-                    Box::new(r2.clone().negate()?),
+                    Box::new(r1.clone().invert()?),
+                    Box::new(r2.clone().invert()?),
                 ))),
                 LogicOp::Not(f) => Ok(*f.clone()),
             },
@@ -354,10 +353,14 @@ fn parse_arg_pred_pair<'a>(
             top_level_arg_value_iter,
             prior_filter,
         ),
+
+        // "NOT" is a unary logical operator, meaning that it only operates on one component.
+        // Thus, we attempt to parse the inner object into a filter and then transform it into
+        // its inverse.
         "not" => {
             if let Value::Object(inner_obj) = predicate {
                 parse_filter_object(inner_obj, entity_type, schema, prior_filter)?
-                    .negate()
+                    .invert()
             } else {
                 Err(GraphqlError::UnsupportedValueType(predicate.to_string()))
             }

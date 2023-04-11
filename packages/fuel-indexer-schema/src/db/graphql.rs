@@ -445,8 +445,6 @@ impl Operation {
                     filters: query_filters,
                 };
 
-                // println!("{query:#?}");
-
                 queries.push(query)
             }
         }
