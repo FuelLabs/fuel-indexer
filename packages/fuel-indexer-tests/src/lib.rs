@@ -21,12 +21,16 @@ pub enum TestError {
     IndexerConfigError(#[from] IndexerConfigError),
 }
 
+pub enum ContractAmount {
+    One = 1,
+    Two = 2,
+}
+
 pub mod assets {
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
         include_str!("./../components/indices/fuel-indexer-test/fuel_indexer_test.yaml");
-    pub const TWO_CONTRACTS_MANIFEST: &str = include_str!(
-        "./../components/indices/two_contracts_test/two_contracts_test.yaml"
-    );
+    pub const TWO_CONTRACTS_MANIFEST: &str =
+        include_str!("./../components/indices/two-contracts/two_contracts.manifest.yaml");
     pub const SIMPLE_WASM_MANIFEST: &str =
         include_str!("./../components/indices/simple-wasm/simple_wasm.yaml");
     pub const BAD_SIMPLE_WASM_MANIFEST: &str =

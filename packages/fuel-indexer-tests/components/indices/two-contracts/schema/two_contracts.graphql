@@ -1,0 +1,12 @@
+schema {
+    query: QueryRoot
+}
+
+type QueryRoot {
+    fooentity: FooEntity 
+}
+
+type FooEntity {
+    id: ID!
+    num: UInt8! 
+}

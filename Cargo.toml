@@ -21,6 +21,7 @@ members = [
    "packages/fuel-indexer-tests/components/fuel-node",
    "packages/fuel-indexer-tests/components/indices/fuel-indexer-test",
    "packages/fuel-indexer-tests/components/indices/simple-wasm/simple-wasm",
+   "packages/fuel-indexer-tests/components/indices/two-contracts",
    "packages/fuel-indexer-tests/components/web-api",
    "packages/fuel-indexer-types",
    "plugins/forc-index",

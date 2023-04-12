@@ -20,7 +20,7 @@ use tokio::task::JoinHandle;
 use tokio::time::{sleep, Duration};
 
 async fn setup_test_components(
-    number_of_contracts: u8,
+    number_of_contracts: u32,
 ) -> (
     JoinHandle<Result<(), ()>>,
     TestPostgresDb,

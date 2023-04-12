@@ -244,20 +244,31 @@ pub async fn setup_test_fuel_node(
     Ok(())
 }
 
-pub async fn setup_example_test_fuel_node(number_of_contracts: u8) -> Result<(), ()> {
+pub async fn setup_example_test_fuel_node(num_of_contracts: u32) -> Result<(), ()> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
 
-    let contract_bin_paths = (1..=number_of_contracts)
-        .map(|i| {
-            Path::new(WORKSPACE_ROOT)
+    let contract_bin_paths = match num_of_contracts {
+        1 => {
+            let contract_bin_path = Path::new(WORKSPACE_ROOT)
                 .join("contracts")
-                .join(format!("two-contracts-test-{}", i))
+                .join("fuel-indexer-test")
                 .join("out")
                 .join("debug")
-                .join(format!("two-contracts-test-{}.bin", i))
-        })
-        .map(Some)
-        .collect::<Vec<_>>();
+                .join("fuel-indexer-test.bin");
+            vec![Some(contract_bin_path)]
+        }
+        _ => (1..=num_of_contracts)
+            .map(|i| {
+                Path::new(WORKSPACE_ROOT)
+                    .join("contracts")
+                    .join(format!("two-contracts-test-{}", i))
+                    .join("out")
+                    .join("debug")
+                    .join(format!("two-contracts-test-{}.bin", i))
+            })
+            .map(Some)
+            .collect::<Vec<_>>(),
+    };
 
     println!("contract_bin_paths: {:?}", contract_bin_paths);
 
@@ -305,7 +316,7 @@ pub fn get_two_test_contract_ids() -> [Bech32ContractId; 2] {
         })
         .collect::<Vec<_>>();
 
-    [ids[0], ids[1]]
+    [ids[0].clone(), ids[1].clone()]
 }
 
 pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
