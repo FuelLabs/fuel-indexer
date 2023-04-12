@@ -101,8 +101,24 @@ fn contract_id_from_str<'de, D>(deserializer: D) -> Result<ContractIds, D::Error
 where
     D: serde::Deserializer<'de>,
 {
-    let s = String::deserialize(deserializer)?;
-    ContractIds::from_str(&s).map_err(serde::de::Error::custom)
+    let value = serde_yaml::Value::deserialize(deserializer)?;
+    match value {
+        serde_yaml::Value::String(s) => {
+            ContractIds::from_str(&s).map_err(serde::de::Error::custom)
+        }
+        serde_yaml::Value::Sequence(seq) => {
+            let ids = seq
+                .into_iter()
+                .filter_map(|val| match val {
+                    serde_yaml::Value::String(s) => Some(s),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+            Ok(ContractIds::Multiple(ids.into_iter().map(Some).collect()))
+        }
+        serde_yaml::Value::Null => Ok(ContractIds::Single(None)),
+        _ => Err(serde::de::Error::custom("Invalid contract_id value")),
+    }
 }
 
 fn contract_id_to_str<S>(ids: &ContractIds, serializer: S) -> Result<S::Ok, S::Error>
@@ -122,10 +138,9 @@ where
 impl Manifest {
     /// Derive an indexer manifest via the YAML file at the specified path.
     pub fn from_file(path: impl AsRef<Path>) -> ManifestResult<Self> {
-        let mut file = File::open(path)?;
-        let mut content = String::new();
-        file.read_to_string(&mut content)?;
-        Self::try_from(content.as_str())
+        let file = File::open(path)?;
+        let manifest: Manifest = serde_yaml::from_reader(file)?;
+        Ok(manifest)
     }
 
     /// Return the raw GraphQL schema string for an indexer manifest.
