@@ -7069,22 +7069,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "two-contracts"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuel-tx",
- "fuels-core",
- "fuels-macros",
- "fuels-types",
- "getrandom",
- "serde",
- "sha2 0.10.6",
-]
-
-[[package]]
 name = "typenum"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

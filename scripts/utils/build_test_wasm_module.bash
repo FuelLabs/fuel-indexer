@@ -31,7 +31,7 @@ rm -fv hello_indexer.wasm
 
 cargo build -p two-contracts --release --target wasm32-unknown-unknown
 bash scripts/stripper.bash two_contracts.wasm
-cp two_contracts_test_1.wasm target/wasm32-unknown-unknown/release/
+cp two_contracts.wasm target/wasm32-unknown-unknown/release/
 rm -fv two_contracts.wasm
 
 set +ex
