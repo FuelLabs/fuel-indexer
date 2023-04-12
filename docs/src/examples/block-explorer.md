@@ -9,9 +9,11 @@ Below is an example of a rudimentary block explorer backend implementation that 
 Once blocks have been added to the database by the indexer, you can query for them by using a query similar to the following:
 
 ```sh
-curl -X POST -H "Content-Type: application/graphql" 
---data '{ "query": "query { block { id, height, timestamp } }" }' 
-http://127.0.0.1:29987/api/graph/fuel_examples/explorer_indexer
+curl \
+   --request POST \
+   --url http://127.0.0.1:29987/api/graph/fuel_examples/explorer_indexer \
+   --header "Content-Type: application/graphql" \
+   --data '{ "query": "query { block { id, height, timestamp } }" }'
 ```
 
 ```json

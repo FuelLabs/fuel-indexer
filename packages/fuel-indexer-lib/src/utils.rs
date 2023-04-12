@@ -19,6 +19,8 @@ use tracing_subscriber::filter::EnvFilter;
 const RUST_LOG: &str = "RUST_LOG";
 const HUMAN_LOGGING: &str = "HUMAN_LOGGING";
 
+const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
+
 // Testing assets use relative paths, while production assets will use absolute paths
 //
 // If we can successfully find the local project root, then we're in the repository,
@@ -44,9 +46,7 @@ pub fn local_repository_root() -> Option<String> {
         }
     }
 
-    if !curr_dir.is_dir()
-        || curr_dir.file_name().unwrap() != defaults::ROOT_DIRECTORY_NAME
-    {
+    if !curr_dir.is_dir() || curr_dir.file_name().unwrap() != ROOT_DIRECTORY_NAME {
         return None;
     }
 

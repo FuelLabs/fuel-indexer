@@ -6,6 +6,9 @@
 # # For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
 # # or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
+# # Log level passed to the Fuel Indexer service.
+# log_level: info
+
 # # Use Prometheus metrics reporting.
 # metrics: true
 
@@ -23,6 +26,9 @@
 
 # # Allow network configuration via indexer manifests.
 # indexer_net_config: false
+
+# # Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out.
+# indexer_handler_timeout: 2
 
 # # ***********************
 # # Fuel Node configuration
@@ -91,3 +97,18 @@
 
 #   # Amount of time (seconds) before expiring token if JWT authentication is specified.
 #   # jwt_expiry: 2592000
+
+# # ********************************
+# # Rate limit configuration options
+# # ********************************
+
+# rate_limit:
+#   # Enable rate limiting.
+#   enabled: false
+
+#   # Maximum number of requests per second.
+#   rps: 10
+
+#   # Number of seconds over which to calculate rate limit.
+#   window: 5
+

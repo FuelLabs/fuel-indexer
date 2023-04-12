@@ -1,7 +1,6 @@
 use crate::{
     config::{utils::derive_http_url, Env, IndexerConfigResult},
     defaults,
-    utils::{is_opt_env_var, trim_opt_env_key},
 };
 pub use clap::Parser;
 use http::Uri;
@@ -10,8 +9,11 @@ use std::net::SocketAddr;
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct FuelNodeConfig {
+    /// Host of the running Fuel node.
     #[serde(default)]
     pub host: String,
+
+    /// Listening port of the running Fuel node.
     #[serde(default)]
     pub port: String,
 }
@@ -27,14 +29,6 @@ impl FuelNodeConfig {
 
 impl Env for FuelNodeConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
-        if is_opt_env_var(&self.host) {
-            self.host = std::env::var(trim_opt_env_key(&self.host))?;
-        }
-
-        if is_opt_env_var(&self.port) {
-            self.port = std::env::var(trim_opt_env_key(&self.port))?;
-        }
-
         Ok(())
     }
 }

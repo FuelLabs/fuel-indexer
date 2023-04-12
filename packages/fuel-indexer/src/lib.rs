@@ -77,4 +77,6 @@ pub enum IndexerError {
     NativeExecutionInstantiationError,
     #[error("Native execution runtime error.")]
     NativeExecutionRuntimeError,
+    #[error("Tokio time error: {0:?}")]
+    Elapsed(#[from] tokio::time::error::Elapsed),
 }

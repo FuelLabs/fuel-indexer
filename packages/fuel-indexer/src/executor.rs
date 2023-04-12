@@ -27,7 +27,7 @@ use std::{
 use thiserror::Error;
 use tokio::{
     task::{spawn_blocking, JoinHandle},
-    time::{sleep, Duration},
+    time::{sleep, timeout, Duration},
 };
 use tracing::{debug, error, info, warn};
 use wasmer::{
@@ -93,6 +93,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     } else {
         None
     };
+
     info!("Subscribing to Fuel node at {fuel_node_addr}");
 
     let client = FuelClient::from_str(&fuel_node_addr)
@@ -112,7 +113,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         let mut num_empty_block_reqs = 0;
 
         loop {
-            debug!("Fetching paginated results from {next_cursor:?}",);
+            debug!("Fetching paginated results from {next_cursor:?}");
 
             let PaginatedResult {
                 cursor, results, ..
@@ -124,7 +125,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 })
                 .await
                 .unwrap_or_else(|e| {
-                    error!("Failed to retrieve blocks: {e}",);
+                    error!("Failed to retrieve blocks: {e}");
                     PaginatedResult {
                         cursor: None,
                         results: vec![],
@@ -232,7 +233,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             if let Err(e) = result {
                 error!("Indexer executor failed {e:?}, retrying.");
-                sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERR)).await;
+                sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
                 retry_count += 1;
                 if retry_count < INDEX_FAILED_CALLS {
                     continue;
@@ -368,7 +369,7 @@ where
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
         if let Err(e) = res {
-            error!("NativeIndexExecutor handle_events failed: {}.", e);
+            error!("NativeIndexExecutor handle_events failed: {e}.");
             self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::NativeExecutionRuntimeError);
         } else {
@@ -385,6 +386,7 @@ pub struct WasmIndexExecutor {
     _module: Module,
     _store: Store,
     db: Arc<Mutex<Database>>,
+    timeout: u64,
 }
 
 impl WasmIndexExecutor {
@@ -424,6 +426,7 @@ impl WasmIndexExecutor {
             _module: module,
             _store: store,
             db: env.db.clone(),
+            timeout: config.indexer_handler_timeout,
         })
     }
 
@@ -499,22 +502,16 @@ impl Executor for WasmIndexExecutor {
         let ptr = arg.get_ptr();
         let len = arg.get_len();
 
-        let res = spawn_blocking(move || fun.call(ptr, len)).await?;
+        let res = timeout(
+            Duration::from_secs(self.timeout),
+            spawn_blocking(move || fun.call(ptr, len)),
+        )
+        .await;
 
         if let Err(e) = res {
-            error!("WasmIndexExecutor handle_events failed: {}.", e.message());
-            let frames = e.trace();
-            for (i, frame) in frames.iter().enumerate() {
-                println!(
-                    "Frame #{}: {:?}::{:?}",
-                    i,
-                    frame.module_name(),
-                    frame.function_name()
-                );
-            }
-
+            error!("WasmIndexExecutor handle_events failed: {e:?}.");
             self.db.lock().await.revert_transaction().await?;
-            return Err(IndexerError::RuntimeError(e));
+            return Err(IndexerError::from(e));
         } else {
             self.db.lock().await.commit_transaction().await?;
         }
