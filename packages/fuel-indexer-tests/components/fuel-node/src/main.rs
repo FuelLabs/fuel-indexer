@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .host
         .unwrap_or_else(|| defaults::FUEL_NODE_ADDR.to_string());
 
-    setup_test_fuel_node(chain_config, vec![Some(contract_bin)], Some(host))
+    setup_test_fuel_node(chain_config, Some(contract_bin), Some(host))
         .await
         .unwrap();
 

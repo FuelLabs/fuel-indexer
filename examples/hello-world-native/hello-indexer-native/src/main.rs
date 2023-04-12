@@ -21,6 +21,7 @@ extern crate alloc;
 use fuel_indexer::prelude::*;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
+use std::str::FromStr;
 
 #[indexer(
     manifest = "examples/hello-world-native/hello-indexer-native/hello_indexer_native.manifest.yaml"

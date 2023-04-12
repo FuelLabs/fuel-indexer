@@ -257,7 +257,7 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let contracts = match &manifest.contract_ids {
+    let contracts = match &manifest.contract_id {
         ContractIds::Single(contract_id) => match contract_id {
             Some(contract_id) => {
                 quote! {

@@ -7,6 +7,6 @@ graphql_schema: examples/hello-world/hello-indexer/schema/hello_indexer.schema.g
 module:
   wasm: target/wasm32-unknown-unknown/release/hello_indexer.wasm
 metrics: ~
-contract_ids: fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9
+contract_id: fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9
 start_block: 1
 resumable: ~

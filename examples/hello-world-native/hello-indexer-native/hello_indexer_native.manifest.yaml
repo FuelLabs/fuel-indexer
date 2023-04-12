@@ -1,6 +1,6 @@
 namespace: fuel_examples
 identifier: hello_indexer_native
-contract_ids: ~ 
+contract_id: ~ 
 fuel_client: ~
 report_metrics: true
 abi: examples/hello-world/contracts/greeting/out/debug/greeting-abi.json

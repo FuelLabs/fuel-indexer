@@ -50,11 +50,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     println!("Spinning up test Fuel node; node will automatically exit in ten minutes.");
-    let server_handle = tokio::spawn(setup_test_fuel_node(
-        chain_config,
-        vec![Some(contract_bin)],
-        host,
-    ));
+    let server_handle =
+        tokio::spawn(setup_test_fuel_node(chain_config, Some(contract_bin), host));
     std::thread::sleep(std::time::Duration::from_secs(600));
 
     server_handle.abort();

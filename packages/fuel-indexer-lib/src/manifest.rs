@@ -88,16 +88,16 @@ pub struct Manifest {
     pub module: Module,
     pub metrics: Option<bool>,
     #[serde(
-        deserialize_with = "contract_ids_from_str",
-        serialize_with = "contract_ids_to_str"
+        deserialize_with = "contract_id_from_str",
+        serialize_with = "contract_id_to_str"
     )]
-    pub contract_ids: ContractIds,
+    pub contract_id: ContractIds,
     pub start_block: Option<u64>,
     #[serde(default)]
     pub resumable: Option<bool>,
 }
 
-fn contract_ids_from_str<'de, D>(deserializer: D) -> Result<ContractIds, D::Error>
+fn contract_id_from_str<'de, D>(deserializer: D) -> Result<ContractIds, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -105,14 +105,11 @@ where
     ContractIds::from_str(&s).map_err(serde::de::Error::custom)
 }
 
-fn contract_ids_to_str<S>(
-    contract_ids: &ContractIds,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+fn contract_id_to_str<S>(ids: &ContractIds, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
-    let s = match contract_ids {
+    let s = match ids {
         ContractIds::Single(Some(id)) => id.clone(),
         ContractIds::Multiple(ids) => {
             serde_json::to_string(ids).map_err(serde::ser::Error::custom)?
