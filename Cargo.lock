@@ -2960,6 +2960,7 @@ dependencies = [
  "fuel-indexer-types",
  "http",
  "serde",
+ "serde_json",
  "serde_yaml",
  "sha2 0.9.9",
  "strum 0.24.1",

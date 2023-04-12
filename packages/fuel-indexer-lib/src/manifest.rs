@@ -4,6 +4,7 @@ use std::{
     fs::File,
     io::{Read, Write},
     path::{Path, PathBuf},
+    str::FromStr,
 };
 use thiserror::Error;
 
@@ -46,6 +47,31 @@ impl ToString for Module {
     }
 }
 
+/// in a `Manifest` struct. It can either be a single `Option<String>`
+/// or a `Vec<Option<String>>`.
+///
+/// - `Single`: Represents an optional single contract ID as an `Option<String>`.
+/// - `Multiple`: Represents a vector of optional contract IDs as a `Vec<Option<String>>`.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum ContractIds {
+    Single(Option<String>),
+    Multiple(Vec<Option<String>>),
+}
+
+impl FromStr for ContractIds {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.starts_with('[') {
+            serde_json::from_str::<Vec<Option<String>>>(s)
+                .map(ContractIds::Multiple)
+                .map_err(|err| err.to_string())
+        } else {
+            Ok(ContractIds::Single(Some(s.to_string())))
+        }
+    }
+}
+
 /// Represents the indexer manifest file.
 ///
 /// This manifest file is a simple YAML file that is read and passed
@@ -61,10 +87,39 @@ pub struct Manifest {
     pub graphql_schema: String,
     pub module: Module,
     pub metrics: Option<bool>,
-    pub contract_ids: Vec<Option<String>>,
+    #[serde(
+        deserialize_with = "contract_ids_from_str",
+        serialize_with = "contract_ids_to_str"
+    )]
+    pub contract_ids: ContractIds,
     pub start_block: Option<u64>,
     #[serde(default)]
     pub resumable: Option<bool>,
+}
+
+fn contract_ids_from_str<'de, D>(deserializer: D) -> Result<ContractIds, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    ContractIds::from_str(&s).map_err(serde::de::Error::custom)
+}
+
+fn contract_ids_to_str<S>(
+    contract_ids: &ContractIds,
+    serializer: S,
+) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    let s = match contract_ids {
+        ContractIds::Single(Some(id)) => id.clone(),
+        ContractIds::Multiple(ids) => {
+            serde_json::to_string(ids).map_err(serde::ser::Error::custom)?
+        }
+        _ => String::new(),
+    };
+    serializer.serialize_str(&s)
 }
 
 impl Manifest {

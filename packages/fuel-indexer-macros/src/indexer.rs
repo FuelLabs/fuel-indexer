@@ -3,7 +3,9 @@ use crate::{
     schema::process_graphql_schema, wasm::handler_block_wasm,
 };
 use fuel_abi_types::program_abi::TypeDeclaration;
-use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
+use fuel_indexer_lib::{
+    manifest::ContractIds, manifest::Manifest, utils::local_repository_root,
+};
 use fuel_indexer_types::{abi, type_id};
 use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
 use fuels_core::function_selector::resolve_fn_selector;
@@ -255,30 +257,45 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let contracts = {
-        let contract_id_checks = manifest.contract_ids.iter().map(|contract_id| {
-        match contract_id {
+    let contracts = match &manifest.contract_ids {
+        ContractIds::Single(contract_id) => match contract_id {
             Some(contract_id) => {
                 quote! {
                     let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
-                    if receipt_contract_id == manifest_contract_id {
-                        found = true;
+                    let receipt_contract_id = Bech32ContractId::from(id);
+                    if receipt_contract_id != manifest_contract_id {
+                        Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
+                        continue;
                     }
                 }
             }
             None => quote! {},
-        }
-    });
+        },
+        ContractIds::Multiple(contract_ids) => {
+            let contract_id_checks = contract_ids.iter().map(|contract_id| {
+            match contract_id {
+                Some(contract_id) => {
+                    quote! {
+                        let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
+                        if receipt_contract_id == manifest_contract_id {
+                            found = true;
+                        }
+                    }
+                }
+                None => quote! {},
+            }
+        });
 
-        quote! {
-            let receipt_contract_id = Bech32ContractId::from(id);
-            let mut found = false;
+            quote! {
+                let receipt_contract_id = Bech32ContractId::from(id);
+                let mut found = false;
 
-            #(#contract_id_checks)*
+                #(#contract_id_checks)*
 
-            if !found {
-                Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
-                continue;
+                if !found {
+                    Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
+                    continue;
+                }
             }
         }
     };

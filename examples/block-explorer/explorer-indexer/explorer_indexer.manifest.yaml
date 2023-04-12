@@ -7,6 +7,6 @@ graphql_schema: examples/block-explorer/explorer-indexer/schema/explorer_indexer
 module:
   wasm: target/wasm32-unknown-unknown/release/explorer_indexer.wasm
 metrics: ~
-contract_ids: []
+contract_ids: ~ 
 start_block: ~
 resumable: ~
