@@ -1,7 +1,5 @@
-use crate::db::arguments::{parse_arguments, Filter};
-use crate::db::queries::{
-    EntityFilter, JoinCondition, QueryElement, QueryJoinNode, UserQuery,
-};
+use crate::db::arguments::{parse_argument_into_param, ParamType, QueryParams};
+use crate::db::queries::{JoinCondition, QueryElement, QueryJoinNode, UserQuery};
 use crate::db::tables::Schema;
 use crate::sql_types::DbType;
 use graphql_parser::query as gql;
@@ -44,7 +42,7 @@ pub enum GraphqlError {
 
 #[derive(Clone, Debug)]
 pub enum Selection {
-    Field(String, Vec<Filter>, Selections),
+    Field(String, Vec<ParamType>, Selections),
     Fragment(String),
 }
 
@@ -83,19 +81,23 @@ impl Selections {
                             )
                         })?;
 
-                    let mut filters = vec![];
-                    for (arg, value) in arguments {
-                        let filter =
-                            parse_arguments(subfield_type, arg, value.clone(), schema)?;
-
-                        filters.push(filter);
-                    }
+                    let params = arguments
+                        .iter()
+                        .map(|(arg, value)| {
+                            parse_argument_into_param(
+                                subfield_type,
+                                arg,
+                                value.clone(),
+                                schema,
+                            )
+                        })
+                        .collect::<Result<Vec<ParamType>, GraphqlError>>()?;
 
                     let sub_selections =
                         Selections::new(schema, subfield_type, selection_set)?;
                     selections.push(Selection::Field(
                         name.to_string(),
-                        filters,
+                        params,
                         sub_selections,
                     ));
                 }
@@ -243,7 +245,7 @@ impl Operation {
             let mut entities: Vec<String> = Vec::new();
 
             let mut joins: HashMap<String, QueryJoinNode> = HashMap::new();
-            let mut query_filters: Vec<EntityFilter> = Vec::new();
+            let mut query_params: QueryParams = QueryParams::default();
 
             let mut nested_entity_stack: Vec<String> = Vec::new();
 
@@ -272,12 +274,10 @@ impl Operation {
                 );
 
                 if !filters.is_empty() {
-                    query_filters.push(EntityFilter {
-                        fully_qualified_table_name: format!(
-                            "{namespace}_{identifier}.{entity_name}"
-                        ),
+                    query_params.add_params(
                         filters,
-                    });
+                        format!("{namespace}_{identifier}.{entity_name}"),
+                    );
                 }
 
                 let mut last_seen_entities_len = entities.len();
@@ -310,12 +310,10 @@ impl Operation {
                                 ),
                             });
                             if !filters.is_empty() {
-                                query_filters.push(EntityFilter {
-                                    fully_qualified_table_name: format!(
-                                        "{namespace}_{identifier}.{entity_name}"
-                                    ),
+                                query_params.add_params(
                                     filters,
-                                });
+                                    format!("{namespace}_{identifier}.{entity_name}"),
+                                );
                             }
                         } else {
                             let mut new_entity = field_name.clone();
@@ -399,12 +397,10 @@ impl Operation {
                                         }
                                     };
                                     if !filters.is_empty() {
-                                        query_filters.push(EntityFilter {
-                                            fully_qualified_table_name: format!(
-                                                "{namespace}_{identifier}.{foreign_key_table}"
-                                            ),
-                                            filters,
-                                        });
+                                        query_params.add_params(
+                                    filters,
+                                    format!("{namespace}_{identifier}.{foreign_key_table}"),
+                                        );
                                     }
                                 }
                             }
@@ -442,7 +438,7 @@ impl Operation {
                     joins,
                     namespace_identifier: format!("{namespace}_{identifier}"),
                     entity_name,
-                    filters: query_filters,
+                    query_params,
                 };
 
                 queries.push(query)
@@ -814,7 +810,7 @@ mod tests {
             ]),
             namespace_identifier: "fuel_indexer_test_test_index".to_string(),
             entity_name: "tx".to_string(),
-            filters: Vec::new(),
+            query_params: QueryParams::default(),
         }];
         assert_eq!(expected, operation.parse(&schema));
     }

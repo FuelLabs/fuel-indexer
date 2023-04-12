@@ -1,4 +1,4 @@
-use super::arguments::Filter;
+use super::arguments::QueryParams;
 use fuel_indexer_database::DbType;
 use std::{collections::HashMap, fmt::Display};
 
@@ -11,13 +11,6 @@ pub enum QueryElement {
     Field { key: String, value: String },
     ObjectOpeningBoundary { key: String },
     ObjectClosingBoundary,
-}
-
-/// Represents one or more predicates that can be used to filter records.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EntityFilter {
-    pub fully_qualified_table_name: String,
-    pub filters: Vec<Filter>,
 }
 
 /// Represents the tables and columns used in a particular database join.
@@ -63,7 +56,7 @@ pub struct UserQuery {
     pub joins: HashMap<String, QueryJoinNode>,
     pub namespace_identifier: String,
     pub entity_name: String,
-    pub filters: Vec<EntityFilter>,
+    pub query_params: QueryParams,
 }
 
 impl UserQuery {
@@ -108,22 +101,10 @@ impl UserQuery {
 
                 // If there are table joins present, add them to the query string.
                 if !joins.is_empty() {
-                    query = format!("{query} {}", joins.join(" "))
+                    query = [query, joins.join(" ")].join(" ");
                 }
 
-                if !self.filters.is_empty() {
-                    let filter_str = self
-                        .filters
-                        .iter()
-                        .flat_map(|qf| {
-                            qf.filters.iter().map(|f| {
-                                f.to_sql(qf.fully_qualified_table_name.clone(), db_type)
-                            })
-                        })
-                        .collect::<Vec<String>>()
-                        .join(" AND ");
-                    query = format!("{query} WHERE {filter_str}");
-                }
+                query = [query, self.query_params.to_sql(db_type)].join(" ");
 
                 query
             }
@@ -230,7 +211,7 @@ impl UserQuery {
 mod tests {
     use super::*;
 
-    use crate::db::arguments::ParsedValue;
+    use crate::db::arguments::{Filter, FilterType, ParsedValue};
 
     #[test]
     fn test_user_query_parse_query_elements() {
@@ -253,7 +234,7 @@ mod tests {
             joins: HashMap::new(),
             namespace_identifier: "".to_string(),
             entity_name: "".to_string(),
-            filters: Vec::new(),
+            query_params: QueryParams::default(),
         };
 
         let expected = vec![
@@ -327,10 +308,15 @@ mod tests {
             ]),
             namespace_identifier: "name_ident".to_string(),
             entity_name: "entity_name".to_string(),
-            filters: vec![EntityFilter {
-                fully_qualified_table_name: "name_ident.entity_name".to_string(),
-                filters: vec![Filter::IdSelection(ParsedValue::Number(1))],
-            }],
+            query_params: QueryParams {
+                filters: vec![Filter {
+                    fully_qualified_table_name: "name_ident.entity_name".to_string(),
+                    filter_type: FilterType::IdSelection(ParsedValue::Number(1)),
+                }],
+                sorts: vec![],
+                offset: None,
+                limit: None,
+            },
         };
 
         let expected = "SELECT json_build_object('hash', name_ident.block.hash, 'tx', json_build_object('hash', name_ident.tx.hash), 'height', name_ident.block.height) FROM name_ident.entity_name INNER JOIN name_ident.block ON name_ident.tx.block = name_ident.block.id WHERE name_ident.entity_name.id = 1"

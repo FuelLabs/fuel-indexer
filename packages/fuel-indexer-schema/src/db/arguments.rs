@@ -4,6 +4,124 @@ use fuel_indexer_database::DbType;
 use graphql_parser::query::Value;
 use std::{collections::BTreeMap, fmt};
 
+/// Represents the full set of parameters that can be applied to a query.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct QueryParams {
+    pub filters: Vec<Filter>,
+    pub sorts: Vec<Sort>,
+    pub offset: Option<u64>,
+    pub limit: Option<u64>,
+}
+
+impl QueryParams {
+    /// Iterate through the list of parsed parameters
+    /// and add them to the corresponding field
+    pub(crate) fn add_params(
+        &mut self,
+        params: Vec<ParamType>,
+        fully_qualified_table_name: String,
+    ) {
+        for param in params {
+            match param {
+                ParamType::Filter(f) => self.filters.push(Filter {
+                    fully_qualified_table_name: fully_qualified_table_name.clone(),
+                    filter_type: f,
+                }),
+                ParamType::Sort(field, order) => self.sorts.push(Sort {
+                    fully_qualified_table_name: format!(
+                        "{}.{}",
+                        fully_qualified_table_name, field
+                    ),
+                    order,
+                }),
+                ParamType::Offset(n) => self.offset = Some(n),
+                ParamType::Limit(n) => self.limit = Some(n),
+            }
+        }
+    }
+
+    pub(crate) fn to_sql(&self, db_type: &DbType) -> String {
+        let mut query_clause = "".to_string();
+
+        if !self.filters.is_empty() {
+            let where_expressions = self
+                .filters
+                .iter()
+                .map(|f| f.to_sql(db_type))
+                .collect::<Vec<String>>()
+                .join(" AND ");
+            query_clause =
+                ["WHERE".to_string(), query_clause, where_expressions].join(" ");
+        }
+
+        if !self.sorts.is_empty() {
+            let sort_expressions = self
+                .sorts
+                .iter()
+                .map(|s| format!("{} {}", s.fully_qualified_table_name, s.order))
+                .collect::<Vec<String>>()
+                .join(", ");
+            query_clause =
+                [query_clause, "ORDER BY".to_string(), sort_expressions].join(" ");
+        }
+
+        if let Some(limit) = self.limit {
+            query_clause =
+                [query_clause, "LIMIT".to_string(), limit.to_string()].join(" ");
+        }
+
+        if let Some(offset) = self.offset {
+            query_clause =
+                [query_clause, "OFFSET".to_string(), offset.to_string()].join(" ");
+        }
+
+        query_clause
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Filter {
+    pub fully_qualified_table_name: String,
+    pub filter_type: FilterType,
+}
+
+impl Filter {
+    pub fn to_sql(&self, db_type: &DbType) -> String {
+        self.filter_type
+            .to_sql(self.fully_qualified_table_name.clone(), db_type)
+    }
+}
+
+/// Represents the different types of parameters that can be created.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParamType {
+    Filter(FilterType),
+    Sort(String, SortOrder),
+    Offset(u64),
+    Limit(u64),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Sort {
+    pub fully_qualified_table_name: String,
+    pub order: SortOrder,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SortOrder {
+    Asc,
+    Desc,
+}
+
+impl fmt::Display for SortOrder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            SortOrder::Asc => write!(f, "ASC"),
+            SortOrder::Desc => write!(f, "DESC"),
+        }
+    }
+}
+
 /// ParsedValue represents the possible value types
 /// that the indexer's GraphQL API supports.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,7 +158,7 @@ impl fmt::Display for ParsedValue {
 
 /// Represents an operation through which records can be included or excluded.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Filter {
+pub enum FilterType {
     IdSelection(ParsedValue),
     Comparison(Comparison),
     Membership(Membership),
@@ -77,12 +195,12 @@ pub enum NullValueCheck {
 /// Represents an operation in which filters are to associated and evaluated together.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LogicOp {
-    And(Box<Filter>, Box<Filter>),
-    Or(Box<Filter>, Box<Filter>),
-    Not(Box<Filter>),
+    And(Box<FilterType>, Box<FilterType>),
+    Or(Box<FilterType>, Box<FilterType>),
+    Not(Box<FilterType>),
 }
 
-impl Filter {
+impl FilterType {
     /// Returns a string to be used as part of a SQL database query.
     pub fn to_sql(&self, fully_qualified_table: String, db_type: &DbType) -> String {
         match db_type {
@@ -179,66 +297,66 @@ impl Filter {
 /// Each filter should have a inverse type when inverted in order to minimize
 /// disruption to the user. When adding a new filter type, special consideration
 /// should be given as to if and how it can be represented in the inverse.
-impl Filter {
-    fn invert(&self) -> Result<Filter, GraphqlError> {
+impl FilterType {
+    fn invert(&self) -> Result<FilterType, GraphqlError> {
         match self {
-            Filter::IdSelection(_) => Err(GraphqlError::UnsupportedNegation(
+            FilterType::IdSelection(_) => Err(GraphqlError::UnsupportedNegation(
                 "ID selection".to_string(),
             )),
-            Filter::Comparison(c) => match c {
+            FilterType::Comparison(c) => match c {
                 Comparison::Between(field, val1, val2) => {
-                    Ok(Filter::LogicOp(LogicOp::And(
-                        Box::new(Filter::Comparison(Comparison::Less(
+                    Ok(FilterType::LogicOp(LogicOp::And(
+                        Box::new(FilterType::Comparison(Comparison::Less(
                             field.clone(),
                             val1.clone(),
                         ))),
-                        Box::new(Filter::Comparison(Comparison::Greater(
+                        Box::new(FilterType::Comparison(Comparison::Greater(
                             field.clone(),
                             val2.clone(),
                         ))),
                     )))
                 }
-                Comparison::Greater(field, val) => Ok(Filter::Comparison(
+                Comparison::Greater(field, val) => Ok(FilterType::Comparison(
                     Comparison::LessEqual(field.clone(), val.clone()),
                 )),
-                Comparison::GreaterEqual(field, val) => Ok(Filter::Comparison(
+                Comparison::GreaterEqual(field, val) => Ok(FilterType::Comparison(
                     Comparison::Less(field.clone(), val.clone()),
                 )),
-                Comparison::Less(field, val) => Ok(Filter::Comparison(
+                Comparison::Less(field, val) => Ok(FilterType::Comparison(
                     Comparison::GreaterEqual(field.clone(), val.clone()),
                 )),
-                Comparison::LessEqual(field, val) => Ok(Filter::Comparison(
+                Comparison::LessEqual(field, val) => Ok(FilterType::Comparison(
                     Comparison::Greater(field.clone(), val.clone()),
                 )),
-                Comparison::Equals(field, val) => Ok(Filter::Comparison(
+                Comparison::Equals(field, val) => Ok(FilterType::Comparison(
                     Comparison::NotEquals(field.clone(), val.clone()),
                 )),
-                Comparison::NotEquals(field, val) => Ok(Filter::Comparison(
+                Comparison::NotEquals(field, val) => Ok(FilterType::Comparison(
                     Comparison::Equals(field.clone(), val.clone()),
                 )),
             },
-            Filter::Membership(mf) => match mf {
-                Membership::In(field, element_list) => Ok(Filter::Membership(
+            FilterType::Membership(mf) => match mf {
+                Membership::In(field, element_list) => Ok(FilterType::Membership(
                     Membership::NotIn(field.clone(), element_list.clone()),
                 )),
-                Membership::NotIn(field, element_list) => Ok(Filter::Membership(
+                Membership::NotIn(field, element_list) => Ok(FilterType::Membership(
                     Membership::In(field.clone(), element_list.clone()),
                 )),
             },
-            Filter::NullValueCheck(nvc) => match nvc {
-                NullValueCheck::NoNulls(column_list) => Ok(Filter::NullValueCheck(
+            FilterType::NullValueCheck(nvc) => match nvc {
+                NullValueCheck::NoNulls(column_list) => Ok(FilterType::NullValueCheck(
                     NullValueCheck::OnlyNulls(column_list.clone()),
                 )),
-                NullValueCheck::OnlyNulls(column_list) => Ok(Filter::NullValueCheck(
+                NullValueCheck::OnlyNulls(column_list) => Ok(FilterType::NullValueCheck(
                     NullValueCheck::NoNulls(column_list.clone()),
                 )),
             },
-            Filter::LogicOp(lo) => match lo {
-                LogicOp::And(r1, r2) => Ok(Filter::LogicOp(LogicOp::And(
+            FilterType::LogicOp(lo) => match lo {
+                LogicOp::And(r1, r2) => Ok(FilterType::LogicOp(LogicOp::And(
                     Box::new(r1.clone().invert()?),
                     Box::new(r2.clone().invert()?),
                 ))),
-                LogicOp::Or(r1, r2) => Ok(Filter::LogicOp(LogicOp::Or(
+                LogicOp::Or(r1, r2) => Ok(FilterType::LogicOp(LogicOp::Or(
                     Box::new(r1.clone().invert()?),
                     Box::new(r2.clone().invert()?),
                 ))),
@@ -252,35 +370,92 @@ impl Filter {
 ///
 /// `parse_arguments` is the entry point for parsing all API query arguments.
 /// Any new top-level operators should first be added here.
-pub fn parse_arguments<'a>(
+pub fn parse_argument_into_param<'a>(
     entity_type: &String,
     arg: &str,
     value: Value<'a, &'a str>,
     schema: &Schema,
-) -> Result<Filter, GraphqlError> {
-    // We instantiate an Option<Filter> in order to keep track of the last
-    // seen filter in the event that an AND/OR operator is used; if so, the
-    // prior filter is associated with the inner filter of the logical operator.
-    let mut prior_filter: Option<Filter> = None;
-
+) -> Result<ParamType, GraphqlError> {
     match arg {
         "filter" => {
+            // We instantiate an Option<Filter> in order to keep track of the last
+            // seen filter in the event that an AND/OR operator is used; if so, the
+            // prior filter is associated with the inner filter of the logical operator.
+            let mut prior_filter: Option<FilterType> = None;
+
             if let Value::Object(obj) = value {
-                parse_filter_object(obj, entity_type, schema, &mut prior_filter)
+                let filter =
+                    parse_filter_object(obj, entity_type, schema, &mut prior_filter)?;
+                Ok(ParamType::Filter(filter))
             } else {
                 Err(GraphqlError::UnsupportedValueType(value.to_string()))
             }
         }
-        "id" => Ok(Filter::IdSelection(parse_value(&value)?)),
-        "order" => todo!(),
-        "offset" => todo!(),
-        "first" => todo!(),
+        "id" => Ok(ParamType::Filter(FilterType::IdSelection(parse_value(
+            &value,
+        )?))),
+        "order" => {
+            if let Value::Object(obj) = value {
+                if let Some((sort_order, predicate)) = obj.into_iter().next() {
+                    if let Value::Enum(field) = predicate {
+                        if schema.field_type(entity_type, field).is_some() {
+                            match sort_order {
+                                "asc" => {
+                                    return Ok(ParamType::Sort(
+                                        field.to_string(),
+                                        SortOrder::Asc,
+                                    ))
+                                }
+                                "desc" => {
+                                    return Ok(ParamType::Sort(
+                                        field.to_string(),
+                                        SortOrder::Desc,
+                                    ))
+                                }
+                                other => {
+                                    return Err(GraphqlError::UnableToParseValue(
+                                        other.to_string(),
+                                    ))
+                                }
+                            }
+                        } else {
+                            return Err(GraphqlError::UnrecognizedField(
+                                entity_type.to_string(),
+                                field.to_string(),
+                            ));
+                        }
+                    } else {
+                        return Err(GraphqlError::UnsupportedValueType(
+                            predicate.to_string(),
+                        ));
+                    }
+                }
+                Err(GraphqlError::NoPredicatesInFilter)
+            } else {
+                Err(GraphqlError::UnsupportedValueType(value.to_string()))
+            }
+        }
+        "offset" => {
+            if let Value::Int(offset) = value {
+                Ok(ParamType::Offset(offset.as_u64()))
+            } else {
+                Err(GraphqlError::UnsupportedValueType(value.to_string()))
+            }
+        }
+        "first" => {
+            if let Value::Int(limit) = value {
+                Ok(ParamType::Limit(limit.as_u64()))
+            } else {
+                Err(GraphqlError::UnsupportedValueType(value.to_string()))
+            }
+        }
         _ => Err(GraphqlError::UnrecognizedArgument(
             entity_type.to_string(),
             arg.to_string(),
         )),
     }
 }
+
 /// Parse an object from a parsed GraphQL document into a `Filter`.
 ///
 /// This serves as a helper function for starting
@@ -289,8 +464,8 @@ fn parse_filter_object<'a>(
     obj: BTreeMap<&'a str, Value<'a, &'a str>>,
     entity_type: &String,
     schema: &Schema,
-    prior_filter: &mut Option<Filter>,
-) -> Result<Filter, GraphqlError> {
+    prior_filter: &mut Option<FilterType>,
+) -> Result<FilterType, GraphqlError> {
     let mut iter = obj.into_iter();
 
     if let Some((key, predicate)) = iter.next() {
@@ -305,6 +480,7 @@ fn parse_filter_object<'a>(
     }
     Err(GraphqlError::NoPredicatesInFilter)
 }
+
 /// Parse an argument's key and value (known here as a predicate) into a `Filter`.
 ///
 /// `parse_arg_pred_pair` contains the majority of the filter parsing functionality.
@@ -317,9 +493,9 @@ fn parse_arg_pred_pair<'a>(
     predicate: Value<'a, &'a str>,
     entity_type: &String,
     schema: &Schema,
-    prior_filter: &mut Option<Filter>,
+    prior_filter: &mut Option<FilterType>,
     top_level_arg_value_iter: &mut impl Iterator<Item = (&'a str, Value<'a, &'a str>)>,
-) -> Result<Filter, GraphqlError> {
+) -> Result<FilterType, GraphqlError> {
     match key {
         "has" => {
             if let Value::List(elements) = predicate {
@@ -340,7 +516,9 @@ fn parse_arg_pred_pair<'a>(
                         ));
                     }
                 }
-                Ok(Filter::NullValueCheck(NullValueCheck::NoNulls(column_list)))
+                Ok(FilterType::NullValueCheck(NullValueCheck::NoNulls(
+                    column_list,
+                )))
             } else {
                 Err(GraphqlError::UnsupportedValueType(predicate.to_string()))
             }
@@ -378,7 +556,7 @@ fn parse_arg_pred_pair<'a>(
                                     ) {
                                         let (min, max) =
                                             (parse_value(min)?, parse_value(max)?);
-                                        return Ok(Filter::Comparison(
+                                        return Ok(FilterType::Comparison(
                                             Comparison::Between(
                                                 other.to_string(),
                                                 min,
@@ -389,31 +567,33 @@ fn parse_arg_pred_pair<'a>(
                                 }
                             }
                             "equals" => {
-                                return Ok(Filter::Comparison(Comparison::Equals(
+                                return Ok(FilterType::Comparison(Comparison::Equals(
                                     other.to_string(),
                                     parse_value(predicate)?,
                                 )))
                             }
                             "gt" => {
-                                return Ok(Filter::Comparison(Comparison::Greater(
+                                return Ok(FilterType::Comparison(Comparison::Greater(
                                     other.to_string(),
                                     parse_value(predicate)?,
                                 )))
                             }
                             "gte" => {
-                                return Ok(Filter::Comparison(Comparison::GreaterEqual(
-                                    other.to_string(),
-                                    parse_value(predicate)?,
-                                )));
+                                return Ok(FilterType::Comparison(
+                                    Comparison::GreaterEqual(
+                                        other.to_string(),
+                                        parse_value(predicate)?,
+                                    ),
+                                ));
                             }
                             "lt" => {
-                                return Ok(Filter::Comparison(Comparison::Less(
+                                return Ok(FilterType::Comparison(Comparison::Less(
                                     other.to_string(),
                                     parse_value(predicate)?,
                                 )))
                             }
                             "lte" => {
-                                return Ok(Filter::Comparison(Comparison::LessEqual(
+                                return Ok(FilterType::Comparison(Comparison::LessEqual(
                                     other.to_string(),
                                     parse_value(predicate)?,
                                 )))
@@ -425,10 +605,9 @@ fn parse_arg_pred_pair<'a>(
                                             .map(parse_value)
                                             .collect::<Result<Vec<ParsedValue>,GraphqlError>>();
                                     if let Ok(elements) = parsed_elements {
-                                        return Ok(Filter::Membership(Membership::In(
-                                            other.to_string(),
-                                            elements,
-                                        )));
+                                        return Ok(FilterType::Membership(
+                                            Membership::In(other.to_string(), elements),
+                                        ));
                                     } else {
                                         return Err(GraphqlError::UnableToParseValue(
                                             predicate.to_string(),
@@ -469,8 +648,8 @@ fn parse_binary_logical_operator<'a>(
     entity_type: &String,
     schema: &Schema,
     top_level_arg_value_iter: &mut impl Iterator<Item = (&'a str, Value<'a, &'a str>)>,
-    prior_filter: &mut Option<Filter>,
-) -> Result<Filter, GraphqlError> {
+    prior_filter: &mut Option<FilterType>,
+) -> Result<FilterType, GraphqlError> {
     if let Value::Object(inner_obj) = predicate {
         // Construct the filter contained in the object value for the binary logical operator
         let filter = parse_filter_object(inner_obj, entity_type, schema, prior_filter)?;
@@ -479,11 +658,11 @@ fn parse_binary_logical_operator<'a>(
         // the filter that was just parsed from the inner object.
         if let Some(prior_filter) = prior_filter {
             match key {
-                "and" => Ok(Filter::LogicOp(LogicOp::And(
+                "and" => Ok(FilterType::LogicOp(LogicOp::And(
                     Box::new(prior_filter.clone()),
                     Box::new(filter),
                 ))),
-                "or" => Ok(Filter::LogicOp(LogicOp::Or(
+                "or" => Ok(FilterType::LogicOp(LogicOp::Or(
                     Box::new(prior_filter.clone()),
                     Box::new(filter),
                 ))),
@@ -517,11 +696,11 @@ fn parse_binary_logical_operator<'a>(
                         top_level_arg_value_iter,
                     )?;
                     let final_filter = match key {
-                        "and" => Filter::LogicOp(LogicOp::And(
+                        "and" => FilterType::LogicOp(LogicOp::And(
                             Box::new(filter),
                             Box::new(next_filter),
                         )),
-                        "or" => Filter::LogicOp(LogicOp::Or(
+                        "or" => FilterType::LogicOp(LogicOp::Or(
                             Box::new(filter),
                             Box::new(next_filter),
                         )),
