@@ -283,7 +283,6 @@ fn process_fn_items(
         }
     };
 
-
     let asyncness = if is_native {
         quote! {async}
     } else {
