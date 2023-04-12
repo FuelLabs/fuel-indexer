@@ -29,9 +29,4 @@ bash scripts/stripper.bash hello_indexer.wasm
 cp hello_indexer.wasm target/wasm32-unknown-unknown/release/
 rm -fv hello_indexer.wasm
 
-cargo build -p two-contracts --release --target wasm32-unknown-unknown
-bash scripts/stripper.bash two_contracts.wasm
-cp two_contracts.wasm target/wasm32-unknown-unknown/release/
-rm -fv two_contracts.wasm
-
 set +ex
