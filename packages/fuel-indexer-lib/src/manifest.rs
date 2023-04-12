@@ -47,8 +47,7 @@ impl ToString for Module {
     }
 }
 
-/// in a `Manifest` struct. It can either be a single `Option<String>`
-/// or a `Vec<Option<String>>`.
+/// Represents contract IDs in a `Manifest` struct.
 ///
 /// - `Single`: Represents an optional single contract ID as an `Option<String>`.
 /// - `Multiple`: Represents a vector of optional contract IDs as a `Vec<Option<String>>`.
