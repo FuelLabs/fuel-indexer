@@ -282,6 +282,32 @@ pub fn get_test_contract_id() -> Bech32ContractId {
     Bech32ContractId::from(id)
 }
 
+pub fn get_two_test_contract_ids() -> [Bech32ContractId; 2] {
+    let contract_paths = ["two-contracts-test-1", "two-contracts-test-2"];
+    let ids = contract_paths
+        .iter()
+        .map(|name| {
+            let path = Path::new(WORKSPACE_ROOT)
+                .join("contracts")
+                .join(name)
+                .join("out")
+                .join("debug")
+                .join(format!("{}.bin", name));
+
+            let compiled = Contract::load_contract(
+                path.as_os_str().to_str().unwrap(),
+                DeployConfiguration::default(),
+            )
+            .expect("Failed to load compiled contract");
+
+            let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
+            Bech32ContractId::from(id)
+        })
+        .collect::<Vec<_>>();
+
+    [ids[0], ids[1]]
+}
+
 pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
     let database: DatabaseConfig = database_url
         .map_or(DatabaseConfig::default(), |url| {
@@ -391,6 +417,32 @@ pub async fn connect_to_deployed_contract(
     println!("Using contract at {contract_id}");
 
     Ok(contract)
+}
+
+pub async fn connect_two_test_contracts(
+) -> Result<(FuelIndexerTest, FuelIndexerTest), Box<dyn std::error::Error>> {
+    let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
+    let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
+    let mut wallet =
+        WalletUnlocked::load_keystore(wallet_path_str, defaults::WALLET_PASSWORD, None)
+            .unwrap();
+
+    let provider = Provider::connect(defaults::FUEL_NODE_ADDR).await.unwrap();
+
+    wallet.set_provider(provider);
+
+    println!(
+        "Wallet({}) keystore at: {}",
+        wallet.address(),
+        wallet_path.display()
+    );
+
+    let contract_ids = get_two_test_contract_ids();
+    let contract1 = FuelIndexerTest::new(contract_ids[0].clone(), wallet.clone());
+    let contract2 = FuelIndexerTest::new(contract_ids[1].clone(), wallet.clone());
+    println!("Using contracts at {:?}", contract_ids);
+
+    Ok((contract1, contract2))
 }
 
 pub mod test_web {
