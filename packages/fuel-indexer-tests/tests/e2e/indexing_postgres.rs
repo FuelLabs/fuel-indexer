@@ -24,9 +24,8 @@ const EXPECTED_CONTRACT_ID: &str =
     "59d8f46aea962725fc3d78622556a0c02583ac2a4693c4ea3cc1e5ddeb359578";
 
 async fn setup_test_components(
-    number_of_contracts: u32,
 ) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
-    let node_handle = tokio::spawn(setup_example_test_fuel_node(number_of_contracts));
+    let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url)).await;
 
@@ -37,7 +36,7 @@ async fn setup_test_components(
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
 {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -105,7 +104,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_callreturn_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -142,7 +141,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -194,7 +193,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_ping_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -239,10 +238,9 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transfer_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
-
     update_test_manifest_asset_paths(&mut manifest);
 
     srvc.register_index_from_manifest(manifest).await.unwrap();
@@ -268,7 +266,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -297,7 +295,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -333,7 +331,7 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -369,7 +367,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -401,7 +399,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -445,7 +443,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_index_event_with_optional_fields_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -482,7 +480,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -511,7 +509,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_respects_start_block_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -580,7 +578,7 @@ async fn test_index_respects_start_block_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -609,7 +607,7 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_pure_function_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -642,7 +640,7 @@ async fn test_can_trigger_and_index_pure_function_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_revert_function_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -674,7 +672,7 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_panic_function_postgres() {
-    let (node_handle, test_db, mut srvc) = setup_test_components(1).await;
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
@@ -698,45 +696,4 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 123);
     assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<i32, usize>(2), 5);
-}
-
-#[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_can_trigger_and_index_events_from_two_contracts_single_manifest() {
-    let number_of_contracts = 2;
-    let (node_handle, test_db, mut srvc) =
-        setup_test_components(number_of_contracts).await;
-
-    let mut two_contract_manifest =
-        Manifest::try_from(assets::TWO_CONTRACTS_MANIFEST).unwrap();
-
-    update_test_manifest_asset_paths(&mut two_contract_manifest);
-
-    srvc.register_index_from_manifest(two_contract_manifest)
-        .await
-        .expect("Failed to initialize indexer.");
-
-    let contracts = connect_two_test_contracts().await.unwrap();
-    let app = test:init_service(app(contracts)).await;
-    let req = test::TestRequest::post().uri("/trigger_foo").to_request();
-    let _ = app.call(req).await;
-    
-    let req = test::TestRequest::post().uri("/trigger_bar").to_request();
-    let _ = app.call(req).await;
-
-    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
-    node_handle.abort();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
-    let foo_row = sqlx::query("SELECT * FROM two_contracts_indexer.fooentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    let bar_row = sqlx::query("SELECT * FROM two_contracts_indexer.barentity LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
-
-    assert_eq!(1, 1);
 }
