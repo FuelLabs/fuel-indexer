@@ -32,6 +32,7 @@ use tower_http::{
     LatencyUnit,
 };
 use tracing::{error, Level};
+
 pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
 #[derive(Debug, Error)]
