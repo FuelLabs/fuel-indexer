@@ -336,15 +336,6 @@ impl Default for IndexerArgs {
     }
 }
 
-fn derive_http_url(host: &String, port: &String) -> String {
-    let protocol = match port.as_str() {
-        "443" | "4443" => "https",
-        _ => "http",
-    };
-
-    format!("{protocol}://{host}:{port}")
-}
-
 pub trait Env {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()>;
 }
