@@ -71,9 +71,17 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     mut executor: T,
     kill_switch: Arc<AtomicBool>,
 ) -> impl Future<Output = ()> {
-    let fuel_node_addr = config.fuel_node.to_string();
     let start_block = manifest.start_block.expect("Failed to detect start_block.");
     let stop_idle_indexers = config.stop_idle_indexers;
+
+    let fuel_node_addr = if config.indexer_net_config {
+        manifest
+            .fuel_client
+            .clone()
+            .unwrap_or(config.fuel_node.to_string())
+    } else {
+        config.fuel_node.to_string()
+    };
 
     let mut next_cursor = if start_block > 1 {
         let decremented = start_block - 1;

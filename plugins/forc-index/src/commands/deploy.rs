@@ -75,7 +75,7 @@ impl Default for Command {
             path: None,
             auth: Some("".to_string()),
             target: defaults::WASM_TARGET.to_string(),
-            release: true,
+            release: true.to_string(),
             profile: Some("release".to_string()),
             verbose: false,
             locked: false,

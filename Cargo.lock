@@ -2378,7 +2378,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "forc-index"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -2407,7 +2407,7 @@ dependencies = [
 
 [[package]]
 name = "forc-postgres"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -2880,7 +2880,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2907,7 +2907,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-graphql 5.0.7",
@@ -2936,7 +2936,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -2948,7 +2948,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "serde",
  "strum 0.24.1",
@@ -2956,7 +2956,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-lib"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -2975,7 +2975,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macros"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "fuel-abi-types 0.2.1",
  "fuel-indexer-database-types",
@@ -3003,7 +3003,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-metrics"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "lazy_static",
  "prometheus",
@@ -3012,7 +3012,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-plugin"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3024,6 +3024,7 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "hex",
+ "sha2 0.10.6",
  "tokio",
  "tracing",
  "tracing-subscriber 0.2.25",
@@ -3031,7 +3032,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3043,7 +3044,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-schema"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "bincode",
  "fuel-indexer-database",
@@ -3071,6 +3072,7 @@ dependencies = [
  "fuels-types",
  "getrandom",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]
@@ -3118,7 +3120,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-types"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "chrono",
  "fuel-tx",
@@ -5132,7 +5134,7 @@ checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 
 [[package]]
 name = "plugin-tests"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "forc-index",
  "fuel-indexer-plugin",
@@ -6131,6 +6133,7 @@ dependencies = [
  "fuels-types",
  "getrandom",
  "serde",
+ "sha2 0.10.6",
 ]
 
 [[package]]

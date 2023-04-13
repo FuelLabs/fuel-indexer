@@ -7,12 +7,15 @@ use fuel_indexer_lib::manifest::Manifest;
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::{
     blocking::{multipart::Form, Client},
-    header::{HeaderMap, AUTHORIZATION},
+    header::{HeaderMap, AUTHORIZATION, CONNECTION},
     StatusCode,
 };
 use serde_json::{to_string_pretty, value::Value, Map};
 use std::time::Duration;
 use tracing::{error, info};
+
+const STEADY_TICK_INTERVAL: u64 = 120;
+const TCP_TIMEOUT: u64 = 3;
 
 pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let DeployCommand {
@@ -60,7 +63,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let form = Form::new()
         .file("manifest", &manifest_path)?
         .file("schema", graphql_schema)?
-        .file("wasm", module.path())?;
+        .file("wasm", module.to_string())?;
 
     let target = format!("{url}/api/index/{namespace}/{identifier}");
 
@@ -75,12 +78,13 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     }
 
     let mut headers = HeaderMap::new();
+    headers.insert(CONNECTION, "keep-alive".parse()?);
     if let Some(auth) = auth {
         headers.insert(AUTHORIZATION, auth.parse()?);
     }
 
     let pb = ProgressBar::new_spinner();
-    pb.enable_steady_tick(Duration::from_millis(120));
+    pb.enable_steady_tick(Duration::from_millis(STEADY_TICK_INTERVAL));
     pb.set_style(
         ProgressStyle::with_template("{spinner:.blue} {msg}")
             .unwrap()
@@ -96,7 +100,12 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     );
     pb.set_message("🚀 Deploying...");
 
-    let res = Client::new()
+    let client = Client::builder()
+        .tcp_keepalive(Duration::from_secs(TCP_TIMEOUT))
+        .connection_verbose(verbose)
+        .build()?;
+
+    let res = client
         .post(&target)
         .multipart(form)
         .headers(headers)

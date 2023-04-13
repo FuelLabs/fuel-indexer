@@ -17,3 +17,4 @@ fuels-macros = { version = "0.38.1" }
 fuels-types = { version = "0.38.1", default-features = false }
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
+sha2 = { version = "0.10" }

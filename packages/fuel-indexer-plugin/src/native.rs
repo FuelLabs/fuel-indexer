@@ -17,6 +17,7 @@ pub use fuel_indexer_lib::{
     utils::{init_logging, ServiceRequest},
 };
 use fuel_indexer_schema::FtColumn;
+pub use sha2;
 pub use std::collections::HashMap;
 pub use std::collections::HashSet;
 pub use tokio;

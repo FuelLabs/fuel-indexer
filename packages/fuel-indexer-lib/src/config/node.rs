@@ -1,5 +1,5 @@
 use crate::{
-    config::{derive_http_url, Env, IndexerConfigResult},
+    config::{utils::derive_http_url, Env, IndexerConfigResult},
     defaults,
     utils::{is_opt_env_var, trim_opt_env_key},
 };
@@ -63,5 +63,11 @@ impl From<SocketAddr> for FuelNodeConfig {
         let host = parts[0].to_owned();
         let port = parts[1].to_owned();
         FuelNodeConfig { host, port }
+    }
+}
+
+impl std::string::ToString for FuelNodeConfig {
+    fn to_string(&self) -> String {
+        format!("{}:{}", self.host, self.port)
     }
 }
