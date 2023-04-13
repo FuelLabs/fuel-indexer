@@ -356,8 +356,8 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
     IndexerService::new(config, pool, None).await.unwrap()
 }
 
-pub async fn connect_to_deployed_contract(
-) -> Result<FuelIndexerTest, Box<dyn std::error::Error>> {
+pub async fn connect_to_deployed_contract<T>(
+) -> Result<FuelIndexerTest<T>, Box<dyn std::error::Error>> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
     let mut wallet =
@@ -689,12 +689,12 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    pub struct AppState {
-        pub contract: FuelIndexerTest,
+    pub struct AppState<T> {
+        pub contract: FuelIndexerTest<T>,
     }
 
     pub fn app<T>(
-        contract: FuelIndexerTest,
+        contract: FuelIndexerTest<T>,
     ) -> App<
         impl ServiceFactory<
             ServiceRequest,

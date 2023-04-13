@@ -5,9 +5,10 @@ use crate::{
 use fuel_abi_types::program_abi::TypeDeclaration;
 use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
 use fuel_indexer_types::{abi, type_id};
+use fuels::{
+    core::function_selector::resolve_fn_selector, types::param_types::ParamType,
+};
 use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
-use fuels_core::function_selector::resolve_fn_selector;
-use fuels_types::param_types::ParamType;
 use proc_macro::TokenStream;
 use quote::quote;
 use std::collections::{HashMap, HashSet};

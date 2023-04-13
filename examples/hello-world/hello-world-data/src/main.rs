@@ -1,11 +1,11 @@
 use clap::Parser;
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
+use fuels::macros::abigen;
 use fuels::{
     prelude::{Bech32ContractId, Contract, DeployConfiguration, Provider},
     signers::WalletUnlocked,
     types::SizedAsciiString,
 };
-use fuels_macros::abigen;
 use rand::{seq::SliceRandom, Rng};
 use std::path::{Path, PathBuf};
 
