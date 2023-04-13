@@ -78,6 +78,8 @@ pub enum ApiError {
     FuelCrypto(#[from] FuelCryptoError),
     #[error("JsonWebTokenError: {0:?}")]
     JsonWebTokenError(#[from] JsonWebTokenError),
+    #[error("HexError: {0:?}")]
+    HexError(#[from] hex::FromHexError),
 }
 
 impl Default for ApiError {
