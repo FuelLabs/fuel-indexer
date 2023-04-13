@@ -11,16 +11,14 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post, put},
-    Error as AxumError, Router,
+    Router,
 };
-use fuel_crypto::Error as FuelCryptoError;
 use fuel_indexer_database::{IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
 use fuel_indexer_schema::db::{
     graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
 };
-use hyper::{Error as HyperError, Method};
-use jsonwebtoken::errors::Error as JsonWebTokenError;
+use hyper::Method;
 use serde_json::json;
 use std::{net::SocketAddr, time::Instant};
 use thiserror::Error;
@@ -70,15 +68,15 @@ pub enum ApiError {
     #[error("Schema error {0:?}")]
     SchemaError(#[from] IndexerSchemaError),
     #[error("Channel send error: {0:?}")]
-    ChannelSendError(#[from] SendError<ServiceRequest>),
+    ChannelSend(#[from] SendError<ServiceRequest>),
     #[error("Axum error: {0:?}")]
-    AxumError(#[from] AxumError),
+    Axum(#[from] axum::Error),
     #[error("Hyper error: {0:?}")]
-    HyperError(#[from] HyperError),
+    HyperError(#[from] hyper::Error),
     #[error("FuelCrypto error: {0:?}")]
-    FuelCrypto(#[from] FuelCryptoError),
-    #[error("JsonWebTokenError: {0:?}")]
-    JsonWebTokenError(#[from] JsonWebTokenError),
+    FuelCrypto(#[from] fuel_crypto::Error),
+    #[error("JsonWebToken: {0:?}")]
+    JsonWebToken(#[from] jsonwebtoken::errors::Error),
     #[error("HexError: {0:?}")]
     HexError(#[from] hex::FromHexError),
 }
@@ -93,7 +91,7 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let generic_details = "Internal server error.".to_string();
         let (status, details) = match self {
-            Self::JsonWebTokenError(e) => (
+            Self::JsonWebToken(e) => (
                 StatusCode::BAD_REQUEST,
                 format!("Could not process JWT: {e}"),
             ),
