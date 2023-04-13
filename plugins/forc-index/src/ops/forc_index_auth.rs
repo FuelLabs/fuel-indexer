@@ -55,8 +55,6 @@ pub fn init(command: AuthCommand) -> anyhow::Result<()> {
 
     let response: NonceResponse = res.json().unwrap();
 
-    // NOTE: Until latest forc-wallet is available via fuelup, manually insert
-    // the path to the latest compiled forc-wallet binary
     let signature = match Command::new("forc-wallet")
         .arg("sign")
         .arg("--account")

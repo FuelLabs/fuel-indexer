@@ -2999,6 +2999,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-metrics",
  "fuel-indexer-schema",
+ "hex",
  "http",
  "hyper 0.14.25",
  "hyper-rustls 0.23.2",
