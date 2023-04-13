@@ -36,9 +36,9 @@ fuel-indexer-schema = { workspace = true, default-features = true }
 fuel-indexer-types = { workspace = true }
 fuel-tx = "0.26.0"
 fuel-types = "0.26.0"
-fuels = { version = "0.38.1", features = ["fuel-core-lib"] }
-fuels-core = { version = "0.38.1", default-features = true }
-fuels-macros = { version = "0.38.1" }
+fuels = { version = "0.40.0", features = ["fuel-core-lib"] }
+fuels-core = { version = "0.40.0", default-features = true }
+fuels-macros = { version = "0.40.0" }
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ] }

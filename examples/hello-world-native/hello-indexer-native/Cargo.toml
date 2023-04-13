@@ -11,10 +11,10 @@ fuel-indexer-macros = { workspace = true, default-features = false }
 fuel-indexer-plugin = { workspace = true, features = ["native-execution"] }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-tx = "0.26.0"
-fuels = { version = "0.38.1" }
-fuels-core = { version = "0.38.1", default-features = false }
-fuels-macros = { version = "0.38.1" }
-fuels-types = { version = "0.38.1", default-features = false }
+fuels = { version = "0.40.0" }
+fuels-core = { version = "0.40.0", default-features = false }
+fuels-macros = { version = "0.40.0" }
+fuels-types = { version = "0.40.0", default-features = false }
 getrandom = { version = "0.2", features = ["js"] }
 instant = { version = "0.1", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
