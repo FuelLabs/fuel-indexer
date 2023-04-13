@@ -694,7 +694,7 @@ pub mod test_web {
     }
 
     pub fn app<T>(
-        contract: FuelIndexerTest<T>,
+        contract: FuelIndexerTest,
     ) -> App<
         impl ServiceFactory<
             ServiceRequest,
