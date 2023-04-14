@@ -211,8 +211,8 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```bash
-curl -X POST -H "Content-Type: application/graphql" 
---data '{ "query": "query { tx { id, hash, block } }" }' 
+curl -X POST -H "Content-Type: application/graphql"
+--data '{ "query": "query { tx { id, hash, block } }" }'
 http://127.0.0.1:29987/api/graph/my_project/hello_indexer
 ```
 
@@ -238,9 +238,8 @@ http://127.0.0.1:29987/api/graph/my_project/hello_indexer
 
 ### 3.1 Using the playgrond
 
-<< MENTION YOU CAN USE THE PLAYGROUND TO WRITE QUERIES >>
+As opposed to writing `curL` commands to query data, note that you can also explore your indexed data using the indexer's GraphQL playground. For more info on using the playground - [checkout the playground docs](./src/reference-guide/components/graphql/playground.md).
 
 ### Finished! 🥳
 
 Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
-

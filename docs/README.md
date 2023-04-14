@@ -8,7 +8,7 @@
     </picture>
 
 </p>
-<p align="left">
+<p align="center">
     <a href="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml" alt="CI">
         <img src="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg" />
     </a>
