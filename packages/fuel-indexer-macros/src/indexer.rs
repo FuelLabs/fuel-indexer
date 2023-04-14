@@ -276,7 +276,7 @@ fn process_fn_items(
                 contract_ids.iter().map(|id| id.to_string()).collect();
 
             quote! {
-                let receipt_contract_id = Bech32ContractId::from(id);
+                let bech32_id = Bech32ContractId::from(id);
                 let contract_ids_set: HashSet<Bech32ContractId> = {
                     let mut set = HashSet::new();
                     #(
