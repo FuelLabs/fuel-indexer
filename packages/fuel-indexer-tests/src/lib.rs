@@ -21,11 +21,6 @@ pub enum TestError {
     IndexerConfigError(#[from] IndexerConfigError),
 }
 
-pub enum ContractAmount {
-    One = 1,
-    Two = 2,
-}
-
 pub mod assets {
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
         include_str!("./../components/indices/fuel-indexer-test/fuel_indexer_test.yaml");
