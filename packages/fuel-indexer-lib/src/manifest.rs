@@ -75,9 +75,10 @@ pub struct Manifest {
 impl Manifest {
     /// Derive an indexer manifest via the YAML file at the specified path.
     pub fn from_file(path: impl AsRef<Path>) -> ManifestResult<Self> {
-        let file = File::open(path)?;
-        let manifest: Manifest = serde_yaml::from_reader(file)?;
-        Ok(manifest)
+        let mut file = File::open(path)?;
+        let mut content = String::new();
+        file.read_to_string(&mut content)?;
+        Self::try_from(content.as_str())
     }
 
     /// Return the raw GraphQL schema string for an indexer manifest.
@@ -158,6 +159,7 @@ impl TryFrom<&Vec<u8>> for Manifest {
 
 /// Represents contract IDs in a `Manifest` struct.
 #[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(untagged)]
 pub enum ContractIds {
     ///Single represents a single contract ID as an `Option<String>`.
     #[serde(alias = "single")]
