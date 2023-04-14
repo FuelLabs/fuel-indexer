@@ -285,7 +285,7 @@ fn process_fn_items(
                     set
                 };
 
-                if !contract_ids_set.contains(&receipt_contract_id) {
+                if !contract_ids_set.contains(&bech32_id) {
                     Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                     continue;
                 }
