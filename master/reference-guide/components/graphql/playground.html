@@ -148,20 +148,15 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="graphql-playground"><a class="header" href="#graphql-playground">GraphQL Playground</a></h1>
-<ul>
-<li>GraphQL Playground is an interactive, in-browser GraphQL IDE that allows developers to easily explore and test GraphQL APIs. 
-You can read more about it <a href="https://github.com/graphql/graphql-playground">here</a></li>
-<li>Indexers come shipped with their own GraphQL playground, so you can get to querying your data right away. </li>
-</ul>
+<p>The Fuel indexer's GraphQL Playground is an interactive, in-browser GraphQL IDE that allows developers to easily explore and test the indexer's GraphQL API server. You can read more about the GraphQL playground in general <a href="https://github.com/graphql/graphql-playground">here</a>.</p>
+<p>Every public indexer can access the GraphQL playground of the Fuel indexer node on which the given indexer runs, so users and devs can get to querying their data right away.</p>
 <h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
-<ul>
-<li>To use the playground, with your indexer running simply go to this url in your browser, where <code>namespace</code> and <code>identifier</code> are those found in your manifest.</li>
-</ul>
-<pre><code class="language-bash">http://localhost:29987/api/playground/{namespace}/{identifier}
+<p>To use the GraphQL playground to explor your indices, simply <a href="../../../getting-started/starting-the-fuel-indexer.html">start your indexer service</a> - then open the following URL in your browser - where <code>namespace</code> and <code>identifier</code> correspond to the namespace and identifier of the index that you'd like to explore.</p>
+<pre><code class="language-bash">http://localhost:29987/api/playground/:namespace/:identifier
 </code></pre>
-<ul>
-<li>Note: On initial page render, the playground throws a 500. Don't worry about this, you should still be able to query. </li>
-</ul>
+<blockquote>
+<p>NOTE: On initial page render, the playground throws a 500. Don't worry about this, you should still be able to query.</p>
+</blockquote>
 
                     </main>
 
