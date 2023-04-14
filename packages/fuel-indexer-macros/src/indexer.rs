@@ -6,7 +6,7 @@ use fuel_abi_types::program_abi::TypeDeclaration;
 use fuel_indexer_lib::{
     manifest::ContractIds, manifest::Manifest, utils::local_repository_root,
 };
-use fuel_indexer_types::{abi, type_id};
+use fuel_indexer_types::{abi, type_id, Bech32ContractId};
 use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
 use fuels_core::function_selector::resolve_fn_selector;
 use fuels_types::param_types::ParamType;
@@ -14,6 +14,7 @@ use proc_macro::TokenStream;
 use quote::quote;
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use syn::{parse_macro_input, FnArg, Item, ItemMod, PatType, Type};
 
 fn process_fn_items(
@@ -272,18 +273,20 @@ fn process_fn_items(
             None => quote! {},
         },
         ContractIds::Multiple(contract_ids) => {
-            let contract_ids_str: HashSet<Bech32ContractId> = contract_ids
+            let contract_ids_str: Vec<String> = contract_ids
                 .iter()
-                .filter_map(|id| id.as_ref().cloned())
-                .map(|id_str| {
-                    Bech32ContractId::from_str(&id_str).expect(
-                        "Failed to parse manifest 'contract_id' as Bech32ContractId",
-                    )
-                })
+                .filter_map(|id| Some(id.clone()))
                 .collect();
 
             quote! {
-                let bech32_id = Bech32ContractId::from(id);
+                let receipt_contract_id = Bech32ContractId::from(id);
+                let contract_ids_set: HashSet<Bech32ContractId> = {
+                    let mut set = HashSet::new();
+                    #(
+                        set.insert(Bech32ContractId::from_str(#contract_ids_str).expect("Failed to parse manifest 'contract_id' as Bech32ContractId"));
+                    )*
+                    set
+                };
 
                 if !contract_ids_set.contains(&receipt_contract_id) {
                     Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
