@@ -765,3 +765,150 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
     assert_eq!(data[0]["maybe_null_bar"].as_i64(), Some(456));
     assert_eq!(data[0]["bazoo"].as_i64(), Some(1000));
 }
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_sorted_results_postgres() {
+    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(api_app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(
+            r#"{"query": "query { filterentity(order: { desc: foola }) { id foola } }" }"#,
+        )
+        .send()
+        .await
+        .unwrap();
+
+    server_handle.abort();
+
+    let body = resp.text().await.unwrap();
+    let v: Value = serde_json::from_str(&body).unwrap();
+    let data = v["data"].as_array().expect("data is not an array");
+
+    assert_eq!(data[0]["id"].as_i64(), Some(2));
+    assert_eq!(data[0]["foola"].as_str(), Some("boop"));
+    assert_eq!(data[1]["id"].as_i64(), Some(3));
+    assert_eq!(data[1]["foola"].as_str(), Some("blorp"));
+    assert_eq!(data[2]["id"].as_i64(), Some(1));
+    assert_eq!(data[2]["foola"].as_str(), Some("beep"));
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_ascending_limited_results_postgres() {
+    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(api_app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(
+            r#"{"query": "query { filterentity(order: { asc: foola }, first: 1) { id foola } }" }"#,
+        )
+        .send()
+        .await
+        .unwrap();
+
+    server_handle.abort();
+
+    let body = resp.text().await.unwrap();
+    let v: Value = serde_json::from_str(&body).unwrap();
+    let data = v["data"].as_array().expect("data is not an array");
+
+    assert_eq!(data[0]["id"].as_i64(), Some(1));
+    assert_eq!(data[0]["foola"].as_str(), Some("beep"));
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_return_query_response_with_offset_results_postgres() {
+    let (fuel_node_handle, _test_db, mut srvc, api_app) = setup_test_components().await;
+
+    let server = axum::Server::bind(&GraphQLConfig::default().into())
+        .serve(api_app.into_make_service());
+
+    let server_handle = tokio::spawn(server);
+    let mut manifest: Manifest =
+        serde_yaml::from_str(assets::FUEL_INDEXER_TEST_MANIFEST).expect("Bad yaml file.");
+
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest)
+        .await
+        .expect("Failed to initialize indexer.");
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    fuel_node_handle.abort();
+
+    let client = http_client();
+    let resp = client
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .header(CONTENT_TYPE, "application/graphql".to_owned())
+        .body(
+            r#"{"query": "query { filterentity(order: { asc: foola }, offset: 1) { id foola } }" }"#,
+        )
+        .send()
+        .await
+        .unwrap();
+
+    server_handle.abort();
+
+    let body = resp.text().await.unwrap();
+    let v: Value = serde_json::from_str(&body).unwrap();
+    let data = v["data"].as_array().expect("data is not an array");
+
+    assert_eq!(data[0]["id"].as_i64(), Some(3));
+    assert_eq!(data[0]["foola"].as_str(), Some("blorp"));
+    assert_eq!(data[1]["id"].as_i64(), Some(2));
+    assert_eq!(data[1]["foola"].as_str(), Some("boop"));
+}
