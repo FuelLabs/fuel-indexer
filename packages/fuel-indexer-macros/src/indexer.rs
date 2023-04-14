@@ -272,20 +272,21 @@ fn process_fn_items(
             None => quote! {},
         },
         ContractIds::Multiple(contract_ids) => {
-            let contract_ids_str: Vec<String> =
-                contract_ids.iter().map(|id| id.to_string()).collect();
+            let contract_ids = contract_ids
+                .iter()
+                .map(|id| {
+                    quote! {
+                        Bech32ContractId::from_str(#id)
+                            .expect("Failed to parse manifest 'contract_id' as Bech32ContractId")
+                    }
+                })
+                .collect::<Vec<proc_macro2::TokenStream>>();
 
             quote! {
                 let bech32_id = Bech32ContractId::from(id);
-                let contract_ids_set: HashSet<Bech32ContractId> = {
-                    let mut set = HashSet::new();
-                    #(
-                        set.insert(Bech32ContractId::from_str(#contract_ids_str).expect("Failed to parse manifest 'contract_id' as Bech32ContractId"));
-                    )*
-                    set
-                };
+                let contract_ids = HashSet::from([#(#contract_ids),*]);
 
-                if !contract_ids_set.contains(&bech32_id) {
+                if !contract_ids.contains(&bech32_id) {
                     Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                     continue;
                 }
