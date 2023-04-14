@@ -113,6 +113,7 @@ fn test_query_builder_parses_correctly() {
                 offset: None,
                 limit: None,
             },
+            alias: None,
         },
         UserQuery {
             elements: vec![
@@ -142,6 +143,7 @@ fn test_query_builder_parses_correctly() {
                 offset: None,
                 limit: None,
             },
+            alias: None,
         },
         UserQuery {
             elements: vec![QueryElement::Field {
@@ -173,6 +175,7 @@ fn test_query_builder_parses_correctly() {
                 offset: None,
                 limit: None,
             },
+            alias: None,
         },
     ];
 

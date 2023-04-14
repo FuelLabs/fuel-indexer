@@ -38,11 +38,13 @@ pub enum GraphqlError {
     UnableToParseValue(String),
     #[error("No available predicates to associate with logical operator")]
     MissingPartnerForBinaryLogicalOperator,
+    #[error("Paginated query must have an order applied to at least one field")]
+    UnorderedPaginatedQuery,
 }
 
 #[derive(Clone, Debug)]
 pub enum Selection {
-    Field(String, Vec<ParamType>, Selections),
+    Field(String, Vec<ParamType>, Selections, Option<String>),
     Fragment(String),
 }
 
@@ -70,6 +72,7 @@ impl Selections {
                         name,
                         selection_set,
                         arguments,
+                        alias,
                         ..
                     } = field;
 
@@ -99,6 +102,7 @@ impl Selections {
                         name.to_string(),
                         params,
                         sub_selections,
+                        alias.map(str::to_string),
                     ));
                 }
                 gql::Selection::FragmentSpread(frag) => {
@@ -145,7 +149,7 @@ impl Selections {
                         selections.push(Selection::Fragment(name.to_string()));
                     }
                 }
-                Selection::Field(name, filters, sub_selection) => {
+                Selection::Field(name, params, sub_selection, alias) => {
                     let field_type = schema
                         .field_type(cond, name)
                         .expect("Unable to retrieve field type");
@@ -154,8 +158,9 @@ impl Selections {
 
                     selections.push(Selection::Field(
                         name.to_string(),
-                        filters.to_vec(),
+                        params.to_vec(),
                         sub_selection.clone(),
+                        alias.clone(),
                     ));
                 }
             }
@@ -252,7 +257,7 @@ impl Operation {
             // Selections can have their own set of subselections and so on, so a queue
             // is created with the first level of selections. In order to track the containing
             // entity of the selection, an entity list of the same length is created.
-            if let Selection::Field(entity_name, filters, selections) = selection {
+            if let Selection::Field(entity_name, filters, selections, alias) = selection {
                 let mut queue: Vec<Selection> = Vec::new();
 
                 // Selections and entities will be popped from their respective vectors
@@ -300,11 +305,12 @@ impl Operation {
 
                     last_seen_entities_len = entities.len();
 
-                    if let Selection::Field(field_name, filters, subselections) = current
+                    if let Selection::Field(field_name, filters, subselections, alias) =
+                        current
                     {
                         if subselections.selections.is_empty() {
                             elements.push(QueryElement::Field {
-                                key: field_name.clone(),
+                                key: alias.unwrap_or(field_name.clone()),
                                 value: format!(
                                     "{namespace}_{identifier}.{entity_name}.{field_name}"
                                 ),
@@ -415,7 +421,7 @@ impl Operation {
                             nested_entity_stack.push(new_entity.clone());
 
                             elements.push(QueryElement::ObjectOpeningBoundary {
-                                key: field_name.clone(),
+                                key: alias.unwrap_or(field_name.clone()),
                             });
 
                             queue.append(&mut subselections.get_selections());
@@ -439,6 +445,7 @@ impl Operation {
                     namespace_identifier: format!("{namespace}_{identifier}"),
                     entity_name,
                     query_params,
+                    alias,
                 };
 
                 queries.push(query)
@@ -465,13 +472,17 @@ impl GraphqlQuery {
         queries
     }
 
-    pub fn as_sql(&self, schema: &Schema, db_type: DbType) -> Vec<String> {
+    pub fn as_sql(
+        &self,
+        schema: &Schema,
+        db_type: DbType,
+    ) -> Result<Vec<String>, GraphqlError> {
         let queries = self.parse(schema);
 
         queries
             .into_iter()
             .map(|mut q| q.to_sql(&db_type))
-            .collect::<Vec<String>>()
+            .collect::<Result<Vec<String>, GraphqlError>>()
     }
 }
 
@@ -638,6 +649,7 @@ mod tests {
                         has_fragments: false,
                         selections: Vec::new(),
                     },
+                    None,
                 ),
                 Selection::Field(
                     "height".to_string(),
@@ -647,6 +659,7 @@ mod tests {
                         has_fragments: false,
                         selections: Vec::new(),
                     },
+                    None,
                 ),
             ],
         };
@@ -659,6 +672,7 @@ mod tests {
                     "block".to_string(),
                     Vec::new(),
                     selections_on_block_field,
+                    None,
                 ),
                 Selection::Field(
                     "id".to_string(),
@@ -668,6 +682,7 @@ mod tests {
                         has_fragments: false,
                         selections: Vec::new(),
                     },
+                    None,
                 ),
                 Selection::Field(
                     "timestamp".to_string(),
@@ -677,6 +692,7 @@ mod tests {
                         has_fragments: false,
                         selections: Vec::new(),
                     },
+                    None,
                 ),
             ],
         };
@@ -685,6 +701,7 @@ mod tests {
             "tx".to_string(),
             Vec::new(),
             selections_on_tx_field,
+            None,
         )];
 
         let operation = Operation {
@@ -811,6 +828,7 @@ mod tests {
             namespace_identifier: "fuel_indexer_test_test_index".to_string(),
             entity_name: "tx".to_string(),
             query_params: QueryParams::default(),
+            alias: None,
         }];
         assert_eq!(expected, operation.parse(&schema));
     }

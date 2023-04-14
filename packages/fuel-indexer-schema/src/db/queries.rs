@@ -1,9 +1,9 @@
-use super::arguments::QueryParams;
+use super::{arguments::QueryParams, graphql::GraphqlError};
 use fuel_indexer_database::DbType;
 use std::{collections::HashMap, fmt::Display};
 
 /// Represents a part of a user query. Each part can be a key-value pair
-/// describing a entity field and its corresponding database table, or a
+/// describing an entity field and its corresponding database table, or a
 /// boundary for a nested object; opening boundaries contain a string to
 /// be used as a JSON key in the final database query.
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -44,23 +44,25 @@ pub struct QueryJoinNode {
 }
 
 /// Represents the full amount of requested information from a user query.
-///
-/// - `elements`: the individal parts or tokens of what will become a selection statement
-/// - `joins`: contains information about the dependents and dependencies of a particular table join
-/// - `namespace_identifier`: the full isolated namespace in which an indexer's entity tables reside
-/// - `entity_name`: the top-level entity contained in a query
-/// - `filters`: contains filters for each requested entity in a query
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UserQuery {
+    /// The individal parts or tokens of what will become a selection statement.
     pub elements: Vec<QueryElement>,
+    /// Contains information about the dependents and dependencies of a particular table join.
     pub joins: HashMap<String, QueryJoinNode>,
+    /// The full isolated namespace in which an indexer's entity tables reside.
     pub namespace_identifier: String,
+    /// The top-level entity contained in a query.
     pub entity_name: String,
+    /// The full set of parameters that can be applied to a query.
     pub query_params: QueryParams,
+    // An optional user-suppled alias for an entity field.
+    pub alias: Option<String>,
 }
 
 impl UserQuery {
-    pub fn to_sql(&mut self, db_type: &DbType) -> String {
+    /// Returns the query as a database-specific SQL query.
+    pub fn to_sql(&mut self, db_type: &DbType) -> Result<String, GraphqlError> {
         // Different database solutions have unique ways of
         // constructing JSON-formatted queries and results.
         match db_type {
@@ -94,19 +96,105 @@ impl UserQuery {
                     }
                 }
 
-                let mut query = format!(
-                    "SELECT json_build_object({}) FROM {}.{}",
-                    selections_str, self.namespace_identifier, self.entity_name,
+                let joins_str = if !joins.is_empty() {
+                    joins.join(" ")
+                } else {
+                    "".to_string()
+                };
+
+                // If there's a limit applied to the query, then we need to create a query
+                // with pagination info. Otherwise, we can return the entire result set.
+                let query: String = if let Some(limit) = self.query_params.limit {
+                    // Paginated queries must have an order applied to at least one field.
+                    if !self.query_params.sorts.is_empty() {
+                        self.create_query_with_pageinfo(
+                            db_type,
+                            selections_str,
+                            joins_str,
+                            limit,
+                        )
+                    } else {
+                        return Err(GraphqlError::UnorderedPaginatedQuery);
+                    }
+                } else {
+                    format!(
+                        "SELECT json_build_object({}) FROM {}.{} {} {} {}",
+                        selections_str,
+                        self.namespace_identifier,
+                        self.entity_name,
+                        joins_str,
+                        self.query_params.get_filtering_expression(db_type),
+                        self.query_params.get_ordering_modififer(db_type)
+                    )
+                };
+
+                Ok(query)
+            }
+        }
+    }
+
+    /// Returns a SQL query that contains the requested results and a PageInfo object.
+    fn create_query_with_pageinfo(
+        &self,
+        db_type: &DbType,
+        selections_str: String,
+        joins_str: String,
+        limit: u64,
+    ) -> String {
+        // In order to create information about pagination, we need to calculate
+        // values according to the amount of records, current offset, and requested
+        // limit. To avoid sending additional queries for every request sent to
+        // the API, we leverage a common table expression (CTE) which is a table
+        // that exists only for the duration of the query and allows us to refer
+        // to its result set.
+        match db_type {
+            db_type @ DbType::Postgres => {
+                let json_selections_str =
+                    self.get_json_selections_from_cte(db_type).join(",");
+
+                let selection_cte = format!(
+                    r#"WITH selection_cte AS (
+                        SELECT json_build_object({}) AS {}
+                        FROM {}.{}
+                        {}
+                        {}
+                        {}),"#,
+                    selections_str,
+                    self.entity_name,
+                    self.namespace_identifier,
+                    self.entity_name,
+                    joins_str,
+                    self.query_params.get_filtering_expression(db_type),
+                    self.query_params.get_ordering_modififer(db_type),
                 );
 
-                // If there are table joins present, add them to the query string.
-                if !joins.is_empty() {
-                    query = [query, joins.join(" ")].join(" ");
-                }
+                let total_count_cte =
+                    "total_count_cte AS (SELECT COUNT(*) as count FROM selection_cte)"
+                        .to_string();
 
-                query = [query, self.query_params.to_sql(db_type)].join(" ");
+                let offset = self.query_params.offset.unwrap_or(0);
+                let alias = self.alias.clone().unwrap_or(self.entity_name.clone());
 
-                query
+                let selection_query = format!(
+                    r#"SELECT json_build_object(
+                        'pageInfo', json_build_object(
+                            'hasNextPage', (({limit} + {offset}) < (SELECT count from total_count_cte)),
+                            'limit', {limit},
+                            'offset', {offset},
+                            'pages', ceil((SELECT count from total_count_cte)::float / {limit}::float),
+                            'totalCount', (SELECT count from total_count_cte)
+                        ),
+                        '{alias}', (
+                            SELECT json_agg(item)
+                            FROM (
+                                SELECT {json_selections_str} FROM selection_cte
+                                LIMIT {limit} OFFSET {offset}
+                            ) item
+                        )
+                    );"#
+                );
+
+                [selection_cte, total_count_cte, selection_query].join("\n")
             }
         }
     }
@@ -170,11 +258,64 @@ impl UserQuery {
         selections
     }
 
+    /// Returns a list of strings that can be used to select user-requested
+    /// elements from a query leveraging common table expressions.
+    fn get_json_selections_from_cte(&self, db_type: &DbType) -> Vec<String> {
+        let mut selections = Vec::new();
+
+        match db_type {
+            DbType::Postgres => {
+                let mut peekable_elements = self.elements.iter().peekable();
+                let mut nesting_level = 0;
+
+                while let Some(element) = peekable_elements.next() {
+                    match element {
+                        QueryElement::Field { key, .. } => {
+                            selections.push(format!(
+                                "{}->'{}' AS {}",
+                                self.entity_name, key, key
+                            ));
+                        }
+
+                        QueryElement::ObjectOpeningBoundary { key } => {
+                            selections.push(format!(
+                                "{}->'{}' AS {}",
+                                self.entity_name, key, key
+                            ));
+                            nesting_level += 1;
+
+                            // Since we've added the entire sub-object (and its potential
+                            // sub-objects) to our selections, we can safely ignore all
+                            // fields and objects until we've come back to the top level.
+                            for inner_element in peekable_elements.by_ref() {
+                                match inner_element {
+                                    QueryElement::ObjectOpeningBoundary { .. } => {
+                                        nesting_level += 1;
+                                    }
+                                    QueryElement::ObjectClosingBoundary => {
+                                        nesting_level -= 1;
+                                        if nesting_level == 0 {
+                                            break;
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
+
+                        QueryElement::ObjectClosingBoundary => {}
+                    }
+                }
+            }
+        }
+
+        selections
+    }
+
     /// Returns table joins sorted in topological order.
     ///
     /// Some databases (i.e Postgres) require that dependent tables be joined after the tables
-    /// the tables they depend upon, i.e. the tables needs to be topologically sorted. This
-    /// is the primary reason for modelling a user query as a DAG.
+    /// the tables they depend upon, i.e. the tables needs to be topologically sorted.
     fn get_topologically_sorted_joins(&mut self) -> Vec<JoinCondition> {
         let mut start_nodes: Vec<String> = self
             .joins
@@ -235,6 +376,7 @@ mod tests {
             namespace_identifier: "".to_string(),
             entity_name: "".to_string(),
             query_params: QueryParams::default(),
+            alias: None,
         };
 
         let expected = vec![
@@ -317,6 +459,7 @@ mod tests {
                 offset: None,
                 limit: None,
             },
+            alias: None,
         };
 
         let expected = "SELECT json_build_object('hash', name_ident.block.hash, 'tx', json_build_object('hash', name_ident.tx.hash), 'height', name_ident.block.height) FROM name_ident.entity_name INNER JOIN name_ident.block ON name_ident.tx.block = name_ident.block.id WHERE name_ident.entity_name.id = 1"
