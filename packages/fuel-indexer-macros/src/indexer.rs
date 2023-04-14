@@ -272,10 +272,8 @@ fn process_fn_items(
             None => quote! {},
         },
         ContractIds::Multiple(contract_ids) => {
-            let contract_ids_str: Vec<String> = contract_ids
-                .iter()
-                .filter_map(|id| Some(id.clone()))
-                .collect();
+            let contract_ids_str: Vec<String> =
+                contract_ids.iter().map(|id| id.to_string()).collect();
 
             quote! {
                 let receipt_contract_id = Bech32ContractId::from(id);
