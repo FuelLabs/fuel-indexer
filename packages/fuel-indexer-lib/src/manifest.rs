@@ -161,10 +161,10 @@ impl TryFrom<&Vec<u8>> for Manifest {
 #[derive(Debug, Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum ContractIds {
-    ///Single represents a single contract ID as an `Option<String>`.
+    /// Single represents a single contract ID as an `Option<String>`.
     #[serde(alias = "single")]
     Single(Option<String>),
-    ///Multiple represents a vector of contracts IDs as a Vec<String>.
+    /// Multiple represents a vector of contracts IDs as a Vec<String>.
     #[serde(alias = "multiple")]
     Multiple(Vec<String>),
 }
