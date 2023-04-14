@@ -1,13 +1,13 @@
 extern crate alloc;
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{defaults, fixtures::indexer_service_postgres};
+use fuels::prelude::{LoadConfiguration, TxParameters};
 use fuels::{
     macros::abigen,
     prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Contract,
-        DeployConfiguration, Provider, WalletUnlocked, DEFAULT_COIN_AMOUNT,
+        setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
+        WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
-    signers::Signer,
 };
 use std::path::Path;
 
@@ -35,8 +35,8 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     let bin_path = workdir.join("contracts/simple-wasm/out/debug/contracts.bin");
     let bin_path_str = bin_path.as_os_str().to_str().unwrap();
-    let _compiled =
-        Contract::load_contract(bin_path_str, DeployConfiguration::default()).unwrap();
+    let loaded_contract =
+        Contract::load_from(bin_path_str, LoadConfiguration::default()).unwrap();
 
     let number_of_coins = 11;
     let asset_id = AssetId::zeroed();
@@ -53,10 +53,10 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
 
     wallet.set_provider(provider.clone());
 
-    let contract_id =
-        Contract::deploy(bin_path_str, &wallet, DeployConfiguration::default())
-            .await
-            .unwrap();
+    let contract_id = loaded_contract
+        .deploy(&wallet, TxParameters::default())
+        .await
+        .unwrap();
 
     let contract = Simple::new(contract_id, wallet);
 

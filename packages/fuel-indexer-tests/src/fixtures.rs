@@ -1,16 +1,8 @@
-use crate::{defaults, TestError, WORKSPACE_ROOT};
+use std::net::SocketAddr;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
+
 use axum::routing::Router;
-use fuel_indexer::IndexerService;
-use fuel_indexer_api_server::api::GraphQlApi;
-use fuel_indexer_database::IndexerConnectionPool;
-use fuel_indexer_lib::{
-    config::{
-        auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
-        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
-    },
-    utils::derive_socket_addr,
-};
-use fuel_indexer_postgres;
 use fuels::{
     macros::abigen,
     prelude::{
@@ -23,10 +15,21 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sqlx::{pool::Pool, PgConnection, Postgres};
 use sqlx::{Connection, Executor};
-use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
 use tracing_subscriber::filter::EnvFilter;
+
+use fuel_indexer::IndexerService;
+use fuel_indexer_api_server::api::GraphQlApi;
+use fuel_indexer_database::IndexerConnectionPool;
+use fuel_indexer_lib::{
+    config::{
+        auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
+        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
+    },
+    utils::derive_socket_addr,
+};
+use fuel_indexer_postgres;
+
+use crate::{defaults, TestError, WORKSPACE_ROOT};
 
 abigen!(Contract(
     name = "FuelIndexerTest",
@@ -219,19 +222,16 @@ pub async fn setup_test_fuel_node(
     wallet.set_provider(provider.clone());
 
     if let Some(contract_bin_path) = contract_bin_path {
-        let _compiled = Contract::load_contract(
+        let loaded_contract = Contract::load_from(
             contract_bin_path.as_os_str().to_str().unwrap(),
             LoadConfiguration::default(),
         )
         .expect("Failed to load contract");
 
-        let contract_id = Contract::deploy(
-            contract_bin_path.as_os_str().to_str().unwrap(),
-            &wallet,
-            LoadConfiguration::default(),
-        )
-        .await
-        .expect("Failed to deploy contract");
+        let contract_id = loaded_contract
+            .deploy(&wallet, TxParameters::default())
+            .await
+            .expect("Failed to deploy contract");
 
         let contract_id = contract_id.to_string();
 
@@ -262,12 +262,12 @@ pub fn get_test_contract_id() -> Bech32ContractId {
         .join("debug")
         .join("fuel-indexer-test.bin");
 
-    let compiled = Contract::load_contract(
+    let loaded_contract = Contract::load_from(
         contract_bin_path.as_os_str().to_str().unwrap(),
         LoadConfiguration::default(),
     )
     .expect("Failed to load compiled contract");
-    let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
+    let id = loaded_contract.contract_id();
 
     Bech32ContractId::from(id)
 }
@@ -356,8 +356,8 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
     IndexerService::new(config, pool, None).await.unwrap()
 }
 
-pub async fn connect_to_deployed_contract<T>(
-) -> Result<FuelIndexerTest<T>, Box<dyn std::error::Error>> {
+pub async fn connect_to_deployed_contract(
+) -> Result<FuelIndexerTest<WalletUnlocked>, Box<dyn std::error::Error>> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
     let mut wallet =
@@ -384,9 +384,8 @@ pub async fn connect_to_deployed_contract<T>(
 }
 
 pub mod test_web {
+    use std::path::Path;
 
-    use super::{tx_params, FuelIndexerTest};
-    use crate::{defaults, fixtures::get_test_contract_id};
     use actix_service::ServiceFactory;
     use actix_web::{
         body::MessageBody,
@@ -394,13 +393,15 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
-    use fuel_indexer_types::{AssetId, Bech32ContractId};
     use fuels::prelude::{CallParameters, Provider, WalletUnlocked};
-    use std::path::Path;
 
-    async fn fuel_indexer_test_blocks<T>(
-        state: web::Data<Arc<AppState<T>>>,
-    ) -> impl Responder {
+    use fuel_indexer_types::{AssetId, Bech32ContractId};
+
+    use crate::{defaults, fixtures::get_test_contract_id};
+
+    use super::{tx_params, FuelIndexerTest};
+
+    async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
             .contract
             .methods()
@@ -412,9 +413,7 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_ping<T>(
-        state: web::Data<Arc<AppState<T>>>,
-    ) -> impl Responder {
+    async fn fuel_indexer_test_ping(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
             .contract
             .methods()
@@ -426,8 +425,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_transfer<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_transfer(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
 
@@ -445,9 +444,7 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_log<T>(
-        state: web::Data<Arc<AppState<T>>>,
-    ) -> impl Responder {
+    async fn fuel_indexer_test_log(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
             .contract
             .methods()
@@ -459,8 +456,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_logdata<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_logdata(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -473,8 +470,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_scriptresult<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_scriptresult(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -487,8 +484,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_transferout<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_transferout(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
 
@@ -506,8 +503,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_messageout<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_messageout(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
 
@@ -526,8 +523,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_callreturn<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_callreturn(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -541,8 +538,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_multiargs<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_multiargs(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -556,8 +553,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_optional_schema_fields<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_optional_schema_fields(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -570,8 +567,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_deeply_nested_schema_fields<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_deeply_nested_schema_fields(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -584,8 +581,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -605,9 +602,7 @@ pub mod test_web {
         HttpResponse::Ok().body(block_height.to_string())
     }
 
-    async fn fuel_indexer_test_tuple<T>(
-        state: web::Data<Arc<AppState<T>>>,
-    ) -> impl Responder {
+    async fn fuel_indexer_test_tuple(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
             .contract
             .methods()
@@ -619,8 +614,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_vec_calldata<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_vec_calldata(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -633,9 +628,7 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_vec_logdata<T>(
-        state: web::Data<Arc<AppState<T>>>,
-    ) -> impl Responder {
+    async fn fuel_indexer_vec_logdata(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
             .contract
             .methods()
@@ -647,8 +640,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_pure_function<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_pure_function(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -662,8 +655,8 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_trigger_panic<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_trigger_panic(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -675,8 +668,8 @@ pub mod test_web {
 
         HttpResponse::Ok()
     }
-    async fn fuel_indexer_test_trigger_revert<T>(
-        state: web::Data<Arc<AppState<T>>>,
+    async fn fuel_indexer_test_trigger_revert(
+        state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let _ = state
             .contract
@@ -689,12 +682,12 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    pub struct AppState<T> {
-        pub contract: FuelIndexerTest<T>,
+    pub struct AppState {
+        pub contract: FuelIndexerTest<WalletUnlocked>,
     }
 
-    pub fn app<T>(
-        contract: FuelIndexerTest<T>,
+    pub fn app(
+        contract: FuelIndexerTest<WalletUnlocked>,
     ) -> App<
         impl ServiceFactory<
             ServiceRequest,
