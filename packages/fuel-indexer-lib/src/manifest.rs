@@ -1,5 +1,7 @@
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::{
+    de, {Deserialize, Serialize},
+};
 use std::{
     fs::File,
     io::{Read, Write},
@@ -20,6 +22,10 @@ pub enum ManifestError {
     NativeModuleError,
     #[error("File IO error: {0:?}.")]
     FileError(#[from] std::io::Error),
+    #[error("Deserialization error: {0}")]
+    DeserializationError(serde::de::value::Error),
+    #[error("Serialization error: {0}")]
+    SerializationError(serde_yaml::Error),
 }
 
 /// Specifies which type of module is used to create this indexer.
@@ -48,13 +54,12 @@ impl ToString for Module {
 }
 
 /// Represents contract IDs in a `Manifest` struct.
-///
-/// - `Single`: Represents an optional single contract ID as an `Option<String>`.
-/// - `Multiple`: Represents a vector of optional contract IDs as a `Vec<Option<String>>`.
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub enum ContractIds {
+    ///Single represents a single contract ID as an `Option<String>`.
     Single(Option<String>),
-    Multiple(Vec<Option<String>>),
+    ///Multiple represents a vector of contracts IDs as a Vec<String>.
+    Multiple(Vec<String>),
 }
 
 impl FromStr for ContractIds {
@@ -62,7 +67,7 @@ impl FromStr for ContractIds {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.starts_with('[') {
-            serde_json::from_str::<Vec<Option<String>>>(s)
+            serde_json::from_str::<Vec<String>>(s)
                 .map(ContractIds::Multiple)
                 .map_err(|err| err.to_string())
         } else {
@@ -96,15 +101,16 @@ pub struct Manifest {
     pub resumable: Option<bool>,
 }
 
-fn contract_id_from_str<'de, D>(deserializer: D) -> Result<ContractIds, D::Error>
+fn contract_id_from_str<'de, D>(deserializer: D) -> Result<ContractIds, ManifestError>
 where
     D: serde::Deserializer<'de>,
 {
-    let value = serde_yaml::Value::deserialize(deserializer)?;
+    let value = serde_yaml::Value::deserialize(deserializer)
+        .map_err(|err| ManifestError::DeserializationError(de::Error::custom(err)))?;
+
     match value {
-        serde_yaml::Value::String(s) => {
-            ContractIds::from_str(&s).map_err(serde::de::Error::custom)
-        }
+        serde_yaml::Value::String(s) => ContractIds::from_str(&s)
+            .map_err(|err| ManifestError::DeserializationError(de::Error::custom(err))),
         serde_yaml::Value::Sequence(seq) => {
             let ids = seq
                 .into_iter()
@@ -113,25 +119,28 @@ where
                     _ => None,
                 })
                 .collect::<Vec<_>>();
-            Ok(ContractIds::Multiple(ids.into_iter().map(Some).collect()))
+            Ok(ContractIds::Multiple(ids.into_iter().collect()))
         }
         serde_yaml::Value::Null => Ok(ContractIds::Single(None)),
-        _ => Err(serde::de::Error::custom("Invalid contract_id value")),
+        _ => Err(ManifestError::DeserializationError(de::Error::custom(
+            "Invalid contract_id value",
+        ))),
     }
 }
 
-fn contract_id_to_str<S>(ids: &ContractIds, serializer: S) -> Result<S::Ok, S::Error>
+fn contract_id_to_str<S>(ids: &ContractIds, serializer: S) -> Result<S::Ok, ManifestError>
 where
     S: serde::Serializer,
 {
     let s = match ids {
         ContractIds::Single(Some(id)) => id.clone(),
-        ContractIds::Multiple(ids) => {
-            serde_json::to_string(ids).map_err(serde::ser::Error::custom)?
-        }
-        _ => String::new(),
+        ContractIds::Multiple(ids) => serde_json::to_string(ids)
+            .map_err(|err| ManifestError::SerializationError(err.to_string()))?,
+        _ => panic!("Invalid contract_id value"),
     };
-    serializer.serialize_str(&s)
+    Ok(serializer
+        .serialize_str(&s)
+        .map_err(|err| ManifestError::SerializationError(err.to_string()))?)
 }
 
 impl Manifest {

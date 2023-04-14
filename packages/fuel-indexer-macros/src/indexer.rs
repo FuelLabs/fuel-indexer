@@ -262,8 +262,8 @@ fn process_fn_items(
             Some(contract_id) => {
                 quote! {
                     let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
-                    let receipt_contract_id = Bech32ContractId::from(id);
-                    if receipt_contract_id != manifest_contract_id {
+                    let bech32_id = Bech32ContractId::from(id);
+                    if bech32_id != manifest_contract_id {
                         Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                         continue;
                     }
@@ -272,20 +272,18 @@ fn process_fn_items(
             None => quote! {},
         },
         ContractIds::Multiple(contract_ids) => {
-            let contract_ids_str: Vec<String> = contract_ids
+            let contract_ids_str: HashSet<Bech32ContractId> = contract_ids
                 .iter()
                 .filter_map(|id| id.as_ref().cloned())
+                .map(|id_str| {
+                    Bech32ContractId::from_str(&id_str).expect(
+                        "Failed to parse manifest 'contract_id' as Bech32ContractId",
+                    )
+                })
                 .collect();
 
             quote! {
-                let receipt_contract_id = Bech32ContractId::from(id);
-                let contract_ids_set: HashSet<Bech32ContractId> = {
-                    let mut set = HashSet::new();
-                    #(
-                        set.insert(Bech32ContractId::from_str(#contract_ids_str).expect("Failed to parse manifest 'contract_id' as Bech32ContractId"));
-                    )*
-                    set
-                };
+                let bech32_id = Bech32ContractId::from(id);
 
                 if !contract_ids_set.contains(&receipt_contract_id) {
                     Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
