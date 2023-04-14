@@ -12,14 +12,17 @@
     <a href="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml" alt="CI">
         <img src="https://github.com/FuelLabs/fuel-indexer/actions/workflows/ci.yml/badge.svg" />
     </a>
+    <a href="https://docs.rs/fuel-indexer/" alt="docs.rs">
+      <img src="https://docs.rs/fuel-indexer/badge.svg" />
+    </a>
     <a href="https://crates.io/crates/fuel-indexer" alt="crates.io">
         <img src="https://img.shields.io/crates/v/fuel-indexer?label=latest" />
     </a>
-    <a href="https://docs.rs/fuel-indexer/" alt="docs.rs">
-        <img src="https://docs.rs/fuel-indexer/badge.svg" />
+    <a href="https://crates.io/crates/fuel-indexer" alt="img-shields">
+      <img alt="GitHub commits since latest release (by date including pre-releases)" src="https://img.shields.io/github/commits-since/FuelLabs/fuel-indexer/latest?include_prereleases">
     </a>
     <a href="https://discord.gg/xfpK4Pe" alt="Discord">
-        <img src="https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" />
+      <img src="https://img.shields.io/badge/chat%20on-discord-orange?&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2" />
     </a>
 </p>
 
@@ -33,7 +36,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
 - [**For Users**](#for-users)
   - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
-    - [`wasm`](#wasm)
+    - [`WebAssembly`](#WebAssembly)
   - [`forc index` Plugin](#forc-index-plugin)
     - [`check`](#forc-index-check)
     - [`new`](#forc-index-new)
@@ -44,7 +47,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
     - [`auth`](#forc-index-auth)
   - [Schema](#schema)
   - [Modules](#modules)
-    - [WASM module notes](#notes-on-wasm-modules)
+    - [WebAssembly (WASM)](#notes-on-wasm-modules)
 - [**For Contributors**](#for-contributors)
   - [Dependencies](#dev-dependencies)
     - [`fuelup`](#fuelup)
@@ -72,7 +75,7 @@ Users of the Fuel indexer project include dApp developers looking to write flexi
 - We use fuelup in order to get the binaries produced by services in the Fuel ecosystem. Fuelup will install binaries related to the Fuel node, the Fuel indexer, the Fuel orchestrator (forc), and other components.
 - fuelup can be downloaded [here](https://github.com/FuelLabs/fuelup).
 
-### `wasm`
+### `WebAssembly`
 
 Two additonal cargo components will be required to build your indexers: `wasm-snip` and the `wasm32-unknown-unknown` target.
 
@@ -188,7 +191,7 @@ type Account {
 
 Within the context of the Fuel indexer, WebAssembly (WASM) modules are binaries that are compiled to a `wasm32-unknown-unknown` target, which can then be deployed to a running indexer service.
 
-### Notes on WASM modules
+### WebAssembly (WASM) modules
 
 There are a few points that Fuel indexer users should know when using WASM:
 
