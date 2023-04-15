@@ -387,7 +387,7 @@ pub async fn run_query(
             let ans_json: Value = serde_json::from_value(ans)?;
 
             // If the response is paginated, remove the array wrapping.
-            if ans_json[0].get("pageInfo").is_some() {
+            if ans_json[0].get("page_info").is_some() {
                 Ok(serde_json::json!(QueryResponse {
                     data: ans_json[0].clone()
                 }))

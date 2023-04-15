@@ -849,7 +849,7 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
-            r#"{"query": "query { aliasedEntities: filterentity(order: { asc: foola }, first: 1, offset: 1) { id foola } }" }"#,
+            r#"{"query": "query { aliased_entities: filterentity(order: { asc: foola }, first: 1, offset: 1) { id foola } }" }"#,
         )
         .send()
         .await
@@ -862,7 +862,7 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
     let v: Value = serde_json::from_str(&body).unwrap();
     let data = v["data"].as_object().expect("data is not an object");
 
-    assert_eq!(data["aliasedEntities"][0]["id"].as_i64(), Some(3));
-    assert_eq!(data["aliasedEntities"][0]["foola"].as_str(), Some("blorp"));
-    assert_eq!(data["pageInfo"]["pages"].as_i64(), Some(3));
+    assert_eq!(data["aliased_entities"][0]["id"].as_i64(), Some(3));
+    assert_eq!(data["aliased_entities"][0]["foola"].as_str(), Some("blorp"));
+    assert_eq!(data["page_info"]["pages"].as_i64(), Some(3));
 }

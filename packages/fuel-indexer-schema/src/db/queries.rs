@@ -177,12 +177,12 @@ impl UserQuery {
 
                 let selection_query = format!(
                     r#"SELECT json_build_object(
-                        'pageInfo', json_build_object(
-                            'hasNextPage', (({limit} + {offset}) < (SELECT count from total_count_cte)),
+                        'page_info', json_build_object(
+                            'has_next_page', (({limit} + {offset}) < (SELECT count from total_count_cte)),
                             'limit', {limit},
                             'offset', {offset},
                             'pages', ceil((SELECT count from total_count_cte)::float / {limit}::float),
-                            'totalCount', (SELECT count from total_count_cte)
+                            'total_count', (SELECT count from total_count_cte)
                         ),
                         '{alias}', (
                             SELECT json_agg(item)
