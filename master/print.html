@@ -1135,7 +1135,7 @@ report_metrics: true
 <p>The <code>abi</code> option is used to provide a link to the Sway JSON application binary interface (ABI) that is generated when you build your Sway project. This generated ABI contains all types, type IDs, logged types, and message types used in your Sway contract.</p>
 <h2 id="contract_id"><a class="header" href="#contract_id"><code>contract_id</code></a></h2>
 <p><em>Optional.</em></p>
-<p>The <code>contract_id</code> specifies the particular contract to which you would like an indexer to subscribe. Setting this field to an empty string will index events from any contract that is currently executing on the network.</p>
+<p>The <code>contract_id</code> specifies the particular contract to which you would like an indexer to subscribe. Setting this field to an empty string will index events from any contract that is currently executing on the network. This field accepts either a single string, or a list of strings. The indexer will index events from all IDs if a list is passed.</p>
 <blockquote>
 <p>Important: Contract IDs are unique to the content of a contract. If you are subscribing to a certain contract and then the contract itself is changed or updated, you will need to change the <code>contract_id</code> field of the manifest to the new ID.</p>
 </blockquote>
