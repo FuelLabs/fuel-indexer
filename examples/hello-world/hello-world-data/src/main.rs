@@ -1,11 +1,10 @@
 use clap::Parser;
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
+use fuels::macros::abigen;
 use fuels::{
-    prelude::{Bech32ContractId, Contract, DeployConfiguration, Provider},
-    signers::WalletUnlocked,
+    prelude::{Bech32ContractId, Contract, LoadConfiguration, Provider, WalletUnlocked},
     types::SizedAsciiString,
 };
-use fuels_macros::abigen;
 use rand::{seq::SliceRandom, Rng};
 use std::path::{Path, PathBuf};
 
@@ -85,12 +84,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     wallet.set_provider(provider.clone());
 
-    let compiled = Contract::load_contract(
+    let loaded_contract = Contract::load_from(
         contract_bin_path.as_os_str().to_str().unwrap(),
-        DeployConfiguration::default(),
+        LoadConfiguration::default(),
     )
     .expect("Failed to load contract");
-    let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
+    let id = loaded_contract.contract_id();
 
     let contract_id = Bech32ContractId::from(id);
 

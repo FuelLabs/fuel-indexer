@@ -1,5 +1,22 @@
-use crate::{defaults, TestError, WORKSPACE_ROOT};
+use std::net::SocketAddr;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
+
 use axum::routing::Router;
+use fuels::{
+    macros::abigen,
+    prelude::{
+        setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
+        Contract, LoadConfiguration, Provider, TxParameters, WalletUnlocked,
+        DEFAULT_COIN_AMOUNT,
+    },
+};
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use sqlx::{pool::Pool, PgConnection, Postgres};
+use sqlx::{Connection, Executor};
+use tracing_subscriber::filter::EnvFilter;
+
 use fuel_indexer::IndexerService;
 use fuel_indexer_api_server::api::GraphQlApi;
 use fuel_indexer_database::IndexerConnectionPool;
@@ -11,23 +28,8 @@ use fuel_indexer_lib::{
     utils::derive_socket_addr,
 };
 use fuel_indexer_postgres;
-use fuels::{
-    macros::abigen,
-    prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
-        Contract, DeployConfiguration, Provider, TxParameters, WalletUnlocked,
-        DEFAULT_COIN_AMOUNT,
-    },
-    signers::Signer,
-};
-use rand::distributions::Alphanumeric;
-use rand::{thread_rng, Rng};
-use sqlx::{pool::Pool, PgConnection, Postgres};
-use sqlx::{Connection, Executor};
-use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use tracing_subscriber::filter::EnvFilter;
+
+use crate::{defaults, TestError, WORKSPACE_ROOT};
 
 abigen!(Contract(
     name = "FuelIndexerTest",
@@ -220,19 +222,16 @@ pub async fn setup_test_fuel_node(
     wallet.set_provider(provider.clone());
 
     if let Some(contract_bin_path) = contract_bin_path {
-        let _compiled = Contract::load_contract(
+        let loaded_contract = Contract::load_from(
             contract_bin_path.as_os_str().to_str().unwrap(),
-            DeployConfiguration::default(),
+            LoadConfiguration::default(),
         )
         .expect("Failed to load contract");
 
-        let contract_id = Contract::deploy(
-            contract_bin_path.as_os_str().to_str().unwrap(),
-            &wallet,
-            DeployConfiguration::default(),
-        )
-        .await
-        .expect("Failed to deploy contract");
+        let contract_id = loaded_contract
+            .deploy(&wallet, TxParameters::default())
+            .await
+            .expect("Failed to deploy contract");
 
         let contract_id = contract_id.to_string();
 
@@ -263,12 +262,12 @@ pub fn get_test_contract_id() -> Bech32ContractId {
         .join("debug")
         .join("fuel-indexer-test.bin");
 
-    let compiled = Contract::load_contract(
+    let loaded_contract = Contract::load_from(
         contract_bin_path.as_os_str().to_str().unwrap(),
-        DeployConfiguration::default(),
+        LoadConfiguration::default(),
     )
     .expect("Failed to load compiled contract");
-    let (id, _) = Contract::compute_contract_id_and_state_root(&compiled);
+    let id = loaded_contract.contract_id();
 
     Bech32ContractId::from(id)
 }
@@ -358,7 +357,7 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
 }
 
 pub async fn connect_to_deployed_contract(
-) -> Result<FuelIndexerTest, Box<dyn std::error::Error>> {
+) -> Result<FuelIndexerTest<WalletUnlocked>, Box<dyn std::error::Error>> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
     let wallet_path_str = wallet_path.as_os_str().to_str().unwrap();
     let mut wallet =
@@ -385,9 +384,8 @@ pub async fn connect_to_deployed_contract(
 }
 
 pub mod test_web {
+    use std::path::Path;
 
-    use super::{tx_params, FuelIndexerTest};
-    use crate::{defaults, fixtures::get_test_contract_id};
     use actix_service::ServiceFactory;
     use actix_web::{
         body::MessageBody,
@@ -395,12 +393,14 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
+    use fuels::prelude::{CallParameters, Provider, WalletUnlocked};
+
     use fuel_indexer_types::{AssetId, Bech32ContractId};
-    use fuels::{
-        prelude::{CallParameters, Provider},
-        signers::WalletUnlocked,
-    };
-    use std::path::Path;
+
+    use crate::{defaults, fixtures::get_test_contract_id};
+
+    use super::{tx_params, FuelIndexerTest};
+
     async fn fuel_indexer_test_blocks(state: web::Data<Arc<AppState>>) -> impl Responder {
         let _ = state
             .contract
@@ -683,11 +683,11 @@ pub mod test_web {
     }
 
     pub struct AppState {
-        pub contract: FuelIndexerTest,
+        pub contract: FuelIndexerTest<WalletUnlocked>,
     }
 
     pub fn app(
-        contract: FuelIndexerTest,
+        contract: FuelIndexerTest<WalletUnlocked>,
     ) -> App<
         impl ServiceFactory<
             ServiceRequest,
