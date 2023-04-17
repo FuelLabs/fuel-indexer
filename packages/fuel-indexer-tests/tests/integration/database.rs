@@ -5,7 +5,7 @@ use fuel_indexer_schema::{
     db::manager::SchemaManager,
     utils::{inject_native_entities_into_schema, schema_version},
 };
-use fuel_types::Address;
+use fuels::prelude::Address;
 use wasmer::{imports, Instance, Module, Store, WasmerEnv};
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_universal::Universal;

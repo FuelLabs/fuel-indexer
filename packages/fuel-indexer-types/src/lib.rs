@@ -8,9 +8,13 @@ pub use crate::tx::*;
 pub use fuel_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
 };
-pub use fuels_core::try_from_bytes;
-pub use fuels_types::bech32::{Bech32Address, Bech32ContractId};
-pub use fuels_types::{Bits256, SizedAsciiString};
+pub use fuels::{
+    core::try_from_bytes,
+    types::{
+        bech32::{Bech32Address, Bech32ContractId},
+        Bits256, SizedAsciiString,
+    },
+};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
