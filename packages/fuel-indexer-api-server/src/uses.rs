@@ -1,6 +1,6 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
-    models::VerifySignatureRequest,
+    models::{QueryResponse, VerifySignatureRequest},
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
@@ -34,7 +34,6 @@ use fuel_indexer_schema::db::{
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
-use serde::Serialize;
 use serde_json::{json, Value};
 use std::{
     convert::From,
@@ -43,11 +42,6 @@ use std::{
 };
 use tokio::sync::mpsc::Sender;
 use tracing::error;
-
-#[derive(Serialize)]
-pub(crate) struct QueryResponse {
-    data: Value,
-}
 
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::{encode_metrics_response, METRICS};
