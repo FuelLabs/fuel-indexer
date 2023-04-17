@@ -179,3 +179,14 @@ impl NativeFuelType for Revert {
         type_id(FUEL_TYPES_NAMESPACE, "Revert") as usize
     }
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Enum {
+    thing: u64,
+}
+
+impl NativeFuelType for Enum {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Enum") as usize
+    }
+}

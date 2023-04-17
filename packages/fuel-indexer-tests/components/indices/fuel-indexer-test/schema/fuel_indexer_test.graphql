@@ -246,3 +246,7 @@ type RevertEntity {
     contract_id: ContractId!
     error_val: UInt8!
 }
+
+type EnumError {
+    id: ID!
+}
