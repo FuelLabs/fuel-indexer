@@ -34,6 +34,7 @@ use fuel_indexer_schema::db::{
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
+use serde::Serialize;
 use serde_json::{json, Value};
 use std::{
     convert::From,
@@ -42,6 +43,11 @@ use std::{
 };
 use tokio::sync::mpsc::Sender;
 use tracing::error;
+
+#[derive(Serialize)]
+pub(crate) struct QueryResponse {
+    data: Value,
+}
 
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::{encode_metrics_response, METRICS};
@@ -361,14 +367,22 @@ pub async fn run_query(
     let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
 
-    let queries = query.as_sql(&schema, pool.database_type()).join(";\n");
+    let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
 
     let mut conn = pool.acquire().await?;
 
     match queries::run_query(&mut conn, queries).await {
         Ok(ans) => {
             let ans_json: Value = serde_json::from_value(ans)?;
-            Ok(serde_json::json!({ "data": ans_json }))
+
+            // If the response is paginated, remove the array wrapping.
+            if ans_json[0].get("page_info").is_some() {
+                Ok(serde_json::json!(QueryResponse {
+                    data: ans_json[0].clone()
+                }))
+            } else {
+                Ok(serde_json::json!(QueryResponse { data: ans_json }))
+            }
         }
         Err(e) => {
             error!("Error querying database: {e}.");

@@ -14,8 +14,7 @@ pub struct QueryParams {
 }
 
 impl QueryParams {
-    /// Iterate through the list of parsed parameters
-    /// and add them to the corresponding field
+    /// Iterate through the list of parsed parameters and add them to the corresponding field.
     pub(crate) fn add_params(
         &mut self,
         params: Vec<ParamType>,
@@ -40,7 +39,8 @@ impl QueryParams {
         }
     }
 
-    pub(crate) fn to_sql(&self, db_type: &DbType) -> String {
+    /// Return a string comprised of the query's filtering clauses, if any.
+    pub(crate) fn get_filtering_expression(&self, db_type: &DbType) -> String {
         let mut query_clause = "".to_string();
 
         if !self.filters.is_empty() {
@@ -54,25 +54,27 @@ impl QueryParams {
                 ["WHERE".to_string(), query_clause, where_expressions].join(" ");
         }
 
-        if !self.sorts.is_empty() {
-            let sort_expressions = self
-                .sorts
-                .iter()
-                .map(|s| format!("{} {}", s.fully_qualified_table_name, s.order))
-                .collect::<Vec<String>>()
-                .join(", ");
-            query_clause =
-                [query_clause, "ORDER BY".to_string(), sort_expressions].join(" ");
-        }
+        query_clause
+    }
 
-        if let Some(limit) = self.limit {
-            query_clause =
-                [query_clause, "LIMIT".to_string(), limit.to_string()].join(" ");
-        }
+    /// Return a string comprised of modifiers to the order of the result set, if any.
+    pub(crate) fn get_ordering_modififer(&self, db_type: &DbType) -> String {
+        let mut query_clause = "".to_string();
 
-        if let Some(offset) = self.offset {
-            query_clause =
-                [query_clause, "OFFSET".to_string(), offset.to_string()].join(" ");
+        match db_type {
+            DbType::Postgres => {
+                if !self.sorts.is_empty() {
+                    let sort_expressions = self
+                        .sorts
+                        .iter()
+                        .map(|s| format!("{} {}", s.fully_qualified_table_name, s.order))
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    query_clause =
+                        [query_clause, "ORDER BY".to_string(), sort_expressions]
+                            .join(" ");
+                }
+            }
         }
 
         query_clause
@@ -122,8 +124,7 @@ impl fmt::Display for SortOrder {
     }
 }
 
-/// ParsedValue represents the possible value types
-/// that the indexer's GraphQL API supports.
+/// Represents the possible value types that the indexer's GraphQL API supports.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParsedValue {
     BigNumber(u128),
@@ -178,7 +179,7 @@ pub enum Comparison {
     NotEquals(String, ParsedValue),
 }
 
-/// Represents an operation in which a records value is checked for membership in a set.
+/// Represents an operation in which a record's column value is checked for membership in a set.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Membership {
     In(String, Vec<ParsedValue>),
@@ -192,7 +193,7 @@ pub enum NullValueCheck {
     OnlyNulls(Vec<String>),
 }
 
-/// Represents an operation in which filters are to associated and evaluated together.
+/// Represents an operation in which filters are associated with one another and evaluated together.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LogicOp {
     And(Box<FilterType>, Box<FilterType>),
@@ -292,12 +293,12 @@ impl FilterType {
     }
 }
 
-/// Invert a filter into its opposite filter.
-///
-/// Each filter should have a inverse type when inverted in order to minimize
-/// disruption to the user. When adding a new filter type, special consideration
-/// should be given as to if and how it can be represented in the inverse.
 impl FilterType {
+    /// Invert a filter into its opposite filter.
+    ///
+    /// Each filter should have a inverse type when inverted in order to minimize
+    /// disruption to the user. When adding a new filter type, special consideration
+    /// should be given as to if and how it can be represented in the inverse.
     fn invert(&self) -> Result<FilterType, GraphqlError> {
         match self {
             FilterType::IdSelection(_) => Err(GraphqlError::UnsupportedNegation(
@@ -458,8 +459,7 @@ pub fn parse_argument_into_param<'a>(
 
 /// Parse an object from a parsed GraphQL document into a `Filter`.
 ///
-/// This serves as a helper function for starting
-/// the parsing operation for values under the "filter" key.
+/// This serves as a helper function for starting the parsing operation for values under the "filter" key.
 fn parse_filter_object<'a>(
     obj: BTreeMap<&'a str, Value<'a, &'a str>>,
     entity_type: &String,
@@ -639,9 +639,8 @@ fn parse_arg_pred_pair<'a>(
 /// Parse logical operators that operate on two components.
 ///
 /// `parse_binary_logical_operator` is a special parsing operation that
-/// essentially folds or flattens two filters into a single filter. This
-/// is also where the nested filtering functionality as filters can be
-/// nested arbitrarily deep due to the LogicOp filter type containing filters itself.
+/// essentially combines two filters into a single filter. This
+/// is also where the nested filtering functionality resides.
 fn parse_binary_logical_operator<'a>(
     key: &str,
     predicate: Value<'a, &'a str>,

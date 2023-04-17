@@ -112,6 +112,9 @@ impl IntoResponse for ApiError {
             ApiError::FuelCrypto(e) => {
                 (StatusCode::BAD_REQUEST, format!("Crypto error: {e}."))
             }
+            ApiError::Graphql(e) => {
+                (StatusCode::BAD_REQUEST, format!("GraphQL error: {e}."))
+            }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };
 
