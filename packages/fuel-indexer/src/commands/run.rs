@@ -7,12 +7,6 @@ use fuel_indexer_lib::{
 };
 use tracing::info;
 
-#[cfg(feature = "fuel-core-lib")]
-use fuel_core::service::{Config, FuelService};
-
-#[cfg(feature = "fuel-core-lib")]
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-
 #[cfg(feature = "api-server")]
 use fuel_indexer_api_server::api::GraphQlApi;
 
@@ -21,17 +15,6 @@ use fuel_indexer_lib::defaults::SERVICE_REQUEST_CHANNEL_SIZE;
 
 #[cfg(feature = "api-server")]
 use tokio::sync::mpsc::channel;
-
-#[cfg(feature = "fuel-core-lib")]
-async fn run_fuel_core_node() -> anyhow::Result<FuelService> {
-    // TODO: This should accept what ever is in FuelNodeConfig
-    let config = Config {
-        addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
-        ..Config::local_node()
-    };
-    let srvc = FuelService::new_node(config).await?;
-    Ok(srvc)
-}
 
 pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     let IndexerArgs { manifest, .. } = args.clone();
@@ -76,28 +59,56 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     let service_handle = tokio::spawn(service.run());
 
-    if cfg!(feature = "api-server") {
+    #[cfg(feature = "api-server")]
+    {
         let gql_handle =
             tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
 
         #[cfg(feature = "fuel-core-lib")]
-        if config.local_fuel_node {
-            let fuel_node_handle = tokio::spawn(run_fuel_core_node());
-            let _ = tokio::join!(service_handle, gql_handle, fuel_node_handle);
+        {
+            use fuel_core::service::{Config, FuelService};
+            use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+            if config.local_fuel_node {
+                let config = Config {
+                    addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
+                    ..Config::local_node()
+                };
+                let node_handle = tokio::spawn(FuelService::new_node(config));
+
+                let _ = tokio::join!(service_handle, node_handle, gql_handle);
+
+                return Ok(());
+            }
         }
 
-        #[cfg(not(feature = "fuel-core-lib"))]
         let _ = tokio::join!(service_handle, gql_handle);
-    } else {
+
+        Ok(())
+    }
+
+    #[cfg(not(feature = "api-server"))]
+    {
         #[cfg(feature = "fuel-core-lib")]
-        if config.local_fuel_node {
-            let fuel_node_handle = tokio::spawn(run_fuel_core_node());
-            let _ = tokio::join!(service_handle, fuel_node_handle);
+        {
+            use fuel_core::service::{Config, FuelService};
+            use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+            if config.local_fuel_node {
+                let config = Config {
+                    addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
+                    ..Config::local_node()
+                };
+                let node_handle = tokio::spawn(FuelService::new_node(config));
+
+                let _ = tokio::join!(service_handle, node_handle);
+
+                return Ok(());
+            }
         }
 
-        #[cfg(not(feature = "fuel-core-lib"))]
-        service_handle.await?
-    };
+        let _ = service_handle.await?;
 
-    Ok(())
+        Ok(())
+    }
 }
