@@ -51,6 +51,22 @@ pub struct Command {
     pub verbose: bool,
 }
 
+impl Default for Command {
+    fn default() -> Self {
+        Command {
+            manifest: Some(String::new()),
+            path: None,
+            target: defaults::WASM_TARGET.to_string(),
+            release: true.to_string(),
+            profile: Some("release".to_string()),
+            verbose: false,
+            locked: false,
+            native: false,
+            target_dir: Some(std::path::PathBuf::from(".")),
+        }
+    }
+}
+
 pub fn exec(command: Command) -> Result<()> {
     forc_index_build::init(command)?;
     Ok(())
