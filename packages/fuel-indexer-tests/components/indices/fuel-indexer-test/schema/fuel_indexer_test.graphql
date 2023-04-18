@@ -23,6 +23,7 @@ type QueryRoot {
     callentity: CallEntity
     panicentity: PanicEntity
     revertentity: RevertEntity 
+    enumerror: EnumError
 
     # GraphQL API test entities
     genre: Genre
@@ -247,6 +248,8 @@ type RevertEntity {
     error_val: UInt8!
 }
 
-type EnumError {
+type EnumError{
     id: ID!
+    contract_id: ContractId!
+    error_val: UInt8!
 }

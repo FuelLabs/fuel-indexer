@@ -21,7 +21,7 @@ use tokio::{
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "e9fcc111f5273447709689198d2059eb490b666e0b1f6e272ef7f960c685f2a5";
+    "ff26a39789cdb733529ba55eb978bd2e55beb3bd41831ceb19b093b95838398d";
 
 async fn setup_test_components(
 ) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
@@ -698,7 +698,7 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
     assert_eq!(row.get::<i32, usize>(2), 5);
 }
 
-#[actic_web::test]
+#[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_enum_error_function_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
@@ -707,6 +707,7 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
     update_test_manifest_asset_paths(&mut manifest);
 
     srvc.register_index_from_manifest(manifest).await.unwrap();
+
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
     let req = test::TestRequest::post().uri("/enum_error").to_request();
@@ -714,4 +715,13 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.enumerror LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 42);
+    assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
 }

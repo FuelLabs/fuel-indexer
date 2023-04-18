@@ -682,7 +682,7 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_enum_error(
+    async fn fuel_indexer_test_trigger_enum_error(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
         let res = state
@@ -759,7 +759,10 @@ pub mod test_web {
             )
             .route("/panic", web::post().to(fuel_indexer_test_trigger_panic))
             .route("/revert", web::post().to(fuel_indexer_test_trigger_revert))
-            .route("enum_error", web::post().to(fuel_indexer_test_enum_error))
+            .route(
+                "/enum_error",
+                web::post().to(fuel_indexer_test_trigger_enum_error),
+            )
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

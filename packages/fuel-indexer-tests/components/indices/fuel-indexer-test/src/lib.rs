@@ -585,4 +585,21 @@ mod fuel_indexer_test {
 
         entity.save();
     }
+
+    fn fuel_indexer_triger_enum_error(enum_error: abi::Revert) {
+        Logger::info("fuel_indexer_triger_enum_error handling trigger_enum_error event.");
+
+        let abi::Revert {
+            contract_id,
+            error_val,
+        } = enum_error;
+
+        let entity = EnumError {
+            id: 42,
+            contract_id,
+            error_val,
+        };
+
+        entity.save();
+    }
 }
