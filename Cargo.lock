@@ -2456,6 +2456,8 @@ dependencies = [
  "hex",
  "hyper-rustls 0.23.2",
  "indicatif",
+ "owo-colors",
+ "rand 0.8.5",
  "reqwest 0.11.16",
  "serde",
  "serde_json",
@@ -7718,7 +7720,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "808cf2735cd4b6866113f648b791c6adc5714537bc222d9347bb203386ffda56"
 dependencies = [
  "same-file",
- "winapi",
+ "winapi 0.3.9",
  "winapi-util",
 ]
 
