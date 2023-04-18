@@ -8,8 +8,6 @@ A paginated query can be made using three keywords:
 - `first` - limit on number of results (required)
 - `offset` - the amount of records to skip before returning results (optional)
 
-In order to generate a paginated response, your query should include a limit and either an ascending or descending sort order applied to one of the fields of the searched entity. _If you include a limit in your query, you are required to include a sort order as well._ Otherwise, your query will return an error.
-
 Let's use the [block explorer](../../../examples/block-explorer.md) example to illustrate how to use pagination.
 
 ```graphql

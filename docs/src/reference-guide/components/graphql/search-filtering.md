@@ -1,6 +1,6 @@
 # Search and Filtering
 
-Currently, the Fuel indexer supports the following search and filtering operations:
+The Fuel indexer currently supports the following search and filtering operations:
 
 - ID selection
 - comparison
@@ -47,11 +47,11 @@ query {
 }
 ```
 
-> Note: It is important to note that you should practice sensible database design when filtering records. Apply database indicies to the underlying columns in order to make search operations more efficient; however, be advised that an overuse of database indicies will lead to degraded performance.
+> You should practice sensible database design when filtering records. Apply database indicies to the underlying columns in order to make search operations more efficient; however, be advised that an overuse of database indicies will lead to degraded performance.
 
 ## ID Selection
 
-You can query for a particular instance of an object by passing an ID value to with the `id` key. For example, let's say that you were storing blocks and you wanted details about a certain block, you would pass the requisite ID:
+You can query for a particular instance of an object by passing an ID value to with the `id` key. For example, let's say that you are storing blocks and you want details about a certain block, you would pass the corresponding ID:
 
 ```graphql
 query {
@@ -81,7 +81,7 @@ query {
 
 ## Excluding Null Values
 
-You can store null values in your records if the corresponding entity fields are configured to allow for it. As such, you can exclude records that contain null values in a particular column or set of coulmns by using the `has` operator inside of a `filter` object.
+You can store null values in your records if the corresponding entity fields are configured to allow for it. You can exclude records that contain null values in a particular column or set of coulmns by using the `has` operator inside of a `filter` object.
 
 If you wanted to filter out any records with a null value in `possibly_null_bar`, you would use the following query:
 
@@ -117,7 +117,7 @@ query {
 
 ## Set Membership
 
-Additionally, you can exclude records in which a particular column's value does not any elements in a given set by using the `in` operator as part of a `filter` object.
+Additionally, you can exclude records in which a particular column's value does not contain any elements in a given set by using the `in` operator as part of a `filter` object.
 
 ```graphql
 query {
@@ -157,11 +157,13 @@ Finally, you can filter records by comparing the values of certain fields to a p
 
 You can do simple value comparisons using any of the following operators:
 
-- equals: `equals`
-- greater than: `gt`
-- greater than or equal to: `gte`
-- less than: `lt`
-- less than or equal to: `lte`
+| | |
+|------|----------|
+| equals | `equals` |
+| greater than | `gt` |
+| greater than or equal to | `gte` |
+| less than | `lt` |
+| less than or equal to | `lte`   |
 
 Here's an example:
 
