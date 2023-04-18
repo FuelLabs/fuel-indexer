@@ -94,11 +94,9 @@ jobs:
       - mdbook-lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - uses: Swatinem/rust-cache@v1
       - name: mdbook build
         uses: peaceiris/actions-mdbook@v1
@@ -121,11 +119,9 @@ jobs:
     timeout-minutes: 45
     continue-on-error: ${{ matrix.skip-error || false }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
 
       - name: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
         if: ${{ matrix.package }}
@@ -151,11 +147,11 @@ jobs:
       - set-env-vars
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
+          components: clippy, rustfmt
       - name: cargo clippy --all-targets --all-features
         run: cargo clippy --all-targets --all-features
 
@@ -166,11 +162,11 @@ jobs:
       - set-env-vars
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
+          components: rustfmt
       - name: cargo fmt --all --verbose -- --check
         run: cargo fmt --all --verbose -- --check
 
@@ -194,11 +190,9 @@ jobs:
           username: fuellabs
           password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
       - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests plugin-tests
         run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests plugin-tests
 
@@ -222,12 +216,11 @@ jobs:
           username: fuellabs
           password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
 
@@ -256,12 +249,11 @@ jobs:
       - check-is-semver-branch
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
 
       - uses: Swatinem/rust-cache@v1
 
@@ -383,13 +375,11 @@ jobs:
         run: |
           ci/macos-install-packages.sh
 
+      - uses: actions/checkout@v3
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          target: ${{ matrix.job.target }}
-          override: true
+          targets: ${{ matrix.job.target }}
 
       - name: Install cross
         uses: baptiste0928/cargo-install@v1
@@ -557,26 +547,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
+      - uses: actions/checkout@v3
       - name: Install toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          override: true
+          targets: wasm32-unknown-unknown
           
       - name: Verify tag version
         run: |
           curl -sSLf "${DASEL_VERSION}" -L -o dasel && chmod +x dasel
           mv ./dasel /usr/local/bin/dasel
           ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} Cargo.toml
-
-      - name: Install WASM target
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          target: wasm32-unknown-unknown
 
       - name: Publish crates
         uses: katyo/publish-crates@v2
