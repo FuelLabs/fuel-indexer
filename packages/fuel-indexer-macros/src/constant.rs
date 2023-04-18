@@ -48,7 +48,6 @@ lazy_static! {
         "TransferOut",
         "Panic",
         "Revert",
-        "Enum",
     ]);
     pub static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
