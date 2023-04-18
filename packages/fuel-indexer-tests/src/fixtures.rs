@@ -1,8 +1,16 @@
-use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-
 use axum::routing::Router;
+use fuel_indexer::IndexerService;
+use fuel_indexer_api_server::api::GraphQlApi;
+use fuel_indexer_database::IndexerConnectionPool;
+use fuel_indexer_lib::{
+    config::{
+        auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
+        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
+    },
+    defaults::SERVICE_REQUEST_CHANNEL_SIZE,
+    utils::{derive_socket_addr, ServiceRequest},
+};
+use fuel_indexer_postgres;
 use fuels::{
     macros::abigen,
     prelude::{
@@ -15,19 +23,11 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use sqlx::{pool::Pool, PgConnection, Postgres};
 use sqlx::{Connection, Executor};
+use std::net::SocketAddr;
+use std::path::{Path, PathBuf};
+use std::str::FromStr;
+use tokio::sync::mpsc::channel;
 use tracing_subscriber::filter::EnvFilter;
-
-use fuel_indexer::IndexerService;
-use fuel_indexer_api_server::api::GraphQlApi;
-use fuel_indexer_database::IndexerConnectionPool;
-use fuel_indexer_lib::{
-    config::{
-        auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
-        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
-    },
-    utils::derive_socket_addr,
-};
-use fuel_indexer_postgres;
 
 use crate::{defaults, TestError, WORKSPACE_ROOT};
 
@@ -295,7 +295,9 @@ pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
         .await
         .expect("Failed to create connection pool");
 
-    GraphQlApi::build(config, pool, None).await.unwrap()
+    let (tx, _) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+
+    GraphQlApi::build(config, pool, tx).await.unwrap()
 }
 
 pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -> Router {
@@ -323,11 +325,13 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
         },
     };
 
+    let (tx, _) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
         .await
         .expect("Failed to create connection pool");
 
-    GraphQlApi::build(config, pool, None).await.unwrap()
+    GraphQlApi::build(config, pool, tx).await.unwrap()
 }
 
 pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerService {
@@ -349,11 +353,13 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
         authentication: AuthenticationConfig::default(),
     };
 
+    let (_, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
         .await
         .expect("Failed to create connection pool");
 
-    IndexerService::new(config, pool, None).await.unwrap()
+    IndexerService::new(config, pool, rx).await.unwrap()
 }
 
 pub async fn connect_to_deployed_contract(

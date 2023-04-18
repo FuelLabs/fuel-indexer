@@ -2,17 +2,15 @@ use crate::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig},
+    defaults::SERVICE_REQUEST_CHANNEL_SIZE,
     manifest::Manifest,
     utils::{init_logging, ServiceRequest},
 };
-use tokio::sync::mpsc::{Receiver, Sender};
+use tokio::sync::mpsc::channel;
 use tracing::info;
 
 #[cfg(feature = "api-server")]
 use fuel_indexer_api_server::api::GraphQlApi;
-
-#[cfg(feature = "api-server")]
-use fuel_indexer_lib::defaults::SERVICE_REQUEST_CHANNEL_SIZE;
 
 pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     let IndexerArgs { manifest, .. } = args.clone();
@@ -27,17 +25,8 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    #[allow(unused_mut, unused)]
-    let (mut tx, mut rx): (
-        Option<Sender<ServiceRequest>>,
-        Option<Receiver<ServiceRequest>>,
-    ) = (None, None);
-    #[cfg(feature = "api-server")]
-    {
-        use tokio::sync::mpsc::channel;
-        let (t, r) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
-        (tx, rx) = (Some(t), Some(r));
-    }
+    #[allow(unused)]
+    let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
