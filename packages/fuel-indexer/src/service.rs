@@ -225,10 +225,7 @@ async fn create_service_task(
         match rx.try_recv() {
             Ok(service_request) => match service_request {
                 ServiceRequest::AssetReload(request) => {
-                    let mut conn = pool
-                        .acquire()
-                        .await
-                        .expect("Failed to acquire connection from pool");
+                    let mut conn = pool.acquire().await?;
 
                     match queries::index_id_for(
                         &mut conn,
@@ -238,10 +235,8 @@ async fn create_service_task(
                     .await
                     {
                         Ok(id) => {
-                            let assets = queries::latest_assets_for_index(&mut conn, &id)
-                                .await
-                                .expect("Could not get latest assets for indexer");
-
+                            let assets =
+                                queries::latest_assets_for_index(&mut conn, &id).await?;
                             let mut manifest =
                                 Manifest::try_from(&assets.manifest.bytes)?;
 
@@ -296,19 +291,16 @@ async fn create_service_task(
 
                     let mut conn = pool
                         .acquire()
-                        .await
-                        .expect("Failed to acquire connection from pool");
+                        .await?;
 
                     let _ = queries::start_transaction(&mut conn)
-                        .await
-                        .expect("Failed to start transaction");
-
+                        .await?;
+                        
                     let latest_assets = queries::latest_assets_for_index(
                         &mut conn,
                         &request.penultimate_asset_id,
                     )
-                    .await
-                    .expect("Could not get latest assets for index");
+                    .await?;
 
                     if let Err(_e) = queries::remove_asset_by_version(
                         &mut conn,
@@ -319,13 +311,9 @@ async fn create_service_task(
                     .await
                     {
                         error!("Failed to remove asset by version");
-                        queries::revert_transaction(&mut conn)
-                            .await
-                            .expect("Failed to revert transaction");
+                        queries::revert_transaction(&mut conn).await?;
                     } else {
-                        queries::commit_transaction(&mut conn)
-                            .await
-                            .expect("Failed to commit transaction");
+                        queries::commit_transaction(&mut conn).await?;
                     }
 
                     let mut manifest = Manifest::try_from(&latest_assets.manifest.bytes)?;
@@ -337,8 +325,7 @@ async fn create_service_task(
                         &manifest,
                         ExecutorSource::Registry(request.penultimate_asset_bytes),
                     )
-                    .await
-                    .expect("Failed to spawn executor from index asset registry.");
+                    .await?;
 
                     futs.push(handle);
                     killers.insert(manifest.uid(), killer);
