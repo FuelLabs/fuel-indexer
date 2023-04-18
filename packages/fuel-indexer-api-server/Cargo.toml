@@ -25,6 +25,7 @@ fuel-indexer-database = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-metrics = { workspace = true, optional = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
+hex = "0.4"
 http = "0.2"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ] }
 hyper-rustls = { version = "0.23", features = ["http2"] }

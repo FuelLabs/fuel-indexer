@@ -3,16 +3,16 @@
 In this tutorial you will:
 
 1. Bootstrap your development environment.
-2. Create, build, and deploy an index to an indexer service hooked up to Fuel's `beta-3` testnet.
-3. Query the indexer service for indexed data using GraphQL.
+2. Create, build, and deploy an indexer to an indexer service hooked up to Fuel's `beta-3` testnet.
+3. Query your newly created index for data using GraphQL.
 
 ## 1. Setting up your environment
 
-In this Quickstart, we'll use Docker's Compose to spin up a Fuel indexer service with a PostgreSQL database backend. We will also use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` binary that we'll use to develop our index.
+In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` component that we'll use to develop our indexer.
 
 ### 1.1 Install `fuelup`
 
-To install fuelup with the default features/options, use the following command, which downloads the fuelup installation script and runs it interactively.
+To install fuelup with the default features/options, use the following command to download the fuelup installation script and run it interactively.
 
 ```bash
 curl \
@@ -24,13 +24,13 @@ curl \
 
 ### 1.2 WebAssembly (WASM) Setup
 
-Indexers are typically compiled to WASM and thus you'll need to have the proper WASM compilation target available on your system. You can install it through `rustup`:
+Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
 ```
 rustup target add wasm32-unknown-unknown
 ```
 
-Additionally, you'll need the `wasm-snip` utility in order to shrink the WASM binary size and cut out errant symbols. You can install it through `cargo`:
+Additionally, you'll need the `wasm-snip` utility in order to remove errant symbols from your compiled WASM binary. You can install this tool using `cargo`:
 
 ```
 cargo install wasm-snip
@@ -38,7 +38,7 @@ cargo install wasm-snip
 
 ## 2. Using the `forc-index` plugin
 
-The primary means of interfacing with the Fuel indexer **for index development** is the [`forc-index` CLI tool](https://crates.io/crates/forc-index). `forc-index` is a [`forc`](https://github.com/FuelLabs/sway/tree/master/forc) plugin specifically created to interface with the Fuel indexer service. Since we already installed `fuelup` in a previous step <sup>[1.1](#11-install-fuelup)</sup>, we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
+The primary means of interfacing with the Fuel indexer for indexer development is the [`forc-index` CLI tool](https://crates.io/crates/forc-index). `forc-index` is a [`forc`](https://github.com/FuelLabs/sway/tree/master/forc) plugin specifically created to interface with the Fuel indexer service. Since we already installed `fuelup` in a previous step <sup>[1.1](#11-install-fuelup)</sup>, we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
 
 ```bash
 which forc-index
@@ -96,7 +96,7 @@ forc index check
 
 ### 2.2 Setup a Database and Start the Indexer Service
 
-To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll use `forc index` and its `forc index postgres` subcommand.
+To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll use `forc index`.
 
 We can quickly create a bootstrapped database and start the Fuel indexer service by running the following command:
 
@@ -105,8 +105,9 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 ```bash
 forc index start \
     --embedded-database
-    --fuel-node-host node-beta-2.fuel.network \
-    --fuel-node-port 80
+    --fuel-node-host beta-3.fuel.network \
+    --fuel-node-port 80 \
+    --run-migrations
 ```
 
 You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:
@@ -135,7 +136,7 @@ Now that we have our development environment set up, the next step is to create 
 forc index new hello-indexer --namespace my_project && cd hello-indexer
 ```
 
-> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`.
+> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`. For a complete list of options passed to `forc index new`, see [here](./src/reference-guide/plugins/forc-index/new.md)
 
 ```text
 forc index new hello-indexer --namespace my_project
@@ -185,15 +186,15 @@ Take a quick tour.
     Authenticate against an indexer service.
 ```
 
-> IMPORTANT: If you want more details on how this indexer works, check out our [block explorer indexer example](https://fuellabs.github.io/fuel-indexer/master/examples/block-explorer.html).
-
 ### 2.4 Deploying our indexer
 
-At this point, we have a brand new indexer that will index some blocks and transactions. And with our database and Fuel indexer service up and running, all that's left is to build and deploy the indexer in order to see it in action. but now we need to build and deploy it in order to see it in action.
+At this point, we have a brand new indexer that will index some blocks and transactions. And with both our database and Fuel indexer services up and running, all that's left is to build and deploy the indexer in order to see it in action. Let's build and deploy our indexer:
 
 ```bash
 forc index deploy
 ```
+
+> IMPORTANT: `forc index deploy` by defaults runs `forc index build` prior to deploying the indexer. The same result can be produced by running `forc index build` then subsequently running `forc index deploy`.
 
 If all goes well, you should see the following:
 
@@ -210,8 +211,8 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```bash
-curl -X POST -H "Content-Type: application/graphql" 
---data '{ "query": "query { tx { id, hash, block } }" }' 
+curl -X POST -H "Content-Type: application/graphql"
+--data '{ "query": "query { tx { id, hash, block } }" }'
 http://127.0.0.1:29987/api/graph/my_project/hello_indexer
 ```
 
@@ -235,7 +236,10 @@ http://127.0.0.1:29987/api/graph/my_project/hello_indexer
 ]
 ```
 
+### 3.1 Using the playgrond
+
+As opposed to writing `curL` commands to query data, note that you can also explore your indexed data using the indexer's GraphQL playground. For more info on using the playground - [checkout the playground docs](./src/reference-guide/components/graphql/playground.md).
+
 ### Finished! 🥳
 
 Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
-

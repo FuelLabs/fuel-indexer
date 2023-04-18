@@ -4,6 +4,7 @@ use std::{
     fs::File,
     io::{Read, Write},
     path::{Path, PathBuf},
+    str::FromStr,
 };
 use thiserror::Error;
 
@@ -61,7 +62,11 @@ pub struct Manifest {
     pub graphql_schema: String,
     pub module: Module,
     pub metrics: Option<bool>,
-    pub contract_id: Option<String>,
+    #[serde(
+        serialize_with = "ContractIds::serialize",
+        deserialize_with = "ContractIds::deserialize"
+    )]
+    pub contract_id: ContractIds,
     pub start_block: Option<u64>,
     #[serde(default)]
     pub resumable: Option<bool>,
@@ -149,5 +154,69 @@ impl TryFrom<&Vec<u8>> for Manifest {
     fn try_from(val: &Vec<u8>) -> ManifestResult<Self> {
         let manifest: Manifest = serde_yaml::from_slice(val)?;
         Ok(manifest)
+    }
+}
+
+/// Represents contract IDs in a `Manifest` struct.
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(untagged)]
+pub enum ContractIds {
+    /// Single represents a single contract ID as an `Option<String>`.
+    #[serde(alias = "single")]
+    Single(Option<String>),
+    /// Multiple represents a vector of contracts IDs as a Vec<String>.
+    #[serde(alias = "multiple")]
+    Multiple(Vec<String>),
+}
+
+impl ContractIds {
+    fn serialize<S>(ids: &ContractIds, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let s = match ids {
+            ContractIds::Single(Some(id)) => id.clone(),
+            ContractIds::Multiple(ids) => {
+                serde_json::to_string(ids).map_err(serde::ser::Error::custom)?
+            }
+            _ => String::new(),
+        };
+        serializer.serialize_str(&s)
+    }
+
+    fn deserialize<'de, D>(deserializer: D) -> Result<ContractIds, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = serde_yaml::Value::deserialize(deserializer)?;
+        match value {
+            serde_yaml::Value::String(s) => Ok(ContractIds::Single(Some(s))),
+            serde_yaml::Value::Sequence(seq) => {
+                let ids = seq
+                    .into_iter()
+                    .filter_map(|val| match val {
+                        serde_yaml::Value::String(s) => Some(s),
+                        _ => None,
+                    })
+                    .collect::<Vec<_>>();
+                Ok(ContractIds::Multiple(ids.into_iter().collect()))
+            }
+            serde_yaml::Value::Null => Ok(ContractIds::Single(None)),
+            _ => Err(serde::de::Error::custom("Invalid contract_id value")),
+        }
+    }
+}
+
+impl FromStr for ContractIds {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.starts_with('[') {
+            serde_json::from_str::<Vec<String>>(s)
+                .map(ContractIds::Multiple)
+                .map_err(|err| err.to_string())
+        } else {
+            Ok(ContractIds::Single(Some(s.to_string())))
+        }
     }
 }

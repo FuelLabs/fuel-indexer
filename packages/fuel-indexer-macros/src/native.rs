@@ -28,10 +28,11 @@ fn native_prelude() -> proc_macro2::TokenStream {
         use fuel_indexer_plugin::native::*;
         use fuel_indexer_plugin::prelude::*;
         use fuel_indexer_schema::utils::{serialize, deserialize};
-        use fuels_core::abi_decoder::ABIDecoder;
-        use fuels_types::StringToken;
-        use fuels_types::traits::{Parameterize, Tokenizable};
-        use fuels_macros::{Parameterize, Tokenizable};
+        use fuels::{
+            core::abi_decoder::ABIDecoder,
+            macros::{Parameterize, Tokenizable},
+            types::{StringToken, traits::{Tokenizable, Parameterize}},
+        };
         use fuel_indexer_plugin::native::bincode;
         use sha2::{Sha256, Digest};
 

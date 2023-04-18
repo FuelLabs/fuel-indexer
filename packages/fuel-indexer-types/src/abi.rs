@@ -3,7 +3,7 @@ use crate::{
     type_id, Address, AssetId, Bytes32, ContractId, MessageId,
 };
 pub use fuel_tx::Receipt;
-pub use fuels_types::Identity;
+pub use fuels::types::Identity;
 use serde::{Deserialize, Serialize};
 
 pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
