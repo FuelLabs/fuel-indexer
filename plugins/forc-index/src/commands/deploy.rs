@@ -67,6 +67,24 @@ pub struct Command {
     pub skip_build: bool,
 }
 
+impl Default for Command {
+    fn default() -> Self {
+        Command {
+            url: "http://127.0.0.1:29987".to_string(),
+            manifest: Some(String::new()),
+            path: None,
+            auth: Some("".to_string()),
+            target: defaults::WASM_TARGET.to_string(),
+            release: true.to_string(),
+            profile: Some("release".to_string()),
+            verbose: false,
+            locked: false,
+            native: false,
+            skip_build: false,
+            target_dir: Some(std::path::PathBuf::from(".")),
+        }
+    }
+}
 pub fn exec(command: Command) -> Result<()> {
     forc_index_deploy::init(command)?;
     Ok(())

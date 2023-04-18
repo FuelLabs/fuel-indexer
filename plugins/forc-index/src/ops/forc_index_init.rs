@@ -69,7 +69,7 @@ An easy-to-use, flexible indexing service built to go fast. 🚗💨
     );
 }
 
-pub fn init(command: InitCommand) -> anyhow::Result<()> {
+pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
     let InitCommand {
         name,
         path,
@@ -195,7 +195,10 @@ pub fn init(command: InitCommand) -> anyhow::Result<()> {
     } else {
         info!("\n✅ Successfully created indexer");
     }
-
+    Ok(())
+}
+pub fn init(command: InitCommand) -> anyhow::Result<()> {
+    create_indexer(command)?;
     print_welcome_message();
     Ok(())
 }

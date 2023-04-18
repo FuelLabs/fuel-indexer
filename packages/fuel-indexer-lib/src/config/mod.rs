@@ -303,6 +303,39 @@ pub struct ApiServerArgs {
     pub verbose: bool,
 }
 
+impl Default for IndexerArgs {
+    fn default() -> Self {
+        Self {
+            log_level: "info".to_string(),
+            config: None,
+            manifest: Some(std::path::PathBuf::from(".")),
+            fuel_node_host: String::new(),
+            fuel_node_port: String::new(),
+            graphql_api_host: String::new(),
+            graphql_api_port: String::new(),
+            database: defaults::DATABASE.to_string(),
+            max_body_size: defaults::MAX_BODY_SIZE,
+            postgres_user: None,
+            postgres_database: None,
+            postgres_password: None,
+            postgres_host: None,
+            postgres_port: None,
+            run_migrations: true,
+            metrics: false,
+            stop_idle_indexers: false,
+            embedded_database: false,
+            auth_enabled: false,
+            auth_strategy: None,
+            jwt_secret: None,
+            jwt_issuer: None,
+            jwt_expiry: None,
+            verbose: false,
+            local_fuel_node: false,
+            indexer_net_config: false,
+        }
+    }
+}
+
 pub trait Env {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()>;
 }

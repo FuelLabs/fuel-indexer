@@ -5,8 +5,10 @@ pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
 pub const INDEX_LIB_FILENAME: &str = "lib.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
-pub const INDEXER_SERVICE_HOST: &str = "http://localhost:29987";
+pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
+pub const GRAPHQL_API_HOST: &str = defaults::GRAPHQL_API_HOST;
 pub const GRAPHQL_API_PORT: &str = defaults::GRAPHQL_API_PORT;
+pub const WASM_TARGET: &str = "wasm32-unknown-unknown";
 pub const INDEXER_TARGET: &str = "wasm32-unknown-unknown";
 pub const BUILD_RELEASE_PROFILE: &str = "true";
 
