@@ -685,15 +685,13 @@ pub mod test_web {
     async fn fuel_indexer_test_trigger_enum_error(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let res = state
+        let _ = state
             .contract
             .methods()
             .trigger_enum_error(69)
             .tx_params(tx_params())
             .call()
             .await;
-
-        println!("res: {:?}", res);
 
         HttpResponse::Ok()
     }
