@@ -5,24 +5,24 @@ schema {
 
 type QueryRoot {
     block: Block
-    panicEntity: PanicEntity 
-    acceptedArbiterEvent: AcceptedArbiterEvent
-    createdEscrowEvent: CreatedEscrowEvent
-    depositEvent: DepositEvent
-    disputeEvent: DisputeEvent
-    paymentTakenEvent: PaymentTakenEvent
-    proposedArbiterEvent: ProposedArbiterEvent
-    resolvedDisputeEvent: ResolvedDisputeEvent
-    returnedDepositEvent: ReturnedDepositEvent
-    transferredToSellerEvent: TransferredToSellerEvent
-    withdrawnCollateralEvent: WithdrawnCollateralEvent
-    arbiterInputError(id: ID!): ArbiterInputError
-    assetInputError(id: ID!): AssetInputError
-    deadlineInputError(id: ID!): DeadlineInputError
-    depositError(id: ID!): DepositError
-    stateError(id: ID!): StateError
-    userError(id: ID!): UserError
-    userInputError(id: ID!): UserInputError
+    # panicEntity: PanicEntity 
+    # acceptedArbiterEvent: AcceptedArbiterEvent
+    # createdEscrowEvent: CreatedEscrowEvent
+    # depositEvent: DepositEvent
+    # disputeEvent: DisputeEvent
+    # paymentTakenEvent: PaymentTakenEvent
+    # proposedArbiterEvent: ProposedArbiterEvent
+    # resolvedDisputeEvent: ResolvedDisputeEvent
+    # returnedDepositEvent: ReturnedDepositEvent
+    # transferredToSellerEvent: TransferredToSellerEvent
+    # withdrawnCollateralEvent: WithdrawnCollateralEvent
+    # arbiterInputError(id: ID!): ArbiterInputError
+    # assetInputError(id: ID!): AssetInputError
+    # deadlineInputError(id: ID!): DeadlineInputError
+    # depositError(id: ID!): DepositError
+    # stateError(id: ID!): StateError
+    # userError(id: ID!): UserError
+    # userInputError(id: ID!): UserInputError
 }
 
 type Block {
@@ -31,99 +31,99 @@ type Block {
     timestamp: Int8!
 }
 
-type PanicEntity {
-    id: ID!
-    contract_id: ContractId!
-    reason: UInt4! 
-}
+# type PanicEntity {
+#     id: ID!
+#     contract_id: ContractId!
+#     reason: UInt4! 
+# }
 
-type Identity {
-    id: ID!
-    address: Address!
-    ContractId: ContractId!
-}
-
-type Arbiter {
-    id: ID!
-    address: Address!
-    asset: ContractId
-    fee_amount: UInt8!
-}
-
-type Buyer {
-    id: ID!
-    address: Identity!
-    asset: ContractId
-    deposited_amount: UInt8!
-}
-
-
-type Seller {
-    id: ID!
-    address: Identity,
-}
-
-type EscrowInfo {
-    id: ID!
-    arbiter: Arbiter!
-    asset_count: UInt8!
-    buyer: Buyer!
-    deadline: UInt8!
-    disputed: Boolean!
-    first_asset_index: UInt8!
-    seller: Seller!
-}
-
-type AcceptedArbiterEvent {
-    id: ID!
-    identifier: UInt8!
-}
-
-type CreatedEscrowEvent {
-    id: ID!
-    escrow: EscrowInfo!
-    identifier: UInt8!
-}
-
-type DepositEvent {
-    id: ID!
-    asset: ContractId!
-    identifier: UInt8!
-}
-
-type DisputeEvent {
-    id: ID!
-    identifier: UInt8!
-}
-
-type PaymentTakenEvent {
-    id: ID!
-    identifier: UInt8!
-}
-
-type ProposedArbiterEvent {
-    id: ID!
-    arbiter: Arbiter!
-    identifier: UInt8!
-}
-
-type ResolvedDisputeEvent {
-    id: ID!
-    identifier: UInt8!
-    user: Identity!
-}
-
-type ReturnedDepositEvent {
-    id: ID!
-    identifier: UInt8!
-}
-
-type TransferredToSellerEvent {
-    id: ID!
-    identifier: UInt8!
-}
-
-type WithdrawnCollateralEvent {
-    id: ID!
-    identifier: UInt8!
-}
+# type Identity {
+#     id: ID!
+#     address: Address!
+#     ContractId: ContractId!
+# }
+#
+# type Arbiter {
+#     id: ID!
+#     address: Address!
+#     asset: ContractId
+#     fee_amount: UInt8!
+# }
+#
+# type Buyer {
+#     id: ID!
+#     address: Identity!
+#     asset: ContractId
+#     deposited_amount: UInt8!
+# }
+#
+#
+# type Seller {
+#     id: ID!
+#     address: Identity,
+# }
+#
+# type EscrowInfo {
+#     id: ID!
+#     arbiter: Arbiter!
+#     asset_count: UInt8!
+#     buyer: Buyer!
+#     deadline: UInt8!
+#     disputed: Boolean!
+#     first_asset_index: UInt8!
+#     seller: Seller!
+# }
+#
+# type AcceptedArbiterEvent {
+#     id: ID!
+#     identifier: UInt8!
+# }
+#
+# type CreatedEscrowEvent {
+#     id: ID!
+#     escrow: EscrowInfo!
+#     identifier: UInt8!
+# }
+#
+# type DepositEvent {
+#     id: ID!
+#     asset: ContractId!
+#     identifier: UInt8!
+# }
+#
+# type DisputeEvent {
+#     id: ID!
+#     identifier: UInt8!
+# }
+#
+# type PaymentTakenEvent {
+#     id: ID!
+#     identifier: UInt8!
+# }
+#
+# type ProposedArbiterEvent {
+#     id: ID!
+#     arbiter: Arbiter!
+#     identifier: UInt8!
+# }
+#
+# type ResolvedDisputeEvent {
+#     id: ID!
+#     identifier: UInt8!
+#     user: Identity!
+# }
+#
+# type ReturnedDepositEvent {
+#     id: ID!
+#     identifier: UInt8!
+# }
+#
+# type TransferredToSellerEvent {
+#     id: ID!
+#     identifier: UInt8!
+# }
+#
+# type WithdrawnCollateralEvent {
+#     id: ID!
+#     identifier: UInt8!
+# }

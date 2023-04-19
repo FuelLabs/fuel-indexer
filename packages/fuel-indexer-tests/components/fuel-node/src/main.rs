@@ -1,6 +1,6 @@
 use clap::Parser;
 use fuel_indexer_tests::{defaults, fixtures::setup_test_fuel_node};
-use fuels_macros::abigen;
+use fuels::macros::abigen;
 use std::path::{Path, PathBuf};
 
 abigen!(Contract(

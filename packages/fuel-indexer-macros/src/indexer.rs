@@ -3,11 +3,14 @@ use crate::{
     schema::process_graphql_schema, wasm::handler_block_wasm,
 };
 use fuel_abi_types::program_abi::TypeDeclaration;
-use fuel_indexer_lib::{manifest::Manifest, utils::local_repository_root};
+use fuel_indexer_lib::{
+    manifest::ContractIds, manifest::Manifest, utils::local_repository_root,
+};
 use fuel_indexer_types::{abi, type_id};
+use fuels::{
+    core::function_selector::resolve_fn_selector, types::param_types::ParamType,
+};
 use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
-use fuels_core::function_selector::resolve_fn_selector;
-use fuels_types::param_types::ParamType;
 use proc_macro::TokenStream;
 use quote::quote;
 use std::collections::{HashMap, HashSet};
@@ -255,18 +258,41 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let contract = match &manifest.contract_id {
-        Some(contract_id) => {
+    let contracts = match &manifest.contract_id {
+        ContractIds::Single(contract_id) => match contract_id {
+            Some(contract_id) => {
+                quote! {
+                    let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
+                    let bech32_id = Bech32ContractId::from(id);
+                    if bech32_id != manifest_contract_id {
+                        Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
+                        continue;
+                    }
+                }
+            }
+            None => quote! {},
+        },
+        ContractIds::Multiple(contract_ids) => {
+            let contract_ids = contract_ids
+                .iter()
+                .map(|id| {
+                    quote! {
+                        Bech32ContractId::from_str(#id)
+                            .expect("Failed to parse manifest 'contract_id' as Bech32ContractId")
+                    }
+                })
+                .collect::<Vec<proc_macro2::TokenStream>>();
+
             quote! {
-                let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
-                let receipt_contract_id = Bech32ContractId::from(id);
-                if receipt_contract_id != manifest_contract_id {
+                let bech32_id = Bech32ContractId::from(id);
+                let contract_ids = HashSet::from([#(#contract_ids),*]);
+
+                if !contract_ids.contains(&bech32_id) {
                     Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                     continue;
                 }
             }
         }
-        None => quote! {},
     };
 
     let asyncness = if is_native {
@@ -449,7 +475,7 @@ fn process_fn_items(
                     for receipt in tx.receipts {
                         match receipt {
                             Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
-                                #contract
+                                #contracts
 
                                 let fn_name = decoder.selector_to_fn_name(param1);
                                 return_types.push(param1);
@@ -460,18 +486,18 @@ fn process_fn_items(
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::Log::type_id();
                                 let data = bincode::serialize(&abi::Log{ contract_id: id, ra, rb }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
-                                #contract
+                                #contracts
                                 decoder.decode_logdata(rb as usize, data);
 
                             }
                             Receipt::Return { id, val, pc, is } => {
-                                #contract
+                                #contracts
                                 if callees.contains(&id) {
                                     let ty_id = abi::Return::type_id();
                                     let data = bincode::serialize(&abi::Return{ contract_id: id, val, pc, is }).expect("Bad encoding,");
@@ -479,7 +505,7 @@ fn process_fn_items(
                                 }
                             }
                             Receipt::ReturnData { data, id, .. } => {
-                                #contract
+                                #contracts
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
                                     decoder.decode_return_type(selector, data);
@@ -518,25 +544,25 @@ fn process_fn_items(
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::Transfer::type_id();
                                 let data = bincode::serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::TransferOut::type_id();
                                 let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Panic { id, reason, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::Panic::type_id();
                                 let data = bincode::serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() as u32 }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Revert { id, ra, .. } => {
-                                #contract
+                                #contracts
                                 let ty_id = abi::Revert::type_id();
                                 let data = bincode::serialize(&abi::Revert{ contract_id: id, error_val: u64::from(ra & 0xF) }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);

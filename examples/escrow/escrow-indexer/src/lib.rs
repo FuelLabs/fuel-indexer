@@ -14,7 +14,5 @@ mod escrow_indexer {
         };
 
         block.save();
-
-        //index LogData for accepted arbiter
     }
 }
