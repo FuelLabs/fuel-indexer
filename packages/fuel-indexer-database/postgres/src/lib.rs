@@ -23,6 +23,7 @@ pub async fn put_object(
 
     let query = builder.build();
     let query = query.bind(bytes);
+    
     let result = query.execute(conn).await?;
 
     Ok(result.rows_affected() as usize)
