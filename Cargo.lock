@@ -3007,6 +3007,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
+ "strum 0.24.1",
  "thiserror",
  "tokio 1.27.0",
  "tower",

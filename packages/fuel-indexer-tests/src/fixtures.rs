@@ -26,7 +26,7 @@ use sqlx::{Connection, Executor};
 use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use tokio::sync::mpsc::channel;
+use tokio::sync::mpsc::{channel, Receiver};
 use tracing_subscriber::filter::EnvFilter;
 
 use crate::{defaults, TestError, WORKSPACE_ROOT};
@@ -272,7 +272,9 @@ pub fn get_test_contract_id() -> Bech32ContractId {
     Bech32ContractId::from(id)
 }
 
-pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
+pub async fn api_server_app_postgres(
+    database_url: Option<&str>,
+) -> (Router, Receiver<ServiceRequest>) {
     let database: DatabaseConfig = database_url
         .map_or(DatabaseConfig::default(), |url| {
             DatabaseConfig::from_str(url).unwrap()
@@ -295,9 +297,12 @@ pub async fn api_server_app_postgres(database_url: Option<&str>) -> Router {
         .await
         .expect("Failed to create connection pool");
 
-    let (tx, _) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+    let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
-    GraphQlApi::build(config, pool, tx).await.unwrap()
+    let router = GraphQlApi::build(config, pool, tx).await.unwrap();
+
+    // NOTE: Keep Receiver in scope to prevent the channel from being closed
+    (router, rx)
 }
 
 pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -> Router {
@@ -325,7 +330,7 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
         },
     };
 
-    let (tx, _) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+    let (tx, _rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
         .await
@@ -353,7 +358,7 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
         authentication: AuthenticationConfig::default(),
     };
 
-    let (_, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+    let (_tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
         .await

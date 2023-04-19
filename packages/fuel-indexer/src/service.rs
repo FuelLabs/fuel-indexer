@@ -289,13 +289,10 @@ async fn create_service_task(
                         warn!("Revert Indexer: Indexer({uid}) not found.");
                     }
 
-                    let mut conn = pool
-                        .acquire()
-                        .await?;
+                    let mut conn = pool.acquire().await?;
 
-                    let _ = queries::start_transaction(&mut conn)
-                        .await?;
-                        
+                    let _ = queries::start_transaction(&mut conn).await?;
+
                     let latest_assets = queries::latest_assets_for_index(
                         &mut conn,
                         &request.penultimate_asset_id,

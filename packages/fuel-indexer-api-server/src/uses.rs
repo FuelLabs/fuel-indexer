@@ -122,7 +122,7 @@ pub(crate) async fn health_check(
 
 pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
-    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+    Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
@@ -140,28 +140,24 @@ pub(crate) async fn stop_indexer(
         error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
 
         return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
-    } else {
-        queries::commit_transaction(&mut conn).await?;
-
-        if let Some(tx) = tx {
-            tx.send(ServiceRequest::IndexStop(IndexStopRequest {
-                namespace,
-                identifier,
-            }))
-            .await?;
-
-            return Ok(Json(json!({
-                "success": "true"
-            })));
-        }
     }
 
-    Err(ApiError::default())
+    queries::commit_transaction(&mut conn).await?;
+
+    tx.send(ServiceRequest::IndexStop(IndexStopRequest {
+        namespace,
+        identifier,
+    }))
+    .await?;
+
+    Ok(Json(json!({
+        "success": "true"
+    })))
 }
 
 pub(crate) async fn revert_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
-    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+    Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
@@ -178,26 +174,22 @@ pub(crate) async fn revert_indexer(
     )
     .await?;
 
-    if let Some(tx) = tx {
-        tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
-            penultimate_asset_id: asset.id,
-            penultimate_asset_bytes: asset.bytes,
-            namespace,
-            identifier,
-        }))
-        .await?;
+    tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
+        penultimate_asset_id: asset.id,
+        penultimate_asset_bytes: asset.bytes,
+        namespace,
+        identifier,
+    }))
+    .await?;
 
-        return Ok(Json(json!({
-            "success": "true"
-        })));
-    }
-
-    Err(ApiError::default())
+    Ok(Json(json!({
+        "success": "true"
+    })))
 }
 
 pub(crate) async fn register_indexer_assets(
     Path((namespace, identifier)): Path<(String, String)>,
-    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+    Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -207,18 +199,17 @@ pub(crate) async fn register_indexer_assets(
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
+    let mut assets: Vec<IndexAsset> = Vec::new();
+
     if let Some(mut multipart) = multipart {
         let mut conn = pool.acquire().await?;
 
         let _ = queries::start_transaction(&mut conn).await?;
 
-        let mut assets: Vec<IndexAsset> = Vec::new();
-
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
-            let asset_type =
-                IndexAssetType::from_str(&name).expect("Invalid asset type.");
+            let asset_type = IndexAssetType::from_str(&name)?;
 
             let asset: IndexAsset = match asset_type {
                 IndexAssetType::Wasm | IndexAssetType::Manifest => {
@@ -269,13 +260,11 @@ pub(crate) async fn register_indexer_assets(
 
         let _ = queries::commit_transaction(&mut conn).await?;
 
-        if let Some(tx) = tx {
-            tx.send(ServiceRequest::AssetReload(AssetReloadRequest {
-                namespace,
-                identifier,
-            }))
-            .await?;
-        }
+        tx.send(ServiceRequest::AssetReload(AssetReloadRequest {
+            namespace,
+            identifier,
+        }))
+        .await?;
 
         return Ok(Json(json!({
             "success": "true",
@@ -352,16 +341,15 @@ pub(crate) async fn verify_signature(
 
                 queries::delete_nonce(&mut conn, &nonce).await?;
 
-                Ok(Json(json!({ "token": token })))
+                return Ok(Json(json!({ "token": token })));
             }
             _ => {
                 error!("Unsupported authentication strategy.");
                 unimplemented!();
             }
         }
-    } else {
-        unreachable!()
     }
+    unreachable!();
 }
 
 pub async fn run_query(
