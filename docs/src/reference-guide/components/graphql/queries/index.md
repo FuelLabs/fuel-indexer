@@ -1,6 +1,6 @@
 # Queries
 
-Once data has been persisted into your storage backend, you can retrieve it by querying the [GraphQL API server](./api-server.md). By default, the API server can be reached at `http://localhost:29987/api/graph/<namespace>/<identifier>`, where `<namespace>` and `<identifier>` are the values for the respective fields in your indexer's manifest. If you've changed the `GRAPHQL_API_HOST` or `GRAPHQL_API_PORT` values of your configuration, then you'll need to adjust the URL accordingly.
+Once data has been persisted into your storage backend, you can retrieve it by querying the [GraphQL API server](./api-server.md). By default, the API server can be reached at `http://localhost:29987/api/graph/:namespace/:identifier`, where `:namespace` and `:identifier` are the values for the respective fields in your indexer's manifest. If you've changed the `GRAPHQL_API_HOST` or `GRAPHQL_API_PORT` values of your configuration, then you'll need to adjust the URL accordingly.
 
 ## Basic Query
 
@@ -19,16 +19,19 @@ query {
 
 The `entity` field corresponds to the name of an entity defined in your [schema](./schema.md) and the sub-fields are the fields defined on that entity type; entities and fields are stored in the database using the names defined in the schema, so make sure that your query uses those same names as well.
 
-Let's refer back to the [block explorer](../../../examples/block-explorer.md) example for an illustration. After the block data has been indexed, we can retrieve information about the blocks by sending a query to the graph endpoint for our indexer.
+Let's refer back to the [block explorer](../../../examples/block-explorer.md) example for an illustration. After the block data has been indexed, we can retrieve information about the blocks by querying for information on the indexer's playground; you can get to the playground by starting the block explorer example using the instructions on the page and navigating to `http://localhost:29987/api/graph/fuel_examples/explorer_indexer`.
 
 ```txt
-curl -X POST http://localhost:29987/api/graph/fuel_examples/explorer_index \
-   -H 'content-type: application/json' \
-   -d '{"query": "query { block { id height timestamp }}", "params": "b"}' \
-| json_pp
+query {
+    block {
+        id
+        height
+        timestamp
+    }
+}
 ```
 
-In the above snippet, you can see that we're requesting the ID, height, and timestamp for each block stored in the backend, and we're doing so by sending a `POST` request with a JSON payload. You can also see that the query is set as the value for the `query` key in the payload. If successful, the API server will return a response similar to the following:
+We're requesting the ID, height, and timestamp for each block stored in the backend. If successful, the API server will return a response similar to the following:
 
 ```json
 [
@@ -137,16 +140,7 @@ query {
 }
 ```
 
-Let's assume that we've created an indexer for this data and indexed data has been stored in the database. Now we'll send a request to the API server in the same way that we did for the basic query example:
-
-```txt
-curl -X POST http://localhost:29987/api/graph/fuel_examples/nested_query_index \
-   -H 'content-type: application/json' \
-   -d '{"query": "query { character { name book { title library { name city { name } } } } }", "params": "b"}' \
-| json_pp
-```
-
-And we receive the following response:
+Let's assume that we've created an indexer for this data and the indexed data has been stored in the database. If we send the query, we'll get the following response:
 
 ```json
 [
