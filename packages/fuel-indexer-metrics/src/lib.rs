@@ -1,7 +1,9 @@
 #![deny(unused_crate_dependencies)]
 
 pub mod core;
+pub mod database;
 pub mod queries;
+pub mod web;
 
 use crate::core::{Metric, Metrics};
 use lazy_static::lazy_static;

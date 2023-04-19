@@ -5,6 +5,14 @@ use crate::{
         register_indexer_assets, revert_indexer, stop_indexer, verify_signature,
     },
 };
+use async_graphql::{
+    extensions::{
+        Extension as GQLExtension, ExtensionContext, ExtensionFactory, NextParseQuery,
+        NextRequest,
+    },
+    parser::types::{ExecutableDocument, OperationType, Selection},
+    Response as GQLResponse, ServerResult, Variables,
+};
 use async_std::sync::{Arc, RwLock};
 use axum::{
     extract::{Extension, Json},
@@ -30,6 +38,9 @@ use tower_http::{
     LatencyUnit,
 };
 use tracing::{error, Level};
+
+#[cfg(feature = "metrics")]
+use fuel_indexer_metrics::METRICS;
 
 pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
@@ -131,6 +142,75 @@ impl IntoResponse for ApiError {
 impl From<http::Error> for ApiError {
     fn from(err: http::Error) -> Self {
         ApiError::Http(HttpError::from(err))
+    }
+}
+
+#[cfg(feature = "metrics")]
+pub(crate) struct PrometheusExtension;
+
+#[cfg(feature = "metrics")]
+impl ExtensionFactory for PrometheusExtension {
+    fn create(&self) -> Arc<dyn GQLExtension> {
+        Arc::new(PrometheusExtInner {
+            operation_name: RwLock::new(None),
+        })
+    }
+}
+
+#[cfg(feature = "metrics")]
+pub(crate) struct PrometheusExtInner {
+    operation_name: RwLock<Option<String>>,
+}
+
+#[cfg(feature = "metrics")]
+#[async_trait::async_trait]
+impl GQLExtension for PrometheusExtInner {
+    async fn request(
+        &self,
+        ctx: &ExtensionContext<'_>,
+        next: NextRequest<'_>,
+    ) -> GQLResponse {
+        let start_time = Instant::now();
+        let result = next.run(ctx).await;
+
+        let op_name = self.operation_name.read().await;
+        if let Some(op) = &*op_name {
+            METRICS
+                .web
+                .graphql
+                .graphql_observe(op, start_time.elapsed().as_secs_f64());
+        }
+
+        result
+    }
+
+    async fn parse_query(
+        &self,
+        ctx: &ExtensionContext<'_>,
+        query: &str,
+        variables: &Variables,
+        next: NextParseQuery<'_>,
+    ) -> ServerResult<ExecutableDocument> {
+        let document = next.run(ctx, query, variables).await?;
+        let is_schema = document
+             .operations
+             .iter()
+             .filter(|(_, operation)| operation.node.ty == OperationType::Query)
+             .any(|(_, operation)| operation.node.selection_set.node.items.iter().any(|selection| matches!(&selection.node, Selection::Field(field) if field.node.name.node == "__schema")));
+        if !is_schema {
+            if let Some((_, def)) = document.operations.iter().next() {
+                if let Some(Selection::Field(e)) =
+                    &def.node.selection_set.node.items.get(0).map(|n| &n.node)
+                {
+                    // only track query if there's a single selection set
+                    if def.node.selection_set.node.items.len() == 1 {
+                        *self.operation_name.write().await =
+                            Some(e.node.name.node.to_string());
+                    }
+                }
+            }
+        }
+        Ok(document)
     }
 }
 

@@ -18,6 +18,7 @@ anyhow = "1.0"
 async-graphql = "5.0.7"
 async-graphql-axum = "5.0.7"
 async-std = "1"
+async-trait = "0.1"
 axum = { version = "0.6", features = ["multipart", "macros"] }
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-crypto = { version = "0.27", features = ["std"] }
