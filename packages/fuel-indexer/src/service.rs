@@ -226,6 +226,8 @@ async fn create_service_task(
             match rx.try_recv() {
                 Ok(service_request) => match service_request {
                     ServiceRequest::AssetReload(request) => {
+                        info!("GraphQL Playground: http://localhost:29987/api/playground/{}/{}", &request.namespace, &request.identifier);
+
                         let mut conn = pool
                             .acquire()
                             .await
