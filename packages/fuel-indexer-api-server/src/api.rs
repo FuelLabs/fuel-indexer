@@ -79,8 +79,6 @@ pub enum ApiError {
     JsonWebToken(#[from] jsonwebtoken::errors::Error),
     #[error("HexError: {0:?}")]
     HexError(#[from] hex::FromHexError),
-    #[error("ParseError: {0:?}")]
-    ParseError(#[from] strum::ParseError),
 }
 
 impl Default for ApiError {

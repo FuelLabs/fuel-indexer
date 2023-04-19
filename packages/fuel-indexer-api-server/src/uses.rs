@@ -209,7 +209,8 @@ pub(crate) async fn register_indexer_assets(
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
-            let asset_type = IndexAssetType::from_str(&name)?;
+            let asset_type =
+                IndexAssetType::from_str(&name).expect("Invalid asset type.");
 
             let asset: IndexAsset = match asset_type {
                 IndexAssetType::Wasm | IndexAssetType::Manifest => {
