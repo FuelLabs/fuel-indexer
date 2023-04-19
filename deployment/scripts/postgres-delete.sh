@@ -11,7 +11,7 @@ if [ "${k8s_provider}" == "eks" ]; then
     if [ "${postgres_enabled}" == "true" ]; then
         echo "Deleting postgres helm chart on ${TF_VAR_eks_cluster_name} ...."
         helm delete postgres \
-                  --namespace ${k8s_namespace} \
+                  --namespace ${k8s_indexer_namespace} \
                   --wait \
                   --timeout 8000s \
                   --debug

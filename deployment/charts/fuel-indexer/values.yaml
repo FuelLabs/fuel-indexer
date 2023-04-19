@@ -26,6 +26,3 @@ app:
     port: 5432
     username: ${postgres_username}
     password: ${postgres_password}
-
-
-#
