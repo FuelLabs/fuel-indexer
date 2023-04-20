@@ -44,7 +44,7 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
         .unwrap();
 
     srv.abort();
-    assert_eq!(resp.split('\n').count(), 112);
+    assert_eq!(resp.split('\n').count(), 126);
 }
 
 #[tokio::test]
@@ -83,16 +83,16 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
     let categories = resp.split('\n').collect::<Vec<&str>>();
 
     assert_eq!(
-        categories[18],
+        categories[32],
         "# HELP postgres_execute_query_calls Count of calls to postgres execute_query_calls."
     );
     assert_eq!(
-        categories[19],
+        categories[33],
         "# TYPE postgres_execute_query_calls counter"
     );
 
     assert!(
-        categories[20].split(' ').collect::<Vec<&str>>()[1]
+        categories[34].split(' ').collect::<Vec<&str>>()[1]
             .to_string()
             .parse::<i64>()
             .unwrap()

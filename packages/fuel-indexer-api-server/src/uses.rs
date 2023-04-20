@@ -109,9 +109,17 @@ pub(crate) async fn health_check(
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(start_time): Extension<Arc<Instant>>,
 ) -> ApiResult<axum::Json<Value>> {
+    let now = Instant::now();
     let db_status = pool.is_connected().await.unwrap_or(ServiceStatus::NotOk);
     let uptime = start_time.elapsed().as_secs().to_string();
     let fuel_core_status = get_fuel_status(&config).await;
+
+    #[cfg(feature = "metrics")]
+    METRICS
+        .web
+        .health
+        .timing
+        .observe(now.elapsed().as_millis() as f64);
 
     Ok(Json(json!({
         "fuel_core_status": fuel_core_status,

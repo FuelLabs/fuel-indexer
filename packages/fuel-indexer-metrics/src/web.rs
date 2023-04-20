@@ -9,7 +9,7 @@ pub struct Label {
 
 lazy_static! {
     static ref REQUEST_TIMING_BUCKETS: Vec<f64> =
-        vec![0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0];
+        vec![0., 10., 100., 1000., 10000., 50000., 100000., 500000., 1000000.];
 }
 
 pub struct HealthCheckEndpoint {
