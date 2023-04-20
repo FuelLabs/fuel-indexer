@@ -73,7 +73,7 @@ pub(crate) async fn query_graph(
 
 pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
     #[cfg(feature = "metrics")]
-    METRICS.web.health.requests.inc();
+    METRICS.web.health_check.requests.inc();
 
     let https = HttpsConnectorBuilder::new()
         .with_native_roots()
@@ -117,7 +117,7 @@ pub(crate) async fn health_check(
     #[cfg(feature = "metrics")]
     METRICS
         .web
-        .health
+        .health_check
         .timing
         .observe(n.elapsed().as_millis() as f64);
 
@@ -166,7 +166,7 @@ pub(crate) async fn stop_indexer(
     #[cfg(feature = "metrics")]
     METRICS
         .web
-        .health
+        .stop_indexer
         .timing
         .observe(n.elapsed().as_millis() as f64);
 
@@ -183,6 +183,7 @@ pub(crate) async fn revert_indexer(
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
+    let n = Instant::now();
     let mut conn = pool.acquire().await?;
     let asset = queries::penultimate_asset_for_index(
         &mut conn,
@@ -199,6 +200,13 @@ pub(crate) async fn revert_indexer(
         identifier,
     }))
     .await?;
+
+    #[cfg(feature = "metrics")]
+    METRICS
+        .web
+        .revert_indexer
+        .timing
+        .observe(n.elapsed().as_millis() as f64);
 
     Ok(Json(json!({
         "success": "true"
@@ -217,6 +225,7 @@ pub(crate) async fn register_indexer_assets(
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
+    let n = Instant::now();
     let mut assets: Vec<IndexAsset> = Vec::new();
 
     if let Some(mut multipart) = multipart {
@@ -268,6 +277,13 @@ pub(crate) async fn register_indexer_assets(
                             result
                         }
                         Err(e) => {
+                            #[cfg(feature = "metrics")]
+                            METRICS
+                                .web
+                                .register_indexer_assets
+                                .timing
+                                .observe(n.elapsed().as_millis() as f64);
+
                             return Err(e.into());
                         }
                     }
@@ -285,11 +301,25 @@ pub(crate) async fn register_indexer_assets(
         }))
         .await?;
 
+        #[cfg(feature = "metrics")]
+        METRICS
+            .web
+            .register_indexer_assets
+            .timing
+            .observe(n.elapsed().as_millis() as f64);
+
         return Ok(Json(json!({
             "success": "true",
             "assets": assets,
         })));
     }
+
+    #[cfg(feature = "metrics")]
+    METRICS
+        .web
+        .register_indexer_assets
+        .timing
+        .observe(n.elapsed().as_millis() as f64);
 
     Err(ApiError::default())
 }
@@ -297,8 +327,16 @@ pub(crate) async fn register_indexer_assets(
 pub(crate) async fn get_nonce(
     Extension(pool): Extension<IndexerConnectionPool>,
 ) -> ApiResult<axum::Json<Value>> {
+    let n = Instant::now();
     let mut conn = pool.acquire().await?;
     let nonce = queries::create_nonce(&mut conn).await?;
+
+    #[cfg(feature = "metrics")]
+    METRICS
+        .web
+        .get_nonce
+        .timing
+        .observe(n.elapsed().as_millis() as f64);
 
     Ok(Json(json!(nonce)))
 }
@@ -308,67 +346,79 @@ pub(crate) async fn verify_signature(
     Extension(pool): Extension<IndexerConnectionPool>,
     Json(payload): Json<VerifySignatureRequest>,
 ) -> ApiResult<axum::Json<Value>> {
-    if config.authentication.enabled {
-        let mut conn = pool.acquire().await?;
-        match config.authentication.strategy {
-            Some(AuthenticationStrategy::JWT) => {
-                let nonce = queries::get_nonce(&mut conn, &payload.message).await?;
-
-                if nonce.is_expired() {
-                    return Err(ApiError::Http(HttpError::Unauthorized));
-                }
-
-                let buff: [u8; 64] = hex::decode(&payload.signature)?
-                    .try_into()
-                    .unwrap_or([0u8; 64]);
-                let sig = Signature::from_bytes(buff);
-                let msg = Message::new(payload.message);
-                let pk = sig.recover(&msg)?;
-
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs() as usize;
-
-                let claims = Claims {
-                    sub: pk.to_string(),
-                    iss: config.authentication.jwt_issuer.unwrap_or_default(),
-                    iat: now,
-                    exp: now
-                        + config
-                            .authentication
-                            .jwt_expiry
-                            .unwrap_or(defaults::JWT_EXPIRY_SECS),
-                };
-
-                if let Err(e) = sig.verify(&pk, &msg) {
-                    error!("Failed to verify signature: {e}.");
-                    return Err(ApiError::FuelCrypto(e));
-                }
-
-                let token = encode(
-                    &Header::default(),
-                    &claims,
-                    &EncodingKey::from_secret(
-                        config
-                            .authentication
-                            .jwt_secret
-                            .unwrap_or_default()
-                            .as_ref(),
-                    ),
-                )?;
-
-                queries::delete_nonce(&mut conn, &nonce).await?;
-
-                return Ok(Json(json!({ "token": token })));
-            }
-            _ => {
-                error!("Unsupported authentication strategy.");
-                unimplemented!();
-            }
-        }
+    if !config.authentication.enabled {
+        return Err(ApiError::default());
     }
-    unreachable!();
+
+    let n = Instant::now();
+
+    let mut conn = pool.acquire().await?;
+    let resp = match config.authentication.strategy {
+        Some(AuthenticationStrategy::JWT) => {
+            let nonce = queries::get_nonce(&mut conn, &payload.message).await?;
+
+            if nonce.is_expired() {
+                return Err(ApiError::Http(HttpError::Unauthorized));
+            }
+
+            let buff: [u8; 64] = hex::decode(&payload.signature)?
+                .try_into()
+                .unwrap_or([0u8; 64]);
+            let sig = Signature::from_bytes(buff);
+            let msg = Message::new(payload.message);
+            let pk = sig.recover(&msg)?;
+
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs() as usize;
+
+            let claims = Claims {
+                sub: pk.to_string(),
+                iss: config.authentication.jwt_issuer.unwrap_or_default(),
+                iat: now,
+                exp: now
+                    + config
+                        .authentication
+                        .jwt_expiry
+                        .unwrap_or(defaults::JWT_EXPIRY_SECS),
+            };
+
+            if let Err(e) = sig.verify(&pk, &msg) {
+                error!("Failed to verify signature: {e}.");
+                return Err(ApiError::FuelCrypto(e));
+            }
+
+            let token = encode(
+                &Header::default(),
+                &claims,
+                &EncodingKey::from_secret(
+                    config
+                        .authentication
+                        .jwt_secret
+                        .unwrap_or_default()
+                        .as_ref(),
+                ),
+            )?;
+
+            queries::delete_nonce(&mut conn, &nonce).await?;
+
+            Ok(Json(json!({ "token": token })))
+        }
+        _ => {
+            error!("Unsupported authentication strategy.");
+            unimplemented!();
+        }
+    };
+
+    #[cfg(feature = "metrics")]
+    METRICS
+        .web
+        .verify_signature
+        .timing
+        .observe(n.elapsed().as_millis() as f64);
+
+    resp
 }
 
 pub async fn run_query(
@@ -376,6 +426,7 @@ pub async fn run_query(
     schema: Schema,
     pool: &IndexerConnectionPool,
 ) -> ApiResult<Value> {
+    let n = Instant::now();
     let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
 
@@ -383,7 +434,7 @@ pub async fn run_query(
 
     let mut conn = pool.acquire().await?;
 
-    match queries::run_query(&mut conn, queries).await {
+    let resp = match queries::run_query(&mut conn, queries).await {
         Ok(ans) => {
             let ans_json: Value = serde_json::from_value(ans)?;
             Ok(serde_json::json!({ "data": ans_json }))
@@ -392,7 +443,16 @@ pub async fn run_query(
             error!("Error querying database: {e}.");
             Err(e.into())
         }
-    }
+    };
+
+    #[cfg(feature = "metrics")]
+    METRICS
+        .web
+        .run_query
+        .timing
+        .observe(n.elapsed().as_millis() as f64);
+
+    resp
 }
 
 pub async fn gql_playground(
