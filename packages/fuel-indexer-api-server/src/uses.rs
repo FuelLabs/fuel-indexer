@@ -109,7 +109,7 @@ pub(crate) async fn health_check(
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(start_time): Extension<Arc<Instant>>,
 ) -> ApiResult<axum::Json<Value>> {
-    let now = Instant::now();
+    let n = Instant::now();
     let db_status = pool.is_connected().await.unwrap_or(ServiceStatus::NotOk);
     let uptime = start_time.elapsed().as_secs().to_string();
     let fuel_core_status = get_fuel_status(&config).await;
@@ -119,7 +119,7 @@ pub(crate) async fn health_check(
         .web
         .health
         .timing
-        .observe(now.elapsed().as_millis() as f64);
+        .observe(n.elapsed().as_millis() as f64);
 
     Ok(Json(json!({
         "fuel_core_status": fuel_core_status,
@@ -138,29 +138,39 @@ pub(crate) async fn stop_indexer(
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
+    let n = Instant::now();
     let mut conn = pool.acquire().await?;
-
     let _ = queries::start_transaction(&mut conn).await?;
 
-    if let Err(e) = queries::remove_indexer(&mut conn, &namespace, &identifier).await {
+    let resp = if let Err(e) =
+        queries::remove_indexer(&mut conn, &namespace, &identifier).await
+    {
+        error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
         queries::revert_transaction(&mut conn).await?;
 
-        error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
+        Err(ApiError::default())
+    } else {
+        let _ = queries::commit_transaction(&mut conn).await?;
 
-        return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
-    }
+        tx.send(ServiceRequest::IndexStop(IndexStopRequest {
+            namespace,
+            identifier,
+        }))
+        .await?;
 
-    queries::commit_transaction(&mut conn).await?;
+        Ok(Json(json!({
+            "success": "true"
+        })))
+    };
 
-    tx.send(ServiceRequest::IndexStop(IndexStopRequest {
-        namespace,
-        identifier,
-    }))
-    .await?;
+    #[cfg(feature = "metrics")]
+    METRICS
+        .web
+        .health
+        .timing
+        .observe(n.elapsed().as_millis() as f64);
 
-    Ok(Json(json!({
-        "success": "true"
-    })))
+    resp
 }
 
 pub(crate) async fn revert_indexer(
