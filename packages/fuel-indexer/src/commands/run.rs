@@ -42,10 +42,16 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         Manifest::from_file(&p).unwrap()
     }) {
         Some(m) => {
+            info!(
+                    "✨ ✨ GraphQL Playground at: http://localhost:29987/api/playground/{}/{}", m.namespace, m.identifier
+                );
             service.register_index_from_manifest(m).await?;
         }
         None => {
             service.register_indices_from_registry().await?;
+            info!(
+                    "✨ ✨ GraphQL Playground at: http://localhost:29987/api/playground/:namespace/:identifier"
+                );
         }
     }
 
