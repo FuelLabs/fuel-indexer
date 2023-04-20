@@ -7,3 +7,4 @@ pub mod forc_index_new;
 pub mod forc_index_remove;
 pub mod forc_index_revert;
 pub mod forc_index_start;
+pub mod forc_index_welcome;
