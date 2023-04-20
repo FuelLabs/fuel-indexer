@@ -643,15 +643,12 @@ pub async fn latest_assets_for_index(
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.latest_assets_for_index_calls.inc();
 
-    let wasm = latest_asset_for_index(conn, index_id, IndexAssetType::Wasm)
-        .await
-        .expect("Failed to retrieve wasm asset.");
-    let schema = latest_asset_for_index(conn, index_id, IndexAssetType::Schema)
-        .await
-        .expect("Failed to retrieve schema asset.");
-    let manifest = latest_asset_for_index(conn, index_id, IndexAssetType::Manifest)
-        .await
-        .expect("Failed to retrieve manifest asset.");
+    let wasm = latest_asset_for_index(conn, index_id, IndexAssetType::Wasm).await?;
+
+    let schema = latest_asset_for_index(conn, index_id, IndexAssetType::Schema).await?;
+
+    let manifest =
+        latest_asset_for_index(conn, index_id, IndexAssetType::Manifest).await?;
 
     Ok(IndexAssetBundle {
         wasm,
