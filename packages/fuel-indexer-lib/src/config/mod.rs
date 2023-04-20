@@ -560,7 +560,7 @@ impl IndexerConfig {
         }
 
         let fuel_config_key = serde_yaml::Value::String("fuel_node".into());
-        let graphql_config_key = serde_yaml::Value::String("graphql".into());
+        let graphql_config_key = serde_yaml::Value::String("graphql_api".into());
         let database_config_key = serde_yaml::Value::String("database".into());
         let auth_config_key = serde_yaml::Value::String("authentication".into());
 
