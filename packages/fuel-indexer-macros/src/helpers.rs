@@ -1,7 +1,8 @@
 use crate::constant::*;
-use fuel_abi_types::program_abi::{ProgramABI, TypeDeclaration};
+use fuel_abi_types::program_abi::{ProgramABI, TypeApplication, TypeDeclaration};
 use fuels_code_gen::utils::Source;
 use quote::{format_ident, quote};
+use std::error::Error;
 use syn::Ident;
 
 /// If TypeDeclaration is tuple type
@@ -134,6 +135,34 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "TransferOut" => quote! { abi::TransferOut },
             "Panic" => quote! { abi::Panic },
             "Revert" => quote! { abi::Revert },
+            "enum Option" => {
+                if let Some(components) = &ty.components {
+                    if let Some(inner_type) = components.iter().find(|c| c.name == "Some")
+                    {
+                        match inner_type.to_type_declaration() {
+                            Some(inner_type_declaration) => {
+                                let inner_ty_token =
+                                    rust_type_token(&inner_type_declaration);
+                                quote! { Option<#inner_ty_token> }
+                            }
+                            None => {
+                                proc_macro_error::abort_call_site!(
+                                    "Could not parse inner type of 'Option' enum type."
+                                )
+                            }
+                        }
+                    } else {
+                        proc_macro_error::abort_call_site!(
+                            "No 'Some' variant found in 'Option' enum type."
+                        )
+                    }
+                } else {
+                    proc_macro_error::abort_call_site!(
+                        "Expected components in 'Option' enum type."
+                    )
+                }
+            }
+            "Result" => quote! {},
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!(
@@ -213,5 +242,39 @@ impl Codegen for TypeDeclaration {
 
     fn rust_type_token_string(&self) -> String {
         self.rust_type_token().to_string()
+    }
+}
+
+/// A wrapper trait for helper methods such as to_type_declaration
+pub trait Generic {
+    fn to_type_declaration(&self) -> Option<TypeDeclaration>;
+}
+
+impl Generic for TypeApplication {
+    fn to_type_declaration(&self) -> Option<TypeDeclaration> {
+        if let Some(type_arguments) = &self.type_arguments {
+            let components: Option<Vec<TypeApplication>> = Some(
+                type_arguments
+                    .iter()
+                    .map(|type_arg| type_arg.clone())
+                    .collect(),
+            );
+
+            let type_parameters: Option<Vec<usize>> = Some(
+                type_arguments
+                    .iter()
+                    .map(|type_arg| type_arg.type_id)
+                    .collect(),
+            );
+
+            Some(TypeDeclaration {
+                type_id: self.type_id,
+                type_field: self.name.clone(),
+                components,
+                type_parameters,
+            })
+        } else {
+            None
+        }
     }
 }

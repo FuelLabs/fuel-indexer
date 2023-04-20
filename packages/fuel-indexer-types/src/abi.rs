@@ -179,3 +179,21 @@ impl NativeFuelType for Revert {
         type_id(FUEL_TYPES_NAMESPACE, "Revert") as usize
     }
 }
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Option<T>(pub T);
+
+impl<T> NativeFuelType for Option<T> {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Option") as usize
+    }
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Result<T, E>(pub T, pub E);
+
+impl<T, E> NativeFuelType for Result<T, E> {
+    fn type_id() -> usize {
+        type_id(FUEL_TYPES_NAMESPACE, "Result") as usize
+    }
+}

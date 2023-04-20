@@ -27,6 +27,8 @@ lazy_static! {
         "abi :: TransferOut",
         "abi :: Panic",
         "abi :: Revert",
+        "abi :: Option",
+        "abi :: Result"
     ]);
     pub static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from([]);
     pub static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> =
