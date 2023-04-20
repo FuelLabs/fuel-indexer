@@ -28,7 +28,7 @@ pub struct IndexerService {
     pool: IndexerConnectionPool,
     manager: SchemaManager,
     handles: HashMap<String, JoinHandle<()>>,
-    rx: Option<Receiver<ServiceRequest>>,
+    rx: Receiver<ServiceRequest>,
     killers: HashMap<String, Arc<AtomicBool>>,
 }
 
@@ -36,7 +36,7 @@ impl IndexerService {
     pub async fn new(
         config: IndexerConfig,
         pool: IndexerConnectionPool,
-        rx: Option<Receiver<ServiceRequest>>,
+        rx: Receiver<ServiceRequest>,
     ) -> IndexerResult<IndexerService> {
         let manager = SchemaManager::new(pool.clone());
 
@@ -214,152 +214,126 @@ impl IndexerService {
 }
 
 async fn create_service_task(
-    rx: Option<Receiver<ServiceRequest>>,
+    mut rx: Receiver<ServiceRequest>,
     config: IndexerConfig,
     pool: IndexerConnectionPool,
     futs: Arc<Mutex<FuturesUnordered<JoinHandle<()>>>>,
     mut killers: HashMap<String, Arc<AtomicBool>>,
 ) -> IndexerResult<()> {
-    if let Some(mut rx) = rx {
-        loop {
-            let futs = futs.lock().await;
-            match rx.try_recv() {
-                Ok(service_request) => match service_request {
-                    ServiceRequest::AssetReload(request) => {
-                        let mut conn = pool
-                            .acquire()
-                            .await
-                            .expect("Failed to acquire connection from pool");
+    loop {
+        let futs = futs.lock().await;
+        match rx.try_recv() {
+            Ok(service_request) => match service_request {
+                ServiceRequest::AssetReload(request) => {
+                    let mut conn = pool.acquire().await?;
 
-                        match queries::index_id_for(
-                            &mut conn,
-                            &request.namespace,
-                            &request.identifier,
-                        )
-                        .await
-                        {
-                            Ok(id) => {
-                                let assets =
-                                    queries::latest_assets_for_index(&mut conn, &id)
-                                        .await
-                                        .expect(
-                                            "Could not get latest assets for indexer",
-                                        );
+                    match queries::index_id_for(
+                        &mut conn,
+                        &request.namespace,
+                        &request.identifier,
+                    )
+                    .await
+                    {
+                        Ok(id) => {
+                            let assets =
+                                queries::latest_assets_for_index(&mut conn, &id).await?;
+                            let mut manifest =
+                                Manifest::try_from(&assets.manifest.bytes)?;
 
-                                let mut manifest =
-                                    Manifest::try_from(&assets.manifest.bytes)?;
+                            let start_block =
+                                get_start_block(&mut conn, &manifest).await?;
+                            manifest.start_block = Some(start_block);
+                            let (handle, _module_bytes, killer) =
+                                WasmIndexExecutor::create(
+                                    &config,
+                                    &manifest,
+                                    ExecutorSource::Registry(assets.wasm.bytes),
+                                )
+                                .await?;
 
-                                let start_block =
-                                    get_start_block(&mut conn, &manifest).await?;
-                                manifest.start_block = Some(start_block);
-                                let (handle, _module_bytes, killer) =
-                                    WasmIndexExecutor::create(
-                                        &config,
-                                        &manifest,
-                                        ExecutorSource::Registry(assets.wasm.bytes),
-                                    )
-                                    .await?;
+                            futs.push(handle);
 
-                                futs.push(handle);
-
-                                if let Some(killer_for_prev_executor) =
-                                    killers.insert(manifest.uid(), killer)
-                                {
-                                    let uid = manifest.uid();
-                                    info!("Indexer({uid}) was replaced. Stopping previous version of Indexer({uid}).");
-                                    killer_for_prev_executor
-                                        .store(true, Ordering::SeqCst);
-                                }
-                            }
-                            Err(e) => {
-                                error!(
-                                    "Failed to find Indexer({}.{}): {}",
-                                    &request.namespace, &request.identifier, e
-                                );
-
-                                continue;
+                            if let Some(killer_for_prev_executor) =
+                                killers.insert(manifest.uid(), killer)
+                            {
+                                let uid = manifest.uid();
+                                info!("Indexer({uid}) was replaced. Stopping previous version of Indexer({uid}).");
+                                killer_for_prev_executor.store(true, Ordering::SeqCst);
                             }
                         }
-                    }
-                    ServiceRequest::IndexStop(request) => {
-                        let uid = format!("{}.{}", request.namespace, request.identifier);
-
-                        if let Some(killer) = killers.remove(&uid) {
-                            killer.store(true, Ordering::SeqCst);
-                        } else {
-                            warn!(
-                                "Stop Indexer: No indexer with the name Indexer({uid})"
+                        Err(e) => {
+                            error!(
+                                "Failed to find Indexer({}.{}): {}",
+                                &request.namespace, &request.identifier, e
                             );
+
+                            continue;
                         }
                     }
-                    ServiceRequest::IndexRevert(request) => {
-                        let uid = format!("{}.{}", request.namespace, request.identifier);
-
-                        if let Some(killer) = killers.get(&uid) {
-                            killer.store(true, Ordering::SeqCst);
-                        } else {
-                            warn!("Revert Indexer: Indexer({uid}) not found.");
-                        }
-
-                        let mut conn = pool
-                            .acquire()
-                            .await
-                            .expect("Failed to acquire connection from pool");
-
-                        let _ = queries::start_transaction(&mut conn)
-                            .await
-                            .expect("Failed to start transaction");
-
-                        let latest_assets = queries::latest_assets_for_index(
-                            &mut conn,
-                            &request.penultimate_asset_id,
-                        )
-                        .await
-                        .expect("Could not get latest assets for index");
-
-                        if let Err(_e) = queries::remove_asset_by_version(
-                            &mut conn,
-                            &latest_assets.manifest.id,
-                            &latest_assets.wasm.version,
-                            IndexAssetType::Wasm,
-                        )
-                        .await
-                        {
-                            error!("Failed to remove asset by version");
-                            queries::revert_transaction(&mut conn)
-                                .await
-                                .expect("Failed to revert transaction");
-                        } else {
-                            queries::commit_transaction(&mut conn)
-                                .await
-                                .expect("Failed to commit transaction");
-                        }
-
-                        let mut manifest =
-                            Manifest::try_from(&latest_assets.manifest.bytes)?;
-
-                        let start_block = get_start_block(&mut conn, &manifest).await?;
-                        manifest.start_block = Some(start_block);
-                        let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
-                            &config,
-                            &manifest,
-                            ExecutorSource::Registry(request.penultimate_asset_bytes),
-                        )
-                        .await
-                        .expect("Failed to spawn executor from index asset registry.");
-
-                        futs.push(handle);
-                        killers.insert(manifest.uid(), killer);
-                    }
-                },
-                Err(e) => {
-                    debug!("No service request to handle: {e:?}.");
-                    sleep(Duration::from_secs(defaults::IDLE_SERVICE_WAIT_SECS)).await;
                 }
+                ServiceRequest::IndexStop(request) => {
+                    let uid = format!("{}.{}", request.namespace, request.identifier);
+
+                    if let Some(killer) = killers.remove(&uid) {
+                        killer.store(true, Ordering::SeqCst);
+                    } else {
+                        warn!("Stop Indexer: No indexer with the name Indexer({uid})");
+                    }
+                }
+                ServiceRequest::IndexRevert(request) => {
+                    let uid = format!("{}.{}", request.namespace, request.identifier);
+
+                    if let Some(killer) = killers.get(&uid) {
+                        killer.store(true, Ordering::SeqCst);
+                    } else {
+                        warn!("Revert Indexer: Indexer({uid}) not found.");
+                    }
+
+                    let mut conn = pool.acquire().await?;
+
+                    let _ = queries::start_transaction(&mut conn).await?;
+
+                    let latest_assets = queries::latest_assets_for_index(
+                        &mut conn,
+                        &request.penultimate_asset_id,
+                    )
+                    .await?;
+
+                    if let Err(_e) = queries::remove_asset_by_version(
+                        &mut conn,
+                        &latest_assets.manifest.id,
+                        &latest_assets.wasm.version,
+                        IndexAssetType::Wasm,
+                    )
+                    .await
+                    {
+                        error!("Failed to remove asset by version");
+                        queries::revert_transaction(&mut conn).await?;
+                    } else {
+                        queries::commit_transaction(&mut conn).await?;
+                    }
+
+                    let mut manifest = Manifest::try_from(&latest_assets.manifest.bytes)?;
+
+                    let start_block = get_start_block(&mut conn, &manifest).await?;
+                    manifest.start_block = Some(start_block);
+                    let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
+                        &config,
+                        &manifest,
+                        ExecutorSource::Registry(request.penultimate_asset_bytes),
+                    )
+                    .await?;
+
+                    futs.push(handle);
+                    killers.insert(manifest.uid(), killer);
+                }
+            },
+            Err(e) => {
+                debug!("No service request to handle: {e:?}.");
+                sleep(Duration::from_secs(defaults::IDLE_SERVICE_WAIT_SECS)).await;
             }
         }
     }
-    Ok(())
 }
 
 async fn get_start_block(
