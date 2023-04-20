@@ -13,5 +13,4 @@ description = "Fuel Indexer Metrics"
 [dependencies]
 lazy_static = "1.4"
 prometheus = "0.13"
-prometheus-client = "0.20"
 thiserror = "1.0"

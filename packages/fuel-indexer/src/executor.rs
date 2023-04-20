@@ -232,7 +232,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             if cursor.is_none() {
-                info!("No new blocks to process, sleeping.");
+                debug!("No new blocks to process, sleeping.");
                 sleep(Duration::from_secs(DELAY_FOR_EMPTY_PAGE)).await;
 
                 num_empty_block_reqs += 1;
