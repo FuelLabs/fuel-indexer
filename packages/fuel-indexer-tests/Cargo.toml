@@ -28,7 +28,7 @@ axum = { version = "0.6", features = ["multipart"] }
 bigdecimal = { version = "0.3" }
 chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { workspace = true }
-fuel-indexer-api-server = { workspace = true }
+fuel-indexer-api-server = { workspace = true, default-features = false }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-postgres = { workspace = true, features = ["metrics"] }

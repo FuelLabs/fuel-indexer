@@ -1,8 +1,8 @@
 use crate::{
     auth::AuthenticationMiddleware,
     uses::{
-        get_nonce, gql_playground, health_check, metrics, query_graph,
-        register_indexer_assets, revert_indexer, stop_indexer, verify_signature,
+        get_nonce, gql_playground, health_check, query_graph, register_indexer_assets,
+        revert_indexer, stop_indexer, verify_signature,
     },
 };
 use async_std::sync::{Arc, RwLock};
@@ -30,6 +30,9 @@ use tower_http::{
     LatencyUnit,
 };
 use tracing::{error, Level};
+
+#[cfg(feature = "metrics")]
+use crate::uses::metrics;
 
 pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
@@ -166,12 +169,15 @@ impl GraphQlApi {
             .layer(Extension(pool.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));
 
-        let root_routes = Router::new()
+        #[allow(unused_mut)]
+        let mut root_routes = Router::new()
             .route("/health", get(health_check))
             .layer(Extension(config.clone()))
             .layer(Extension(pool.clone()))
-            .layer(Extension(start_time))
-            .route("/metrics", get(metrics));
+            .layer(Extension(start_time));
+
+        #[cfg(feature = "metrics")]
+        let root_routes = root_routes.route("/metrics", get(metrics));
 
         let auth_routes = Router::new()
             .route("/nonce", get(get_nonce))
