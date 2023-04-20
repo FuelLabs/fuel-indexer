@@ -208,13 +208,11 @@ impl ContractIds {
 }
 
 impl FromStr for ContractIds {
-    type Err = String;
+    type Err = serde_json::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.starts_with('[') {
-            serde_json::from_str::<Vec<String>>(s)
-                .map(ContractIds::Multiple)
-                .map_err(|err| err.to_string())
+            serde_json::from_str::<Vec<String>>(s).map(ContractIds::Multiple)
         } else {
             Ok(ContractIds::Single(Some(s.to_string())))
         }
