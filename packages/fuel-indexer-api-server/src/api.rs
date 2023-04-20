@@ -140,7 +140,7 @@ impl GraphQlApi {
     pub async fn build(
         config: IndexerConfig,
         pool: IndexerConnectionPool,
-        tx: Option<Sender<ServiceRequest>>,
+        tx: Sender<ServiceRequest>,
     ) -> ApiResult<Router> {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
@@ -227,7 +227,7 @@ impl GraphQlApi {
     pub async fn build_and_run(
         config: IndexerConfig,
         pool: IndexerConnectionPool,
-        tx: Option<Sender<ServiceRequest>>,
+        tx: Sender<ServiceRequest>,
     ) -> ApiResult<()> {
         let listen_on: SocketAddr = config.graphql_api.clone().into();
         let app = GraphQlApi::build(config, pool, tx).await?;

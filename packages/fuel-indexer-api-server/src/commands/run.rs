@@ -2,8 +2,10 @@ use crate::api::GraphQlApi;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{ApiServerArgs, IndexerConfig},
-    utils::init_logging,
+    defaults::SERVICE_REQUEST_CHANNEL_SIZE,
+    utils::{init_logging, ServiceRequest},
 };
+use tokio::sync::mpsc::channel;
 use tracing::info;
 
 pub async fn exec(args: ApiServerArgs) -> anyhow::Result<()> {
@@ -14,6 +16,8 @@ pub async fn exec(args: ApiServerArgs) -> anyhow::Result<()> {
 
     info!("Configuration: {:?}", config);
 
+    let (tx, _) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
     if config.run_migrations {
@@ -23,7 +27,7 @@ pub async fn exec(args: ApiServerArgs) -> anyhow::Result<()> {
 
     init_logging(&config).await?;
 
-    let _ = GraphQlApi::build_and_run(config.clone(), pool, None).await;
+    let _ = GraphQlApi::build_and_run(config.clone(), pool, tx).await;
 
     Ok(())
 }
