@@ -181,18 +181,24 @@ impl NativeFuelType for Revert {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Option<T>(pub T);
+pub enum Option<T> {
+    Some(T),
+    None,
+}
 
-impl<T> NativeFuelType for Option<T> {
+impl NativeFuelType for Option<()> {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Option") as usize
     }
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Result<T, E>(pub T, pub E);
+pub enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
 
-impl<T, E> NativeFuelType for Result<T, E> {
+impl NativeFuelType for Result<(), ()> {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Result") as usize
     }

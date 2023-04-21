@@ -2,7 +2,6 @@ use crate::constant::*;
 use fuel_abi_types::program_abi::{ProgramABI, TypeApplication, TypeDeclaration};
 use fuels_code_gen::utils::Source;
 use quote::{format_ident, quote};
-use std::error::Error;
 use syn::Ident;
 
 /// If TypeDeclaration is tuple type
@@ -135,34 +134,8 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "TransferOut" => quote! { abi::TransferOut },
             "Panic" => quote! { abi::Panic },
             "Revert" => quote! { abi::Revert },
-            "enum Option" => {
-                if let Some(components) = &ty.components {
-                    if let Some(inner_type) = components.iter().find(|c| c.name == "Some")
-                    {
-                        match inner_type.to_type_declaration() {
-                            Some(inner_type_declaration) => {
-                                let inner_ty_token =
-                                    rust_type_token(&inner_type_declaration);
-                                quote! { Option<#inner_ty_token> }
-                            }
-                            None => {
-                                proc_macro_error::abort_call_site!(
-                                    "Could not parse inner type of 'Option' enum type."
-                                )
-                            }
-                        }
-                    } else {
-                        proc_macro_error::abort_call_site!(
-                            "No 'Some' variant found in 'Option' enum type."
-                        )
-                    }
-                } else {
-                    proc_macro_error::abort_call_site!(
-                        "Expected components in 'Option' enum type."
-                    )
-                }
-            }
-            "Result" => quote! {},
+            "Option" => quote! { abi::Option },
+            "Result" => quote! { abi::Result },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!(
