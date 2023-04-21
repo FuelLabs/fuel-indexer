@@ -2993,6 +2993,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-metrics",
  "fuel-indexer-schema",
+ "futures-util",
  "hex",
  "http",
  "hyper 0.14.26",
@@ -3079,9 +3080,10 @@ dependencies = [
 name = "fuel-indexer-metrics"
 version = "0.10.0"
 dependencies = [
+ "axum 0.6.15",
  "lazy_static",
  "prometheus",
- "thiserror",
+ "prometheus-client 0.20.0",
 ]
 
 [[package]]

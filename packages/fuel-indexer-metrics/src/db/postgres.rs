@@ -1,9 +1,18 @@
-use crate::core::Metric;
+use crate::core::{Metric, TIMING_HISTOGRAM_BUCKETS};
 #[allow(unused)]
 use prometheus::{self, register_int_counter, Counter, Encoder, IntCounter, TextEncoder};
+use prometheus_client::{
+    encoding::EncodeLabelSet,
+    metrics::{family::Family, histogram::Histogram},
+    registry::Registry,
+};
 
-#[derive(Debug, Clone)]
-pub struct PostgreQueries {
+#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
+pub struct Label {
+    path: String,
+}
+
+pub struct Postgres {
     pub graph_root_latest_calls: IntCounter,
     pub new_graph_root_calls: IntCounter,
     pub type_id_list_by_name_calls: IntCounter,
@@ -36,11 +45,21 @@ pub struct PostgreQueries {
     pub run_migration_calls: IntCounter,
     pub remove_asset_by_version_calls: IntCounter,
     pub remove_indexer: IntCounter,
+    pub registry: Registry,
+    requests: Family<Label, Histogram>,
 }
 
-impl Metric for PostgreQueries {
+impl Metric for Postgres {
     fn init() -> Self {
+        let mut registry = Registry::default();
+        let requests = Family::<Label, Histogram>::new_with_constructor(|| {
+            Histogram::new(TIMING_HISTOGRAM_BUCKETS.iter().cloned())
+        });
+        registry.register("db_operation_duration_seconds", "", requests.clone());
+
         Self {
+            registry,
+            requests,
             graph_root_latest_calls: register_int_counter!(
                 "postgres_graph_root_latest_calls",
                 "Count of calls to postgres graph_root_latest_calls."
@@ -202,5 +221,14 @@ impl Metric for PostgreQueries {
             )
             .unwrap(),
         }
+    }
+}
+
+impl Postgres {
+    pub fn record(&self, query: &str, time: f64) {
+        let histogram = self.requests.get_or_create(&Label {
+            path: query.to_string(),
+        });
+        histogram.observe(time);
     }
 }
