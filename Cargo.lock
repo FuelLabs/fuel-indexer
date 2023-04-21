@@ -3080,7 +3080,7 @@ dependencies = [
 name = "fuel-indexer-metrics"
 version = "0.10.0"
 dependencies = [
- "axum 0.6.15",
+ "axum 0.6.16",
  "lazy_static",
  "prometheus",
  "prometheus-client 0.20.0",
