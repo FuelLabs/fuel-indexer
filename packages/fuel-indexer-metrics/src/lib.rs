@@ -18,6 +18,7 @@ lazy_static! {
 }
 
 pub fn encode_metrics_response() -> impl IntoResponse {
+    
     let mut encoded_families = Vec::new();
     let encoder = TextEncoder::new();
 
