@@ -30,6 +30,8 @@ spec:
               containerPort: 5432
               protocol: TCP
           env:
+          - name: POSTGRES_PASSWORD
+            value: {{ .Values.postgres.password }}
           - name: PGDATA
             value: "/var/lib/postgresql/data/pgdata"
           resources:
