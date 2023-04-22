@@ -14,6 +14,8 @@ lazy_static! {
         "TransferOut",
         "Panic",
         "Revert",
+        "Option",
+        "Result",
     ]);
     pub static ref FUEL_PRIMITIVES_NAMESPACED: HashSet<&'static str> = HashSet::from([
         "abi :: BlockData",
@@ -27,8 +29,6 @@ lazy_static! {
         "abi :: TransferOut",
         "abi :: Panic",
         "abi :: Revert",
-        "abi :: Option",
-        "abi :: Result"
     ]);
     pub static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from([]);
     pub static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> =

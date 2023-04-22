@@ -38,12 +38,22 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         use fuels::{
             core::abi_decoder::ABIDecoder,
             macros::{Parameterize, Tokenizable},
-            types::{StringToken, traits::{Tokenizable, Parameterize}},
+            types::{StringToken, param_types::ParamType, errors::Error as SwayError, traits::{Tokenizable, Parameterize}},
         };
         use sha2::{Sha256, Digest};
         use std::str::FromStr;
         use fuel_indexer_plugin::wasm::bincode;
 
         type B256 = [u8; 32];
+
+        enum SwayOption<ParamType> {
+            None,
+            Some(ParamType),
+        }
+
+        enum SwayResult<ParamType> {
+            Ok(ParamType),
+            Err(SwayError),
+        }
     }
 }
