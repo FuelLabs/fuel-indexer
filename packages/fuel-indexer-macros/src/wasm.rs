@@ -44,7 +44,6 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         use std::str::FromStr;
         use fuel_indexer_plugin::wasm::bincode;
 
-        type B256 = [u8; 32];
 
         enum SwayOption<ParamType> {
             None,
@@ -55,5 +54,9 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
             Ok(ParamType),
             Err(SwayError),
         }
+
+        type B256 = [u8; 32];
+        type Option = SwayOption<ParamType>;
+        type Result = SwayResult<ParamType>;
     }
 }

@@ -122,13 +122,13 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u32" => quote! { u32 },
             "u64" => quote! { u64 },
             "u8" => quote! { u8 },
-            "enum Option" => {
+            "Option" => {
                 let generic_type = quote! { ParamType };
-                quote! { SwayOption<#generic_type> }
+                quote! { Option<#generic_type> }
             }
-            "enum Result" => {
+            "Result" => {
                 let generic_type = quote! { ParamType };
-                quote! { SwayResult<#generic_type> }
+                quote! { Result<#generic_type> }
             }
             "BlockData" => quote! { BlockData },
             "Call" => quote! { abi::Call },
