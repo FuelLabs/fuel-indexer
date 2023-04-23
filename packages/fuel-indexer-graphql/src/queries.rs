@@ -1,5 +1,6 @@
 use super::{arguments::QueryParams, graphql::GraphqlError};
 use fuel_indexer_database::DbType;
+
 use std::{collections::HashMap, fmt::Display};
 
 /// Represents a part of a user query. Each part can be a key-value pair
@@ -352,7 +353,7 @@ impl UserQuery {
 mod tests {
     use super::*;
 
-    use crate::db::arguments::{Filter, FilterType, ParsedValue};
+    use crate::arguments::{Filter, FilterType, ParsedValue};
 
     #[test]
     fn test_user_query_parse_query_elements() {
@@ -462,7 +463,7 @@ mod tests {
             alias: None,
         };
 
-        let expected = "SELECT json_build_object('hash', name_ident.block.hash, 'tx', json_build_object('hash', name_ident.tx.hash), 'height', name_ident.block.height) FROM name_ident.entity_name INNER JOIN name_ident.block ON name_ident.tx.block = name_ident.block.id WHERE name_ident.entity_name.id = 1"
+        let expected = "SELECT json_build_object('hash', name_ident.block.hash, 'tx', json_build_object('hash', name_ident.tx.hash), 'height', name_ident.block.height) FROM name_ident.entity_name INNER JOIN name_ident.block ON name_ident.tx.block = name_ident.block.id WHERE  name_ident.entity_name.id = 1 "
             .to_string();
         assert_eq!(expected, uq.to_sql(&DbType::Postgres).unwrap());
     }

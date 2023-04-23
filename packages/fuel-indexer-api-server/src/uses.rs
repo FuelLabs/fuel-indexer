@@ -17,6 +17,7 @@ use fuel_indexer_database::{
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
+use fuel_indexer_graphql::graphql::GraphqlQueryBuilder;
 use fuel_indexer_lib::{
     config::{
         auth::{AuthenticationStrategy, Claims},
@@ -28,9 +29,7 @@ use fuel_indexer_lib::{
         ServiceRequest, ServiceStatus,
     },
 };
-use fuel_indexer_schema::db::{
-    graphql::GraphqlQueryBuilder, manager::SchemaManager, tables::Schema,
-};
+use fuel_indexer_schema::db::{manager::SchemaManager, tables::Schema};
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};

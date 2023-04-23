@@ -1,0 +1,21 @@
+[package]
+name = "fuel-indexer-graphql"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+description = "Fuel Indexer GraphQL"
+
+[dependencies]
+fuel-indexer-database = { workspace = true }
+fuel-indexer-database-types = { workspace = true }
+fuel-indexer-graphql-parser = { workspace = true }
+fuel-indexer-schema = { workspace = true }
+fuel-indexer-types = { workspace = true }
+thiserror = { version = "1.0" }
+
+[dev-dependencies]
+pretty_assertions = "0.5.0"

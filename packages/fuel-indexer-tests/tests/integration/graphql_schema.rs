@@ -1,9 +1,9 @@
-use fuel_indexer_schema::db::{
+use fuel_indexer_graphql::{
     arguments::{Comparison, Filter, FilterType, ParsedValue, QueryParams},
     graphql::*,
     queries::{QueryElement, UserQuery},
-    tables::Schema,
 };
+use fuel_indexer_schema::db::tables::Schema;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 

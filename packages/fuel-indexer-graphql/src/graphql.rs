@@ -1,8 +1,8 @@
-use crate::db::arguments::{parse_argument_into_param, ParamType, QueryParams};
-use crate::db::queries::{JoinCondition, QueryElement, QueryJoinNode, UserQuery};
-use crate::db::tables::Schema;
-use crate::sql_types::DbType;
-use graphql_parser::query as gql;
+use super::arguments::{parse_argument_into_param, ParamType, QueryParams};
+use super::queries::{JoinCondition, QueryElement, QueryJoinNode, UserQuery};
+use fuel_indexer_schema::{db::tables::Schema, sql_types::DbType};
+
+use fuel_indexer_graphql_parser::query as gql;
 use std::collections::HashMap;
 use thiserror::Error;
 

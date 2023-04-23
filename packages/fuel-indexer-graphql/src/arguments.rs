@@ -1,7 +1,8 @@
-use super::{graphql::GraphqlError, tables::Schema};
-
+use super::graphql::GraphqlError;
 use fuel_indexer_database::DbType;
-use graphql_parser::query::Value;
+use fuel_indexer_schema::db::tables::Schema;
+
+use fuel_indexer_graphql_parser::query::Value;
 use std::{collections::BTreeMap, fmt};
 
 /// Represents the full set of parameters that can be applied to a query.
