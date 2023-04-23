@@ -31,6 +31,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         target_dir,
         verbose,
         skip_build,
+        stop_previous,
     } = command;
 
     if !skip_build {
@@ -63,7 +64,8 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let form = Form::new()
         .file("manifest", &manifest_path)?
         .file("schema", graphql_schema)?
-        .file("wasm", module.to_string())?;
+        .file("wasm", module.to_string())?
+        .text("stop_previous", stop_previous.to_string());
 
     let target = format!("{url}/api/index/{namespace}/{identifier}");
 

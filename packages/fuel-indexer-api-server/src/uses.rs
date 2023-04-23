@@ -200,6 +200,7 @@ pub(crate) async fn register_indexer_assets(
     }
 
     let mut assets: Vec<IndexAsset> = Vec::new();
+    let mut stop_previous: Option<bool> = None;
 
     if let Some(mut multipart) = multipart {
         let mut conn = pool.acquire().await?;
@@ -209,6 +210,25 @@ pub(crate) async fn register_indexer_assets(
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
+
+            if name == "stop_previous" {
+                stop_previous = Some(
+                    String::from_utf8_lossy(&data)
+                        .parse::<bool>()
+                        .expect("Invalid value for stop_previous"),
+                );
+            }
+
+            if stop_previous.unwrap_or_else(|| false) {
+                let _ = stop_indexer(
+                    Path((namespace.clone(), identifier.clone())),
+                    Extension(tx.clone()),
+                    Extension(pool.clone()),
+                    Extension(claims.clone()),
+                )
+                .await?;
+            }
+
             let asset_type =
                 IndexAssetType::from_str(&name).expect("Invalid asset type.");
 

@@ -65,6 +65,10 @@ pub struct Command {
     /// Do not build before deploying.
     #[clap(long, help = "Do not build before deploying.")]
     pub skip_build: bool,
+
+    /// Stop previous running indexer.
+    #[clap(long, help = "Stop previous running indexer.")]
+    pub stop_previous: bool,
 }
 
 impl Default for Command {
@@ -82,6 +86,7 @@ impl Default for Command {
             native: false,
             skip_build: false,
             target_dir: Some(std::path::PathBuf::from(".")),
+            stop_previous: true,
         }
     }
 }
