@@ -1,15 +1,10 @@
 
-use fuel_indexer_lib::config::GraphQLConfig;
-use fuel_indexer_postgres as postgres;
-use fuel_indexer_tests::assets::{
-    SIMPLE_WASM_MANIFEST, SIMPLE_WASM_SCHEMA, SIMPLE_WASM_WASM,
-};
-use fuel_indexer_tests::fixtures::{
-    api_server_app_postgres, authenticated_api_server_app_postgres, http_client,
-    indexer_service_postgres, TestPostgresDb,
-};
-use hyper::header::CONTENT_TYPE;
-use reqwest::multipart;
+
+
+
+
+
+
 use serde::{Deserialize, Serialize};
 
 
