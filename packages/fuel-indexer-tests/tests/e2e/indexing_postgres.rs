@@ -1,22 +1,19 @@
-use actix_service::Service;
-use actix_web::test;
-use bigdecimal::ToPrimitive;
+
+
+
 use fuel_indexer::IndexerService;
-use fuel_indexer_lib::manifest::Manifest;
+
 use fuel_indexer_tests::{
-    assets, defaults,
     fixtures::{
-        connect_to_deployed_contract, indexer_service_postgres,
-        setup_example_test_fuel_node, test_web::app, TestPostgresDb,
+        indexer_service_postgres,
+        setup_example_test_fuel_node, TestPostgresDb,
     },
-    utils::update_test_manifest_asset_paths,
 };
-use fuel_indexer_types::{Address, ContractId, Identity};
-use sqlx::{types::BigDecimal, Row};
-use std::str::FromStr;
+
+
+
 use tokio::{
     task::JoinHandle,
-    time::{sleep, Duration},
 };
 
 const REVERT_VM_CODE: u64 = 0x0004;

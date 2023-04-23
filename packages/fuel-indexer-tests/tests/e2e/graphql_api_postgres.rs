@@ -1,23 +1,21 @@
-use actix_service::Service;
-use actix_web::test;
+
+
 use axum::Router;
 use fuel_indexer::IndexerService;
-use fuel_indexer_lib::config::GraphQLConfig;
-use fuel_indexer_lib::manifest::Manifest;
+
+
 use fuel_indexer_tests::{
-    assets, defaults,
     fixtures::{
-        api_server_app_postgres, connect_to_deployed_contract, http_client,
-        indexer_service_postgres, setup_example_test_fuel_node, test_web::app,
+        api_server_app_postgres,
+        indexer_service_postgres, setup_example_test_fuel_node,
         TestPostgresDb,
     },
-    utils::update_test_manifest_asset_paths,
 };
-use hyper::header::CONTENT_TYPE;
-use serde_json::{Number, Value};
-use std::collections::HashMap;
+
+
+
 use tokio::task::JoinHandle;
-use tokio::time::{sleep, Duration};
+
 
 async fn setup_test_components() -> (
     JoinHandle<Result<(), ()>>,
@@ -28,7 +26,7 @@ async fn setup_test_components() -> (
     let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url)).await;
-    let api_app = api_server_app_postgres(Some(&test_db.url)).await;
+    let (api_app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
 
     (node_handle, test_db, srvc, api_app)
 }
