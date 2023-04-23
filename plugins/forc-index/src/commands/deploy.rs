@@ -66,7 +66,7 @@ pub struct Command {
     #[clap(long, help = "Do not build before deploying.")]
     pub skip_build: bool,
 
-    /// Stop previous running indexer.
+    /// Stop the previous running indexer.
     #[clap(long, help = "Stop previous running indexer.")]
     pub stop_previous: bool,
 }
