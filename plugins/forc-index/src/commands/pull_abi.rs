@@ -6,12 +6,12 @@ use std::path::PathBuf;
 #[derive(Debug, Parser)]
 pub struct Command {
     ////// URL of the ABI file
-    #[clap(long, help = "URL of the ABI file.")]
-    pub url: String,
+    #[clap(long, help = "Raw github URL of the ABI file.")]
+    pub raw_url: String,
 
     /// Name of contract
     #[clap(long, help = "Name of contract.")]
-    pub contract_name: String,
+    pub contract_name: Option<String>,
 
     /// Path at which to write the ABI.
     #[clap(
@@ -28,6 +28,6 @@ pub struct Command {
 }
 
 pub async fn exec(command: Command) -> Result<(), anyhow::Error> {
-    forc_index_pull_abi::init(command).await;
+    forc_index_pull_abi::init(command).await?;
     Ok(())
 }
