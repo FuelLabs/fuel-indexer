@@ -1,16 +1,11 @@
-use fuel_indexer_lib::config::GraphQLConfig;
-use fuel_indexer_postgres as postgres;
-use fuel_indexer_tests::assets::{
-    SIMPLE_WASM_MANIFEST, SIMPLE_WASM_SCHEMA, SIMPLE_WASM_WASM,
-};
-use fuel_indexer_tests::fixtures::{
-    api_server_app_postgres, authenticated_api_server_app_postgres, http_client,
-    indexer_service_postgres, TestPostgresDb,
-};
-use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
-use reqwest::multipart;
+
+
+
+
+
+
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
+
 
 const SIGNATURE: &str = "cb19384361af5dd7fec2a0052ca49d289f997238ea90590baf47f16ff0a33fb20170a43bd20208ce16daf443bad06dd66c1d1bf73f48b5ae53de682a5731d7d9";
 const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
