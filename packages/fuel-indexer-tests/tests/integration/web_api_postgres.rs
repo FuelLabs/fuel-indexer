@@ -1,12 +1,4 @@
-
-
-
-
-
-
-
 use serde::{Deserialize, Serialize};
-
 
 const SIGNATURE: &str = "cb19384361af5dd7fec2a0052ca49d289f997238ea90590baf47f16ff0a33fb20170a43bd20208ce16daf443bad06dd66c1d1bf73f48b5ae53de682a5731d7d9";
 const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";

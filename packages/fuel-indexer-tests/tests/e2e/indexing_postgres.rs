@@ -1,20 +1,10 @@
-
-
-
 use fuel_indexer::IndexerService;
 
-use fuel_indexer_tests::{
-    fixtures::{
-        indexer_service_postgres,
-        setup_example_test_fuel_node, TestPostgresDb,
-    },
+use fuel_indexer_tests::fixtures::{
+    indexer_service_postgres, setup_example_test_fuel_node, TestPostgresDb,
 };
 
-
-
-use tokio::{
-    task::JoinHandle,
-};
+use tokio::task::JoinHandle;
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =

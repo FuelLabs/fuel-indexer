@@ -1,21 +1,12 @@
-
-
 use axum::Router;
 use fuel_indexer::IndexerService;
 
-
-use fuel_indexer_tests::{
-    fixtures::{
-        api_server_app_postgres,
-        indexer_service_postgres, setup_example_test_fuel_node,
-        TestPostgresDb,
-    },
+use fuel_indexer_tests::fixtures::{
+    api_server_app_postgres, indexer_service_postgres, setup_example_test_fuel_node,
+    TestPostgresDb,
 };
 
-
-
 use tokio::task::JoinHandle;
-
 
 async fn setup_test_components() -> (
     JoinHandle<Result<(), ()>>,
