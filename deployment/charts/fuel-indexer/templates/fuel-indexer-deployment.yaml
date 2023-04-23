@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.app.name }}
-          image: {{ .Values.fuelIndexerImage }} 
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}" 
           command: ["./fuel-indexer"]
           args:
             - "run"
@@ -32,15 +32,15 @@ spec:
             - "--fuel-node-port"
             - "{{ .Values.app.fuel_node_port }}"
             - "--postgres-password"
-            - "{{ .Values.password }}"
+            - "{{ .Values.app.postgres.password }}"
             - "--postgres-host"
-            - "{{ .Release.Name }}-postgres"
+            - "{{ .Values.app.postgres.host }}"
             - "--postgres-port"
             - "5432"
             - "--postgres-user"
-            - "postgres"
+            - "{{ .Values.app.postgres.username }}"
             - "--postgres-database"
-            - "postgres"
+            - "{{ .Values.app.postgres.database }}"
             - "--graphql-api-host"
             - "0.0.0.0"
             - "--run-migrations"
@@ -49,23 +49,16 @@ spec:
           - name: POSTGRES_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: {{ .Release.Name }} 
+                name: {{ .Release.Name }}-postgres-secret
                 key: POSTGRES_PASSWORD
-
           - name: POSTGRES_HOST
-            value: "{{ .Release.Name }}-postgres"
-
+            value: "{{ .Values.app.postgres.host }}"
           - name: POSTGRES_USER
-            value: "postgres"
-
+            value: "{{ .Values.app.postgres.username }}"
           - name: POSTGRES_PORT
             value: "5432"
-
           - name: POSTGRES_DATABASE
-            value: "postgres"
-
-
-          resources: {}
+            value: "{{ .Values.app.postgres.database }}"
           imagePullPolicy: {{ .Values.app.image.pullPolicy }}
           ports:
             - name: http

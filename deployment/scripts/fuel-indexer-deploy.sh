@@ -8,7 +8,7 @@ set -o allexport && source .env && set +o allexport
 if [ "${k8s_provider}" == "eks" ]; then
     echo "Updating your kube context locally ...."
     aws eks update-kubeconfig --name ${TF_VAR_eks_cluster_name}
-    cd ../charts
+    cd ../charts/fuel-indexer
     mv values.yaml values.template
     envsubst < values.template > values.yaml
     rm values.template
@@ -17,7 +17,7 @@ if [ "${k8s_provider}" == "eks" ]; then
               --values values.yaml \
               --install \
               --create-namespace \
-              --namespace=${k8s_namespace} \
+              --namespace=${k8s_indexer_namespace} \
               --wait \
               --timeout 8000s \
               --debug    
