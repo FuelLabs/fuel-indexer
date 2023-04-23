@@ -6,7 +6,7 @@ use fuel_indexer_graphql_parser::parse_query;
 fn test_error(filename: &str) {
     let mut buf = String::with_capacity(1024);
     let path = format!("tests/query_errors/{}.txt", filename);
-    let mut f = File::open(&path).unwrap();
+    let mut f = File::open(path).unwrap();
     f.read_to_string(&mut buf).unwrap();
     let mut iter = buf.splitn(2, "\n---\n");
     let graphql = iter.next().unwrap();
