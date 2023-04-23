@@ -219,7 +219,7 @@ pub(crate) async fn register_indexer_assets(
                 );
             }
 
-            if stop_previous.unwrap_or_else(|| false) {
+            if stop_previous.unwrap_or(false) {
                 let _ = stop_indexer(
                     Path((namespace.clone(), identifier.clone())),
                     Extension(tx.clone()),
