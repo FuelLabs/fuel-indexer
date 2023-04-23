@@ -1,52 +1,36 @@
-use crate::cli::PullAbiCommand;
-use anyhow::anyhow;
+use crate::{cli::PullAbiCommand, utils::project_dir_info};
 use reqwest::Url;
-use std::{fs::File, io::prelude::*};
-use tracing::{info};
+use std::{fs::File, io::prelude::*, path::PathBuf};
 
 pub async fn init(command: PullAbiCommand) -> anyhow::Result<()> {
     let PullAbiCommand {
-        raw_url,
+        url,
         contract_name,
         path,
         verbose,
         ..
     } = command;
 
-    let url = Url::parse(&raw_url)?;
-    if url.host_str() != Some("raw.githubusercontent.com") {
-        return Err(anyhow!("URL must be a raw github URL (https://raw.githubusercontent.com/...)"));
-    }
-    
+    let url = Url::parse(&url)?;
     let client = reqwest::Client::new();
-    let response = client.get(&raw_url).send().await?;
+    let response = client.get(url).send().await?;
     let content = response.text().await?;
 
-    let file_name = match contract_name {
-        Some(name) => format!("{}-abi.json", name),
+    let file_path = match path {
+        Some(p) => p,
         None => {
-            url.path_segments()
-                .ok_or(anyhow!("Invalid URL path"))?
-                .last()
-                .ok_or(anyhow!("Invalid URL path"))?
-                .to_owned()
+            let file_name = "contract_abi.json";
+            let current_dir = std::env::current_dir()?;
+            current_dir.join(file_name)
         }
     };
 
-    let output_dir = match path {
-        Some(p) => p, 
-        None => std::env::current_dir()?
-    };
-
-    let file_path = output_dir.join(file_name);
     let mut file = File::create(&file_path)?;
     file.write_all(content.as_bytes())?;
 
     if verbose {
-        info!("ABI file saved to: {:?}", file_path);
+        println!("ABI file saved to: {:?}", file_path);
     }
-
-    info!("Built ABI ✅ using `forc build`");
 
     Ok(())
 }
