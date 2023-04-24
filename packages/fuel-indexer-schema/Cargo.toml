@@ -17,7 +17,6 @@ fuel-indexer-graphql-parser = { workspace = true }
 fuel-indexer-types = { workspace = true }
 hex = "0.4"
 serde = { version = "1.0", default-features = false, features = ["derive"] }
-serde_json = "1.0"
 sha2 = "0.9"
 sqlx = { version = "0.6", optional = true, features = ["postgres", "runtime-tokio-rustls", "bigdecimal"] }
 thiserror = { version = "1.0", optional = true }
