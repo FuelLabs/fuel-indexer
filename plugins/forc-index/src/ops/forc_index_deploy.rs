@@ -67,7 +67,8 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .file("wasm", module.to_string())?
         .text("stop_previous", stop_previous.to_string());
 
-    let target = format!("{url}/api/index/{namespace}/{identifier}");
+    let target =
+        format!("{url}/api/index/{namespace}/{identifier}?stop_previous={stop_previous}");
 
     if verbose {
         info!(

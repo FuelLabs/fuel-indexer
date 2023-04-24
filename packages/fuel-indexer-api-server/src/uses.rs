@@ -7,7 +7,7 @@ use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
-    extract::{multipart::Multipart, Extension, Json, Path},
+    extract::{self, multipart::Multipart, Extension, Json, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -34,6 +34,7 @@ use fuel_indexer_schema::db::{
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
+use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
     convert::From,
@@ -120,7 +121,7 @@ pub(crate) async fn health_check(
     })))
 }
 
-pub(crate) async fn stop_indexer(
+pub(crate) async fn remove_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -187,12 +188,18 @@ pub(crate) async fn revert_indexer(
     })))
 }
 
+#[derive(Debug, Deserialize)]
+pub struct QueryParams {
+    stop_previous: Option<bool>,
+}
+
 pub(crate) async fn register_indexer_assets(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
+    params: Query<QueryParams>,
     multipart: Option<Multipart>,
 ) -> ApiResult<axum::Json<Value>> {
     if claims.is_unauthenticated() {
@@ -200,7 +207,6 @@ pub(crate) async fn register_indexer_assets(
     }
 
     let mut assets: Vec<IndexAsset> = Vec::new();
-    let mut stop_previous: Option<bool> = None;
 
     if let Some(mut multipart) = multipart {
         let mut conn = pool.acquire().await?;
@@ -211,16 +217,8 @@ pub(crate) async fn register_indexer_assets(
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
 
-            if name == "stop_previous" {
-                stop_previous = Some(
-                    String::from_utf8_lossy(&data)
-                        .parse::<bool>()
-                        .expect("Invalid value for stop_previous"),
-                );
-            }
-
-            if stop_previous.unwrap_or(false) {
-                let _ = stop_indexer(
+            if params.stop_previous.unwrap_or(false) {
+                let _ = remove_indexer(
                     Path((namespace.clone(), identifier.clone())),
                     Extension(tx.clone()),
                     Extension(pool.clone()),
