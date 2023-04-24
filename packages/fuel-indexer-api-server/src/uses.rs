@@ -8,7 +8,7 @@ use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
     extract::{multipart::Multipart, Extension, Json, Path},
-    http::{Request, StatusCode},
+    http::StatusCode,
     response::{IntoResponse, Response},
 };
 use fuel_crypto::{Message, Signature};
@@ -44,7 +44,10 @@ use tokio::sync::mpsc::Sender;
 use tracing::error;
 
 #[cfg(feature = "metrics")]
-use fuel_indexer_metrics::{encode_metrics_response, METRICS};
+use fuel_indexer_metrics::encode_metrics_response;
+
+#[cfg(feature = "metrics")]
+use http::Request;
 
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
@@ -72,9 +75,6 @@ pub(crate) async fn query_graph(
 }
 
 pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
-    #[cfg(feature = "metrics")]
-    METRICS.web.health.requests.inc();
-
     let https = HttpsConnectorBuilder::new()
         .with_native_roots()
         .https_or_http()
@@ -393,23 +393,7 @@ pub async fn gql_playground(
     Ok(response)
 }
 
+#[cfg(feature = "metrics")]
 pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
-    #[cfg(feature = "metrics")]
-    {
-        match encode_metrics_response() {
-            Ok((buff, fmt_type)) => Response::builder()
-                .status(StatusCode::OK)
-                .header(http::header::CONTENT_TYPE, &fmt_type)
-                .body(Body::from(buff))
-                .unwrap(),
-            Err(_e) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from("Error."))
-                .unwrap(),
-        }
-    }
-    #[cfg(not(feature = "metrics"))]
-    {
-        (StatusCode::NOT_FOUND, "Metrics collection disabled.")
-    }
+    encode_metrics_response()
 }
