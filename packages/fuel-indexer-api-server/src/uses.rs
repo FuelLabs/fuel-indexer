@@ -1,14 +1,13 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::{QueryResponse, VerifySignatureRequest},
-    GraphQLQueryParams,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
-    extract::{multipart::Multipart, Extension, Json, Path, Query},
+    extract::{multipart::Multipart, Extension, Json, Path},
     http::{Request, StatusCode},
     response::{IntoResponse, Response},
 };
@@ -50,38 +49,32 @@ pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
-    params: Query<GraphQLQueryParams>,
     req: GraphQLRequest,
 ) -> ApiResult<axum::Json<Value>> {
-    let schema = manager
+    let query = req.into_inner().query;
+
+    match manager
         .read()
         .await
         .load_schema(&namespace, &identifier)
-        .await?;
-
-    if params.introspect {
-        let introspection = schema.introspect();
-        println!("introspection: {:#?}", introspection);
-        println!("schema: {:#?}", schema);
-        todo!();
-    } else {
-        match manager
-            .read()
-            .await
-            .load_schema(&namespace, &identifier)
-            .await
-        {
-            Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
-                Ok(query_res) => Ok(axum::Json(query_res)),
-                Err(e) => {
-                    error!("query_graph error: {e}");
-                    Err(e)
+        .await
+    {
+        Ok(schema) => {
+            if query.contains("IntrospectionQuery") {
+                return Ok(axum::Json(json!({ "data": schema.introspect() })));
+            } else {
+                match run_query(&query, schema, &pool).await {
+                    Ok(query_res) => Ok(axum::Json(query_res)),
+                    Err(e) => {
+                        error!("query_graph error: {e}");
+                        Err(e)
+                    }
                 }
-            },
-            Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
-                "The graph '{namespace}.{identifier}' was not found."
-            )))),
+            }
         }
+        Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
+            "The graph '{namespace}.{identifier}' was not found."
+        )))),
     }
 }
 
@@ -368,7 +361,7 @@ pub(crate) async fn verify_signature(
 }
 
 pub async fn run_query(
-    query: String,
+    query: &String,
     schema: Schema,
     pool: &IndexerConnectionPool,
 ) -> ApiResult<Value> {
