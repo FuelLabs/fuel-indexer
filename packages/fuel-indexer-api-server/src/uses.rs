@@ -1,6 +1,7 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::VerifySignatureRequest,
+    IndexerQueryParams,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
@@ -34,7 +35,6 @@ use fuel_indexer_schema::db::{
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
-use serde::Deserialize;
 use serde_json::{json, Value};
 use std::{
     convert::From,
@@ -188,18 +188,13 @@ pub(crate) async fn revert_indexer(
     })))
 }
 
-#[derive(Debug, Deserialize)]
-pub struct QueryParams {
-    stop_previous: Option<bool>,
-}
-
 pub(crate) async fn register_indexer_assets(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
-    params: Query<QueryParams>,
+    params: Query<IndexerQueryParams>,
     multipart: Option<Multipart>,
 ) -> ApiResult<axum::Json<Value>> {
     if claims.is_unauthenticated() {
