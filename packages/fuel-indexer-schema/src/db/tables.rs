@@ -13,6 +13,7 @@ use fuel_indexer_graphql_parser::schema::{
 };
 use fuel_indexer_graphql_parser::{parse_schema, schema::Document};
 use fuel_indexer_types::type_id;
+use serde_json::{json, Value};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
@@ -421,6 +422,62 @@ impl Schema {
                 }
             }
         }
+    }
+
+    pub fn introspect(&self) -> Value {
+        let mut types = vec![json!({
+            "kind": "OBJECT",
+            "name": "Query",
+            "fields": [
+                {
+                    "name": &self.query,
+                    "type": {
+                        "kind": "NON_NULL",
+                        "ofType": {
+                            "kind": "OBJECT",
+                            "name": &self.query,
+                        },
+                    },
+                },
+            ],
+        })];
+
+        for (type_name, fields) in self.fields.iter() {
+            let mut fields_json = vec![];
+
+            for (field_name, field_type) in fields.iter() {
+                fields_json.push(json!({
+                    "name": field_name,
+                    "type": {
+                        "kind": "NON_NULL",
+                        "ofType": {
+                            "kind": "SCALAR",
+                            "name": field_type,
+                        },
+                    },
+                }));
+            }
+
+            types.push(json!({
+                "kind": "OBJECT",
+                "name": type_name,
+                "fields": fields_json,
+            }));
+        }
+
+        //We don't support mutations or subscriptions so these fields are null.
+        json!({
+            "data": {
+                "__schema": {
+                    "queryType": {
+                        "name": "Query",
+                    },
+                    "mutationType": Value::Null,
+                    "subscriptionType": Value::Null,
+                    "types": types,
+                },
+            },
+        })
     }
 }
 

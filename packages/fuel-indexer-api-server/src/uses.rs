@@ -53,16 +53,18 @@ pub(crate) async fn query_graph(
     params: Query<GraphQLQueryParams>,
     req: GraphQLRequest,
 ) -> ApiResult<axum::Json<Value>> {
-    if params.introspect {
-        todo!()
-    } else {
-        let schema = manager
-            .read()
-            .await
-            .load_schema(&namespace, &identifier)
-            .await?;
-        println!("schema: {:#?}", schema);
+    let schema = manager
+        .read()
+        .await
+        .load_schema(&namespace, &identifier)
+        .await?;
 
+    if params.introspect {
+        let introspection = schema.introspect();
+        println!("introspection: {:#?}", introspection);
+        println!("schema: {:#?}", schema);
+        todo!();
+    } else {
         match manager
             .read()
             .await
