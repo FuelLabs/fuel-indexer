@@ -1,4 +1,5 @@
 extern crate alloc;
+
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
@@ -578,6 +579,23 @@ mod fuel_indexer_test {
 
         let entity = RevertEntity {
             id: 123,
+            contract_id,
+            error_val,
+        };
+
+        entity.save();
+    }
+
+    fn fuel_indexer_triger_enum_error(enum_error: abi::Revert) {
+        Logger::info("fuel_indexer_triger_enum_error handling trigger_enum_error event.");
+
+        let abi::Revert {
+            contract_id,
+            error_val,
+        } = enum_error;
+
+        let entity = EnumError {
+            id: 42,
             contract_id,
             error_val,
         };
