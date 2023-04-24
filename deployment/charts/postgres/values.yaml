@@ -1,0 +1,15 @@
+# Default values for fuel indexer for environment
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+postgres:
+  replicaCount: 1
+  password: ${postgres_password}
+  image:
+    repository: ${postgres_image_repository}
+    tag: ${postgres_image_tag}
+    pullPolicy: Always
+  volume: 
+    storageclass: ${postgres_pvc_storage_class}
+    storagerequests: ${postgres_pvc_storage_requests}
+    accessmodes: ReadWriteOnce

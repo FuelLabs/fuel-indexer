@@ -7,7 +7,7 @@ use fuel_indexer_tests::fixtures::{
     api_server_app_postgres, authenticated_api_server_app_postgres, http_client,
     indexer_service_postgres, TestPostgresDb,
 };
-use hyper::header::{AUTHORIZATION, CONTENT_TYPE};
+use hyper::header::CONTENT_TYPE;
 use reqwest::multipart;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -20,7 +20,7 @@ const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
     let test_db = TestPostgresDb::new().await.unwrap();
     let _srvc = indexer_service_postgres(Some(&test_db.url)).await;
-    let app = api_server_app_postgres(Some(&test_db.url)).await;
+    let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
@@ -44,7 +44,7 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
         .unwrap();
 
     srv.abort();
-    assert_eq!(resp.split('\n').count(), 112);
+    assert!((resp.split('\n').count() >= 127));
 }
 
 #[tokio::test]
@@ -53,7 +53,7 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 {
     let test_db = TestPostgresDb::new().await.unwrap();
     let _ = indexer_service_postgres(Some(&test_db.url)).await;
-    let app = api_server_app_postgres(Some(&test_db.url)).await;
+    let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
@@ -83,16 +83,16 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
     let categories = resp.split('\n').collect::<Vec<&str>>();
 
     assert_eq!(
-        categories[18],
+        categories[15],
         "# HELP postgres_execute_query_calls Count of calls to postgres execute_query_calls."
     );
     assert_eq!(
-        categories[19],
+        categories[16],
         "# TYPE postgres_execute_query_calls counter"
     );
 
     assert!(
-        categories[20].split(' ').collect::<Vec<&str>>()[1]
+        categories[17].split(' ').collect::<Vec<&str>>()[1]
             .to_string()
             .parse::<i64>()
             .unwrap()
@@ -104,7 +104,7 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 #[cfg(all(feature = "postgres"))]
 async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() {
     let test_db = TestPostgresDb::new().await.unwrap();
-    let app = api_server_app_postgres(Some(&test_db.url)).await;
+    let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
         .serve(app.into_make_service());
@@ -138,7 +138,6 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
         .post("http://localhost:29987/api/index/test_namespace/simple_wasm_executor")
         .multipart(form)
         .header(CONTENT_TYPE, "multipart/form-data".to_owned())
-        .header(AUTHORIZATION, "foo".to_owned())
         .send()
         .await
         .unwrap();

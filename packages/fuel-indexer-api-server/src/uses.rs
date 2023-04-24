@@ -8,7 +8,7 @@ use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
     extract::{multipart::Multipart, Extension, Json, Path},
-    http::{Request, StatusCode},
+    http::StatusCode,
     response::{IntoResponse, Response},
 };
 use fuel_crypto::{Message, Signature};
@@ -44,7 +44,10 @@ use tokio::sync::mpsc::Sender;
 use tracing::error;
 
 #[cfg(feature = "metrics")]
-use fuel_indexer_metrics::{encode_metrics_response, METRICS};
+use fuel_indexer_metrics::encode_metrics_response;
+
+#[cfg(feature = "metrics")]
+use http::Request;
 
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
@@ -72,9 +75,6 @@ pub(crate) async fn query_graph(
 }
 
 pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
-    #[cfg(feature = "metrics")]
-    METRICS.web.health.requests.inc();
-
     let https = HttpsConnectorBuilder::new()
         .with_native_roots()
         .https_or_http()
@@ -122,7 +122,7 @@ pub(crate) async fn health_check(
 
 pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
-    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+    Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
@@ -140,28 +140,24 @@ pub(crate) async fn stop_indexer(
         error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
 
         return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
-    } else {
-        queries::commit_transaction(&mut conn).await?;
-
-        if let Some(tx) = tx {
-            tx.send(ServiceRequest::IndexStop(IndexStopRequest {
-                namespace,
-                identifier,
-            }))
-            .await?;
-
-            return Ok(Json(json!({
-                "success": "true"
-            })));
-        }
     }
 
-    Err(ApiError::default())
+    queries::commit_transaction(&mut conn).await?;
+
+    tx.send(ServiceRequest::IndexStop(IndexStopRequest {
+        namespace,
+        identifier,
+    }))
+    .await?;
+
+    Ok(Json(json!({
+        "success": "true"
+    })))
 }
 
 pub(crate) async fn revert_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
-    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+    Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
@@ -178,26 +174,22 @@ pub(crate) async fn revert_indexer(
     )
     .await?;
 
-    if let Some(tx) = tx {
-        tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
-            penultimate_asset_id: asset.id,
-            penultimate_asset_bytes: asset.bytes,
-            namespace,
-            identifier,
-        }))
-        .await?;
+    tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
+        penultimate_asset_id: asset.id,
+        penultimate_asset_bytes: asset.bytes,
+        namespace,
+        identifier,
+    }))
+    .await?;
 
-        return Ok(Json(json!({
-            "success": "true"
-        })));
-    }
-
-    Err(ApiError::default())
+    Ok(Json(json!({
+        "success": "true"
+    })))
 }
 
 pub(crate) async fn register_indexer_assets(
     Path((namespace, identifier)): Path<(String, String)>,
-    Extension(tx): Extension<Option<Sender<ServiceRequest>>>,
+    Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -207,12 +199,12 @@ pub(crate) async fn register_indexer_assets(
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
+    let mut assets: Vec<IndexAsset> = Vec::new();
+
     if let Some(mut multipart) = multipart {
         let mut conn = pool.acquire().await?;
 
         let _ = queries::start_transaction(&mut conn).await?;
-
-        let mut assets: Vec<IndexAsset> = Vec::new();
 
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap_or("").to_string();
@@ -269,13 +261,11 @@ pub(crate) async fn register_indexer_assets(
 
         let _ = queries::commit_transaction(&mut conn).await?;
 
-        if let Some(tx) = tx {
-            tx.send(ServiceRequest::AssetReload(AssetReloadRequest {
-                namespace,
-                identifier,
-            }))
-            .await?;
-        }
+        tx.send(ServiceRequest::AssetReload(AssetReloadRequest {
+            namespace,
+            identifier,
+        }))
+        .await?;
 
         return Ok(Json(json!({
             "success": "true",
@@ -352,16 +342,15 @@ pub(crate) async fn verify_signature(
 
                 queries::delete_nonce(&mut conn, &nonce).await?;
 
-                Ok(Json(json!({ "token": token })))
+                return Ok(Json(json!({ "token": token })));
             }
             _ => {
                 error!("Unsupported authentication strategy.");
                 unimplemented!();
             }
         }
-    } else {
-        unreachable!()
     }
+    unreachable!();
 }
 
 pub async fn run_query(
@@ -404,23 +393,7 @@ pub async fn gql_playground(
     Ok(response)
 }
 
+#[cfg(feature = "metrics")]
 pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
-    #[cfg(feature = "metrics")]
-    {
-        match encode_metrics_response() {
-            Ok((buff, fmt_type)) => Response::builder()
-                .status(StatusCode::OK)
-                .header(http::header::CONTENT_TYPE, &fmt_type)
-                .body(Body::from(buff))
-                .unwrap(),
-            Err(_e) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from("Error."))
-                .unwrap(),
-        }
-    }
-    #[cfg(not(feature = "metrics"))]
-    {
-        (StatusCode::NOT_FOUND, "Metrics collection disabled.")
-    }
+    encode_metrics_response()
 }

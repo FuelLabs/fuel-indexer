@@ -10,7 +10,7 @@ if [ "${k8s_provider}" == "eks" ]; then
     aws eks update-kubeconfig --name ${TF_VAR_eks_cluster_name}
     echo "Deleting fuel-indexer helm chart on ${TF_VAR_eks_cluster_name} ...."
     helm delete fuel-indexer \
-              --namespace ${k8s_namespace} \
+              --namespace ${k8s_indexer_namespace} \
               --wait \
               --timeout 8000s \
               --debug

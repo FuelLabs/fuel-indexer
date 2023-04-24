@@ -5,8 +5,10 @@ pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
 pub const INDEX_LIB_FILENAME: &str = "lib.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
-pub const INDEXER_SERVICE_HOST: &str = "http://localhost:29987";
+pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
+pub const GRAPHQL_API_HOST: &str = defaults::GRAPHQL_API_HOST;
 pub const GRAPHQL_API_PORT: &str = defaults::GRAPHQL_API_PORT;
+pub const WASM_TARGET: &str = "wasm32-unknown-unknown";
 pub const INDEXER_TARGET: &str = "wasm32-unknown-unknown";
 pub const BUILD_RELEASE_PROFILE: &str = "true";
 
@@ -22,13 +24,11 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.9", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.9", features = ["native-execution"] }}
-fuel-indexer-schema = {{ version = "0.9", default-features = false }}
+fuel-indexer-macros = {{ version = "0.10", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.10", features = ["native-execution"] }}
+fuel-indexer-schema = {{ version = "0.10", default-features = false }}
 fuel-tx = "0.26"
-fuels = {{ version = "0.40.0" }}
-fuels-core = {{ version = "0.40.0" }}
-fuels-types = {{ version = "0.40.0", default-features = false }}
+fuels = {{ version = "0.40.0", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
@@ -47,13 +47,11 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.9", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.9" }}
-fuel-indexer-schema = {{ version = "0.9", default-features = false }}
+fuel-indexer-macros = {{ version = "0.10", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.10" }}
+fuel-indexer-schema = {{ version = "0.10", default-features = false }}
 fuel-tx = "0.26"
-fuels-core = {{ version = "0.40.0", default-features = false }}
-fuels-macros = {{ version = "0.40.0" }}
-fuels-types ={{ version = "0.40.0", default-features = false }}
+fuels = {{ version = "0.40.0", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
@@ -91,6 +89,12 @@ abi: ~
 # The particular start block after which you'd like your indexer to start indexing events.
 start_block: ~
 
+# The `fuel_client` denotes the address (host, port combination) of the running Fuel client
+# that you would like your indexer to index events from. In order to use this per-indexer
+# `fuel_client` option, the indexer service at which your indexer is deployed will have to run
+# with the `--indexer_net_config` option.
+fuel_client:
+
 # The contract_id specifies which particular contract you would like your index to subscribe to.
 contract_id: ~
 
@@ -109,7 +113,7 @@ module:
 report_metrics: true
 
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
-# with the latest block if it has fallen out of sync. 
+# with the latest block if it has fallen out of sync.
 resumable: ~
 "#
     )

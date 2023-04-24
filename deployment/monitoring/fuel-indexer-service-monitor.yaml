@@ -2,7 +2,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: fuel-indexer
-  namespace: ${k8s_namespace}
+  namespace: ${k8s_indexer_namespace}
   labels:
     release: kube-prometheus
 spec:

@@ -724,4 +724,5 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
 
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 42);
     assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
+    assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
 }

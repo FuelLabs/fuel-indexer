@@ -5,13 +5,14 @@ use crate::{
 };
 pub use clap::Parser;
 use serde::{Deserialize, Serialize};
+use std::fmt::{Debug, Formatter};
 use strum::{AsRefStr, EnumString};
 
 const JWT_SECRET_KEY: &str = "JWT_SECRET";
 const JWT_ISSUER_KEY: &str = "JWT_ISSUER";
 
 /// Indexer service authentication configuration.
-#[derive(Clone, Deserialize, Debug)]
+#[derive(Clone, Deserialize)]
 pub struct AuthenticationConfig {
     pub enabled: bool,
     #[serde(default)]
@@ -30,6 +31,28 @@ impl Default for AuthenticationConfig {
             jwt_issuer: None,
             jwt_expiry: None,
         }
+    }
+}
+
+impl Debug for AuthenticationConfig {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let AuthenticationConfig {
+            enabled,
+            jwt_expiry,
+            strategy,
+            jwt_issuer,
+            ..
+        } = self;
+        let _ = f
+            .debug_struct("AuthenticationConfig")
+            .field("enabled", &enabled)
+            .field("strategy", &strategy)
+            .field("jwt_secret", &"XXXX")
+            .field("jwt_issuer", &jwt_issuer)
+            .field("jwt_expiry", &jwt_expiry)
+            .finish();
+
+        Ok(())
     }
 }
 
