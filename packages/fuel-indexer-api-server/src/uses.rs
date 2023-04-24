@@ -1,13 +1,14 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::{QueryResponse, VerifySignatureRequest},
+    GraphQLQueryParams,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
-    extract::{multipart::Multipart, Extension, Json, Path},
+    extract::{multipart::Multipart, Extension, Json, Path, Query},
     http::{Request, StatusCode},
     response::{IntoResponse, Response},
 };
@@ -49,24 +50,36 @@ pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
+    params: Query<GraphQLQueryParams>,
     req: GraphQLRequest,
 ) -> ApiResult<axum::Json<Value>> {
-    match manager
-        .read()
-        .await
-        .load_schema(&namespace, &identifier)
-        .await
-    {
-        Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
-            Ok(query_res) => Ok(axum::Json(query_res)),
-            Err(e) => {
-                error!("query_graph error: {e}");
-                Err(e)
-            }
-        },
-        Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
-            "The graph '{namespace}.{identifier}' was not found."
-        )))),
+    if params.introspect {
+        todo!()
+    } else {
+        let schema = manager
+            .read()
+            .await
+            .load_schema(&namespace, &identifier)
+            .await?;
+        println!("schema: {:#?}", schema);
+
+        match manager
+            .read()
+            .await
+            .load_schema(&namespace, &identifier)
+            .await
+        {
+            Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
+                Ok(query_res) => Ok(axum::Json(query_res)),
+                Err(e) => {
+                    error!("query_graph error: {e}");
+                    Err(e)
+                }
+            },
+            Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
+                "The graph '{namespace}.{identifier}' was not found."
+            )))),
+        }
     }
 }
 
