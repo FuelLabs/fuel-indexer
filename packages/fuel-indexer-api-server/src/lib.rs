@@ -6,3 +6,5 @@ pub mod cli;
 pub(crate) mod commands;
 pub(crate) mod models;
 mod uses;
+
+pub use api::{ApiError, ApiResult, GraphQlApi};

@@ -1,6 +1,6 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
-    models::{QueryResponse, VerifySignatureRequest},
+    models::{PageType, QueryResponse, VerifySignatureRequest},
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
@@ -51,23 +51,18 @@ pub(crate) async fn query_graph(
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
     req: GraphQLRequest,
 ) -> ApiResult<axum::Json<Value>> {
-    match manager
+    let schema = manager
         .read()
         .await
         .load_schema(&namespace, &identifier)
-        .await
-    {
-        Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
-            Ok(query_res) => Ok(axum::Json(query_res)),
-            Err(e) => {
-                error!("query_graph error: {e}");
-                Err(e)
-            }
-        },
-        Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
-            "The graph '{namespace}.{identifier}' was not found."
-        )))),
-    }
+        .await?;
+
+    let res = match run_query(req.into_inner().query, schema, &pool).await? {
+        PageType::Plain(v) => axum::Json(json!({ "data": v })),
+        PageType::Paginated(v) => v.into(),
+    };
+
+    Ok(res)
 }
 
 pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
@@ -356,32 +351,14 @@ pub async fn run_query(
     query: String,
     schema: Schema,
     pool: &IndexerConnectionPool,
-) -> ApiResult<Value> {
+) -> ApiResult<PageType> {
     let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
-
     let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
 
     let mut conn = pool.acquire().await?;
-
-    match queries::run_query(&mut conn, queries).await {
-        Ok(ans) => {
-            let ans_json: Value = serde_json::from_value(ans)?;
-
-            // If the response is paginated, remove the array wrapping.
-            if ans_json[0].get("page_info").is_some() {
-                Ok(serde_json::json!(QueryResponse {
-                    data: ans_json[0].clone()
-                }))
-            } else {
-                Ok(serde_json::json!(QueryResponse { data: ans_json }))
-            }
-        }
-        Err(e) => {
-            error!("Error querying database: {e}.");
-            Err(e.into())
-        }
-    }
+    let data: QueryResponse = queries::run_query(&mut conn, queries).await?;
+    PageType::try_from(data)
 }
 
 pub async fn gql_playground(
