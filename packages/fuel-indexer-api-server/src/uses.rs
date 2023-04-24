@@ -7,7 +7,7 @@ use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
-    extract::{self, multipart::Multipart, Extension, Json, Path, Query},
+    extract::{multipart::Multipart, Extension, Json, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
