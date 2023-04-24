@@ -28,9 +28,7 @@ fuel-indexer-macros = {{ version = "0.10", default-features = false }}
 fuel-indexer-plugin = {{ version = "0.10", features = ["native-execution"] }}
 fuel-indexer-schema = {{ version = "0.10", default-features = false }}
 fuel-tx = "0.26"
-fuels = {{ version = "0.40.0" }}
-fuels-core = {{ version = "0.40.0" }}
-fuels-types = {{ version = "0.40.0", default-features = false }}
+fuels = {{ version = "0.40.0", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
@@ -53,9 +51,7 @@ fuel-indexer-macros = {{ version = "0.10", default-features = false }}
 fuel-indexer-plugin = {{ version = "0.10" }}
 fuel-indexer-schema = {{ version = "0.10", default-features = false }}
 fuel-tx = "0.26"
-fuels-core = {{ version = "0.40.0", default-features = false }}
-fuels-macros = {{ version = "0.40.0" }}
-fuels-types ={{ version = "0.40.0", default-features = false }}
+fuels = {{ version = "0.40.0", default-features = false }}
 getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
