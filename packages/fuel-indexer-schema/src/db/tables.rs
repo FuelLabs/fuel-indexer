@@ -467,7 +467,6 @@ impl Schema {
 
         //We don't support mutations or subscriptions so these fields are null.
         json!({
-            "data": {
                 "__schema": {
                     "queryType": {
                         "name": "Query",
@@ -476,7 +475,6 @@ impl Schema {
                     "subscriptionType": Value::Null,
                     "types": types,
                 },
-            },
         })
     }
 }

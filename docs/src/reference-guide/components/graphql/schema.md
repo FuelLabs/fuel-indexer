@@ -38,3 +38,26 @@ Required fields are denoted with a `!` following its type; for example, the `val
 In contrast, optional fields are not required to be present for the indexer to persist the entity in storage. You can denote an optional field by just using the type name; for example, the `optional_value` field of the `SecondThing` type is optional, and should be a `UInt8` if present. If it's possible that a value might not always exist in the data you wish to index, consider making that the corresponding field optional. In your indexer code, you will need to use the `Option` Rust type when assigning a value to an optional field; values that are present should be assigned after being wrapped in `Some(..)` while absent values should be assigned using `None`.
 
 > Important: The `ID` field is _always_ required. An indexer **will** return an error if an optional value is used for the `ID` field.
+
+## Introspection
+Introspection is a powerful feature in GraphQL that allows you to query the schema and retrieve its structure, types, and fields. Read more about introspection in the [GraphQL Docs](https://graphql.org/learn/introspection/)
+
+To perform an introspection query, you can use the special `__schema` field, which will return information about the schema's types and fields. Here's an example introspection query that retrieves information about the types and their fields in the schema:
+
+```graphql
+query IntrospectionQuery {
+  __schema {
+    types {
+      name
+      fields {
+        name
+        type {
+          name
+          kind
+        }
+      }
+    }
+  }
+}
+
+```
