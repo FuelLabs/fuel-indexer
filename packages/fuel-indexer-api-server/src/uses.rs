@@ -17,7 +17,10 @@ use fuel_indexer_database::{
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
-use fuel_indexer_graphql_parser::query::{parse_query, Definition, OperationDefinition};
+use fuel_indexer_graphql_parser::{
+    query::{parse_query, Definition, OperationDefinition},
+    schema::Text,
+};
 use fuel_indexer_lib::{
     config::{
         auth::{AuthenticationStrategy, Claims},
@@ -427,7 +430,7 @@ async fn process_queries(
     let inner = request.into_inner();
     let query_str = inner.query;
 
-    let document = match parse_query(&query_str) {
+    let document = match parse_query::<&str>(&query_str) {
         Ok(doc) => doc,
         Err(e) => {
             error!("Error parsing query: {e}.");
@@ -438,27 +441,25 @@ async fn process_queries(
     let mut results = HashMap::new();
     let mut index = 1;
     for definition in document.definitions {
-        if let Definition::Operation(operation) = definition {
-            if operation.is_query() {
-                let query = operation.to_string();
-                let mut query_parts = query.split(";");
-                for query_part in query_parts {
-                    match run_query(query_part.trim().to_string(), schema.clone(), pool)
-                        .await
-                    {
-                        Ok(query_res) => {
-                            let op_name = operation
-                                .name
-                                .unwrap_or_else(|| format!("query_{}", index));
-                            results.insert(op_name, query_res);
-                        }
-                        Err(e) => {
-                            error!("query_graph error: {}", e);
-                            return Err(e);
-                        }
+        if let Definition::Operation(OperationDefinition::Query(query)) = definition {
+            let query_str = query.to_string();
+            let query_parts = query_str.split(";");
+            for query_part in query_parts {
+                match run_query(query_part.trim().to_string(), schema.clone(), pool).await
+                {
+                    Ok(query_res) => {
+                        let op_name = query
+                            .name
+                            .map(ToString::to_string)
+                            .unwrap_or_else(|| format!("query_{}", index));
+                        results.insert(op_name, query_res);
                     }
-                    index += 1;
+                    Err(e) => {
+                        error!("query_graph error: {}", e);
+                        return Err(e);
+                    }
                 }
+                index += 1;
             }
         }
     }
