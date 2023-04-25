@@ -61,7 +61,7 @@ pub(crate) async fn query_graph(
     {
         Ok(schema) => {
             if query.contains("IntrospectionQuery") {
-                return Ok(axum::Json(json!({ "data": schema.introspect() })));
+                Ok(axum::Json(json!({ "data": schema.introspect() })))
             } else {
                 match run_query(&query, schema, &pool).await {
                     Ok(query_res) => Ok(axum::Json(query_res)),
@@ -365,7 +365,7 @@ pub async fn run_query(
     schema: Schema,
     pool: &IndexerConnectionPool,
 ) -> ApiResult<Value> {
-    let builder = GraphqlQueryBuilder::new(&schema, &query)?;
+    let builder = GraphqlQueryBuilder::new(&schema, query)?;
     let query = builder.build()?;
 
     let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
