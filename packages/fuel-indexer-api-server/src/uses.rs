@@ -62,7 +62,7 @@ pub(crate) async fn query_graph(
         req.into_inner().query,
         schema,
         &pool,
-        query.include_page_info.unwrap_or(false),
+        query.page_info.unwrap_or(false),
     )
     .await?
     {

@@ -152,5 +152,5 @@ impl From<Paginated> for axum::Json<JsonValue> {
 /// GraphQL request query parameters.
 #[derive(Deserialize)]
 pub(crate) struct GraphQLQuery {
-    pub(crate) include_page_info: Option<bool>,
+    pub(crate) page_info: Option<bool>,
 }
