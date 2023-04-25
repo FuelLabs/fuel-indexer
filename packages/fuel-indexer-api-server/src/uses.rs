@@ -428,7 +428,7 @@ async fn process_queries(
     request: GraphQLRequest,
 ) -> Result<Value, ApiError> {
     let inner = request.into_inner();
-    let query_str = inner.query;
+    let query_str: String = inner.query;
 
     let document = match parse_query::<&str>(&query_str) {
         Ok(doc) => doc,
@@ -443,7 +443,7 @@ async fn process_queries(
     for definition in document.definitions {
         if let Definition::Operation(OperationDefinition::Query(query)) = definition {
             let query_str = query.to_string();
-            let query_parts = query_str.split(";");
+            let query_parts = query_str.split("}");
             for query_part in query_parts {
                 match run_query(query_part.trim().to_string(), schema.clone(), pool).await
                 {
