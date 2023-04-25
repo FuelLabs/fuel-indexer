@@ -1,5 +1,3 @@
-#![deny(unused_crate_dependencies)]
-
 extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
