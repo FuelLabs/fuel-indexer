@@ -117,3 +117,8 @@ impl From<Paginated> for axum::Json<JsonValue> {
         }))
     }
 }
+
+#[derive(Deserialize)]
+pub(crate) struct GraphQLQuery {
+    pub(crate) include_page_info: Option<bool>,
+}

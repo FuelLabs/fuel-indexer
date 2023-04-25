@@ -68,7 +68,11 @@ pub struct UserQuery {
 
 impl UserQuery {
     /// Returns the query as a database-specific SQL query.
-    pub fn to_sql(&mut self, db_type: &DbType) -> Result<String, GraphqlError> {
+    pub fn to_sql(
+        &mut self,
+        db_type: &DbType,
+        include_page_info: bool,
+    ) -> Result<String, GraphqlError> {
         // Different database solutions have unique ways of
         // constructing JSON-formatted queries and results.
         match db_type {
@@ -118,6 +122,7 @@ impl UserQuery {
                             selections_str,
                             joins_str,
                             limit,
+                            include_page_info,
                         )
                     } else {
                         return Err(GraphqlError::UnorderedPaginatedQuery);
@@ -146,6 +151,7 @@ impl UserQuery {
         selections_str: String,
         joins_str: String,
         limit: u64,
+        include_page_info: bool,
     ) -> String {
         // In order to create information about pagination, we need to calculate
         // values according to the amount of records, current offset, and requested
@@ -181,8 +187,9 @@ impl UserQuery {
                 let offset = self.query_params.offset.unwrap_or(0);
                 let alias = self.alias.clone().unwrap_or(self.entity_name.clone());
 
-                let selection_query = format!(
-                    r#"SELECT json_build_object(
+                let selection_query = if include_page_info {
+                    format!(
+                        r#"SELECT json_build_object(
                         'page_info', json_build_object(
                             'has_next_page', (({limit} + {offset}) < (SELECT count from total_count_cte)),
                             'limit', {limit},
@@ -198,7 +205,20 @@ impl UserQuery {
                             ) item
                         )
                     );"#
-                );
+                    )
+                } else {
+                    format!(
+                        r#"SELECT json_build_object(
+                        '{alias}', (
+                            SELECT json_agg(item)
+                            FROM (
+                                SELECT {json_selections_str} FROM selection_cte
+                                LIMIT {limit} OFFSET {offset}
+                            ) item
+                        )
+                    );"#
+                    )
+                };
 
                 [selection_cte, total_count_cte, selection_query].join("\n")
             }
@@ -470,6 +490,6 @@ mod tests {
 
         let expected = "SELECT json_build_object('hash', name_ident.block.hash, 'tx', json_build_object('hash', name_ident.tx.hash), 'height', name_ident.block.height) FROM name_ident.entity_name INNER JOIN name_ident.block ON name_ident.tx.block = name_ident.block.id WHERE  name_ident.entity_name.id = 1 "
             .to_string();
-        assert_eq!(expected, uq.to_sql(&DbType::Postgres).unwrap());
+        assert_eq!(expected, uq.to_sql(&DbType::Postgres, true).unwrap());
     }
 }

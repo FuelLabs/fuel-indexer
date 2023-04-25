@@ -1,13 +1,13 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
-    models::{PageType, QueryResponse, VerifySignatureRequest},
+    models::{GraphQLQuery, PageType, QueryResponse, VerifySignatureRequest},
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
-    extract::{multipart::Multipart, Extension, Json, Path},
+    extract::{multipart::Multipart, Extension, Json, Path, Query},
     http::{Request, StatusCode},
     response::{IntoResponse, Response},
 };
@@ -46,6 +46,7 @@ use tracing::error;
 use fuel_indexer_metrics::{encode_metrics_response, METRICS};
 
 pub(crate) async fn query_graph(
+    query: Query<GraphQLQuery>,
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
@@ -57,7 +58,14 @@ pub(crate) async fn query_graph(
         .load_schema(&namespace, &identifier)
         .await?;
 
-    let res = match run_query(req.into_inner().query, schema, &pool).await? {
+    let res = match run_query(
+        req.into_inner().query,
+        schema,
+        &pool,
+        query.include_page_info.unwrap_or(false),
+    )
+    .await?
+    {
         PageType::Plain(v) => axum::Json(json!({ "data": v })),
         PageType::Paginated(v) => v.into(),
     };
@@ -351,10 +359,13 @@ pub async fn run_query(
     query: String,
     schema: Schema,
     pool: &IndexerConnectionPool,
+    include_page_info: bool,
 ) -> ApiResult<PageType> {
     let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
-    let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
+    let queries = query
+        .as_sql(&schema, pool.database_type(), include_page_info)?
+        .join(";\n");
 
     let mut conn = pool.acquire().await?;
     let data: QueryResponse = queries::run_query(&mut conn, queries).await?;

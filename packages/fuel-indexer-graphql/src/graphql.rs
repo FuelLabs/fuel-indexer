@@ -476,12 +476,13 @@ impl GraphqlQuery {
         &self,
         schema: &Schema,
         db_type: DbType,
+        include_page_info: bool,
     ) -> Result<Vec<String>, GraphqlError> {
         let queries = self.parse(schema);
 
         queries
             .into_iter()
-            .map(|mut q| q.to_sql(&db_type))
+            .map(|mut q| q.to_sql(&db_type, include_page_info))
             .collect::<Result<Vec<String>, GraphqlError>>()
     }
 }
