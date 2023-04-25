@@ -17,10 +17,8 @@ use fuel_indexer_database::{
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
-use fuel_indexer_graphql_parser::{
-    query::{parse_query, Definition, OperationDefinition},
-    schema::Text,
-};
+use fuel_indexer_graphql::graphql::{GraphqlQueryBuilder, Selection};
+use fuel_indexer_graphql_parser::query::{parse_query, Definition, OperationDefinition};
 use fuel_indexer_lib::{
     config::{
         auth::{AuthenticationStrategy, Claims},
@@ -430,29 +428,50 @@ async fn process_queries(
     let inner = request.into_inner();
     let query_str = inner.query;
 
-    let document = match parse_query::<String>(&query_str) {
-        Ok(doc) => doc,
-        Err(e) => {
-            error!("Error parsing query: {e}.");
-            return Err(ApiError::Http(HttpError::BadRequest));
+    // Split the query_str by the keyword "query"
+    let query_str_parts: Vec<&str> = query_str.split_whitespace().collect();
+    let mut query_strings = vec![];
+    let mut current_query = String::new();
+
+    for (i, part) in query_str_parts.iter().enumerate() {
+        if *part == "query" && !current_query.is_empty() {
+            query_strings.push(current_query.clone());
+            current_query.clear();
         }
-    };
+        current_query.push_str(part);
+        if i != query_str_parts.len() - 1 {
+            current_query.push(' ');
+        }
+    }
+    query_strings.push(current_query);
 
     let mut results = HashMap::new();
     let mut index = 1;
-    for definition in document.definitions {
-        if let Definition::Operation(OperationDefinition::Query(query)) = definition {
-            let query_str = query.to_string();
-            let query_parts = query_str.split("}");
-            for query_part in query_parts {
+
+    for query_str in query_strings {
+        let document = match parse_query::<String>(&query_str) {
+            Ok(doc) => doc,
+            Err(e) => {
+                error!("Error parsing query: {e}.");
+                return Err(ApiError::Http(HttpError::BadRequest));
+            }
+        };
+
+        for definition in document.definitions {
+            if let Definition::Operation(OperationDefinition::Query(query)) = definition {
+                println!("Running query: {:#?}", query);
                 let cloned_query = query.clone();
                 match run_query(cloned_query.to_string(), schema.clone(), pool).await {
                     Ok(query_res) => {
                         let op_name = query
-                            .name
-                            .as_ref()
-                            .map(|s| s.to_owned())
-                            .unwrap_or_else(|| format!("query_{}", index));
+                            .selection_set
+                            .items
+                            .get(0)
+                            .and_then(|item| match item {
+                                Selection::Field(name, ..) => Some(name.to_owned()),
+                                _ => None,
+                            })
+                            .unwrap_or_else(|| format!("data_{}", index));
                         results.insert(op_name, query_res);
                     }
                     Err(e) => {
@@ -461,9 +480,11 @@ async fn process_queries(
                     }
                 }
                 index += 1;
+            } else {
+                println!("Skipping non-query definition");
             }
         }
     }
 
-    Ok(json!(results))
+    Ok(json!({ "data": results }))
 }
