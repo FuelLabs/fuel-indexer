@@ -144,7 +144,7 @@ impl UserQuery {
         }
     }
 
-    /// Returns a SQL query that contains the requested results and a Paginated object.
+    /// Returns a SQL query that contains the requested results and a `PageInfo` object.
     fn create_query_with_pageinfod(
         &self,
         db_type: &DbType,

@@ -846,7 +846,7 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
 
     let client = http_client();
     let resp = client
-        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
+        .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1?include_page_info=true")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
             r#"{"query": "query { aliased_entities: filterentity(order: { asc: foola }, first: 1, offset: 1) { id foola } }" }"#,

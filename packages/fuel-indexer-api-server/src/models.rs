@@ -3,16 +3,25 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sqlx::types::JsonValue;
 
+/// Alias for an arbitrary `sqlx` query response.
 pub type QueryResponse = Value;
 
+/// Verify signature request.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VerifySignatureRequest {
+    /// Signature to verify.
     pub signature: String,
+
+    /// Message used to recover public key from signature.
     pub message: String,
 }
 
+/// Type of page results.
 pub enum PageType {
+    /// Paginated page results.
     Paginated(Paginated),
+
+    /// Plain page results.
     Plain(QueryResponse),
 }
 
@@ -45,12 +54,22 @@ impl TryFrom<QueryResponse> for PageType {
     }
 }
 
+/// Pagination metadata returned from `sqlx` queries.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PageInfo {
+    /// If the pagination result inclues another page that can be fetched.
     has_next_page: bool,
+
+    /// Amount of results to include in a single page.
     limit: usize,
+
+    /// Offset at which to read next `limit` amount of items.
     offset: usize,
+
+    /// Total amount of pages included in this query result.
     pages: usize,
+
+    /// Total amount of items included in this query result.
     total_count: usize,
 }
 
@@ -66,13 +85,25 @@ impl From<Value> for PageInfo {
     }
 }
 
+/// Paginated `PageType`.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Paginated {
+    /// If the pagination result inclues another page that can be fetched.
     has_next_page: bool,
+
+    /// Amount of results to include in a single page.
     limit: usize,
+
+    /// Offset at which to read next `limit` amount of items.
     offset: usize,
+
+    /// Total amount of pages included in this query result.
     pages: usize,
+
+    /// Total amount of items included in this query result.
     total_count: usize,
+
+    /// List of query results.
     data: QueryResponse,
 }
 
@@ -118,6 +149,7 @@ impl From<Paginated> for axum::Json<JsonValue> {
     }
 }
 
+/// GraphQL request query parameters.
 #[derive(Deserialize)]
 pub(crate) struct GraphQLQuery {
     pub(crate) include_page_info: Option<bool>,
