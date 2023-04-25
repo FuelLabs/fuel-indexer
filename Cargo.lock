@@ -3006,6 +3006,7 @@ dependencies = [
  "fuel-crypto 0.27.0",
  "fuel-indexer-database",
  "fuel-indexer-graphql",
+ "fuel-indexer-graphql-parser 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fuel-indexer-lib",
  "fuel-indexer-metrics",
  "fuel-indexer-schema",
@@ -3050,7 +3051,7 @@ version = "0.10.0"
 dependencies = [
  "fuel-indexer-database",
  "fuel-indexer-database-types",
- "fuel-indexer-graphql-parser",
+ "fuel-indexer-graphql-parser 0.10.0",
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "pretty_assertions",
@@ -3063,6 +3064,16 @@ version = "0.10.0"
 dependencies = [
  "combine",
  "pretty_assertions",
+ "thiserror",
+]
+
+[[package]]
+name = "fuel-indexer-graphql-parser"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "003564458e35b7a19ef4d1190e49345177c3d2d784e44163f290d42358cd482a"
+dependencies = [
+ "combine",
  "thiserror",
 ]
 
@@ -3092,7 +3103,7 @@ version = "0.10.0"
 dependencies = [
  "fuel-abi-types 0.2.1",
  "fuel-indexer-database-types",
- "fuel-indexer-graphql-parser",
+ "fuel-indexer-graphql-parser 0.10.0",
  "fuel-indexer-lib",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
@@ -3161,7 +3172,7 @@ dependencies = [
  "bincode",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
- "fuel-indexer-graphql-parser",
+ "fuel-indexer-graphql-parser 0.10.0",
  "fuel-indexer-types",
  "hex",
  "insta",

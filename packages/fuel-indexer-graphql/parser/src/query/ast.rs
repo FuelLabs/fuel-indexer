@@ -56,6 +56,15 @@ pub enum OperationDefinition<'a, T: Text<'a>> {
     Subscription(Subscription<'a, T>),
 }
 
+impl<'a, T: Text<'a>> OperationDefinition<'a, T> {
+    pub fn is_query(&self) -> bool {
+        match self {
+            OperationDefinition::Query(_) => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Query<'a, T: Text<'a>> {
     pub position: Pos,
