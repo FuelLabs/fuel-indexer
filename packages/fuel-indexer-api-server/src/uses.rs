@@ -361,7 +361,7 @@ pub(crate) async fn verify_signature(
 }
 
 pub async fn run_query(
-    query: &String,
+    query: &str,
     schema: Schema,
     pool: &IndexerConnectionPool,
 ) -> ApiResult<Value> {
