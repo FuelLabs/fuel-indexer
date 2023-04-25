@@ -99,23 +99,28 @@ impl IntoResponse for ApiError {
                 StatusCode::BAD_REQUEST,
                 format!("Could not process JWT: {e}"),
             ),
-            ApiError::Http(HttpError::Unauthorized) => {
+            Self::Http(HttpError::Unauthorized) => {
                 (StatusCode::UNAUTHORIZED, "Unauthorized.".to_string())
             }
-            ApiError::Http(HttpError::NotFound(e)) => {
+            Self::Http(HttpError::NotFound(e)) => {
                 (StatusCode::NOT_FOUND, format!("Not found: {e}."))
             }
-            ApiError::Sqlx(e) => (
+            Self::Sqlx(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Database error: {e}."),
             ),
-            ApiError::Database(e) => (
+            Self::Database(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Database error: {e}."),
             ),
-            ApiError::FuelCrypto(e) => {
+            Self::FuelCrypto(e) => {
                 (StatusCode::BAD_REQUEST, format!("Crypto error: {e}."))
             }
+            Self::Graphql(e) => (StatusCode::BAD_REQUEST, format!("GraphQL error: {e}.")),
+            Self::SchemaError(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Schema error: {e}."),
+            ),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };
 
