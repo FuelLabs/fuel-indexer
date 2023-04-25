@@ -117,7 +117,7 @@ impl UserQuery {
                 let query: String = if let Some(limit) = self.query_params.limit {
                     // Paginated queries must have an order applied to at least one field.
                     if !self.query_params.sorts.is_empty() {
-                        self.create_query_with_paginated(
+                        self.create_query_with_pageinfod(
                             db_type,
                             selections_str,
                             joins_str,
@@ -145,7 +145,7 @@ impl UserQuery {
     }
 
     /// Returns a SQL query that contains the requested results and a Paginated object.
-    fn create_query_with_paginated(
+    fn create_query_with_pageinfod(
         &self,
         db_type: &DbType,
         selections_str: String,

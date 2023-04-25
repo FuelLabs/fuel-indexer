@@ -859,7 +859,6 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
-    println!("{v:?}");
     let data = &v["data"].as_array().expect("data is not an array")[0];
 
     assert_eq!(data["aliased_entities"][0]["id"].as_i64(), Some(3));
