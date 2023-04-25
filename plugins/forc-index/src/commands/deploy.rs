@@ -66,8 +66,12 @@ pub struct Command {
     #[clap(long, help = "Do not build before deploying.")]
     pub skip_build: bool,
 
-    /// Stop the currently running version of this indexer, if one exists. 
-    #[clap(long, help = "Stop previous running indexer.")]
+    /// Stop the currently running version of this indexer, if one exists.
+    #[clap(
+        long,
+        help = "Stop the currently running version of this indexer, if one exists. 
+"
+    )]
     pub stop_previous: bool,
 }
 
