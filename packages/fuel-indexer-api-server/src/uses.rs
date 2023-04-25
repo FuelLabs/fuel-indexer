@@ -35,6 +35,7 @@ use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde_json::{json, Value};
 use std::{
+    collections::HashMap,
     convert::From,
     str::FromStr,
     time::{Instant, SystemTime, UNIX_EPOCH},
@@ -49,7 +50,7 @@ pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
-    req: GraphQLRequest,
+    request: GraphQLRequest,
 ) -> ApiResult<axum::Json<Value>> {
     match manager
         .read()
@@ -57,13 +58,10 @@ pub(crate) async fn query_graph(
         .load_schema(&namespace, &identifier)
         .await
     {
-        Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
-            Ok(query_res) => Ok(axum::Json(query_res)),
-            Err(e) => {
-                error!("query_graph error: {e}");
-                Err(e)
-            }
-        },
+        Ok(schema) => {
+            let results = process_queries(schema, &pool, request).await?;
+            Ok(axum::Json(results))
+        }
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
             "The graph '{namespace}.{identifier}' was not found."
         )))),
@@ -419,4 +417,35 @@ pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
     {
         (StatusCode::NOT_FOUND, "Metrics collection disabled.")
     }
+}
+
+async fn process_queries(
+    schema: Schema,
+    pool: &IndexerConnectionPool,
+    request: GraphQLRequest,
+) -> Result<Value, ApiError> {
+    let inner = request.into_inner();
+    let query_str = inner.query;
+    let query_parts: Vec<&str> = query_str.split("}").collect();
+
+    let mut results = HashMap::new();
+    let mut index = 1;
+
+    for definition in ast.definitions {
+        if let Operation(op) = definition {
+            let query = op.to_string();
+            match run_query(query.clone(), schema.clone(), pool).await {
+                Ok(query_res) => {
+                    let op_name = op.name.unwrap_or_else(|| format!("query_{}", index));
+                    results.insert(op_name, query_res);
+                }
+                Err(e) => {
+                    error!("query_graph error: {}", e);
+                    return Err(e);
+                }
+            }
+            index += 1;
+        }
+    }
+    Ok(json!(results))
 }
