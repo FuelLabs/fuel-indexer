@@ -2,7 +2,7 @@ use crate::{
     middleware::AuthenticationMiddleware,
     uses::{
         get_nonce, gql_playground, health_check, query_graph, register_indexer_assets,
-        revert_indexer, stop_indexer, verify_signature,
+        remove_indexer, revert_indexer, verify_signature,
     },
 };
 
@@ -171,7 +171,7 @@ impl GraphQlApi {
             .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
-            .route("/:namespace/:identifier", delete(stop_indexer))
+            .route("/:namespace/:identifier", delete(remove_indexer))
             .route("/:namespace/:identifier", put(revert_indexer))
             .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx))
