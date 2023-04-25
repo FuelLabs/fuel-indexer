@@ -428,9 +428,9 @@ async fn process_queries(
     request: GraphQLRequest,
 ) -> Result<Value, ApiError> {
     let inner = request.into_inner();
-    let query_str: String = inner.query;
+    let query_str = inner.query;
 
-    let document = match parse_query::<&str>(&query_str) {
+    let document = match parse_query::<String>(&query_str) {
         Ok(doc) => doc,
         Err(e) => {
             error!("Error parsing query: {e}.");
@@ -445,12 +445,13 @@ async fn process_queries(
             let query_str = query.to_string();
             let query_parts = query_str.split("}");
             for query_part in query_parts {
-                match run_query(query_part.trim().to_string(), schema.clone(), pool).await
-                {
+                let cloned_query = query.clone();
+                match run_query(cloned_query.to_string(), schema.clone(), pool).await {
                     Ok(query_res) => {
                         let op_name = query
                             .name
-                            .map(ToString::to_string)
+                            .as_ref()
+                            .map(|s| s.to_owned())
                             .unwrap_or_else(|| format!("query_{}", index));
                         results.insert(op_name, query_res);
                     }
