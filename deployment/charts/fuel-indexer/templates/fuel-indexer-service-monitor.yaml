@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: fuel-indexer
+  labels:
+    release: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: fuel-indexer
+  endpoints:
+  - path: /api/metrics 
+    port: http

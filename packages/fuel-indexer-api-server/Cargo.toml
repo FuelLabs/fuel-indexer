@@ -22,6 +22,7 @@ axum = { version = "0.6", features = ["multipart", "macros"] }
 clap = { version = "3.1", features = ["cargo", "derive", "env"] }
 fuel-crypto = { version = "0.27", features = ["std"] }
 fuel-indexer-database = { workspace = true }
+fuel-indexer-graphql = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-metrics = { workspace = true, optional = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }

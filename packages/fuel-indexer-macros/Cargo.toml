@@ -15,13 +15,13 @@ proc-macro = true
 [dependencies]
 fuel-abi-types = "0.2.1"
 fuel-indexer-database-types = { workspace = true }
+fuel-indexer-graphql-parser = { workspace = true }
 fuel-indexer-lib = { workspace = true, default-features = false }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
 fuel-tx = "0.26.0"
 fuels = { version = "0.40.0", default-features = false }
 fuels-code-gen = { version = "0.40.0", default-features = false }
-graphql-parser = "0.3"
 lazy_static = "1.4"
 proc-macro-error = "1.0"
 proc-macro2 = "1.0"

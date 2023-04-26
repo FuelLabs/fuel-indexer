@@ -1,7 +1,5 @@
 #![deny(unused_crate_dependencies)]
 
-use serde::Deserialize;
-
 pub mod api;
 pub mod cli;
 pub(crate) mod commands;

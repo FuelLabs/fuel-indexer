@@ -21,7 +21,6 @@ OPTIONS:
     -r, --release                    Build optimized artifacts with the release profile. [default:
                                      true] 
         --skip-build                 Do not build before deploying.
-        --stop-previous              Stop the currently running version of this indexer, if one exists. 
         --target <TARGET>            Target at which to compile. [default: wasm32-unknown-unknown]
         --target-dir <TARGET_DIR>    Directory for all generated artifacts and intermediate files.
         --url <URL>                  URL at which to deploy indexer assets. [default:

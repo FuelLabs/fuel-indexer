@@ -2,10 +2,10 @@ extern crate alloc;
 
 use alloc::vec::Vec;
 pub use fuel_indexer_database_types as sql_types;
-use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
-use graphql_parser::schema::{
+use fuel_indexer_graphql_parser::schema::{
     Definition, Directive, Document, Field, ObjectType, TypeDefinition,
 };
+use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
@@ -213,7 +213,7 @@ pub fn build_schema_objects_set(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use graphql_parser::parse_schema;
+    use fuel_indexer_graphql_parser::parse_schema;
 
     #[test]
     fn test_build_schema_fields_and_types_map_properly_builds_schema_types_map() {

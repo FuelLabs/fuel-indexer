@@ -2,7 +2,7 @@ use crate::{
     middleware::AuthenticationMiddleware,
     uses::{
         get_nonce, gql_playground, health_check, query_graph, register_indexer_assets,
-        remove_indexer, revert_indexer, verify_signature,
+        revert_indexer, stop_indexer, verify_signature,
     },
 };
 
@@ -18,10 +18,9 @@ use axum::{
     Router,
 };
 use fuel_indexer_database::{IndexerConnectionPool, IndexerDatabaseError};
+use fuel_indexer_graphql::graphql::GraphqlError;
 use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
-use fuel_indexer_schema::db::{
-    graphql::GraphqlError, manager::SchemaManager, IndexerSchemaError,
-};
+use fuel_indexer_schema::db::{manager::SchemaManager, IndexerSchemaError};
 use hyper::Method;
 use serde_json::json;
 use std::{net::SocketAddr, time::Instant};
@@ -171,7 +170,7 @@ impl GraphQlApi {
             .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
-            .route("/:namespace/:identifier", delete(remove_indexer))
+            .route("/:namespace/:identifier", delete(stop_indexer))
             .route("/:namespace/:identifier", put(revert_indexer))
             .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx))
