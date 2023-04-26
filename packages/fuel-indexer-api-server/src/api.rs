@@ -1,10 +1,14 @@
 use crate::{
-    auth::AuthenticationMiddleware,
+    middleware::AuthenticationMiddleware,
     uses::{
-        get_nonce, gql_playground, health_check, metrics, query_graph,
-        register_indexer_assets, revert_indexer, stop_indexer, verify_signature,
+        get_nonce, gql_playground, health_check, query_graph, register_indexer_assets,
+        revert_indexer, stop_indexer, verify_signature,
     },
 };
+
+#[cfg(feature = "metrics")]
+use crate::middleware::MetricsMiddleware;
+
 use async_std::sync::{Arc, RwLock};
 use axum::{
     extract::{Extension, Json},
@@ -94,26 +98,28 @@ impl IntoResponse for ApiError {
                 StatusCode::BAD_REQUEST,
                 format!("Could not process JWT: {e}"),
             ),
-            ApiError::Http(HttpError::Unauthorized) => {
+            Self::Http(HttpError::Unauthorized) => {
                 (StatusCode::UNAUTHORIZED, "Unauthorized.".to_string())
             }
-            ApiError::Http(HttpError::NotFound(e)) => {
+            Self::Http(HttpError::NotFound(e)) => {
                 (StatusCode::NOT_FOUND, format!("Not found: {e}."))
             }
-            ApiError::Sqlx(e) => (
+            Self::Sqlx(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Database error: {e}."),
             ),
-            ApiError::Database(e) => (
+            Self::Database(e) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Database error: {e}."),
             ),
-            ApiError::FuelCrypto(e) => {
+            Self::FuelCrypto(e) => {
                 (StatusCode::BAD_REQUEST, format!("Crypto error: {e}."))
             }
-            ApiError::Graphql(e) => {
-                (StatusCode::BAD_REQUEST, format!("GraphQL error: {e}."))
-            }
+            Self::Graphql(e) => (StatusCode::BAD_REQUEST, format!("GraphQL error: {e}.")),
+            Self::SchemaError(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("Schema error: {e}."),
+            ),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, generic_details),
         };
 
@@ -149,11 +155,14 @@ impl GraphQlApi {
         let max_body_size = config.graphql_api.max_body_size;
         let start_time = Arc::new(Instant::now());
 
-        let graph_route = Router::new()
+        let graph_routes = Router::new()
             .route("/:namespace/:identifier", post(query_graph))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));
+
+        #[cfg(feature = "metrics")]
+        let graph_routes = graph_routes.layer(MetricsMiddleware::default());
 
         let index_routes = Router::new()
             .route("/:namespace/:identifier", post(register_indexer_assets))
@@ -168,12 +177,19 @@ impl GraphQlApi {
             .layer(Extension(pool.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));
 
+        #[cfg(feature = "metrics")]
+        let index_routes = index_routes.layer(MetricsMiddleware::default());
+
         let root_routes = Router::new()
             .route("/health", get(health_check))
             .layer(Extension(config.clone()))
             .layer(Extension(pool.clone()))
-            .layer(Extension(start_time))
-            .route("/metrics", get(metrics));
+            .layer(Extension(start_time));
+
+        #[cfg(feature = "metrics")]
+        let root_routes = root_routes
+            .route("/metrics", get(crate::uses::metrics))
+            .layer(MetricsMiddleware::default());
 
         let auth_routes = Router::new()
             .route("/nonce", get(get_nonce))
@@ -182,17 +198,23 @@ impl GraphQlApi {
             .layer(Extension(pool.clone()))
             .layer(Extension(config));
 
+        #[cfg(feature = "metrics")]
+        let auth_routes = auth_routes.layer(MetricsMiddleware::default());
+
         let playground_route = Router::new()
             .route("/:namespace/:identifier", get(gql_playground))
             .layer(Extension(schema_manager))
             .layer(Extension(pool))
             .layer(RequestBodyLimitLayer::new(max_body_size));
 
+        #[cfg(feature = "metrics")]
+        let playground_route = playground_route.layer(MetricsMiddleware::default());
+
         let api_routes = Router::new()
             .nest("/", root_routes)
             .nest("/playground", playground_route)
             .nest("/index", index_routes)
-            .nest("/graph", graph_route)
+            .nest("/graph", graph_routes)
             .nest("/auth", auth_routes);
 
         let app = Router::new()

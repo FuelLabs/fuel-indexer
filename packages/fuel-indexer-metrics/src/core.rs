@@ -1,23 +1,38 @@
-use crate::queries::PostgreQueries;
+use crate::db::Postgres;
+use lazy_static::lazy_static;
 use prometheus::{self, register_int_counter, IntCounter};
+use prometheus_client::{
+    encoding::EncodeLabelSet,
+    metrics::{family::Family, histogram::Histogram},
+    registry::Registry,
+};
+
+lazy_static! {
+    pub static ref TIMING_HISTOGRAM_BUCKETS: Vec<f64> =
+        vec![0., 10., 100., 1000., 10000., 50000., 100000., 500000., 1000000.];
+}
 
 pub trait Metric {
     fn init() -> Self;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
+pub struct Label {
+    path: String,
+}
+
 pub struct Database {
     pub write_ops: IntCounter,
     pub read_ops: IntCounter,
     pub bytes_written: IntCounter,
     pub bytes_read: IntCounter,
-    pub postgres: PostgreQueries,
+    pub postgres: Postgres,
 }
 
 impl Metric for Database {
     fn init() -> Self {
         Self {
-            postgres: PostgreQueries::init(),
+            postgres: Postgres::init(),
             write_ops: register_int_counter!("write_ops", "Count of write operations.")
                 .unwrap(),
             read_ops: register_int_counter!("read_ops", "Count of read operations.")
@@ -36,32 +51,28 @@ impl Metric for Database {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct HealthCheckEndpoint {
-    pub requests: IntCounter,
-}
-
-impl Metric for HealthCheckEndpoint {
-    fn init() -> Self {
-        HealthCheckEndpoint {
-            requests: register_int_counter!(
-                "Requests",
-                "Number of requests made to /healthcheck."
-            )
-            .unwrap(),
-        }
-    }
-}
-
 pub struct Web {
-    pub health: HealthCheckEndpoint,
+    pub registry: Registry,
+    requests: Family<Label, Histogram>,
 }
 
 impl Metric for Web {
     fn init() -> Self {
-        Self {
-            health: HealthCheckEndpoint::init(),
-        }
+        let mut registry = Registry::default();
+        let requests = Family::<Label, Histogram>::new_with_constructor(|| {
+            Histogram::new(TIMING_HISTOGRAM_BUCKETS.iter().cloned())
+        });
+        registry.register("web_request_duration_seconds", "", requests.clone());
+        Self { registry, requests }
+    }
+}
+
+impl Web {
+    pub fn record(&self, query: &str, time: f64) {
+        let histogram = self.requests.get_or_create(&Label {
+            path: query.to_string(),
+        });
+        histogram.observe(time);
     }
 }
 

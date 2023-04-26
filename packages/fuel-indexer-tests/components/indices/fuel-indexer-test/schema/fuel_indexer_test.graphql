@@ -23,6 +23,7 @@ type QueryRoot {
     callentity: CallEntity
     panicentity: PanicEntity
     revertentity: RevertEntity 
+    enumerror: EnumError
 
     # GraphQL API test entities
     genre: Genre
@@ -262,4 +263,10 @@ type FilterEntity {
     maybe_null_bar: UInt8
     bazoo: UInt8!
     inner_entity: InnerFilterEntity!
+}
+
+type EnumError{
+    id: ID!
+    contract_id: ContractId!
+    error_val: UInt8!
 }

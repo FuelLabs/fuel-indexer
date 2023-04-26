@@ -26,6 +26,7 @@ fuel-indexer-graphql = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-metrics = { workspace = true, optional = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
+futures-util = { version = "0.3", optional = true }
 hex = "0.4"
 http = "0.2"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ] }
@@ -43,4 +44,4 @@ tracing = "0.1"
 [features]
 default = ["metrics"]
 fuel-core-lib = []
-metrics = ["fuel-indexer-metrics"]
+metrics = ["fuel-indexer-metrics", "futures-util"]
