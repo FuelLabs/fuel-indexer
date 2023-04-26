@@ -750,8 +750,8 @@ pub async fn asset_for_index(
     identifier: &str,
     asset_type: IndexAssetType,
 ) -> sqlx::Result<IndexAsset> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.asset_for_index_calls.inc();
+    // #[cfg(feature = "metrics")]
+    // METRICS.db.postgres.asset_for_index_calls.inc();
 
     let index_id = index_id_for(conn, namespace, identifier).await?;
     let query = format!(

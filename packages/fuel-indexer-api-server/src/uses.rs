@@ -467,4 +467,3 @@ pub async fn gql_playground(
 pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
     encode_metrics_response()
 }
-
