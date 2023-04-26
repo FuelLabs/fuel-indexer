@@ -79,7 +79,6 @@ pub struct IndexRevertRequest {
 pub enum ServiceRequest {
     AssetReload(AssetReloadRequest),
     IndexStop(IndexStopRequest),
-    IndexStopPrevious(IndexStopRequest),
     IndexRevert(IndexRevertRequest),
 }
 

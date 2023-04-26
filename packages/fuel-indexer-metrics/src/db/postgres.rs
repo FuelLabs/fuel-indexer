@@ -44,7 +44,8 @@ pub struct Postgres {
     pub revert_transaction_calls: IntCounter,
     pub run_migration_calls: IntCounter,
     pub remove_asset_by_version_calls: IntCounter,
-    pub remove_indexer: IntCounter,
+    pub remove_previous_indexer_calls: IntCounter,
+    pub remove_indexer_calls: IntCounter,
     pub registry: Registry,
     requests: Family<Label, Histogram>,
 }
@@ -210,8 +211,13 @@ impl Metric for Postgres {
                 "Count of calls to postgres run_migration_calls."
             )
             .unwrap(),
-            remove_indexer: register_int_counter!(
-                "postgres_remove_indexer",
+            remove_previous_indexer_calls: register_int_counter!(
+                "postgres_remove_previous_indexer_calls",
+                "Count of calls to postgres remove_previous_indexer_calls."
+            )
+            .unwrap(),
+            remove_indexer_calls: register_int_counter!(
+                "postgres_remove_indexer_calls",
                 "Count of calls to postgres remove_indexer."
             )
             .unwrap(),
