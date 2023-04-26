@@ -33,6 +33,7 @@ pub struct Postgres {
     pub registered_indices_calls: IntCounter,
     pub index_asset_version_calls: IntCounter,
     pub register_index_asset_calls: IntCounter,
+    pub asset_for_index_calls: IntCounter,
     pub latest_asset_for_index_calls: IntCounter,
     pub latest_assets_for_index_calls: IntCounter,
     pub last_block_height_for_indexer_calls: IntCounter,
@@ -158,6 +159,11 @@ impl Metric for Postgres {
             register_index_asset_calls: register_int_counter!(
                 "postgres_register_index_asset_calls",
                 "Count of calls to postgres register_index_asset_calls."
+            )
+            .unwrap(),
+            asset_for_index_calls: register_int_counter!(
+                "postgres_asset_for_index_calls",
+                "Count of calls to postgres asset_for_index_calls."
             )
             .unwrap(),
             latest_asset_for_index_calls: register_int_counter!(

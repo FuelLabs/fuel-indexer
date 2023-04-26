@@ -133,7 +133,6 @@ pub(crate) async fn remove_indexer(
     }
 
     if params.stop_previous.unwrap_or(false) {
-        println!("Inside remove_indexer handler, stop_previous is true");
         let mut conn = pool.acquire().await?;
 
         let asset = queries::asset_for_index(
