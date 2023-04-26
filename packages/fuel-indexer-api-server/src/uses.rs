@@ -1,13 +1,14 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::{QueryResponse, VerifySignatureRequest},
+    IndexerQueryParams,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
-    extract::{multipart::Multipart, Extension, Json, Path},
+    extract::{multipart::Multipart, Extension, Json, Path, Query},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -119,7 +120,7 @@ pub(crate) async fn health_check(
     })))
 }
 
-pub(crate) async fn stop_indexer(
+pub(crate) async fn remove_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -214,6 +215,7 @@ pub(crate) async fn register_indexer_assets(
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
+    params: Query<IndexerQueryParams>,
     multipart: Option<Multipart>,
 ) -> ApiResult<axum::Json<Value>> {
     if claims.is_unauthenticated() {
