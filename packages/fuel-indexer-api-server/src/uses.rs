@@ -449,7 +449,7 @@ async fn process_queries(
 
     let mut results = HashMap::new();
 
-    for query_str in query_strings {
+    for query_str in query_strings.clone() {
         let document = match parse_query::<String>(&query_str) {
             Ok(doc) => doc,
             Err(e) => {
@@ -460,7 +460,6 @@ async fn process_queries(
 
         for definition in document.definitions {
             if let Definition::Operation(OperationDefinition::Query(query)) = definition {
-                println!("Running query: {:#?}", query);
                 let cloned_query = query.clone();
                 match run_query(cloned_query.to_string(), schema.clone(), pool).await {
                     Ok(query_res) => {
@@ -482,11 +481,24 @@ async fn process_queries(
                         return Err(e);
                     }
                 }
-            } else {
-                println!("Skipping non-query definition");
             }
         }
     }
 
-    Ok(json!({ "data": results }))
+    let is_single_query = query_strings.len() == 1;
+
+    if is_single_query {
+        if let Some((_, value)) = results.iter().next() {
+            if let Some(array) = value["data"].as_array() {
+                return Ok(json!({ "data": array.to_owned() }));
+            }
+        }
+    }
+
+    Ok(json!({
+        "data": results
+            .into_iter()
+            .map(|(k, v)| (k, v["data"].as_array().unwrap_or(&Vec::new()).to_owned()))
+            .collect::<HashMap<_, _>>()
+    }))
 }
