@@ -810,7 +810,7 @@ pub async fn remove_indexer(
     identifier: &str,
 ) -> sqlx::Result<()> {
     #[cfg(feature = "metrics")]
-    METRICS.db.postgres.remove_indexer.inc();
+    METRICS.db.postgres.remove_indexer_calls.inc();
 
     let index_id = index_id_for(conn, namespace, identifier).await?;
 

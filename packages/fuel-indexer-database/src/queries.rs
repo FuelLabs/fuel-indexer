@@ -231,6 +231,18 @@ pub async fn register_index_asset(
     }
 }
 
+pub async fn latest_asset_for_index(
+    conn: &mut IndexerConnection,
+    index_id: &i64,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::latest_asset_for_index(c, index_id, asset_type).await
+        }
+    }
+}
+
 pub async fn latest_assets_for_index(
     conn: &mut IndexerConnection,
     index_id: &i64,

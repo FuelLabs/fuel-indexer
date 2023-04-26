@@ -147,11 +147,6 @@ pub(crate) async fn remove_indexer(
         }
 
         queries::commit_transaction(&mut conn).await?;
-        // tx.send(ServiceRequest::IndexStopPrevious(IndexStopRequest {
-        //     namespace,
-        //     identifier,
-        // }))
-        // .await?;
 
         return Ok(Json(json!({
             "success": "true"
