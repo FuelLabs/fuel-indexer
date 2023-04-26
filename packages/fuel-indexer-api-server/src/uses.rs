@@ -258,19 +258,6 @@ pub(crate) async fn register_indexer_assets(
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
-    if params.stop_previous.unwrap_or(false) {
-        println!("Stopping previous indexer");
-        let _ = remove_indexer(
-            Path((namespace.clone(), identifier.clone())),
-            Extension(tx.clone()),
-            Extension(pool.clone()),
-            Extension(claims.clone()),
-            params.clone(),
-        )
-        .await?;
-    }
-    println!("Registering new indexer");
-
     let mut assets: Vec<IndexAsset> = Vec::new();
 
     if let Some(mut multipart) = multipart {
@@ -282,9 +269,16 @@ pub(crate) async fn register_indexer_assets(
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
 
-            let mut conn = pool.acquire().await?;
-
-            let _ = queries::start_transaction(&mut conn).await?;
+            if params.stop_previous.unwrap_or(false) {
+                let _ = remove_indexer(
+                    Path((namespace.clone(), identifier.clone())),
+                    Extension(tx.clone()),
+                    Extension(pool.clone()),
+                    Extension(claims.clone()),
+                    params.clone(),
+                )
+                .await?;
+            }
 
             let asset_type =
                 IndexAssetType::from_str(&name).expect("Invalid asset type.");
@@ -474,3 +468,4 @@ pub async fn gql_playground(
 pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
     encode_metrics_response()
 }
+
