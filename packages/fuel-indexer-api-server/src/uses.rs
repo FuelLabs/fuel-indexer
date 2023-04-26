@@ -488,9 +488,9 @@ async fn process_queries(
     let is_single_query = query_strings.len() == 1;
 
     if is_single_query {
-        if let Some((_, value)) = results.iter().next() {
+        if let Some((field_name, value)) = results.clone().into_iter().next() {
             if let Some(array) = value["data"].as_array() {
-                return Ok(json!({ "data": array.to_owned() }));
+                return Ok(json!({ "data": { field_name: array.to_owned() } }));
             }
         }
     }
