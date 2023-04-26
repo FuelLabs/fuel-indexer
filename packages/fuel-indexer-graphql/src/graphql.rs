@@ -1,8 +1,8 @@
-use crate::db::tables::Schema;
-use crate::sql_types::{
-    DbType, JoinCondition, QueryElement, QueryFilter, QueryJoinNode, UserQuery,
-};
-use graphql_parser::query as gql;
+use super::arguments::{parse_argument_into_param, ParamType, QueryParams};
+use super::queries::{JoinCondition, QueryElement, QueryJoinNode, UserQuery};
+use fuel_indexer_schema::{db::tables::Schema, sql_types::DbType};
+
+use fuel_indexer_graphql_parser::query as gql;
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -28,28 +28,24 @@ pub enum GraphqlError {
     FragmentResolverFailed,
     #[error("Selection not supported.")]
     SelectionNotSupported,
+    #[error("Unsupported negation for filter type: {0:?}")]
+    UnsupportedNegation(String),
+    #[error("Filters should have at least one predicate")]
+    NoPredicatesInFilter,
+    #[error("Unsupported filter operation type: {0:?}")]
+    UnsupportedFilterOperation(String),
+    #[error("Unable to parse value into string, bool, or i64: {0:?}")]
+    UnableToParseValue(String),
+    #[error("No available predicates to associate with logical operator")]
+    MissingPartnerForBinaryLogicalOperator,
+    #[error("Paginated query must have an order applied to at least one field")]
+    UnorderedPaginatedQuery,
 }
 
 #[derive(Clone, Debug)]
 pub enum Selection {
-    Field(String, Vec<Filter>, Selections),
+    Field(String, Vec<ParamType>, Selections, Option<String>),
     Fragment(String),
-}
-
-#[derive(Clone, Debug)]
-pub struct Filter {
-    name: String,
-    value: String,
-}
-
-impl Filter {
-    pub fn new(name: String, value: String) -> Filter {
-        Filter { name, value }
-    }
-
-    pub fn as_sql(&self, _jsonify: bool) -> String {
-        format!("{} = {}", self.name, self.value)
-    }
 }
 
 #[derive(Clone, Debug)]
@@ -76,6 +72,7 @@ impl Selections {
                         name,
                         selection_set,
                         arguments,
+                        alias,
                         ..
                     } = field;
 
@@ -87,42 +84,25 @@ impl Selections {
                             )
                         })?;
 
-                    let mut filters = vec![];
-                    for (arg, value) in arguments {
-                        if schema.field_type(subfield_type, arg).is_none() {
-                            return Err(GraphqlError::UnrecognizedArgument(
-                                subfield_type.into(),
-                                arg.to_string(),
-                            ));
-                        }
-
-                        let val = match value {
-                            gql::Value::Int(val) => {
-                                format!(
-                                    "{}",
-                                    val.as_i64().expect("Failed to parse value as i64")
-                                )
-                            }
-                            gql::Value::Float(val) => format!("{val}",),
-                            gql::Value::String(val) => val.to_string(),
-                            gql::Value::Boolean(val) => format!("{val}",),
-                            gql::Value::Null => String::from("NULL"),
-                            o => {
-                                return Err(GraphqlError::UnsupportedValueType(format!(
-                                    "{o:#?}",
-                                )))
-                            }
-                        };
-
-                        filters.push(Filter::new(arg.to_string(), val));
-                    }
+                    let params = arguments
+                        .iter()
+                        .map(|(arg, value)| {
+                            parse_argument_into_param(
+                                subfield_type,
+                                arg,
+                                value.clone(),
+                                schema,
+                            )
+                        })
+                        .collect::<Result<Vec<ParamType>, GraphqlError>>()?;
 
                     let sub_selections =
                         Selections::new(schema, subfield_type, selection_set)?;
                     selections.push(Selection::Field(
                         name.to_string(),
-                        filters,
+                        params,
                         sub_selections,
+                        alias.map(str::to_string),
                     ));
                 }
                 gql::Selection::FragmentSpread(frag) => {
@@ -169,7 +149,7 @@ impl Selections {
                         selections.push(Selection::Fragment(name.to_string()));
                     }
                 }
-                Selection::Field(name, filters, sub_selection) => {
+                Selection::Field(name, params, sub_selection, alias) => {
                     let field_type = schema
                         .field_type(cond, name)
                         .expect("Unable to retrieve field type");
@@ -178,8 +158,9 @@ impl Selections {
 
                     selections.push(Selection::Field(
                         name.to_string(),
-                        filters.to_vec(),
+                        params.to_vec(),
                         sub_selection.clone(),
+                        alias.clone(),
                     ));
                 }
             }
@@ -269,13 +250,14 @@ impl Operation {
             let mut entities: Vec<String> = Vec::new();
 
             let mut joins: HashMap<String, QueryJoinNode> = HashMap::new();
+            let mut query_params: QueryParams = QueryParams::default();
 
             let mut nested_entity_stack: Vec<String> = Vec::new();
 
             // Selections can have their own set of subselections and so on, so a queue
             // is created with the first level of selections. In order to track the containing
             // entity of the selection, an entity list of the same length is created.
-            if let Selection::Field(entity_name, filters, selections) = selection {
+            if let Selection::Field(entity_name, filters, selections, alias) = selection {
                 let mut queue: Vec<Selection> = Vec::new();
 
                 // Selections and entities will be popped from their respective vectors
@@ -295,6 +277,13 @@ impl Operation {
                         .rev()
                         .collect::<Vec<Selection>>(),
                 );
+
+                if !filters.is_empty() {
+                    query_params.add_params(
+                        filters,
+                        format!("{namespace}_{identifier}.{entity_name}"),
+                    );
+                }
 
                 let mut last_seen_entities_len = entities.len();
 
@@ -316,14 +305,22 @@ impl Operation {
 
                     last_seen_entities_len = entities.len();
 
-                    if let Selection::Field(field_name, _f, subselections) = current {
+                    if let Selection::Field(field_name, filters, subselections, alias) =
+                        current
+                    {
                         if subselections.selections.is_empty() {
                             elements.push(QueryElement::Field {
-                                key: field_name.clone(),
+                                key: alias.unwrap_or(field_name.clone()),
                                 value: format!(
                                     "{namespace}_{identifier}.{entity_name}.{field_name}"
                                 ),
                             });
+                            if !filters.is_empty() {
+                                query_params.add_params(
+                                    filters,
+                                    format!("{namespace}_{identifier}.{entity_name}"),
+                                );
+                            }
                         } else {
                             let mut new_entity = field_name.clone();
                             // If the current entity has a foreign key on the current
@@ -405,6 +402,12 @@ impl Operation {
                                             );
                                         }
                                     };
+                                    if !filters.is_empty() {
+                                        query_params.add_params(
+                                    filters,
+                                    format!("{namespace}_{identifier}.{foreign_key_table}"),
+                                        );
+                                    }
                                 }
                             }
 
@@ -418,7 +421,7 @@ impl Operation {
                             nested_entity_stack.push(new_entity.clone());
 
                             elements.push(QueryElement::ObjectOpeningBoundary {
-                                key: field_name,
+                                key: alias.unwrap_or(field_name.clone()),
                             });
 
                             queue.append(&mut subselections.get_selections());
@@ -436,22 +439,13 @@ impl Operation {
                     ]);
                 }
 
-                // TODO: Support filtering operations, e.g. <, >, set membership, etc.
-                let filters: Vec<QueryFilter> = filters
-                    .into_iter()
-                    .map(|f| QueryFilter {
-                        key: f.name,
-                        relation: "=".to_string(),
-                        value: f.value,
-                    })
-                    .collect();
-
                 let query = UserQuery {
                     elements,
                     joins,
                     namespace_identifier: format!("{namespace}_{identifier}"),
                     entity_name,
-                    filters,
+                    query_params,
+                    alias,
                 };
 
                 queries.push(query)
@@ -478,13 +472,17 @@ impl GraphqlQuery {
         queries
     }
 
-    pub fn as_sql(&self, schema: &Schema, db_type: DbType) -> Vec<String> {
+    pub fn as_sql(
+        &self,
+        schema: &Schema,
+        db_type: DbType,
+    ) -> Result<Vec<String>, GraphqlError> {
         let queries = self.parse(schema);
 
         queries
             .into_iter()
             .map(|mut q| q.to_sql(&db_type))
-            .collect::<Vec<String>>()
+            .collect::<Result<Vec<String>, GraphqlError>>()
     }
 }
 
@@ -651,6 +649,7 @@ mod tests {
                         has_fragments: false,
                         selections: Vec::new(),
                     },
+                    None,
                 ),
                 Selection::Field(
                     "height".to_string(),
@@ -660,6 +659,7 @@ mod tests {
                         has_fragments: false,
                         selections: Vec::new(),
                     },
+                    None,
                 ),
             ],
         };
@@ -672,6 +672,7 @@ mod tests {
                     "block".to_string(),
                     Vec::new(),
                     selections_on_block_field,
+                    None,
                 ),
                 Selection::Field(
                     "id".to_string(),
@@ -681,6 +682,7 @@ mod tests {
                         has_fragments: false,
                         selections: Vec::new(),
                     },
+                    None,
                 ),
                 Selection::Field(
                     "timestamp".to_string(),
@@ -690,6 +692,7 @@ mod tests {
                         has_fragments: false,
                         selections: Vec::new(),
                     },
+                    None,
                 ),
             ],
         };
@@ -698,6 +701,7 @@ mod tests {
             "tx".to_string(),
             Vec::new(),
             selections_on_tx_field,
+            None,
         )];
 
         let operation = Operation {
@@ -823,7 +827,8 @@ mod tests {
             ]),
             namespace_identifier: "fuel_indexer_test_test_index".to_string(),
             entity_name: "tx".to_string(),
-            filters: Vec::new(),
+            query_params: QueryParams::default(),
+            alias: None,
         }];
         assert_eq!(expected, operation.parse(&schema));
     }

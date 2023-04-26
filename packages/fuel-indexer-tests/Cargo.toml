@@ -30,6 +30,7 @@ chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { workspace = true }
 fuel-indexer-api-server = { workspace = true }
 fuel-indexer-database = { workspace = true }
+fuel-indexer-graphql = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-postgres = { workspace = true, features = ["metrics"] }
 fuel-indexer-schema = { workspace = true, default-features = true }

@@ -1,6 +1,6 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
-    models::VerifySignatureRequest,
+    models::{QueryResponse, VerifySignatureRequest},
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
@@ -17,6 +17,7 @@ use fuel_indexer_database::{
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
+use fuel_indexer_graphql::graphql::GraphqlQueryBuilder;
 use fuel_indexer_lib::{
     config::{
         auth::{AuthenticationStrategy, Claims},
@@ -28,9 +29,7 @@ use fuel_indexer_lib::{
         ServiceRequest, ServiceStatus,
     },
 };
-use fuel_indexer_schema::db::{
-    graphql::GraphqlQueryBuilder, manager::SchemaManager, tables::Schema,
-};
+use fuel_indexer_schema::db::{manager::SchemaManager, tables::Schema};
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
@@ -361,14 +360,22 @@ pub async fn run_query(
     let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
 
-    let queries = query.as_sql(&schema, pool.database_type()).join(";\n");
+    let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
 
     let mut conn = pool.acquire().await?;
 
     match queries::run_query(&mut conn, queries).await {
         Ok(ans) => {
             let ans_json: Value = serde_json::from_value(ans)?;
-            Ok(serde_json::json!({ "data": ans_json }))
+
+            // If the response is paginated, remove the array wrapping.
+            if ans_json[0].get("page_info").is_some() {
+                Ok(serde_json::json!(QueryResponse {
+                    data: ans_json[0].clone()
+                }))
+            } else {
+                Ok(serde_json::json!(QueryResponse { data: ans_json }))
+            }
         }
         Err(e) => {
             error!("Error querying database: {e}.");
