@@ -15,7 +15,7 @@ use std::time::Duration;
 use tracing::{error, info};
 
 const STEADY_TICK_INTERVAL: u64 = 120;
-const TCP_TIMEOUT: u64 = 3;
+const TCP_TIMEOUT: u64 = 30;
 
 pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let DeployCommand {
