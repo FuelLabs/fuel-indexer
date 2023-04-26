@@ -1,14 +1,13 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::VerifySignatureRequest,
-    IndexerQueryParams,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
-    extract::{multipart::Multipart, Extension, Json, Path, Query},
+    extract::{multipart::Multipart, Extension, Json, Path},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -121,7 +120,7 @@ pub(crate) async fn health_check(
     })))
 }
 
-pub(crate) async fn remove_indexer(
+pub(crate) async fn stop_indexer(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -194,7 +193,6 @@ pub(crate) async fn register_indexer_assets(
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
-    params: Query<IndexerQueryParams>,
     multipart: Option<Multipart>,
 ) -> ApiResult<axum::Json<Value>> {
     if claims.is_unauthenticated() {
@@ -211,17 +209,6 @@ pub(crate) async fn register_indexer_assets(
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
-
-            if params.stop_previous.unwrap_or(false) {
-                let _ = remove_indexer(
-                    Path((namespace.clone(), identifier.clone())),
-                    Extension(tx.clone()),
-                    Extension(pool.clone()),
-                    Extension(claims.clone()),
-                )
-                .await?;
-            }
-
             let asset_type =
                 IndexAssetType::from_str(&name).expect("Invalid asset type.");
 

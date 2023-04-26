@@ -1,18 +1,11 @@
 #![deny(unused_crate_dependencies)]
 
-use serde::Deserialize;
-
 pub mod api;
 pub mod cli;
 pub(crate) mod commands;
 pub(crate) mod middleware;
 pub(crate) mod models;
 mod uses;
-
-#[derive(Debug, Deserialize)]
-pub struct IndexerQueryParams {
-    stop_previous: Option<bool>,
-}
 
 pub mod utils {
     use axum::body::Body;
