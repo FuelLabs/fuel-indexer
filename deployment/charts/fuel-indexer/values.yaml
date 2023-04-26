@@ -13,6 +13,9 @@ app:
     repository: ${fuel_indexer_image_repository}
     tag: ${fuel_indexer_image_tag}
     pullPolicy: Always
+  jwt:
+    issuer: ${fuel_indexer_jwt_issuer}
+    secret: ${fuel_indexer_jwt_secret}
   volume: 
     pvname: fuel-indexer-db-volume
     mountPath: /mnt/db/
