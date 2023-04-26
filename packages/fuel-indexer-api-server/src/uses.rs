@@ -134,53 +134,24 @@ pub(crate) async fn remove_indexer(
 
     if params.stop_previous.unwrap_or(false) {
         let mut conn = pool.acquire().await?;
-
-        let asset = queries::asset_for_index(
-            &mut conn,
-            &namespace,
-            &identifier,
-            IndexAssetType::Wasm,
-        )
-        .await?;
-
-        println!("penultimate_asset: {:?}", asset);
         let _ = queries::start_transaction(&mut conn).await?;
 
-        if let Err(_e) = queries::remove_asset_by_version(
-            &mut conn,
-            &asset.index_id,
-            &asset.version,
-            IndexAssetType::Wasm,
-        )
-        .await
+        if let Err(e) =
+            queries::remove_previous_indexer(&mut conn, &namespace, &identifier).await
         {
             queries::revert_transaction(&mut conn).await?;
 
-            error!(
-                "Failed to remove Asset({namespace}.{identifier}.{version}): {e}",
-                namespace = namespace,
-                identifier = identifier,
-                version = asset.version,
-                e = _e
-            );
-            println!(
-                "Failed to remove Asset({namespace}.{identifier}.{version}): {e}",
-                namespace = namespace,
-                identifier = identifier,
-                version = asset.version,
-                e = _e
-            );
+            error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
 
             return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
-        } else {
-            queries::commit_transaction(&mut conn).await?;
         }
 
-        tx.send(ServiceRequest::IndexStopPrevious(IndexStopRequest {
-            namespace,
-            identifier,
-        }))
-        .await?;
+        queries::commit_transaction(&mut conn).await?;
+        // tx.send(ServiceRequest::IndexStopPrevious(IndexStopRequest {
+        //     namespace,
+        //     identifier,
+        // }))
+        // .await?;
 
         return Ok(Json(json!({
             "success": "true"
@@ -277,6 +248,7 @@ pub(crate) async fn register_indexer_assets(
                     params.clone(),
                 )
                 .await?;
+                println!("Removed previous indexer");
             }
 
             let asset_type =

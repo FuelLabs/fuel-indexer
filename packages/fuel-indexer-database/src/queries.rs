@@ -354,6 +354,18 @@ pub async fn remove_indexer(
     }
 }
 
+pub async fn remove_previous_indexer(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::remove_previous_indexer(c, namespace, identifier).await
+        }
+    }
+}
+
 pub async fn remove_asset_by_version(
     conn: &mut IndexerConnection,
     index_id: &i64,
