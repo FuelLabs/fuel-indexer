@@ -17,8 +17,10 @@ use fuel_indexer_database::{
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
-use fuel_indexer_graphql::graphql::{GraphqlQueryBuilder, Selection};
-use fuel_indexer_graphql_parser::query::{parse_query, Definition, OperationDefinition};
+use fuel_indexer_graphql::graphql::GraphqlQueryBuilder;
+use fuel_indexer_graphql_parser::query::{
+    parse_query, Definition, OperationDefinition, Selection,
+};
 use fuel_indexer_lib::{
     config::{
         auth::{AuthenticationStrategy, Claims},
@@ -446,7 +448,6 @@ async fn process_queries(
     query_strings.push(current_query);
 
     let mut results = HashMap::new();
-    let mut index = 1;
 
     for query_str in query_strings {
         let document = match parse_query::<String>(&query_str) {
@@ -463,23 +464,24 @@ async fn process_queries(
                 let cloned_query = query.clone();
                 match run_query(cloned_query.to_string(), schema.clone(), pool).await {
                     Ok(query_res) => {
-                        let op_name = query
+                        let field_name = query
                             .selection_set
                             .items
                             .get(0)
                             .and_then(|item| match item {
-                                Selection::Field(name, ..) => Some(name.to_owned()),
+                                Selection::Field(field, ..) => {
+                                    Some(field.name.to_owned())
+                                }
                                 _ => None,
                             })
-                            .unwrap_or_else(|| format!("data_{}", index));
-                        results.insert(op_name, query_res);
+                            .ok_or(ApiError::Http(HttpError::BadRequest))?;
+                        results.insert(field_name, query_res);
                     }
                     Err(e) => {
                         error!("query_graph error: {}", e);
                         return Err(e);
                     }
                 }
-                index += 1;
             } else {
                 println!("Skipping non-query definition");
             }
