@@ -19,6 +19,6 @@ You can handle functions that produce a `Return` receipt type by adding a parame
 
 ```rust, ignore
 fn handle_return(data: abi::Return) {
-  // handle the returned data
+  // handle the emitted Return receipt
 }
 ```

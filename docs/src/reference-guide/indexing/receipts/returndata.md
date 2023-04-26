@@ -18,6 +18,6 @@ You can handle functions that produce a `ReturnData` receipt type by using the r
 
 ```rust, ignore
 fn handle_return_data(data: MyStruct) {
-  // handle the returned data
+  // handle the emitted ReturnData receipt
 }
 ```

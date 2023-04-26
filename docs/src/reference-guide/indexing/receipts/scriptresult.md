@@ -15,6 +15,6 @@ You can handle functions that produce a `ScriptResult` receipt type by adding a 
 
 ```rust, ignore
 fn handle_script_result(script_result: abi::ScriptResult) {
-  // handle the script result
+  // handle the ScriptResult receipt
 }
 ```

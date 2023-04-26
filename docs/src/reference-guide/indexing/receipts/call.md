@@ -19,7 +19,7 @@ pub struct Call {
 You can handle functions that produce a `Call` receipt type by adding a parameter with the type `abi::Call`.
 
 ```rust, ignore
-fn handle_log(call: abi::Call) {
-  // handle all functions that produce a Call receipt
+fn handle_call(call: abi::Call) {
+  // handle the emitted Call receipt
 }
 ```
