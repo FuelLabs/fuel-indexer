@@ -13,6 +13,7 @@ The new authentication functionality offers a flexible and secure way for users 
 Below is a demonstration of basic JWT authentication using an indexer operator at "https://indexer.fuel.network"
 
 ```bash
+
 forc index auth --url https://indexer.fuel.network:29987
 ```
 
