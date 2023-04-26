@@ -17,9 +17,9 @@ anyhow = { version = "1.0", default-features = false, optional = true }
 async-trait = { version = "0.1", optional = true }
 bincode = { version = "1.3" }
 fuel-indexer = { workspace = true, features = ["api-server"], optional = true }
-fuel-indexer-api-server = { workspace = true, default-features = false, optional = true }
-fuel-indexer-database = { workspace = true, default-features = false, optional = true }
-fuel-indexer-lib = { workspace = true, default-features = false }
+fuel-indexer-api-server = { workspace = true, optional = true }
+fuel-indexer-database = { workspace = true, optional = true }
+fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
 hex = "0.4"

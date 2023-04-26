@@ -244,7 +244,7 @@ jobs:
 
   cargo-test-forc-index-plugins:
     # if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
-    if: false 
+    if: false
     needs: 
       - cargo-toml-fmt-check
       - check-is-semver-branch
