@@ -744,6 +744,39 @@ pub async fn index_id_for(
     Ok(id)
 }
 
+pub async fn asset_for_index(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
+    //#[cfg(feature = "metrics")]
+    //METRICS.db.postgres.asset_for_index_calls.inc();
+
+    let index_id = index_id_for(conn, namespace, identifier).await?;
+    let query = format!(
+        "SELECT * FROM index_asset_registry_{} 
+        WHERE index_id = {} ORDER BY id DESC LIMIT 1",
+        asset_type.as_ref(),
+        index_id
+    );
+    let row = sqlx::query(&query).fetch_one(conn).await?;
+
+    let id = row.get(0);
+    let index_id = row.get(1);
+    let version = row.get(2);
+    let digest = row.get(3);
+    let bytes = row.get(4);
+
+    Ok(IndexAsset {
+        id,
+        index_id,
+        version,
+        digest,
+        bytes,
+    })
+}
+
 pub async fn penultimate_asset_for_index(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,

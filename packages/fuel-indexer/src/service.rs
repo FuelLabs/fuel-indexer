@@ -280,6 +280,15 @@ async fn create_service_task(
                         warn!("Stop Indexer: No indexer with the name Indexer({uid})");
                     }
                 }
+                ServiceRequest::IndexStopPrevious(request) => {
+                    let uid = format!("{}.{}", request.namespace, request.identifier);
+
+                    if let Some(killer) = killers.remove(&uid) {
+                        killer.store(true, Ordering::SeqCst);
+                    } else {
+                        warn!("Stop Previous Indexer: No indexer with the name Indexer({uid})");
+                    }
+                }
                 ServiceRequest::IndexRevert(request) => {
                     let uid = format!("{}.{}", request.namespace, request.identifier);
 

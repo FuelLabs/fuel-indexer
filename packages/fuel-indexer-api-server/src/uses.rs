@@ -126,9 +126,66 @@ pub(crate) async fn remove_indexer(
     Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(claims): Extension<Claims>,
+    params: Query<IndexerQueryParams>,
 ) -> ApiResult<axum::Json<Value>> {
     if claims.is_unauthenticated() {
         return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
+    if params.stop_previous.unwrap_or(false) {
+        println!("Inside remove_indexer handler, stop_previous is true");
+        let mut conn = pool.acquire().await?;
+
+        let asset = queries::asset_for_index(
+            &mut conn,
+            &namespace,
+            &identifier,
+            IndexAssetType::Wasm,
+        )
+        .await?;
+
+        println!("penultimate_asset: {:?}", asset);
+        let _ = queries::start_transaction(&mut conn).await?;
+
+        if let Err(_e) = queries::remove_asset_by_version(
+            &mut conn,
+            &asset.index_id,
+            &asset.version,
+            IndexAssetType::Wasm,
+        )
+        .await
+        {
+            queries::revert_transaction(&mut conn).await?;
+
+            error!(
+                "Failed to remove Asset({namespace}.{identifier}.{version}): {e}",
+                namespace = namespace,
+                identifier = identifier,
+                version = asset.version,
+                e = _e
+            );
+            println!(
+                "Failed to remove Asset({namespace}.{identifier}.{version}): {e}",
+                namespace = namespace,
+                identifier = identifier,
+                version = asset.version,
+                e = _e
+            );
+
+            return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
+        } else {
+            queries::commit_transaction(&mut conn).await?;
+        }
+
+        tx.send(ServiceRequest::IndexStopPrevious(IndexStopRequest {
+            namespace,
+            identifier,
+        }))
+        .await?;
+
+        return Ok(Json(json!({
+            "success": "true"
+        })));
     }
 
     let mut conn = pool.acquire().await?;
@@ -201,6 +258,19 @@ pub(crate) async fn register_indexer_assets(
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
+    if params.stop_previous.unwrap_or(false) {
+        println!("Stopping previous indexer");
+        let _ = remove_indexer(
+            Path((namespace.clone(), identifier.clone())),
+            Extension(tx.clone()),
+            Extension(pool.clone()),
+            Extension(claims.clone()),
+            params.clone(),
+        )
+        .await?;
+    }
+    println!("Registering new indexer");
+
     let mut assets: Vec<IndexAsset> = Vec::new();
 
     if let Some(mut multipart) = multipart {
@@ -212,15 +282,9 @@ pub(crate) async fn register_indexer_assets(
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
 
-            if params.stop_previous.unwrap_or(false) {
-                let _ = remove_indexer(
-                    Path((namespace.clone(), identifier.clone())),
-                    Extension(tx.clone()),
-                    Extension(pool.clone()),
-                    Extension(claims.clone()),
-                )
-                .await?;
-            }
+            let mut conn = pool.acquire().await?;
+
+            let _ = queries::start_transaction(&mut conn).await?;
 
             let asset_type =
                 IndexAssetType::from_str(&name).expect("Invalid asset type.");

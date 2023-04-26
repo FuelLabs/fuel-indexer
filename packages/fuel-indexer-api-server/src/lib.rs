@@ -9,7 +9,7 @@ pub(crate) mod middleware;
 pub(crate) mod models;
 mod uses;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct IndexerQueryParams {
     stop_previous: Option<bool>,
 }

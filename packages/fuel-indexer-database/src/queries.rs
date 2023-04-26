@@ -291,6 +291,19 @@ pub async fn index_id_for(
     }
 }
 
+pub async fn asset_for_index(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+    asset_type: IndexAssetType,
+) -> sqlx::Result<IndexAsset> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::asset_for_index(c, namespace, identifier, asset_type).await
+        }
+    }
+}
+
 pub async fn penultimate_asset_for_index(
     conn: &mut IndexerConnection,
     namespace: &str,
