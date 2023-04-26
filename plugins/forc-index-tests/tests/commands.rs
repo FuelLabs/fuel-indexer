@@ -1,5 +1,8 @@
-use forc_index::commands::{init::Command as InitCommand, new::Command as NewCommand};
-use std::path::PathBuf;
+use forc_index::commands::{
+    build::Command as BuildCommand, init::Command as InitCommand,
+    new::Command as NewCommand,
+};
+use std::path::{Path, PathBuf};
 use tempfile::{Builder, TempDir};
 
 #[test]
@@ -39,45 +42,45 @@ fn test_init_command_creates_correct_project_tree() {
     temp_dir.close().expect("Failed to close temp dir");
 }
 
-// #[test]
-// fn test_build_command_creates_artifact_at_expected_path() {
-//     let (temp_dir, temp_dir_path, temp_dir_name) = init_temp_dir();
-//
-//     forc_index::commands::init::exec(InitCommand {
-//         name: Some(temp_dir_name.clone()),
-//         path: Some(temp_dir_path.clone()),
-//         namespace: temp_dir_name.to_string(),
-//         native: false,
-//         absolute_paths: false,
-//         verbose: false,
-//     })
-//     .expect("Init command failed");
-//
-//     std::env::set_current_dir(&temp_dir_path).expect("Failed to set current dir");
-//
-//     let manifest = temp_dir_name + ".manifest.yaml";
-//
-//     forc_index::commands::build::exec(BuildCommand {
-//         target: "wasm32-unknown-unknown".to_string(),
-//         native: false,
-//         path: None,
-//         verbose: false,
-//         profile: None,
-//         release: false.to_string(),
-//         locked: false,
-//         manifest: Some(manifest),
-//         target_dir: None,
-//     })
-//     .expect("Build command failed");
-//     let wasm_artifact_path =
-//         temp_dir_path.join("target/wasm32-unknown-unknown/debug/plugin_test.wasm");
-//
-//     assert!(
-//         Path::new(&wasm_artifact_path).exists(),
-//         "WASM artifact not found at expected path"
-//     );
-//     temp_dir.close().expect("Failed to close temp dir");
-// }
+#[test]
+fn test_build_command_creates_artifact_at_expected_path() {
+    let (temp_dir, temp_dir_path, temp_dir_name) = init_temp_dir();
+
+    forc_index::commands::init::exec(InitCommand {
+        name: Some(temp_dir_name.clone()),
+        path: Some(temp_dir_path.clone()),
+        namespace: temp_dir_name.to_string(),
+        native: false,
+        absolute_paths: false,
+        verbose: false,
+    })
+    .expect("Init command failed");
+
+    std::env::set_current_dir(&temp_dir_path).expect("Failed to set current dir");
+
+    let manifest = temp_dir_name + ".manifest.yaml";
+
+    forc_index::commands::build::exec(BuildCommand {
+        target: "wasm32-unknown-unknown".to_string(),
+        native: false,
+        path: None,
+        verbose: false,
+        profile: None,
+        release: false.to_string(),
+        locked: false,
+        manifest: Some(manifest),
+        target_dir: None,
+    })
+    .expect("Build command failed");
+    let wasm_artifact_path =
+        temp_dir_path.join("target/wasm32-unknown-unknown/debug/plugin_test.wasm");
+
+    assert!(
+        Path::new(&wasm_artifact_path).exists(),
+        "WASM artifact not found at expected path"
+    );
+    temp_dir.close().expect("Failed to close temp dir");
+}
 
 #[test]
 fn test_new_command_initializes_project_at_new_directory() {
