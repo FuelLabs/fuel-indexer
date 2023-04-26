@@ -1,8 +1,5 @@
-use forc_index::commands::{
-    build::Command as BuildCommand, init::Command as InitCommand,
-    new::Command as NewCommand,
-};
-use std::path::{Path, PathBuf};
+use forc_index::commands::{init::Command as InitCommand, new::Command as NewCommand};
+use std::path::PathBuf;
 use tempfile::{Builder, TempDir};
 
 #[test]

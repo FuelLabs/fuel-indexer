@@ -73,7 +73,7 @@ mod explorer_index {
             match &tx.transaction {
                 #[allow(unused)]
                 Transaction::Script(t) => {
-                    Logger::info("Inside a script transaction. (>^‿^)>");
+                    Logger::info("Inside a script transaction./././ (>^‿^)>");
 
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
