@@ -20,6 +20,6 @@ You can handle functions that produce a `TransferOut` receipt type by adding a p
 
 ```rust, ignore
 fn handle_transferout(transfer_out: abi::TransferOut) {
-  // handle the transfer out
+  // handle the emitted TransferOut receipt
 }
 ```

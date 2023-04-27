@@ -21,6 +21,6 @@ You can handle functions that produce a `Transfer` receipt type by adding a para
 
 ```rust, ignore
 fn handle_transfer(transfer: abi::Transfer) {
-  // handle the transfer
+  // handle the emitted Transfer receipt
 }
 ```

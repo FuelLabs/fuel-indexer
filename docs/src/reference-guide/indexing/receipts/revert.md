@@ -26,6 +26,6 @@ You can handle functions that could produce a `Revert` receipt by adding a param
 
 ```rust, ignore
 fn handle_revert(revert: abi::Revert) {
-  // handle the revert 
+  // handle the emitted Revert receipt
 }
 ```
