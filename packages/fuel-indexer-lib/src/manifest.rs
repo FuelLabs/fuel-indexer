@@ -68,6 +68,7 @@ pub struct Manifest {
     )]
     pub contract_id: ContractIds,
     pub start_block: Option<u64>,
+    pub end_block: Option<u64>,
     #[serde(default)]
     pub resumable: Option<bool>,
 }

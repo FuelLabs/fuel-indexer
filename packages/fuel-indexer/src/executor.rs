@@ -29,7 +29,7 @@ use tokio::{
     task::{spawn_blocking, JoinHandle},
     time::{sleep, Duration},
 };
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 use wasmer::{
     imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store,
     WasmerEnv,
@@ -72,6 +72,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     kill_switch: Arc<AtomicBool>,
 ) -> impl Future<Output = ()> {
     let start_block = manifest.start_block.expect("Failed to detect start_block.");
+    let end_block = manifest.end_block; // Value can be none.
     let stop_idle_indexers = config.stop_idle_indexers;
 
     let fuel_node_addr = if config.indexer_net_config {
@@ -131,6 +132,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             let mut block_info = Vec::new();
             for block in results.into_iter() {
+                if let Some(end_block) = end_block {
+                    if block.header.height.0 > end_block {
+                        info!("Stopping indexer at the specified end_block: {end_block}");
+                        break;
+                    }
+                } else {
+                    warn!("No end block is set. Indexer will run forever!");
+                }
+
                 let producer = block.block_producer().map(|pk| pk.hash());
 
                 let mut transactions = Vec::new();
