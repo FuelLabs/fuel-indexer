@@ -94,8 +94,8 @@ impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let generic_details = "Internal server error.".to_string();
 
-        error!("{self:?}");
-        
+        error!("ApiError: {self:?}");
+
         let (status, details) = match self {
             Self::JsonWebToken(e) => (
                 StatusCode::BAD_REQUEST,
