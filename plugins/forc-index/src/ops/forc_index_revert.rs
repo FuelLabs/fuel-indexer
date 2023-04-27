@@ -48,18 +48,22 @@ pub async fn init(command: RevertCommand) -> anyhow::Result<()> {
         .send()
         .expect("Failed to deploy indexer.");
 
-    if res.status() != StatusCode::OK {
-        error!(
-            "\n❌ {} returned a non-200 response code: {:?}",
-            &target,
-            res.status()
-        );
-        return Ok(());
-    }
-
+    let status = res.status();
     let res_json = res
         .json::<Map<String, Value>>()
         .expect("Failed to read JSON response.");
+
+    if status != StatusCode::OK {
+        if verbose {
+            error!("\n❌ {target} returned a non-200 response code: {status:?}",);
+
+            info!("\n{}", to_string_pretty(&res_json)?);
+        } else {
+            info!("\n{}", to_string_pretty(&res_json)?);
+        }
+
+        return Ok(());
+    }
 
     if verbose {
         info!(
