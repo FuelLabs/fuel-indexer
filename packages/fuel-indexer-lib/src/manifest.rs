@@ -179,7 +179,7 @@ impl ContractIds {
             ContractIds::Multiple(ids) => {
                 serde_json::to_string(ids).map_err(serde::ser::Error::custom)?
             }
-            _ => String::new(),
+            _ => return serializer.serialize_none(),
         };
         serializer.serialize_str(&s)
     }
