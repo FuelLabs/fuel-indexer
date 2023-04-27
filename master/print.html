@@ -169,17 +169,19 @@
 <p>To run the Fuel indexer, you'll need to install a few dependencies on your system:</p>
 <ul>
 <li><a href="getting-started/dependencies/./fuelup.html"><code>fuelup</code></a>, the Fuel toolchain manager</li>
-<li>a supported <a href="getting-started/dependencies/./database.html">database</a>
+<li>A supported <a href="getting-started/dependencies/./database.html">database</a>
 <ul>
-<li>We support Postgres at this time</li>
+<li>As of now we only support Postgres</li>
 </ul>
 </li>
-<li>the <a href="getting-started/dependencies/./wasm.html"><code>wasm32-unknown-unknown</code></a> Rust compilation target</li>
-<li><a href="getting-started/dependencies/./wasm.html"><code>wasm-snip</code></a>, a utility for trimming WebAssembly binaries</li>
+<li>The <a href="getting-started/dependencies/./wasm.html"><code>wasm32-unknown-unknown</code></a> <code>rustup</code> target</li>
+<li><a href="getting-started/dependencies/./wasm.html"><code>wasm-snip</code></a>, a utility for stripping symbols from WebAssemly binaries.</li>
 </ul>
 <p>If you don't want to install a database directly onto your system, you can use Docker to run it as an isolated container. You can install it by following the <a href="https://docs.docker.com/get-docker/">install instructions</a>. For reference purposes, we provide a <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/docker-compose.yaml"><code>docker compose</code> file</a> that runs a Postgres database and the Fuel indexer service.</p>
 <blockquote>
-<p>Note for Apple Silicon macOS users: Using the Fuel indexer through Docker on Apple Silicon systems is currently not supported. We're working to bring support to these systems.</p>
+<p>IMPORTANT: Note for Apple Silicon macOS users: </p>
+<p>Using the Fuel indexer through Docker on Apple Silicon systems is currently not supported. </p>
+<p>We're working to bring support to these systems.</p>
 </blockquote>
 <p>Also, it's assumed that you have the Rust programming language installed on your system. If that is not the case, please refer to the <a href="https://www.rust-lang.org/tools/install">Rust installation instructions</a> for more information.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="fuelup"><a class="header" href="#fuelup"><code>fuelup</code></a></h1>
@@ -188,16 +190,15 @@
 </code></pre>
 <p>After <code>fuelup</code> has been installed, the <code>forc index</code> command and <code>fuel-indexer</code> binaries will be available on your system.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="database"><a class="header" href="#database">Database</a></h1>
-<p>At this time, the Fuel indexer requires the use of a database. We currently support a single database option: PostgresSQL. PostgreSQL is a database solution with a complex feature set and requires a database server.</p>
+<p>The Fuel indexer requires the use of a database. We currently support <a href="https://www.postgresql.org/docs/">PostgresSQL</a>.</p>
 <h2 id="postgresql"><a class="header" href="#postgresql">PostgreSQL</a></h2>
 <blockquote>
-<p>Note: The following explanation is for demonstration purposes only. For an even faster setup on some platforms, you can use the <a href="getting-started/dependencies/../../reference-guide/plugins/forc-postgres/index.html">forc index postgres</a> command. <em>A production setup should use secure users, permissions, and passwords.</em></p>
+<p>IMPORTANT: Fuel Indexer users on most platforms don't need to explicitly install PostgresQL software via a package manager. When starting the indexer service via <code>forc index start</code> simply pass the <code>--embedded-database</code> flag in order to have the indexer service download and start an embedded PostgresQL instance via <a href="getting-started/dependencies/./../../reference-guide/plugins/forc-postgres/index.html"><code>forc index postgres</code></a>.</p>
+<p>However if users or devs would like to install PostgresQL via some package manager, feel free to checkout the more detailed installation steps below.</p>
 </blockquote>
 <h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
-<p>On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. Once installed, you can add PostgreSQL to your system by running <code>brew install postgresql</code>. You can then start the service through <code>brew services start postgresql</code>. You'll need to create a database for your index data, which you can do by running <code>createdb [DATABASE_NAME]</code>. You may also need to create the <code>postgres</code> role; you can do so by running <code>createuser -s postgres</code>.</p>
-<h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
-<p>For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new <code>postgres</code> user account; you can switch to that account by running <code>sudo -i -u postgres</code>. After you have switched accounts, you may need to create a <code>postgres</code> database role by running <code>createuser --interactive</code>. You will be asked a few questions; the name of the role should be <code>postgres</code> and you should elect for the new role to be a superuser. Finally, you can create a database by running <code>createdb [DATABASE_NAME]</code>.</p>
-<p>In either case, your PostgreSQL database should now be accessible at <code>postgres://postgres@localhost:5432/[DATABASE_NAME]</code>.</p>
+<p>On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the <a href="https://brew.sh/">instructions</a>. </p>
+<p>Once installed, you can add PostgreSQL to your system by running <code>brew install postgresql</code>. </p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="wasm"><a class="header" href="#wasm">WASM</a></h1>
 <p>Two additonal cargo components will be required to build your indexers: <code>wasm-snip</code> and the <code>wasm32-unknown-unknown</code> target.</p>
 <blockquote>
@@ -1456,8 +1457,8 @@ pub struct Call {
 <li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#return-receipt">Read more about <code>Call</code> in the Fuel protocol ABI spec</a></li>
 </ul>
 <p>You can handle functions that produce a <code>Call</code> receipt type by adding a parameter with the type <code>abi::Call</code>.</p>
-<pre><code class="language-rust  ignore">fn handle_log(call: abi::Call) {
-  // handle all functions that produce a Call receipt
+<pre><code class="language-rust  ignore">fn handle_call(call: abi::Call) {
+  // handle the emitted Call receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="log"><a class="header" href="#log">Log</a></h1>
 <pre><code class="language-rust  ignore">use fuel_types::ContractId;
@@ -1477,7 +1478,7 @@ pub struct Log {
 </ul>
 <p>You can handle functions that produce a <code>Log</code> receipt type by adding a parameter with the type <code>abi::Log</code>.</p>
 <pre><code class="language-rust  ignore">fn handle_log(log: abi::Log) {
-  // handle all functions that produce a log receipt
+  // handle the emitted Log receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="logdata"><a class="header" href="#logdata">LogData</a></h1>
 <pre><code class="language-rust ignore">use fuel_types::ContractId;
@@ -1502,7 +1503,7 @@ pub struct LogData {
 <p>Note: the example below will run both when the type <code>MyStruct</code> is logged as well as when <code>MyStruct</code> is returned from a function.</p>
 </blockquote>
 <pre><code class="language-rust  ignore">fn handle_log_data(data: MyStruct) {
-  // handle the logged data
+  // handle the emitted LogData receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="messageout"><a class="header" href="#messageout">MessageOut</a></h1>
 <pre><code class="language-rust ignore">use fuel_types::{MessageId, Bytes32, Address};
@@ -1523,7 +1524,7 @@ pub struct MessageOut {
 </ul>
 <p>You can handle functions that produce a <code>MessageOut</code> receipt type by adding a parameter with the type <code>abi::MessageOut</code>.</p>
 <pre><code class="language-rust  ignore">fn handle_message_out(message_out: abi::MessageOut) {
-  // handle the message out
+  // handle the emitted MessageOut receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="panic"><a class="header" href="#panic">Panic</a></h1>
 <pre><code class="language-rust  ignore">use fuel_types::ContractId;
@@ -1538,7 +1539,7 @@ pub struct Panic {
 <li>You can handle functions that could produce a <code>Panic</code> receipt by adding a parameter with the type <code>abi::Panic</code>.</li>
 </ul>
 <pre><code class="language-rust  ignore">fn handle_panic(panic: abi::Panic) {
-  // handle the panic 
+  // handle the emitted Panic receipt 
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="return"><a class="header" href="#return">Return</a></h1>
 <pre><code class="language-rust  ignore">use fuel_types::ContractId;
@@ -1559,7 +1560,7 @@ pub struct Return {
 </ul>
 <p>You can handle functions that produce a <code>Return</code> receipt type by adding a parameter with the type <code>abi::Return</code>.</p>
 <pre><code class="language-rust  ignore">fn handle_return(data: abi::Return) {
-  // handle the returned data
+  // handle the emitted Return receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="returndata"><a class="header" href="#returndata">ReturnData</a></h1>
 <pre><code class="language-rust  ignore">use fuel_types::ContractId;
@@ -1577,7 +1578,7 @@ pub struct ReturnData {
 <p>Note: the example below will run both when the type <code>MyStruct</code> is logged as well as when <code>MyStruct</code> is returned from a function.</p>
 </blockquote>
 <pre><code class="language-rust  ignore">fn handle_return_data(data: MyStruct) {
-  // handle the returned data
+  // handle the emitted ReturnData receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="revert"><a class="header" href="#revert">Revert</a></h1>
 <pre><code class="language-rust  ignore">use fuel_types::ContractId;
@@ -1603,7 +1604,7 @@ pub struct Revert {
 </ul>
 <p>You can handle functions that could produce a <code>Revert</code> receipt by adding a parameter with the type <code>abi::Revert</code>.</p>
 <pre><code class="language-rust  ignore">fn handle_revert(revert: abi::Revert) {
-  // handle the revert 
+  // handle the emitted Revert receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="scriptresult"><a class="header" href="#scriptresult">ScriptResult</a></h1>
 <pre><code class="language-rust ignore">pub struct ScriptResult {
@@ -1617,7 +1618,7 @@ pub struct Revert {
 </ul>
 <p>You can handle functions that produce a <code>ScriptResult</code> receipt type by adding a parameter with the type <code>abi::ScriptResult</code>.</p>
 <pre><code class="language-rust  ignore">fn handle_script_result(script_result: abi::ScriptResult) {
-  // handle the script result
+  // handle the emitted ScriptResult receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="transfer"><a class="header" href="#transfer">Transfer</a></h1>
 <pre><code class="language-rust ignore">use fuel_types::{ContractId, AssetId};
@@ -1640,7 +1641,7 @@ pub struct Transfer {
 </ul>
 <p>You can handle functions that produce a <code>Transfer</code> receipt type by adding a parameter with the type <code>abi::Transfer</code>.</p>
 <pre><code class="language-rust  ignore">fn handle_transfer(transfer: abi::Transfer) {
-  // handle the transfer
+  // handle the emitted Transfer receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="transferout"><a class="header" href="#transferout">TransferOut</a></h1>
 <pre><code class="language-rust ignore">use fuel_types::{ContractId, AssetId, Address};
@@ -1659,7 +1660,7 @@ pub struct TransferOut {
 </ul>
 <p>You can handle functions that produce a <code>TransferOut</code> receipt type by adding a parameter with the type <code>abi::TransferOut</code>.</p>
 <pre><code class="language-rust  ignore">fn handle_transferout(transfer_out: abi::TransferOut) {
-  // handle the transfer out
+  // handle the emitted TransferOut receipt
 }</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="types"><a class="header" href="#types">Types</a></h1>
 <p>Below is a mapping of GraphQL schema types to their Sway and database equivalents.</p>

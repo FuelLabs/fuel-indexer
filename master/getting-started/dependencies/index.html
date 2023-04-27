@@ -151,17 +151,19 @@
 <p>To run the Fuel indexer, you'll need to install a few dependencies on your system:</p>
 <ul>
 <li><a href="./fuelup.html"><code>fuelup</code></a>, the Fuel toolchain manager</li>
-<li>a supported <a href="./database.html">database</a>
+<li>A supported <a href="./database.html">database</a>
 <ul>
-<li>We support Postgres at this time</li>
+<li>As of now we only support Postgres</li>
 </ul>
 </li>
-<li>the <a href="./wasm.html"><code>wasm32-unknown-unknown</code></a> Rust compilation target</li>
-<li><a href="./wasm.html"><code>wasm-snip</code></a>, a utility for trimming WebAssembly binaries</li>
+<li>The <a href="./wasm.html"><code>wasm32-unknown-unknown</code></a> <code>rustup</code> target</li>
+<li><a href="./wasm.html"><code>wasm-snip</code></a>, a utility for stripping symbols from WebAssemly binaries.</li>
 </ul>
 <p>If you don't want to install a database directly onto your system, you can use Docker to run it as an isolated container. You can install it by following the <a href="https://docs.docker.com/get-docker/">install instructions</a>. For reference purposes, we provide a <a href="https://github.com/FuelLabs/fuel-indexer/blob/master/scripts/docker-compose.yaml"><code>docker compose</code> file</a> that runs a Postgres database and the Fuel indexer service.</p>
 <blockquote>
-<p>Note for Apple Silicon macOS users: Using the Fuel indexer through Docker on Apple Silicon systems is currently not supported. We're working to bring support to these systems.</p>
+<p>IMPORTANT: Note for Apple Silicon macOS users: </p>
+<p>Using the Fuel indexer through Docker on Apple Silicon systems is currently not supported. </p>
+<p>We're working to bring support to these systems.</p>
 </blockquote>
 <p>Also, it's assumed that you have the Rust programming language installed on your system. If that is not the case, please refer to the <a href="https://www.rust-lang.org/tools/install">Rust installation instructions</a> for more information.</p>
 

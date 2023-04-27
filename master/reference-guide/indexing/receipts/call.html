@@ -163,8 +163,8 @@ pub struct Call {
 <li><a href="https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#return-receipt">Read more about <code>Call</code> in the Fuel protocol ABI spec</a></li>
 </ul>
 <p>You can handle functions that produce a <code>Call</code> receipt type by adding a parameter with the type <code>abi::Call</code>.</p>
-<pre><code class="language-rust  ignore">fn handle_log(call: abi::Call) {
-  // handle all functions that produce a Call receipt
+<pre><code class="language-rust  ignore">fn handle_call(call: abi::Call) {
+  // handle the emitted Call receipt
 }</code></pre>
 
                     </main>
