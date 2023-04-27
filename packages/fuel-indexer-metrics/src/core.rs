@@ -62,7 +62,7 @@ impl Metric for Web {
         let requests = Family::<Label, Histogram>::new_with_constructor(|| {
             Histogram::new(TIMING_HISTOGRAM_BUCKETS.iter().cloned())
         });
-        registry.register("web_request_duration_seconds", "", requests.clone());
+        registry.register("web_request_duration", "", requests.clone());
         Self { registry, requests }
     }
 }
