@@ -74,6 +74,7 @@ mod explorer_index {
                 #[allow(unused)]
                 Transaction::Script(t) => {
                     Logger::info("Inside a script transaction. (>^‿^)>");
+                    Logger::info("Hey123");
 
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
