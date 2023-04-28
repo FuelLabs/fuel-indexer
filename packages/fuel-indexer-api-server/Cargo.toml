@@ -15,7 +15,7 @@ path = "src/bin/main.rs"
 
 [dependencies]
 anyhow = "1.0"
-async-graphql = "5.0.7"
+async-graphql = { version = "5.0.7", features = ["dynamic-schema"] }
 async-graphql-axum = "5.0.7"
 async-std = "1"
 axum = { version = "0.6", features = ["multipart", "macros"] }

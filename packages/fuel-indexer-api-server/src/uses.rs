@@ -2,8 +2,13 @@ use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::{QueryResponse, VerifySignatureRequest},
 };
-use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
-use async_graphql_axum::GraphQLRequest;
+use async_graphql::{
+    dynamic::Schema as DynamicSchema, dynamic::*, Value as DynamicValue,
+};
+use async_graphql::{
+    http::{playground_source, GraphQLPlaygroundConfig},
+};
+use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
@@ -40,7 +45,7 @@ use std::{
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 use tokio::sync::mpsc::Sender;
-use tracing::error;
+use tracing::{error};
 
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::encode_metrics_response;
@@ -403,4 +408,146 @@ pub async fn gql_playground(
 #[cfg(feature = "metrics")]
 pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
     encode_metrics_response()
+}
+
+//
+// Async GraphQL code
+//
+pub async fn gql_playground_next(
+    Path((namespace, identifier)): Path<(String, String)>,
+) -> ApiResult<impl IntoResponse> {
+    let html = playground_source(
+        GraphQLPlaygroundConfig::new(&format!("/api/next/{namespace}/{identifier}"))
+            .with_setting("scehma.polling.enable", true),
+    );
+
+    let response = Response::builder()
+        .status(StatusCode::OK)
+        .header(http::header::CONTENT_TYPE, "text/html; charset=utf-8")
+        .body(Body::from(html))?;
+
+    Ok(response)
+}
+
+
+
+pub(crate) async fn next_query_graph(
+    Path((namespace, identifier)): Path<(String, String)>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
+    req: GraphQLRequest,
+) -> GraphQLResponse {
+    println!("Start building schema");
+    let schema = manager
+        .read()
+        .await
+        .load_schema(&namespace, &identifier)
+        .await
+        .unwrap();
+    let req_ref = req.into_inner();
+    let query = &req_ref.query;
+    let dy_schema: DynamicSchema =
+        build_schema(query.clone(), schema, pool).await.unwrap();
+
+    dy_schema.execute(req_ref).await.into()
+}
+
+async fn query_db(
+    query: String,
+    schema: Schema,
+    pool: &IndexerConnectionPool,
+) -> ApiResult<axum::Json<Value>> {
+    match run_query(query, schema, &pool).await {
+        Ok(query_res) => Ok(axum::Json(query_res)),
+        Err(e) => {
+            error!("query_graph error: {e}");
+            Err(e)
+        }
+    }
+}
+
+pub async fn build_schema(
+    query: String,
+    schema: Schema,
+    pool: IndexerConnectionPool,
+) -> Result<DynamicSchema, SchemaError> {
+    let mut new_query: Object = Object::new("QueryRoot");
+    let mut new_schema = DynamicSchema::build(new_query.type_name(), None, None);
+
+    for (type_name, fields) in schema.fields.iter() {
+        if type_name != "QueryRoot" {
+            let mut obj = Object::new(type_name.to_string());
+            for (field_name, field_type) in fields.iter() {
+                if field_type.as_str() != "__" {
+                    let field_name_clone = field_name.clone();
+                    let type_name = field_type.to_string().replace("!", "");
+                    let type_type = TypeRef::named_nn(type_name);
+
+                    obj = obj.field(Field::new(
+                        field_name.to_string(),
+                        type_type,
+                        move |ctx: ResolverContext| {
+                            let field_name_clone = field_name_clone.clone();
+                            FieldFuture::new(async move {
+                                let data = ctx.parent_value.try_downcast_ref::<Value>().unwrap().clone();
+                                let val = data.get(field_name_clone).unwrap().clone();
+                                Ok(Some(DynamicValue::from_json(val).unwrap()))
+                            })
+                        },
+                    ));
+                }
+            }
+            new_schema = new_schema.register(obj);
+        } else {
+            for (field_name, field_type) in fields.iter() {
+                let query_clone = query.clone();
+                let schema_clone = schema.clone();
+                let pool_clone = pool.clone();
+
+                new_query = new_query.field(Field::new(
+                    field_name,
+                    TypeRef::named_list_nn(field_type),
+                    move |_ctx| {
+                        let query_clone = query_clone.clone();
+                        let schema_clone = schema_clone.clone();
+                        let pool_clone = pool_clone.clone();
+
+                        FieldFuture::new(async move {
+                            let result = query_db(query_clone, schema_clone, &pool_clone).await.unwrap();
+                            let result = result.get("data").unwrap();
+                            println!("{:#?}", result);
+                            let list = result.as_array().unwrap().to_owned();
+                            let data = list.into_iter().map(|v| FieldValue::owned_any(v));
+                            Ok(Some(FieldValue::list(data)))
+                        })
+                    },
+                ))
+            }
+        }
+    }
+
+    new_schema
+        .register(Scalar::new("Address"))
+        .register(Scalar::new("AssetId"))
+        .register(Scalar::new("Bytes4"))
+        .register(Scalar::new("Bytes8"))
+        .register(Scalar::new("Bytes32"))
+        .register(Scalar::new("Bytes64"))
+        .register(Scalar::new("Int4"))
+        .register(Scalar::new("Int8"))
+        .register(Scalar::new("Int16"))
+        .register(Scalar::new("UInt4"))
+        .register(Scalar::new("UInt8"))
+        .register(Scalar::new("UInt16"))
+        .register(Scalar::new("Timestamp"))
+        .register(Scalar::new("Color"))
+        .register(Scalar::new("ContractId"))
+        .register(Scalar::new("Salt"))
+        .register(Scalar::new("Json"))
+        .register(Scalar::new("MessageId"))
+        .register(Scalar::new("Charfield"))
+        .register(Scalar::new("Identity"))
+        .register(Scalar::new("Blob"))
+        .register(new_query)
+        .finish()
 }

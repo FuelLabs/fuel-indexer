@@ -1,7 +1,7 @@
 use crate::{
     middleware::AuthenticationMiddleware,
     uses::{
-        get_nonce, gql_playground, health_check, query_graph, register_indexer_assets,
+        get_nonce, gql_playground, health_check, query_graph, next_query_graph, register_indexer_assets, gql_playground_next,
         revert_indexer, stop_indexer, verify_signature,
     },
 };
@@ -158,6 +158,12 @@ impl GraphQlApi {
         let max_body_size = config.graphql_api.max_body_size;
         let start_time = Arc::new(Instant::now());
 
+        let next_graph_routes = Router::new()
+            .route("/:namespace/:identifier",  get(gql_playground_next).post(next_query_graph))
+            .layer(Extension(schema_manager.clone()))
+            .layer(Extension(pool.clone()))
+            .layer(RequestBodyLimitLayer::new(max_body_size));
+
         let graph_routes = Router::new()
             .route("/:namespace/:identifier", post(query_graph))
             .layer(Extension(schema_manager.clone()))
@@ -218,6 +224,7 @@ impl GraphQlApi {
             .nest("/playground", playground_route)
             .nest("/index", index_routes)
             .nest("/graph", graph_routes)
+            .nest("/next", next_graph_routes)
             .nest("/auth", auth_routes);
 
         let app = Router::new()

@@ -341,7 +341,7 @@ impl SchemaBuilder {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Schema {
     pub version: String,
     pub namespace: String,
