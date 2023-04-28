@@ -418,7 +418,7 @@ pub async fn gql_playground_next(
 ) -> ApiResult<impl IntoResponse> {
     let html = playground_source(
         GraphQLPlaygroundConfig::new(&format!("/api/next/{namespace}/{identifier}"))
-            .with_setting("scehma.polling.enable", true),
+            .with_setting("schema.polling.enable", true),
     );
 
     let response = Response::builder()
@@ -515,7 +515,6 @@ pub async fn build_schema(
                         FieldFuture::new(async move {
                             let result = query_db(query_clone, schema_clone, &pool_clone).await.unwrap();
                             let result = result.get("data").unwrap();
-                            println!("{:#?}", result);
                             let list = result.as_array().unwrap().to_owned();
                             let data = list.into_iter().map(|v| FieldValue::owned_any(v));
                             Ok(Some(FieldValue::list(data)))
