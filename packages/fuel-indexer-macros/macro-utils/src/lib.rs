@@ -30,7 +30,6 @@ fn process_with_prometheus_metrics(input: TokenStream) -> TokenStream {
 
     let gen = quote! {
         #fn_vis #asyncness fn #fn_name(#fn_inputs) #fn_output {
-            println!(">> WRAPPING {}", #label);
             let result = {
                 #asyncness fn inner(#fn_inputs) #fn_output #block
                 inner(#(#input_idents),*)#awaitness
