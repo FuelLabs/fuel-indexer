@@ -7,7 +7,7 @@ pub fn process_with_prometheus_metrics(
     input: TokenStream,
 ) -> TokenStream {
     let ast = parse_macro_input!(input as ItemFn);
-    let label = parse_macro_input!(attrs as Ident).to_string();
+    let _label = parse_macro_input!(attrs as Ident).to_string();
     let fn_name = &ast.sig.ident;
     let fn_inputs = &ast.sig.inputs;
     let fn_output = &ast.sig.output;
