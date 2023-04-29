@@ -9,8 +9,13 @@ use tracing::info;
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::METRICS;
 
+#[cfg(feature = "metrics")]
+use fuel_indexer_macro_utils::metrics;
+
 const NONCE_EXPIRY: u64 = 3600; // 1 hour
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn put_object(
     conn: &mut PoolConnection<Postgres>,
     query: String,
@@ -28,6 +33,8 @@ pub async fn put_object(
     Ok(result.rows_affected() as usize)
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn get_object(
     conn: &mut PoolConnection<Postgres>,
     query: String,
@@ -44,6 +51,8 @@ pub async fn get_object(
     Ok(row.get(0))
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn run_migration(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<()> {
     #[cfg(feature = "metrics")]
     METRICS.db.postgres.run_migration_calls.inc();
@@ -212,8 +221,8 @@ pub async fn type_id_list_by_name(
 
     Ok(sqlx::query(
         "SELECT * FROM graph_registry_type_ids
-        WHERE schema_name = $1 
-        AND schema_version = $2 
+        WHERE schema_name = $1
+        AND schema_version = $2
         AND schema_identifier = $3",
     )
     .bind(namespace)
@@ -250,9 +259,9 @@ pub async fn type_id_latest(
     METRICS.db.postgres.type_id_latest_calls.inc();
 
     let latest = sqlx::query(
-        "SELECT schema_version FROM graph_registry_type_ids 
-        WHERE schema_name = $1 
-        AND schema_identifier = $2 
+        "SELECT schema_version FROM graph_registry_type_ids
+        WHERE schema_name = $1
+        AND schema_identifier = $2
         ORDER BY id",
     )
     .bind(schema_name)
@@ -300,9 +309,9 @@ pub async fn schema_exists(
     METRICS.db.postgres.schema_exists_calls.inc();
 
     let count = sqlx::query(
-        "SELECT COUNT(*) AS count FROM graph_registry_type_ids 
-        WHERE schema_name = $1 
-        AND schema_identifier = $2 
+        "SELECT COUNT(*) AS count FROM graph_registry_type_ids
+        WHERE schema_name = $1
+        AND schema_identifier = $2
         AND schema_version = $3",
     )
     .bind(namespace)
@@ -396,8 +405,8 @@ pub async fn columns_get_schema(
             c.column_type as column_type
             FROM graph_registry_type_ids as t
             INNER JOIN graph_registry_columns as c ON t.id = c.type_id
-            WHERE t.schema_name = $1 
-            AND t.schema_identifier = $2 
+            WHERE t.schema_name = $1
+            AND t.schema_identifier = $2
             AND t.schema_version = $3
             ORDER BY c.type_id, c.column_position",
     )
@@ -434,8 +443,8 @@ pub async fn index_is_registered(
     METRICS.db.postgres.index_is_registered_calls.inc();
 
     match sqlx::query(
-        "SELECT * FROM index_registry 
-        WHERE namespace = $1 
+        "SELECT * FROM index_registry
+        WHERE namespace = $1
         AND identifier = $2",
     )
     .bind(namespace)
@@ -468,7 +477,7 @@ pub async fn register_index(
 
     let row = sqlx::query(
         "INSERT INTO index_registry (namespace, identifier, pubkey)
-         VALUES ($1, $2, $3) 
+         VALUES ($1, $2, $3)
          RETURNING *",
     )
     .bind(namespace)
@@ -525,8 +534,8 @@ pub async fn index_asset_version(
     METRICS.db.postgres.index_asset_version_calls.inc();
 
     match sqlx::query(&format!(
-        "SELECT COUNT(*) 
-        FROM index_asset_registry_{} 
+        "SELECT COUNT(*)
+        FROM index_asset_registry_{}
         WHERE index_id = {}",
         asset_type.as_ref(),
         index_id,
@@ -730,8 +739,8 @@ pub async fn index_id_for(
     METRICS.db.postgres.index_id_for_calls.inc();
 
     let row = sqlx::query(
-        "SELECT id FROM index_registry 
-        WHERE namespace = $1 
+        "SELECT id FROM index_registry
+        WHERE namespace = $1
         AND identifier = $2",
     )
     .bind(namespace)
@@ -755,7 +764,7 @@ pub async fn penultimate_asset_for_index(
 
     let index_id = index_id_for(conn, namespace, identifier).await?;
     let query = format!(
-        "SELECT * FROM index_asset_registry_{} 
+        "SELECT * FROM index_asset_registry_{}
         WHERE index_id = {} ORDER BY id DESC LIMIT 1 OFFSET 1",
         asset_type.as_ref(),
         index_id
