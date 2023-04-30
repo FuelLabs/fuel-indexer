@@ -1,8 +1,9 @@
 use crate::{
     middleware::AuthenticationMiddleware,
     uses::{
-        get_nonce, gql_playground, health_check, query_graph, next_query_graph, register_indexer_assets, gql_playground_next,
-        revert_indexer, stop_indexer, verify_signature,
+        get_nonce, gql_playground, gql_playground_next, health_check, next_query_graph,
+        query_graph, register_indexer_assets, revert_indexer, stop_indexer,
+        verify_signature,
     },
 };
 
@@ -159,7 +160,10 @@ impl GraphQlApi {
         let start_time = Arc::new(Instant::now());
 
         let next_graph_routes = Router::new()
-            .route("/:namespace/:identifier",  get(gql_playground_next).post(next_query_graph))
+            .route(
+                "/:namespace/:identifier",
+                get(gql_playground_next).post(next_query_graph),
+            )
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));

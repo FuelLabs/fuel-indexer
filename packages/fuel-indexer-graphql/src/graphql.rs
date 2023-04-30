@@ -764,6 +764,7 @@ mod tests {
             ]),
             fields,
             foreign_keys,
+            schema: "".to_string(),
         };
 
         let expected = vec![UserQuery {

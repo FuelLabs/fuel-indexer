@@ -399,7 +399,7 @@ impl WasmIndexExecutor {
         env.db
             .lock()
             .await
-            .load_schema(manifest, Some(schema_version),Some(&instance))
+            .load_schema(manifest, Some(schema_version), Some(&instance))
             .await?;
 
         if !instance
@@ -443,8 +443,13 @@ impl WasmIndexExecutor {
                     let mut file = File::open(module).await?;
                     file.read_to_end(&mut bytes).await?;
 
-                    let executor =
-                        WasmIndexExecutor::new(config, &schema_version, manifest, bytes.clone()).await?;
+                    let executor = WasmIndexExecutor::new(
+                        config,
+                        &schema_version,
+                        manifest,
+                        bytes.clone(),
+                    )
+                    .await?;
                     let handle = tokio::spawn(run_executor(
                         config,
                         manifest,
@@ -459,7 +464,9 @@ impl WasmIndexExecutor {
                 }
             },
             ExecutorSource::Registry(bytes) => {
-                let executor = WasmIndexExecutor::new(config, &schema_version, manifest, bytes).await?;
+                let executor =
+                    WasmIndexExecutor::new(config, &schema_version, manifest, bytes)
+                        .await?;
                 let handle = tokio::spawn(run_executor(
                     config,
                     manifest,

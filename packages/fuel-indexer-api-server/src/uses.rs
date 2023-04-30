@@ -2,11 +2,9 @@ use crate::{
     api::{ApiError, ApiResult, HttpError},
     models::{QueryResponse, VerifySignatureRequest},
 };
+use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::{
     dynamic::Schema as DynamicSchema, dynamic::*, Value as DynamicValue,
-};
-use async_graphql::{
-    http::{playground_source, GraphQLPlaygroundConfig},
 };
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use async_std::sync::{Arc, RwLock};
@@ -23,6 +21,7 @@ use fuel_indexer_database::{
     IndexerConnectionPool,
 };
 use fuel_indexer_graphql::graphql::GraphqlQueryBuilder;
+use fuel_indexer_graphql_parser::parse_schema;
 use fuel_indexer_lib::{
     config::{
         auth::{AuthenticationStrategy, Claims},
@@ -43,19 +42,17 @@ use std::{
     convert::From,
     str::FromStr,
     time::{Instant, SystemTime, UNIX_EPOCH},
+    vec,
 };
-// use async_graphql::parser::parse_schema;
-use async_graphql::parser::types::{OperationType, SchemaDefinition, TypeSystemDefinition};
-use fuel_indexer_graphql_parser::{parse_schema};
 use tokio::sync::mpsc::Sender;
-use tracing::{error};
+use tracing::error;
 
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::encode_metrics_response;
 
+use fuel_indexer_graphql_parser::schema::{Definition, Type as TypeDef, TypeDefinition};
 #[cfg(feature = "metrics")]
 use http::Request;
-use fuel_indexer_graphql_parser::schema::{Definition, TypeDefinition, Type as TypeDef};
 
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
@@ -433,8 +430,6 @@ pub async fn gql_playground_next(
     Ok(response)
 }
 
-
-
 pub(crate) async fn next_query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
@@ -449,35 +444,21 @@ pub(crate) async fn next_query_graph(
         .await
         .unwrap();
     let req_ref = req.into_inner();
-    let query = &req_ref.query;
-    let dy_schema: DynamicSchema =
-        build_schema(query.clone(), schema, pool).await.unwrap();
+    let dy_schema: DynamicSchema = build_schema(schema, pool).await.unwrap();
 
     dy_schema.execute(req_ref).await.into()
 }
 
-async fn query_db(
-    query: String,
-    schema: Schema,
-    pool: &IndexerConnectionPool,
-) -> ApiResult<axum::Json<Value>> {
-    match run_query(query, schema, &pool).await {
-        Ok(query_res) => Ok(axum::Json(query_res)),
-        Err(e) => {
-            error!("query_graph error: {e}");
-            Err(e)
-        }
-    }
-}
-
 pub async fn build_schema(
-    query: String,
     schema: Schema,
     pool: IndexerConnectionPool,
 ) -> Result<DynamicSchema, SchemaError> {
     let mut new_query = Object::new("QueryRoot");
     let mut new_schema = DynamicSchema::build(new_query.type_name().clone(), None, None);
     let document = parse_schema::<String>(&schema.schema).unwrap();
+
+    let mut query_fields: Vec<Field> = vec![];
+    let mut objects: Vec<Object> = vec![];
 
     for def in document.definitions.iter() {
         match def {
@@ -491,40 +472,126 @@ pub async fn build_schema(
                         if type_name == "QueryRoot" {
                             for field in o_def.fields.iter() {
                                 let field_name = field.name.to_string();
-                                let field_type = field.field_type.to_string();
-                                let new_query = new_query.clone();
 
-                                match field.field_type {
-                                    TypeDef::NamedType(_) => {
-                                        println!("Type::NamedType");
-                                    }
-                                    TypeDef::ListType(_) => {
-                                        new_query = new_query.field(Field::new(
+                                match &field.field_type {
+                                    TypeDef::NamedType(l_def) => {
+                                        let field_type = l_def.to_string();
+                                        let pool = pool.clone();
+                                        let schema_clone = schema.clone();
+
+                                        query_fields.push(Field::new(
                                             field_name,
-                                            TypeRef::named_list(field_type),
+                                            TypeRef::named(field_type.to_string()),
                                             move |_ctx| {
+                                                let pool: IndexerConnectionPool = pool.clone();
+                                                let field_type = field_type.to_string();
+                                                let schema_clone = schema_clone.clone();
+
                                                 FieldFuture::new(async move {
-                                                    // format!(
-                                                    //     "SELECT {} FROM {} LIMIT 100",
-                                                    //     ctx.,
-                                                    //     index.id,
-                                                    // );
-                                                    // let result = query_db(query_clone, schema_clone, &pool_clone).await.unwrap();
-                                                    // let result = result.get("data").unwrap();
-                                                    let result = json!([]);
+                                                    // Here we should do all the magic for mount the SQL as we currently do
+                                                    let sql_select = format!(
+                                                        "SELECT json_build_object('data', t.*) FROM {}_{}.{} t LIMIT 1",
+                                                        schema_clone.namespace,
+                                                        schema_clone.identifier,
+                                                        field_type.to_lowercase(),
+                                                    );
+                                                    let mut conn = pool.acquire().await?;
+                                                    let result = queries::run_query(&mut conn, sql_select).await?;
                                                     let list = result.as_array().unwrap().to_owned();
-                                                    let data = list.into_iter().map(|v| FieldValue::owned_any(v));
+                                                    let first_result = list.get(0).unwrap().to_owned();
+
+                                                    let data = first_result.get("data").unwrap().to_owned();
+                                                    Ok(Some(FieldValue::owned_any(data)))
+                                                })
+                                            },
+                                        ));
+                                    }
+                                    TypeDef::ListType(l_def) => {
+                                        let field_type = l_def.to_string();
+                                        let pool = pool.clone();
+                                        let schema_clone = schema.clone();
+
+                                        query_fields.push(Field::new(
+                                            field_name,
+                                            TypeRef::named_list(field_type.to_string()),
+                                            move |_ctx| {
+                                                let pool: IndexerConnectionPool = pool.clone();
+                                                let field_type = field_type.to_string();
+                                                let schema_clone = schema_clone.clone();
+
+                                                FieldFuture::new(async move {
+                                                    // Here we should do all the magic for mount the SQL as we currently do
+                                                    let sql_select = format!(
+                                                        "SELECT json_build_object('data', t.*) FROM {}_{}.{} t LIMIT 100",
+                                                        schema_clone.namespace,
+                                                        schema_clone.identifier,
+                                                        field_type.to_lowercase(),
+                                                    );
+                                                    let mut conn = pool.acquire().await?;
+                                                    let result = queries::run_query(&mut conn, sql_select).await?;
+                                                    let list = result.as_array().unwrap().to_owned();
+                                                    let data = list.into_iter().map(|v| {
+                                                        let data_v = v.get("data").unwrap().clone();
+                                                        FieldValue::owned_any(data_v)
+                                                    });
                                                     Ok(Some(FieldValue::list(data)))
                                                 })
                                             },
                                         ));
-                                        new_schema = new_schema.register(new_query);
                                     }
                                     TypeDef::NonNullType(_) => {
                                         println!("Type::NonNullType");
                                     }
                                 };
                             }
+                        } else {
+                            let mut obj = Object::new(type_name.to_string());
+                            let mut obj_fields: Vec<Field> = vec![];
+
+                            for field in o_def.fields.iter() {
+                                let field_name = field.name.to_string();
+                                let field_type = match &field.field_type {
+                                    TypeDef::NamedType(f_def) => {
+                                        let field_type = f_def.to_string();
+                                        TypeRef::named(field_type)
+                                    }
+                                    TypeDef::ListType(f_def) => {
+                                        let field_type = f_def.to_string();
+                                        TypeRef::named_list(field_type)
+                                    }
+                                    TypeDef::NonNullType(f_def) => {
+                                        let field_type = f_def.to_string();
+                                        TypeRef::named_nn(field_type)
+                                    }
+                                };
+
+                                obj_fields.push(Field::new(
+                                    field_name.to_string(),
+                                    field_type,
+                                    move |ctx: ResolverContext| {
+                                        let field_name_clone = field_name.clone();
+                                        FieldFuture::new(async move {
+                                            let data = ctx
+                                                .parent_value
+                                                .try_downcast_ref::<Value>()
+                                                .unwrap()
+                                                .clone();
+                                            let val = data
+                                                .get(field_name_clone)
+                                                .unwrap()
+                                                .clone();
+                                            Ok(Some(
+                                                DynamicValue::from_json(val).unwrap(),
+                                            ))
+                                        })
+                                    },
+                                ));
+                            }
+
+                            for field in obj_fields {
+                                obj = obj.field(field);
+                            }
+                            objects.push(obj);
                         }
                     }
                     TypeDefinition::Interface(_) => {}
@@ -538,32 +605,11 @@ pub async fn build_schema(
         }
     }
 
-
-    for (type_name, fields) in schema.fields.iter() {
-        if type_name != "QueryRoot" {
-            let mut obj = Object::new(type_name.to_string());
-            for (field_name, field_type) in fields.iter() {
-                if field_type.as_str() != "__" {
-                    let field_name_clone = field_name.clone();
-                    let type_name = field_type.to_string().replace("!", "");
-                    let type_type = TypeRef::named_nn(type_name);
-
-                    obj = obj.field(Field::new(
-                        field_name.to_string(),
-                        type_type,
-                        move |ctx: ResolverContext| {
-                            let field_name_clone = field_name_clone.clone();
-                            FieldFuture::new(async move {
-                                let data = ctx.parent_value.try_downcast_ref::<Value>().unwrap().clone();
-                                let val = data.get(field_name_clone).unwrap().clone();
-                                Ok(Some(DynamicValue::from_json(val).unwrap()))
-                            })
-                        },
-                    ));
-                }
-            }
-            new_schema = new_schema.register(obj);
-        }
+    for field in query_fields {
+        new_query = new_query.field(field);
+    }
+    for obj in objects {
+        new_schema = new_schema.register(obj);
     }
 
     new_schema
