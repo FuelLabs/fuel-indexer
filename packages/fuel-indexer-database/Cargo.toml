@@ -12,7 +12,7 @@ description = "Fuel Indexer Database"
 [dependencies]
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true }
-fuel-indexer-postgres = { workspace = true, default-features = true }
+fuel-indexer-postgres = { workspace = true }
 sqlx = { version = "0.6" }
 thiserror = { version = "1.0" }
 url = "2.2"

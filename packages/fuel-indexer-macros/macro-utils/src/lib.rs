@@ -39,7 +39,7 @@ fn process_with_prometheus_metrics(input: TokenStream) -> TokenStream {
                     .db
                     .postgres
                     .record(#label, start_time.elapsed().as_millis() as f64);
-            res
+                res
             };
             result
         }
