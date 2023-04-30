@@ -7,6 +7,12 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
 
 #[cfg(feature = "metrics")]
+use std::time::Instant;
+
+#[cfg(feature = "metrics")]
+use fuel_indexer_metrics::METRICS;
+
+#[cfg(feature = "metrics")]
 use fuel_indexer_macro_utils::metrics;
 
 const NONCE_EXPIRY: u64 = 3600; // 1 hour

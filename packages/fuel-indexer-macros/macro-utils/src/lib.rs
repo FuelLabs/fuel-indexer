@@ -31,8 +31,15 @@ fn process_with_prometheus_metrics(input: TokenStream) -> TokenStream {
     let gen = quote! {
         #fn_vis #asyncness fn #fn_name(#fn_inputs) #fn_output {
             let result = {
+                let start_time = Instant::now();
                 #asyncness fn inner(#fn_inputs) #fn_output #block
-                inner(#(#input_idents),*)#awaitness
+                let res = inner(#(#input_idents),*)#awaitness;
+
+            METRICS
+                .db
+                .postgres
+                .record(#label, start_time.elapsed().as_millis() as f64);
+            res
             };
             result
         }
