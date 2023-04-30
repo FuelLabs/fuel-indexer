@@ -35,10 +35,10 @@ fn process_with_prometheus_metrics(input: TokenStream) -> TokenStream {
                 #asyncness fn inner(#fn_inputs) #fn_output #block
                 let res = inner(#(#input_idents),*)#awaitness;
 
-            METRICS
-                .db
-                .postgres
-                .record(#label, start_time.elapsed().as_millis() as f64);
+                METRICS
+                    .db
+                    .postgres
+                    .record(#label, start_time.elapsed().as_millis() as f64);
             res
             };
             result
