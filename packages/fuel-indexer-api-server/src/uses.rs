@@ -482,15 +482,26 @@ pub async fn build_schema(
                                         query_fields.push(Field::new(
                                             field_name,
                                             TypeRef::named(field_type.to_string()),
-                                            move |_ctx| {
+                                            move |ctx| {
                                                 let pool: IndexerConnectionPool = pool.clone();
                                                 let field_type = field_type.to_string();
                                                 let schema_clone = schema_clone.clone();
 
+                                                // Create selection list
+                                                let selection_set = ctx.field().selection_set();
+                                                let mut selections: Vec<String> = vec![];
+                                                for selection in selection_set {
+                                                    let val = selection.name().to_string();
+                                                    let field_query = format!("'{}', {}", val.to_string(), val.to_string());
+                                                    selections.push(field_query);
+                                                }
+                                                let selection_list = selections.join(",");
+
                                                 FieldFuture::new(async move {
                                                     // Here we should do all the magic for mount the SQL as we currently do
                                                     let sql_select = format!(
-                                                        "SELECT json_build_object('data', t.*) FROM {}_{}.{} t LIMIT 1",
+                                                        "SELECT json_build_object('data', json_build_object({}))FROM {}_{}.{} t LIMIT 1",
+                                                        selection_list.to_string(),
                                                         schema_clone.namespace,
                                                         schema_clone.identifier,
                                                         field_type.to_lowercase(),
@@ -514,15 +525,26 @@ pub async fn build_schema(
                                         query_fields.push(Field::new(
                                             field_name,
                                             TypeRef::named_list(field_type.to_string()),
-                                            move |_ctx| {
+                                            move |ctx| {
                                                 let pool: IndexerConnectionPool = pool.clone();
                                                 let field_type = field_type.to_string();
                                                 let schema_clone = schema_clone.clone();
 
+                                                // Create selection list
+                                                let selection_set = ctx.field().selection_set();
+                                                let mut selections: Vec<String> = vec![];
+                                                for selection in selection_set {
+                                                    let val = selection.name().to_string();
+                                                    let field_query = format!("'{}', {}", val.to_string(), val.to_string());
+                                                    selections.push(field_query);
+                                                }
+                                                let selection_list = selections.join(",");
+
                                                 FieldFuture::new(async move {
                                                     // Here we should do all the magic for mount the SQL as we currently do
                                                     let sql_select = format!(
-                                                        "SELECT json_build_object('data', t.*) FROM {}_{}.{} t LIMIT 100",
+                                                        "SELECT json_build_object('data', json_build_object({})) FROM {}_{}.{} t LIMIT 100",
+                                                        selection_list.to_string(),
                                                         schema_clone.namespace,
                                                         schema_clone.identifier,
                                                         field_type.to_lowercase(),
