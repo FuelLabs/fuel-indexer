@@ -7,9 +7,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
 
 #[cfg(feature = "metrics")]
-use fuel_indexer_metrics::METRICS;
-
-#[cfg(feature = "metrics")]
 use fuel_indexer_macro_utils::metrics;
 
 const NONCE_EXPIRY: u64 = 3600; // 1 hour
@@ -21,15 +18,10 @@ pub async fn put_object(
     query: String,
     bytes: Vec<u8>,
 ) -> sqlx::Result<usize> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.put_object_calls.inc();
-
     let mut builder = sqlx::QueryBuilder::new(query);
-
     let query = builder.build();
     let query = query.bind(bytes);
     let result = query.execute(conn).await?;
-
     Ok(result.rows_affected() as usize)
 }
 
@@ -39,71 +31,53 @@ pub async fn get_object(
     conn: &mut PoolConnection<Postgres>,
     query: String,
 ) -> sqlx::Result<Vec<u8>> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.get_object_calls.inc();
-
     let mut builder = sqlx::QueryBuilder::new(query);
-
     let query = builder.build();
-
     let row = query.fetch_one(conn).await?;
-
     Ok(row.get(0))
 }
 
 #[cfg(feature = "metrics")]
 #[metrics]
 pub async fn run_migration(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<()> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.run_migration_calls.inc();
-
     sqlx::migrate!().run(conn).await?;
-
     Ok(())
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn run_query(
     conn: &mut PoolConnection<Postgres>,
     query: String,
 ) -> sqlx::Result<JsonValue> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.run_query_calls.inc();
-
     let mut builder = sqlx::QueryBuilder::new(query);
-
     let query = builder.build();
-
     Ok(query
         .fetch_all(conn)
         .await?
         .iter()
-        .map(|r| r.get::<'_, JsonValue, usize>(0))
+        .map(|r| r.get::<JsonValue, usize>(0))
         .collect())
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn execute_query(
     conn: &mut PoolConnection<Postgres>,
     query: String,
 ) -> sqlx::Result<usize> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.execute_query_calls.inc();
-
     let mut builder = sqlx::QueryBuilder::new(query);
-
     let query = builder.build();
-
     let result = query.execute(conn).await?;
-
     Ok(result.rows_affected() as usize)
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn root_columns_list_by_id(
     conn: &mut PoolConnection<Postgres>,
     root_id: i64,
 ) -> sqlx::Result<Vec<RootColumns>> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.root_columns_list_by_id_calls.inc();
-
     Ok(
         sqlx::query("SELECT * FROM graph_registry_root_columns WHERE root_id = $1")
             .bind(root_id)
@@ -126,13 +100,12 @@ pub async fn root_columns_list_by_id(
     )
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn new_root_columns(
     conn: &mut PoolConnection<Postgres>,
     cols: Vec<NewRootColumns>,
 ) -> sqlx::Result<usize> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.new_root_columns_calls.inc();
-
     let mut builder = sqlx::QueryBuilder::new(
         "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)",
     );
@@ -144,19 +117,16 @@ pub async fn new_root_columns(
     });
 
     let query = builder.build();
-
     let result = query.execute(conn).await?;
-
     Ok(result.rows_affected() as usize)
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn new_graph_root(
     conn: &mut PoolConnection<Postgres>,
     root: NewGraphRoot,
 ) -> sqlx::Result<usize> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.new_graph_root_calls.inc();
-
     let mut builder = sqlx::QueryBuilder::new(
         "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, query, schema)",
     );
@@ -170,20 +140,17 @@ pub async fn new_graph_root(
     });
 
     let query = builder.build();
-
     let result = query.execute(conn).await?;
-
     Ok(result.rows_affected() as usize)
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn graph_root_latest(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<GraphRoot> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.graph_root_latest_calls.inc();
-
     let row = sqlx::query(
         "SELECT * FROM graph_registry_graph_root
         WHERE schema_name = $1 AND schema_identifier = $2
@@ -210,15 +177,14 @@ pub async fn graph_root_latest(
     })
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn type_id_list_by_name(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     version: &str,
     identifier: &str,
 ) -> sqlx::Result<Vec<TypeId>> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.type_id_list_by_name_calls.inc();
-
     Ok(sqlx::query(
         "SELECT * FROM graph_registry_type_ids
         WHERE schema_name = $1
@@ -250,14 +216,13 @@ pub async fn type_id_list_by_name(
     .collect::<Vec<TypeId>>())
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn type_id_latest(
     conn: &mut PoolConnection<Postgres>,
     schema_name: &str,
     identifier: &str,
 ) -> sqlx::Result<String> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.type_id_latest_calls.inc();
-
     let latest = sqlx::query(
         "SELECT schema_version FROM graph_registry_type_ids
         WHERE schema_name = $1
@@ -274,13 +239,12 @@ pub async fn type_id_latest(
     Ok(schema_version)
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn type_id_insert(
     conn: &mut PoolConnection<Postgres>,
     type_ids: Vec<TypeId>,
 ) -> sqlx::Result<usize> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.type_id_insert_calls.inc();
-
     let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name)");
 
     builder.push_values(type_ids.into_iter(), |mut b, tid| {
@@ -293,21 +257,18 @@ pub async fn type_id_insert(
     });
 
     let query = builder.build();
-
     let result = query.execute(conn).await?;
-
     Ok(result.rows_affected() as usize)
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn schema_exists(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
     version: &str,
 ) -> sqlx::Result<bool> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.schema_exists_calls.inc();
-
     let count = sqlx::query(
         "SELECT COUNT(*) AS count FROM graph_registry_type_ids
         WHERE schema_name = $1
@@ -325,13 +286,12 @@ pub async fn schema_exists(
     Ok(count > 0)
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn new_column_insert(
     conn: &mut PoolConnection<Postgres>,
     cols: Vec<NewColumn>,
 ) -> sqlx::Result<usize> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.new_column_insert_calls.inc();
-
     let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type)");
 
     builder.push_values(cols.into_iter(), |mut b, new_col| {
@@ -350,13 +310,12 @@ pub async fn new_column_insert(
     Ok(result.rows_affected() as usize)
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn list_column_by_id(
     conn: &mut PoolConnection<Postgres>,
     col_id: i64,
 ) -> sqlx::Result<Vec<Columns>> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.list_column_by_id_calls.inc();
-
     Ok(
         sqlx::query("SELECT * FROM graph_registry_columns WHERE type_id = $1")
             .bind(col_id)
@@ -386,15 +345,14 @@ pub async fn list_column_by_id(
     )
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn columns_get_schema(
     conn: &mut PoolConnection<Postgres>,
     name: &str,
     identifier: &str,
     version: &str,
 ) -> sqlx::Result<Vec<ColumnInfo>> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.columns_get_schema_calls.inc();
-
     Ok(sqlx::query(
         "
             SELECT
@@ -434,14 +392,13 @@ pub async fn columns_get_schema(
     .collect::<Vec<ColumnInfo>>())
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn index_is_registered(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<Option<RegisteredIndex>> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.index_is_registered_calls.inc();
-
     match sqlx::query(
         "SELECT * FROM index_registry
         WHERE namespace = $1
@@ -462,15 +419,14 @@ pub async fn index_is_registered(
     }
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn register_index(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
     pubkey: Option<&str>,
 ) -> sqlx::Result<RegisteredIndex> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.register_index_calls.inc();
-
     if let Some(index) = index_is_registered(conn, namespace, identifier).await? {
         return Ok(index);
     }
@@ -499,12 +455,11 @@ pub async fn register_index(
     })
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn registered_indices(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<Vec<RegisteredIndex>> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.registered_indices_calls.inc();
-
     Ok(sqlx::query("SELECT * FROM index_registry")
         .fetch_all(conn)
         .await?
@@ -525,14 +480,13 @@ pub async fn registered_indices(
         .collect::<Vec<RegisteredIndex>>())
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn index_asset_version(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
     asset_type: &IndexAssetType,
 ) -> sqlx::Result<i64> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.index_asset_version_calls.inc();
-
     match sqlx::query(&format!(
         "SELECT COUNT(*)
         FROM index_asset_registry_{}
@@ -543,11 +497,13 @@ pub async fn index_asset_version(
     .fetch_one(conn)
     .await
     {
-        Ok(row) => Ok(row.try_get::<'_, i64, usize>(0).unwrap_or(0)),
+        Ok(row) => Ok(row.try_get::<i64, usize>(0).unwrap_or(0)),
         Err(_e) => Ok(0),
     }
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn register_index_asset(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -556,9 +512,6 @@ pub async fn register_index_asset(
     asset_type: IndexAssetType,
     pubkey: Option<&str>,
 ) -> sqlx::Result<IndexAsset> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.register_index_asset_calls.inc();
-
     let index = match index_is_registered(conn, namespace, identifier).await? {
         Some(index) => index,
         None => register_index(conn, namespace, identifier, pubkey).await?,
@@ -614,14 +567,13 @@ pub async fn register_index_asset(
     })
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn latest_asset_for_index(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
     asset_type: IndexAssetType,
 ) -> sqlx::Result<IndexAsset> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.latest_asset_for_index_calls.inc();
-
     let query = format!(
         "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1",
         asset_type.as_ref(),
@@ -645,13 +597,12 @@ pub async fn latest_asset_for_index(
     })
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn latest_assets_for_index(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
 ) -> sqlx::Result<IndexAssetBundle> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.latest_assets_for_index_calls.inc();
-
     let wasm = latest_asset_for_index(conn, index_id, IndexAssetType::Wasm).await?;
 
     let schema = latest_asset_for_index(conn, index_id, IndexAssetType::Schema).await?;
@@ -666,18 +617,13 @@ pub async fn latest_assets_for_index(
     })
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn last_block_height_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<u64> {
-    #[cfg(feature = "metrics")]
-    METRICS
-        .db
-        .postgres
-        .last_block_height_for_indexer_calls
-        .inc();
-
     let query = format!(
         "SELECT MAX(id) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1"
     );
@@ -692,15 +638,14 @@ pub async fn last_block_height_for_indexer(
 }
 
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Postgres>,
     asset_type: &IndexAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
 ) -> sqlx::Result<Option<IndexAsset>> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.asset_already_exists_calls.inc();
-
     let digest = sha256_digest(bytes);
 
     let query = format!(
@@ -730,14 +675,13 @@ pub async fn asset_already_exists(
     }
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn index_id_for(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<i64> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.index_id_for_calls.inc();
-
     let row = sqlx::query(
         "SELECT id FROM index_registry
         WHERE namespace = $1
@@ -753,15 +697,14 @@ pub async fn index_id_for(
     Ok(id)
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn penultimate_asset_for_index(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
     asset_type: IndexAssetType,
 ) -> sqlx::Result<IndexAsset> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.penultimate_asset_for_index_calls.inc();
-
     let index_id = index_id_for(conn, namespace, identifier).await?;
     let query = format!(
         "SELECT * FROM index_asset_registry_{}
@@ -789,38 +732,32 @@ pub async fn penultimate_asset_for_index(
 pub async fn start_transaction(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<usize> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.start_transaction_calls.inc();
-
     execute_query(conn, "BEGIN".into()).await
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn commit_transaction(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<usize> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.commit_transaction_calls.inc();
-
     execute_query(conn, "COMMIT".into()).await
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn revert_transaction(
     conn: &mut PoolConnection<Postgres>,
 ) -> sqlx::Result<usize> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.revert_transaction_calls.inc();
-
     execute_query(conn, "ROLLBACK".into()).await
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn remove_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<()> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.remove_indexer.inc();
-
     let index_id = index_id_for(conn, namespace, identifier).await?;
 
     execute_query(
@@ -850,15 +787,14 @@ pub async fn remove_indexer(
     Ok(())
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn remove_asset_by_version(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
     version: &i32,
     asset_type: IndexAssetType,
 ) -> sqlx::Result<()> {
-    #[cfg(feature = "metrics")]
-    METRICS.db.postgres.remove_asset_by_version_calls.inc();
-
     execute_query(
         conn,
         format!(
@@ -873,6 +809,8 @@ pub async fn remove_asset_by_version(
     Ok(())
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn create_nonce(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<Nonce> {
     let uid = uuid::Uuid::new_v4().as_simple().to_string();
     let now = SystemTime::now()
@@ -895,6 +833,8 @@ pub async fn create_nonce(conn: &mut PoolConnection<Postgres>) -> sqlx::Result<N
     Ok(Nonce { uid, expiry })
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn delete_nonce(
     conn: &mut PoolConnection<Postgres>,
     nonce: &Nonce,
@@ -906,6 +846,8 @@ pub async fn delete_nonce(
     Ok(())
 }
 
+#[cfg(feature = "metrics")]
+#[metrics]
 pub async fn get_nonce(
     conn: &mut PoolConnection<Postgres>,
     uid: &str,

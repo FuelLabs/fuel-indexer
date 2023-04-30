@@ -1,7 +1,6 @@
 #![deny(unused_crate_dependencies)]
 
 pub mod core;
-pub mod db;
 
 use crate::core::{Metric, Metrics};
 use axum::{
