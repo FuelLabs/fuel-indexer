@@ -27,7 +27,7 @@ pub struct NewRootColumns {
     pub graphql_type: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GraphRoot {
     pub id: i64,
     pub version: String,
@@ -37,7 +37,7 @@ pub struct GraphRoot {
     pub schema: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NewGraphRoot {
     pub version: String,
     pub schema_name: String,

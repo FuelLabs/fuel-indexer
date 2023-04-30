@@ -125,6 +125,7 @@ impl SchemaBuilder {
             db_type,
             ..
         } = self;
+        let schema_str = schema.clone();
 
         let new_root = NewGraphRoot {
             version: version.clone(),
@@ -135,20 +136,21 @@ impl SchemaBuilder {
         };
         queries::new_graph_root(conn, new_root).await?;
 
-        let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
-
-        let field_defs = query_fields.get(&query).expect("No query root.");
-
-        let cols: Vec<_> = field_defs
-            .iter()
-            .map(|(key, val)| NewRootColumns {
-                root_id: latest.id,
-                column_name: key.to_string(),
-                graphql_type: val.to_string(),
-            })
-            .collect();
-
-        queries::new_root_columns(conn, cols).await?;
+        // Queries don't need to be register as the query is mount directly on the
+        // query execution time
+        //
+        // let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
+        // let field_defs = query_fields.get(&query).expect("No query root.");
+        //
+        // let cols: Vec<_> = field_defs
+        //     .iter()
+        //     .map(|(key, val)| NewRootColumns {
+        //         root_id: latest.id,
+        //         column_name: key.to_string(),
+        //         graphql_type: val.to_string(),
+        //     })
+        //     .collect();
+        // queries::new_root_columns(conn, cols).await?;
 
         for query in statements {
             queries::execute_query(conn, query).await?;
@@ -166,6 +168,7 @@ impl SchemaBuilder {
         queries::new_column_insert(conn, columns).await?;
 
         Ok(Schema {
+            schema: schema_str,
             version,
             namespace,
             identifier,
@@ -312,8 +315,8 @@ impl SchemaBuilder {
                     .insert(o.name.to_string(), map_fields(&o.fields));
 
                 if o.name == root {
-                    self.query_fields
-                        .insert(root.to_string(), map_fields(&o.fields));
+                    // self.query_fields
+                    //     .insert(root.to_string(), map_fields(&o.fields));
                     return;
                 }
 
@@ -343,6 +346,7 @@ impl SchemaBuilder {
 }
 #[derive(Debug, Clone)]
 pub struct Schema {
+    pub schema: String,
     pub version: String,
     pub namespace: String,
     pub identifier: String,
@@ -396,6 +400,7 @@ impl Schema {
         let foreign_keys = get_foreign_keys(&root.schema);
 
         Ok(Schema {
+            schema: root.schema,
             version: root.version,
             namespace: root.schema_name,
             identifier: root.schema_identifier,

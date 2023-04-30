@@ -323,7 +323,7 @@ where
     ) -> IndexerResult<Self> {
         let db_url = config.database.to_string();
         let db = Arc::new(Mutex::new(Database::new(&db_url).await?));
-        db.lock().await.load_schema(manifest, None).await?;
+        db.lock().await.load_schema(manifest, None, None).await?;
         Ok(Self {
             db,
             manifest: manifest.to_owned(),
@@ -379,6 +379,7 @@ pub struct WasmIndexExecutor {
 impl WasmIndexExecutor {
     pub async fn new(
         config: &IndexerConfig,
+        schema_version: &String,
         manifest: &Manifest,
         wasm_bytes: impl AsRef<[u8]>,
     ) -> IndexerResult<Self> {
@@ -398,7 +399,7 @@ impl WasmIndexExecutor {
         env.db
             .lock()
             .await
-            .load_schema(manifest, Some(&instance))
+            .load_schema(manifest, Some(schema_version),Some(&instance))
             .await?;
 
         if !instance
@@ -417,19 +418,20 @@ impl WasmIndexExecutor {
     }
 
     /// Restore index from wasm file
-    pub async fn from_file(
-        p: impl AsRef<Path>,
-        config: Option<IndexerConfig>,
-    ) -> IndexerResult<Self> {
-        let config = config.unwrap_or_default();
-        let manifest = Manifest::from_file(p)?;
-        let bytes = manifest.module_bytes()?;
-        Self::new(&config, &manifest, bytes).await
-    }
+    // pub async fn from_file(
+    //     p: impl AsRef<Path>,
+    //     config: Option<IndexerConfig>,
+    // ) -> IndexerResult<Self> {
+    //     let config = config.unwrap_or_default();
+    //     let manifest = Manifest::from_file(p)?;
+    //     let bytes = manifest.module_bytes()?;
+    //     Self::new(&config, &manifest, bytes).await
+    // }
 
     pub async fn create(
         config: &IndexerConfig,
         manifest: &Manifest,
+        schema_version: &String,
         exec_source: ExecutorSource,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
@@ -442,7 +444,7 @@ impl WasmIndexExecutor {
                     file.read_to_end(&mut bytes).await?;
 
                     let executor =
-                        WasmIndexExecutor::new(config, manifest, bytes.clone()).await?;
+                        WasmIndexExecutor::new(config, &schema_version, manifest, bytes.clone()).await?;
                     let handle = tokio::spawn(run_executor(
                         config,
                         manifest,
@@ -457,7 +459,7 @@ impl WasmIndexExecutor {
                 }
             },
             ExecutorSource::Registry(bytes) => {
-                let executor = WasmIndexExecutor::new(config, manifest, bytes).await?;
+                let executor = WasmIndexExecutor::new(config, &schema_version, manifest, bytes).await?;
                 let handle = tokio::spawn(run_executor(
                     config,
                     manifest,

@@ -44,6 +44,9 @@ use std::{
     str::FromStr,
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
+// use async_graphql::parser::parse_schema;
+use async_graphql::parser::types::{OperationType, SchemaDefinition, TypeSystemDefinition};
+use fuel_indexer_graphql_parser::{parse_schema};
 use tokio::sync::mpsc::Sender;
 use tracing::{error};
 
@@ -52,6 +55,7 @@ use fuel_indexer_metrics::encode_metrics_response;
 
 #[cfg(feature = "metrics")]
 use http::Request;
+use fuel_indexer_graphql_parser::schema::{Definition, TypeDefinition, Type as TypeDef};
 
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
@@ -471,8 +475,69 @@ pub async fn build_schema(
     schema: Schema,
     pool: IndexerConnectionPool,
 ) -> Result<DynamicSchema, SchemaError> {
-    let mut new_query: Object = Object::new("QueryRoot");
-    let mut new_schema = DynamicSchema::build(new_query.type_name(), None, None);
+    let mut new_query = Object::new("QueryRoot");
+    let mut new_schema = DynamicSchema::build(new_query.type_name().clone(), None, None);
+    let document = parse_schema::<String>(&schema.schema).unwrap();
+
+    for def in document.definitions.iter() {
+        match def {
+            Definition::SchemaDefinition(_) => {}
+            Definition::TypeDefinition(t_def) => {
+                match t_def {
+                    TypeDefinition::Scalar(_) => {}
+                    TypeDefinition::Object(o_def) => {
+                        let type_name = o_def.name.to_string();
+
+                        if type_name == "QueryRoot" {
+                            for field in o_def.fields.iter() {
+                                let field_name = field.name.to_string();
+                                let field_type = field.field_type.to_string();
+                                let new_query = new_query.clone();
+
+                                match field.field_type {
+                                    TypeDef::NamedType(_) => {
+                                        println!("Type::NamedType");
+                                    }
+                                    TypeDef::ListType(_) => {
+                                        new_query = new_query.field(Field::new(
+                                            field_name,
+                                            TypeRef::named_list(field_type),
+                                            move |_ctx| {
+                                                FieldFuture::new(async move {
+                                                    // format!(
+                                                    //     "SELECT {} FROM {} LIMIT 100",
+                                                    //     ctx.,
+                                                    //     index.id,
+                                                    // );
+                                                    // let result = query_db(query_clone, schema_clone, &pool_clone).await.unwrap();
+                                                    // let result = result.get("data").unwrap();
+                                                    let result = json!([]);
+                                                    let list = result.as_array().unwrap().to_owned();
+                                                    let data = list.into_iter().map(|v| FieldValue::owned_any(v));
+                                                    Ok(Some(FieldValue::list(data)))
+                                                })
+                                            },
+                                        ));
+                                        new_schema = new_schema.register(new_query);
+                                    }
+                                    TypeDef::NonNullType(_) => {
+                                        println!("Type::NonNullType");
+                                    }
+                                };
+                            }
+                        }
+                    }
+                    TypeDefinition::Interface(_) => {}
+                    TypeDefinition::Union(_) => {}
+                    TypeDefinition::Enum(_) => {}
+                    TypeDefinition::InputObject(_) => {}
+                }
+            }
+            Definition::TypeExtension(_) => {}
+            Definition::DirectiveDefinition(_) => {}
+        }
+    }
+
 
     for (type_name, fields) in schema.fields.iter() {
         if type_name != "QueryRoot" {
@@ -498,30 +563,6 @@ pub async fn build_schema(
                 }
             }
             new_schema = new_schema.register(obj);
-        } else {
-            for (field_name, field_type) in fields.iter() {
-                let query_clone = query.clone();
-                let schema_clone = schema.clone();
-                let pool_clone = pool.clone();
-
-                new_query = new_query.field(Field::new(
-                    field_name,
-                    TypeRef::named_list_nn(field_type),
-                    move |_ctx| {
-                        let query_clone = query_clone.clone();
-                        let schema_clone = schema_clone.clone();
-                        let pool_clone = pool_clone.clone();
-
-                        FieldFuture::new(async move {
-                            let result = query_db(query_clone, schema_clone, &pool_clone).await.unwrap();
-                            let result = result.get("data").unwrap();
-                            let list = result.as_array().unwrap().to_owned();
-                            let data = list.into_iter().map(|v| FieldValue::owned_any(v));
-                            Ok(Some(FieldValue::list(data)))
-                        })
-                    },
-                ))
-            }
         }
     }
 

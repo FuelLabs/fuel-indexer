@@ -7,7 +7,13 @@ use fuel_indexer_database::{
     queries, types::IndexAssetType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::{defaults, utils::ServiceRequest};
-use fuel_indexer_schema::db::manager::SchemaManager;
+use fuel_indexer_schema::{
+    db::manager::SchemaManager,
+    utils::{
+        schema_version,
+        inject_native_entities_into_schema,
+    },
+};
 use fuel_indexer_types::abi::BlockData;
 use futures::{
     stream::{FuturesUnordered, StreamExt},
@@ -78,8 +84,17 @@ impl IndexerService {
         let mut conn = self.pool.acquire().await?;
         let start_block = get_start_block(&mut conn, &manifest).await?;
         manifest.start_block = Some(start_block);
+
+        // The current version saved on memory is different from the real version
+        // this code gets the version from the current version on the assets list what
+        // than gets the correct version
+        let entire_schema = inject_native_entities_into_schema(&schema);
+        let schema_version = schema_version(&entire_schema);
+
+        println!("schema_version {:#?}", schema_version);
+
         let (handle, exec_source, killer) =
-            WasmIndexExecutor::create(&self.config, &manifest, ExecutorSource::Manifest)
+            WasmIndexExecutor::create(&self.config,  &manifest, &schema_version, ExecutorSource::Manifest)
                 .await?;
 
         let mut items = vec![
@@ -125,11 +140,21 @@ impl IndexerService {
             let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
             let mut manifest = Manifest::try_from(&assets.manifest.bytes)?;
 
+            // The current version saved on memory is different from the real version
+            // this code gets the version from the current version on the assets list what
+            // than gets the correct version
+            let schema_str = String::from_utf8(assets.schema.bytes).expect("Found invalid UTF-8");
+            let entire_schema = inject_native_entities_into_schema(&schema_str);
+            let schema_version = schema_version(&entire_schema);
+
+            println!("schema_version {:#?}", schema_version);
+
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
             manifest.start_block = Some(start_block);
             let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                 &self.config,
                 &manifest,
+                &schema_version,
                 ExecutorSource::Registry(assets.wasm.bytes),
             )
             .await?;
@@ -243,10 +268,16 @@ async fn create_service_task(
                             let start_block =
                                 get_start_block(&mut conn, &manifest).await?;
                             manifest.start_block = Some(start_block);
+
+                            let schema_str = String::from_utf8(assets.schema.bytes.clone()).expect("Found invalid UTF-8");
+                            let entire_schema = inject_native_entities_into_schema(&schema_str);
+                            let schema_version = schema_version(&entire_schema);
+
                             let (handle, _module_bytes, killer) =
                                 WasmIndexExecutor::create(
                                     &config,
                                     &manifest,
+                                    &schema_version,
                                     ExecutorSource::Registry(assets.wasm.bytes),
                                 )
                                 .await?;
@@ -315,11 +346,17 @@ async fn create_service_task(
 
                     let mut manifest = Manifest::try_from(&latest_assets.manifest.bytes)?;
 
+                    // Read schema version
+                    let schema_str = String::from_utf8(latest_assets.schema.bytes.clone()).expect("Found invalid UTF-8");
+                    let entire_schema = inject_native_entities_into_schema(&schema_str);
+                    let schema_version = schema_version(&entire_schema);
+
                     let start_block = get_start_block(&mut conn, &manifest).await?;
                     manifest.start_block = Some(start_block);
                     let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                         &config,
                         &manifest,
+                        &schema_version,
                         ExecutorSource::Registry(request.penultimate_asset_bytes),
                     )
                     .await?;

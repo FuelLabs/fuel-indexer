@@ -40,7 +40,12 @@ pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String>
 }
 
 pub fn schema_version(schema: &str) -> String {
+    println!("schema_version: {:#?}", schema);
     format!("{:x}", Sha256::digest(schema.as_bytes()))
+}
+
+pub fn schema_version_bytes(schema: &Vec<u8>) -> String {
+    format!("{:x}", Sha256::digest(schema))
 }
 
 pub fn type_name(typ: &TypeDefinition<String>) -> String {

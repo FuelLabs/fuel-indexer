@@ -151,6 +151,7 @@ impl Database {
     pub async fn load_schema(
         &mut self,
         manifest: &Manifest,
+        schema_version: Option<&String>,
         instance: Option<&Instance>,
     ) -> IndexerResult<()> {
         match manifest.is_native() {
@@ -191,7 +192,7 @@ impl Database {
 
                 self.namespace = ffi::get_namespace(instance)?;
                 self.identifier = ffi::get_identifier(instance)?;
-                self.version = ffi::get_version(instance)?;
+                self.version = schema_version.unwrap().clone();
 
                 let mut conn = self.pool.acquire().await?;
                 let results = queries::columns_get_schema(

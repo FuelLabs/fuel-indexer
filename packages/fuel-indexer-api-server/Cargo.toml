@@ -26,6 +26,7 @@ fuel-indexer-graphql = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-metrics = { workspace = true, optional = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
+fuel-indexer-graphql-parser = { workspace = true }
 futures-util = { version = "0.3", optional = true }
 hex = "0.4"
 http = "0.2"

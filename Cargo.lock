@@ -3006,6 +3006,7 @@ dependencies = [
  "fuel-crypto 0.27.0",
  "fuel-indexer-database",
  "fuel-indexer-graphql",
+ "fuel-indexer-graphql-parser",
  "fuel-indexer-lib",
  "fuel-indexer-metrics",
  "fuel-indexer-schema",
