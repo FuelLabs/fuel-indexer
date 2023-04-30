@@ -9,7 +9,6 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use lazy_static::lazy_static;
-use prometheus::{self, Encoder, TextEncoder};
 use prometheus_client::encoding::text::encode;
 
 lazy_static! {
@@ -17,19 +16,7 @@ lazy_static! {
 }
 
 pub fn encode_metrics_response() -> impl IntoResponse {
-    let mut encoded_families = Vec::new();
-    let encoder = TextEncoder::new();
-
-    let metric_families = prometheus::gather();
-
-    if encoder
-        .encode(&metric_families, &mut encoded_families)
-        .is_err()
-    {
-        return error_body();
-    }
-
-    let mut encoded = String::from_utf8_lossy(&encoded_families).into_owned();
+    let mut encoded = String::new();
 
     if encode(&mut encoded, &METRICS.web.registry).is_err() {
         return error_body();
