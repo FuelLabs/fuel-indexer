@@ -395,6 +395,7 @@ jobs:
             --profile=release \
             --target ${{ matrix.job.target }} \
             -p fuel-indexer \
+            --features fuel-core-lib \
             -p fuel-indexer-api-server \
             -p forc-index
 
