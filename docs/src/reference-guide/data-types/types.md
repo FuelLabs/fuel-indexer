@@ -4,20 +4,20 @@ Below is a mapping of GraphQL schema types to their Sway and database equivalent
 
 | Sway Type | GraphQL Schema Type | Postgres Type |
 |------|----------|----------|
-| u64 | ID | bigint primary key |
 | b256 | Address | varchar(64) |
+| b256 | ContractId | varchar(64) |
+| bool | Boolean | bool |
+| i64 | Timestamp | timestamp |
+| str[] | Blob | bytes |
 | str[4] | Bytes4 | varchar(16) |
 | str[8] | Bytes8 | varchar(64) |
 | str[32] | Bytes32 | varchar(64) |
 | str[32] | AssetId | varchar(64) |
-| b256 | ContractId | varchar(64) |
+| str[32] | MessageId | varchar(64) |
 | str[32] | Salt | varchar(64) |
 | u32 | UInt4 | integer |
+| u64 | ID | bigint primary key |
 | u64 | UInt8 | bigint |
-| i64 | Timestamp | timestamp |
-| str[] | Blob | bytes |
-| str[32] | MessageId | varchar(64) |
-| bool | Boolean | bool |
 |  | Json | json |
 |  | Charfield | varchar(255) |
 |  | Blob | varchar(10485760) |
