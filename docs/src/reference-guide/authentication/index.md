@@ -19,7 +19,7 @@ forc index auth --url https://indexer.fuel.network:29987
 You will first be prompted for the password for your wallet:
 
 ```text
-Please enter your password:
+Please enter your wallet password:
 ```
 
 After successfully entering your wallet password you should be presented with your new JWT token.
