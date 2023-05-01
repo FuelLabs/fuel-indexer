@@ -39,7 +39,6 @@
     - [TransferOut](./reference-guide/indexing/receipts/transferout.md)
 - [Data Types](./reference-guide/data-types/types.md)
 - [GraphQL](./reference-guide/components/graphql/index.md)
-  - [Schema](./reference-guide/components/graphql/schema.md)
   - [Directives](./reference-guide/components/graphql/directives.md)
   - [API Server](./reference-guide/components/graphql/api-server.md)
   - [Playground](./reference-guide/components/graphql/playground.md)
