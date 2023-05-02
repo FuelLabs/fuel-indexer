@@ -29,6 +29,23 @@ members = [
    "plugins/forc-postgres",
    "plugins/forc-index-tests",
 ]
+default-members = [
+   "packages/fuel-indexer",
+   "packages/fuel-indexer-api-server",
+   "packages/fuel-indexer-database",
+   "packages/fuel-indexer-database/database-types",
+   "packages/fuel-indexer-database/postgres",
+   "packages/fuel-indexer-graphql",
+   "packages/fuel-indexer-graphql/parser",
+   "packages/fuel-indexer-lib",
+   "packages/fuel-indexer-macros",
+   "packages/fuel-indexer-metrics",
+   "packages/fuel-indexer-plugin",
+   "packages/fuel-indexer-schema",
+   "packages/fuel-indexer-types",
+   "plugins/forc-index",
+   "plugins/forc-postgres",
+]
 
 [profile.release]
 codegen-units = 1
