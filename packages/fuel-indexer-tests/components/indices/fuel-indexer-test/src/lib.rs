@@ -139,7 +139,7 @@ mod fuel_indexer_test {
             id: result,
             result,
             gas_used,
-            blob: Blob(vec![1u8, 1, 1, 1, 1]),
+            blob: vec![1u8, 1, 1, 1, 1].into(),
         };
 
         entity.save();

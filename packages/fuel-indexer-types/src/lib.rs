@@ -39,6 +39,18 @@ impl From<Vec<u8>> for Blob {
     }
 }
 
+impl AsRef<[u8]> for Blob {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl From<Blob> for Vec<u8> {
+    fn from(value: Blob) -> Self {
+        value.0
+    }
+}
+
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Json(pub String);
 
@@ -89,7 +101,7 @@ mod tests {
         let as_bytes: Blob = id.into();
 
         assert_eq!(as_json, Json("123".to_string()));
-        assert_eq!(as_bytes, Blob(vec![123]));
+        assert_eq!(as_bytes, Blob(vec![123, 0, 0, 0, 0, 0, 0, 0]));
     }
 
     #[test]
@@ -109,7 +121,7 @@ mod tests {
         let as_bytes: Blob = int.into();
 
         assert_eq!(as_json, Json("1234567890".to_string()));
-        assert_eq!(as_bytes, Blob(vec![210, 2, 150, 152, 0, 0, 0, 0]));
+        assert_eq!(as_bytes, Blob(vec![210, 2, 150, 73, 0, 0, 0, 0]));
     }
 
     #[test]
@@ -122,7 +134,7 @@ mod tests {
         assert_eq!(
             as_bytes,
             Blob(vec![
-                25, 17, 224, 201, 87, 110, 69, 7, 0, 0, 0, 0, 0, 0, 0, 0
+                121, 223, 13, 134, 72, 112, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             ])
         );
     }
@@ -144,7 +156,7 @@ mod tests {
         let as_bytes: Blob = uint.into();
 
         assert_eq!(as_json, Json("1234567890".to_string()));
-        assert_eq!(as_bytes, Blob(vec![210, 2, 150, 152, 0, 0, 0, 0]));
+        assert_eq!(as_bytes, Blob(vec![210, 2, 150, 73, 0, 0, 0, 0]));
     }
 
     #[test]
@@ -157,7 +169,7 @@ mod tests {
         assert_eq!(
             as_bytes,
             Blob(vec![
-                25, 17, 224, 201, 87, 110, 69, 7, 0, 0, 0, 0, 0, 0, 0, 0
+                121, 223, 13, 134, 72, 112, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
             ])
         );
     }
@@ -169,6 +181,6 @@ mod tests {
         let as_bytes: Blob = timestamp.into();
 
         assert_eq!(as_json, Json("1234567890".to_string()));
-        assert_eq!(as_bytes, Blob(vec![210, 2, 150, 152, 0, 0, 0, 0]));
+        assert_eq!(as_bytes, Blob(vec![210, 2, 150, 73, 0, 0, 0, 0]));
     }
 }
