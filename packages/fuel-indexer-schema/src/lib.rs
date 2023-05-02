@@ -261,10 +261,9 @@ impl FtColumn {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-
             FtColumn::Blob(value) => match value {
                 Some(fuel_indexer_types::Blob(val)) => {
-                    let x = hex::encode(&val);
+                    let x = hex::encode(val);
                     format!("'{}'", x)
                 }
                 None => String::from(NULL_VALUE),

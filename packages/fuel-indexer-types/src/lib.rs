@@ -5,7 +5,6 @@ pub mod tx;
 
 pub use crate::abi::*;
 pub use crate::tx::*;
-use bincode;
 pub use fuel_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
 };
