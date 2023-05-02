@@ -80,7 +80,7 @@ mod hello_world_indexer {
 
                 // Here we show an example of an arbtrarily sized Blob type. These Blob types
                 // support data up to 10485760 bytes in length
-                visits: vec![1u8, 2, 3, 4, 5, 6, 7, 8],
+                visits: Blob(vec![1u8, 2, 3, 4, 5, 6, 7, 8]),
             },
         };
 
