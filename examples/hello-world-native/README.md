@@ -5,21 +5,21 @@
 ### Start a Fuel node
 
 ```bash
-cargo run --bin hello-world-node
+cargo run -p hello-world-node --bin hello-world-node
 ```
 
 ### Start the indexer service
 
 ```bash
-cargo run --bin hello_indexer_native -- \
-    --manifest examples/hello-world-native/hello-indexer-native/hello_indexer_native.manifest.yaml
+cargo run -p hello_indexer_native --bin hello_indexer_native -- \
+    --manifest hello-indexer-native/hello_indexer_native.manifest.yaml
     --run-migrations
 ```
 
 ### Trigger some data
 
 ```bash
-cargo run --bin hello-world-data
+cargo run -p hello-world-data --bin hello-world-data
 ```
 
 ### Query some data
