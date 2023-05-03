@@ -3088,6 +3088,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-macro-utils"
+version = "0.11.2"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "fuel-indexer-macros"
 version = "0.11.2"
 dependencies = [
@@ -3150,6 +3160,7 @@ version = "0.11.2"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
+ "fuel-indexer-macro-utils",
  "fuel-indexer-metrics",
  "sqlx",
  "tracing",
@@ -3232,6 +3243,7 @@ dependencies = [
 name = "fuel-indexer-types"
 version = "0.11.2"
 dependencies = [
+ "bincode",
  "chrono",
  "fuel-tx",
  "fuel-types 0.26.2",

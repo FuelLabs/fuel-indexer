@@ -73,6 +73,8 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::prelude::TransactionStatus;
    |
+2  | use fuel_indexer_types::TransactionStatus;
+   |
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
@@ -113,6 +115,6 @@ error: unused import: `types::traits::Tokenizable`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |     use fuels::{core::abi_encoder::ABIEncoder, types::traits::Tokenizable};
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: `-D unused-imports` implied by `-D warnings`
