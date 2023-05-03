@@ -698,10 +698,9 @@ mod tests {
     use super::*;
     use std::fs;
 
-    const FILE: &str = "foo.yaml";
-
     #[test]
     fn test_indexer_config_will_supplement_top_level_config_vars() {
+        let file_path: &str = "foo1.yaml";
         let config_str = r#"
     stop_idle_indexers: true
 
@@ -712,8 +711,8 @@ mod tests {
       port: 9999
     "#;
 
-        fs::write(FILE, config_str).unwrap();
-        let config = IndexerConfig::from_file(FILE).unwrap();
+        fs::write(file_path, config_str).unwrap();
+        let config = IndexerConfig::from_file(file_path).unwrap();
 
         assert!(config.stop_idle_indexers);
         assert!(!config.run_migrations);
@@ -722,11 +721,12 @@ mod tests {
         let DatabaseConfig::Postgres { verbose, .. } = config.database;
         assert_eq!(verbose.as_str(), "false");
 
-        fs::remove_file(FILE).unwrap();
+        fs::remove_file(file_path).unwrap();
     }
 
     #[test]
     fn test_indexer_config_will_supplement_entire_config_sections() {
+        let file_path: &str = "foo2.yaml";
         let config_str = r#"
     ## Fuel Node configuration
     #
@@ -735,18 +735,19 @@ mod tests {
       port: 9999
     "#;
 
-        fs::write(FILE, config_str).unwrap();
-        let config = IndexerConfig::from_file(FILE).unwrap();
+        fs::write(file_path, config_str).unwrap();
+        let config = IndexerConfig::from_file(file_path).unwrap();
 
         assert_eq!(config.fuel_node.host, "1.1.1.1".to_string());
         assert_eq!(config.fuel_node.port, "9999".to_string());
         assert_eq!(config.graphql_api.host, "localhost".to_string());
 
-        fs::remove_file(FILE).unwrap();
+        fs::remove_file(file_path).unwrap();
     }
 
     #[test]
     fn test_indexer_config_will_supplement_individual_config_vars_in_sections() {
+        let file_path: &str = "foo3.yaml";
         let config_str = r#"
         ## Database configuration options.
         #
@@ -758,8 +759,8 @@ mod tests {
 
         "#;
 
-        fs::write(FILE, config_str).unwrap();
-        let config = IndexerConfig::from_file(FILE).unwrap();
+        fs::write(file_path, config_str).unwrap();
+        let config = IndexerConfig::from_file(file_path).unwrap();
 
         assert_eq!(config.fuel_node.host, "localhost".to_string());
         assert_eq!(config.fuel_node.port, "4000".to_string());
@@ -776,7 +777,7 @@ mod tests {
                 assert_eq!(database, "my_fancy_db".to_string());
                 assert_eq!(password, "super_secret_password".to_string());
 
-                fs::remove_file(FILE).unwrap();
+                fs::remove_file(file_path).unwrap();
             }
         }
     }
