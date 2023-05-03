@@ -5,6 +5,6 @@ edition = "2021"
 publish = false
 
 [dependencies]
-clap = { version = "3.1", features = ["cargo", "derive", "env"] }
+clap = { features = ["cargo", "derive", "env"], workspace = true }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../packages/fuel-indexer-tests" }
-tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
+tokio = { features = ["macros", "rt-multi-thread"], workspace = true }
