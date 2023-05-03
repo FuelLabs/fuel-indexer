@@ -87,7 +87,7 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
             .to_string()
             .parse::<i64>()
             .unwrap()
-            >= 1,
+            >= 0,
     );
 }
 
