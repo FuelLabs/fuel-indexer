@@ -587,9 +587,7 @@ pub async fn latest_assets_for_indexer(
     index_id: &i64,
 ) -> sqlx::Result<IndexAssetBundle> {
     let wasm = latest_asset_for_indexer(conn, index_id, IndexAssetType::Wasm).await?;
-
     let schema = latest_asset_for_indexer(conn, index_id, IndexAssetType::Schema).await?;
-
     let manifest =
         latest_asset_for_indexer(conn, index_id, IndexAssetType::Manifest).await?;
 

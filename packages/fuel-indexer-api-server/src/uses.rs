@@ -166,12 +166,22 @@ pub(crate) async fn revert_indexer(
 
     let mut conn = pool.acquire().await?;
     let _ = queries::start_transaction(&mut conn).await?;
-    if let Err(e) =
-        queries::remove_latest_assets_for_indexer(&mut conn, &namespace, &identifier)
-            .await
+
+    let indexer_id = queries::get_indexer_id(&mut conn, &namespace, &identifier).await?;
+    let wasm =
+        queries::latest_asset_for_indexer(&mut conn, &indexer_id, IndexAssetType::Wasm)
+            .await?;
+
+    if let Err(e) = queries::remove_asset_by_version(
+        &mut conn,
+        &indexer_id,
+        &wasm.version,
+        IndexAssetType::Wasm,
+    )
+    .await
     {
         error!(
-            "Could not remove latest assets for Indexer({namespace}.{identifier}): {e}"
+            "Could not remove latest WASM asset for Indexer({namespace}.{identifier}): {e}"
         );
         let _ = queries::revert_transaction(&mut conn).await?;
         return Err(ApiError::default());

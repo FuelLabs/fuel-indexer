@@ -4,9 +4,14 @@ use crate::{
 };
 use async_std::sync::{Arc, Mutex};
 use fuel_indexer_database::{
-    queries, types::IndexAssetType, IndexerConnection, IndexerConnectionPool,
+    queries,
+    types::{IndexAssetBundle, IndexAssetType},
+    IndexerConnection, IndexerConnectionPool,
 };
-use fuel_indexer_lib::{defaults, utils::ServiceRequest};
+use fuel_indexer_lib::{
+    defaults,
+    utils::{IndexRevertRequest, ServiceRequest},
+};
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_types::abi::BlockData;
 use futures::{
@@ -282,37 +287,42 @@ async fn create_service_task(
                     }
                 }
                 ServiceRequest::IndexRevert(request) => {
-                    let uid = format!("{}.{}", request.namespace, request.identifier);
-
-                    if let Some(killer) = killers.get(&uid) {
-                        killer.store(true, Ordering::SeqCst);
-                    } else {
-                        warn!("Revert Indexer: Indexer({uid}) not found.");
-                    }
+                    let IndexRevertRequest {
+                        identifier,
+                        namespace,
+                    } = request;
 
                     let mut conn = pool.acquire().await?;
-                    let indexer_id = queries::get_indexer_id(
-                        &mut conn,
-                        &request.namespace,
-                        &request.identifier,
-                    )
-                    .await?;
-                    let assets =
+
+                    let indexer_id =
+                        queries::get_indexer_id(&mut conn, &namespace, &identifier)
+                            .await?;
+
+                    let IndexAssetBundle { wasm, manifest, .. } =
                         queries::latest_assets_for_indexer(&mut conn, &indexer_id)
                             .await?;
-                    let mut manifest = Manifest::try_from(&assets.manifest.bytes)?;
+
+                    let mut manifest = Manifest::try_from(&manifest.bytes)?;
                     let start_block = get_start_block(&mut conn, &manifest).await?;
+
                     manifest.start_block = Some(start_block);
 
                     let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                         &config,
                         &manifest,
-                        ExecutorSource::Registry(assets.wasm.bytes),
+                        ExecutorSource::Registry(wasm.bytes),
                     )
                     .await?;
 
                     futs.push(handle);
-                    killers.insert(manifest.uid(), killer);
+
+                    if let Some(killer_for_prev_executor) =
+                        killers.insert(manifest.uid(), killer)
+                    {
+                        let uid = manifest.uid();
+                        info!("Indexer({uid}) was reverted. Stopping previous version of Indexer({uid}).");
+                        killer_for_prev_executor.store(true, Ordering::SeqCst);
+                    }
                 }
             },
             Err(e) => {
@@ -327,17 +337,21 @@ async fn get_start_block(
     conn: &mut IndexerConnection,
     manifest: &Manifest,
 ) -> Result<u64, IndexerError> {
-    match &manifest.resumable {
+    let Manifest {
+        namespace,
+        identifier,
+        start_block,
+        resumable,
+        ..
+    } = manifest;
+    match &resumable {
         Some(_) => {
-            let last = queries::last_block_height_for_indexer(
-                conn,
-                &manifest.namespace,
-                &manifest.identifier,
-            )
-            .await?;
-            info!("Resuming index from block {}", last);
+            let last =
+                queries::last_block_height_for_indexer(conn, namespace, identifier)
+                    .await?;
+            info!("Resuming index from block {last}");
             Ok(last)
         }
-        None => Ok(manifest.start_block.unwrap_or(1)),
+        None => Ok(start_block.unwrap_or(1)),
     }
 }
