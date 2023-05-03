@@ -3,11 +3,11 @@ extern crate proc_macro;
 
 pub(crate) mod constant;
 pub(crate) mod helpers;
-mod indexer;
-mod native;
-mod parse;
-mod schema;
-mod wasm;
+pub(crate) mod indexer;
+pub(crate) mod native;
+pub(crate) mod parse;
+pub(crate) mod schema;
+pub(crate) mod wasm;
 
 use indexer::process_indexer_module;
 use proc_macro::TokenStream;

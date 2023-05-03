@@ -82,17 +82,8 @@ async fn test_database_postgres_metrics_properly_increments_counts_when_queries_
 
     let categories = resp.split('\n').collect::<Vec<&str>>();
 
-    assert_eq!(
-        categories[15],
-        "# HELP postgres_execute_query_calls Count of calls to postgres execute_query_calls."
-    );
-    assert_eq!(
-        categories[16],
-        "# TYPE postgres_execute_query_calls counter"
-    );
-
     assert!(
-        categories[17].split(' ').collect::<Vec<&str>>()[1]
+        categories[18].split(' ').collect::<Vec<&str>>()[1]
             .to_string()
             .parse::<i64>()
             .unwrap()

@@ -1,4 +1,3 @@
-use crate::db::Postgres;
 use lazy_static::lazy_static;
 use prometheus::{self, register_int_counter, IntCounter};
 use prometheus_client::{
@@ -19,6 +18,32 @@ pub trait Metric {
 #[derive(Clone, Debug, Hash, PartialEq, Eq, EncodeLabelSet)]
 pub struct Label {
     path: String,
+}
+
+pub struct Postgres {
+    pub registry: Registry,
+    requests: Family<Label, Histogram>,
+}
+
+impl Metric for Postgres {
+    fn init() -> Self {
+        let mut registry = Registry::default();
+        let requests = Family::<Label, Histogram>::new_with_constructor(|| {
+            Histogram::new(TIMING_HISTOGRAM_BUCKETS.iter().cloned())
+        });
+        registry.register("postgres_operation_duration", "", requests.clone());
+
+        Self { registry, requests }
+    }
+}
+
+impl Postgres {
+    pub fn record(&self, query: &str, time: f64) {
+        let histogram = self.requests.get_or_create(&Label {
+            path: query.to_string(),
+        });
+        histogram.observe(time);
+    }
 }
 
 pub struct Database {
