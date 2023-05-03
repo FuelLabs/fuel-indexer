@@ -11,8 +11,8 @@ crate-type = ['cdylib']
 fuel-indexer-macros = { workspace = true, default-features = false }
 fuel-indexer-plugin = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
-fuel-tx = "0.26.0"
-fuels = { version = "0.40.0", default-features = false }
+fuel-tx = { workspace = true }
+fuels = { default-features = false, workspace = true }
 getrandom = { version = "0.2", features = ["js"] }
 instant = { version = "0.1", default-features = false }
-serde = { version = "1.0", default-features = false, features = ["derive"] }
+serde = { default-features = false, features = ["derive"], workspace = true }
