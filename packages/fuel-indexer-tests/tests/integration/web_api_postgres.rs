@@ -103,7 +103,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
     let srv = tokio::spawn(server);
 
     let mut conn = test_db.pool.acquire().await.unwrap();
-    let is_index_registered = postgres::index_is_registered(
+    let is_index_registered = postgres::indexer_is_registered(
         &mut conn,
         "test_namespace",
         "simple_wasm_executor",
@@ -137,7 +137,7 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
 
     assert!(resp.status().is_success());
 
-    let is_index_registered = postgres::index_is_registered(
+    let is_index_registered = postgres::indexer_is_registered(
         &mut conn,
         "test_namespace",
         "simple_wasm_executor",
