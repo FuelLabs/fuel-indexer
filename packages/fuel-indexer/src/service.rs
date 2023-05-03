@@ -55,7 +55,7 @@ impl IndexerService {
         mut manifest: Manifest,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
-        let index = queries::register_index(
+        let index = queries::register_indexer(
             &mut conn,
             &manifest.namespace,
             &manifest.identifier,
@@ -99,7 +99,7 @@ impl IndexerService {
             );
 
             {
-                queries::register_index_asset(
+                queries::register_indexer_asset(
                     &mut conn,
                     &manifest.namespace,
                     &manifest.identifier,
@@ -120,9 +120,9 @@ impl IndexerService {
 
     pub async fn register_indices_from_registry(&mut self) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
-        let indices = queries::registered_indices(&mut conn).await?;
+        let indices = queries::all_registered_indexers(&mut conn).await?;
         for index in indices {
-            let assets = queries::latest_assets_for_index(&mut conn, &index.id).await?;
+            let assets = queries::latest_assets_for_indexer(&mut conn, &index.id).await?;
             let mut manifest = Manifest::try_from(&assets.manifest.bytes)?;
 
             let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
@@ -150,7 +150,7 @@ impl IndexerService {
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
-        let _index = queries::register_index(
+        let _index = queries::register_indexer(
             &mut conn,
             &manifest.namespace,
             &manifest.identifier,
@@ -227,7 +227,7 @@ async fn create_service_task(
                 ServiceRequest::AssetReload(request) => {
                     let mut conn = pool.acquire().await?;
 
-                    match queries::index_id_for(
+                    match queries::get_indexer_id(
                         &mut conn,
                         &request.namespace,
                         &request.identifier,
@@ -236,7 +236,8 @@ async fn create_service_task(
                     {
                         Ok(id) => {
                             let assets =
-                                queries::latest_assets_for_index(&mut conn, &id).await?;
+                                queries::latest_assets_for_indexer(&mut conn, &id)
+                                    .await?;
                             let mut manifest =
                                 Manifest::try_from(&assets.manifest.bytes)?;
 
@@ -290,37 +291,23 @@ async fn create_service_task(
                     }
 
                     let mut conn = pool.acquire().await?;
-
-                    let _ = queries::start_transaction(&mut conn).await?;
-
-                    let latest_assets = queries::latest_assets_for_index(
+                    let indexer_id = queries::get_indexer_id(
                         &mut conn,
-                        &request.penultimate_asset_id,
+                        &request.namespace,
+                        &request.identifier,
                     )
                     .await?;
-
-                    if let Err(_e) = queries::remove_asset_by_version(
-                        &mut conn,
-                        &latest_assets.manifest.id,
-                        &latest_assets.wasm.version,
-                        IndexAssetType::Wasm,
-                    )
-                    .await
-                    {
-                        error!("Failed to remove asset by version");
-                        queries::revert_transaction(&mut conn).await?;
-                    } else {
-                        queries::commit_transaction(&mut conn).await?;
-                    }
-
-                    let mut manifest = Manifest::try_from(&latest_assets.manifest.bytes)?;
-
+                    let assets =
+                        queries::latest_assets_for_indexer(&mut conn, &indexer_id)
+                            .await?;
+                    let mut manifest = Manifest::try_from(&assets.manifest.bytes)?;
                     let start_block = get_start_block(&mut conn, &manifest).await?;
                     manifest.start_block = Some(start_block);
+
                     let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
                         &config,
                         &manifest,
-                        ExecutorSource::Registry(request.penultimate_asset_bytes),
+                        ExecutorSource::Registry(assets.wasm.bytes),
                     )
                     .await?;
 
