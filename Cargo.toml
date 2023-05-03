@@ -59,7 +59,7 @@ edition = "2021"
 homepage = "https://fuel.network/"
 license = "Apache-2.0"
 repository = "https://github.com/FuelLabs/fuel-indexer"
-rust-version = "1.68.1"
+rust-version = "1.69.0"
 version = "0.11.2"
 
 [workspace.dependencies]
