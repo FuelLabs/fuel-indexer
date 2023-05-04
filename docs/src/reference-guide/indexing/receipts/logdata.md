@@ -23,6 +23,6 @@ You can handle functions that produce a `LogData` receipt type by using the logg
 
 ```rust, ignore
 fn handle_log_data(data: MyStruct) {
-  // handle the logged data
+  // handle the emitted LogData receipt
 }
 ```

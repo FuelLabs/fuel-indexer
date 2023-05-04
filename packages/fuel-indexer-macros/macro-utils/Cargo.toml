@@ -1,5 +1,5 @@
 [package]
-name = "fuel-indexer-database-types"
+name = "fuel-indexer-macro-utils"
 version = { workspace = true }
 authors = { workspace = true }
 edition = { workspace = true }
@@ -7,8 +7,13 @@ homepage = { workspace = true }
 license = { workspace = true }
 repository = { workspace = true }
 rust-version = { workspace = true }
-description = "Fuel Indexer Database Types"
+description = "Fuel Indexer Macro Utils"
+
+[lib]
+proc-macro = true
 
 [dependencies]
-serde = { default-features = false, features = ["derive", "alloc"], workspace = true }
-strum = { version = "0.24", default-features = false, features = ["derive"] }
+proc-macro-error = "1.0"
+proc-macro2 = "1.0"
+quote = "1"
+syn = { version = "1.0", features = ["full"] }

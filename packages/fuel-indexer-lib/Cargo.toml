@@ -11,16 +11,16 @@ description = "Fuel Indexer Library"
 
 [dependencies]
 anyhow = "1.0"
-clap = { version = "3.1", features = ["cargo", "derive", "env"] }
+clap = { features = ["cargo", "derive", "env"], workspace = true }
 fuel-indexer-types = { workspace = true }
 http = { version = "0.2", default-features = false }
-serde = { version = "1.0", features = ["derive"] }
+serde = { features = ["derive"], workspace = true }
 serde_json = "1.0"
 serde_yaml = "0.8"
 sha2 = "0.9"
 strum = { version = "0.24", default-features = false, features = ["derive"] }
-thiserror = "1.0"
-tokio = { version = "1.8", features = ["time", "rt"] }
-tracing = "0.1"
+thiserror = { workspace = true }
+tokio = { features = ["time", "rt"], workspace = true }
+tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["ansi", "json", "env-filter"] }
 url = "2.3"
