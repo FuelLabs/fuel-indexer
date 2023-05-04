@@ -14,6 +14,8 @@ OPTIONS:
         --contract-name <CONTRACT_NAME>    Name of contract.
     -h, --help                             Print help information
     -p, --path <PATH>                      Path at which to write the ABI.
-        --raw-url <RAW_URL>                URL of the ABI file.
+        --url <URL>                        URL of the ABI file.
     -v, --verbose                          Enable verbose output.
+        --with-abi <WITH_ABI>              Only pull the ABI for the given contract.
+        --with-contract <WITH_CONTRACT>    Pull the full contract code including the abi.
 ```
