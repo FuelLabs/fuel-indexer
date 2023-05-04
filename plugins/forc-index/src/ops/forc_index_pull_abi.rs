@@ -6,14 +6,16 @@ use tracing::info;
 
 pub async fn init(command: PullAbiCommand) -> anyhow::Result<()> {
     let PullAbiCommand {
-        raw_url,
+        url,
+        with_abi,
+        with_contract,
         contract_name,
         path,
         verbose,
         ..
     } = command;
 
-    let url = Url::parse(&raw_url)?;
+    let url = Url::parse(&url)?;
     let client = reqwest::Client::new();
     let response = client.get(url.clone()).send().await?;
     let content = response.text().await?;
@@ -28,20 +30,22 @@ pub async fn init(command: PullAbiCommand) -> anyhow::Result<()> {
             .to_owned(),
     };
 
-    let output_dir = match path {
-        Some(p) => p,
-        None => std::env::current_dir()?,
-    };
-
-    let file_path = output_dir.join(file_name);
-    let mut file = File::create(&file_path)?;
-    file.write_all(content.as_bytes())?;
-
-    if verbose {
-        println!("ABI file saved to: {:?}", file_path);
+    if with_contract.unwrap_or(false) {
+        unimplemented!();
     }
 
-    info!("✅ ABI file saved to: {:?}", file_path);
+    if with_abi.unwrap_or(true) {
+        let output_dir = path.unwrap_or(std::env::current_dir()?);
+        let file_path = output_dir.join(file_name);
+        let mut file = File::create(&file_path)?;
+        file.write_all(content.as_bytes())?;
+
+        if verbose {
+            info!("ABI file saved to: {:?}", file_path);
+        }
+
+        info!("✅ ABI file saved");
+    }
 
     Ok(())
 }

@@ -5,11 +5,19 @@ use std::path::PathBuf;
 
 #[derive(Debug, Parser)]
 pub struct Command {
-    ////// URL of the ABI file
+    /// URL of the ABI file.
     #[clap(long, help = "URL of the ABI file.")]
-    pub raw_url: String,
+    pub url: String,
 
-    /// Name of contract
+    /// Only pull the ABI for the given contract.
+    #[clap(long, help = "Only pull the ABI for the given contract.")]
+    pub with_abi: Option<bool>,
+
+    /// Pull the full contract code including the abi.
+    #[clap(long, help = "Pull the full contract code including the abi.")]
+    pub with_contract: Option<bool>,
+
+    /// Name of contract.
     #[clap(long, help = "Name of contract.")]
     pub contract_name: Option<String>,
 
