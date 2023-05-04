@@ -40,7 +40,7 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
             macros::{Parameterize, Tokenizable},
             types::{StringToken, traits::{Tokenizable, Parameterize}},
         };
-        use sha2::{Sha256, Digest};
+        use crate::sha2::{Sha256, Digest};
         use std::str::FromStr;
         use fuel_indexer_plugin::wasm::bincode;
 

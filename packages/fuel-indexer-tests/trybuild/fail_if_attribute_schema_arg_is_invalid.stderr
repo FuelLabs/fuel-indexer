@@ -1,10 +1,8 @@
 error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `namespace[Name]`\nExpected `schema`, `extend`, `scalar`, `type`, `interface`, `union`, `enum`, `input` or `directive`\n")
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  | / #[indexer(
-  | |     manifest = "packages/fuel-indexer-tests/trybuild/bad_simple_wasm_graphql.yaml"
-  | | )]
-  | |__^
+  | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/bad_simple_wasm_graphql.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
@@ -77,11 +75,6 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_types::TransactionStatus;
    |
-2  | use fuels::client::schema::schema::TransactionStatus;
-   |
-2  | use fuels::client::schema::tx::TransactionStatus;
-   |
-     and 3 other candidates
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
@@ -97,9 +90,9 @@ help: consider importing one of these items
    |
 2  | use fuel_tx::Transaction;
    |
-2  | use fuels::client::schema::schema::Transaction;
+2  | use fuels::prelude::Transaction;
    |
-     and 4 other candidates
+     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
@@ -107,11 +100,9 @@ error[E0425]: cannot find function `serialize` in this scope
   |     let mut bytes = serialize(&data);
   |                     ^^^^^^^^^ not found in this scope
   |
-help: consider importing one of these items
+help: consider importing this function
    |
 2  | use fuel_indexer_schema::utils::serialize;
-   |
-2  | use fuels::prelude::serde_hex::serialize;
    |
 
 error[E0425]: cannot find function `handle_events` in this scope
@@ -120,10 +111,10 @@ error[E0425]: cannot find function `handle_events` in this scope
   |     handle_events(ptr, len);
   |     ^^^^^^^^^^^^^ not found in this scope
 
-error: unused import: `fuels::types::traits::Tokenizable`
+error: unused import: `types::traits::Tokenizable`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |     use fuels::types::traits::Tokenizable;
-  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |     use fuels::{core::abi_encoder::ABIEncoder, types::traits::Tokenizable};
+  |                                                ^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: `-D unused-imports` implied by `-D warnings`
