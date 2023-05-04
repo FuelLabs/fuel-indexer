@@ -39,7 +39,7 @@ Ensure that test data was indexed via a GraphQL query.
 
 ```bash
 curl -X POST http://0.0.0.0:29987/api/graph/fuel_examples/hello_indexer \
-   -H 'content-type: application/json' \
+   -H 'Content-Type: application/graphql' \
    -d '{"query": "query { salutation { id message_hash message greeter first_seen last_seen }}", "params": "b"}' \
 | json_pp
 ```
