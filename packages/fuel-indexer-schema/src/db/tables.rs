@@ -429,6 +429,7 @@ impl Schema {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn get_foreign_keys(
     schema: &str,
 ) -> Result<HashMap<String, HashMap<String, (String, String)>>, IndexerSchemaError> {
@@ -490,6 +491,7 @@ fn get_foreign_keys(
     Ok(foreign_keys)
 }
 
+#[allow(clippy::type_complexity)]
 fn parse_schema_for_ast_data(
     schema: &str,
 ) -> Result<(ServiceDocument, HashSet<String>, HashMap<String, String>), IndexerSchemaError>
