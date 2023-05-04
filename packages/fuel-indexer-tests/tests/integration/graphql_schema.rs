@@ -143,7 +143,14 @@ fn test_query_builder_parses_correctly() {
         },
     ];
 
-    assert_eq!(q.parse(&schema), expected);
+    let result = q.parse(&schema);
+
+    // The underlying parser representation of multiple queries uses a
+    // HashMap, which does not guarantee ordering. We can't use a HashSet
+    // to assert equality due to HashMaps not implementing the Hash trait,
+    // so we just assert that the expected elements are present.
+    assert!(result.iter().find(|uq| **uq == expected[0]).is_some());
+    assert!(result.iter().find(|uq| **uq == expected[1]).is_some());
 
     let bad_query = r#"
         fragment frag1 on BadType{

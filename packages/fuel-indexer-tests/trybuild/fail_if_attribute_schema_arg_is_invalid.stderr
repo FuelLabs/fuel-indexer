@@ -1,4 +1,4 @@
-error: Error parsing graphql schema ParseError("Parse error at 1:1\nUnexpected `namespace[Name]`\nExpected `schema`, `extend`, `scalar`, `type`, `interface`, `union`, `enum`, `input` or `directive`\n")
+error: Error parsing graphql schema Syntax { message: " --> 1:1\n  |\n1 | namespace: test_namespace\n  | ^---\n  |\n  = expected type_system_definition", start: Pos(1:1), end: None }
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/bad_simple_wasm_graphql.yaml")]
