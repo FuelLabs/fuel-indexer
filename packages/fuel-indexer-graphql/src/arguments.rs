@@ -438,15 +438,23 @@ pub fn parse_argument_into_param(
             }
         }
         "offset" => {
-            if let Value::Number(offset) = value {
-                Ok(ParamType::Offset(offset.as_u64().unwrap()))
+            if let Value::Number(number) = value {
+                if let Some(offset) = number.as_u64() {
+                    Ok(ParamType::Offset(offset))
+                } else {
+                    Err(GraphqlError::UnsupportedValueType(number.to_string()))
+                }
             } else {
                 Err(GraphqlError::UnsupportedValueType(value.to_string()))
             }
         }
         "first" => {
-            if let Value::Number(limit) = value {
-                Ok(ParamType::Limit(limit.as_u64().unwrap()))
+            if let Value::Number(number) = value {
+                if let Some(limit) = number.as_u64() {
+                    Ok(ParamType::Limit(limit))
+                } else {
+                    Err(GraphqlError::UnsupportedValueType(number.to_string()))
+                }
             } else {
                 Err(GraphqlError::UnsupportedValueType(value.to_string()))
             }
@@ -723,9 +731,17 @@ fn parse_binary_logical_operator(
 /// instances so that they can be properly formatted for transformation into SQL queries.
 fn parse_value(value: &Value) -> Result<ParsedValue, GraphqlError> {
     match value {
-        // TODO: Add support for u128 through the use of a custom scalar
+        // TODO: https://github.com/FuelLabs/fuel-indexer/issues/858
         Value::Boolean(b) => Ok(ParsedValue::Boolean(*b)),
-        Value::Number(n) => Ok(ParsedValue::Number(n.as_u64().unwrap())),
+        Value::Number(n) => {
+            if let Some(num) = n.as_u64() {
+                Ok(ParsedValue::Number(num))
+            } else {
+                Err(GraphqlError::UnableToParseValue(
+                    "Could not parse number into u64".to_string(),
+                ))
+            }
+        }
         Value::String(s) => Ok(ParsedValue::String(s.clone())),
         _ => Err(GraphqlError::UnsupportedValueType(value.to_string())),
     }
