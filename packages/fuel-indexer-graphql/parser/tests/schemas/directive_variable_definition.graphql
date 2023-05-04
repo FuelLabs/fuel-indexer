@@ -1,1 +1,0 @@
-directive @configurable on VARIABLE_DEFINITION

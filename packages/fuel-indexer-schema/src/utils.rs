@@ -1,10 +1,11 @@
 extern crate alloc;
 
 use alloc::vec::Vec;
-pub use fuel_indexer_database_types as sql_types;
-use fuel_indexer_graphql_parser::schema::{
-    Definition, Directive, Document, Field, ObjectType, TypeDefinition,
+use async_graphql_parser::types::{
+    Directive, FieldDefinition, ServiceDocument, TypeDefinition, TypeKind,
+    TypeSystemDefinition,
 };
+pub use fuel_indexer_database_types as sql_types;
 use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -23,8 +24,8 @@ pub fn normalize_field_type_name(name: &str) -> String {
     name.replace('!', "")
 }
 
-pub fn field_type_table_name(f: &Field<String>) -> String {
-    normalize_field_type_name(&f.field_type.to_string()).to_lowercase()
+pub fn field_type_table_name(f: &FieldDefinition) -> String {
+    normalize_field_type_name(&f.ty.to_string()).to_lowercase()
 }
 
 // serde_scale for now, can look at other options if necessary.
@@ -43,42 +44,44 @@ pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
 }
 
-pub fn type_name(typ: &TypeDefinition<String>) -> String {
-    match typ {
-        TypeDefinition::Scalar(obj) => obj.name.clone(),
-        TypeDefinition::Object(obj) => obj.name.clone(),
-        TypeDefinition::Interface(obj) => obj.name.clone(),
-        TypeDefinition::Union(obj) => obj.name.clone(),
-        TypeDefinition::Enum(obj) => obj.name.clone(),
-        TypeDefinition::InputObject(obj) => obj.name.clone(),
-    }
+pub fn type_name(typ: &TypeDefinition) -> String {
+    typ.name.clone().to_string()
 }
 
 pub fn get_index_directive(
-    field: &Field<String>,
+    field: &FieldDefinition,
 ) -> Option<sql_types::directives::Index> {
-    let Field {
-        mut directives,
+    let FieldDefinition {
+        directives,
         name: field_name,
         ..
     } = field.clone();
 
+    let mut directives: Vec<Directive> = directives
+        .into_iter()
+        .map(|d| d.into_inner().into_directive())
+        .collect();
+
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
-        if name == INDEX_DIRECTIVE_NAME {
-            return Some(sql_types::directives::Index::new(field_name));
+        if name.to_string().as_str() == INDEX_DIRECTIVE_NAME {
+            return Some(sql_types::directives::Index::new(field_name.to_string()));
         }
     }
 
     None
 }
 
-pub fn get_unique_directive(field: &Field<String>) -> sql_types::directives::Unique {
-    let Field { mut directives, .. } = field.clone();
+pub fn get_unique_directive(field: &FieldDefinition) -> sql_types::directives::Unique {
+    let FieldDefinition { directives, .. } = field.clone();
+    let mut directives: Vec<Directive> = directives
+        .into_iter()
+        .map(|d| d.into_inner().into_directive())
+        .collect();
 
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
-        if name == UNIQUE_DIRECTIVE_NAME {
+        if name.to_string().as_str() == UNIQUE_DIRECTIVE_NAME {
             return sql_types::directives::Unique(true);
         }
     }
@@ -86,18 +89,23 @@ pub fn get_unique_directive(field: &Field<String>) -> sql_types::directives::Uni
     sql_types::directives::Unique(false)
 }
 
-pub fn get_join_directive_info<'a>(
-    field: &Field<'a, String>,
-    obj: &ObjectType<'a, String>,
+pub fn get_join_directive_info(
+    field: &FieldDefinition,
+    type_name: &String,
     types_map: &HashMap<String, String>,
 ) -> sql_types::directives::Join {
-    let Field {
+    let FieldDefinition {
         name: field_name,
-        mut directives,
+        directives,
         ..
     } = field.clone();
 
-    let field_type_name = normalize_field_type_name(&field.field_type.to_string());
+    let mut directives: Vec<Directive> = directives
+        .into_iter()
+        .map(|d| d.into_inner().into_directive())
+        .collect();
+
+    let field_type_name = normalize_field_type_name(&field.ty.to_string());
 
     let (reference_field_name, ref_field_type_name) = if directives.len() == 1 {
         let Directive {
@@ -107,9 +115,11 @@ pub fn get_join_directive_info<'a>(
         } = directives.pop().unwrap();
 
         assert_eq!(
-            directive_name, JOIN_DIRECTIVE_NAME,
+            directive_name.to_string().as_str(),
+            JOIN_DIRECTIVE_NAME,
             "Cannot call get_join_directive_info on a non-foreign key item."
         );
+
         let (_, ref_field_name) = arguments.pop().unwrap();
 
         let field_id = format!("{field_type_name}.{ref_field_name}");
@@ -147,31 +157,34 @@ pub fn get_join_directive_info<'a>(
 
     sql_types::directives::Join {
         field_type_name,
-        field_name,
+        field_name: field_name.to_string(),
         reference_field_name,
-        object_name: obj.name.clone(),
+        object_name: type_name.to_string(),
         reference_field_type_name: ref_field_type_name,
     }
 }
 
 pub fn build_schema_fields_and_types_map(
-    ast: &Document<String>,
+    ast: &ServiceDocument,
 ) -> HashMap<String, String> {
     let mut types_map = HashMap::new();
 
     for def in ast.definitions.iter() {
-        if let Definition::TypeDefinition(typ) = def {
-            match typ {
-                TypeDefinition::Object(obj) => {
+        if let TypeSystemDefinition::Type(typ) = def {
+            match &typ.node.kind {
+                TypeKind::Object(obj) => {
                     for field in &obj.fields {
-                        let field_type = field.field_type.to_string().replace('!', "");
-                        let obj_name = &obj.name;
-                        let field_name = &field.name;
+                        let field = &field.node;
+                        let field_type = field.ty.to_string().replace('!', "");
+                        let obj_name = &typ.node.name.to_string();
+                        let field_name = &field.name.to_string();
                         let field_id = format!("{obj_name}.{field_name}");
                         types_map.insert(field_id, field_type);
                     }
                 }
-                o => panic!("Got a non-object type: '{o:?}'"),
+                o => {
+                    panic!("Got a non-object type: '{o:?}'")
+                }
             }
         }
     }
@@ -180,14 +193,14 @@ pub fn build_schema_fields_and_types_map(
 }
 
 pub fn build_schema_objects_set(
-    ast: &Document<String>,
+    ast: &ServiceDocument,
 ) -> (HashSet<String>, HashSet<String>) {
     let types: HashSet<String> = ast
         .definitions
         .iter()
         .filter_map(|def| {
-            if let Definition::TypeDefinition(typ) = def {
-                Some(typ)
+            if let TypeSystemDefinition::Type(typ) = def {
+                Some(&typ.node)
             } else {
                 None
             }
@@ -199,8 +212,8 @@ pub fn build_schema_objects_set(
         .definitions
         .iter()
         .filter_map(|def| {
-            if let Definition::DirectiveDefinition(dir) = def {
-                Some(dir.name.clone())
+            if let TypeSystemDefinition::Directive(dir) = def {
+                Some(dir.node.name.to_string())
             } else {
                 None
             }
@@ -213,7 +226,7 @@ pub fn build_schema_objects_set(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fuel_indexer_graphql_parser::parse_schema;
+    use async_graphql_parser::parse_schema;
 
     #[test]
     fn test_build_schema_fields_and_types_map_properly_builds_schema_types_map() {
@@ -256,7 +269,7 @@ type Contract {
 }
         "#;
 
-        let ast = match parse_schema::<String>(schema) {
+        let ast = match parse_schema(schema) {
             Ok(ast) => ast,
             Err(e) => {
                 panic!("Error parsing graphql schema {e:?}")
@@ -312,7 +325,7 @@ type Auditor {
 }
 "#;
 
-        let ast = match parse_schema::<String>(schema) {
+        let ast = match parse_schema(schema) {
             Ok(ast) => ast,
             Err(e) => {
                 panic!("Error parsing graphql schema {e:?}")
