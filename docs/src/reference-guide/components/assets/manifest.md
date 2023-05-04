@@ -68,7 +68,7 @@ _Optional._
 
 The `end_block` field indicates the block height after which the indexer should stop indexing blocks. 
 
-> Important: If no `end_block` is added the indexer will keep listening to new block indefinitely. 
+> Important: If no `end_block` is added the indexer will keep listening to new blocks indefinitely. 
 
 ## `module`
 
