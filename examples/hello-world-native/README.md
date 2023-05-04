@@ -12,7 +12,7 @@ cargo run -p hello-world-node --bin hello-world-node
 
 ```bash
 cargo run -p hello_indexer_native --bin hello_indexer_native -- \
-    --manifest hello-indexer-native/hello_indexer_native.manifest.yaml
+    --manifest hello-indexer-native/hello_indexer_native.manifest.yaml \
     --run-migrations
 ```
 
