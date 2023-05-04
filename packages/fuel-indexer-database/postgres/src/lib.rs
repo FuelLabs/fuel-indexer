@@ -733,7 +733,6 @@ pub async fn remove_indexer(
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<()> {
-    #[cfg(feature = "metrics")]
     let index_id = get_indexer_id(conn, namespace, identifier).await?;
 
     execute_query(
@@ -769,25 +768,24 @@ pub async fn remove_last_indexer_version(
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<()> {
-    #[cfg(feature = "metrics")]
     let index_id = get_indexer_id(conn, namespace, identifier).await?;
-    let index_id = index_id - 1;
+    let last_id = index_id - 1;
 
     execute_query(
         conn,
-        format!("DELETE FROM index_asset_registry_wasm WHERE index_id = {index_id}",),
+        format!("DELETE FROM index_asset_registry_wasm WHERE index_id = {last_id}",),
     )
     .await?;
 
     execute_query(
         conn,
-        format!("DELETE FROM index_asset_registry_manifest WHERE index_id = {index_id}",),
+        format!("DELETE FROM index_asset_registry_manifest WHERE index_id = {last_id}",),
     )
     .await?;
 
     execute_query(
         conn,
-        format!("DELETE FROM index_asset_registry_schema WHERE index_id = {index_id}",),
+        format!("DELETE FROM index_asset_registry_schema WHERE index_id = {last_id}",),
     )
     .await?;
 
