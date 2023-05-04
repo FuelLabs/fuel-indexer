@@ -218,6 +218,12 @@
 <li><code>AR=/opt/homebrew/opt/llvm/bin/llvm-ar</code></li>
 <li><code>CC=/opt/homebrew/opt/llvm/bin/clang</code></li>
 </ul>
+<p>Addtionally, on some systems you need to explictly link clang to llvm. </p>
+<ul>
+<li><code>LIBCLANG_PATH=&quot;/opt/homebrew/opt/llvm/lib&quot;</code></li>
+<li><code>LDFLAGS=&quot;-L/opt/homebrew/opt/llvm/lib&quot;</code></li>
+<li><code>CPPFLAGS=&quot;-I/opt/homebrew/opt/llvm/include&quot;</code></li>
+</ul>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><!-- markdownlint-disable MD041 -->
 <h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
