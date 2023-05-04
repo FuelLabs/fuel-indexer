@@ -1,8 +1,9 @@
-use fuel_indexer_database_types::directives;
-use fuel_indexer_graphql_parser::parse_schema;
-use fuel_indexer_graphql_parser::schema::{
-    Definition, Document, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
+use async_graphql_parser::parse_schema;
+use async_graphql_parser::types::{
+    BaseType, FieldDefinition, SchemaDefinition, ServiceDocument, Type, TypeDefinition,
+    TypeKind, TypeSystemDefinition,
 };
+use fuel_indexer_database_types::directives;
 use fuel_indexer_lib::utils::local_repository_root;
 use fuel_indexer_schema::utils::{
     build_schema_fields_and_types_map, build_schema_objects_set, get_join_directive_info,
@@ -22,43 +23,41 @@ lazy_static! {
         HashSet::from(["Json", "Charfield", "Identity", "Blob"]);
 }
 
-fn process_type(
-    types: &HashSet<String>,
-    typ: &Type<String>,
-    nullable: bool,
-) -> proc_macro2::TokenStream {
-    match typ {
-        Type::NamedType(t) => {
-            if !types.contains(t) {
-                panic!("Type '{t}' is undefined.",);
+fn process_type(types: &HashSet<String>, typ: &Type) -> proc_macro2::TokenStream {
+    match &typ.base {
+        BaseType::Named(t) => {
+            let name = t.to_string();
+            if !types.contains(&name) {
+                panic!("Type '{name}' is undefined.",);
             }
 
-            let id = format_ident! {"{}", t };
+            let id = format_ident! {"{}", name};
 
-            if nullable {
+            if typ.nullable {
                 quote! { Option<#id> }
             } else {
                 quote! { #id }
             }
         }
-        Type::ListType(_t) => panic!("Got a list type, we don't handle this yet..."),
-        Type::NonNullType(t) => process_type(types, t, false),
+        BaseType::List(_t) => panic!("Got a list type, we don't handle this yet..."),
     }
 }
 
 fn process_field(
     types: &HashSet<String>,
-    field: &Field<String>,
+    field: &FieldDefinition,
 ) -> (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
     proc_macro2::TokenStream,
 ) {
-    let Field {
-        name, field_type, ..
+    let FieldDefinition {
+        name,
+        ty: field_type,
+        ..
     } = field;
-    let typ = process_type(types, field_type, true);
-    let ident = format_ident! {"{}", name};
+    let typ = process_type(types, &field_type.node);
+    let ident = format_ident! {"{}", name.to_string()};
 
     let (is_nullable, column_type) = get_column_type(typ.clone());
 
@@ -88,10 +87,10 @@ fn process_field(
     (typ, ident, extractor)
 }
 
-fn process_fk_field<'a>(
+fn process_fk_field(
     types: &HashSet<String>,
-    obj: &ObjectType<'a, String>,
-    field: &Field<'a, String>,
+    type_name_string: String,
+    field: &FieldDefinition,
     types_map: &HashMap<String, String>,
     is_nullable: bool,
 ) -> (
@@ -103,10 +102,16 @@ fn process_fk_field<'a>(
         field_name,
         reference_field_type_name,
         ..
-    } = get_join_directive_info(field, obj, types_map);
+    } = get_join_directive_info(field, &type_name_string, types_map);
 
-    let field_type: Type<'a, String> = Type::NamedType(reference_field_type_name);
-    let typ = process_type(types, &field_type, is_nullable);
+    let field_type_name = if !is_nullable {
+        [reference_field_type_name, "!".to_string()].join("")
+    } else {
+        reference_field_type_name
+    };
+
+    let field_type: Type = Type::new(&field_type_name).expect("Could not construct type");
+    let typ = process_type(types, &field_type);
     let ident = format_ident! {"{}", field_name.to_lowercase()};
 
     let (_, column_type) = get_column_type(typ.clone());
@@ -143,20 +148,20 @@ fn process_type_def(
     namespace: &str,
     identifier: &str,
     types: &HashSet<String>,
-    typ: &TypeDefinition<String>,
+    typ: &TypeDefinition,
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
     types_map: &HashMap<String, String>,
     is_native: bool,
 ) -> Option<proc_macro2::TokenStream> {
-    match typ {
-        TypeDefinition::Object(obj) => {
-            if obj.name == *query_root {
+    match &typ.kind {
+        TypeKind::Object(obj) => {
+            if typ.name.to_string().as_str() == query_root {
                 return None;
             }
 
-            let name = &obj.name;
-            let type_id = type_id(&format!("{namespace}_{identifier}"), name);
+            let name = typ.name.to_string();
+            let type_id = type_id(&format!("{namespace}_{identifier}"), name.as_str());
             let mut block = quote! {};
             let mut row_extractors = quote! {};
             let mut construction = quote! {};
@@ -164,7 +169,7 @@ fn process_type_def(
 
             for field in &obj.fields {
                 let (mut type_name, mut field_name, mut ext) =
-                    process_field(types, field);
+                    process_field(types, &field.node);
 
                 let (is_nullable, mut column_type_name) =
                     get_column_type(type_name.clone());
@@ -174,8 +179,13 @@ fn process_type_def(
                 if processed.contains(&column_type_name_str)
                     && !primitives.contains(&column_type_name_str)
                 {
-                    (type_name, field_name, ext) =
-                        process_fk_field(types, obj, field, types_map, is_nullable);
+                    (type_name, field_name, ext) = process_fk_field(
+                        types,
+                        typ.name.to_string(),
+                        &field.node,
+                        types_map,
+                        is_nullable,
+                    );
                     column_type_name = type_name.clone();
                     column_type_name_str = column_type_name.to_string();
                 }
@@ -307,28 +317,28 @@ fn process_definition(
     namespace: &str,
     identifier: &str,
     types: &HashSet<String>,
-    definition: &Definition<String>,
+    definition: &TypeSystemDefinition,
     processed: &mut HashSet<String>,
     primitives: &HashSet<String>,
     types_map: &HashMap<String, String>,
     is_native: bool,
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
-        Definition::TypeDefinition(def) => process_type_def(
-            query_root, namespace, identifier, types, def, processed, primitives,
+        TypeSystemDefinition::Type(def) => process_type_def(
+            query_root, namespace, identifier, types, &def.node, processed, primitives,
             types_map, is_native,
         ),
-        Definition::SchemaDefinition(_def) => None,
+        TypeSystemDefinition::Schema(_def) => None,
         def => {
             panic!("Unhandled definition type: {def:?}");
         }
     }
 }
 
-fn get_query_root(types: &HashSet<String>, ast: &Document<String>) -> String {
+fn get_query_root(types: &HashSet<String>, ast: &ServiceDocument) -> String {
     let schema = ast.definitions.iter().find_map(|def| {
-        if let Definition::SchemaDefinition(d) = def {
-            Some(d)
+        if let TypeSystemDefinition::Schema(d) = def {
+            Some(d.node.clone())
         } else {
             None
         }
@@ -339,7 +349,7 @@ fn get_query_root(types: &HashSet<String>, ast: &Document<String>) -> String {
     let name = query
         .as_ref()
         .expect("Schema definition must specify a query root.")
-        .into();
+        .to_string();
 
     if !types.contains(&name) {
         panic!("Query root not defined.");
@@ -396,7 +406,7 @@ pub(crate) fn process_graphql_schema(
 
     let text = inject_native_entities_into_schema(&text);
 
-    let base_ast = match parse_schema::<String>(BASE_SCHEMA) {
+    let base_ast = match parse_schema(BASE_SCHEMA) {
         Ok(ast) => ast,
         Err(e) => {
             proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
@@ -404,7 +414,7 @@ pub(crate) fn process_graphql_schema(
     };
     let (primitives, _) = build_schema_objects_set(&base_ast);
 
-    let ast = match parse_schema::<String>(&text) {
+    let ast = match parse_schema(&text) {
         Ok(ast) => ast,
         Err(e) => {
             proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
