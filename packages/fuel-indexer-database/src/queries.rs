@@ -341,14 +341,14 @@ pub async fn remove_indexer(
     }
 }
 
-pub async fn remove_previous_indexer(
+pub async fn remove_last_indexer_version(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::remove_previous_indexer(c, namespace, identifier).await
+            postgres::remove_last_indexer_version(c, namespace, identifier).await
         }
     }
 }

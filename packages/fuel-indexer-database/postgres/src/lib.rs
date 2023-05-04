@@ -841,7 +841,7 @@ pub async fn remove_indexer(
     Ok(())
 }
 
-pub async fn remove_previous_indexer(
+pub async fn remove_last_indexer_version(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,

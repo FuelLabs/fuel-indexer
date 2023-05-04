@@ -41,7 +41,7 @@ use std::{
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
 use tokio::sync::mpsc::Sender;
-use tracing::error;
+use tracing::{error, info};
 
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::encode_metrics_response;
@@ -136,13 +136,13 @@ pub(crate) async fn remove_indexer(
         let _ = queries::start_transaction(&mut conn).await?;
 
         if let Err(e) =
-            queries::remove_previous_indexer(&mut conn, &namespace, &identifier).await
+            queries::remove_last_indexer_version(&mut conn, &namespace, &identifier).await
         {
             queries::revert_transaction(&mut conn).await?;
 
             error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
 
-            return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
+            return Err(ApiError::default());
         }
 
         queries::commit_transaction(&mut conn).await?;
@@ -233,18 +233,6 @@ pub(crate) async fn register_indexer_assets(
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
 
-            if params.stop_previous.unwrap_or(false) {
-                let _ = remove_indexer(
-                    Path((namespace.clone(), identifier.clone())),
-                    Extension(tx.clone()),
-                    Extension(pool.clone()),
-                    Extension(claims.clone()),
-                    params.clone(),
-                )
-                .await?;
-                println!("Removed previous indexer");
-            }
-
             let asset_type =
                 IndexAssetType::from_str(&name).expect("Invalid asset type.");
 
@@ -298,10 +286,22 @@ pub(crate) async fn register_indexer_assets(
         let _ = queries::commit_transaction(&mut conn).await?;
 
         tx.send(ServiceRequest::AssetReload(AssetReloadRequest {
-            namespace,
-            identifier,
+            namespace: namespace.clone(),
+            identifier: identifier.clone(),
         }))
         .await?;
+
+        if params.stop_previous.unwrap_or(false) {
+            let _ = remove_indexer(
+                Path((namespace.clone(), identifier.clone())),
+                Extension(tx.clone()),
+                Extension(pool.clone()),
+                Extension(claims.clone()),
+                params.clone(),
+            )
+            .await?;
+            info!("Removed previous Indexer");
+        }
 
         return Ok(Json(json!({
             "success": "true",
