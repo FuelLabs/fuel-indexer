@@ -15,7 +15,7 @@ pub struct Panic {
 
 ```rust, ignore
 fn handle_panic(panic: abi::Panic) {
-  // handle the panic 
+  // handle the emitted Panic receipt 
 }
 ```
 

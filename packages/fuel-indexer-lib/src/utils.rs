@@ -69,8 +69,6 @@ pub struct IndexStopRequest {
 
 #[derive(Debug)]
 pub struct IndexRevertRequest {
-    pub penultimate_asset_id: i64,
-    pub penultimate_asset_bytes: Vec<u8>,
     pub namespace: String,
     pub identifier: String,
 }

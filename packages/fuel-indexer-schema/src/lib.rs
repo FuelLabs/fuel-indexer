@@ -130,7 +130,7 @@ impl FtColumn {
                 );
                 FtColumn::Timestamp(Some(int8))
             }
-            ColumnType::Blob => FtColumn::Blob(Some(bytes[..size].to_vec())),
+            ColumnType::Blob => FtColumn::Blob(Some(bytes[..size].to_vec().into())),
             ColumnType::ForeignKey => {
                 panic!("ForeignKey not supported for FtColumn.");
             }
@@ -260,8 +260,8 @@ impl FtColumn {
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Blob(value) => match value {
-                Some(val) => {
-                    let x = hex::encode(val);
+                Some(blob) => {
+                    let x = hex::encode(blob.as_ref());
                     format!("'{x}'")
                 }
                 None => String::from(NULL_VALUE),

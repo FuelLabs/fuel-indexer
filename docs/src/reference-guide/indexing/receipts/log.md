@@ -18,6 +18,6 @@ You can handle functions that produce a `Log` receipt type by adding a parameter
 
 ```rust, ignore
 fn handle_log(log: abi::Log) {
-  // handle all functions that produce a log receipt
+  // handle the emitted Log receipt
 }
 ```

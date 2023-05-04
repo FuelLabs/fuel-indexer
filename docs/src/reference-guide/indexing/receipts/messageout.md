@@ -22,6 +22,6 @@ You can handle functions that produce a `MessageOut` receipt type by adding a pa
 
 ```rust, ignore
 fn handle_message_out(message_out: abi::MessageOut) {
-  // handle the message out
+  // handle the emitted MessageOut receipt
 }
 ```

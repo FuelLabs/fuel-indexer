@@ -32,6 +32,6 @@ pub mod utils {
             path.to_string()
         };
 
-        format!("{}/{}", method, path)
+        format!("{method}{path}")
     }
 }

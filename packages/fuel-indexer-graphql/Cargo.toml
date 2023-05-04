@@ -15,7 +15,7 @@ fuel-indexer-database-types = { workspace = true }
 fuel-indexer-graphql-parser = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
-thiserror = { version = "1.0" }
+thiserror = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = "0.5.0"
