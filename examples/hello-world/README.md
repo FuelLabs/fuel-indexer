@@ -22,9 +22,7 @@ docker compose up --build
 forc index deploy \
    --path hello-indexer \
    --target-dir /path/to/repository/fuel-indexer \
-   --url http://0.0.0.0:29987 \
-   --target wasm32-unknown-unknown \
-   --release
+   --url http://0.0.0.0:29987
 ```
 
 ### Interact
@@ -32,7 +30,7 @@ forc index deploy \
 Trigger some test data by simulating a contract call.
 
 ```bash
-cargo run --bin hello-world-data -- --host 0.0.0.0:4000
+cargo run -p hello-world-data --bin hello-world-data -- --host 0.0.0.0:4000
 ```
 
 ### Validate
@@ -41,7 +39,7 @@ Ensure that test data was indexed via a GraphQL query.
 
 ```bash
 curl -X POST http://0.0.0.0:29987/api/graph/fuel_examples/hello_indexer \
-   -H 'content-type: application/json' \
+   -H 'Content-Type: application/graphql' \
    -d '{"query": "query { salutation { id message_hash message greeter first_seen last_seen }}", "params": "b"}' \
 | json_pp
 ```
