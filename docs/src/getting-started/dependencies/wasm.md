@@ -24,3 +24,9 @@ rustup target add wasm32-unknown-unknown
 >
 > - `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
 > - `CC=/opt/homebrew/opt/llvm/bin/clang`
+>
+> Addtionally, on some systems you need to explictly link clang to llvm. 
+>
+> - `LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"`
+> - `LDFLAGS="-L/opt/homebrew/opt/llvm/lib"`
+> - `CPPFLAGS="-I/opt/homebrew/opt/llvm/include"`
