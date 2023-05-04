@@ -3049,20 +3049,12 @@ dependencies = [
 name = "fuel-indexer-graphql"
 version = "0.11.2"
 dependencies = [
+ "async-graphql-parser 5.0.7",
+ "async-graphql-value 5.0.7",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
- "fuel-indexer-graphql-parser",
  "fuel-indexer-schema",
  "fuel-indexer-types",
- "pretty_assertions",
- "thiserror",
-]
-
-[[package]]
-name = "fuel-indexer-graphql-parser"
-version = "0.11.2"
-dependencies = [
- "combine",
  "pretty_assertions",
  "thiserror",
 ]
@@ -3101,9 +3093,9 @@ dependencies = [
 name = "fuel-indexer-macros"
 version = "0.11.2"
 dependencies = [
+ "async-graphql-parser 5.0.7",
  "fuel-abi-types 0.2.1",
  "fuel-indexer-database-types",
- "fuel-indexer-graphql-parser",
  "fuel-indexer-lib",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
@@ -3171,10 +3163,10 @@ dependencies = [
 name = "fuel-indexer-schema"
 version = "0.11.2"
 dependencies = [
+ "async-graphql-parser 5.0.7",
  "bincode",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
- "fuel-indexer-graphql-parser",
  "fuel-indexer-types",
  "hex",
  "insta",

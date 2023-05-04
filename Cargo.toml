@@ -13,7 +13,6 @@ members = [
    "packages/fuel-indexer-database/database-types",
    "packages/fuel-indexer-database/postgres",
    "packages/fuel-indexer-graphql",
-   "packages/fuel-indexer-graphql/parser",
    "packages/fuel-indexer-lib",
    "packages/fuel-indexer-macros",
    "packages/fuel-indexer-macros/macro-utils",
@@ -37,7 +36,6 @@ default-members = [
    "packages/fuel-indexer-database/database-types",
    "packages/fuel-indexer-database/postgres",
    "packages/fuel-indexer-graphql",
-   "packages/fuel-indexer-graphql/parser",
    "packages/fuel-indexer-lib",
    "packages/fuel-indexer-macros",
    "packages/fuel-indexer-metrics",
@@ -70,7 +68,6 @@ fuel-indexer-api-server = { version = "0.11.2", path = "./packages/fuel-indexer-
 fuel-indexer-database = { version = "0.11.2", path = "./packages/fuel-indexer-database" }
 fuel-indexer-database-types = { version = "0.11.2", path = "./packages/fuel-indexer-database/database-types" }
 fuel-indexer-graphql = { version = "0.11.2", path = "./packages/fuel-indexer-graphql" }
-fuel-indexer-graphql-parser = { version = "0.11.2", path = "./packages/fuel-indexer-graphql/parser" }
 fuel-indexer-lib = { version = "0.11.2", path = "./packages/fuel-indexer-lib" }
 fuel-indexer-macros = { version = "0.11.2", path = "./packages/fuel-indexer-macros", default-features = false }
 fuel-indexer-macro-utils = { version = "0.11.2", path = "./packages/fuel-indexer-macros/macro-utils" }
