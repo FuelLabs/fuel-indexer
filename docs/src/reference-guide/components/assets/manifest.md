@@ -10,6 +10,7 @@ abi: path/to/my/contract-abi.json
 contract_id: "0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051"
 graphql_schema: path/to/my/schema.graphql
 start_block: 1564
+end_block: 310000
 module:
   wasm: path/to/my/wasm_module.wasm
 report_metrics: true
@@ -60,6 +61,14 @@ The `graphql_schema` field contains the file path pointing to the corresponding 
 _Optional._
 
 The `start_block` field indicates the block height after which you'd like your indexer to start indexing events.
+
+## `end_block`
+
+_Optional._
+
+The `end_block` field indicates the block height after which the indexer should stop indexing blocks. 
+
+> Important: If no `end_block` is added the indexer will keep listening to new block indefinitely. 
 
 ## `module`
 

@@ -9,4 +9,5 @@ module:
 metrics: ~
 contract_id: ~
 start_block: ~
+end_block: ~
 resumable: ~
