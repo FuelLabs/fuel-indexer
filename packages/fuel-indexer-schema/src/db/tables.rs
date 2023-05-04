@@ -8,11 +8,11 @@ use fuel_indexer_database::{
     types::{directives, *},
     DbType, IndexerConnection, IndexerConnectionPool,
 };
-use fuel_indexer_types::type_id;
-use graphql_parser::schema::{
+use fuel_indexer_graphql_parser::schema::{
     Definition, Field, ObjectType, SchemaDefinition, Type, TypeDefinition,
 };
-use graphql_parser::{parse_schema, schema::Document};
+use fuel_indexer_graphql_parser::{parse_schema, schema::Document};
+use fuel_indexer_types::type_id;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
@@ -542,7 +542,7 @@ mod tests {
         let create_thing1_schmea: &str = concat!(
             "CREATE TABLE IF NOT EXISTS\n",
             " test_namespace_index1.thing1 (\n",
-            " id bigint primary key not null,\n",
+            " id numeric(20, 0) primary key not null,\n",
             "account varchar(64) not null,\n",
             "object bytea not null",
             "\n)"
@@ -550,7 +550,7 @@ mod tests {
         let create_thing2_schema: &str = concat!(
             "CREATE TABLE IF NOT EXISTS\n",
             " test_namespace_index1.thing2 (\n",
-            " id bigint primary key not null,\n",
+            " id numeric(20, 0) primary key not null,\n",
             "account varchar(64) not null,\n",
             "hash varchar(64) not null,\n",
             "object bytea not null\n",
@@ -600,7 +600,7 @@ mod tests {
         let create_thing1_schmea: &str = concat!(
             "CREATE TABLE IF NOT EXISTS\n",
             " test_namespace_index1.thing1 (\n",
-            " id bigint primary key not null,\n",
+            " id numeric(20, 0) primary key not null,\n",
             "account varchar(64),\n",
             "object bytea not null",
             "\n)"
@@ -608,7 +608,7 @@ mod tests {
         let create_thing2_schema: &str = concat!(
             "CREATE TABLE IF NOT EXISTS\n",
             " test_namespace_index1.thing2 (\n",
-            " id bigint primary key not null,\n",
+            " id numeric(20, 0) primary key not null,\n",
             "account varchar(64),\n",
             "hash varchar(64),\n",
             "object bytea not null\n",

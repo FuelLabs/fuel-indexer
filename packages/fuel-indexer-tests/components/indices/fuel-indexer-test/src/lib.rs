@@ -1,4 +1,5 @@
 extern crate alloc;
+
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
@@ -138,7 +139,7 @@ mod fuel_indexer_test {
             id: result,
             result,
             gas_used,
-            blob: vec![1u8, 1, 1, 1, 1],
+            blob: vec![1u8, 1, 1, 1, 1].into(),
         };
 
         entity.save();
@@ -578,6 +579,78 @@ mod fuel_indexer_test {
 
         let entity = RevertEntity {
             id: 123,
+            contract_id,
+            error_val,
+        };
+
+        entity.save();
+    }
+
+    fn fuel_indexer_test_filterable_fields(_ping: Ping) {
+        let inner_entity1 = InnerFilterEntity {
+            id: 1,
+            inner_foo: "spam".to_string(),
+            inner_bar: 100,
+            inner_baz: 200,
+        };
+
+        let inner_entity2 = InnerFilterEntity {
+            id: 2,
+            inner_foo: "ham".to_string(),
+            inner_bar: 300,
+            inner_baz: 400,
+        };
+
+        let inner_entity3 = InnerFilterEntity {
+            id: 3,
+            inner_foo: "eggs".to_string(),
+            inner_bar: 500,
+            inner_baz: 600,
+        };
+
+        inner_entity1.save();
+        inner_entity2.save();
+        inner_entity3.save();
+
+        let f1 = FilterEntity {
+            id: 1,
+            foola: "beep".to_string(),
+            maybe_null_bar: Some(123),
+            bazoo: 1,
+            inner_entity: inner_entity1.id,
+        };
+
+        let f2 = FilterEntity {
+            id: 2,
+            foola: "boop".to_string(),
+            maybe_null_bar: None,
+            bazoo: 5,
+            inner_entity: inner_entity2.id,
+        };
+
+        let f3 = FilterEntity {
+            id: 3,
+            foola: "blorp".to_string(),
+            maybe_null_bar: Some(456),
+            bazoo: 1000,
+            inner_entity: inner_entity3.id,
+        };
+
+        f1.save();
+        f2.save();
+        f3.save();
+    }
+
+    fn fuel_indexer_triger_enum_error(enum_error: abi::Revert) {
+        Logger::info("fuel_indexer_triger_enum_error handling trigger_enum_error event.");
+
+        let abi::Revert {
+            contract_id,
+            error_val,
+        } = enum_error;
+
+        let entity = EnumError {
+            id: 42,
             contract_id,
             error_val,
         };

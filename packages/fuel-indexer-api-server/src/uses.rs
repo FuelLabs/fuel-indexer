@@ -1,6 +1,6 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
-    models::VerifySignatureRequest,
+    models::{QueryResponse, VerifySignatureRequest},
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
@@ -8,7 +8,7 @@ use async_std::sync::{Arc, RwLock};
 use axum::{
     body::Body,
     extract::{multipart::Multipart, Extension, Json, Path},
-    http::{Request, StatusCode},
+    http::StatusCode,
     response::{IntoResponse, Response},
 };
 use fuel_crypto::{Message, Signature};
@@ -17,6 +17,7 @@ use fuel_indexer_database::{
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
+use fuel_indexer_graphql::graphql::GraphqlQueryBuilder;
 use fuel_indexer_lib::{
     config::{
         auth::{AuthenticationStrategy, Claims},
@@ -28,9 +29,7 @@ use fuel_indexer_lib::{
         ServiceRequest, ServiceStatus,
     },
 };
-use fuel_indexer_schema::db::{
-    graphql::GraphqlQueryBuilder, manager::SchemaManager, tables::Schema,
-};
+use fuel_indexer_schema::db::{manager::SchemaManager, tables::Schema};
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
@@ -44,7 +43,10 @@ use tokio::sync::mpsc::Sender;
 use tracing::error;
 
 #[cfg(feature = "metrics")]
-use fuel_indexer_metrics::{encode_metrics_response, METRICS};
+use fuel_indexer_metrics::encode_metrics_response;
+
+#[cfg(feature = "metrics")]
+use http::Request;
 
 pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
@@ -72,9 +74,6 @@ pub(crate) async fn query_graph(
 }
 
 pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
-    #[cfg(feature = "metrics")]
-    METRICS.web.health.requests.inc();
-
     let https = HttpsConnectorBuilder::new()
         .with_native_roots()
         .https_or_http()
@@ -166,17 +165,31 @@ pub(crate) async fn revert_indexer(
     }
 
     let mut conn = pool.acquire().await?;
-    let asset = queries::penultimate_asset_for_index(
+    let _ = queries::start_transaction(&mut conn).await?;
+
+    let indexer_id = queries::get_indexer_id(&mut conn, &namespace, &identifier).await?;
+    let wasm =
+        queries::latest_asset_for_indexer(&mut conn, &indexer_id, IndexAssetType::Wasm)
+            .await?;
+
+    if let Err(e) = queries::remove_asset_by_version(
         &mut conn,
-        &namespace,
-        &identifier,
+        &indexer_id,
+        &wasm.version,
         IndexAssetType::Wasm,
     )
-    .await?;
+    .await
+    {
+        error!(
+            "Could not remove latest WASM asset for Indexer({namespace}.{identifier}): {e}"
+        );
+        let _ = queries::revert_transaction(&mut conn).await?;
+        return Err(ApiError::default());
+    }
+
+    let _ = queries::commit_transaction(&mut conn).await?;
 
     tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
-        penultimate_asset_id: asset.id,
-        penultimate_asset_bytes: asset.bytes,
         namespace,
         identifier,
     }))
@@ -214,7 +227,7 @@ pub(crate) async fn register_indexer_assets(
 
             let asset: IndexAsset = match asset_type {
                 IndexAssetType::Wasm | IndexAssetType::Manifest => {
-                    queries::register_index_asset(
+                    queries::register_indexer_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
@@ -225,7 +238,7 @@ pub(crate) async fn register_indexer_assets(
                     .await?
                 }
                 IndexAssetType::Schema => {
-                    match queries::register_index_asset(
+                    match queries::register_indexer_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
@@ -361,14 +374,22 @@ pub async fn run_query(
     let builder = GraphqlQueryBuilder::new(&schema, &query)?;
     let query = builder.build()?;
 
-    let queries = query.as_sql(&schema, pool.database_type()).join(";\n");
+    let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
 
     let mut conn = pool.acquire().await?;
 
     match queries::run_query(&mut conn, queries).await {
         Ok(ans) => {
             let ans_json: Value = serde_json::from_value(ans)?;
-            Ok(serde_json::json!({ "data": ans_json }))
+
+            // If the response is paginated, remove the array wrapping.
+            if ans_json[0].get("page_info").is_some() {
+                Ok(serde_json::json!(QueryResponse {
+                    data: ans_json[0].clone()
+                }))
+            } else {
+                Ok(serde_json::json!(QueryResponse { data: ans_json }))
+            }
         }
         Err(e) => {
             error!("Error querying database: {e}.");
@@ -393,23 +414,7 @@ pub async fn gql_playground(
     Ok(response)
 }
 
+#[cfg(feature = "metrics")]
 pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
-    #[cfg(feature = "metrics")]
-    {
-        match encode_metrics_response() {
-            Ok((buff, fmt_type)) => Response::builder()
-                .status(StatusCode::OK)
-                .header(http::header::CONTENT_TYPE, &fmt_type)
-                .body(Body::from(buff))
-                .unwrap(),
-            Err(_e) => Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from("Error."))
-                .unwrap(),
-        }
-    }
-    #[cfg(not(feature = "metrics"))]
-    {
-        (StatusCode::NOT_FOUND, "Metrics collection disabled.")
-    }
+    encode_metrics_response()
 }

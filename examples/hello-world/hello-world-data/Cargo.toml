@@ -5,12 +5,12 @@ edition = "2021"
 publish = false
 
 [dependencies]
-clap = { version = "3.1", features = ["cargo", "derive", "env"] }
+clap = { features = ["cargo", "derive", "env"], workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../packages/fuel-indexer-tests" }
-fuel-tx = "0.26.0"
+fuel-tx = { workspace = true }
 fuel-types = "0.26.0"
-fuels = { version = "0.40.0" }
+fuels = { workspace = true }
 rand = "0.8"
-thiserror = "1.0"
-tokio = { version = "1.17", features = ["macros", "rt-multi-thread"] }
+thiserror = { workspace = true }
+tokio = { features = ["macros", "rt-multi-thread"], workspace = true }

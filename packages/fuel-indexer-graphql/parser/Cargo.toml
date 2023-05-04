@@ -1,0 +1,18 @@
+[package]
+name = "fuel-indexer-graphql-parser"
+description = "Fuel indexer GraphQL parser"
+license = "MIT/Apache-2.0"
+readme = "README.md"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+
+[dependencies]
+combine = "3.2.0"
+thiserror = { workspace = true }
+
+[dev-dependencies]
+pretty_assertions = "0.5.0"

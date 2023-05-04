@@ -33,30 +33,33 @@ The Fuel indexer is a standalone service that can be used to index various compo
 
 <font size="4">Want to get started right away? Check out our [Quickstart](./QUICKSTART.md)!</font>
 
-- [**For Users**](#for-users)
+- [For Users](#for-users)
   - [Dependencies](#dependencies)
     - [`fuelup`](#fuelup)
-    - [`WebAssembly`](#WebAssembly)
-  - [`forc index` Plugin](#forc-index-plugin)
-    - [`check`](#forc-index-check)
-    - [`new`](#forc-index-new)
-    - [`init`](#forc-index-init)
-    - [`build`](#forc-index-build)
-    - [`deploy`](#forc-index-new)
-    - [`remove`](#forc-index-remove)
-    - [`auth`](#forc-index-auth)
+    - [`WebAssembly`](#webassembly)
+  - [`forc-index` Plugin](#forc-index-plugin)
+    - [`forc index check`](#forc-index-check)
+    - [`forc index new`](#forc-index-new)
+    - [`forc index init`](#forc-index-init)
+    - [`forc index build`](#forc-index-build)
+    - [`forc index deploy`](#forc-index-deploy)
+    - [`forc index remove`](#forc-index-remove)
+    - [`forc index auth`](#forc-index-auth)
+    - [`forc index start`](#forc-index-start)
   - [Schema](#schema)
   - [Modules](#modules)
-    - [WebAssembly (WASM)](#notes-on-wasm-modules)
-- [**For Contributors**](#for-contributors)
-  - [Dependencies](#dev-dependencies)
-    - [`fuelup`](#fuelup)
+    - [WebAssembly (WASM) modules](#webassembly-wasm-modules)
+- [For Contributors](#for-contributors)
+  - [Dev Dependencies](#dev-dependencies)
     - [`docker`](#docker)
-    - [PostgreSQL](#postgresql)
+    - [Database](#database)
+      - [PostgreSQL](#postgresql)
     - [SQLx](#sqlx)
-  - [Building from source](#building-from-source)
-  - [Run migrations](#run-migrations)
-  - [Start the service](#start-the-service)
+  - [Building from Source](#building-from-source)
+    - [Clone repository](#clone-repository)
+    - [Run migrations](#run-migrations)
+      - [PostgreSQL migrations](#postgresql-migrations)
+    - [Start the service](#start-the-service)
   - [Testing](#testing)
     - [Default tests](#default-tests)
     - [End-to-end tests](#end-to-end-tests)
@@ -203,8 +206,8 @@ There are a few points that Fuel indexer users should know when using WASM:
 
 > IMPORTANT: Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its `clang` binary not supporting WASM targets. If encountered, you can install a binary with better support from Homebrew (`brew install llvm`) and instruct `rustc` to leverage it by setting the following environment variables:
 >
-> - `AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
-> - `CC=/opt/homebrew/opt/llvm/bin/clang`
+> - `export AR=/opt/homebrew/opt/llvm/bin/llvm-ar`
+> - `export CC=/opt/homebrew/opt/llvm/bin/clang`
 
 # For Contributors
 

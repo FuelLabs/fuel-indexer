@@ -284,6 +284,15 @@ dependencies = [
 
 [[package]]
 name = "ansi_term"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee49baf6cb617b853aa8d93bf420db2383fab46d314482ca2803b40d5fde979b"
+dependencies = [
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d52a9bb7ec0cf484c551830a7ce27bd20d67eac647e1befb56b0be4ee39a55d2"
@@ -1848,7 +1857,7 @@ checksum = "70a1bb05cc554f46079d0fa72abe995a2d32d0737d410a41da75b31e3f7ef768"
 dependencies = [
  "counter",
  "darling 0.13.4",
- "graphql-parser 0.4.0",
+ "graphql-parser",
  "once_cell",
  "proc-macro2",
  "quote",
@@ -1978,6 +1987,12 @@ dependencies = [
  "rustc_version",
  "syn 1.0.109",
 ]
+
+[[package]]
+name = "difference"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "524cbf6897b527295dff137cec09ecf3a05f4fddffd7dfcd1585403449e74198"
 
 [[package]]
 name = "digest"
@@ -2433,7 +2448,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "forc-index"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -2462,7 +2477,7 @@ dependencies = [
 
 [[package]]
 name = "forc-postgres"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -2483,7 +2498,7 @@ version = "0.31.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e128b6278387c3b95103b292cfc311e213a21b3178ee3a63ee505876e02d0a1"
 dependencies = [
- "ansi_term",
+ "ansi_term 0.12.1",
  "tracing",
  "tracing-subscriber 0.3.16",
 ]
@@ -2494,7 +2509,7 @@ version = "0.35.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15a5505631d4b9deff14b19823372388c861edbc6dccebabe899bbf5b08523b1"
 dependencies = [
- "ansi_term",
+ "ansi_term 0.12.1",
  "tracing",
  "tracing-subscriber 0.3.16",
 ]
@@ -2506,7 +2521,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a87496084f753e41f48d5af3dddf9a8a1f019c8e3a5b399410aacd53680dc527"
 dependencies = [
  "annotate-snippets",
- "ansi_term",
+ "ansi_term 0.12.1",
  "anyhow",
  "dirs 3.0.2",
  "forc-tracing 0.35.5",
@@ -2953,7 +2968,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2980,7 +2995,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "anyhow",
  "async-graphql 5.0.7",
@@ -2990,9 +3005,11 @@ dependencies = [
  "clap 3.2.23",
  "fuel-crypto 0.27.0",
  "fuel-indexer-database",
+ "fuel-indexer-graphql",
  "fuel-indexer-lib",
  "fuel-indexer-metrics",
  "fuel-indexer-schema",
+ "futures-util",
  "hex",
  "http",
  "hyper 0.14.26",
@@ -3010,7 +3027,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3022,15 +3039,37 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "serde",
  "strum 0.24.1",
 ]
 
 [[package]]
+name = "fuel-indexer-graphql"
+version = "0.11.2"
+dependencies = [
+ "fuel-indexer-database",
+ "fuel-indexer-database-types",
+ "fuel-indexer-graphql-parser",
+ "fuel-indexer-schema",
+ "fuel-indexer-types",
+ "pretty_assertions",
+ "thiserror",
+]
+
+[[package]]
+name = "fuel-indexer-graphql-parser"
+version = "0.11.2"
+dependencies = [
+ "combine",
+ "pretty_assertions",
+ "thiserror",
+]
+
+[[package]]
 name = "fuel-indexer-lib"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -3049,11 +3088,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-macro-utils"
+version = "0.11.2"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "fuel-indexer-macros"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "fuel-abi-types 0.2.1",
  "fuel-indexer-database-types",
+ "fuel-indexer-graphql-parser",
  "fuel-indexer-lib",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
@@ -3063,7 +3113,6 @@ dependencies = [
  "fuels-code-gen",
  "fuels-macros",
  "fuels-types",
- "graphql-parser 0.3.0",
  "lazy_static",
  "proc-macro-error",
  "proc-macro2",
@@ -3077,16 +3126,17 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-metrics"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
+ "axum 0.6.16",
  "lazy_static",
  "prometheus",
- "thiserror",
+ "prometheus-client 0.20.0",
 ]
 
 [[package]]
 name = "fuel-indexer-plugin"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3106,10 +3156,11 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
+ "fuel-indexer-macro-utils",
  "fuel-indexer-metrics",
  "sqlx",
  "tracing",
@@ -3118,13 +3169,13 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-schema"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "bincode",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
+ "fuel-indexer-graphql-parser",
  "fuel-indexer-types",
- "graphql-parser 0.3.0",
  "hex",
  "insta",
  "serde",
@@ -3160,6 +3211,7 @@ dependencies = [
  "fuel-indexer",
  "fuel-indexer-api-server",
  "fuel-indexer-database",
+ "fuel-indexer-graphql",
  "fuel-indexer-lib",
  "fuel-indexer-postgres",
  "fuel-indexer-schema",
@@ -3189,8 +3241,9 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-types"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
+ "bincode",
  "chrono",
  "fuel-tx",
  "fuel-types 0.26.2",
@@ -3677,16 +3730,6 @@ dependencies = [
  "futures-core",
  "js-sys",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "graphql-parser"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1abd4ce5247dfc04a03ccde70f87a048458c9356c7e41d21ad8c407b3dde6f2"
-dependencies = [
- "combine",
- "thiserror",
 ]
 
 [[package]]
@@ -5376,7 +5419,7 @@ checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 
 [[package]]
 name = "plugin-tests"
-version = "0.10.0"
+version = "0.11.2"
 dependencies = [
  "forc-index",
  "fuel-indexer-plugin",
@@ -5430,6 +5473,16 @@ name = "ppv-lite86"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
+
+[[package]]
+name = "pretty_assertions"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a029430f0d744bc3d15dd474d591bed2402b645d024583082b9f63bb936dac6"
+dependencies = [
+ "ansi_term 0.11.0",
+ "difference",
+]
 
 [[package]]
 name = "primitive-types"
@@ -7452,7 +7505,7 @@ version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0e0d2eaa99c3c2e41547cfa109e910a68ea03823cccad4a0525dcbc9b01e8c71"
 dependencies = [
- "ansi_term",
+ "ansi_term 0.12.1",
  "chrono",
  "lazy_static",
  "matchers 0.0.1",

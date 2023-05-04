@@ -1,10 +1,14 @@
-use fuel_indexer_database::types::{QueryElement, QueryFilter, UserQuery};
-use fuel_indexer_schema::db::{graphql::*, tables::Schema};
+use fuel_indexer_graphql::{
+    arguments::{Comparison, Filter, FilterType, ParsedValue, QueryParams},
+    graphql::*,
+    queries::{QueryElement, UserQuery},
+};
+use fuel_indexer_schema::db::tables::Schema;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 fn generate_schema() -> Schema {
-    let t = ["Address", "Bytes32", "ID", "Thing1", "Thing2"]
+    let t = ["Address", "Bytes32", "ID", "Thing1", "Thing2", "UInt16"]
         .iter()
         .map(|s| s.to_string());
     let types = HashSet::from_iter(t);
@@ -15,9 +19,13 @@ fn generate_schema() -> Schema {
             .map(|(k, v)| (k.to_string(), v.to_string())),
     );
     let f2 = HashMap::from_iter(
-        [("id", "ID"), ("account", "Address")]
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string())),
+        [
+            ("id", "ID"),
+            ("account", "Address"),
+            ("huge_number", "UInt16"),
+        ]
+        .iter()
+        .map(|(k, v)| (k.to_string(), v.to_string())),
     );
     let f3 = HashMap::from_iter(
         [("id", "ID"), ("account", "Address"), ("hash", "Bytes32")]
@@ -68,7 +76,7 @@ fn test_query_builder_parses_correctly() {
         }
 
         {
-            thing1(id: 4321) { account }
+            thing1(id: 4321, filter: { huge_number: { equals: 340282366920938463463374607431768211455 } } ) { account }
         }
     "#;
 
@@ -95,11 +103,17 @@ fn test_query_builder_parses_correctly() {
             joins: HashMap::new(),
             namespace_identifier: "test_namespace_index1".to_string(),
             entity_name: "thing2".to_string(),
-            filters: vec![QueryFilter {
-                key: "id".to_string(),
-                relation: "=".to_string(),
-                value: "1234".to_string(),
-            }],
+            query_params: QueryParams {
+                filters: vec![Filter {
+                    fully_qualified_table_name: "test_namespace_index1.thing2"
+                        .to_string(),
+                    filter_type: FilterType::IdSelection(ParsedValue::Number(1234)),
+                }],
+                sorts: vec![],
+                offset: None,
+                limit: None,
+            },
+            alias: None,
         },
         UserQuery {
             elements: vec![
@@ -119,11 +133,17 @@ fn test_query_builder_parses_correctly() {
             joins: HashMap::new(),
             namespace_identifier: "test_namespace_index1".to_string(),
             entity_name: "thing2".to_string(),
-            filters: vec![QueryFilter {
-                key: "id".to_string(),
-                relation: "=".to_string(),
-                value: "84848".to_string(),
-            }],
+            query_params: QueryParams {
+                filters: vec![Filter {
+                    fully_qualified_table_name: "test_namespace_index1.thing2"
+                        .to_string(),
+                    filter_type: FilterType::IdSelection(ParsedValue::Number(84848)),
+                }],
+                sorts: vec![],
+                offset: None,
+                limit: None,
+            },
+            alias: None,
         },
         UserQuery {
             elements: vec![QueryElement::Field {
@@ -133,11 +153,29 @@ fn test_query_builder_parses_correctly() {
             joins: HashMap::new(),
             namespace_identifier: "test_namespace_index1".to_string(),
             entity_name: "thing1".to_string(),
-            filters: vec![QueryFilter {
-                key: "id".to_string(),
-                relation: "=".to_string(),
-                value: "4321".to_string(),
-            }],
+            query_params: QueryParams {
+                filters: vec![
+                    Filter {
+                        fully_qualified_table_name: "test_namespace_index1.thing1"
+                            .to_string(),
+                        filter_type: FilterType::IdSelection(ParsedValue::Number(4321)),
+                    },
+                    Filter {
+                        fully_qualified_table_name: "test_namespace_index1.thing1"
+                            .to_string(),
+                        filter_type: FilterType::Comparison(Comparison::Equals(
+                            "huge_number".to_string(),
+                            ParsedValue::BigNumber(
+                                340282366920938463463374607431768211455,
+                            ),
+                        )),
+                    },
+                ],
+                sorts: vec![],
+                offset: None,
+                limit: None,
+            },
+            alias: None,
         },
     ];
 

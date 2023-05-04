@@ -10,9 +10,10 @@ rust-version = { workspace = true }
 description = "Fuel Indexer Types"
 
 [dependencies]
+bincode = "1.3"
 chrono = { version = "0.4", features = ["serde"] }
-fuel-tx = { version = "0.26.0", features = ["serde"] }
+fuel-tx = { features = ["serde"], workspace = true }
 fuel-types = "0.26.0"
-fuels = { version = "0.40.0", default-features = false }
-serde = { version = "1.0", default-features = false, features = ["derive", "alloc"] }
+fuels = { default-features = false, workspace = true }
+serde = { default-features = false, features = ["derive", "alloc"], workspace = true }
 sha2 = "0.9"
