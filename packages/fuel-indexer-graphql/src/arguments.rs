@@ -2,8 +2,8 @@ use super::graphql::GraphqlError;
 use fuel_indexer_database::DbType;
 use fuel_indexer_schema::db::tables::Schema;
 
-use fuel_indexer_graphql_parser::query::Value;
-use std::{collections::BTreeMap, fmt};
+use async_graphql_value::{indexmap::IndexMap, Name, Value};
+use std::fmt;
 
 /// Represents the full set of parameters that can be applied to a query.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -372,10 +372,10 @@ impl FilterType {
 ///
 /// `parse_arguments` is the entry point for parsing all API query arguments.
 /// Any new top-level operators should first be added here.
-pub fn parse_argument_into_param<'a>(
+pub fn parse_argument_into_param(
     entity_type: &String,
     arg: &str,
-    value: Value<'a, &'a str>,
+    value: Value,
     schema: &Schema,
 ) -> Result<ParamType, GraphqlError> {
     match arg {
@@ -400,8 +400,8 @@ pub fn parse_argument_into_param<'a>(
             if let Value::Object(obj) = value {
                 if let Some((sort_order, predicate)) = obj.into_iter().next() {
                     if let Value::Enum(field) = predicate {
-                        if schema.field_type(entity_type, field).is_some() {
-                            match sort_order {
+                        if schema.field_type(entity_type, field.as_str()).is_some() {
+                            match sort_order.as_str() {
                                 "asc" => {
                                     return Ok(ParamType::Sort(
                                         field.to_string(),
@@ -438,15 +438,15 @@ pub fn parse_argument_into_param<'a>(
             }
         }
         "offset" => {
-            if let Value::Int(offset) = value {
-                Ok(ParamType::Offset(offset.as_u64()))
+            if let Value::Number(offset) = value {
+                Ok(ParamType::Offset(offset.as_u64().unwrap()))
             } else {
                 Err(GraphqlError::UnsupportedValueType(value.to_string()))
             }
         }
         "first" => {
-            if let Value::Int(limit) = value {
-                Ok(ParamType::Limit(limit.as_u64()))
+            if let Value::Number(limit) = value {
+                Ok(ParamType::Limit(limit.as_u64().unwrap()))
             } else {
                 Err(GraphqlError::UnsupportedValueType(value.to_string()))
             }
@@ -461,8 +461,8 @@ pub fn parse_argument_into_param<'a>(
 /// Parse an object from a parsed GraphQL document into a `Filter`.
 ///
 /// This serves as a helper function for starting the parsing operation for values under the "filter" key.
-fn parse_filter_object<'a>(
-    obj: BTreeMap<&'a str, Value<'a, &'a str>>,
+fn parse_filter_object(
+    obj: IndexMap<Name, Value>,
     entity_type: &String,
     schema: &Schema,
     prior_filter: &mut Option<FilterType>,
@@ -471,7 +471,7 @@ fn parse_filter_object<'a>(
 
     if let Some((key, predicate)) = iter.next() {
         return parse_arg_pred_pair(
-            key,
+            key.as_str(),
             predicate,
             entity_type,
             schema,
@@ -489,13 +489,13 @@ fn parse_filter_object<'a>(
 /// (i.e. "has" or a logical operator) is decoded accordingly. If the key does not
 /// match to the aforementioned keywords but is a field of the entity type, then the
 /// key and inner value are parsed into a filter.
-fn parse_arg_pred_pair<'a>(
+fn parse_arg_pred_pair(
     key: &str,
-    predicate: Value<'a, &'a str>,
+    predicate: Value,
     entity_type: &String,
     schema: &Schema,
     prior_filter: &mut Option<FilterType>,
-    top_level_arg_value_iter: &mut impl Iterator<Item = (&'a str, Value<'a, &'a str>)>,
+    top_level_arg_value_iter: &mut impl Iterator<Item = (Name, Value)>,
 ) -> Result<FilterType, GraphqlError> {
     match key {
         "has" => {
@@ -503,7 +503,7 @@ fn parse_arg_pred_pair<'a>(
                 let mut column_list = vec![];
                 for element in elements {
                     if let Value::Enum(column) = element {
-                        if schema.field_type(entity_type, column).is_some() {
+                        if schema.field_type(entity_type, column.as_str()).is_some() {
                             column_list.push(column.to_string())
                         } else {
                             return Err(GraphqlError::UnrecognizedField(
@@ -548,7 +548,7 @@ fn parse_arg_pred_pair<'a>(
             if schema.field_type(entity_type, other).is_some() {
                 if let Value::Object(inner_obj) = predicate {
                     for (key, predicate) in inner_obj.iter() {
-                        match *key {
+                        match key.as_str() {
                             "between" => {
                                 if let Value::Object(complex_comparison_obj) = predicate {
                                     if let (Some(min), Some(max)) = (
@@ -642,12 +642,12 @@ fn parse_arg_pred_pair<'a>(
 /// `parse_binary_logical_operator` is a special parsing operation that
 /// essentially combines two filters into a single filter. This
 /// is also where the nested filtering functionality resides.
-fn parse_binary_logical_operator<'a>(
+fn parse_binary_logical_operator(
     key: &str,
-    predicate: Value<'a, &'a str>,
+    predicate: Value,
     entity_type: &String,
     schema: &Schema,
-    top_level_arg_value_iter: &mut impl Iterator<Item = (&'a str, Value<'a, &'a str>)>,
+    top_level_arg_value_iter: &mut impl Iterator<Item = (Name, Value)>,
     prior_filter: &mut Option<FilterType>,
 ) -> Result<FilterType, GraphqlError> {
     if let Value::Object(inner_obj) = predicate {
@@ -671,15 +671,15 @@ fn parse_binary_logical_operator<'a>(
             }
         // It's possible that we may parse a logical operator before we've constructed
         // another filter; this is due to the underlying argument value type being a
-        // BTreeMap, which sorts keys alphabetically. If so, get the next top-level
+        // IndexMap, which sorts keys by insertion order. If so, get the next top-level
         // key-object-value pair, parse it into a filter and assoicate it with the
         // constructed filter from the inner object.
         } else if let Some((next_key, next_predicate)) = top_level_arg_value_iter.next() {
-            match next_key {
+            match next_key.as_str() {
                 "and" | "or" => {
                     return parse_binary_logical_operator(
-                        next_key,
-                        next_predicate.clone(),
+                        next_key.as_str(),
+                        next_predicate,
                         entity_type,
                         schema,
                         top_level_arg_value_iter,
@@ -689,7 +689,7 @@ fn parse_binary_logical_operator<'a>(
                 other => {
                     let next_filter = parse_arg_pred_pair(
                         other,
-                        next_predicate.clone(),
+                        next_predicate,
                         entity_type,
                         schema,
                         prior_filter,
@@ -717,15 +717,15 @@ fn parse_binary_logical_operator<'a>(
     }
 }
 
-/// Parse a value from the parsed GraphQL document into a `ParsedValue` for use in the indexer.
-///
-/// Value types from the parsed GraphQL query should be turned into `ParsedValue`
-/// instances so that they can be properly formatted for transformation into SQL queries.
-fn parse_value<'a>(value: &Value<'a, &'a str>) -> Result<ParsedValue, GraphqlError> {
+// / Parse a value from the parsed GraphQL document into a `ParsedValue` for use in the indexer.
+// /
+// / Value types from the parsed GraphQL query should be turned into `ParsedValue`
+// / instances so that they can be properly formatted for transformation into SQL queries.
+fn parse_value(value: &Value) -> Result<ParsedValue, GraphqlError> {
     match value {
-        Value::BigInt(bn) => Ok(ParsedValue::BigNumber(bn.as_u128())),
+        // Value::BigInt(bn) => Ok(ParsedValue::BigNumber(bn.as_u128())),
         Value::Boolean(b) => Ok(ParsedValue::Boolean(*b)),
-        Value::Int(n) => Ok(ParsedValue::Number(n.as_u64())),
+        Value::Number(n) => Ok(ParsedValue::Number(n.as_u64().unwrap())),
         Value::String(s) => Ok(ParsedValue::String(s.clone())),
         _ => Err(GraphqlError::UnsupportedValueType(value.to_string())),
     }
