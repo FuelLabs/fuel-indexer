@@ -717,13 +717,13 @@ fn parse_binary_logical_operator(
     }
 }
 
-// / Parse a value from the parsed GraphQL document into a `ParsedValue` for use in the indexer.
-// /
-// / Value types from the parsed GraphQL query should be turned into `ParsedValue`
-// / instances so that they can be properly formatted for transformation into SQL queries.
+/// Parse a value from the parsed GraphQL document into a `ParsedValue` for use in the indexer.
+///
+/// Value types from the parsed GraphQL query should be turned into `ParsedValue`
+/// instances so that they can be properly formatted for transformation into SQL queries.
 fn parse_value(value: &Value) -> Result<ParsedValue, GraphqlError> {
     match value {
-        // Value::BigInt(bn) => Ok(ParsedValue::BigNumber(bn.as_u128())),
+        // TODO: Add support for u128 through the use of a custom scalar
         Value::Boolean(b) => Ok(ParsedValue::Boolean(*b)),
         Value::Number(n) => Ok(ParsedValue::Number(n.as_u64().unwrap())),
         Value::String(s) => Ok(ParsedValue::String(s.clone())),
