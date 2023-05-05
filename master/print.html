@@ -1128,6 +1128,7 @@ abi: path/to/my/contract-abi.json
 contract_id: &quot;0x39150017c9e38e5e280432d546fae345d6ce6d8fe4710162c2e3a95a6faff051&quot;
 graphql_schema: path/to/my/schema.graphql
 start_block: 1564
+end_block: 310000
 module:
   wasm: path/to/my/wasm_module.wasm
 report_metrics: true
@@ -1159,6 +1160,12 @@ report_metrics: true
 <h2 id="start_block"><a class="header" href="#start_block"><code>start_block</code></a></h2>
 <p><em>Optional.</em></p>
 <p>The <code>start_block</code> field indicates the block height after which you'd like your indexer to start indexing events.</p>
+<h2 id="end_block"><a class="header" href="#end_block"><code>end_block</code></a></h2>
+<p><em>Optional.</em></p>
+<p>The <code>end_block</code> field indicates the block height after which the indexer should stop indexing blocks. </p>
+<blockquote>
+<p>Important: If no <code>end_block</code> is added the indexer will keep listening to new blocks indefinitely. </p>
+</blockquote>
 <h2 id="module"><a class="header" href="#module"><code>module</code></a></h2>
 <p><em>Required.</em></p>
 <p>The <code>module</code> field contains a file path that points to code that will be run as an <em>executor</em> inside of the indexer. There are two available options for modules/execution: <code>wasm</code> and <code>native</code>. Note that when specifying a <code>wasm</code> module, the provided path must lead to a compiled WASM binary.</p>
