@@ -37,7 +37,6 @@ type QueryRoot {
     library: Library
     book: Book
     sponsor: Sponsor
-    chapter: Chapter
     bookclub: BookClub
     municipality: Municipality
     sportsteam: SportsTeam

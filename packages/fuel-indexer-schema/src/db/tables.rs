@@ -129,7 +129,7 @@ impl SchemaBuilder {
             schema_name: namespace.clone(),
             schema_identifier: identifier.clone(),
             query: query.clone(),
-            schema,
+            schema: schema.clone(),
         };
         queries::new_graph_root(conn, new_root).await?;
 
@@ -168,6 +168,7 @@ impl SchemaBuilder {
             namespace,
             identifier,
             query,
+            schema,
             types,
             fields,
             foreign_keys: HashMap::new(),
@@ -346,12 +347,13 @@ impl SchemaBuilder {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Schema {
     pub version: String,
     pub namespace: String,
     pub identifier: String,
     pub query: String,
+    pub schema: String,
     pub types: HashSet<String>,
     pub fields: HashMap<String, HashMap<String, String>>,
     pub foreign_keys: HashMap<String, HashMap<String, (String, String)>>,
@@ -405,6 +407,7 @@ impl Schema {
             namespace: root.schema_name,
             identifier: root.schema_identifier,
             query: root.query,
+            schema: root.schema,
             types,
             fields,
             foreign_keys,

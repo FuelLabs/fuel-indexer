@@ -16,6 +16,8 @@ type GraphqlResult<T> = Result<T, GraphqlError>;
 pub enum GraphqlError {
     #[error("GraphQl Parser error: {0:?}")]
     ParseError(#[from] async_graphql_parser::Error),
+    #[error("Error building dynamic schema: {0:?}")]
+    DynamicSchemaBuildError(#[from] async_graphql::dynamic::SchemaError),
     #[error("Unrecognized Type: {0:?}")]
     UnrecognizedType(String),
     #[error("Unrecognized Field in {0:?}: {1:?}")]
@@ -789,6 +791,7 @@ mod tests {
             ]),
             fields,
             foreign_keys,
+            schema: "".to_string(),
         };
 
         let expected = vec![UserQuery {
