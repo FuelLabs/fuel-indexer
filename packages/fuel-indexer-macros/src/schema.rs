@@ -200,19 +200,17 @@ fn process_type_def(
 
                 processed.insert(column_type_name_str.clone());
 
+                let clone = if COPY_TYPES.contains(column_type_name_str.as_str()) {
+                    quote! {.clone()}
+                } else {
+                    quote! {}
+                };
+
                 #[allow(clippy::collapsible_else_if)]
                 let decoder = if is_nullable {
-                    if COPY_TYPES.contains(column_type_name_str.as_str()) {
-                        quote! { FtColumn::#column_type_name(self.#field_name.clone()), }
-                    } else {
-                        quote! { FtColumn::#column_type_name(self.#field_name), }
-                    }
+                    quote! { FtColumn::#column_type_name(self.#field_name #clone), }
                 } else {
-                    if COPY_TYPES.contains(column_type_name_str.as_str()) {
-                        quote! { FtColumn::#column_type_name(Some(self.#field_name.clone())), }
-                    } else {
-                        quote! { FtColumn::#column_type_name(Some(self.#field_name)), }
-                    }
+                    quote! { FtColumn::#column_type_name(Some(self.#field_name #clone)), }
                 };
 
                 block = quote! {
