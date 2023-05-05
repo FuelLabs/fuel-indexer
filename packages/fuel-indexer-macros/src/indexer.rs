@@ -258,7 +258,26 @@ fn process_fn_items(
         None => quote! {},
     };
 
-    let contracts = match &manifest.contract_id {
+    let subscribed_contract_ids = match &manifest.contract_id {
+        ContractIds::Single(_) => quote! {},
+        ContractIds::Multiple(contract_ids) => {
+            let contract_ids = contract_ids
+                .iter()
+                .map(|id| {
+                    quote! {
+                        Bech32ContractId::from_str(#id)
+                            .expect("Failed to parse manifest 'contract_id' as Bech32ContractId")
+                    }
+                })
+                .collect::<Vec<proc_macro2::TokenStream>>();
+
+            quote! {
+                let contract_ids = HashSet::from([#(#contract_ids),*]);
+            }
+        }
+    };
+
+    let check_if_subscribed_to_contract = match &manifest.contract_id {
         ContractIds::Single(contract_id) => match contract_id {
             Some(contract_id) => {
                 quote! {
@@ -272,20 +291,9 @@ fn process_fn_items(
             }
             None => quote! {},
         },
-        ContractIds::Multiple(contract_ids) => {
-            let contract_ids = contract_ids
-                .iter()
-                .map(|id| {
-                    quote! {
-                        Bech32ContractId::from_str(#id)
-                            .expect("Failed to parse manifest 'contract_id' as Bech32ContractId")
-                    }
-                })
-                .collect::<Vec<proc_macro2::TokenStream>>();
-
+        ContractIds::Multiple(_contract_ids) => {
             quote! {
                 let bech32_id = Bech32ContractId::from(id);
-                let contract_ids = HashSet::from([#(#contract_ids),*]);
 
                 if !contract_ids.contains(&bech32_id) {
                     Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
@@ -457,6 +465,8 @@ fn process_fn_items(
     };
     (
         quote! {
+            #subscribed_contract_ids
+
             for block in blocks {
 
                 #start_block
@@ -475,7 +485,7 @@ fn process_fn_items(
                     for receipt in tx.receipts {
                         match receipt {
                             Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
-                                #contracts
+                                #check_if_subscribed_to_contract
 
                                 let fn_name = decoder.selector_to_fn_name(param1);
                                 return_types.push(param1);
@@ -486,18 +496,18 @@ fn process_fn_items(
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
-                                #contracts
+                                #check_if_subscribed_to_contract
                                 let ty_id = abi::Log::type_id();
                                 let data = bincode::serialize(&abi::Log{ contract_id: id, ra, rb }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
-                                #contracts
+                                #check_if_subscribed_to_contract
                                 decoder.decode_logdata(rb as usize, data);
 
                             }
                             Receipt::Return { id, val, pc, is } => {
-                                #contracts
+                                #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
                                     let ty_id = abi::Return::type_id();
                                     let data = bincode::serialize(&abi::Return{ contract_id: id, val, pc, is }).expect("Bad encoding,");
@@ -505,7 +515,7 @@ fn process_fn_items(
                                 }
                             }
                             Receipt::ReturnData { data, id, .. } => {
-                                #contracts
+                                #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
                                     decoder.decode_return_type(selector, data);
@@ -544,25 +554,25 @@ fn process_fn_items(
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
-                                #contracts
+                                #check_if_subscribed_to_contract
                                 let ty_id = abi::Transfer::type_id();
                                 let data = bincode::serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
-                                #contracts
+                                #check_if_subscribed_to_contract
                                 let ty_id = abi::TransferOut::type_id();
                                 let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Panic { id, reason, .. } => {
-                                #contracts
+                                #check_if_subscribed_to_contract
                                 let ty_id = abi::Panic::type_id();
                                 let data = bincode::serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() as u32 }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Revert { id, ra, .. } => {
-                                #contracts
+                                #check_if_subscribed_to_contract
                                 let ty_id = abi::Revert::type_id();
                                 let data = bincode::serialize(&abi::Revert{ contract_id: id, error_val: u64::from(ra & 0xF) }).expect("Bad encoding,");
                                 decoder.decode_type(ty_id, data);
