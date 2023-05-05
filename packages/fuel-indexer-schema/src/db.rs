@@ -14,4 +14,12 @@ pub enum IndexerSchemaError {
     DatabaseError(#[from] IndexerDatabaseError),
     #[error("Generic error")]
     Generic,
+    #[error("GraphQL parser error: {0:?}")]
+    ParseError(#[from] async_graphql_parser::Error),
+    #[error("Could not build schema: {0:?}")]
+    SchemaConstructionError(String),
+    #[error("Unable to parse join directive: {0:?}")]
+    JoinDirectiveError(String),
+    #[error("Unable to build schema field and type map: {0:?}")]
+    FieldAndTypeConstructionError(String),
 }

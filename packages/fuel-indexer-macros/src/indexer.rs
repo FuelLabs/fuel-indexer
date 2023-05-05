@@ -734,61 +734,12 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
                 service.register_native_index(manifest, handle_events).await?;
 
                 let service_handle = tokio::spawn(service.run());
+                let gql_handle = tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
 
-                #[cfg(feature = "api-server")]
-                {
-                    let gql_handle =
-                        tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
-
-                    #[cfg(feature = "fuel-core-lib")]
-                    {
-                        use fuel_core::service::{Config, FuelService};
-                        use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-
-                        if config.local_fuel_node {
-                            let config = Config {
-                                addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
-                                ..Config::local_node()
-                            };
-                            let node_handle = tokio::spawn(FuelService::new_node(config));
-
-                            let _ = tokio::join!(service_handle, node_handle, gql_handle);
-
-                            return Ok(());
-                        }
-                    }
-
-                    let _ = tokio::join!(service_handle, gql_handle);
-
-                    Ok(())
-                }
-
-                #[cfg(not(feature = "api-server"))]
-                {
-                    #[cfg(feature = "fuel-core-lib")]
-                    {
-                        use fuel_core::service::{Config, FuelService};
-                        use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-
-                        if config.local_fuel_node {
-                            let config = Config {
-                                addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
-                                ..Config::local_node()
-                            };
-                            let node_handle = tokio::spawn(FuelService::new_node(config));
-
-                            let _ = tokio::join!(service_handle, node_handle);
-
-                            return Ok(());
-                        }
-                    }
-
-                    let _ = service_handle.await?;
+                let _ = tokio::join!(service_handle, gql_handle);
 
                 Ok(())
             }
-            }
-
         }
     } else {
         let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);

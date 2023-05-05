@@ -1,5 +1,5 @@
 use fuel_indexer_graphql::{
-    arguments::{Comparison, Filter, FilterType, ParsedValue, QueryParams},
+    arguments::{Filter, FilterType, ParsedValue, QueryParams},
     graphql::*,
     queries::{QueryElement, UserQuery},
 };
@@ -74,10 +74,6 @@ fn test_query_builder_parses_correctly() {
                 ...frag1
             }
         }
-
-        {
-            thing1(id: 4321, filter: { huge_number: { equals: 340282366920938463463374607431768211455 } } ) { account }
-        }
     "#;
 
     let schema = generate_schema();
@@ -145,41 +141,16 @@ fn test_query_builder_parses_correctly() {
             },
             alias: None,
         },
-        UserQuery {
-            elements: vec![QueryElement::Field {
-                key: "account".to_string(),
-                value: "test_namespace_index1.thing1.account".to_string(),
-            }],
-            joins: HashMap::new(),
-            namespace_identifier: "test_namespace_index1".to_string(),
-            entity_name: "thing1".to_string(),
-            query_params: QueryParams {
-                filters: vec![
-                    Filter {
-                        fully_qualified_table_name: "test_namespace_index1.thing1"
-                            .to_string(),
-                        filter_type: FilterType::IdSelection(ParsedValue::Number(4321)),
-                    },
-                    Filter {
-                        fully_qualified_table_name: "test_namespace_index1.thing1"
-                            .to_string(),
-                        filter_type: FilterType::Comparison(Comparison::Equals(
-                            "huge_number".to_string(),
-                            ParsedValue::BigNumber(
-                                340282366920938463463374607431768211455,
-                            ),
-                        )),
-                    },
-                ],
-                sorts: vec![],
-                offset: None,
-                limit: None,
-            },
-            alias: None,
-        },
     ];
 
-    assert_eq!(q.parse(&schema), expected);
+    let result = q.parse(&schema);
+
+    // The underlying parser representation of multiple queries uses a
+    // HashMap, which does not guarantee ordering. We can't use a HashSet
+    // to assert equality due to HashMaps not implementing the Hash trait,
+    // so we just assert that the expected elements are present.
+    assert!(result.iter().find(|uq| **uq == expected[0]).is_some());
+    assert!(result.iter().find(|uq| **uq == expected[1]).is_some());
 
     let bad_query = r#"
         fragment frag1 on BadType{

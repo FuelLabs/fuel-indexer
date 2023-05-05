@@ -11,7 +11,7 @@ fuel-indexer-macros = { workspace = true, default-features = false }
 fuel-indexer-plugin = { workspace = true, features = ["native-execution"] }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-tx = { workspace = true }
-fuels = { default-features = false, workspace = true }
+fuels = { default-features = false, workspace = true, features = ["std"] }
 getrandom = { version = "0.2", features = ["js"] }
 instant = { version = "0.1", default-features = false }
-serde = { default-features = false, features = ["derive"], workspace = true }
+serde = { workspace = true }

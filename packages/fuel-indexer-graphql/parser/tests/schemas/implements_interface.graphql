@@ -1,3 +1,0 @@
-interface IOne implements ITwo
-
-interface IThree implements IFour & IFive

@@ -2448,7 +2448,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "forc-index"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -2477,7 +2477,7 @@ dependencies = [
 
 [[package]]
 name = "forc-postgres"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -2968,7 +2968,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2995,7 +2995,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "async-graphql 5.0.7",
@@ -3027,7 +3027,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3039,7 +3039,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "serde",
  "strum 0.24.1",
@@ -3047,11 +3047,12 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-graphql"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
+ "async-graphql-parser 5.0.7",
+ "async-graphql-value 5.0.7",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
- "fuel-indexer-graphql-parser",
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "pretty_assertions",
@@ -3059,17 +3060,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuel-indexer-graphql-parser"
-version = "0.11.2"
-dependencies = [
- "combine",
- "pretty_assertions",
- "thiserror",
-]
-
-[[package]]
 name = "fuel-indexer-lib"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "clap 3.2.23",
@@ -3089,7 +3081,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macro-utils"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -3099,11 +3091,11 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macros"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
+ "async-graphql-parser 5.0.7",
  "fuel-abi-types 0.2.1",
  "fuel-indexer-database-types",
- "fuel-indexer-graphql-parser",
  "fuel-indexer-lib",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
@@ -3126,7 +3118,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-metrics"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "axum 0.6.16",
  "lazy_static",
@@ -3136,7 +3128,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-plugin"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3156,7 +3148,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3169,12 +3161,12 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-schema"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
+ "async-graphql-parser 5.0.7",
  "bincode",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
- "fuel-indexer-graphql-parser",
  "fuel-indexer-types",
  "hex",
  "insta",
@@ -3241,7 +3233,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-types"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "bincode",
  "chrono",
@@ -5419,7 +5411,7 @@ checksum = "6ac9a59f73473f1b8d852421e59e64809f025994837ef743615c6d0c5b305160"
 
 [[package]]
 name = "plugin-tests"
-version = "0.11.2"
+version = "0.12.0"
 dependencies = [
  "forc-index",
  "fuel-indexer-plugin",
