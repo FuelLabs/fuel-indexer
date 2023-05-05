@@ -577,6 +577,164 @@ async fn test_index_respects_start_block_postgres() {
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_index_respects_end_block_postgres() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::get().uri("/block_height").to_request();
+    let res = test::call_and_read_body(&app, req).await;
+    let block_height = String::from_utf8(res.to_vec())
+        .unwrap()
+        .parse::<u64>()
+        .unwrap();
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    manifest.end_block = Some(block_height + 1);
+
+    srvc.register_index_from_manifest(manifest).await.unwrap();
+
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let first_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
+
+    let row = first_check.unwrap();
+    let indexed_height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+
+    assert_eq!(indexed_height, (block_height));
+    assert!(row.get::<i64, usize>(2) > 0);
+
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let second_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height + 1,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
+
+    let row = second_check.unwrap();
+    let indexed_height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+
+    assert_eq!(indexed_height, (block_height + 1));
+    assert!(row.get::<i64, usize>(2) > 0);
+
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let final_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height + 2,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
+
+    // Should not have indexed this block
+    assert!(final_check.is_none());
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_index_respects_end_block_and_start_block_postgres() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::get().uri("/block_height").to_request();
+    let res = test::call_and_read_body(&app, req).await;
+    let block_height = String::from_utf8(res.to_vec())
+        .unwrap()
+        .parse::<u64>()
+        .unwrap();
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+    manifest.start_block = Some(block_height + 1);
+    manifest.end_block = Some(block_height + 2);
+
+    srvc.register_index_from_manifest(manifest).await.unwrap();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+
+    // Check block before start block is not indexed
+    let pre_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
+
+    assert!(pre_check.is_none());
+
+    // Index and check start block
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let start_block_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height + 1,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
+
+    assert!(start_block_check.is_some());
+
+    // Index and check end block
+    let req = test::TestRequest::post().uri("/ping").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+
+    let end_block_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height + 2,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
+
+    assert!(end_block_check.is_some());
+
+    // Check block after end block is not indexed
+    let post_check = sqlx::query(&format!(
+        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        block_height + 3,
+    ))
+    .fetch_optional(&mut conn)
+    .await
+    .unwrap();
+
+    assert!(post_check.is_none());
+
+    node_handle.abort();
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
