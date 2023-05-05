@@ -206,7 +206,6 @@ fn process_type_def(
                     quote! {}
                 };
 
-                #[allow(clippy::collapsible_else_if)]
                 let decoder = if is_nullable {
                     quote! { FtColumn::#column_type_name(self.#field_name #clone), }
                 } else {
