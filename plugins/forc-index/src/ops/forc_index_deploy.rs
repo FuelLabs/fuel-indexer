@@ -11,7 +11,7 @@ use reqwest::{
     StatusCode,
 };
 use serde_json::{to_string_pretty, value::Value, Map};
-use std::time::Duration;
+use std::{path::Path, time::Duration};
 use tracing::{error, info};
 
 const STEADY_TICK_INTERVAL: u64 = 120;
@@ -44,7 +44,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
             verbose,
             locked,
             native,
-            target_dir,
+            target_dir: target_dir.clone(),
         })?;
     }
 
@@ -54,12 +54,26 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let manifest = Manifest::from_file(&manifest_path)?;
 
     let Manifest {
-        graphql_schema,
+        mut graphql_schema,
         namespace,
         identifier,
-        module,
+        mut module,
         ..
     } = manifest;
+
+    if path.is_some() {
+        if let Some(t) = target_dir {
+            graphql_schema = Path::new(&t)
+                .join(graphql_schema)
+                .to_str()
+                .unwrap()
+                .to_string();
+
+            module = Path::new(&t).join(module).into();
+        } else {
+            anyhow::bail!("--target-dir must be specified when --path is specified.");
+        }
+    }
 
     let form = Form::new()
         .file("manifest", &manifest_path)?

@@ -3,6 +3,7 @@ fuel_client: ~
 graphql_schema: packages/fuel-indexer-tests/components/indices/fuel-indexer-test/schema/fuel_indexer_test.graphql
 abi: packages/fuel-indexer-tests/contracts/fuel-indexer-test/out/debug/fuel-indexer-test-abi.json
 start_block: 1
+end_block: ~
 contract_id: fuel1lun289ufekmnx55m540tj79a9e2mavaagxp3e6cekzfmjkpc8xxsqy42wh
 identifier: index1
 module:

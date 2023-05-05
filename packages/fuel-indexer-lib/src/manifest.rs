@@ -36,12 +36,27 @@ pub enum Module {
     Native,
 }
 
+impl From<PathBuf> for Module {
+    fn from(path: PathBuf) -> Self {
+        Self::Wasm(path.to_str().unwrap().to_string())
+    }
+}
+
 impl ToString for Module {
     fn to_string(&self) -> String {
         match self {
-            Self::Wasm(o) => o.clone(),
+            Self::Wasm(o) => o.to_string(),
+            Self::Native => "native".to_string(),
+        }
+    }
+}
+
+impl AsRef<Path> for Module {
+    fn as_ref(&self) -> &Path {
+        match self {
+            Self::Wasm(o) => Path::new(o),
             Self::Native => {
-                unimplemented!("Only wasm execution supports module path access.")
+                unimplemented!("Only WASM execution supports module path access.")
             }
         }
     }
@@ -68,6 +83,7 @@ pub struct Manifest {
     )]
     pub contract_id: ContractIds,
     pub start_block: Option<u64>,
+    pub end_block: Option<u64>,
     #[serde(default)]
     pub resumable: Option<bool>,
 }

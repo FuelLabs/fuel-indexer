@@ -1,8 +1,12 @@
 use super::arguments::{parse_argument_into_param, ParamType, QueryParams};
 use super::queries::{JoinCondition, QueryElement, QueryJoinNode, UserQuery};
+use async_graphql_parser::parse_query;
+use async_graphql_parser::types::{
+    DocumentOperations, ExecutableDocument, Field, FragmentDefinition, FragmentSpread,
+    OperationDefinition, OperationType, SelectionSet, TypeCondition,
+};
+use async_graphql_value::Name;
 use fuel_indexer_schema::{db::tables::Schema, sql_types::DbType};
-
-use fuel_indexer_graphql_parser::query as gql;
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -11,7 +15,7 @@ type GraphqlResult<T> = Result<T, GraphqlError>;
 #[derive(Debug, Error)]
 pub enum GraphqlError {
     #[error("GraphQl Parser error: {0:?}")]
-    ParseError(#[from] gql::ParseError),
+    ParseError(#[from] async_graphql_parser::Error),
     #[error("Unrecognized Type: {0:?}")]
     UnrecognizedType(String),
     #[error("Unrecognized Field in {0:?}: {1:?}")]
@@ -44,7 +48,12 @@ pub enum GraphqlError {
 
 #[derive(Clone, Debug)]
 pub enum Selection {
-    Field(String, Vec<ParamType>, Selections, Option<String>),
+    Field {
+        name: String,
+        params: Vec<ParamType>,
+        sub_selections: Selections,
+        alias: Option<String>,
+    },
     Fragment(String),
 }
 
@@ -56,28 +65,29 @@ pub struct Selections {
 }
 
 impl Selections {
-    pub fn new<'a>(
+    pub fn new(
         schema: &Schema,
         field_type: &str,
-        set: &gql::SelectionSet<'a, &'a str>,
+        set: &SelectionSet,
     ) -> GraphqlResult<Selections> {
         let mut selections = Vec::with_capacity(set.items.len());
         let mut has_fragments = false;
 
         for item in &set.items {
-            match item {
-                gql::Selection::Field(field) => {
+            match &item.node {
+                async_graphql_parser::types::Selection::Field(field) => {
                     // TODO: directives and sub-selections for nested types...
-                    let gql::Field {
+                    let Field {
                         name,
                         selection_set,
                         arguments,
                         alias,
                         ..
-                    } = field;
+                    } = &field.node;
 
-                    let subfield_type =
-                        schema.field_type(field_type, name).ok_or_else(|| {
+                    let subfield_type = schema
+                        .field_type(field_type, &name.to_string())
+                        .ok_or_else(|| {
                             GraphqlError::UnrecognizedField(
                                 field_type.into(),
                                 name.to_string(),
@@ -89,24 +99,28 @@ impl Selections {
                         .map(|(arg, value)| {
                             parse_argument_into_param(
                                 subfield_type,
-                                arg,
-                                value.clone(),
+                                &arg.to_string(),
+                                value.node.clone(),
                                 schema,
                             )
                         })
                         .collect::<Result<Vec<ParamType>, GraphqlError>>()?;
 
                     let sub_selections =
-                        Selections::new(schema, subfield_type, selection_set)?;
-                    selections.push(Selection::Field(
-                        name.to_string(),
+                        Selections::new(schema, subfield_type, &selection_set.node)?;
+                    selections.push(Selection::Field {
+                        name: name.to_string(),
                         params,
                         sub_selections,
-                        alias.map(str::to_string),
-                    ));
+                        alias: if alias.is_some() {
+                            Some(alias.clone().unwrap().to_string())
+                        } else {
+                            None
+                        },
+                    });
                 }
-                gql::Selection::FragmentSpread(frag) => {
-                    let gql::FragmentSpread { fragment_name, .. } = frag;
+                async_graphql_parser::types::Selection::FragmentSpread(frag) => {
+                    let FragmentSpread { fragment_name, .. } = &frag.node;
                     has_fragments = true;
                     selections.push(Selection::Fragment(fragment_name.to_string()));
                 }
@@ -149,19 +163,24 @@ impl Selections {
                         selections.push(Selection::Fragment(name.to_string()));
                     }
                 }
-                Selection::Field(name, params, sub_selection, alias) => {
+                Selection::Field {
+                    name,
+                    params,
+                    sub_selections,
+                    alias,
+                } => {
                     let field_type = schema
                         .field_type(cond, name)
                         .expect("Unable to retrieve field type");
-                    let _ =
-                        sub_selection.resolve_fragments(schema, field_type, fragments)?;
+                    let _ = sub_selections
+                        .resolve_fragments(schema, field_type, fragments)?;
 
-                    selections.push(Selection::Field(
-                        name.to_string(),
-                        params.to_vec(),
-                        sub_selection.clone(),
-                        alias.clone(),
-                    ));
+                    selections.push(Selection::Field {
+                        name: name.to_string(),
+                        params: params.to_vec(),
+                        sub_selections: sub_selections.clone(),
+                        alias: alias.clone(),
+                    });
                 }
             }
         }
@@ -183,10 +202,10 @@ pub struct Fragment {
 }
 
 impl Fragment {
-    pub fn new<'a>(
+    pub fn new(
         schema: &Schema,
         cond: String,
-        selection_set: &gql::SelectionSet<'a, &'a str>,
+        selection_set: &async_graphql_parser::types::SelectionSet,
     ) -> GraphqlResult<Fragment> {
         let selections = Selections::new(schema, &cond, selection_set)?;
 
@@ -257,7 +276,13 @@ impl Operation {
             // Selections can have their own set of subselections and so on, so a queue
             // is created with the first level of selections. In order to track the containing
             // entity of the selection, an entity list of the same length is created.
-            if let Selection::Field(entity_name, filters, selections, alias) = selection {
+            if let Selection::Field {
+                name: entity_name,
+                params: filters,
+                sub_selections: selections,
+                alias,
+            } = selection
+            {
                 let mut queue: Vec<Selection> = Vec::new();
 
                 // Selections and entities will be popped from their respective vectors
@@ -305,8 +330,12 @@ impl Operation {
 
                     last_seen_entities_len = entities.len();
 
-                    if let Selection::Field(field_name, filters, subselections, alias) =
-                        current
+                    if let Selection::Field {
+                        name: field_name,
+                        params: filters,
+                        sub_selections: subselections,
+                        alias,
+                    } = current
                     {
                         if subselections.selections.is_empty() {
                             elements.push(QueryElement::Field {
@@ -488,7 +517,7 @@ impl GraphqlQuery {
 
 pub struct GraphqlQueryBuilder<'a> {
     schema: &'a Schema,
-    document: gql::Document<'a, &'a str>,
+    document: ExecutableDocument,
 }
 
 impl<'a> GraphqlQueryBuilder<'a> {
@@ -496,7 +525,7 @@ impl<'a> GraphqlQueryBuilder<'a> {
         schema: &'a Schema,
         query: &'a str,
     ) -> GraphqlResult<GraphqlQueryBuilder<'a>> {
-        let document = gql::parse_query::<&str>(query)?;
+        let document = parse_query::<&str>(query)?;
         Ok(GraphqlQueryBuilder { schema, document })
     }
 
@@ -509,31 +538,21 @@ impl<'a> GraphqlQueryBuilder<'a> {
 
     fn process_operation(
         &self,
-        operation: &gql::OperationDefinition<'a, &'a str>,
+        name: Option<Name>,
+        operation: &OperationDefinition,
         fragments: &HashMap<String, Fragment>,
     ) -> GraphqlResult<Operation> {
-        match operation {
-            gql::OperationDefinition::SelectionSet(set) => {
-                let selections = Selections::new(self.schema, &self.schema.query, set)?;
-
-                Ok(Operation::new(
-                    self.schema.namespace.clone(),
-                    self.schema.identifier.clone(),
-                    "Unnamed".into(),
-                    selections,
-                ))
-            }
-            gql::OperationDefinition::Query(q) => {
+        match operation.ty {
+            OperationType::Query => {
                 // TODO: directives and variable definitions....
-                let gql::Query {
-                    name,
-                    selection_set,
-                    ..
-                } = q;
-                let name = name.map_or_else(|| "Unnamed".into(), |o| o.into());
+                let OperationDefinition { selection_set, .. } = operation;
+                let name = name.map_or_else(|| "Unnamed".into(), |o| o.to_string());
 
-                let mut selections =
-                    Selections::new(self.schema, &self.schema.query, selection_set)?;
+                let mut selections = Selections::new(
+                    self.schema,
+                    &self.schema.query,
+                    &selection_set.node,
+                )?;
                 selections.resolve_fragments(
                     self.schema,
                     &self.schema.query,
@@ -547,10 +566,10 @@ impl<'a> GraphqlQueryBuilder<'a> {
                     selections,
                 ))
             }
-            gql::OperationDefinition::Mutation(_) => {
+            OperationType::Mutation => {
                 Err(GraphqlError::OperationNotSupported("Mutation".into()))
             }
-            gql::OperationDefinition::Subscription(_) => {
+            OperationType::Subscription => {
                 Err(GraphqlError::OperationNotSupported("Subscription".into()))
             }
         }
@@ -562,11 +581,20 @@ impl<'a> GraphqlQueryBuilder<'a> {
     ) -> GraphqlResult<Vec<Operation>> {
         let mut operations = vec![];
 
-        for def in &self.document.definitions {
-            if let gql::Definition::Operation(operation) = def {
-                let op = self.process_operation(operation, &fragments)?;
-
+        match &self.document.operations {
+            DocumentOperations::Single(operation_def) => {
+                let op = self.process_operation(None, &operation_def.node, &fragments)?;
                 operations.push(op);
+            }
+            DocumentOperations::Multiple(operation_map) => {
+                for (name, operation_def) in operation_map.iter() {
+                    let op = self.process_operation(
+                        Some(name.clone()),
+                        &operation_def.node,
+                        &fragments,
+                    )?;
+                    operations.push(op);
+                }
             }
         }
 
@@ -577,28 +605,25 @@ impl<'a> GraphqlQueryBuilder<'a> {
         let mut fragments = HashMap::new();
         let mut to_resolve = Vec::new();
 
-        for def in &self.document.definitions {
-            if let gql::Definition::Fragment(frag) = def {
-                let gql::FragmentDefinition {
-                    name,
-                    type_condition,
-                    selection_set,
-                    ..
-                } = frag;
+        for (name, fragment_def) in self.document.fragments.iter() {
+            let FragmentDefinition {
+                type_condition,
+                selection_set,
+                ..
+            } = &fragment_def.node;
 
-                let gql::TypeCondition::On(cond) = type_condition;
+            let TypeCondition { on: cond } = &type_condition.node;
 
-                if !self.schema.check_type(cond) {
-                    return Err(GraphqlError::UnrecognizedType(cond.to_string()));
-                }
+            if !self.schema.check_type(&cond.to_string()) {
+                return Err(GraphqlError::UnrecognizedType(cond.to_string()));
+            }
 
-                let frag = Fragment::new(self.schema, cond.to_string(), selection_set)?;
+            let frag = Fragment::new(self.schema, cond.to_string(), &selection_set.node)?;
 
-                if frag.has_fragments() {
-                    to_resolve.push((name.to_string(), frag));
-                } else {
-                    fragments.insert(name.to_string(), frag);
-                }
+            if frag.has_fragments() {
+                to_resolve.push((name.to_string(), frag));
+            } else {
+                fragments.insert(name.to_string(), frag);
             }
         }
 
@@ -641,26 +666,26 @@ mod tests {
             _field_type: "Block".to_string(),
             has_fragments: false,
             selections: vec![
-                Selection::Field(
-                    "id".to_string(),
-                    Vec::new(),
-                    Selections {
+                Selection::Field {
+                    name: "id".to_string(),
+                    params: Vec::new(),
+                    sub_selections: Selections {
                         _field_type: "ID!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
-                    None,
-                ),
-                Selection::Field(
-                    "height".to_string(),
-                    Vec::new(),
-                    Selections {
+                    alias: None,
+                },
+                Selection::Field {
+                    name: "height".to_string(),
+                    params: Vec::new(),
+                    sub_selections: Selections {
                         _field_type: "UInt8!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
-                    None,
-                ),
+                    alias: None,
+                },
             ],
         };
 
@@ -668,41 +693,41 @@ mod tests {
             _field_type: "Tx".to_string(),
             has_fragments: false,
             selections: vec![
-                Selection::Field(
-                    "block".to_string(),
-                    Vec::new(),
-                    selections_on_block_field,
-                    None,
-                ),
-                Selection::Field(
-                    "id".to_string(),
-                    Vec::new(),
-                    Selections {
+                Selection::Field {
+                    name: "block".to_string(),
+                    params: Vec::new(),
+                    sub_selections: selections_on_block_field,
+                    alias: None,
+                },
+                Selection::Field {
+                    name: "id".to_string(),
+                    params: Vec::new(),
+                    sub_selections: Selections {
                         _field_type: "ID!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
-                    None,
-                ),
-                Selection::Field(
-                    "timestamp".to_string(),
-                    Vec::new(),
-                    Selections {
+                    alias: None,
+                },
+                Selection::Field {
+                    name: "timestamp".to_string(),
+                    params: Vec::new(),
+                    sub_selections: Selections {
                         _field_type: "Int8!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
-                    None,
-                ),
+                    alias: None,
+                },
             ],
         };
 
-        let query_selections = vec![Selection::Field(
-            "tx".to_string(),
-            Vec::new(),
-            selections_on_tx_field,
-            None,
-        )];
+        let query_selections = vec![Selection::Field {
+            name: "tx".to_string(),
+            params: Vec::new(),
+            sub_selections: selections_on_tx_field,
+            alias: None,
+        }];
 
         let operation = Operation {
             _name: "".to_string(),

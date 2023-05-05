@@ -35,8 +35,8 @@ impl SchemaManager {
                 identifier,
                 &version,
                 self.pool.database_type(),
-            )
-            .build(&schema)
+            )?
+            .build(&schema)?
             .commit_metadata(conn)
             .await?;
         }
@@ -49,6 +49,6 @@ impl SchemaManager {
         identifier: &str,
     ) -> IndexerSchemaResult<Schema> {
         // TODO: might be nice to cache this data in server?
-        Ok(Schema::load_from_db(&self.pool, namespace, identifier).await?)
+        Schema::load_from_db(&self.pool, namespace, identifier).await
     }
 }

@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM lukemathwalker/cargo-chef:latest-rust-1.68.1 AS chef
+FROM lukemathwalker/cargo-chef:latest-rust-1.69.0 AS chef
 
 WORKDIR /build/
 
