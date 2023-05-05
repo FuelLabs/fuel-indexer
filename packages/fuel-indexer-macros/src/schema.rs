@@ -19,8 +19,16 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 lazy_static! {
-    static ref COPY_TYPES: HashSet<&'static str> =
-        HashSet::from(["Json", "Charfield", "Identity", "Blob"]);
+    static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
+        "Json",
+        "Charfield",
+        "Identity",
+        "Blob",
+        "Option<Json>",
+        "Option<Blob>",
+        "Option<Charfield>",
+        "Option<Identity>"
+    ]);
 }
 
 fn process_type(types: &HashSet<String>, typ: &Type) -> proc_macro2::TokenStream {
@@ -192,10 +200,19 @@ fn process_type_def(
 
                 processed.insert(column_type_name_str.clone());
 
+                #[allow(clippy::collapsible_else_if)]
                 let decoder = if is_nullable {
-                    quote! { FtColumn::#column_type_name(self.#field_name), }
+                    if COPY_TYPES.contains(column_type_name_str.as_str()) {
+                        quote! { FtColumn::#column_type_name(self.#field_name.clone()), }
+                    } else {
+                        quote! { FtColumn::#column_type_name(self.#field_name), }
+                    }
                 } else {
-                    quote! { FtColumn::#column_type_name(Some(self.#field_name.clone())), }
+                    if COPY_TYPES.contains(column_type_name_str.as_str()) {
+                        quote! { FtColumn::#column_type_name(Some(self.#field_name.clone())), }
+                    } else {
+                        quote! { FtColumn::#column_type_name(Some(self.#field_name)), }
+                    }
                 };
 
                 block = quote! {
