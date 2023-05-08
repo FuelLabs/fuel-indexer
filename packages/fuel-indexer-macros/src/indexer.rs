@@ -291,7 +291,7 @@ fn process_fn_items(
             }
             None => quote! {},
         },
-        ContractIds::Multiple(_contract_ids) => {
+        ContractIds::Multiple(_) => {
             quote! {
                 let bech32_id = Bech32ContractId::from(id);
 
