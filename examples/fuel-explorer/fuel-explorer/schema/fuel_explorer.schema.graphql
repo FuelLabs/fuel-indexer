@@ -1,0 +1,80 @@
+schema {
+  query: QueryRoot
+}
+
+type QueryRoot {
+  block: Block
+  # tx: TransactionEntity
+}
+
+type Block {
+  id: ID!
+  hash: Bytes32!
+  producer: Bytes32
+  previous_root: Bytes32!
+  height: UInt8!
+  timestamp: Int8!
+#   # transactions: [Transaction]!
+}
+
+type FailureStatus {
+  id: ID!
+  block: Block!
+  reason: Charfield!
+  timestamp: Int8!
+}
+
+type SqueezedOutStatus {
+  id: ID!
+  reason: Charfield!
+}
+
+type SubmittedStatus {
+  id: ID!
+  timestamp: Int8!
+}
+
+type SuccessStatus {
+  id: ID!
+  block: Block!
+  timestamp: Int8!
+}
+
+type TxStatus {
+  id: ID!
+  failure: FailureStatus
+  squeezed_out: SqueezedOutStatus
+  submitted: SubmittedStatus
+  success: SuccessStatus
+}
+
+type TransactionEntity {
+  id: ID!
+  block_id: Block!
+  hash: Bytes32!
+  value: UInt8!
+  status: TxStatus
+  age: Int8!
+  inputs: Json
+  outputs: Json!
+}
+
+type TransferOut {
+  id: ID!
+  contract_id: Bytes32!
+  receiver: Bytes32!
+  amount: UInt8!
+  asset_id: Bytes32!
+}
+
+type MessageOut {
+  id: ID!
+  message_id: MessageId!
+  sender: Address!
+  recipient: Address!
+  amount: UInt8!
+  nonce: Bytes32!
+  len: UInt8!
+  digest: Bytes32!
+  data: Blob!
+}

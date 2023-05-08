@@ -3,11 +3,11 @@
 resolver = "2"
 members = [
    "examples/block-explorer/explorer-indexer",
+   "examples/fuel-explorer/fuel-explorer",
    "examples/hello-world-native/hello-indexer-native",
    "examples/hello-world/hello-indexer",
    "examples/hello-world/hello-world-data",
    "examples/hello-world/hello-world-node",
-   "packages/fuel-indexer",
    "packages/fuel-indexer-api-server",
    "packages/fuel-indexer-database",
    "packages/fuel-indexer-database/database-types",
@@ -25,6 +25,8 @@ members = [
    "packages/fuel-indexer-tests/components/indices/simple-wasm/simple-wasm",
    "packages/fuel-indexer-tests/components/web-api",
    "packages/fuel-indexer-types",
+   "packages/fuel-indexer",
+   "plugins/forc-index-tests",
    "plugins/forc-index",
    "plugins/forc-index-tests",
    "plugins/forc-postgres",
