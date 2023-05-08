@@ -673,4 +673,12 @@ mod fuel_indexer_test {
 
         e.save();
     }
+
+    fn fuel_indexer_trigger_enum(
+        first: AnotherSimpleEnum,
+        second: NestedEnum,
+        third: AnotherSimpleEnum,
+    ) {
+        Logger::info("fuel_indexer_trigger_enum handling trigger_enum event.");
+    }
 }
