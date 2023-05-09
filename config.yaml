@@ -27,7 +27,7 @@
 # # Allow network configuration via indexer manifests.
 # indexer_net_config: false
 
-# # Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out.
+# # Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
 # indexer_handler_timeout: 2
 
 # # ***********************

@@ -214,11 +214,11 @@ pub struct IndexerArgs {
     #[clap(long, help = "Number of seconds over which to calculate rate limit.")]
     pub rate_limit_window: Option<u64>,
 
-    /// Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out.
+    /// Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
     #[clap(
         long,
         default_value_t = defaults::INDEXER_HANDLER_TIMEOUT,
-        help = "Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out."
+        help = "Maximum length of time (in seconds) that an indexer's event handler can run before timing out."
     )]
     pub indexer_handler_timeout: u64,
 }

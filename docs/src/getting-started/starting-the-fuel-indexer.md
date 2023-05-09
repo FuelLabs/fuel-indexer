@@ -40,8 +40,7 @@ OPTIONS:
             Print help information
 
         --indexer-handler-timeout <INDEXER_HANDLER_TIMEOUT>
-            Maximum amount of time (seconds) that an indexer's `handle_events` function can take
-            before being timed out. [default: 2]
+            Maximum length of time (in seconds) that an indexer's event handler can run before timing out. [default: 2]
 
         --indexer-net-config
             Allow network configuration via indexer manifests.

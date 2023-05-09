@@ -100,7 +100,7 @@ pub const VERBOSE_LOGGING: bool = false;
 /// Verbose output for database operations.
 pub const VERBOSE_DB_LOGGING: &str = "false";
 
-/// Amount of items to return in a GraphQL page.
+/// Amount of blocks to return in a GraphQL page.
 pub const NODE_GRAPHQL_PAGE_SIZE: usize = 10;
 
 /// Start a local Fuel node.

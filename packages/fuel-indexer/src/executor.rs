@@ -386,6 +386,7 @@ pub struct WasmIndexExecutor {
     _module: Module,
     _store: Store,
     db: Arc<Mutex<Database>>,
+    #[allow(unused)]
     timeout: u64,
 }
 
@@ -509,10 +510,17 @@ impl Executor for WasmIndexExecutor {
         .await;
 
         if let Err(e) = res {
-            error!("WasmIndexExecutor handle_events failed: {e:?}.");
+            error!("WasmIndexExecutor handle_events timed out: {e:?}.");
             self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::from(e));
         } else {
+            let inner = res.unwrap();
+
+            if let Err(e) = inner {
+                error!("WasmIndexExecutor handle_events failed: {e:?}.");
+                self.db.lock().await.revert_transaction().await?;
+                return Err(IndexerError::from(e));
+            }
             self.db.lock().await.commit_transaction().await?;
         }
         Ok(())
