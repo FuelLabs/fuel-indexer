@@ -27,10 +27,16 @@ fuel-indexer-database = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
+forc-postgres = { workspace = true }
 futures = "0.3"
 sqlx = { version = "0.6", features = ["bigdecimal"] }
 thiserror = { workspace = true }
-tokio = { features = ["macros", "rt-multi-thread", "sync", "process"], workspace = true }
+tokio = { features = [
+    "macros",
+    "rt-multi-thread",
+    "sync",
+    "process",
+], workspace = true }
 tracing = { workspace = true }
 wasmer = "2.3"
 wasmer-compiler-cranelift = { version = "2.3" }
