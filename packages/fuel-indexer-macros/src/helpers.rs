@@ -215,3 +215,54 @@ impl Codegen for TypeDeclaration {
         self.rust_type_token().to_string()
     }
 }
+
+/// Generate tokens for retrieving necessary indexer data through FFI.
+pub fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
+    let ident = format_ident! {"{}", id};
+
+    let fn_ptr = format_ident! {"get_{}_ptr", id.to_lowercase()};
+    let fn_len = format_ident! {"get_{}_len", id.to_lowercase()};
+
+    quote! {
+        const #ident: &'static str = #value;
+
+        #[no_mangle]
+        fn #fn_ptr() -> *const u8 {
+            #ident.as_ptr()
+        }
+
+        #[no_mangle]
+        fn #fn_len() -> u32 {
+            #ident.len() as u32
+        }
+    }
+}
+
+pub fn generate_row_extractor(
+    ident: proc_macro2::Ident,
+    column_scalar_type: proc_macro2::Ident,
+    is_nullable: bool,
+) -> proc_macro2::TokenStream {
+    if is_nullable {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_scalar_type(t) => t,
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    } else {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #ident = match item {
+                FtColumn::#column_scalar_type(t) => match t {
+                    Some(inner_type) => { inner_type },
+                    None => {
+                        panic!("Non-nullable type is returning a None value.")
+                    }
+                },
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    }
+}
