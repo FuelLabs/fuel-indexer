@@ -674,6 +674,7 @@ mod fuel_indexer_test {
         e.save();
     }
 
+    #[allow(unused)]
     fn fuel_indexer_trigger_enum(
         first: AnotherSimpleEnum,
         second: NestedEnum,

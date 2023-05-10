@@ -713,7 +713,9 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_trigger_enum() -> impl Responder {
+    async fn fuel_indexer_test_trigger_enum(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
         let _ = state
             .contract
             .methods()
