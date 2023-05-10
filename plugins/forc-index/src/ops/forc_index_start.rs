@@ -1,6 +1,4 @@
 use crate::cli::StartCommand;
-use forc_postgres::cli::CreateDbCommand;
-use fuel_indexer_lib::defaults;
 use std::process::Command;
 use tracing::info;
 
@@ -79,6 +77,9 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
         match database.as_ref() {
             "postgres" => {
                 if embedded_database {
+                    if postgres_host.is_some() {
+                        panic!("Cannot specify postgres host when using embedded database.");
+                    }
                     cmd.arg("--embedded-database");
                 }
 
