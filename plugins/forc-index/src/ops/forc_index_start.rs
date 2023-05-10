@@ -78,7 +78,9 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
             "postgres" => {
                 if embedded_database {
                     if postgres_host.is_some() {
-                        panic!("Cannot specify postgres host when using embedded database.");
+                        panic!(
+                            "Cannot specify postgres host when using embedded database."
+                        );
                     }
                     cmd.arg("--embedded-database");
                 }
