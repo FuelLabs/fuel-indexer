@@ -30,9 +30,21 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
     init_tracing_subscriber(tracing_options);
 
     match opt.command {
-        ForcPostgres::Create(command) => crate::commands::create::exec(command).await,
+        ForcPostgres::Create(command) => {
+            crate::commands::create::exec(command).await.map(|pg| {
+                // Prevent PgEmbed from stopping the database when it goes out of scope
+                let _ = std::mem::ManuallyDrop::new(pg);
+                ()
+            })
+        }
         ForcPostgres::Stop(command) => crate::commands::stop::exec(command).await,
         ForcPostgres::Drop(command) => crate::commands::drop::exec(command).await,
-        ForcPostgres::Start(command) => crate::commands::start::exec(command).await,
+        ForcPostgres::Start(command) => {
+            crate::commands::start::exec(command).await.map(|pg| {
+                // Prevent PgEmbed from stopping the database when it goes out of scope
+                let _ = std::mem::ManuallyDrop::new(pg);
+                ()
+            })
+        }
     }
 }

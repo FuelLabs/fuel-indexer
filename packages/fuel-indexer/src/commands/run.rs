@@ -23,28 +23,15 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         ..
     } = args.clone();
 
-    let config = args
-        .clone()
-        .config
-        .map(IndexerConfig::from_file)
-        .unwrap_or(Ok(IndexerConfig::from(args)))?;
-
-    init_logging(&config).await?;
-
-    info!("Configuration: {:?}", config);
-
     // will stop the database when the pg instance is dropped
     let _pg: Option<pg_embed::postgres::PgEmbed> = if embedded_database {
         println!("EMBEDDED DATABASE");
         use fuel_indexer_lib::defaults;
-        let name = postgres_database
-            .unwrap_or(defaults::POSTGRES_DATABASE.to_string());
-        let password = postgres_password
-            .unwrap_or(defaults::POSTGRES_PASSWORD.to_string());
-        let user = postgres_user
-            .unwrap_or(defaults::POSTGRES_USER.to_string());
-        let port = postgres_port
-            .unwrap_or(defaults::POSTGRES_PORT.to_string());
+        let name = postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
+        let password =
+            postgres_password.unwrap_or(defaults::POSTGRES_PASSWORD.to_string());
+        let user = postgres_user.unwrap_or(defaults::POSTGRES_USER.to_string());
+        let port = postgres_port.unwrap_or(defaults::POSTGRES_PORT.to_string());
 
         let create_db_cmd = forc_postgres::cli::CreateDbCommand {
             name,
@@ -52,7 +39,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
             user,
             port,
             persistent: true,
-            config: config.clone(),
+            config: args.config.clone(),
             start: true,
             ..Default::default()
         };
@@ -63,6 +50,16 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     } else {
         None
     };
+
+    let config = args
+        .config
+        .clone()
+        .map(IndexerConfig::from_file)
+        .unwrap_or(Ok(IndexerConfig::from(args)))?;
+
+    init_logging(&config).await?;
+
+    info!("Configuration: {:?}", config);
 
     #[allow(unused)]
     let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
