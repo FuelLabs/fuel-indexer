@@ -11,7 +11,7 @@ use pg_embed::{pg_fetch::PgFetchSettings, postgres::PgEmbed};
 use std::{fs::File, io::Write, path::PathBuf, time::Duration};
 use tracing::info;
 
-fn save_pgembed_config(config: PgEmbedConfig, path: Option<&PathBuf>) -> Result<()> {
+fn save_pgembed_config(config: &PgEmbedConfig, path: Option<&PathBuf>) -> Result<()> {
     if let Some(path) = path {
         let filename = db_config_file_name(&config.name);
         let path = path.join(filename);
@@ -80,7 +80,7 @@ impl From<IndexerConfig> for PgEmbedConfig {
     }
 }
 
-pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
+pub async fn init(command: CreateDbCommand) -> anyhow::Result<PgEmbed> {
     let CreateDbCommand {
         name,
         database_dir,
@@ -141,14 +141,13 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
                     == format!("database \"{name}\" already exists")
                 {
                     info!("Database {} already exists", &name);
-                    save_pgembed_config(pg_config, database_dir.as_ref())?;
+                    save_pgembed_config(&pg_config, database_dir.as_ref())?;
                     pb.finish();
 
                     if start {
-                        start_database(pg, name, database_dir, config).await?;
+                        let pg = start_database(pg, name, database_dir, config).await?;
+                        return Ok(pg);
                     }
-
-                    return Ok(());
                 }
             }
         } else {
@@ -160,7 +159,7 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
         pg.migrate(&name).await?;
     }
 
-    save_pgembed_config(pg_config, database_dir.as_ref())?;
+    save_pgembed_config(&pg_config, database_dir.as_ref())?;
 
     pb.finish();
 
@@ -171,10 +170,11 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
     }
 
     if start {
-        start_database(pg, name, database_dir, config).await?;
+        let pg = start_database(pg, name, database_dir, config).await?;
+        Ok(pg)
+    } else {
+        Ok(pg)
     }
-
-    Ok(())
 }
 
 async fn start_database(
@@ -182,11 +182,11 @@ async fn start_database(
     name: String,
     database_dir: Option<PathBuf>,
     config: Option<PathBuf>,
-) -> Result<(), anyhow::Error> {
+) -> Result<PgEmbed, anyhow::Error> {
     // Allow for start command to fully manage PgEmbed object
     pg.stop_db().await?;
 
-    start::exec(StartDbCommand {
+    let pg = start::exec(StartDbCommand {
         name,
         database_dir: Some(database_dir.unwrap()),
         config,
@@ -194,5 +194,5 @@ async fn start_database(
     })
     .await?;
 
-    Ok(())
+    Ok(pg)
 }

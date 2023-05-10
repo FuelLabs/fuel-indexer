@@ -1,9 +1,8 @@
 use crate::{cli::StartDbCommand, pg::PgEmbedConfig};
 use pg_embed::{pg_fetch::PgFetchSettings, postgres::PgEmbed};
-use std::mem::ManuallyDrop;
 use tracing::info;
 
-pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
+pub async fn init(command: StartDbCommand) -> anyhow::Result<PgEmbed> {
     let StartDbCommand {
         name,
         database_dir,
@@ -12,19 +11,18 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
         ..
     } = command;
 
-    let pg_config =
-        PgEmbedConfig::from_file(database_dir.as_ref(), config.as_ref(), &name)?;
+    let mut pg = {
+        let pg_config =
+            PgEmbedConfig::from_file(database_dir.as_ref(), config.as_ref(), &name)?;
 
-    let version = pg_config.postgres_version.clone();
+        let version = pg_config.postgres_version.clone();
 
-    let fetch_settings = PgFetchSettings {
-        version: version.clone().into(),
-        ..Default::default()
+        let fetch_settings = PgFetchSettings {
+            version: version.clone().into(),
+            ..Default::default()
+        };
+        PgEmbed::new(pg_config.clone().into(), fetch_settings).await?
     };
-
-    // Disabling Drop trait behavior as PgEmbed shuts down when going out of scope
-    let mut pg =
-        ManuallyDrop::new(PgEmbed::new(pg_config.clone().into(), fetch_settings).await?);
 
     info!("\nStarting PostgreSQL...\n");
     pg.start_db().await?;
@@ -48,5 +46,5 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
         }
     }
 
-    Ok(())
+    Ok(pg)
 }

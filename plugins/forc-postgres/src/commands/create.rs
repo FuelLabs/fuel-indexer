@@ -2,6 +2,7 @@ use crate::{ops::forc_postgres_createdb, pg::PostgresVersion, utils::db_dir_or_d
 use anyhow::Result;
 use clap::Parser;
 use fuel_indexer_lib::defaults;
+use pg_embed::postgres::PgEmbed;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -89,7 +90,7 @@ impl Default for Command {
     }
 }
 
-pub async fn exec(command: Box<Command>) -> Result<()> {
+pub async fn exec(command: Box<Command>) -> Result<PgEmbed> {
     let Command {
         name,
         user,
@@ -108,7 +109,7 @@ pub async fn exec(command: Box<Command>) -> Result<()> {
 
     let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
 
-    forc_postgres_createdb::init(Command {
+    let pg = forc_postgres_createdb::init(Command {
         name,
         user,
         password,
@@ -124,5 +125,5 @@ pub async fn exec(command: Box<Command>) -> Result<()> {
         verbose,
     })
     .await?;
-    Ok(())
+    Ok(pg)
 }
