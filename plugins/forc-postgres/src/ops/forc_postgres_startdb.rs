@@ -2,7 +2,7 @@ use crate::{cli::StartDbCommand, pg::PgEmbedConfig};
 use pg_embed::{pg_fetch::PgFetchSettings, postgres::PgEmbed};
 use tracing::info;
 
-pub async fn init(command: StartDbCommand) -> anyhow::Result<PgEmbed> {
+pub async fn init(command: StartDbCommand) -> anyhow::Result<()> {
     let StartDbCommand {
         name,
         database_dir,
@@ -21,7 +21,9 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<PgEmbed> {
             version: version.clone().into(),
             ..Default::default()
         };
-        PgEmbed::new(pg_config.clone().into(), fetch_settings).await?
+        let pg = PgEmbed::new(pg_config.clone().into(), fetch_settings).await?;
+        // Disabling Drop trait behavior as PgEmbed shuts down when going out of scope
+        std::mem::ManuallyDrop::new(pg)
     };
 
     info!("\nStarting PostgreSQL...\n");
@@ -46,5 +48,5 @@ pub async fn init(command: StartDbCommand) -> anyhow::Result<PgEmbed> {
         }
     }
 
-    Ok(pg)
+    Ok(())
 }

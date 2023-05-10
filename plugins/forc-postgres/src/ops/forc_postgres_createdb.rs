@@ -80,7 +80,7 @@ impl From<IndexerConfig> for PgEmbedConfig {
     }
 }
 
-pub async fn init(command: CreateDbCommand) -> anyhow::Result<PgEmbed> {
+pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
     let CreateDbCommand {
         name,
         database_dir,
@@ -145,9 +145,10 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<PgEmbed> {
                     pb.finish();
 
                     if start {
-                        let pg = start_database(pg, name, database_dir, config).await?;
-                        return Ok(pg);
+                        start_database(pg, name, database_dir, config).await?;
                     }
+
+                    return Ok(());
                 }
             }
         } else {
@@ -170,11 +171,10 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<PgEmbed> {
     }
 
     if start {
-        let pg = start_database(pg, name, database_dir, config).await?;
-        Ok(pg)
-    } else {
-        Ok(pg)
+        start_database(pg, name, database_dir, config).await?;
     }
+
+    Ok(())
 }
 
 async fn start_database(
@@ -182,11 +182,11 @@ async fn start_database(
     name: String,
     database_dir: Option<PathBuf>,
     config: Option<PathBuf>,
-) -> Result<PgEmbed, anyhow::Error> {
+) -> Result<(), anyhow::Error> {
     // Allow for start command to fully manage PgEmbed object
     pg.stop_db().await?;
 
-    let pg = start::exec(StartDbCommand {
+    start::exec(StartDbCommand {
         name,
         database_dir: Some(database_dir.unwrap()),
         config,
@@ -194,5 +194,5 @@ async fn start_database(
     })
     .await?;
 
-    Ok(pg)
+    Ok(())
 }

@@ -23,15 +23,26 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         ..
     } = args.clone();
 
-    // will stop the database when the pg instance is dropped
-    let _pg: Option<pg_embed::postgres::PgEmbed> = if embedded_database {
-        println!("EMBEDDED DATABASE");
+    let args_config = args.config.clone();
+
+    // start embedded postgres
+    if embedded_database {
+        info!("Starting embedded postgres");
+
         use fuel_indexer_lib::defaults;
-        let name = postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
-        let password =
-            postgres_password.unwrap_or(defaults::POSTGRES_PASSWORD.to_string());
-        let user = postgres_user.unwrap_or(defaults::POSTGRES_USER.to_string());
-        let port = postgres_port.unwrap_or(defaults::POSTGRES_PORT.to_string());
+
+        let name = postgres_database
+            .clone()
+            .unwrap_or(defaults::POSTGRES_DATABASE.to_string());
+        let password = postgres_password
+            .clone()
+            .unwrap_or(defaults::POSTGRES_PASSWORD.to_string());
+        let user = postgres_user
+            .clone()
+            .unwrap_or(defaults::POSTGRES_USER.to_string());
+        let port = postgres_port
+            .clone()
+            .unwrap_or(defaults::POSTGRES_PORT.to_string());
 
         let create_db_cmd = forc_postgres::cli::CreateDbCommand {
             name,
@@ -39,17 +50,13 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
             user,
             port,
             persistent: true,
-            config: args.config.clone(),
+            config: args_config.clone(),
             start: true,
             ..Default::default()
         };
 
-        let pg: pg_embed::postgres::PgEmbed =
-            forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
-        Some(pg)
-    } else {
-        None
-    };
+        forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
+    }
 
     let config = args
         .config
@@ -138,6 +145,24 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
                 info!("Received SIGINT. Stopping services");
             }
         }
+
+        // stop embedded postgres
+        if embedded_database {
+            info!("Stopping embedded postgres");
+
+            use fuel_indexer_lib::defaults;
+            let name =
+                postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
+
+            let stop_db_cmd = forc_postgres::cli::StopDbCommand {
+                name,
+                config: args_config.clone(),
+                database_dir: None,
+                verbose: false,
+            };
+
+            forc_postgres::commands::stop::exec(stop_db_cmd).await?;
+        };
 
         Ok(())
     }

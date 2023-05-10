@@ -23,7 +23,7 @@ pub struct Command {
     pub verbose: bool,
 }
 
-pub async fn exec(command: Command) -> Result<pg_embed::postgres::PgEmbed> {
+pub async fn exec(command: Command) -> Result<()> {
     let Command {
         name,
         database_dir,
@@ -33,7 +33,7 @@ pub async fn exec(command: Command) -> Result<pg_embed::postgres::PgEmbed> {
 
     let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
 
-    let pg = forc_postgres_startdb::init(Command {
+    forc_postgres_startdb::init(Command {
         name,
         database_dir: Some(database_dir),
         config,
@@ -41,5 +41,5 @@ pub async fn exec(command: Command) -> Result<pg_embed::postgres::PgEmbed> {
     })
     .await?;
 
-    Ok(pg)
+    Ok(())
 }

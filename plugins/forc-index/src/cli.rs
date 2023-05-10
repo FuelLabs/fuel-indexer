@@ -59,22 +59,10 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         //ForcIndex::Welcome(command) => crate::commands::welcome::exec(command).await,
         ForcIndex::Auth(command) => crate::commands::auth::exec(command),
         ForcIndex::Postgres(opt) => match opt.command {
-            ForcPostgres::Create(command) => {
-                pg_commands::create::exec(command).await.map(|pg| {
-                    // Prevent PgEmbed from stopping the database when it goes out of scope
-                    let _ = std::mem::ManuallyDrop::new(pg);
-                    ()
-                })
-            }
+            ForcPostgres::Create(command) => pg_commands::create::exec(command).await,
             ForcPostgres::Stop(command) => pg_commands::stop::exec(command).await,
             ForcPostgres::Drop(command) => pg_commands::drop::exec(command).await,
-            ForcPostgres::Start(command) => {
-                pg_commands::start::exec(command).await.map(|pg| {
-                    // Prevent PgEmbed from stopping the database when it goes out of scope
-                    let _ = std::mem::ManuallyDrop::new(pg);
-                    ()
-                })
-            }
+            ForcPostgres::Start(command) => pg_commands::start::exec(command).await,
         },
         ForcIndex::Kill(command) => crate::commands::kill::exec(command),
     }

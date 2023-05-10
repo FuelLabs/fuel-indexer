@@ -2985,7 +2985,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "futures",
- "pg-embed",
  "sqlx",
  "thiserror",
  "tokio 1.27.0",

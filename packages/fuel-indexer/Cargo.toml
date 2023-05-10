@@ -28,7 +28,6 @@ fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
 forc-postgres = { workspace = true }
-pg-embed = "0.7"
 futures = "0.3"
 sqlx = { version = "0.6", features = ["bigdecimal"] }
 thiserror = { workspace = true }
