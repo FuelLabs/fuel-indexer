@@ -89,6 +89,9 @@ abi: ~
 # The particular start block after which you'd like your indexer to start indexing events.
 start_block: ~
 
+# The particular end block after which you'd like your indexer to stop indexing events.
+end_block: ~
+
 # The `fuel_client` denotes the address (host, port combination) of the running Fuel client
 # that you would like your indexer to index events from. In order to use this per-indexer
 # `fuel_client` option, the indexer service at which your indexer is deployed will have to run
