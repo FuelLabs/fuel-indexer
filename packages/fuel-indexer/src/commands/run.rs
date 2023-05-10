@@ -17,7 +17,6 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         manifest,
         embedded_database,
         postgres_database,
-        postgres_host,
         postgres_password,
         postgres_port,
         postgres_user,
@@ -34,21 +33,17 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     info!("Configuration: {:?}", config);
 
-    if embedded_database {
+    // will stop the database when the pg instance is dropped
+    let _pg: Option<pg_embed::postgres::PgEmbed> = if embedded_database {
         println!("EMBEDDED DATABASE");
         use fuel_indexer_lib::defaults;
         let name = postgres_database
-            .clone()
             .unwrap_or(defaults::POSTGRES_DATABASE.to_string());
         let password = postgres_password
-            .clone()
             .unwrap_or(defaults::POSTGRES_PASSWORD.to_string());
         let user = postgres_user
-            .clone()
             .unwrap_or(defaults::POSTGRES_USER.to_string());
-
         let port = postgres_port
-            .clone()
             .unwrap_or(defaults::POSTGRES_PORT.to_string());
 
         let create_db_cmd = forc_postgres::cli::CreateDbCommand {
@@ -57,14 +52,17 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
             user,
             port,
             persistent: true,
-            // config: config.clone(),
+            config: config.clone(),
             start: true,
             ..Default::default()
         };
 
-        println!("RUNNING forc_postgres::commands::create::exec");
-        forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
-    }
+        let pg: pg_embed::postgres::PgEmbed =
+            forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
+        Some(pg)
+    } else {
+        None
+    };
 
     #[allow(unused)]
     let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
@@ -121,7 +119,28 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
             }
         }
 
-        let _ = tokio::join!(service_handle, gql_handle);
+        // spawn application as separate task
+        tokio::spawn(async {
+            let _ = tokio::join!(service_handle, gql_handle);
+        });
+
+        use tokio::signal::unix::{signal, Signal, SignalKind};
+
+        let mut sighup: Signal = signal(SignalKind::hangup())?;
+        let mut sigterm: Signal = signal(SignalKind::terminate())?;
+        let mut sigint: Signal = signal(SignalKind::interrupt())?;
+
+        tokio::select! {
+            _ = sighup.recv() => {
+                info!("Received SIGHUP. Stopping services");
+            }
+            _ = sigterm.recv() => {
+                info!("Received SIGTERM. Stopping services");
+            }
+            _ = sigint.recv() => {
+                info!("Received SIGINT. Stopping services");
+            }
+        }
 
         Ok(())
     }
