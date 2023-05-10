@@ -2,7 +2,7 @@ use crate::cli::PullAbiCommand;
 use anyhow::anyhow;
 use reqwest::Url;
 use std::{fs::File, io::prelude::*};
-use tracing::info;
+use tracing::{error, info};
 
 pub async fn init(command: PullAbiCommand) -> anyhow::Result<()> {
     let PullAbiCommand {
@@ -29,6 +29,10 @@ pub async fn init(command: PullAbiCommand) -> anyhow::Result<()> {
             .ok_or(anyhow!("Invalid URL path"))?
             .to_owned(),
     };
+
+    if with_contract.unwrap_or(false) && with_abi.unwrap_or(false) {
+        error!("Cannot use both --with-contract and --with-abi, please choose one");
+    }
 
     if with_contract.unwrap_or(false) {
         unimplemented!();
