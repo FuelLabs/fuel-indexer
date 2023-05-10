@@ -89,7 +89,7 @@ impl Default for Command {
     }
 }
 
-pub async fn exec(command: Box<Command>) -> Result<()> {
+pub async fn exec(command: Command) -> Result<()> {
     let Command {
         name,
         user,
@@ -104,7 +104,7 @@ pub async fn exec(command: Box<Command>) -> Result<()> {
         start,
         config,
         verbose,
-    } = *command;
+    } = command;
 
     let database_dir = db_dir_or_default(database_dir.as_ref(), &name);
 

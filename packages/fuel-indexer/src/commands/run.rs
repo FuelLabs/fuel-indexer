@@ -55,7 +55,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
             ..Default::default()
         };
 
-        forc_postgres::commands::create::exec(Box::new(create_db_cmd)).await?;
+        forc_postgres::commands::create::exec(create_db_cmd).await?;
     }
 
     let config = args
