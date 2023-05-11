@@ -211,11 +211,11 @@ pub struct IndexerArgs {
         long,
         help = "Maximum number of requests to allow over --rate-limit-window.."
     )]
-    pub rate_limit_rps: Option<u64>,
+    pub rate_limit_request_count: Option<u64>,
 
     /// Number of seconds over which to allow --rate-limit-rps.
     #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
-    pub rate_limit_window: Option<u64>,
+    pub rate_limit_window_size: Option<u64>,
 
     /// Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
     #[clap(
@@ -340,11 +340,11 @@ pub struct ApiServerArgs {
         long,
         help = "Maximum number of requests to allow over --rate-limit-window.."
     )]
-    pub rate_limit_rps: Option<u64>,
+    pub rate_limit_request_count: Option<u64>,
 
     /// Number of seconds over which to allow --rate-limit-rps.
     #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
-    pub rate_limit_window: Option<u64>,
+    pub rate_limit_window_size: Option<u64>,
 }
 
 impl Default for IndexerArgs {
@@ -378,8 +378,8 @@ impl Default for IndexerArgs {
             local_fuel_node: defaults::LOCAL_FUEL_NODE,
             indexer_net_config: defaults::INDEXER_NET_CONFIG,
             rate_limit: defaults::RATE_LIMIT_ENABLED,
-            rate_limit_rps: Some(defaults::REQUESTS_PER_SECOND),
-            rate_limit_window: Some(defaults::RATE_LIMIT_WINDOW),
+            rate_limit_request_count: Some(defaults::RATE_LIMIT_REQUEST_COUNT),
+            rate_limit_window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
         }
     }
 }
@@ -483,8 +483,8 @@ impl From<IndexerArgs> for IndexerConfig {
             },
             rate_limit: RateLimitConfig {
                 enabled: args.rate_limit,
-                rps: args.rate_limit_rps,
-                window: args.rate_limit_window,
+                request_count: args.rate_limit_request_count,
+                window_size: args.rate_limit_window_size,
             },
         };
 
@@ -567,8 +567,8 @@ impl From<ApiServerArgs> for IndexerConfig {
             },
             rate_limit: RateLimitConfig {
                 enabled: args.rate_limit,
-                rps: args.rate_limit_rps,
-                window: args.rate_limit_window,
+                request_count: args.rate_limit_request_count,
+                window_size: args.rate_limit_window_size,
             },
         };
 
@@ -758,14 +758,16 @@ impl IndexerConfig {
                 config.rate_limit.enabled = limit_enabled.as_bool().unwrap();
             }
 
-            let rps = section.get(&serde_yaml::Value::String("rps".into()));
-            if let Some(rps) = rps {
-                config.rate_limit.rps = Some(rps.as_u64().unwrap());
+            let request_count =
+                section.get(&serde_yaml::Value::String("request_count".into()));
+            if let Some(request_count) = request_count {
+                config.rate_limit.request_count = Some(request_count.as_u64().unwrap());
             }
 
-            let window = section.get(&serde_yaml::Value::String("window".into()));
-            if let Some(window) = window {
-                config.rate_limit.window = Some(window.as_u64().unwrap());
+            let window_size =
+                section.get(&serde_yaml::Value::String("window_size".into()));
+            if let Some(window_size) = window_size {
+                config.rate_limit.window_size = Some(window_size.as_u64().unwrap());
             }
         }
 

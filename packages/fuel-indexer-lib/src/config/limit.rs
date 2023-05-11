@@ -13,18 +13,18 @@ pub struct RateLimitConfig {
     pub enabled: bool,
 
     /// Maximum number of requests to allow over --rate-limit-window..
-    pub rps: Option<u64>,
+    pub request_count: Option<u64>,
 
     /// Number of seconds over which to allow --rate-limit-rps.
-    pub window: Option<u64>,
+    pub window_size: Option<u64>,
 }
 
 impl Default for RateLimitConfig {
     fn default() -> Self {
         Self {
             enabled: defaults::RATE_LIMIT_ENABLED,
-            rps: None,
-            window: None,
+            request_count: None,
+            window_size: None,
         }
     }
 }

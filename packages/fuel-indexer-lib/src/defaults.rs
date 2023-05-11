@@ -113,10 +113,10 @@ pub const INDEXER_NET_CONFIG: bool = false;
 pub const RATE_LIMIT_ENABLED: bool = false;
 
 /// Maximum number of requests to allow over --rate-limit-window..
-pub const REQUESTS_PER_SECOND: u64 = 10;
+pub const RATE_LIMIT_REQUEST_COUNT: u64 = 10;
 
 /// Number of seconds over which to allow --rate-limit-rps.
-pub const RATE_LIMIT_WINDOW: u64 = 5;
+pub const RATE_LIMIT_WINDOW_SIZE: u64 = 5;
 
 /// Log level.
 pub const LOG_LEVEL: &str = "info";

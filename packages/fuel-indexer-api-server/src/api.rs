@@ -196,13 +196,13 @@ impl GraphQlApi {
                     .layer(RateLimitLayer::new(
                         config
                             .rate_limit
-                            .rps
-                            .unwrap_or(defaults::REQUESTS_PER_SECOND),
+                            .request_count
+                            .unwrap_or(defaults::RATE_LIMIT_REQUEST_COUNT),
                         Duration::from_secs(
                             config
                                 .rate_limit
-                                .window
-                                .unwrap_or(defaults::RATE_LIMIT_WINDOW),
+                                .window_size
+                                .unwrap_or(defaults::RATE_LIMIT_WINDOW_SIZE),
                         ),
                     )),
             );
