@@ -10,7 +10,7 @@ pub struct Command {
     #[clap(long, help = "Name of indexer.")]
     pub name: Option<String>,
 
-    /// Path at which to create indexer
+    /// Path at which to create indexer.
     #[clap(
         short,
         long,

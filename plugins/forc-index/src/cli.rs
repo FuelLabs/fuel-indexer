@@ -3,9 +3,9 @@ pub(crate) use crate::commands::{
     auth::Command as AuthCommand, build::Command as BuildCommand,
     check::Command as CheckCommand, deploy::Command as DeployCommand,
     init::Command as InitCommand, kill::Command as KillCommand,
-    new::Command as NewCommand, remove::Command as RemoveCommand,
-    revert::Command as RevertCommand, start::Command as StartCommand,
-    welcome::Command as WelcomeCommand,
+    new::Command as NewCommand, pull_abi::Command as PullAbiCommand,
+    remove::Command as RemoveCommand, revert::Command as RevertCommand,
+    start::Command as StartCommand, welcome::Command as WelcomeCommand,
 };
 use clap::{Parser, Subcommand};
 use forc_postgres::{
@@ -34,6 +34,7 @@ pub enum ForcIndex {
     Build(BuildCommand),
     Auth(AuthCommand),
     Postgres(ForcPostgresOpt),
+    PullAbi(PullAbiCommand),
     Kill(KillCommand),
     //Welcome(WelcomeCommand),
 }
@@ -54,6 +55,7 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::Remove(command) => crate::commands::remove::exec(command),
         ForcIndex::Revert(command) => crate::commands::revert::exec(command).await,
         ForcIndex::Build(command) => crate::commands::build::exec(command),
+        ForcIndex::PullAbi(command) => crate::commands::pull_abi::exec(command).await,
         //ForcIndex::Welcome(command) => crate::commands::welcome::exec(command).await,
         ForcIndex::Auth(command) => crate::commands::auth::exec(command),
         ForcIndex::Postgres(opt) => match opt.command {
