@@ -122,49 +122,6 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
                 return Ok(());
             }
         }
-
-        // spawn application as separate task
-        tokio::spawn(async {
-            let _ = tokio::join!(service_handle, gql_handle);
-        });
-
-        use tokio::signal::unix::{signal, Signal, SignalKind};
-
-        let mut sighup: Signal = signal(SignalKind::hangup())?;
-        let mut sigterm: Signal = signal(SignalKind::terminate())?;
-        let mut sigint: Signal = signal(SignalKind::interrupt())?;
-
-        tokio::select! {
-            _ = sighup.recv() => {
-                info!("Received SIGHUP. Stopping services");
-            }
-            _ = sigterm.recv() => {
-                info!("Received SIGTERM. Stopping services");
-            }
-            _ = sigint.recv() => {
-                info!("Received SIGINT. Stopping services");
-            }
-        }
-
-        // stop embedded postgres
-        if embedded_database {
-            info!("Stopping embedded postgres");
-
-            use fuel_indexer_lib::defaults;
-            let name =
-                postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
-
-            let stop_db_cmd = forc_postgres::cli::StopDbCommand {
-                name,
-                config: args_config.clone(),
-                database_dir: None,
-                verbose: false,
-            };
-
-            forc_postgres::commands::stop::exec(stop_db_cmd).await?;
-        };
-
-        Ok(())
     }
 
     #[cfg(not(feature = "api-server"))]
@@ -191,4 +148,41 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
         Ok(())
     }
+
+    use tokio::signal::unix::{signal, Signal, SignalKind};
+
+    let mut sighup: Signal = signal(SignalKind::hangup())?;
+    let mut sigterm: Signal = signal(SignalKind::terminate())?;
+    let mut sigint: Signal = signal(SignalKind::interrupt())?;
+
+    tokio::select! {
+        _ = sighup.recv() => {
+            info!("Received SIGHUP. Stopping services");
+        }
+        _ = sigterm.recv() => {
+            info!("Received SIGTERM. Stopping services");
+        }
+        _ = sigint.recv() => {
+            info!("Received SIGINT. Stopping services");
+        }
+    }
+
+    // stop embedded postgres
+    if embedded_database {
+        info!("Stopping embedded postgres");
+
+        use fuel_indexer_lib::defaults;
+        let name = postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
+
+        let stop_db_cmd = forc_postgres::cli::StopDbCommand {
+            name,
+            config: args_config.clone(),
+            database_dir: None,
+            verbose: false,
+        };
+
+        forc_postgres::commands::stop::exec(stop_db_cmd).await?;
+    };
+
+    Ok(())
 }
