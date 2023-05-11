@@ -207,7 +207,10 @@ pub struct IndexerArgs {
     pub rate_limit: bool,
 
     /// Maximum number of requests to allow over --rate-limit-window..
-    #[clap(long, help = "Maximum number of requests to allow over --rate-limit-window..")]
+    #[clap(
+        long,
+        help = "Maximum number of requests to allow over --rate-limit-window.."
+    )]
     pub rate_limit_rps: Option<u64>,
 
     /// Number of seconds over which to allow --rate-limit-rps.
@@ -333,7 +336,10 @@ pub struct ApiServerArgs {
     pub rate_limit: bool,
 
     /// Maximum number of requests to allow over --rate-limit-window..
-    #[clap(long, help = "Maximum number of requests to allow over --rate-limit-window..")]
+    #[clap(
+        long,
+        help = "Maximum number of requests to allow over --rate-limit-window.."
+    )]
     pub rate_limit_rps: Option<u64>,
 
     /// Number of seconds over which to allow --rate-limit-rps.
