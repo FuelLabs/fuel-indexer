@@ -515,7 +515,6 @@ impl Executor for WasmIndexExecutor {
             return Err(IndexerError::from(e));
         } else {
             let inner = res.unwrap();
-
             if let Err(e) = inner {
                 error!("WasmIndexExecutor handle_events failed: {e:?}.");
                 self.db.lock().await.revert_transaction().await?;
