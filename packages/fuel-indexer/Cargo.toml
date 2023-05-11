@@ -37,6 +37,7 @@ tokio = { features = [
     "sync",
     "process",
 ], workspace = true }
+tokio-util = { workspace = true }
 tracing = { workspace = true }
 wasmer = "2.3"
 wasmer-compiler-cranelift = { version = "2.3" }

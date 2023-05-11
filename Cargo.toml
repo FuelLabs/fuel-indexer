@@ -82,4 +82,5 @@ fuels = { version = "0.40", default-features = false }
 serde = { version = "1.0", default-features = false }
 thiserror = "1.0"
 tokio = "1.17"
+tokio-util = "0.7.8"
 tracing = "0.1"

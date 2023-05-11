@@ -26,7 +26,7 @@ dependencies = [
  "memchr",
  "pin-project-lite 0.2.9",
  "tokio 1.27.0",
- "tokio-util 0.7.7",
+ "tokio-util 0.7.8",
 ]
 
 [[package]]
@@ -61,7 +61,7 @@ dependencies = [
  "sha1",
  "smallvec",
  "tokio 1.27.0",
- "tokio-util 0.7.7",
+ "tokio-util 0.7.8",
  "tracing",
 ]
 
@@ -512,7 +512,7 @@ dependencies = [
  "futures-util",
  "http-body 0.4.5",
  "serde_json",
- "tokio-util 0.7.7",
+ "tokio-util 0.7.8",
  "tower-service",
 ]
 
@@ -2988,6 +2988,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio 1.27.0",
+ "tokio-util 0.7.8",
  "tracing",
  "wasmer",
  "wasmer-compiler-cranelift",
@@ -3781,7 +3782,7 @@ dependencies = [
  "indexmap",
  "slab",
  "tokio 1.27.0",
- "tokio-util 0.7.7",
+ "tokio-util 0.7.8",
  "tracing",
 ]
 
@@ -7269,7 +7270,7 @@ dependencies = [
  "futures-core",
  "pin-project-lite 0.2.9",
  "tokio 1.27.0",
- "tokio-util 0.7.7",
+ "tokio-util 0.7.8",
 ]
 
 [[package]]
@@ -7300,9 +7301,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.7"
+version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5427d89453009325de0d8f342c9490009f76e999cb7672d77e46267448f7e6b2"
+checksum = "806fe8c2c87eccc8b3267cbae29ed3ab2d0bd37fca70ab622e46aaa9375ddb7d"
 dependencies = [
  "bytes 1.4.0",
  "futures-core",
@@ -7374,7 +7375,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite 0.2.9",
  "tokio 1.27.0",
- "tokio-util 0.7.7",
+ "tokio-util 0.7.8",
  "tower",
  "tower-layer",
  "tower-service",

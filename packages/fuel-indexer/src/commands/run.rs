@@ -100,6 +100,10 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     let service_handle = tokio::spawn(service.run());
 
+    // for graceful shutdown
+    let token = tokio_util::sync::CancellationToken::new();
+    let cloned_token = token.clone();
+
     #[cfg(feature = "api-server")]
     {
         let gql_handle =
@@ -117,11 +121,19 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
                 };
                 let node_handle = tokio::spawn(FuelService::new_node(config));
 
-                let _ = tokio::join!(service_handle, node_handle, gql_handle);
+                tokio::spawn(async move {
+                    let _ = tokio::join!(service_handle, node_handle, gql_handle);
+                    token.cancel();
+                });
 
                 return Ok(());
             }
         }
+
+        tokio::spawn(async move {
+            let _ = tokio::join!(service_handle, gql_handle);
+            token.cancel();
+        });
     }
 
     #[cfg(not(feature = "api-server"))]
@@ -138,13 +150,19 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
                 };
                 let node_handle = tokio::spawn(FuelService::new_node(config));
 
-                let _ = tokio::join!(service_handle, node_handle);
+                tokio::spawn(async move {
+                    let _ = tokio::join!(service_handle, node_handle);
+                    token.cancel();
+                });
 
                 return Ok(());
             }
         }
 
-        let _ = service_handle.await?;
+        tokio::spawn(async move {
+            let _ = service_handle.await?;
+            token.cancel();
+        });
 
         Ok(())
     }
@@ -164,6 +182,9 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         }
         _ = sigint.recv() => {
             info!("Received SIGINT. Stopping services");
+        }
+        _ = cloned_token.cancelled() => {
+            info!("Received cancellation. Stopping services");
         }
     }
 
