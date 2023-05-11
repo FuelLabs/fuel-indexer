@@ -106,9 +106,9 @@
 #   # Enable rate limiting.
 #   enabled: false
 
-#   # Maximum number of requests per second.
+#   # Maximum number of requests to allow over --rate-limit-window..
 #   rps: 10
 
-#   # Number of seconds over which to calculate rate limit.
+#   # Number of seconds over which to allow --rate-limit-rps.
 #   window: 5
 

@@ -112,10 +112,10 @@ pub const INDEXER_NET_CONFIG: bool = false;
 /// Enable rate limiting.
 pub const RATE_LIMIT_ENABLED: bool = false;
 
-/// Maximum number of requests per second.
+/// Maximum number of requests to allow over --rate-limit-window..
 pub const REQUESTS_PER_SECOND: u64 = 10;
 
-/// Number of seconds over which to calculate rate limit.
+/// Number of seconds over which to allow --rate-limit-rps.
 pub const RATE_LIMIT_WINDOW: u64 = 5;
 
 /// Log level.

@@ -89,10 +89,10 @@ OPTIONS:
             Enable rate limiting.
 
         --rate-limit-rps <RATE_LIMIT_RPS>
-            Maximum number of requests per second.
+            Maximum number of requests to allow over --rate-limit-window.
 
         --rate-limit-window <RATE_LIMIT_WINDOW>
-            Number of seconds over which to calculate rate limit.
+            Number of seconds over which to allow --rate-limit-rps.
 
         --run-migrations
             Run database migrations before starting service.

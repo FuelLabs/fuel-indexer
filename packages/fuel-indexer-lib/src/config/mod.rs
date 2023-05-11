@@ -206,12 +206,12 @@ pub struct IndexerArgs {
     #[clap(long, help = "Enable rate limiting.")]
     pub rate_limit: bool,
 
-    /// Maximum number of requests per second.
-    #[clap(long, help = "Maximum number of requests per second.")]
+    /// Maximum number of requests to allow over --rate-limit-window..
+    #[clap(long, help = "Maximum number of requests to allow over --rate-limit-window..")]
     pub rate_limit_rps: Option<u64>,
 
-    /// Number of seconds over which to calculate rate limit.
-    #[clap(long, help = "Number of seconds over which to calculate rate limit.")]
+    /// Number of seconds over which to allow --rate-limit-rps.
+    #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
     pub rate_limit_window: Option<u64>,
 
     /// Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
@@ -332,12 +332,12 @@ pub struct ApiServerArgs {
     #[clap(long, help = "Enable rate limiting.")]
     pub rate_limit: bool,
 
-    /// Maximum number of requests per second.
-    #[clap(long, help = "Maximum number of requests per second.")]
+    /// Maximum number of requests to allow over --rate-limit-window..
+    #[clap(long, help = "Maximum number of requests to allow over --rate-limit-window..")]
     pub rate_limit_rps: Option<u64>,
 
-    /// Number of seconds over which to calculate rate limit.
-    #[clap(long, help = "Number of seconds over which to calculate rate limit.")]
+    /// Number of seconds over which to allow --rate-limit-rps.
+    #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
     pub rate_limit_window: Option<u64>,
 }
 

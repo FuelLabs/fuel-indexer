@@ -12,10 +12,10 @@ pub struct RateLimitConfig {
     /// Enable rate limiting.
     pub enabled: bool,
 
-    /// Maximum number of requests per second.
+    /// Maximum number of requests to allow over --rate-limit-window..
     pub rps: Option<u64>,
 
-    /// Number of seconds over which to calculate rate limit.
+    /// Number of seconds over which to allow --rate-limit-rps.
     pub window: Option<u64>,
 }
 
