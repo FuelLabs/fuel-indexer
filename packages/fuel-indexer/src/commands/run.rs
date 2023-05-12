@@ -101,71 +101,43 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     let service_handle = tokio::spawn(service.run());
 
     // for graceful shutdown
-    let token = tokio_util::sync::CancellationToken::new();
-    let cloned_token = token.clone();
+    let cancel_token = tokio_util::sync::CancellationToken::new();
 
     #[cfg(feature = "api-server")]
-    {
-        let gql_handle =
-            tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
-
-        #[cfg(feature = "fuel-core-lib")]
-        {
-            use fuel_core::service::{Config, FuelService};
-            use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-
-            if config.local_fuel_node {
-                let config = Config {
-                    addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
-                    ..Config::local_node()
-                };
-                let node_handle = tokio::spawn(FuelService::new_node(config));
-
-                tokio::spawn(async move {
-                    let _ = tokio::join!(service_handle, node_handle, gql_handle);
-                    token.cancel();
-                });
-
-                return Ok(());
-            }
-        }
-
-        tokio::spawn(async move {
-            let _ = tokio::join!(service_handle, gql_handle);
-            token.cancel();
-        });
-    }
+    let gql_handle = tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
 
     #[cfg(not(feature = "api-server"))]
-    {
-        #[cfg(feature = "fuel-core-lib")]
-        {
-            use fuel_core::service::{Config, FuelService};
-            use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+    let gql_handle = tokio::spawn(futures::future::ready(()));
 
-            if config.local_fuel_node {
-                let config = Config {
-                    addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
-                    ..Config::local_node()
-                };
-                let node_handle = tokio::spawn(FuelService::new_node(config));
+    #[cfg(feature = "fuel-core-lib")]
+    let node_handle = {
+        use fuel_core::service::{Config, FuelService};
+        use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
-                tokio::spawn(async move {
-                    let _ = tokio::join!(service_handle, node_handle);
-                    token.cancel();
-                });
-
-                return Ok(());
-            }
+        if config.local_fuel_node {
+            let config = Config {
+                addr: SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 4000),
+                ..Config::local_node()
+            };
+            tokio::spawn(async move {
+                let _ = FuelService::new_node(config).await;
+            })
+        } else {
+            tokio::spawn(futures::future::ready(()))
         }
+    };
 
-        tokio::spawn(async move {
-            let _ = service_handle.await?;
-            token.cancel();
-        });
+    #[cfg(not(feature = "fuel-core-lib"))]
+    let node_handle = tokio::spawn(futures::future::ready(()));
 
-        Ok(())
-    }
+    // spawn application as separate task
+    tokio::spawn({
+        let cancel_token = cancel_token.clone();
+        async move {
+            let _ = tokio::join!(service_handle, node_handle, gql_handle);
+            cancel_token.cancel();
+        }
+    });
 
     use tokio::signal::unix::{signal, Signal, SignalKind};
 
@@ -183,7 +155,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         _ = sigint.recv() => {
             info!("Received SIGINT. Stopping services");
         }
-        _ = cloned_token.cancelled() => {
+        _ = cancel_token.cancelled() => {
             info!("Received cancellation. Stopping services");
         }
     }
