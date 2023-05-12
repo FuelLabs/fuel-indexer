@@ -13,7 +13,7 @@ pub use fuel_indexer_lib::{
     config::IndexerConfig,
     manifest::{Manifest, ManifestError, Module},
 };
-pub use fuel_indexer_schema::{FtColumn, IndexerSchemaError};
+pub use fuel_indexer_schema::{FtColumn, db::IndexerSchemaDbError};
 pub use service::IndexerService;
 use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
@@ -70,7 +70,7 @@ pub enum IndexerError {
     #[error("Unknown error")]
     Unknown,
     #[error("Indexer schema error: {0:?}")]
-    SchemaError(#[from] IndexerSchemaError),
+    SchemaError(#[from] IndexerSchemaDbError),
     #[error("Manifest error: {0:?}")]
     ManifestError(#[from] ManifestError),
     #[error("Error creating native executor.")]

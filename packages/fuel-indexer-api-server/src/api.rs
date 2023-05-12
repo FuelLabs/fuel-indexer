@@ -20,7 +20,7 @@ use axum::{
 use fuel_indexer_database::{IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_graphql::graphql::GraphqlError;
 use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
-use fuel_indexer_schema::{db::manager::SchemaManager, IndexerSchemaError};
+use fuel_indexer_schema::db::{manager::SchemaManager, IndexerSchemaDbError};
 use hyper::Method;
 use serde_json::json;
 use std::{net::SocketAddr, time::Instant};
@@ -69,7 +69,7 @@ pub enum ApiError {
     #[error("Http error {0:?}")]
     Http(#[from] HttpError),
     #[error("Schema error {0:?}")]
-    SchemaError(#[from] IndexerSchemaError),
+    SchemaError(#[from] IndexerSchemaDbError),
     #[error("Channel send error: {0:?}")]
     ChannelSend(#[from] SendError<ServiceRequest>),
     #[error("Axum error: {0:?}")]

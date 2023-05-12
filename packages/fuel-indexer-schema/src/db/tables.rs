@@ -16,7 +16,7 @@ use fuel_indexer_database::{
 use fuel_indexer_types::type_id;
 use std::collections::{HashMap, HashSet};
 
-use crate::{IndexerSchemaError, IndexerSchemaResult};
+use crate::db::{IndexerSchemaDbError, IndexerSchemaDbResult};
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 type FooBar = (ServiceDocument, HashSet<String>, HashMap<String, String>);
@@ -45,10 +45,10 @@ impl SchemaBuilder {
         identifier: &str,
         version: &str,
         db_type: DbType,
-    ) -> Result<SchemaBuilder, IndexerSchemaError> {
+    ) -> Result<SchemaBuilder, IndexerSchemaDbError> {
         let base_ast = match parse_schema(BASE_SCHEMA) {
             Ok(ast) => ast,
-            Err(e) => return Err(IndexerSchemaError::ParseError(e)),
+            Err(e) => return Err(IndexerSchemaDbError::ParseError(e)),
         };
         let (primitives, _) = build_schema_objects_set(&base_ast);
 
@@ -62,7 +62,7 @@ impl SchemaBuilder {
         })
     }
 
-    pub fn build(mut self, schema: &str) -> Result<Self, IndexerSchemaError> {
+    pub fn build(mut self, schema: &str) -> Result<Self, IndexerSchemaDbError> {
         if DbType::Postgres == self.db_type {
             let create = format!(
                 "CREATE SCHEMA IF NOT EXISTS {}_{}",
@@ -71,7 +71,7 @@ impl SchemaBuilder {
             self.statements.push(create);
         }
 
-        let ast = parse_schema(schema).map_err(IndexerSchemaError::ParseError)?;
+        let ast = parse_schema(schema).map_err(IndexerSchemaDbError::ParseError)?;
         let types_map = build_schema_fields_and_types_map(&ast)?;
 
         for def in ast.definitions.iter() {
@@ -267,7 +267,7 @@ impl SchemaBuilder {
         typ: &TypeDefinition,
         types_map: &HashMap<String, String>,
     ) {
-        println!(">>> TYPE: {:?} \n\n {:?}", typ, types_map);
+
         match &typ.kind {
             TypeKind::Scalar => {}
             TypeKind::Enum(_e) => {}
@@ -334,10 +334,9 @@ impl Schema {
         pool: &IndexerConnectionPool,
         namespace: &str,
         identifier: &str,
-    ) -> Result<Self, IndexerSchemaError> {
+    ) -> Result<Self, IndexerSchemaDbError> {
         let mut conn = pool.acquire().await?;
         let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
-        // let root_cols = queries::root_columns_list_by_id(&mut conn, root.id).await?;
         let typeids = queries::type_id_list_by_name(
             &mut conn,
             &root.schema_name,
@@ -393,7 +392,7 @@ impl Schema {
     }
 }
 
-fn get_foreign_keys(schema: &str) -> IndexerSchemaResult<ForeignKeyMap> {
+fn get_foreign_keys(schema: &str) -> IndexerSchemaDbResult<ForeignKeyMap> {
     let (ast, primitives, types_map) = parse_schema_for_ast_data(schema)?;
     let mut fks: ForeignKeyMap = HashMap::new();
 
@@ -406,7 +405,7 @@ fn get_foreign_keys(schema: &str) -> IndexerSchemaResult<ForeignKeyMap> {
                 }
                 for field in o.fields.iter() {
                     let col_type = get_column_type(&field.node.ty.node, &primitives)?;
-                    #[warn(clippy::single_match)]
+                    #[allow(clippy::single_match)]
                     match col_type {
                         ColumnType::ForeignKey => {
                             let directives::Join {
@@ -454,9 +453,9 @@ fn get_foreign_keys(schema: &str) -> IndexerSchemaResult<ForeignKeyMap> {
     Ok(fks)
 }
 
-fn parse_schema_for_ast_data(schema: &str) -> IndexerSchemaResult<FooBar> {
-    let base_ast = parse_schema(BASE_SCHEMA).map_err(IndexerSchemaError::ParseError)?;
-    let ast = parse_schema(schema).map_err(IndexerSchemaError::ParseError)?;
+fn parse_schema_for_ast_data(schema: &str) -> IndexerSchemaDbResult<FooBar> {
+    let base_ast = parse_schema(BASE_SCHEMA).map_err(IndexerSchemaDbError::ParseError)?;
+    let ast = parse_schema(schema).map_err(IndexerSchemaDbError::ParseError)?;
     let (primitives, _) = build_schema_objects_set(&base_ast);
 
     let types_map = build_schema_fields_and_types_map(&ast)?;
@@ -467,7 +466,7 @@ fn parse_schema_for_ast_data(schema: &str) -> IndexerSchemaResult<FooBar> {
 fn get_column_type(
     field_type: &Type,
     primitives: &HashSet<String>,
-) -> IndexerSchemaResult<ColumnType> {
+) -> IndexerSchemaDbResult<ColumnType> {
     match &field_type.base {
         BaseType::Named(t) => {
             if !primitives.contains(t.as_str()) {
@@ -475,7 +474,7 @@ fn get_column_type(
             }
             Ok(ColumnType::from(t.as_str()))
         }
-        BaseType::List(_) => Err(IndexerSchemaError::ListTypesUnsupported),
+        BaseType::List(_) => Err(IndexerSchemaDbError::ListTypesUnsupported),
     }
 }
 

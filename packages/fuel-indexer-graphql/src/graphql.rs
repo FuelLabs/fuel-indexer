@@ -235,7 +235,6 @@ impl Fragment {
 pub struct Operation {
     namespace: String,
     identifier: String,
-    // _name: String,
     selections: Selections,
 }
 
@@ -243,13 +242,11 @@ impl Operation {
     pub fn new(
         namespace: String,
         identifier: String,
-        // name: String,
         selections: Selections,
     ) -> Operation {
         Operation {
             namespace,
             identifier,
-            // _name: name,
             selections,
         }
     }
@@ -580,7 +577,7 @@ impl<'a> GraphqlQueryBuilder<'a> {
             DocumentOperations::Multiple(operation_map) => {
                 for (_name, operation_def) in operation_map.iter() {
                     let op = self.process_operation(
-                        // Some(name.clone()),
+
                         &operation_def.node,
                         &fragments,
                     )?;

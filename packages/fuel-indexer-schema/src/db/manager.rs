@@ -1,7 +1,7 @@
 use crate::{
     db::tables::{Schema, SchemaBuilder},
+    db::IndexerSchemaDbResult,
     utils::{inject_native_entities_into_schema, schema_version},
-    IndexerSchemaResult,
 };
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 
@@ -20,7 +20,7 @@ impl SchemaManager {
         identifier: &str,
         schema: &str,
         conn: &mut IndexerConnection,
-    ) -> IndexerSchemaResult<()> {
+    ) -> IndexerSchemaDbResult<()> {
         // Schema is built in serveral different places so we add default entities here
         let schema = inject_native_entities_into_schema(schema);
 
@@ -45,7 +45,7 @@ impl SchemaManager {
         &self,
         namespace: &str,
         identifier: &str,
-    ) -> IndexerSchemaResult<Schema> {
+    ) -> IndexerSchemaDbResult<Schema> {
         // TODO: might be nice to cache this data in server?
         Schema::load_from_db(&self.pool, namespace, identifier).await
     }
