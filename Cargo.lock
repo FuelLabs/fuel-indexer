@@ -3092,6 +3092,7 @@ dependencies = [
  "fuel-indexer-types",
  "lazy_static",
  "pretty_assertions",
+ "serde_json",
  "thiserror",
 ]
 

@@ -3,16 +3,19 @@ use std::{
     sync::Arc,
 };
 
-use async_graphql::dynamic::{
-    Enum, Field, FieldFuture, FieldValue, InputObject, InputValue, Object,
-    ResolverContext, Scalar, Schema as DynamicSchema,
-    SchemaBuilder as DynamicSchemaBuilder, TypeRef,
+use async_graphql::{
+    dynamic::{
+        Enum, Field, FieldFuture, FieldValue, InputObject, InputValue, Object,
+        ResolverContext, Scalar, Schema as DynamicSchema,
+        SchemaBuilder as DynamicSchemaBuilder, SchemaError, TypeRef,
+    },
+    futures_util::lock::Mutex,
 };
 use async_graphql_parser::{
     parse_schema,
     types::{BaseType, ObjectType, TypeKind, TypeSystemDefinition},
 };
-use async_graphql_value::Value;
+use async_graphql_value::ConstValue;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_schema::db::tables::Schema;
 use lazy_static::lazy_static;
@@ -96,8 +99,10 @@ pub async fn build_dynamic_schema(
     schema: Schema,
     pool: IndexerConnectionPool,
 ) -> Result<DynamicSchema, GraphqlError> {
-    // TODO: Remove unwrap
-    let indexer_schema = parse_schema(schema.schema.clone()).unwrap();
+    let indexer_schema = parse_schema(schema.schema.clone())?;
+
+    let result_cache: Option<ConstValue> = None;
+    let query_executed: Arc<Mutex<bool>> = Arc::new(Mutex::new(false));
 
     let mut schema_builder: DynamicSchemaBuilder =
         DynamicSchema::build(QUERY_ROOT, None, None)
@@ -121,7 +126,9 @@ pub async fn build_dynamic_schema(
             .register(Scalar::new("Charfield"))
             .register(Scalar::new("Identity"))
             .register(Scalar::new("Blob"))
-            .data(pool);
+            .data(pool)
+            .data(query_executed)
+            .data(result_cache);
 
     let mut input_objects = Vec::new();
     let mut filter_object_list = Vec::new();
@@ -225,30 +232,26 @@ pub async fn build_dynamic_schema(
                                     }
                                 };
 
-                                // TODO: Default impl doesn't work; can we refer to
-                                // QueryRoot resolver through ctx.parent_value and grabbing
-                                // the result from the JSON map?
+                                let schema = Arc::new(schema.clone());
+
                                 let mut field = Field::new(
                                     field_name.clone(),
                                     field_type.clone(),
-                                    move |_ctx: ResolverContext| {
-                                        FieldFuture::new(async move {
-                                            Ok(Value::default().into_const())
-                                        })
+                                    move |ctx: ResolverContext| {
+                                        let schema = schema.clone();
+                                        return FieldFuture::new(async move {
+                                            Ok(Some(
+                                                query_for_results(schema, &ctx).await?,
+                                            ))
+                                        });
                                     },
                                 );
 
                                 if let BaseType::Named(field_type) = base_field_type {
-                                    println!("On the {field_type} field on {obj_name}");
                                     if !SCALAR_TYPES.contains(field_type.as_str()) {
                                         if let Some(idx) =
                                             filter_tracker.get(&field_type.to_string())
                                         {
-                                            println!(
-                                            "Adding {} to {} as it's not a scalar type",
-                                            filter_object_list[*idx].type_name(),
-                                            field_type.as_str()
-                                        );
                                             let object_filter_arg = InputValue::new(
                                                 "filter",
                                                 TypeRef::named(
@@ -349,36 +352,15 @@ pub async fn build_dynamic_schema(
                 field_type.clone(),
                 move |ctx: ResolverContext| {
                     let schema = schema.clone();
-                    FieldFuture::new(async move {
-                        let pool = ctx.data::<IndexerConnectionPool>()?;
-
-                        let query =
-                            GraphqlQueryBuilder::new(&schema, ctx.data::<String>()?)?
-                                .build()?;
-
-                        let queries =
-                            query.as_sql(&schema, pool.database_type())?.join(";\n");
-
-                        let mut conn = pool.acquire().await?;
-
-                        let result = queries::run_query(&mut conn, queries).await?;
-
-                        // TODO: Remove unwraps
-                        let list = result.as_array().unwrap().to_owned();
-                        let first_result = list.get(0).unwrap().to_owned();
-                        Ok(Some(FieldValue::owned_any(first_result)))
-                    })
+                    return FieldFuture::new(async move {
+                        Ok(Some(query_for_results(schema, &ctx).await?))
+                    });
                 },
             );
 
             if let BaseType::Named(field_type) = base_field_type {
                 if !SCALAR_TYPES.contains(field_type.as_str()) {
                     if let Some(idx) = filter_tracker.get(&field_type.to_string()) {
-                        println!(
-                            "Adding {} to {} as it's not a scalar type",
-                            filter_object_list[*idx].type_name(),
-                            field_type.as_str()
-                        );
                         let object_filter_arg = InputValue::new(
                             "filter",
                             TypeRef::named(filter_object_list[*idx].type_name()),
@@ -484,4 +466,92 @@ fn create_filter_val_and_objects_for_field<'a>(
 
     input_objs.append(&mut vec![complex_comparison_obj, complete_comparison_obj]);
     (input_val_for_field, input_objs)
+}
+
+/// Retrieve query results. If the query has not yet been executed, the database
+/// will be queried and the results will be cached internally. If the query has
+/// already been executed, the results are returned from the cache.
+async fn query_for_results<'a>(
+    schema: Arc<Schema>,
+    ctx: &ResolverContext<'_>,
+) -> Result<FieldValue<'a>, GraphqlError> {
+    let mut executed = match ctx.data::<Arc<Mutex<bool>>>() {
+        Ok(mtx) => mtx.lock().await,
+        Err(_) => {
+            return Err(GraphqlError::DynamicQueryError(
+                "Unable to retrieve lock from context".to_string(),
+            ))
+        }
+    };
+
+    if *executed == false {
+        let pool = match ctx.data::<IndexerConnectionPool>() {
+            Ok(p) => p,
+            Err(_) => {
+                return Err(GraphqlError::DynamicQueryError(
+                    "Unable to retrieve pool from context".to_string(),
+                ))
+            }
+        };
+
+        let user_query = match ctx.data::<String>() {
+            Ok(uq) => uq,
+            Err(_) => {
+                return Err(GraphqlError::DynamicQueryError(
+                    "Unable to retrieve user query from context".to_string(),
+                ))
+            }
+        };
+
+        let query = GraphqlQueryBuilder::new(&schema, user_query)?.build()?;
+
+        let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
+        let mut conn = match pool.acquire().await {
+            Ok(c) => c,
+            Err(e) => return Err(GraphqlError::DynamicQueryError(e.to_string())),
+        };
+
+        let results = match queries::run_query(&mut conn, queries).await {
+            Ok(val) => val,
+            Err(e) => return Err(GraphqlError::DynamicQueryError(e.to_string())),
+        };
+
+        let stored_results = &mut ctx.data::<Option<ConstValue>>();
+
+        let stored_results = match stored_results {
+            Ok(sr) => sr,
+            Err(_) => {
+                return Err(GraphqlError::DynamicQueryError(
+                    "Unable to retrieve cached query results".to_string(),
+                ))
+            }
+        };
+
+        let parsed_results = match ConstValue::from_json(results) {
+            Ok(cv) => cv,
+            Err(_) => {
+                return Err(GraphqlError::DynamicQueryError(
+                    "Unable to parse query results from JSON".to_string(),
+                ))
+            }
+        };
+        *stored_results = &Some(parsed_results.clone());
+
+        *executed = true;
+
+        Ok(FieldValue::from(parsed_results.clone()))
+    } else {
+        if let Ok(Some(cached_results)) = ctx.data::<Option<ConstValue>>() {
+            Ok(FieldValue::from(cached_results.clone()))
+        } else {
+            match ctx.parent_value.as_value() {
+                Some(results_from_parent) => {
+                    Ok(FieldValue::from(results_from_parent.clone()))
+                }
+                None => Err(GraphqlError::DynamicSchemaBuildError(SchemaError::from(
+                    "No results available".to_string(),
+                ))),
+            }
+        }
+    }
 }

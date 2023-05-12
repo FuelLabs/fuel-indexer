@@ -119,7 +119,7 @@ impl UserQuery {
                     }
                 } else {
                     format!(
-                        "SELECT json_build_object('data', json_build_object({})) FROM {}.{} {} {} {}",
+                        "SELECT json_build_object({}) FROM {}.{} {} {} {}",
                         selections_str,
                         self.namespace_identifier,
                         self.entity_name,
@@ -178,21 +178,19 @@ impl UserQuery {
 
                 let selection_query = format!(
                     r#"SELECT json_build_object(
-                        'data', json_build_object(
-                            'page_info', json_build_object(
-                                'has_next_page', (({limit} + {offset}) < (SELECT count from total_count_cte)),
-                                'limit', {limit},
-                                'offset', {offset},
-                                'pages', ceil((SELECT count from total_count_cte)::float / {limit}::float),
-                                'total_count', (SELECT count from total_count_cte)
-                            ),
-                            '{alias}', (
-                                SELECT json_agg(item)
-                                FROM (
-                                    SELECT {json_selections_str} FROM selection_cte
-                                    LIMIT {limit} OFFSET {offset}
-                                ) item
-                            )
+                        'page_info', json_build_object(
+                            'has_next_page', (({limit} + {offset}) < (SELECT count from total_count_cte)),
+                            'limit', {limit},
+                            'offset', {offset},
+                            'pages', ceil((SELECT count from total_count_cte)::float / {limit}::float),
+                            'total_count', (SELECT count from total_count_cte)
+                        ),
+                        '{alias}', (
+                            SELECT json_agg(item)
+                            FROM (
+                                SELECT {json_selections_str} FROM selection_cte
+                                LIMIT {limit} OFFSET {offset}
+                            ) item
                         )
                     );"#
                 );

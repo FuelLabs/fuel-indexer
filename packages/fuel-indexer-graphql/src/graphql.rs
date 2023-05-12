@@ -18,6 +18,8 @@ pub enum GraphqlError {
     ParseError(#[from] async_graphql_parser::Error),
     #[error("Error building dynamic schema: {0:?}")]
     DynamicSchemaBuildError(#[from] async_graphql::dynamic::SchemaError),
+    #[error("Error executing dynamic query: {0:?}")]
+    DynamicQueryError(String),
     #[error("Unrecognized Type: {0:?}")]
     UnrecognizedType(String),
     #[error("Unrecognized Field in {0:?}: {1:?}")]
