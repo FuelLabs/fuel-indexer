@@ -10,6 +10,8 @@ use std::{
 };
 use strum::{AsRefStr, EnumString};
 
+use chrono::{DateTime, Utc};
+
 pub mod directives;
 
 #[derive(Debug)]
@@ -309,6 +311,7 @@ pub struct RegisteredIndex {
     pub namespace: String,
     pub identifier: String,
     pub pubkey: Option<String>,
+    pub created_at: DateTime<Utc>,
 }
 
 impl RegisteredIndex {

@@ -3075,6 +3075,7 @@ dependencies = [
 name = "fuel-indexer-database-types"
 version = "0.13.0"
 dependencies = [
+ "chrono",
  "serde",
  "strum 0.24.1",
 ]
@@ -3184,6 +3185,7 @@ dependencies = [
 name = "fuel-indexer-postgres"
 version = "0.13.0"
 dependencies = [
+ "chrono",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "fuel-indexer-macro-utils",
@@ -6758,6 +6760,7 @@ dependencies = [
  "bitflags",
  "byteorder",
  "bytes 1.4.0",
+ "chrono",
  "crc",
  "crossbeam-queue",
  "dirs 4.0.0",
@@ -6794,6 +6797,7 @@ dependencies = [
  "sqlx-rt",
  "stringprep",
  "thiserror",
+ "time 0.3.20",
  "tokio-stream",
  "url",
  "webpki-roots 0.22.6",
