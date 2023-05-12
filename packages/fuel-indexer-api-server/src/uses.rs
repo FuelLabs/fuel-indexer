@@ -17,7 +17,7 @@ use fuel_indexer_database::{
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
-use fuel_indexer_graphql::schema::build_dynamic_schema;
+use fuel_indexer_graphql::dynamic::{build_dynamic_schema, execute_query};
 use fuel_indexer_lib::{
     config::{
         auth::{AuthenticationStrategy, Claims},
@@ -61,12 +61,12 @@ pub(crate) async fn query_graph(
         .await
     {
         Ok(schema) => {
-            let dyn_schema = build_dynamic_schema(schema.clone(), pool.clone()).await?;
-            let query = req.0.query.clone();
-            let res = dyn_schema
-                .execute(req.into_inner().data(query.clone()))
-                .await;
-            Ok(axum::Json(serde_json::to_value(&res)?))
+            let dynamic_schema = build_dynamic_schema(schema, pool).await?;
+            let user_query = req.0.query.clone();
+            let response =
+                execute_query(req.into_inner(), dynamic_schema, user_query).await?;
+            let json_res = axum::Json(response);
+            Ok(json_res)
         }
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
             "The graph '{namespace}.{identifier}' was not found."
@@ -372,7 +372,7 @@ pub async fn gql_playground(
 ) -> ApiResult<impl IntoResponse> {
     let html = playground_source(
         GraphQLPlaygroundConfig::new(&format!("/api/graph/{namespace}/{identifier}"))
-            .with_setting("schema.polling.enable", true),
+            .with_setting("schema.polling.enable", false),
     );
 
     let response = Response::builder()

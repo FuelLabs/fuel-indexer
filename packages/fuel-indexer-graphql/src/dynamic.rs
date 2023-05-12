@@ -10,6 +10,7 @@ use async_graphql::{
         SchemaBuilder as DynamicSchemaBuilder, SchemaError, TypeRef,
     },
     futures_util::lock::Mutex,
+    Request,
 };
 use async_graphql_parser::{
     parse_schema,
@@ -19,6 +20,7 @@ use async_graphql_value::ConstValue;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_schema::db::tables::Schema;
 use lazy_static::lazy_static;
+use serde_json::Value;
 
 use crate::graphql::{GraphqlError, GraphqlQueryBuilder};
 
@@ -89,6 +91,7 @@ lazy_static! {
         "ContractId",
         "Salt",
         "MessageId",
+        "Charfield",
         "Identity",
     ]);
 }
@@ -156,6 +159,9 @@ pub async fn build_dynamic_schema(
                             let mut filter_input_vals = Vec::new();
                             let mut sort_input_vals = Vec::new();
 
+                            let mut object_field_enum =
+                                Enum::new(format!("{obj_name}Fields"));
+
                             for field_def in obj_type.fields.iter() {
                                 let field_name = field_def.node.name.to_string();
                                 let base_field_type = &field_def.node.ty.node.base;
@@ -174,18 +180,26 @@ pub async fn build_dynamic_schema(
                                     if SORTABLE_SCALAR_TYPES.contains(field_type.as_str())
                                     {
                                         let sort_input_val = InputValue::new(
-                                            field_name,
+                                            field_name.clone(),
                                             TypeRef::named(sort_enum.type_name()),
                                         );
                                         sort_input_vals.push(sort_input_val);
                                     }
                                 }
+
+                                object_field_enum = object_field_enum.item(field_name);
                             }
 
-                            let filter_object = filter_input_vals.into_iter().fold(
-                                InputObject::new(format!("{obj_name}Filter")),
-                                |input_obj, input_val| input_obj.field(input_val),
-                            );
+                            let filter_object = filter_input_vals
+                                .into_iter()
+                                .fold(
+                                    InputObject::new(format!("{obj_name}Filter")),
+                                    |input_obj, input_val| input_obj.field(input_val),
+                                )
+                                .field(InputValue::new(
+                                    "has",
+                                    TypeRef::named_nn_list(object_field_enum.type_name()),
+                                ));
 
                             let sort_object = sort_input_vals.into_iter().fold(
                                 InputObject::new(format!("{obj_name}Sort")),
@@ -301,7 +315,8 @@ pub async fn build_dynamic_schema(
                             let obj = fields
                                 .into_iter()
                                 .fold(Object::new(obj_name), |obj, f| obj.field(f));
-                            schema_builder = schema_builder.register(obj);
+                            schema_builder =
+                                schema_builder.register(obj).register(object_field_enum);
                         }
                     }
                     TypeKind::Interface(_) => todo!(),
@@ -451,10 +466,6 @@ fn create_filter_val_and_objects_for_field<'a>(
             .field(InputValue::new("lt", TypeRef::named(filter_arg_type)))
             .field(InputValue::new("lte", TypeRef::named(filter_arg_type)))
             .field(InputValue::new(
-                "has",
-                TypeRef::named_nn_list(TypeRef::STRING),
-            ))
-            .field(InputValue::new(
                 "in",
                 TypeRef::named_nn_list(filter_arg_type),
             ));
@@ -554,4 +565,58 @@ async fn query_for_results<'a>(
             }
         }
     }
+}
+
+pub async fn execute_query(
+    dynamic_request: Request,
+    dynamic_schema: DynamicSchema,
+    user_query: String,
+) -> Result<Value, GraphqlError> {
+    let raw_response = dynamic_schema
+        .execute(dynamic_request.data(user_query))
+        .await;
+
+    // Unfortunately, due to the constraints of both our current process and async-graphql,
+    // the following is a hack in order to return the correct response structure to the
+    // user. In order to enable introspection that respects the user's schema,
+    // fields had to be created; each field requires a FieldFuture to be created. To
+    // ensure that the futures satisied the constraints of the library, I've chosen
+    // to populate a fields with the results of the query. As such, the JSON response
+    // needs to be modified so that the results are only included one time.
+    let raw_json = serde_json::to_value(raw_response).unwrap();
+    println!("{raw_json:#?}");
+    let mut results: Option<Value> = None;
+
+    let data = raw_json.get("data").unwrap();
+    let mut object_pointers = data
+        .as_object()
+        .unwrap()
+        .keys()
+        .into_iter()
+        .map(|k| format!("/{}", *k))
+        .collect::<Vec<String>>();
+
+    // Iterate through the keys and find the first part that has an array for the results
+    while let Some(pointer) = object_pointers.pop() {
+        let val = data.pointer(&pointer).unwrap();
+
+        // Found the results
+        if val.is_array() {
+            results = Some(val.clone());
+            break;
+        } else if val.is_object() {
+            let mut pointers = val
+                .as_object()
+                .unwrap()
+                .keys()
+                .into_iter()
+                .map(|k| format!("{}/{}", pointer, *k))
+                .collect::<Vec<String>>();
+            object_pointers.append(&mut pointers);
+        } else {
+            continue;
+        }
+    }
+
+    Ok(serde_json::json!({"data": results.unwrap()}))
 }
