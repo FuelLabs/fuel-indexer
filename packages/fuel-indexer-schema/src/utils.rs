@@ -1,5 +1,6 @@
 extern crate alloc;
 
+use crate::{IndexerSchemaError, IndexerSchemaResult};
 use alloc::vec::Vec;
 use async_graphql_parser::types::{
     Directive, FieldDefinition, ServiceDocument, TypeDefinition, TypeKind,
@@ -164,14 +165,20 @@ pub fn get_join_directive_info(
     }
 }
 
+/// Given a GraphQL document return a `HashMap` where each key in the map
+/// is a the fully qualified field name, and each value in the map is the
+/// Fuel type of the field (e.g., `UInt8`, `Address`, etc).
+///
+/// Each entry in the map represents a field
 pub fn build_schema_fields_and_types_map(
     ast: &ServiceDocument,
-) -> HashMap<String, String> {
+) -> IndexerSchemaResult<HashMap<String, String>> {
     let mut types_map = HashMap::new();
-
     for def in ast.definitions.iter() {
         if let TypeSystemDefinition::Type(typ) = def {
             match &typ.node.kind {
+                TypeKind::Scalar => {}
+                TypeKind::Enum(_e) => {}
                 TypeKind::Object(obj) => {
                     for field in &obj.fields {
                         let field = &field.node;
@@ -182,16 +189,18 @@ pub fn build_schema_fields_and_types_map(
                         types_map.insert(field_id, field_type);
                     }
                 }
-                o => {
-                    panic!("Got a non-object type: '{o:?}'")
+                _ => {
+                    return Err(IndexerSchemaError::UnsupportedTypeKind);
                 }
             }
         }
     }
 
-    types_map
+    Ok(types_map)
 }
 
+/// Given a GraphQL document, return a two `HashSet`s - one for each
+/// unique field type, and one for each unique directive.
 pub fn build_schema_objects_set(
     ast: &ServiceDocument,
 ) -> (HashSet<String>, HashSet<String>) {
@@ -231,18 +240,6 @@ mod tests {
     #[test]
     fn test_build_schema_fields_and_types_map_properly_builds_schema_types_map() {
         let schema = r#"
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    block: Block
-    tx: Tx
-    count: Count
-}
-
-# https://ethereum.org/en/developers/docs/data-and-analytics/block-explorers/
-
 type Block {
     id: Bytes32! @unique
     height: UInt8!
@@ -269,14 +266,8 @@ type Contract {
 }
         "#;
 
-        let ast = match parse_schema(schema) {
-            Ok(ast) => ast,
-            Err(e) => {
-                panic!("Error parsing graphql schema {e:?}")
-            }
-        };
-
-        let types_map = build_schema_fields_and_types_map(&ast);
+        let ast = parse_schema(schema).unwrap();
+        let types_map = build_schema_fields_and_types_map(&ast).unwrap();
 
         assert_eq!(*types_map.get("Block.id").unwrap(), "Bytes32".to_string());
         assert_eq!(*types_map.get("Tx.block").unwrap(), "Block".to_string());
@@ -298,16 +289,6 @@ type Contract {
     #[test]
     fn test_build_schema_objects_set_returns_proper_schema_types_set() {
         let schema = r#"
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    borrower: Borrower
-    lender: Lender
-    auditor: Auditor
-}
-
 type Borrower {
     account: Address! @indexed
 }
@@ -325,16 +306,10 @@ type Auditor {
 }
 "#;
 
-        let ast = match parse_schema(schema) {
-            Ok(ast) => ast,
-            Err(e) => {
-                panic!("Error parsing graphql schema {e:?}")
-            }
-        };
+        let ast = parse_schema(schema).unwrap();
 
         let (obj_set, _directives_set) = build_schema_objects_set(&ast);
 
-        assert!(obj_set.contains("QueryRoot"));
         assert!(!obj_set.contains("NotARealThing"));
         assert!(obj_set.contains("Borrower"));
         assert!(obj_set.contains("Auditor"));

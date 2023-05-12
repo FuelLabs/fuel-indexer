@@ -1,12 +1,3 @@
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    salutation: Salutation
-    greeter: Greeter
-}
-
 # Calling this `Greeter` so as to not clash with `Person` in the contract
 type Greeter {
     id: ID!

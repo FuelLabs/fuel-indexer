@@ -1,9 +1,7 @@
 use crate::{
-    db::{
-        tables::{Schema, SchemaBuilder},
-        IndexerSchemaResult,
-    },
+    db::tables::{Schema, SchemaBuilder},
     utils::{inject_native_entities_into_schema, schema_version},
+    IndexerSchemaResult,
 };
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 

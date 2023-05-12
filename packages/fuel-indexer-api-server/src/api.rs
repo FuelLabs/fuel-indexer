@@ -20,7 +20,7 @@ use axum::{
 use fuel_indexer_database::{IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_graphql::graphql::GraphqlError;
 use fuel_indexer_lib::{config::IndexerConfig, utils::ServiceRequest};
-use fuel_indexer_schema::db::{manager::SchemaManager, IndexerSchemaError};
+use fuel_indexer_schema::{db::manager::SchemaManager, IndexerSchemaError};
 use hyper::Method;
 use serde_json::json;
 use std::{net::SocketAddr, time::Instant};
