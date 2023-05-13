@@ -39,7 +39,7 @@ fn generate_schema() -> Schema {
         foreign_keys: HashMap::new(),
     };
 
-    schema.registery_queryroot_fields();
+    schema.register_queryroot_fields();
 
     schema
 }

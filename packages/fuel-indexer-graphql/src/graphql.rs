@@ -757,7 +757,7 @@ mod tests {
             foreign_keys,
         };
 
-        schema.registery_queryroot_fields();
+        schema.register_queryroot_fields();
 
         let expected = vec![UserQuery {
             elements: vec![

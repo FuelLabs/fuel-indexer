@@ -148,7 +148,7 @@ impl SchemaBuilder {
             fields,
             foreign_keys: HashMap::new(),
         };
-        schema.registery_queryroot_fields();
+        schema.register_queryroot_fields();
 
         Ok(schema)
     }
@@ -374,7 +374,7 @@ impl Schema {
             foreign_keys,
         };
 
-        schema.registery_queryroot_fields();
+        schema.register_queryroot_fields();
 
         Ok(schema)
     }
@@ -405,7 +405,7 @@ impl Schema {
     // We need this because at the moment our GraphQL query parsing is tightly-coupled
     // to our old way of resolving GraphQL types (which was using a `QueryType` object
     // defined in a `TypeSystemDefinition::Schema`)
-    pub fn registery_queryroot_fields(&mut self) {
+    pub fn register_queryroot_fields(&mut self) {
         self.fields.insert(
             "QueryRoot".to_string(),
             self.fields
