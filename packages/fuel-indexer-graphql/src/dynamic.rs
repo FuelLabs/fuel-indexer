@@ -1,3 +1,19 @@
+// At first, I thought that I could coerce the async-graphql crate into doing my bidding. It laughed
+// at me. Undeterred, I pressed on. "If only it could see my vision," I thought, "it would yield
+// to me in an instant." Alas, if I could only return to the naïveté of that time. Oh, to
+// be that young developer again; they were so bright...and so foolish. We clashed
+// continuously over the period of several moons; with my face illuminated by faint blue
+// light, I tried and tried. Thrusts of brilliant engineering were invariably met, at times with
+// parries and at times with an added riposte. Bruised but unbeaten, I toiled. I searched for answers
+// in the type system of async-graphql. But where I hoped and expected to find solace, I found only
+// mockery. "Why wasn't the Hash trait implemented?" I asked aloud. "Why wouldn't someone derive at least
+// the Debug trait?" I cursed the gods above and below, and I vowed to mete out my own punishment
+// upon the crate (in the form of upstream changes) once I finished...if ever.
+//
+// An uncountably infinite time passed. Gazing upon the blinking cursor of my editor, I compromised.
+// With a heavy sigh and even heavier sense of defeat, I implemented the functionality below. I have
+// documented the sites of frustrating battles, of potential improvements, and of innocence lost.
+
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
@@ -98,6 +114,93 @@ lazy_static! {
 
 const QUERY_ROOT: &str = "QueryRoot";
 
+pub async fn execute_query(
+    dynamic_request: Request,
+    dynamic_schema: DynamicSchema,
+    user_query: String,
+) -> Result<Value, GraphqlError> {
+    let raw_response = dynamic_schema
+        .execute(dynamic_request.data(user_query))
+        .await;
+
+    // Unfortunately, due to the constraints of both our current process and async-graphql,
+    // the following is a hack in order to return the correct response structure to the
+    // user. In order to enable introspection that respects the user's schema,
+    // fields had to be created; each field requires a FieldFuture to be created. To
+    // ensure that the futures satisied the constraints of the library, I've chosen
+    // to populate a fields with the results of the query. As such, the JSON response
+    // needs to be modified so that the results are only included one time.
+    let raw_json = match serde_json::to_value(raw_response) {
+        Ok(json) => json,
+        Err(e) => return Err(GraphqlError::DynamicQueryError(e.to_string())),
+    };
+
+    let mut data = match raw_json.get("data") {
+        Some(val) => val.clone(),
+        None => {
+            return Err(GraphqlError::DynamicQueryError(
+                "No key named 'data' in response".to_string(),
+            ))
+        }
+    };
+
+    let root_level_object_pointers = match data.as_object() {
+        Some(obj) => obj
+            .keys()
+            .map(|k| format!("/{}", *k))
+            .collect::<Vec<String>>(),
+        None => {
+            return Err(GraphqlError::DynamicQueryError(
+                "Could not get object pointers for JSON response".to_string(),
+            ))
+        }
+    };
+
+    for root_lvl_obj_ptr in root_level_object_pointers {
+        if let Some(unparsed_obj) = data.pointer(&root_lvl_obj_ptr) {
+            if let Some(obj) = unparsed_obj.as_object() {
+                let mut object_pointers = obj
+                    .keys()
+                    .map(|k| format!("{}/{}", root_lvl_obj_ptr, *k))
+                    .collect::<Vec<String>>();
+
+                while let Some(pointer) = object_pointers.pop() {
+                    let val = match data.pointer(&pointer) {
+                        Some(v) => v.clone(),
+                        None => {
+                            return Err(GraphqlError::DynamicQueryError(format!(
+                                "Could not get value for {pointer}"
+                            )))
+                        }
+                    };
+
+                    // Found the results
+                    if val.is_array() {
+                        if let Some(data_obj) = data.pointer_mut(&root_lvl_obj_ptr) {
+                            *data_obj = val.clone();
+                        }
+                        break;
+                    } else if val.is_object() {
+                        if let Some(obj) = val.as_object() {
+                            let mut pointers = obj
+                                .keys()
+                                .map(|k| format!("{}/{}", pointer, *k))
+                                .collect::<Vec<String>>();
+                            object_pointers.append(&mut pointers);
+                        }
+                    } else {
+                        continue;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(serde_json::json!({ "data": data }))
+}
+
+/// Build a dynamic schema. This allows for introspection, which allows for extensive
+/// auto-documentation and code suggestions.
 pub async fn build_dynamic_schema(
     schema: Schema,
     pool: IndexerConnectionPool,
@@ -153,15 +256,23 @@ pub async fn build_dynamic_schema(
                     TypeKind::Object(obj_type) => {
                         let obj_name = type_def.name.node.as_str();
 
+                        // We want to do the query root last so that we can construct it
+                        // with all of the type information for introspection.
                         if obj_name == QUERY_ROOT {
                             query_root_obj_type = Some(obj_type);
                         } else {
+                            // Input values are stored for each field so that we can create
+                            // a final input object for filtering and sorting a field.
                             let mut filter_input_vals = Vec::new();
                             let mut sort_input_vals = Vec::new();
 
+                            // Field names will be added to this enum in order to allow
+                            // for filtering on the column itself, i.e. "has" operator.
                             let mut object_field_enum =
                                 Enum::new(format!("{obj_name}Fields"));
 
+                            // Iterate through the fields to create input values and objects
+                            // to construct field arguments.
                             for field_def in obj_type.fields.iter() {
                                 let field_name = field_def.node.name.to_string();
                                 let base_field_type = &field_def.node.ty.node.base;
@@ -206,6 +317,10 @@ pub async fn build_dynamic_schema(
                                 |input_obj, input_val| input_obj.field(input_val),
                             );
 
+                            // For some reason, async-graphql does not implement the Hash
+                            // trait on any of the type that we need for dynamic schemas.
+                            // So we are essentially making a hash table ourselves for
+                            // the filter and sort objects.
                             filter_object_list.push(filter_object);
                             filter_tracker.insert(
                                 obj_name.to_string(),
@@ -216,6 +331,10 @@ pub async fn build_dynamic_schema(
                             sorter_tracker
                                 .insert(obj_name.to_string(), sort_object_list.len() - 1);
 
+                            // Additionally, because we cannot refer to the object fields directly and
+                            // associate the field arguments to them, we iterate through the fields a
+                            // second time and construct the fields for the dynamic schema and add the
+                            // field arguments as well.
                             let mut fields = Vec::new();
                             for field_def in obj_type.fields.iter() {
                                 let field_name = field_def.node.name.to_string();
@@ -329,6 +448,9 @@ pub async fn build_dynamic_schema(
         }
     }
 
+    // Now that all of the other fields have been constructed, we can ensure that
+    // the fields used in the root query object will have type information available
+    // during introspection.
     if let Some(obj_type) = query_root_obj_type {
         let mut fields = Vec::new();
         for field_def in obj_type.fields.iter() {
@@ -410,12 +532,19 @@ pub async fn build_dynamic_schema(
             fields.push(field);
         }
 
+        // TODO: Add PageInfo field
+
+        // TODO: Add nodes and edges?
+
         let query_root = fields
             .into_iter()
             .fold(Object::new(QUERY_ROOT), |obj, f| obj.field(f));
         schema_builder = schema_builder.register(query_root);
     }
 
+    // In order for the schema to successfully use the input objects
+    // that make up the filter and sort arguments, the objects have to
+    // be registered with the schema.
     for filter_obj in filter_object_list {
         schema_builder = schema_builder.register(filter_obj);
     }
@@ -436,6 +565,9 @@ pub async fn build_dynamic_schema(
     }
 }
 
+/// Build the filter objects for a particular field. The resultant object
+/// will ensure that the correct value type is allowed for the field by
+/// passing the input type information in the introspection response.
 fn create_filter_val_and_objects_for_field<'a>(
     field_name: &'a str,
     field_type: &'a str,
@@ -448,6 +580,8 @@ fn create_filter_val_and_objects_for_field<'a>(
     } else {
         TypeRef::STRING
     };
+
+    // TODO: Add AND, OR, and NOT
 
     let complex_comparison_obj =
         InputObject::new(format!("{obj_name}_{field_name}_ComplexComparisonObject"))
@@ -486,6 +620,8 @@ async fn query_for_results<'a>(
     schema: Arc<Schema>,
     ctx: &ResolverContext<'_>,
 ) -> Result<FieldValue<'a>, GraphqlError> {
+    // A mutex is used because field resolvers are executed concurrently. This
+    // ensures that a database query is run only once.
     let mut executed = match ctx.data::<Arc<Mutex<bool>>>() {
         Ok(mtx) => mtx.lock().await,
         Err(_) => {
@@ -495,7 +631,7 @@ async fn query_for_results<'a>(
         }
     };
 
-    if *executed == false {
+    if !(*executed) {
         let pool = match ctx.data::<IndexerConnectionPool>() {
             Ok(p) => p,
             Err(_) => {
@@ -550,73 +686,17 @@ async fn query_for_results<'a>(
 
         *executed = true;
 
-        Ok(FieldValue::from(parsed_results.clone()))
+        Ok(FieldValue::from(parsed_results))
+    } else if let Ok(Some(cached_results)) = ctx.data::<Option<ConstValue>>() {
+        Ok(FieldValue::from(cached_results.clone()))
     } else {
-        if let Ok(Some(cached_results)) = ctx.data::<Option<ConstValue>>() {
-            Ok(FieldValue::from(cached_results.clone()))
-        } else {
-            match ctx.parent_value.as_value() {
-                Some(results_from_parent) => {
-                    Ok(FieldValue::from(results_from_parent.clone()))
-                }
-                None => Err(GraphqlError::DynamicSchemaBuildError(SchemaError::from(
-                    "No results available".to_string(),
-                ))),
+        match ctx.parent_value.as_value() {
+            Some(results_from_parent) => {
+                Ok(FieldValue::from(results_from_parent.clone()))
             }
+            None => Err(GraphqlError::DynamicSchemaBuildError(SchemaError::from(
+                "No results available".to_string(),
+            ))),
         }
     }
-}
-
-pub async fn execute_query(
-    dynamic_request: Request,
-    dynamic_schema: DynamicSchema,
-    user_query: String,
-) -> Result<Value, GraphqlError> {
-    let raw_response = dynamic_schema
-        .execute(dynamic_request.data(user_query))
-        .await;
-
-    // Unfortunately, due to the constraints of both our current process and async-graphql,
-    // the following is a hack in order to return the correct response structure to the
-    // user. In order to enable introspection that respects the user's schema,
-    // fields had to be created; each field requires a FieldFuture to be created. To
-    // ensure that the futures satisied the constraints of the library, I've chosen
-    // to populate a fields with the results of the query. As such, the JSON response
-    // needs to be modified so that the results are only included one time.
-    let raw_json = serde_json::to_value(raw_response).unwrap();
-    println!("{raw_json:#?}");
-    let mut results: Option<Value> = None;
-
-    let data = raw_json.get("data").unwrap();
-    let mut object_pointers = data
-        .as_object()
-        .unwrap()
-        .keys()
-        .into_iter()
-        .map(|k| format!("/{}", *k))
-        .collect::<Vec<String>>();
-
-    // Iterate through the keys and find the first part that has an array for the results
-    while let Some(pointer) = object_pointers.pop() {
-        let val = data.pointer(&pointer).unwrap();
-
-        // Found the results
-        if val.is_array() {
-            results = Some(val.clone());
-            break;
-        } else if val.is_object() {
-            let mut pointers = val
-                .as_object()
-                .unwrap()
-                .keys()
-                .into_iter()
-                .map(|k| format!("{}/{}", pointer, *k))
-                .collect::<Vec<String>>();
-            object_pointers.append(&mut pointers);
-        } else {
-            continue;
-        }
-    }
-
-    Ok(serde_json::json!({"data": results.unwrap()}))
 }
