@@ -30,14 +30,18 @@ fn generate_schema() -> Schema {
     let fields =
         HashMap::from_iter([("Thing1".to_string(), f2), ("Thing2".to_string(), f3)]);
 
-    Schema {
-        version: "".into(),
+    let mut schema = Schema {
+        version: "123456".into(),
         namespace: "test_namespace".to_string(),
         identifier: "index1".to_string(),
         types,
         fields,
         foreign_keys: HashMap::new(),
-    }
+    };
+
+    schema.registery_queryroot_fields();
+
+    schema
 }
 
 #[test]

@@ -140,14 +140,17 @@ impl SchemaBuilder {
         queries::type_id_insert(conn, type_ids).await?;
         queries::new_column_insert(conn, columns).await?;
 
-        Ok(Schema {
+        let mut schema = Schema {
             version,
             namespace,
             identifier,
             types,
             fields,
             foreign_keys: HashMap::new(),
-        })
+        };
+        schema.registery_queryroot_fields();
+
+        Ok(schema)
     }
 
     fn process_type(&self, field_type: &Type) -> (ColumnType, bool) {
@@ -360,32 +363,20 @@ impl Schema {
             );
         }
 
-        // **** HACK ****
-        //
-        // Below we manually add a `QueryRoot` type, with its corresponding field types
-        // data being each `Object` defined in the schema.
-        //
-        // We need this because at the moment our GraphQL query parsing is tightly-coupled
-        // to our old way of resolving GraphQL types (which was using a `QueryType` object
-        // defined in a `TypeSystemDefinition::Schema`)
-        fields.insert(
-            "QueryRoot".to_string(),
-            typeids
-                .iter()
-                .map(|tyid| (tyid.graphql_name.to_lowercase(), tyid.graphql_name.clone()))
-                .collect::<HashMap<String, String>>(),
-        );
-
         let foreign_keys = get_foreign_keys(&root.schema)?;
 
-        Ok(Schema {
+        let mut schema = Schema {
             version: root.version,
             namespace: root.schema_name,
             identifier: root.schema_identifier,
             types,
             fields,
             foreign_keys,
-        })
+        };
+
+        schema.registery_queryroot_fields();
+
+        Ok(schema)
     }
 
     /// Ensure the given type is included in this `Schema`'s types
@@ -404,6 +395,24 @@ impl Schema {
 
     pub fn check_type(&self, type_name: &str) -> bool {
         self.types.contains(type_name)
+    }
+
+    // **** HACK ****
+
+    // Below we manually add a `QueryRoot` type, with its corresponding field types
+    // data being each `Object` defined in the schema.
+
+    // We need this because at the moment our GraphQL query parsing is tightly-coupled
+    // to our old way of resolving GraphQL types (which was using a `QueryType` object
+    // defined in a `TypeSystemDefinition::Schema`)
+    pub fn registery_queryroot_fields(&mut self) {
+        self.fields.insert(
+            "QueryRoot".to_string(),
+            self.fields
+                .keys()
+                .map(|k| (k.to_lowercase(), k.clone()))
+                .collect::<HashMap<String, String>>(),
+        );
     }
 }
 

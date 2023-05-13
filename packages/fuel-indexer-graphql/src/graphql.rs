@@ -527,7 +527,6 @@ impl<'a> GraphqlQueryBuilder<'a> {
     pub fn build(self) -> GraphqlResult<GraphqlQuery> {
         let fragments = self.process_fragments()?;
         let operations = self.process_operations(fragments)?;
-
         Ok(GraphqlQuery { operations })
     }
 
@@ -540,7 +539,6 @@ impl<'a> GraphqlQueryBuilder<'a> {
             OperationType::Query => {
                 // TODO: directives and variable definitions....
                 let OperationDefinition { selection_set, .. } = operation;
-
                 let mut selections =
                     Selections::new(self.schema, "QueryRoot", &selection_set.node)?;
                 selections.resolve_fragments(self.schema, "QueryRoot", fragments)?;
@@ -750,7 +748,7 @@ mod tests {
             )]),
         )]);
 
-        let schema = Schema {
+        let mut schema = Schema {
             version: "test_version".to_string(),
             namespace: "fuel_indexer_test".to_string(),
             identifier: "test_index".to_string(),
@@ -758,6 +756,8 @@ mod tests {
             fields,
             foreign_keys,
         };
+
+        schema.registery_queryroot_fields();
 
         let expected = vec![UserQuery {
             elements: vec![
