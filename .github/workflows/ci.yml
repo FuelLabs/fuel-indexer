@@ -240,7 +240,7 @@ jobs:
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
 
       - name: Run E2E and integration tests
-        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
+        run: cargo test --locked --all-targets --features e2e,postgres,examples -p fuel-indexer-tests -- --test-threads=1 --nocapture
 
   cargo-test-forc-index-plugins:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'

@@ -27,6 +27,7 @@ async-std = "1"
 axum = { version = "0.6", features = ["multipart"] }
 bigdecimal = { version = "0.3" }
 chrono = { version = "0.4", features = ["serde"] }
+forc-index = { workspace = true }
 fuel-indexer = { workspace = true }
 fuel-indexer-api-server = { workspace = true }
 fuel-indexer-database = { workspace = true }
@@ -60,3 +61,4 @@ wasmer-engine-universal = "2.3"
 [features]
 e2e = []
 postgres = []
+examples = []

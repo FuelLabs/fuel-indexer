@@ -27,6 +27,7 @@ use std::net::SocketAddr;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use tokio::sync::mpsc::{channel, Receiver};
+use tokio::task::JoinHandle;
 use tracing_subscriber::filter::EnvFilter;
 
 use crate::{defaults, TestError, WORKSPACE_ROOT};
@@ -169,6 +170,15 @@ pub fn tx_params() -> TxParameters {
     TxParameters::new(gas_price, gas_limit, byte_price)
 }
 
+pub async fn setup_test_components(
+) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
+    let node_handle = tokio::spawn(setup_example_test_fuel_node("fuel-indexer-test"));
+    let test_db = TestPostgresDb::new().await.unwrap();
+    let srvc = indexer_service_postgres(Some(&test_db.url)).await;
+
+    (node_handle, test_db, srvc)
+}
+
 pub async fn setup_test_fuel_node(
     wallet_path: PathBuf,
     contract_bin_path: Option<PathBuf>,
@@ -241,15 +251,18 @@ pub async fn setup_test_fuel_node(
     Ok(())
 }
 
-pub async fn setup_example_test_fuel_node() -> Result<(), ()> {
+pub async fn setup_example_test_fuel_node(name: &str) -> Result<(), ()> {
     let wallet_path = Path::new(WORKSPACE_ROOT).join("test-chain-config.json");
+    let bin = format!("{}.bin", name);
 
     let contract_bin_path = Path::new(WORKSPACE_ROOT)
         .join("contracts")
-        .join("fuel-indexer-test")
+        .join(name)
         .join("out")
         .join("debug")
-        .join("fuel-indexer-test.bin");
+        .join(bin);
+
+    println!("Contract binary path: {:?}", &contract_bin_path);
 
     setup_test_fuel_node(wallet_path, Some(contract_bin_path), None).await
 }
@@ -386,11 +399,7 @@ pub async fn connect_to_deployed_contract(
     );
 
     let contract_id: Bech32ContractId = get_test_contract_id();
-
     let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
-
-    println!("Using contract at {contract_id}");
-
     Ok(contract)
 }
 

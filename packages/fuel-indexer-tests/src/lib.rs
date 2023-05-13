@@ -34,6 +34,12 @@ pub mod assets {
         include_bytes!("./../components/indices/simple-wasm/simple_wasm.wasm");
     pub const SIMPLE_WASM_SCHEMA: &str =
         include_str!("./../components/indices/simple-wasm/schema/simple_wasm.graphql");
+    pub const HELLO_WORLD_MANIFEST: &str = include_str!(
+        "../../../examples/hello-world/hello-indexer/hello_indexer.manifest.yaml"
+    );
+    pub const BLOCK_EXPLORER_MANIFEST: &str = include_str!(
+        "../../../examples/block-explorer/explorer-indexer/explorer_indexer.manifest.yaml"
+    );
 }
 
 pub mod defaults {
@@ -53,6 +59,13 @@ pub mod defaults {
     pub const COIN_AMOUNT: u64 = 11;
     pub const MAX_BODY_SIZE: usize = 5242880; // 5MB in bytes
     pub const POSTGRES_URL: &str = "postgres://postgres:my-secret@localhost:5432";
+
+    // For examples tests
+    pub const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
+    pub const BLOCK_EXPLORER_PATH: &str = "examples/block-explorer/explorer-indexer";
+    pub const BLOCK_EXPLORER_INDEXER: &str = "explorer_indexer";
+    pub const HELLO_WORLD_PATH: &str = "examples/hello-world/hello-indexer";
+    pub const HELLO_WORLD_INDEXER: &str = "hello_indexer";
 }
 
 pub mod utils {

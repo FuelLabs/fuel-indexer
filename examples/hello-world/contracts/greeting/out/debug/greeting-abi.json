@@ -77,7 +77,8 @@
         "name": "",
         "type": 0,
         "typeArguments": null
-      }
+      },
+      "attributes": null
     }
   ],
   "loggedTypes": [
@@ -89,5 +90,7 @@
         "typeArguments": []
       }
     }
-  ]
+  ],
+  "messagesTypes": [],
+  "configurables": []
 }

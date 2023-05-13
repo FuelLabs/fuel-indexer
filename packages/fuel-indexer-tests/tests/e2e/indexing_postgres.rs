@@ -23,9 +23,9 @@ const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
     "ff26a39789cdb733529ba55eb978bd2e55beb3bd41831ceb19b093b95838398d";
 
-async fn setup_test_components(
+pub async fn setup_test_components(
 ) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
-    let node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let node_handle = tokio::spawn(setup_example_test_fuel_node("fuel-indexer-test"));
     let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url)).await;
 

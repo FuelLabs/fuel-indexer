@@ -123,8 +123,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
         .post(&target)
         .multipart(form)
         .headers(headers)
-        .send()
-        .expect("Failed to deploy indexer.");
+        .send()?;
 
     let status = res.status();
     let res_json = res

@@ -25,7 +25,7 @@ async fn setup_test_components() -> (
     IndexerService,
     Router,
 ) {
-    let node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let node_handle = tokio::spawn(setup_example_test_fuel_node("fuel-indexer-test"));
     let test_db = TestPostgresDb::new().await.unwrap();
     let srvc = indexer_service_postgres(Some(&test_db.url)).await;
     let (api_app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
