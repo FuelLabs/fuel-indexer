@@ -90,13 +90,6 @@ Essentially, it's the same as the basic query example with an added sub-block to
 We'll start with the following example schema:
 
 ```graphql
-type QueryRoot {
-    character: Character
-    book: Book
-    library: Library
-    city: City
-}
-
 type City {
     id: ID!
     name: Charfield!

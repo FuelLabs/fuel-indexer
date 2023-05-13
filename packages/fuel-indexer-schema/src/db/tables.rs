@@ -19,7 +19,7 @@ use std::collections::{HashMap, HashSet};
 use crate::db::{IndexerSchemaDbError, IndexerSchemaDbResult};
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
-type FooBar = (ServiceDocument, HashSet<String>, HashMap<String, String>);
+type ServiceDocumentBundle = (ServiceDocument, HashSet<String>, HashMap<String, String>);
 
 #[derive(Default)]
 pub struct SchemaBuilder {
@@ -45,7 +45,7 @@ impl SchemaBuilder {
         identifier: &str,
         version: &str,
         db_type: DbType,
-    ) -> Result<SchemaBuilder, IndexerSchemaDbError> {
+    ) -> IndexerSchemaDbResult<SchemaBuilder> {
         let base_ast = match parse_schema(BASE_SCHEMA) {
             Ok(ast) => ast,
             Err(e) => return Err(IndexerSchemaDbError::ParseError(e)),
@@ -62,7 +62,7 @@ impl SchemaBuilder {
         })
     }
 
-    pub fn build(mut self, schema: &str) -> Result<Self, IndexerSchemaDbError> {
+    pub fn build(mut self, schema: &str) -> IndexerSchemaDbResult<Self> {
         if DbType::Postgres == self.db_type {
             let create = format!(
                 "CREATE SCHEMA IF NOT EXISTS {}_{}",
@@ -87,7 +87,7 @@ impl SchemaBuilder {
     pub async fn commit_metadata(
         self,
         conn: &mut IndexerConnection,
-    ) -> sqlx::Result<Schema> {
+    ) -> IndexerSchemaDbResult<Schema> {
         let SchemaBuilder {
             version,
             statements,
@@ -267,7 +267,6 @@ impl SchemaBuilder {
         typ: &TypeDefinition,
         types_map: &HashMap<String, String>,
     ) {
-
         match &typ.kind {
             TypeKind::Scalar => {}
             TypeKind::Enum(_e) => {}
@@ -334,7 +333,7 @@ impl Schema {
         pool: &IndexerConnectionPool,
         namespace: &str,
         identifier: &str,
-    ) -> Result<Self, IndexerSchemaDbError> {
+    ) -> IndexerSchemaDbResult<Self> {
         let mut conn = pool.acquire().await?;
         let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
         let typeids = queries::type_id_list_by_name(
@@ -348,18 +347,34 @@ impl Schema {
         let mut types = HashSet::new();
         let mut fields = HashMap::new();
 
-        for tid in typeids {
-            types.insert(tid.graphql_name.clone());
+        for tyid in &typeids {
+            types.insert(tyid.graphql_name.clone());
 
-            let columns = queries::list_column_by_id(&mut conn, tid.id).await?;
+            let columns = queries::list_column_by_id(&mut conn, tyid.id).await?;
             fields.insert(
-                tid.graphql_name,
+                tyid.graphql_name.clone(),
                 columns
                     .into_iter()
                     .map(|c| (c.column_name, c.graphql_type))
                     .collect(),
             );
         }
+
+        // **** HACK ****
+        //
+        // Below we manually add a `QueryRoot` type, with its corresponding field types
+        // data being each `Object` defined in the schema.
+        //
+        // We need this because at the moment our GraphQL query parsing is tightly-coupled
+        // to our old way of resolving GraphQL types (which was using a `QueryType` object
+        // defined in a `TypeSystemDefinition::Schema`)
+        fields.insert(
+            "QueryRoot".to_string(),
+            typeids
+                .iter()
+                .map(|tyid| (tyid.graphql_name.to_lowercase(), tyid.graphql_name.clone()))
+                .collect::<HashMap<String, String>>(),
+        );
 
         let foreign_keys = get_foreign_keys(&root.schema)?;
 
@@ -453,7 +468,9 @@ fn get_foreign_keys(schema: &str) -> IndexerSchemaDbResult<ForeignKeyMap> {
     Ok(fks)
 }
 
-fn parse_schema_for_ast_data(schema: &str) -> IndexerSchemaDbResult<FooBar> {
+fn parse_schema_for_ast_data(
+    schema: &str,
+) -> IndexerSchemaDbResult<ServiceDocumentBundle> {
     let base_ast = parse_schema(BASE_SCHEMA).map_err(IndexerSchemaDbError::ParseError)?;
     let ast = parse_schema(schema).map_err(IndexerSchemaDbError::ParseError)?;
     let (primitives, _) = build_schema_objects_set(&base_ast);

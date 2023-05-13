@@ -27,5 +27,7 @@ pub enum IndexerSchemaDbError {
     #[error("List types are unsupported.")]
     ListTypesUnsupported,
     #[error("IndexerSchemaError: {0:?}")]
-    IndexerSchemaError(#[from] crate::IndexerSchemaError)
+    IndexerSchemaError(#[from] crate::IndexerSchemaError),
+    #[error("Utf8 Error: {0:?}")]
+    Utf8Error(#[from] std::str::Utf8Error),
 }

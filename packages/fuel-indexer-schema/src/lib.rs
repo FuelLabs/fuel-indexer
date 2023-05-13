@@ -3,12 +3,12 @@
 extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
-use thiserror::Error;
 use fuel_indexer_types::{
     try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes8, ContractId,
     Identity, Int16, Int4, Int8, Json, MessageId, Salt, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 pub use fuel_indexer_database_types as sql_types;
 
@@ -20,7 +20,6 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 const MAX_CHARFIELD_LENGTH: usize = 255;
 const NULL_VALUE: &str = "NULL";
-
 
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
 
@@ -39,9 +38,8 @@ pub enum IndexerSchemaError {
     #[error("This TypeKind is unsupported.")]
     UnsupportedTypeKind,
     #[error("List types are unsupported.")]
-    ListTypesUnsupported
+    ListTypesUnsupported,
 }
-
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {

@@ -87,12 +87,10 @@ impl Selections {
 
                     let subfield_type = schema
                         .field_type(field_type, &name.to_string())
-                        .ok_or_else(|| {
-                            GraphqlError::UnrecognizedField(
-                                field_type.into(),
-                                name.to_string(),
-                            )
-                        })?;
+                        .ok_or(GraphqlError::UnrecognizedField(
+                            field_type.into(),
+                            name.to_string(),
+                        ))?;
 
                     let params = arguments
                         .iter()
@@ -535,7 +533,6 @@ impl<'a> GraphqlQueryBuilder<'a> {
 
     fn process_operation(
         &self,
-        // name: Option<Name>,
         operation: &OperationDefinition,
         fragments: &HashMap<String, Fragment>,
     ) -> GraphqlResult<Operation> {
@@ -543,14 +540,14 @@ impl<'a> GraphqlQueryBuilder<'a> {
             OperationType::Query => {
                 // TODO: directives and variable definitions....
                 let OperationDefinition { selection_set, .. } = operation;
+
                 let mut selections =
-                    Selections::new(self.schema, "", &selection_set.node)?;
-                selections.resolve_fragments(self.schema, "", fragments)?;
+                    Selections::new(self.schema, "QueryRoot", &selection_set.node)?;
+                selections.resolve_fragments(self.schema, "QueryRoot", fragments)?;
 
                 Ok(Operation::new(
                     self.schema.namespace.clone(),
                     self.schema.identifier.clone(),
-                    // name,
                     selections,
                 ))
             }
@@ -576,11 +573,7 @@ impl<'a> GraphqlQueryBuilder<'a> {
             }
             DocumentOperations::Multiple(operation_map) => {
                 for (_name, operation_def) in operation_map.iter() {
-                    let op = self.process_operation(
-
-                        &operation_def.node,
-                        &fragments,
-                    )?;
+                    let op = self.process_operation(&operation_def.node, &fragments)?;
                     operations.push(op);
                 }
             }

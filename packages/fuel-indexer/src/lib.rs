@@ -13,7 +13,7 @@ pub use fuel_indexer_lib::{
     config::IndexerConfig,
     manifest::{Manifest, ManifestError, Module},
 };
-pub use fuel_indexer_schema::{FtColumn, db::IndexerSchemaDbError};
+pub use fuel_indexer_schema::{db::IndexerSchemaDbError, FtColumn};
 pub use service::IndexerService;
 use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
