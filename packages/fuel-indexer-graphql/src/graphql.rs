@@ -5,7 +5,10 @@ use async_graphql_parser::types::{
     DocumentOperations, ExecutableDocument, Field, FragmentDefinition, FragmentSpread,
     OperationDefinition, OperationType, SelectionSet, TypeCondition,
 };
-use fuel_indexer_schema::{db::tables::Schema, sql_types::DbType};
+use fuel_indexer_schema::{
+    QUERY_ROOT,
+    {db::tables::Schema, sql_types::DbType},
+};
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -540,8 +543,8 @@ impl<'a> GraphqlQueryBuilder<'a> {
                 // TODO: directives and variable definitions....
                 let OperationDefinition { selection_set, .. } = operation;
                 let mut selections =
-                    Selections::new(self.schema, "QueryRoot", &selection_set.node)?;
-                selections.resolve_fragments(self.schema, "QueryRoot", fragments)?;
+                    Selections::new(self.schema, QUERY_ROOT, &selection_set.node)?;
+                selections.resolve_fragments(self.schema, QUERY_ROOT, fragments)?;
 
                 Ok(Operation::new(
                     self.schema.namespace.clone(),

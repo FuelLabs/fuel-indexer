@@ -1,7 +1,10 @@
-use crate::utils::{
-    build_schema_fields_and_types_map, build_schema_objects_set, field_type_table_name,
-    get_index_directive, get_join_directive_info, get_unique_directive,
-    normalize_field_type_name, BASE_SCHEMA,
+use crate::{
+    utils::{
+        build_schema_fields_and_types_map, build_schema_objects_set,
+        field_type_table_name, get_index_directive, get_join_directive_info,
+        get_unique_directive, normalize_field_type_name, BASE_SCHEMA,
+    },
+    QUERY_ROOT,
 };
 use async_graphql_parser::parse_schema;
 use async_graphql_parser::types::{
@@ -355,7 +358,7 @@ impl Schema {
 
             let columns = queries::list_column_by_id(&mut conn, tyid.id).await?;
             fields.insert(
-                tyid.graphql_name.clone(),
+                tyid.graphql_name.to_owned(),
                 columns
                     .into_iter()
                     .map(|c| (c.column_name, c.graphql_type))
@@ -379,7 +382,7 @@ impl Schema {
         Ok(schema)
     }
 
-    /// Ensure the given type is included in this `Schema`'s types
+    /// Return the field type for a given field name on a given type name.
     pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
         match self.fields.get(cond) {
             Some(fieldset) => fieldset.get(name),
@@ -393,6 +396,7 @@ impl Schema {
         }
     }
 
+    /// Ensure the given type is included in this `Schema`'s types
     pub fn check_type(&self, type_name: &str) -> bool {
         self.types.contains(type_name)
     }
@@ -407,7 +411,7 @@ impl Schema {
     // defined in a `TypeSystemDefinition::Schema`)
     pub fn register_queryroot_fields(&mut self) {
         self.fields.insert(
-            "QueryRoot".to_string(),
+            QUERY_ROOT.to_string(),
             self.fields
                 .keys()
                 .map(|k| (k.to_lowercase(), k.clone()))

@@ -12,6 +12,8 @@ use thiserror::Error;
 
 pub use fuel_indexer_database_types as sql_types;
 
+pub const QUERY_ROOT: &str = "QueryRoot";
+
 #[cfg(feature = "db-models")]
 pub mod db;
 pub mod utils;

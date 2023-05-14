@@ -358,7 +358,7 @@ pub(crate) fn process_graphql_schema(
     let mut processed: HashSet<String> = HashSet::new();
     let schema_types_map: HashMap<String, String> =
         build_schema_fields_and_types_map(&ast).unwrap_or_else(|e| {
-            panic!("Failed to build GraphQL shcema field and types: {e}")
+            panic!("Failed to build GraphQL schema field and types: {e}")
         });
 
     for definition in ast.definitions.iter() {
