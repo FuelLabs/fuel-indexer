@@ -79,7 +79,7 @@ async fn test_release_build_block_explorer_wasm_artifact() {
 #[cfg(all(feature = "examples"))]
 async fn test_start_indexer_block_explorer() {
     let original_dir = std::env::current_dir().expect("Failed to get current dir");
-    env::set_current_dir("../../").expect("Failed to set current dir");
+    std::env::set_current_dir("../../").expect("Failed to set current dir");
 
     let entries = std::fs::read_dir("./").expect("Failed to read dir");
     for entry in entries {
