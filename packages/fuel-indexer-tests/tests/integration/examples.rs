@@ -29,6 +29,14 @@ async fn test_start_indexer_with_hello_world() {
 
     std::env::set_current_dir("../../").expect("Failed to set current dir");
 
+    let entries = std::fs::read_dir("./").expect("Failed to read dir");
+    for entry in entries {
+        let entry = entry.expect("Failed to read entry");
+        if entry.file_type().expect("Failed to get file type").is_dir() {
+            println!("{}", entry.path().display());
+        }
+    }
+
     let manifest = format!(
         "{}/{}.manifest.yaml",
         defaults::HELLO_WORLD_PATH,
@@ -71,6 +79,14 @@ async fn test_start_indexer_block_explorer() {
     let original_dir = std::env::current_dir().expect("Failed to get current dir");
 
     std::env::set_current_dir("../../").expect("Failed to set current dir");
+
+    let entries = std::fs::read_dir("./").expect("Failed to read dir");
+    for entry in entries {
+        let entry = entry.expect("Failed to read entry");
+        if entry.file_type().expect("Failed to get file type").is_dir() {
+            println!("{}", entry.path().display());
+        }
+    }
 
     let manifest = format!(
         "{}/{}.manifest.yaml",
