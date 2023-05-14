@@ -27,8 +27,6 @@ async fn test_release_build_hello_world_wasm_artifact() {
 async fn test_start_indexer_with_hello_world() {
     let original_dir = std::env::current_dir().expect("Failed to get current dir");
 
-    std::env::set_current_dir("../../").expect("Failed to set current dir");
-
     let entries = std::fs::read_dir("./").expect("Failed to read dir");
     for entry in entries {
         let entry = entry.expect("Failed to read entry");
@@ -42,6 +40,8 @@ async fn test_start_indexer_with_hello_world() {
         defaults::HELLO_WORLD_PATH,
         defaults::HELLO_WORLD_INDEXER
     );
+
+    println!("Manifest: {}", manifest);
 
     let start = forc_index::commands::start::exec(Box::new(StartCommand {
         manifest: Some(manifest.into()),
@@ -77,8 +77,6 @@ async fn test_release_build_block_explorer_wasm_artifact() {
 #[cfg(all(feature = "examples"))]
 async fn test_start_indexer_block_explorer() {
     let original_dir = std::env::current_dir().expect("Failed to get current dir");
-
-    std::env::set_current_dir("../../").expect("Failed to set current dir");
 
     let entries = std::fs::read_dir("./").expect("Failed to read dir");
     for entry in entries {
