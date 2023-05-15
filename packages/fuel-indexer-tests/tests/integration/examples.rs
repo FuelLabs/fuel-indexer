@@ -43,6 +43,14 @@ async fn test_start_indexer_with_hello_world() {
         defaults::HELLO_WORLD_INDEXER
     );
 
+    let entries = std::fs::read_dir("examples/block-explorer/explorer-indexer/")
+        .expect("Failed to read dir");
+
+    for entry in entries {
+        let entry = entry.expect("Failed to read entry");
+        println!("{}", entry.path().display());
+    }
+
     println!("Manifest: {}", manifest);
 
     let start = forc_index::commands::start::exec(Box::new(StartCommand {
@@ -95,6 +103,14 @@ async fn test_start_indexer_block_explorer() {
         defaults::BLOCK_EXPLORER_PATH,
         defaults::BLOCK_EXPLORER_INDEXER
     );
+
+    let entries = std::fs::read_dir("examples/block-explorer/explorer-indexer/")
+        .expect("Failed to read dir");
+
+    for entry in entries {
+        let entry = entry.expect("Failed to read entry");
+        println!("{}", entry.path().display());
+    }
 
     println!("Manifest: {}", manifest);
 
