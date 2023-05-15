@@ -21,6 +21,7 @@ env:
   IS_MASTER: ${{ github.ref == 'refs/heads/master' }}
   IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
   IS_RELEASE_OR_MASTER: ${{ github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master' }}
+  PROJECT_ROOT: ${{ github.workspace }}
 
 jobs:
   cancel-previous-runs:
