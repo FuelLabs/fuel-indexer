@@ -1,5 +1,6 @@
 use forc_index::commands::start::Command as StartCommand;
 use fuel_indexer_tests::defaults;
+use std::path::PathBuf;
 use std::process::Command;
 use tokio::time::{sleep, Duration};
 
@@ -25,6 +26,8 @@ async fn test_release_build_hello_world_wasm_artifact() {
 #[actix_web::test]
 #[cfg(all(feature = "examples"))]
 async fn test_start_indexer_with_hello_world() {
+    use std::path::PathBuf;
+
     let original_dir = std::env::current_dir().expect("Failed to get current dir");
     let project_root = std::env::var("PROJECT_ROOT").expect("Failed to get PROJECT_ROOT");
     std::env::set_current_dir(project_root).expect("Failed to set current dir");
@@ -43,7 +46,7 @@ async fn test_start_indexer_with_hello_world() {
         defaults::HELLO_WORLD_INDEXER
     );
 
-    let entries = std::fs::read_dir("examples/block-explorer/explorer-indexer/")
+    let entries = std::fs::read_dir("examples/hello_world/hello-indexer/")
         .expect("Failed to read dir");
 
     for entry in entries {
@@ -54,7 +57,7 @@ async fn test_start_indexer_with_hello_world() {
     println!("Manifest: {}", manifest);
 
     let start = forc_index::commands::start::exec(Box::new(StartCommand {
-        manifest: Some(manifest.into()),
+        manifest: Some(PathBuf::from(manifest)),
         ..Default::default()
     }))
     .await;
@@ -115,7 +118,7 @@ async fn test_start_indexer_block_explorer() {
     println!("Manifest: {}", manifest);
 
     let start = forc_index::commands::start::exec(Box::new(StartCommand {
-        manifest: Some(manifest.into()),
+        manifest: Some(PathBuf::from(manifest)),
         ..Default::default()
     }))
     .await;
