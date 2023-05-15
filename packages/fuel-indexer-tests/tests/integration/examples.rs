@@ -25,8 +25,6 @@ async fn test_release_build_hello_world_wasm_artifact() {
 #[actix_web::test]
 #[cfg(all(feature = "examples"))]
 async fn test_start_indexer_with_hello_world() {
-    use std::path::PathBuf;
-
     let original_dir = std::env::current_dir().expect("Failed to get current dir");
     let project_root = std::env::var("PROJECT_ROOT").expect("Failed to get PROJECT_ROOT");
     std::env::set_current_dir(project_root).expect("Failed to set current dir");
