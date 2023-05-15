@@ -762,10 +762,10 @@ mod tests {
             types: HashSet::from(["Tx".to_string(), "Block".to_string()]),
             fields,
             foreign_keys,
-            schema: "".to_string(),
+            document: "".to_string(),
         };
 
-        schema.register_queryroot_fields();
+        // schema.register_queryroot_fields();
 
         let expected = vec![UserQuery {
             elements: vec![

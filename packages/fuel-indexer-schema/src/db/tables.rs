@@ -110,7 +110,7 @@ impl SchemaBuilder {
             version: version.clone(),
             schema_name: namespace.clone(),
             schema_identifier: identifier.clone(),
-            schema,
+            schema: schema.clone(),
         };
         queries::new_graph_root(conn, new_root).await?;
 
@@ -150,6 +150,7 @@ impl SchemaBuilder {
             types,
             fields,
             foreign_keys: HashMap::new(),
+            document: schema,
         };
         schema.register_queryroot_fields();
 
@@ -332,6 +333,7 @@ pub struct Schema {
     /// Schema field mapping is namespaced by type name
     pub fields: HashMap<String, HashMap<String, String>>,
     pub foreign_keys: HashMap<String, HashMap<String, (String, String)>>,
+    pub document: String,
 }
 
 impl Schema {
@@ -375,6 +377,7 @@ impl Schema {
             types,
             fields,
             foreign_keys,
+            document: root.schema.clone(),
         };
 
         schema.register_queryroot_fields();

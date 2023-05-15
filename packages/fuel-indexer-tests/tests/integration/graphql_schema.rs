@@ -36,7 +36,7 @@ fn generate_schema() -> Schema {
         identifier: "index1".to_string(),
         types,
         fields,
-        schema: "".into(),
+        document: "".into(),
         foreign_keys: HashMap::new(),
     };
 

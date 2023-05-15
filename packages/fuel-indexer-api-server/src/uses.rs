@@ -61,10 +61,13 @@ pub(crate) async fn query_graph(
         .await
     {
         Ok(schema) => {
-            let dynamic_schema = build_dynamic_schema(schema, pool).await?;
+            let dynamic_schema =
+                build_dynamic_schema(schema.clone(), pool.clone()).await?;
             let user_query = req.0.query.clone();
+            println!("{user_query}");
             let response =
-                execute_query(req.into_inner(), dynamic_schema, user_query).await?;
+                execute_query(req.into_inner(), dynamic_schema, user_query, pool, schema)
+                    .await?;
             let json_res = axum::Json(response);
             Ok(json_res)
         }
