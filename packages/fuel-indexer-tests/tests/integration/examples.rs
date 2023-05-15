@@ -1,6 +1,5 @@
 use forc_index::commands::start::Command as StartCommand;
 use fuel_indexer_tests::defaults;
-use std::path::PathBuf;
 use std::process::Command;
 use tokio::time::{sleep, Duration};
 
@@ -57,7 +56,7 @@ async fn test_start_indexer_with_hello_world() {
     println!("Manifest: {}", manifest);
 
     let start = forc_index::commands::start::exec(Box::new(StartCommand {
-        manifest: Some(PathBuf::from(manifest)),
+        manifest: Some(manifest.into()),
         ..Default::default()
     }))
     .await;
@@ -118,7 +117,7 @@ async fn test_start_indexer_block_explorer() {
     println!("Manifest: {}", manifest);
 
     let start = forc_index::commands::start::exec(Box::new(StartCommand {
-        manifest: Some(PathBuf::from(manifest)),
+        manifest: Some(manifest.into()),
         ..Default::default()
     }))
     .await;

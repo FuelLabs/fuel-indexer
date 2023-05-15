@@ -171,6 +171,18 @@ jobs:
       - name: cargo fmt --all --verbose -- --check
         run: cargo fmt --all --verbose -- --check
 
+  cargo-build-indexer:
+    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: cargo build -p fuel-indexer --locked --all-features --all-targets
+        run: cargo build -p fuel-indexer --locked --all-features --all-targets
+
   cargo-test-unit-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
@@ -200,6 +212,7 @@ jobs:
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
+      - cargo-build-indexer
       - cargo-toml-fmt-check
       - set-env-vars
     runs-on: ubuntu-latest
