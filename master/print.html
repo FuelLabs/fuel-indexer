@@ -631,16 +631,7 @@ impl Greet for Contract {
     }
 }</code></pre>
 <p>We can define our schema like this in the schema file:</p>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    greeting: Greeting
-    salutation: Salutation
-}
-
-# Calling this `Greeter` so as to not clash with `Person` in the contract
+<pre><code class="language-graphql"># Calling this `Greeter` so as to not clash with `Person` in the contract
 type Greeter {
     id: ID!
     name: Charfield!
@@ -1181,16 +1172,7 @@ report_metrics: true
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graphql-schema"><a class="header" href="#graphql-schema">GraphQL Schema</a></h1>
 <p>The GraphQL schema is a required component of the Fuel indexer. When data is indexed into the database, the actual values that are persisted to the database will be values created using the data structures defined in the schema.</p>
 <p>In its most basic form, a Fuel indexer GraphQL schema should have a <code>schema</code> definition that contains a defined query root. The rest of the implementation is up to you. Here's an example of a well-formed schema:</p>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    thing1: FirstThing
-    thing2: SecondThing
-}
-
-type FirstThing {
+<pre><code class="language-graphql">type FirstThing {
     id: ID!
     value: UInt8!
 }
@@ -1615,16 +1597,7 @@ Access method: heap
 </ul>
 <h2 id="indexed"><a class="header" href="#indexed"><code>@indexed</code></a></h2>
 <p>The <code>@indexed</code> directive adds a <a href="https://www.postgresql.org/docs/current/indexes-intro.html">database index</a> to the underlying column for the indicated field of that type. Generally, a database index is a data structure that allows you to quickly locate data without having to search each row in a database table.</p>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
-type Book {
+<pre><code class="language-graphql">type Book {
     id: ID!
     name: Bytes8! @indexed
 }
@@ -1640,16 +1613,7 @@ type Library {
 </blockquote>
 <h2 id="unique"><a class="header" href="#unique"><code>@unique</code></a></h2>
 <p>The <code>@unique</code> directive adds a <code>UNIQUE</code> database constraint to the underlying database column for the indicated field of that type. A constraint specifies a rule for the data in a table and can be used to limit the type of data that can be placed in the table. In the case of a column with a <code>UNIQUE</code> constraint, all values in the column must be different.</p>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
-type Book {
+<pre><code class="language-graphql">type Book {
     id: ID!
     name: Bytes8! @unique
 }
@@ -1665,16 +1629,7 @@ type Library {
 </blockquote>
 <h2 id="join"><a class="header" href="#join"><code>@join</code></a></h2>
 <p>The <code>@join</code> directive is used to relate a field in one type to others by referencing fields in another type. You can think of it as a link between two tables in your database. The field in the referenced type is called a <em>foreign key</em> and it is <strong>required</strong> to be unique.</p>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
-type Book {
+<pre><code class="language-graphql">type Book {
     id: ID!
     name: Bytes8! @unique
 }
@@ -1853,14 +1808,7 @@ OPTIONS:
 <p>Important: There is no limit to how deeply nested your entities and queries can be. However, every nested reference <em><strong>will</strong></em> add computation and latency to your query as the information will have to be retrieved from different tables in your storage backend. Please exercise caution in your entity design and try to minimize nesting as much as possible.</p>
 </blockquote>
 <p>We'll start with the following example schema:</p>
-<pre><code class="language-graphql">type QueryRoot {
-    character: Character
-    book: Book
-    library: Library
-    city: City
-}
-
-type City {
+<pre><code class="language-graphql">type City {
     id: ID!
     name: Charfield!
 }
@@ -2397,16 +2345,7 @@ type Character {
 <p>Let's learn how to use each foreign key type by looking at some GraphQL schema examples.</p>
 <h2 id="usage-3"><a class="header" href="#usage-3">Usage</a></h2>
 <h3 id="implicit-foreign-keys"><a class="header" href="#implicit-foreign-keys">Implicit foreign keys</a></h3>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
-type Book {
+<pre><code class="language-graphql">type Book {
     id: ID!
     name: Bytes8!
 }
@@ -2419,16 +2358,7 @@ type Library {
 <h4 id="implicit-foreign-key-breakdown"><a class="header" href="#implicit-foreign-key-breakdown">Implicit foreign key breakdown</a></h4>
 <p>Given the above schema, two entities will be created: a <code>Book</code> entity, and a <code>Library</code> entity. As you can see, we add the <code>Book</code> entity as an attribute on the <code>Library</code> entity, thus conveying that we want a one-to-many or one-to-one relationship between <code>Library</code> and <code>Book</code>. This means that for a given <code>Library</code>, we may also fetch one or many <code>Book</code> entities. It also means that the column <code>library.book</code> will be an integer type that references <code>book.id</code>.</p>
 <h3 id="explicit-foreign-keys"><a class="header" href="#explicit-foreign-keys">Explicit foreign keys</a></h3>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
-type Book {
+<pre><code class="language-graphql">type Book {
     id: ID!
     name: Bytes8! @unique
 }

@@ -173,16 +173,7 @@ impl Greet for Contract {
     }
 }</code></pre>
 <p>We can define our schema like this in the schema file:</p>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    greeting: Greeting
-    salutation: Salutation
-}
-
-# Calling this `Greeter` so as to not clash with `Person` in the contract
+<pre><code class="language-graphql"># Calling this `Greeter` so as to not clash with `Person` in the contract
 type Greeter {
     id: ID!
     name: Charfield!

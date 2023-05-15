@@ -161,16 +161,7 @@
 <p>Let's learn how to use each foreign key type by looking at some GraphQL schema examples.</p>
 <h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
 <h3 id="implicit-foreign-keys"><a class="header" href="#implicit-foreign-keys">Implicit foreign keys</a></h3>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
-type Book {
+<pre><code class="language-graphql">type Book {
     id: ID!
     name: Bytes8!
 }
@@ -183,16 +174,7 @@ type Library {
 <h4 id="implicit-foreign-key-breakdown"><a class="header" href="#implicit-foreign-key-breakdown">Implicit foreign key breakdown</a></h4>
 <p>Given the above schema, two entities will be created: a <code>Book</code> entity, and a <code>Library</code> entity. As you can see, we add the <code>Book</code> entity as an attribute on the <code>Library</code> entity, thus conveying that we want a one-to-many or one-to-one relationship between <code>Library</code> and <code>Book</code>. This means that for a given <code>Library</code>, we may also fetch one or many <code>Book</code> entities. It also means that the column <code>library.book</code> will be an integer type that references <code>book.id</code>.</p>
 <h3 id="explicit-foreign-keys"><a class="header" href="#explicit-foreign-keys">Explicit foreign keys</a></h3>
-<pre><code class="language-graphql">schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
-type Book {
+<pre><code class="language-graphql">type Book {
     id: ID!
     name: Bytes8! @unique
 }
