@@ -5,8 +5,10 @@ use async_graphql_parser::types::{
     DocumentOperations, ExecutableDocument, Field, FragmentDefinition, FragmentSpread,
     OperationDefinition, OperationType, SelectionSet, TypeCondition,
 };
-use async_graphql_value::Name;
-use fuel_indexer_schema::{db::tables::Schema, sql_types::DbType};
+use fuel_indexer_schema::{
+    QUERY_ROOT,
+    {db::tables::Schema, sql_types::DbType},
+};
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -63,7 +65,8 @@ pub enum Selection {
 
 #[derive(Clone, Debug)]
 pub struct Selections {
-    _field_type: String,
+    #[allow(unused)]
+    field_type: String,
     has_fragments: bool,
     selections: Vec<Selection>,
 }
@@ -91,12 +94,10 @@ impl Selections {
 
                     let subfield_type = schema
                         .field_type(field_type, &name.to_string())
-                        .ok_or_else(|| {
-                            GraphqlError::UnrecognizedField(
-                                field_type.into(),
-                                name.to_string(),
-                            )
-                        })?;
+                        .ok_or(GraphqlError::UnrecognizedField(
+                            field_type.into(),
+                            name.to_string(),
+                        ))?;
 
                     let params = arguments
                         .iter()
@@ -128,13 +129,13 @@ impl Selections {
                     has_fragments = true;
                     selections.push(Selection::Fragment(fragment_name.to_string()));
                 }
-                // Inline fragments not handled yet....
+                // TODO: Support inline fragments
                 _ => return Err(GraphqlError::SelectionNotSupported),
             }
         }
 
         Ok(Selections {
-            _field_type: field_type.to_string(),
+            field_type: field_type.to_string(),
             has_fragments,
             selections,
         })
@@ -239,7 +240,6 @@ impl Fragment {
 pub struct Operation {
     namespace: String,
     identifier: String,
-    _name: String,
     selections: Selections,
 }
 
@@ -247,13 +247,11 @@ impl Operation {
     pub fn new(
         namespace: String,
         identifier: String,
-        name: String,
         selections: Selections,
     ) -> Operation {
         Operation {
             namespace,
             identifier,
-            _name: name,
             selections,
         }
     }
@@ -536,13 +534,11 @@ impl<'a> GraphqlQueryBuilder<'a> {
     pub fn build(self) -> GraphqlResult<GraphqlQuery> {
         let fragments = self.process_fragments()?;
         let operations = self.process_operations(fragments)?;
-
         Ok(GraphqlQuery { operations })
     }
 
     fn process_operation(
         &self,
-        name: Option<Name>,
         operation: &OperationDefinition,
         fragments: &HashMap<String, Fragment>,
     ) -> GraphqlResult<Operation> {
@@ -550,23 +546,13 @@ impl<'a> GraphqlQueryBuilder<'a> {
             OperationType::Query => {
                 // TODO: directives and variable definitions....
                 let OperationDefinition { selection_set, .. } = operation;
-                let name = name.map_or_else(|| "Unnamed".into(), |o| o.to_string());
-
-                let mut selections = Selections::new(
-                    self.schema,
-                    &self.schema.query,
-                    &selection_set.node,
-                )?;
-                selections.resolve_fragments(
-                    self.schema,
-                    &self.schema.query,
-                    fragments,
-                )?;
+                let mut selections =
+                    Selections::new(self.schema, QUERY_ROOT, &selection_set.node)?;
+                selections.resolve_fragments(self.schema, QUERY_ROOT, fragments)?;
 
                 Ok(Operation::new(
                     self.schema.namespace.clone(),
                     self.schema.identifier.clone(),
-                    name,
                     selections,
                 ))
             }
@@ -587,16 +573,12 @@ impl<'a> GraphqlQueryBuilder<'a> {
 
         match &self.document.operations {
             DocumentOperations::Single(operation_def) => {
-                let op = self.process_operation(None, &operation_def.node, &fragments)?;
+                let op = self.process_operation(&operation_def.node, &fragments)?;
                 operations.push(op);
             }
             DocumentOperations::Multiple(operation_map) => {
-                for (name, operation_def) in operation_map.iter() {
-                    let op = self.process_operation(
-                        Some(name.clone()),
-                        &operation_def.node,
-                        &fragments,
-                    )?;
+                for (_name, operation_def) in operation_map.iter() {
+                    let op = self.process_operation(&operation_def.node, &fragments)?;
                     operations.push(op);
                 }
             }
@@ -667,14 +649,14 @@ mod tests {
     #[test]
     fn test_operation_parse_into_user_query() {
         let selections_on_block_field = Selections {
-            _field_type: "Block".to_string(),
+            field_type: "Block".to_string(),
             has_fragments: false,
             selections: vec![
                 Selection::Field {
                     name: "id".to_string(),
                     params: Vec::new(),
                     sub_selections: Selections {
-                        _field_type: "ID!".to_string(),
+                        field_type: "ID!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
@@ -684,7 +666,7 @@ mod tests {
                     name: "height".to_string(),
                     params: Vec::new(),
                     sub_selections: Selections {
-                        _field_type: "UInt8!".to_string(),
+                        field_type: "UInt8!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
@@ -694,7 +676,7 @@ mod tests {
         };
 
         let selections_on_tx_field = Selections {
-            _field_type: "Tx".to_string(),
+            field_type: "Tx".to_string(),
             has_fragments: false,
             selections: vec![
                 Selection::Field {
@@ -707,7 +689,7 @@ mod tests {
                     name: "id".to_string(),
                     params: Vec::new(),
                     sub_selections: Selections {
-                        _field_type: "ID!".to_string(),
+                        field_type: "ID!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
@@ -717,7 +699,7 @@ mod tests {
                     name: "timestamp".to_string(),
                     params: Vec::new(),
                     sub_selections: Selections {
-                        _field_type: "Int8!".to_string(),
+                        field_type: "Int8!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
@@ -734,24 +716,16 @@ mod tests {
         }];
 
         let operation = Operation {
-            _name: "".to_string(),
             namespace: "fuel_indexer_test".to_string(),
             identifier: "test_index".to_string(),
             selections: Selections {
-                _field_type: "QueryRoot".to_string(),
+                field_type: "".to_string(),
                 has_fragments: false,
                 selections: query_selections,
             },
         };
 
         let fields = HashMap::from([
-            (
-                "QueryRoot".to_string(),
-                HashMap::from([
-                    ("tx".to_string(), "Tx".to_string()),
-                    ("block".to_string(), "Block".to_string()),
-                ]),
-            ),
             (
                 "Tx".to_string(),
                 HashMap::from([
@@ -781,20 +755,17 @@ mod tests {
             )]),
         )]);
 
-        let schema = Schema {
+        let mut schema = Schema {
             version: "test_version".to_string(),
             namespace: "fuel_indexer_test".to_string(),
             identifier: "test_index".to_string(),
-            query: "QueryRoot".to_string(),
-            types: HashSet::from([
-                "Tx".to_string(),
-                "Block".to_string(),
-                "QueryRoot".to_string(),
-            ]),
+            types: HashSet::from(["Tx".to_string(), "Block".to_string()]),
             fields,
             foreign_keys,
             schema: "".to_string(),
         };
+
+        schema.register_queryroot_fields();
 
         let expected = vec![UserQuery {
             elements: vec![

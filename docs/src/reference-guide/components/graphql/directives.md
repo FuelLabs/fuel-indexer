@@ -13,15 +13,6 @@ As of this writing, the list of supported Fuel GraphQL schema directives include
 The `@indexed` directive adds a [database index](https://www.postgresql.org/docs/current/indexes-intro.html) to the underlying column for the indicated field of that type. Generally, a database index is a data structure that allows you to quickly locate data without having to search each row in a database table.
 
 ```graphql
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
 type Book {
     id: ID!
     name: Bytes8! @indexed
@@ -42,15 +33,6 @@ In this example, a single `BTREE INDEX` constraint will be created on the `book`
 The `@unique` directive adds a `UNIQUE` database constraint to the underlying database column for the indicated field of that type. A constraint specifies a rule for the data in a table and can be used to limit the type of data that can be placed in the table. In the case of a column with a `UNIQUE` constraint, all values in the column must be different.
 
 ```graphql
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
 type Book {
     id: ID!
     name: Bytes8! @unique
@@ -71,15 +53,6 @@ A `UNIQUE` constraint will be created on the `book` table's `name` column, ensur
 The `@join` directive is used to relate a field in one type to others by referencing fields in another type. You can think of it as a link between two tables in your database. The field in the referenced type is called a _foreign key_ and it is **required** to be unique.
 
 ```graphql
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
 type Book {
     id: ID!
     name: Bytes8! @unique

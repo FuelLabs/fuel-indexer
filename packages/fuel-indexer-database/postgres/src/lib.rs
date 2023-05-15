@@ -126,14 +126,13 @@ pub async fn new_graph_root(
     root: NewGraphRoot,
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new(
-        "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, query, schema)",
+        "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, schema)",
     );
 
     builder.push_values(std::iter::once(root), |mut b, root| {
         b.push_bind(root.version)
             .push_bind(root.schema_name)
             .push_bind(root.schema_identifier)
-            .push_bind(root.query)
             .push_bind(root.schema);
     });
 
@@ -161,14 +160,12 @@ pub async fn graph_root_latest(
     let id: i64 = row.get(0);
     let version: String = row.get(1);
     let schema_name: String = row.get(2);
-    let query: String = row.get(3);
-    let schema: String = row.get(4);
+    let schema: String = row.get(3);
 
     Ok(GraphRoot {
         id,
         version,
         schema_name,
-        query,
         schema,
         schema_identifier: identifier.to_string(),
     })

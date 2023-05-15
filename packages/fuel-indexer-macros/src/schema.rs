@@ -1,8 +1,7 @@
 use crate::helpers::{const_item, generate_row_extractor};
 use async_graphql_parser::parse_schema;
 use async_graphql_parser::types::{
-    BaseType, FieldDefinition, SchemaDefinition, ServiceDocument, Type, TypeDefinition,
-    TypeKind, TypeSystemDefinition,
+    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
 use fuel_indexer_database_types::directives;
 use fuel_indexer_lib::utils::local_repository_root;
@@ -108,11 +107,9 @@ fn process_fk_field(
     process_field(schema_types, &field_name, &field_type)
 }
 
-/// Process a schema's type definition into the
-/// corresponding tokens for use in an indexer module.
+/// Process a schema's type definition into the corresponding tokens for use in an indexer module.
 #[allow(clippy::too_many_arguments)]
 fn process_type_def(
-    query_root: &str,
     namespace: &str,
     identifier: &str,
     schema_types: &HashSet<String>,
@@ -124,9 +121,6 @@ fn process_type_def(
 ) -> Option<proc_macro2::TokenStream> {
     if let TypeKind::Object(obj) = &typ.kind {
         let object_name = typ.name.to_string();
-        if object_name.as_str() == query_root {
-            return None;
-        }
 
         let type_id = type_id(&format!("{namespace}_{identifier}"), object_name.as_str());
         let mut block = quote! {};
@@ -176,7 +170,6 @@ fn process_type_def(
 
             row_extractors = quote! {
                 #ext
-
                 #row_extractors
             };
 
@@ -278,14 +271,12 @@ fn process_type_def(
             })
         }
     } else {
-        panic!("Unexpected type: {:?}", typ.kind)
+        panic!("Unexpected type: '{:?}'", typ.kind)
     }
 }
 
-/// Process defintions from a user-supplied schema and return a set of tokens.
 #[allow(clippy::too_many_arguments)]
 fn process_definition(
-    query_root: &str,
     namespace: &str,
     identifier: &str,
     types: &HashSet<String>,
@@ -297,38 +288,14 @@ fn process_definition(
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
         TypeSystemDefinition::Type(def) => process_type_def(
-            query_root, namespace, identifier, types, &def.node, processed, primitives,
-            types_map, is_native,
+            namespace, identifier, types, &def.node, processed, primitives, types_map,
+            is_native,
         ),
         TypeSystemDefinition::Schema(_def) => None,
         def => {
             panic!("Unhandled definition type: {def:?}");
         }
     }
-}
-
-/// Get query root of schema.
-fn get_query_root(types: &HashSet<String>, ast: &ServiceDocument) -> String {
-    let schema = ast.definitions.iter().find_map(|def| {
-        if let TypeSystemDefinition::Schema(d) = def {
-            Some(d.node.clone())
-        } else {
-            None
-        }
-    });
-
-    let SchemaDefinition { query, .. } = schema.expect("Schema definition not found.");
-
-    let name = query
-        .as_ref()
-        .expect("Schema definition must specify a query root.")
-        .to_string();
-
-    if !types.contains(&name) {
-        panic!("Query root not defined.");
-    }
-
-    name
 }
 
 /// Process user-supplied GraphQL schema into code for indexer module.
@@ -388,15 +355,14 @@ pub(crate) fn process_graphql_schema(
         #version_tokens
     };
 
-    let query_root = get_query_root(&schema_types, &ast);
-
     let mut processed: HashSet<String> = HashSet::new();
     let schema_types_map: HashMap<String, String> =
-        build_schema_fields_and_types_map(&ast);
+        build_schema_fields_and_types_map(&ast).unwrap_or_else(|e| {
+            panic!("Failed to build GraphQL schema field and types: {e}")
+        });
 
     for definition in ast.definitions.iter() {
         if let Some(def) = process_definition(
-            &query_root,
             &namespace,
             &identifier,
             &schema_types,

@@ -176,14 +176,6 @@ forc index start
 The Fuel indexer uses data models derived from GraphQL schema types in order to persist data to a database backend.
 
 ```graphql
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    account: Account
-}
-
 type Account {
     id: ID!
     address: Address! @unique

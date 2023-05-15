@@ -4,10 +4,10 @@ pub mod tables;
 use fuel_indexer_database::IndexerDatabaseError;
 use thiserror::Error;
 
-pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
+pub type IndexerSchemaDbResult<T> = core::result::Result<T, IndexerSchemaDbError>;
 
 #[derive(Error, Debug)]
-pub enum IndexerSchemaError {
+pub enum IndexerSchemaDbError {
     #[error("Error from sqlx: {0:#?}")]
     SqlxError(#[from] sqlx::Error),
     #[error("Database error: {0:?}")]
@@ -22,4 +22,12 @@ pub enum IndexerSchemaError {
     JoinDirectiveError(String),
     #[error("Unable to build schema field and type map: {0:?}")]
     FieldAndTypeConstructionError(String),
+    #[error("This TypeKind is unsupported.")]
+    UnsupportedTypeKind,
+    #[error("List types are unsupported.")]
+    ListTypesUnsupported,
+    #[error("IndexerSchemaError: {0:?}")]
+    IndexerSchemaError(#[from] crate::IndexerSchemaError),
+    #[error("Utf8 Error: {0:?}")]
+    Utf8Error(#[from] std::str::Utf8Error),
 }
