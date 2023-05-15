@@ -1,7 +1,10 @@
-use crate::utils::{
-    build_schema_fields_and_types_map, build_schema_objects_set, field_type_table_name,
-    get_index_directive, get_join_directive_info, get_unique_directive,
-    normalize_field_type_name, BASE_SCHEMA,
+use crate::{
+    utils::{
+        build_schema_fields_and_types_map, build_schema_objects_set,
+        field_type_table_name, get_index_directive, get_join_directive_info,
+        get_unique_directive, normalize_field_type_name, BASE_SCHEMA,
+    },
+    QUERY_ROOT,
 };
 use async_graphql_parser::parse_schema;
 use async_graphql_parser::types::{
@@ -16,7 +19,10 @@ use fuel_indexer_database::{
 use fuel_indexer_types::type_id;
 use std::collections::{HashMap, HashSet};
 
-use super::IndexerSchemaError;
+use crate::db::{IndexerSchemaDbError, IndexerSchemaDbResult};
+
+type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
+type ServiceDocumentBundle = (ServiceDocument, HashSet<String>, HashMap<String, String>);
 
 #[derive(Default)]
 pub struct SchemaBuilder {
@@ -31,9 +37,8 @@ pub struct SchemaBuilder {
     version: String,
     schema: String,
     types: HashSet<String>,
+    /// Schema field mapping is namespaced by type name
     fields: HashMap<String, HashMap<String, String>>,
-    query: String,
-    query_fields: HashMap<String, HashMap<String, String>>,
     primitives: HashSet<String>,
 }
 
@@ -43,10 +48,10 @@ impl SchemaBuilder {
         identifier: &str,
         version: &str,
         db_type: DbType,
-    ) -> Result<SchemaBuilder, IndexerSchemaError> {
+    ) -> IndexerSchemaDbResult<SchemaBuilder> {
         let base_ast = match parse_schema(BASE_SCHEMA) {
             Ok(ast) => ast,
-            Err(e) => return Err(IndexerSchemaError::ParseError(e)),
+            Err(e) => return Err(IndexerSchemaDbError::ParseError(e)),
         };
         let (primitives, _) = build_schema_objects_set(&base_ast);
 
@@ -60,7 +65,7 @@ impl SchemaBuilder {
         })
     }
 
-    pub fn build(mut self, schema: &str) -> Result<Self, IndexerSchemaError> {
+    pub fn build(mut self, schema: &str) -> IndexerSchemaDbResult<Self> {
         if DbType::Postgres == self.db_type {
             let create = format!(
                 "CREATE SCHEMA IF NOT EXISTS {}_{}",
@@ -69,33 +74,14 @@ impl SchemaBuilder {
             self.statements.push(create);
         }
 
-        let ast = match parse_schema(schema) {
-            Ok(ast) => ast,
-            Err(e) => return Err(IndexerSchemaError::ParseError(e)),
-        };
-
-        // Find a nicer way of doing all of this
-        let query: String = ast
-            .definitions
-            .iter()
-            .find_map(|s| {
-                if let TypeSystemDefinition::Schema(def) = s {
-                    def.node.query.as_ref().map(|query| query.to_string())
-                } else {
-                    None
-                }
-            })
-            .expect("Return an error here");
-
-        let types_map = build_schema_fields_and_types_map(&ast);
+        let ast = parse_schema(schema).map_err(IndexerSchemaDbError::ParseError)?;
+        let types_map = build_schema_fields_and_types_map(&ast)?;
 
         for def in ast.definitions.iter() {
             if let TypeSystemDefinition::Type(typ) = def {
-                self.generate_table_sql(&query, &typ.node, &types_map)
+                self.generate_table_sql(&typ.node, &types_map)
             }
         }
-
-        self.query = query;
         self.schema = schema.to_string();
 
         Ok(self)
@@ -104,8 +90,7 @@ impl SchemaBuilder {
     pub async fn commit_metadata(
         self,
         conn: &mut IndexerConnection,
-    ) -> sqlx::Result<Schema> {
-        #[allow(unused_variables)]
+    ) -> IndexerSchemaDbResult<Schema> {
         let SchemaBuilder {
             version,
             statements,
@@ -117,10 +102,7 @@ impl SchemaBuilder {
             identifier,
             types,
             fields,
-            query,
-            query_fields,
             schema,
-            db_type,
             ..
         } = self;
 
@@ -128,21 +110,19 @@ impl SchemaBuilder {
             version: version.clone(),
             schema_name: namespace.clone(),
             schema_identifier: identifier.clone(),
-            query: query.clone(),
             schema,
         };
         queries::new_graph_root(conn, new_root).await?;
 
         let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
 
-        let field_defs = query_fields.get(&query).expect("No query root.");
+        let type_names = fields.keys();
 
-        let cols: Vec<_> = field_defs
-            .iter()
-            .map(|(key, val)| NewRootColumns {
+        let cols: Vec<_> = type_names
+            .map(|t| NewRootColumns {
                 root_id: latest.id,
-                column_name: key.to_string(),
-                graphql_type: val.to_string(),
+                column_name: t.to_string(),
+                graphql_type: t.to_string(),
             })
             .collect();
 
@@ -163,15 +143,17 @@ impl SchemaBuilder {
         queries::type_id_insert(conn, type_ids).await?;
         queries::new_column_insert(conn, columns).await?;
 
-        Ok(Schema {
+        let mut schema = Schema {
             version,
             namespace,
             identifier,
-            query,
             types,
             fields,
             foreign_keys: HashMap::new(),
-        })
+        };
+        schema.register_queryroot_fields();
+
+        Ok(schema)
     }
 
     fn process_type(&self, field_type: &Type) -> (ColumnType, bool) {
@@ -288,18 +270,12 @@ impl SchemaBuilder {
 
     fn generate_table_sql(
         &mut self,
-        root: &str,
         typ: &TypeDefinition,
         types_map: &HashMap<String, String>,
     ) {
-        fn map_fields(fields: &[FieldDefinition]) -> HashMap<String, String> {
-            fields
-                .iter()
-                .map(|f| (f.name.to_string(), f.ty.to_string()))
-                .collect()
-        }
-
         match &typ.kind {
+            TypeKind::Scalar => {}
+            TypeKind::Enum(_e) => {}
             TypeKind::Object(o) => {
                 self.types.insert(typ.name.to_string());
 
@@ -308,14 +284,14 @@ impl SchemaBuilder {
                     .iter()
                     .map(|f| f.node.clone())
                     .collect::<Vec<FieldDefinition>>()[..];
-                self.fields
-                    .insert(typ.name.to_string(), map_fields(field_defs));
 
-                if typ.name.to_string().as_str() == root {
-                    self.query_fields
-                        .insert(root.to_string(), map_fields(field_defs));
-                    return;
-                }
+                self.fields.insert(
+                    typ.name.to_string(),
+                    field_defs
+                        .iter()
+                        .map(|f| (f.name.to_string(), f.ty.to_string()))
+                        .collect(),
+                );
 
                 let table_name = typ.name.to_string().to_lowercase();
                 let type_id = type_id(&self.namespace(), &typ.name.to_string());
@@ -342,6 +318,7 @@ impl SchemaBuilder {
                     table_name,
                 });
             }
+            // TODO: Don't panic, return Err
             other_type => panic!("Got a non-object type: '{other_type:?}'"),
         }
     }
@@ -351,8 +328,8 @@ pub struct Schema {
     pub version: String,
     pub namespace: String,
     pub identifier: String,
-    pub query: String,
     pub types: HashSet<String>,
+    /// Schema field mapping is namespaced by type name
     pub fields: HashMap<String, HashMap<String, String>>,
     pub foreign_keys: HashMap<String, HashMap<String, (String, String)>>,
 }
@@ -362,10 +339,9 @@ impl Schema {
         pool: &IndexerConnectionPool,
         namespace: &str,
         identifier: &str,
-    ) -> Result<Self, IndexerSchemaError> {
+    ) -> IndexerSchemaDbResult<Self> {
         let mut conn = pool.acquire().await?;
         let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
-        let root_cols = queries::root_columns_list_by_id(&mut conn, root.id).await?;
         let typeids = queries::type_id_list_by_name(
             &mut conn,
             &root.schema_name,
@@ -377,20 +353,12 @@ impl Schema {
         let mut types = HashSet::new();
         let mut fields = HashMap::new();
 
-        types.insert(root.query.clone());
-        fields.insert(
-            root.query.clone(),
-            root_cols
-                .into_iter()
-                .map(|c| (c.column_name, c.graphql_type))
-                .collect(),
-        );
-        for tid in typeids {
-            types.insert(tid.graphql_name.clone());
+        for tyid in &typeids {
+            types.insert(tyid.graphql_name.clone());
 
-            let columns = queries::list_column_by_id(&mut conn, tid.id).await?;
+            let columns = queries::list_column_by_id(&mut conn, tyid.id).await?;
             fields.insert(
-                tid.graphql_name,
+                tyid.graphql_name.to_owned(),
                 columns
                     .into_iter()
                     .map(|c| (c.column_name, c.graphql_type))
@@ -400,21 +368,21 @@ impl Schema {
 
         let foreign_keys = get_foreign_keys(&root.schema)?;
 
-        Ok(Schema {
+        let mut schema = Schema {
             version: root.version,
             namespace: root.schema_name,
             identifier: root.schema_identifier,
-            query: root.query,
             types,
             fields,
             foreign_keys,
-        })
+        };
+
+        schema.register_queryroot_fields();
+
+        Ok(schema)
     }
 
-    pub fn check_type(&self, type_name: &str) -> bool {
-        self.types.contains(type_name)
-    }
-
+    /// Return the field type for a given field name on a given type name.
     pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
         match self.fields.get(cond) {
             Some(fieldset) => fieldset.get(name),
@@ -427,99 +395,116 @@ impl Schema {
             }
         }
     }
+
+    /// Ensure the given type is included in this `Schema`'s types
+    pub fn check_type(&self, type_name: &str) -> bool {
+        self.types.contains(type_name)
+    }
+
+    // **** HACK ****
+
+    // Below we manually add a `QueryRoot` type, with its corresponding field types
+    // data being each `Object` defined in the schema.
+
+    // We need this because at the moment our GraphQL query parsing is tightly-coupled
+    // to our old way of resolving GraphQL types (which was using a `QueryType` object
+    // defined in a `TypeSystemDefinition::Schema`)
+    pub fn register_queryroot_fields(&mut self) {
+        self.fields.insert(
+            QUERY_ROOT.to_string(),
+            self.fields
+                .keys()
+                .map(|k| (k.to_lowercase(), k.clone()))
+                .collect::<HashMap<String, String>>(),
+        );
+    }
 }
 
-#[allow(clippy::type_complexity)]
-fn get_foreign_keys(
-    schema: &str,
-) -> Result<HashMap<String, HashMap<String, (String, String)>>, IndexerSchemaError> {
+fn get_foreign_keys(schema: &str) -> IndexerSchemaDbResult<ForeignKeyMap> {
     let (ast, primitives, types_map) = parse_schema_for_ast_data(schema)?;
-    let mut foreign_keys: HashMap<String, HashMap<String, (String, String)>> =
-        HashMap::new();
+    let mut fks: ForeignKeyMap = HashMap::new();
 
     for def in ast.definitions.iter() {
         if let TypeSystemDefinition::Type(t) = def {
             if let TypeKind::Object(o) = &t.node.kind {
+                // TODO: Add more ignorable types as needed - and use lazy_static!
                 if t.node.name.to_string().to_lowercase() == *"queryroot" {
                     continue;
                 }
                 for field in o.fields.iter() {
-                    if let ColumnType::ForeignKey =
-                        get_column_type(&field.node.ty.node, &primitives)
-                    {
-                        let directives::Join {
-                            reference_field_name,
-                            ..
-                        } = get_join_directive_info(
-                            &field.node,
-                            &t.node.name.to_string(),
-                            &types_map,
-                        );
+                    let col_type = get_column_type(&field.node.ty.node, &primitives)?;
+                    #[allow(clippy::single_match)]
+                    match col_type {
+                        ColumnType::ForeignKey => {
+                            let directives::Join {
+                                reference_field_name,
+                                ..
+                            } = get_join_directive_info(
+                                &field.node,
+                                &t.node.name.to_string(),
+                                &types_map,
+                            );
 
-                        match foreign_keys
-                            .get_mut(&t.node.name.to_string().to_lowercase())
-                        {
-                            Some(foreign_keys_for_field) => {
-                                foreign_keys_for_field.insert(
-                                    field.node.name.to_string(),
-                                    (
-                                        field_type_table_name(&field.node),
-                                        reference_field_name.clone(),
-                                    ),
-                                );
-                            }
-                            None => {
-                                let foreign_keys_for_field = HashMap::from([(
-                                    field.node.name.to_string(),
-                                    (
-                                        field_type_table_name(&field.node),
-                                        reference_field_name.clone(),
-                                    ),
-                                )]);
-                                foreign_keys.insert(
-                                    t.node.name.to_string().to_lowercase(),
-                                    foreign_keys_for_field,
-                                );
+                            let fk = fks.get_mut(&t.node.name.to_string().to_lowercase());
+                            match fk {
+                                Some(fks_for_field) => {
+                                    fks_for_field.insert(
+                                        field.node.name.to_string(),
+                                        (
+                                            field_type_table_name(&field.node),
+                                            reference_field_name.clone(),
+                                        ),
+                                    );
+                                }
+                                None => {
+                                    let fks_for_field = HashMap::from([(
+                                        field.node.name.to_string(),
+                                        (
+                                            field_type_table_name(&field.node),
+                                            reference_field_name.clone(),
+                                        ),
+                                    )]);
+                                    fks.insert(
+                                        t.node.name.to_string().to_lowercase(),
+                                        fks_for_field,
+                                    );
+                                }
                             }
                         }
+                        _ => {}
                     }
                 }
             }
         }
     }
 
-    Ok(foreign_keys)
+    Ok(fks)
 }
 
-#[allow(clippy::type_complexity)]
 fn parse_schema_for_ast_data(
     schema: &str,
-) -> Result<(ServiceDocument, HashSet<String>, HashMap<String, String>), IndexerSchemaError>
-{
-    let base_ast = match parse_schema(BASE_SCHEMA) {
-        Ok(ast) => ast,
-        Err(e) => return Err(IndexerSchemaError::ParseError(e)),
-    };
+) -> IndexerSchemaDbResult<ServiceDocumentBundle> {
+    let base_ast = parse_schema(BASE_SCHEMA).map_err(IndexerSchemaDbError::ParseError)?;
+    let ast = parse_schema(schema).map_err(IndexerSchemaDbError::ParseError)?;
     let (primitives, _) = build_schema_objects_set(&base_ast);
 
-    let ast = match parse_schema(schema) {
-        Ok(ast) => ast,
-        Err(e) => return Err(IndexerSchemaError::ParseError(e)),
-    };
-    let types_map = build_schema_fields_and_types_map(&ast);
+    let types_map = build_schema_fields_and_types_map(&ast)?;
 
     Ok((ast, primitives, types_map))
 }
 
-fn get_column_type(field_type: &Type, primitives: &HashSet<String>) -> ColumnType {
+fn get_column_type(
+    field_type: &Type,
+    primitives: &HashSet<String>,
+) -> IndexerSchemaDbResult<ColumnType> {
     match &field_type.base {
         BaseType::Named(t) => {
             if !primitives.contains(t.as_str()) {
-                return ColumnType::ForeignKey;
+                return Ok(ColumnType::ForeignKey);
             }
-            ColumnType::from(t.as_str())
+            Ok(ColumnType::from(t.as_str()))
         }
-        BaseType::List(_) => panic!("List types not supported yet."),
+        BaseType::List(_) => Err(IndexerSchemaDbError::ListTypesUnsupported),
     }
 }
 
@@ -530,15 +515,6 @@ mod tests {
     #[test]
     fn test_schema_builder_for_basic_postgres_schema_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            thing1: Thing1
-            thing2: Thing2
-        }
-
         type Thing1 {
             id: ID!
             account: Address!
@@ -588,15 +564,6 @@ mod tests {
     fn test_schema_builder_for_basic_postgres_schema_with_optional_types_returns_proper_create_sql(
     ) {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            thing1: Thing1
-            thing2: Thing2
-        }
-
         type Thing1 {
             id: ID!
             account: Address
@@ -645,15 +612,6 @@ mod tests {
     #[test]
     fn test_schema_builder_for_postgres_indices_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            thing1: Thing1
-            thing2: Thing2
-        }
-
         type Payer {
             id: ID!
             account: Address! @indexed
@@ -686,16 +644,6 @@ mod tests {
     #[test]
     fn test_schema_builder_for_postgres_foreign_keys_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
         type Borrower {
             id: ID!
             account: Address! @indexed
@@ -730,16 +678,6 @@ mod tests {
     fn test_schema_builder_for_postgres_foreign_keys_with_directive_returns_proper_create_sql(
     ) {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
         type Borrower {
             account: Address! @indexed
         }
@@ -770,15 +708,6 @@ mod tests {
     #[test]
     fn test_schema_builder_for_postgres_creates_fk_with_proper_column_names() {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            account: Account
-            message: Message
-        }
-
         type Account {
             id: ID!
             account: Address! @indexed
@@ -803,17 +732,7 @@ mod tests {
 
     #[test]
     fn test_get_implicit_foreign_keys_for_schema() {
-        let implicit_fk_graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
+        let implicit_schema: &str = r#"
         type Borrower {
             id: ID!
             account: Address! @indexed
@@ -850,24 +769,13 @@ mod tests {
             )]),
         );
 
-        let implicit_fk_foreign_keys =
-            get_foreign_keys(implicit_fk_graphql_schema).unwrap();
-        assert_eq!(expected, implicit_fk_foreign_keys);
+        let implicit_fks = get_foreign_keys(implicit_schema).unwrap();
+        assert_eq!(expected, implicit_fks);
     }
 
     #[test]
     fn test_get_explicit_foreign_keys_for_schema() {
-        let explicit_fk_graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
+        let explicit_schema: &str = r#"
         type Borrower {
             account: Address! @indexed
         }
@@ -901,8 +809,7 @@ mod tests {
             )]),
         );
 
-        let explicit_fk_foreign_keys =
-            get_foreign_keys(explicit_fk_graphql_schema).unwrap();
-        assert_eq!(expected, explicit_fk_foreign_keys);
+        let explicit_fks = get_foreign_keys(explicit_schema).unwrap();
+        assert_eq!(expected, explicit_fks);
     }
 }

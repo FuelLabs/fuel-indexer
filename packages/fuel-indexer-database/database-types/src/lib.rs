@@ -33,7 +33,6 @@ pub struct GraphRoot {
     pub version: String,
     pub schema_name: String,
     pub schema_identifier: String,
-    pub query: String,
     pub schema: String,
 }
 
@@ -42,7 +41,6 @@ pub struct NewGraphRoot {
     pub version: String,
     pub schema_name: String,
     pub schema_identifier: String,
-    pub query: String,
     pub schema: String,
 }
 
