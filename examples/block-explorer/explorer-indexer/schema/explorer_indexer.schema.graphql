@@ -1,16 +1,3 @@
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    block: Block
-    tx: Tx
-    account: Account
-    contract: Contract
-}
-
-# https://ethereum.org/en/developers/docs/data-and-analytics/block-explorers/
-
 type Block {
     id: ID!
     height: UInt8!

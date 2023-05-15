@@ -162,16 +162,7 @@ pub mod {index_name}_index_mod {{
 }
 
 pub fn default_index_schema() -> String {
-    r#"schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    block: Block
-    tx: Tx
-}
-
-type Block {
+    r#"type Block {
     id: ID!
     height: UInt8!
     hash: Bytes32! @unique

@@ -8,8 +8,11 @@ use fuel_indexer_types::{
     Identity, Int16, Int4, Int8, Json, MessageId, Salt, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 pub use fuel_indexer_database_types as sql_types;
+
+pub const QUERY_ROOT: &str = "QueryRoot";
 
 #[cfg(feature = "db-models")]
 pub mod db;
@@ -19,6 +22,26 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 const MAX_CHARFIELD_LENGTH: usize = 255;
 const NULL_VALUE: &str = "NULL";
+
+pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
+
+#[derive(Error, Debug)]
+pub enum IndexerSchemaError {
+    #[error("Generic error")]
+    Generic,
+    #[error("GraphQL parser error: {0:?}")]
+    ParseError(#[from] async_graphql_parser::Error),
+    #[error("Could not build schema: {0:?}")]
+    SchemaConstructionError(String),
+    #[error("Unable to parse join directive: {0:?}")]
+    JoinDirectiveError(String),
+    #[error("Unable to build schema field and type map: {0:?}")]
+    FieldAndTypeConstructionError(String),
+    #[error("This TypeKind is unsupported.")]
+    UnsupportedTypeKind,
+    #[error("List types are unsupported.")]
+    ListTypesUnsupported,
+}
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {

@@ -19,7 +19,7 @@ hex = "0.4"
 serde = { default-features = false, features = ["derive"], workspace = true }
 sha2 = "0.9"
 sqlx = { version = "0.6", optional = true, features = ["postgres", "runtime-tokio-rustls", "bigdecimal"] }
-thiserror = { optional = true, workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
 insta = { version = "1.8", features = ["yaml"] }
@@ -28,7 +28,6 @@ insta = { version = "1.8", features = ["yaml"] }
 default = ["db-models"]
 db-models = [
     "sqlx",
-    "thiserror",
     "fuel-indexer-database",
 ]
 
