@@ -75,7 +75,7 @@ impl Database {
             "INSERT INTO {}
                 ({})
              VALUES
-                ({}, $1)
+                ({}, $1::bytea)
              ON CONFLICT(id)
              DO UPDATE SET {}",
             table,
