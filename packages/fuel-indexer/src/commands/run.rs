@@ -25,10 +25,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     let args_config = args.config.clone();
 
-    // start embedded postgres
     if embedded_database {
-        info!("Starting embedded postgres");
-
         use fuel_indexer_lib::defaults;
 
         let name = postgres_database
@@ -160,10 +157,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         }
     }
 
-    // stop embedded postgres
     if embedded_database {
-        info!("Stopping embedded postgres");
-
         use fuel_indexer_lib::defaults;
         let name = postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
 
