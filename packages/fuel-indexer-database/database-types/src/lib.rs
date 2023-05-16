@@ -10,6 +10,9 @@ use std::{
 };
 use strum::{AsRefStr, EnumString};
 
+use chrono::serde::ts_microseconds;
+use chrono::{DateTime, Utc};
+
 pub mod directives;
 
 #[derive(Debug)]
@@ -307,6 +310,8 @@ pub struct RegisteredIndex {
     pub namespace: String,
     pub identifier: String,
     pub pubkey: Option<String>,
+    #[serde(with = "ts_microseconds")]
+    pub created_at: DateTime<Utc>,
 }
 
 impl RegisteredIndex {
