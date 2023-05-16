@@ -143,6 +143,7 @@ impl NewColumn {
             ColumnType::Signature => "varchar(128)",
             ColumnType::Nonce => "varchar(64)",
             ColumnType::HexString => "varchar(10485760)",
+            ColumnType::Tai64Timestamp => "bigint",
         }
     }
 }
@@ -185,6 +186,7 @@ pub enum ColumnType {
     Signature = 24,
     Nonce = 25,
     HexString = 26,
+    Tai64Timestamp = 27,
 }
 
 impl From<ColumnType> for i32 {
@@ -217,6 +219,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Signature => 24,
             ColumnType::Nonce => 25,
             ColumnType::HexString => 26,
+            ColumnType::Tai64Timestamp => 27,
         }
     }
 }
@@ -257,6 +260,7 @@ impl From<i32> for ColumnType {
             24 => ColumnType::Signature,
             25 => ColumnType::Nonce,
             26 => ColumnType::HexString,
+            27 => ColumnType::Tai64Timestamp,
             _ => panic!("Invalid column type."),
         }
     }
@@ -292,6 +296,7 @@ impl From<&str> for ColumnType {
             "Signature" => ColumnType::Signature,
             "Nonce" => ColumnType::Nonce,
             "HexString" => ColumnType::HexString,
+            "Tai64Timestamp" => ColumnType::Tai64Timestamp,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }

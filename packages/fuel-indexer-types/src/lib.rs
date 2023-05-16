@@ -18,6 +18,7 @@ pub use fuels::{
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use tai64::Tai64;
 
 pub type Error = Box<dyn std::error::Error>;
 pub type ID = u64;
@@ -33,6 +34,7 @@ pub type Boolean = bool;
 pub type Signature = Bytes64;
 pub type Nonce = Bytes32;
 pub type HexString = Bytes;
+pub type Tai64Timestamp = Tai64;
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Blob(pub Vec<u8>);

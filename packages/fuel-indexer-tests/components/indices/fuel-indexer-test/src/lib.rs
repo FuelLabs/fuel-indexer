@@ -641,8 +641,10 @@ mod fuel_indexer_test {
         f3.save();
     }
 
-    fn fuel_indexer_triger_enum_error(enum_error: abi::Revert) {
-        Logger::info("fuel_indexer_triger_enum_error handling trigger_enum_error event.");
+    fn fuel_indexer_trigger_enum_error(enum_error: abi::Revert) {
+        Logger::info(
+            "fuel_indexer_trigger_enum_error handling trigger_enum_error event.",
+        );
 
         let abi::Revert {
             contract_id,
@@ -656,5 +658,18 @@ mod fuel_indexer_test {
         };
 
         entity.save();
+    }
+
+    fn fuel_indexer_block_explorer_types(_b: BlockData) {
+        let e = ExplorerEntity {
+            id: 8675309,
+            nonce: Nonce::default(),
+            time: Some(Tai64Timestamp::now()),
+            hex: Some(HexString::from("hello world")),
+            sig: Signature::default(),
+            bytes: Bytes64::default(),
+        };
+
+        e.save();
     }
 }

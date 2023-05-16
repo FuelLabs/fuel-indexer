@@ -22,6 +22,7 @@ scalar MessageId
 scalar Nonce
 scalar Salt
 scalar Signature
+scalar Tai64Timestamp
 scalar Timestamp
 scalar UInt16
 scalar UInt4
