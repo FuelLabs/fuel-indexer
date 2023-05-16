@@ -6,7 +6,7 @@ use core::convert::TryInto;
 use fuel_indexer_types::{
     try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
     HexString, Identity, Int16, Int4, Int8, Json, MessageId, Nonce, Salt, Signature,
-    UInt16, UInt4, UInt8,
+    Tai64Timestamp, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -46,31 +46,32 @@ pub enum IndexerSchemaError {
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
-    ID(Option<UInt8>),
     Address(Option<Address>),
     AssetId(Option<AssetId>),
-    Bytes4(Option<Bytes4>),
-    Bytes8(Option<Bytes8>),
+    Blob(Option<Blob>),
+    Boolean(Option<bool>),
     Bytes32(Option<Bytes32>),
+    Bytes4(Option<Bytes4>),
     Bytes64(Option<Bytes64>),
-    Signature(Option<Signature>),
+    Bytes8(Option<Bytes8>),
+    Charfield(Option<String>),
     ContractId(Option<ContractId>),
+    HexString(Option<HexString>),
+    ID(Option<UInt8>),
+    Identity(Option<Identity>),
+    Int16(Option<Int16>),
     Int4(Option<Int4>),
     Int8(Option<Int8>),
-    Int16(Option<Int16>),
-    UInt4(Option<UInt4>),
-    UInt8(Option<UInt8>),
-    UInt16(Option<UInt16>),
-    Timestamp(Option<Int8>),
-    Salt(Option<Salt>),
     Json(Option<Json>),
     MessageId(Option<MessageId>),
-    Charfield(Option<String>),
-    Identity(Option<Identity>),
-    Boolean(Option<bool>),
-    Blob(Option<Blob>),
     Nonce(Option<Nonce>),
-    HexString(Option<HexString>),
+    Salt(Option<Salt>),
+    Signature(Option<Signature>),
+    Tai64Timestamp(Option<Tai64Timestamp>),
+    Timestamp(Option<Int8>),
+    UInt16(Option<UInt16>),
+    UInt4(Option<UInt4>),
+    UInt8(Option<UInt8>),
 }
 
 impl FtColumn {
@@ -177,6 +178,11 @@ impl FtColumn {
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
                 FtColumn::Timestamp(Some(int8))
+            }
+            ColumnType::Tai64Timestamp => {
+                let ts = Tai64Timestamp::try_from(&bytes[..size])
+                    .expect("Invalid slice length");
+                FtColumn::Tai64Timestamp(Some(ts))
             }
             ColumnType::Blob => FtColumn::Blob(Some(bytes[..size].to_vec().into())),
             ColumnType::ForeignKey => {
@@ -291,6 +297,13 @@ impl FtColumn {
             },
             FtColumn::Timestamp(value) => match value {
                 Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Tai64Timestamp(value) => match value {
+                Some(val) => {
+                    let x = u64::from_le_bytes(val.to_bytes());
+                    format!("{x}")
+                }
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Salt(value) => match value {

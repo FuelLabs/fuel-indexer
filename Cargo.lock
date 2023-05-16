@@ -3225,6 +3225,7 @@ dependencies = [
  "fuels",
  "serde",
  "sha2 0.9.9",
+ "tai64",
 ]
 
 [[package]]
