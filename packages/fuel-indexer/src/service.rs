@@ -246,30 +246,23 @@ async fn create_service_task(
                             let mut manifest =
                                 Manifest::try_from(&assets.manifest.bytes)?;
 
-                            let mut conn = self.pool.acquire().await?;
-
                             if let Some(true) = manifest.database_sync {
                                 info!("Indexer is configured to sync database. Syncing database for Indexer({})", manifest.uid());
                                 let last_indexed_block = queries::get_last_indexed_block(
-                                    conn,
+                                    &mut conn,
                                     &manifest.namespace,
                                     &manifest.identifier,
                                 )
                                 .await?;
-                                manifest.start_block = Some(last_indexed_block)
+                                manifest.start_block = Some(last_indexed_block.try_into().unwrap_or_else(|_| {
+                                        info!("Failed to convert last indexed block to u64. Setting start block to 1.");
+                                        1
+                                    }))
                             } else {
                                 let start_block =
                                     get_start_block(&mut conn, &manifest).await?;
                                 manifest.start_block = Some(start_block);
                             }
-
-                            let (handle, _module_bytes, killer) =
-                                WasmIndexExecutor::create(
-                                    &config,
-                                    &manifest,
-                                    ExecutorSource::Registry(assets.wasm.bytes),
-                                )
-                                .await?;
 
                             let (handle, _module_bytes, killer) =
                                 WasmIndexExecutor::create(
