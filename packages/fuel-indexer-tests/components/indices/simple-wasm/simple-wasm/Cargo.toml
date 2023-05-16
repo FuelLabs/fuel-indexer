@@ -13,5 +13,5 @@ fuel-indexer-plugin = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-tx = { workspace = true }
 fuels = { workspace = true }
-serde = { default-features = false, features = ["derive"], workspace = true }
+serde = { features = ["derive"], workspace = true }
 sha2 = { version = "0.10" }
