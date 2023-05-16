@@ -14,6 +14,7 @@ end_block: 310000
 module:
   wasm: path/to/my/wasm_module.wasm
 report_metrics: true
+sync_database: ~
 ```
 
 ## `namespace`
