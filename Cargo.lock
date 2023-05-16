@@ -3221,6 +3221,7 @@ name = "fuel-indexer-types"
 version = "0.13.2"
 dependencies = [
  "bincode",
+ "bytes 1.4.0",
  "chrono",
  "fuel-tx",
  "fuel-types 0.26.3",

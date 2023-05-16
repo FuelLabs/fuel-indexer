@@ -4,8 +4,9 @@ extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
-    try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes8, ContractId,
-    Identity, Int16, Int4, Int8, Json, MessageId, Salt, UInt16, UInt4, UInt8,
+    try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
+    HexString, Identity, Int16, Int4, Int8, Json, MessageId, Nonce, Salt, Signature,
+    UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -51,6 +52,8 @@ pub enum FtColumn {
     Bytes4(Option<Bytes4>),
     Bytes8(Option<Bytes8>),
     Bytes32(Option<Bytes32>),
+    Bytes64(Option<Bytes64>),
+    Signature(Option<Signature>),
     ContractId(Option<ContractId>),
     Int4(Option<Int4>),
     Int8(Option<Int8>),
@@ -66,6 +69,8 @@ pub enum FtColumn {
     Identity(Option<Identity>),
     Boolean(Option<bool>),
     Blob(Option<Blob>),
+    Nonce(Option<Nonce>),
+    HexString(Option<HexString>),
 }
 
 impl FtColumn {
@@ -101,6 +106,26 @@ impl FtColumn {
                 let bytes =
                     Bytes32::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Bytes32(Some(bytes))
+            }
+            ColumnType::HexString => {
+                let bytes = HexString::try_from(bytes[..size].to_vec())
+                    .expect("Invalid slice length");
+                FtColumn::HexString(Some(bytes))
+            }
+            ColumnType::Nonce => {
+                let bytes =
+                    Nonce::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::Nonce(Some(bytes))
+            }
+            ColumnType::Bytes64 => {
+                let bytes =
+                    Bytes64::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::Bytes64(Some(bytes))
+            }
+            ColumnType::Signature => {
+                let bytes =
+                    Signature::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::Signature(Some(bytes))
             }
             ColumnType::ContractId => {
                 let contract_id =
@@ -217,6 +242,22 @@ impl FtColumn {
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Bytes32(value) => match value {
+                Some(val) => format!("'{val:x}'"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Nonce(value) => match value {
+                Some(val) => format!("'{val:x}'"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Bytes64(value) => match value {
+                Some(val) => format!("'{val:x}'"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::HexString(value) => match value {
+                Some(val) => format!("'{val:x}'"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Signature(value) => match value {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
