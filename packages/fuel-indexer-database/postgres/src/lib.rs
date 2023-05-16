@@ -402,7 +402,7 @@ pub async fn indexer_is_registered(
     {
         Some(row) => {
             let created_at: DateTime<Utc> = {
-                let created_at: NaiveDateTime = row.try_get("created_at")?;
+                let created_at: NaiveDateTime = row.get(4);
                 DateTime::<Utc>::from_utc(created_at, Utc)
             };
 
@@ -447,7 +447,7 @@ pub async fn register_indexer(
     let identifier: String = row.get(2);
     let pubkey = row.get(3);
     let created_at: DateTime<Utc> = {
-        let created_at: NaiveDateTime = row.try_get("created_at")?;
+        let created_at: NaiveDateTime = row.get(4);
         DateTime::<Utc>::from_utc(created_at, Utc)
     };
 
