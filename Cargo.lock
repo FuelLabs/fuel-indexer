@@ -2313,7 +2313,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
  "serde",
  "serde_json",
 ]
@@ -3167,7 +3166,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
  "serde",
  "sha2 0.10.6",
 ]
@@ -3916,8 +3914,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
- "instant",
  "serde",
 ]
 
@@ -3932,8 +3928,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
- "instant",
  "serde",
 ]
 
@@ -6544,7 +6538,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
  "serde",
  "sha2 0.10.6",
 ]
