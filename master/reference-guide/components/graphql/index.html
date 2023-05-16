@@ -153,9 +153,32 @@
 <li><a href="./schema.html">Schema</a></li>
 <li><a href="./directives.html">Directives</a></li>
 <li><a href="./api-server.html">GraphQL API Server</a></li>
-<li><a href="./queries.html">Queries</a></li>
+<li><a href="./queries/index.html">Queries</a></li>
 </ul>
-
+<h2 id="supported-functionality"><a class="header" href="#supported-functionality">Supported Functionality</a></h2>
+<p>While we do our best to maintain compliance with the GraphQL specification and parity with other implementations, there are a few things that are under development or will not be implemented. Here's a table describing our GraphQL functionality:</p>
+<pre><code class="language-text">✅ -- implemented
+🚧 -- planned or in development
+⛔ -- will not implement
+</code></pre>
+<div class="table-wrapper"><table><thead><tr><th>Functionality</th><th>Status</th><th>Notes</th></tr></thead><tbody>
+<tr><td>Arguments</td><td>✅</td><td><a href="./queries/search-filtering.html">read the Search and Filtering section</a></td></tr>
+<tr><td>Aliases</td><td>✅</td><td></td></tr>
+<tr><td>Fragments</td><td>✅</td><td>inline fragments are currently not supported</td></tr>
+<tr><td>Introspection</td><td>✅</td><td></td></tr>
+<tr><td>GraphQL Playground</td><td>✅</td><td><a href="./playground.html">read the Playground section</a></td></tr>
+<tr><td>Pagination</td><td>✅</td><td><a href="./queries/pagination.html">read the Pagination section</a></td></tr>
+<tr><td>Directives</td><td>🚧</td><td><a href="./directives.html">read the Directives section</a></td></tr>
+<tr><td>List Types</td><td>🚧</td><td></td></tr>
+<tr><td>Union Types</td><td>🚧</td><td></td></tr>
+<tr><td>Federation</td><td>🚧</td><td></td></tr>
+<tr><td>Variables</td><td>⛔</td><td></td></tr>
+<tr><td>Mutations</td><td>⛔</td><td></td></tr>
+<tr><td>Enums</td><td>⛔</td><td></td></tr>
+<tr><td>Interfaces</td><td>⛔</td><td></td></tr>
+<tr><td>Input Types</td><td>⛔</td><td></td></tr>
+</tbody></table>
+</div>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
