@@ -661,12 +661,11 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_block_explorer_types(_b: BlockData) {
-        Logger::info("fuel_indexer_block_explorer_types handling explorer_types event.");
         let e = ExplorerEntity {
             id: 8675309,
             nonce: Nonce::default(),
-            time: None,
-            hex: Some(HexString::from("hello world!")),
+            time: Some(Tai64Timestamp::now()),
+            hex: Some(HexString::from("hello world")),
             sig: Signature::default(),
             bytes: Bytes64::default(),
         };
