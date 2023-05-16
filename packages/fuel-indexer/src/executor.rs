@@ -270,8 +270,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
     }
 }
 
-fn sync_database(start_block: &u64) -> IndexerResult<()> {}
-
 #[async_trait]
 pub trait Executor
 where
