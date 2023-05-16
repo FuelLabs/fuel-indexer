@@ -11,4 +11,4 @@ crate-type = ['cdylib']
 fuel-indexer-macros = { workspace = true, default-features = false }
 fuel-indexer-plugin = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
-fuels = { default-features = false, workspace = true }
+fuels = { workspace = true }
