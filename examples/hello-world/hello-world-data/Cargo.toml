@@ -9,7 +9,7 @@ clap = { features = ["cargo", "derive", "env"], workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../packages/fuel-indexer-tests" }
 fuel-tx = { workspace = true }
-fuel-types = "0.26.0"
+fuel-types = { workspace = true }
 fuels = { workspace = true }
 rand = "0.8"
 thiserror = { workspace = true }
