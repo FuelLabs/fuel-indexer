@@ -92,6 +92,7 @@ lazy_static! {
         HashSet::from(["object"]);
 }
 
+/// Execute user query and return results.
 pub async fn execute_query(
     dynamic_request: Request,
     dynamic_schema: DynamicSchema,
@@ -99,6 +100,11 @@ pub async fn execute_query(
     pool: IndexerConnectionPool,
     schema: Schema,
 ) -> Result<Value, GraphqlError> {
+    // Because the schema types from async-graphql expect each field to be resolved
+    // separately, it became untenable to use the .execute() method of the dynamic
+    // schema itself to resolve queries. Instead, we set it to only resolve
+    // introspection queries and then pass any non-introspection queries to our
+    // custom query resolver.
     match dynamic_request.operation_name.as_deref() {
         Some("IntrospectionQuery") | Some("introspectionquery") => {
             let introspection_results = dynamic_schema.execute(dynamic_request).await;
@@ -136,6 +142,7 @@ pub async fn execute_query(
 pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, GraphqlError> {
     let mut schema_builder: DynamicSchemaBuilder =
         DynamicSchema::build("QueryRoot", None, None)
+            .introspection_only()
             .register(Scalar::new("Address"))
             .register(Scalar::new("AssetId"))
             .register(Scalar::new("Bytes4"))
@@ -214,6 +221,7 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
             object_field_enum = object_field_enum.item(field_name);
         }
 
+        // Fold corresponding input values into objects for that particular field.
         let filter_object = filter_input_vals
             .into_iter()
             .fold(
@@ -277,6 +285,9 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
                         }
                     }
                 };
+
+                // Because the dynamic schema is set to only resolve introspection
+                // queries, we set the resolvers to return a dummy value.
                 let mut field = Field::new(
                     field_name.clone(),
                     field_type.clone(),
@@ -325,6 +336,9 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
             }
         }
 
+        // Create object using all of the fields that were constructed for the entity
+        // and repeat the same process in order to allow for introspection-related
+        // functionality at the root query level.
         let obj = fields
             .into_iter()
             .fold(Object::new(entity_type.clone()), |obj, f| obj.field(f));
@@ -386,9 +400,7 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
     }
 
     schema_builder = schema_builder.register(sort_enum);
-
     schema_builder = schema_builder.register(query_root);
-    schema_builder = schema_builder.introspection_only();
 
     match schema_builder.finish() {
         Ok(schema) => Ok(schema),
