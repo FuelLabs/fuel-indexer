@@ -139,6 +139,10 @@ impl NewColumn {
             ColumnType::Charfield => "varchar(255)",
             ColumnType::Identity => "varchar(66)",
             ColumnType::Boolean => "boolean",
+            ColumnType::Bytes64 => "varchar(128)",
+            ColumnType::Signature => "varchar(128)",
+            ColumnType::Nonce => "varchar(64)",
+            ColumnType::HexString => "varchar(10485760)",
         }
     }
 }
@@ -177,6 +181,10 @@ pub enum ColumnType {
     Object = 20,
     UInt16 = 21,
     Int16 = 22,
+    Bytes64 = 23,
+    Signature = 24,
+    Nonce = 25,
+    HexString = 26,
 }
 
 impl From<ColumnType> for i32 {
@@ -205,6 +213,10 @@ impl From<ColumnType> for i32 {
             ColumnType::Object => 20,
             ColumnType::UInt16 => 21,
             ColumnType::Int16 => 22,
+            ColumnType::Bytes64 => 23,
+            ColumnType::Signature => 24,
+            ColumnType::Nonce => 25,
+            ColumnType::HexString => 26,
         }
     }
 }
@@ -241,6 +253,10 @@ impl From<i32> for ColumnType {
             20 => ColumnType::Object,
             21 => ColumnType::Int16,
             22 => ColumnType::UInt16,
+            23 => ColumnType::Bytes64,
+            24 => ColumnType::Signature,
+            25 => ColumnType::Nonce,
+            26 => ColumnType::HexString,
             _ => panic!("Invalid column type."),
         }
     }
@@ -272,6 +288,10 @@ impl From<&str> for ColumnType {
             "Object" => ColumnType::Object,
             "UInt16" => ColumnType::UInt16,
             "Int16" => ColumnType::Int16,
+            "Bytes64" => ColumnType::Bytes64,
+            "Signature" => ColumnType::Signature,
+            "Nonce" => ColumnType::Nonce,
+            "HexString" => ColumnType::HexString,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }
