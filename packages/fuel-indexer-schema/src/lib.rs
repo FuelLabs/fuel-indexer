@@ -180,8 +180,8 @@ impl FtColumn {
                 FtColumn::Timestamp(Some(int8))
             }
             ColumnType::Tai64Timestamp => {
-                let ts = Tai64Timestamp::try_from(&bytes[..size])
-                    .expect("Invalid slice length");
+                let x = hex::decode(&bytes[..size]).expect("Invalid slice length");
+                let ts = Tai64Timestamp::from_slice(&x).expect("Bad Tai64");
                 FtColumn::Tai64Timestamp(Some(ts))
             }
             ColumnType::Blob => FtColumn::Blob(Some(bytes[..size].to_vec().into())),
@@ -301,8 +301,8 @@ impl FtColumn {
             },
             FtColumn::Tai64Timestamp(value) => match value {
                 Some(val) => {
-                    let x = u64::from_le_bytes(val.to_bytes());
-                    format!("{x}")
+                    let x = hex::encode(val.to_bytes());
+                    format!("'{x}'")
                 }
                 None => String::from(NULL_VALUE),
             },

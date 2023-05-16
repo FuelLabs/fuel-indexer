@@ -143,7 +143,7 @@ impl NewColumn {
             ColumnType::Signature => "varchar(128)",
             ColumnType::Nonce => "varchar(64)",
             ColumnType::HexString => "varchar(10485760)",
-            ColumnType::Tai64Timestamp => "bigint",
+            ColumnType::Tai64Timestamp => "varchar(128)",
         }
     }
 }
