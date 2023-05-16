@@ -859,9 +859,12 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
 
     let body = resp.text().await.unwrap();
     let v: Value = serde_json::from_str(&body).unwrap();
-    let data = v["data"].as_object().expect("data is not an object");
+    let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data["aliased_entities"][0]["id"].as_i64(), Some(3));
-    assert_eq!(data["aliased_entities"][0]["foola"].as_str(), Some("blorp"));
-    assert_eq!(data["page_info"]["pages"].as_i64(), Some(3));
+    assert_eq!(data[0]["aliased_entities"][0]["id"].as_i64(), Some(3));
+    assert_eq!(
+        data[0]["aliased_entities"][0]["foola"].as_str(),
+        Some("blorp")
+    );
+    assert_eq!(data[0]["page_info"]["pages"].as_i64(), Some(3));
 }
