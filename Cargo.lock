@@ -2311,9 +2311,7 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "serde",
  "serde_json",
 ]
 
@@ -3915,9 +3913,7 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "serde",
 ]
 
 [[package]]
@@ -3929,9 +3925,7 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "serde",
 ]
 
 [[package]]
