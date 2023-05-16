@@ -257,7 +257,13 @@ async fn create_service_task(
                                 manifest.start_block = Some(last_indexed_block.try_into().unwrap_or_else(|_| {
                                         info!("Failed to convert last indexed block to u64. Setting start block to 1.");
                                         1
-                                    }))
+                                    }));
+
+                                info!(
+                                    "Indexer({}) will start indexing from block {}",
+                                    manifest.uid(),
+                                    manifest.start_block.unwrap()
+                                );
                             } else {
                                 let start_block =
                                     get_start_block(&mut conn, &manifest).await?;

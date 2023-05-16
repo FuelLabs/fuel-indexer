@@ -922,6 +922,6 @@ async fn test_will_sync_indexer_from_database_when_enabled() {
     //restart test componenets
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
     manifest.database_sync = Some(true);
-    updated_test_manifest_asset_paths(&mut manifest);
+    update_test_manifest_asset_paths(&mut manifest);
     srvc.register_index_from_manifest(manifest).await.unwrap();
 }

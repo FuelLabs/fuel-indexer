@@ -89,3 +89,10 @@ The `report_metrics` field indicates whether to report Prometheus metrics to the
 _Optional._
 
 The `resumable` field contains a boolean value and specifies whether the indexer should synchronise with the latest block if it has fallen out of sync.
+
+## `database_sync`
+
+_Optional._
+
+The `database_sync` field contains a boolean value and specifies whether the indexer should only listen to events from the block after the last indexed block already present in the database. If `database_sync`, is null or false, the indexer will listen to events starting from the `start_block`, even if those blocks are already present in the database. 
+
