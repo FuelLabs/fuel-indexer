@@ -13,7 +13,7 @@ pub use fuels::{
     core::try_from_bytes,
     types::{
         bech32::{Bech32Address, Bech32ContractId},
-        Bits256, SizedAsciiString,
+        Identity, SizedAsciiString,
     },
 };
 use serde::{Deserialize, Serialize};

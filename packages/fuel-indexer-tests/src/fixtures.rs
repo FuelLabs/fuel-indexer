@@ -404,8 +404,7 @@ pub async fn connect_to_deployed_contract(
 }
 
 pub mod test_web {
-    use std::path::Path;
-
+    use crate::{defaults, fixtures::get_test_contract_id};
     use actix_service::ServiceFactory;
     use actix_web::{
         body::MessageBody,
@@ -413,11 +412,9 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
-    use fuels::prelude::{CallParameters, Provider, WalletUnlocked};
-
     use fuel_indexer_types::{AssetId, Bech32ContractId};
-
-    use crate::{defaults, fixtures::get_test_contract_id};
+    use fuels::prelude::{CallParameters, Provider, WalletUnlocked};
+    use std::path::Path;
 
     use super::{tx_params, FuelIndexerTest};
 
