@@ -99,6 +99,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         .unwrap_or_else(|e| panic!("Node connection failed: {e}."));
 
     async move {
+        if let Some(true) = manifest.database_sync {
+            info!("Syncing from the database...");
+            sync_database(&start_block).await;
+        }
         let mut retry_count = 0;
 
         // If we're testing or running on CI, we don't want indexers to run forever. But in production
@@ -265,6 +269,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         }
     }
 }
+
+fn sync_database(start_block: &u64) -> IndexerResult<()> {}
 
 #[async_trait]
 pub trait Executor

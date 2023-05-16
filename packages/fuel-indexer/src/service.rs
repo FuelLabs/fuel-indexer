@@ -246,6 +246,16 @@ async fn create_service_task(
                             let mut manifest =
                                 Manifest::try_from(&assets.manifest.bytes)?;
 
+                            if let Some(true) = manifest.database_sync {
+                                info!("Indexer is configured to sync database. Syncing database for Indexer({})", manifest.uid());
+                                let mut conn = self.pool.acquire().await?;
+                                queries::get_last_block(
+                                    conn,
+                                    &manifest.namespace,
+                                    &manifest.identifier,
+                                );
+                            }
+
                             let start_block =
                                 get_start_block(&mut conn, &manifest).await?;
                             manifest.start_block = Some(start_block);

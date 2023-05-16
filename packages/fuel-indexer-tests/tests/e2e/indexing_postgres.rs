@@ -884,3 +884,22 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
     assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
 }
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_will_sync_indexer_from_database_when_enabled() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_index_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/enum_error").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+}

@@ -86,6 +86,7 @@ pub struct Manifest {
     pub end_block: Option<u64>,
     #[serde(default)]
     pub resumable: Option<bool>,
+    pub database_sync: Option<bool>,
 }
 
 impl Manifest {

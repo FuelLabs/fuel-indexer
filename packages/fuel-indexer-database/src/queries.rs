@@ -388,3 +388,15 @@ pub async fn delete_nonce(
         IndexerConnection::Postgres(ref mut c) => postgres::delete_nonce(c, nonce).await,
     }
 }
+
+pub async fn get_last_block(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::get_last_block(c, namespace, identifier).await
+        }
+    }
+}

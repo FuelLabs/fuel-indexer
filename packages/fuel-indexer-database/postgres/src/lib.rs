@@ -857,3 +857,23 @@ pub async fn remove_latest_assets_for_indexer(
 
     Ok(())
 }
+
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn get_last_block(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+) -> sqlx::Resukt<u64> {
+    let indexer_id = get_indexer_id(conn, namespace, identifier).await?;
+
+    let row = sqlx::query(&format!(
+        "SELECT * FROM indexer_blocks WHERE indexer_id = {indexer_id} ORDER BY id DESC LIMIT 1",
+        indexer_id = indexer_id
+    ))
+    .fetch_one(conn)
+    .await?;
+
+    let block_number: u64 = row.get(2);
+
+    Ok(block_number)
+}
