@@ -4,90 +4,109 @@ use async_graphql::{
     dynamic::{
         Enum, Field, FieldFuture, FieldValue, InputObject, InputValue, Object,
         ResolverContext, Scalar, Schema as DynamicSchema,
-        SchemaBuilder as DynamicSchemaBuilder, TypeRef,
+        SchemaBuilder as DynamicSchemaBuilder, SchemaError, TypeRef,
     },
     Request,
 };
 use async_graphql_parser::types::{BaseType, Type};
+use async_graphql_value::Name;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_schema::db::tables::Schema;
 use lazy_static::lazy_static;
 use serde_json::Value;
 
-use crate::graphql::{GraphqlError, GraphqlQueryBuilder};
+use crate::graphql::{GraphqlError, GraphqlQueryBuilder, GraphqlResult};
 
 lazy_static! {
+    /// Scalar types supported by the Fuel indexer. These should always stay up-to-date
+    /// with fuel-indexer-schema/src/base.graphql.
     static ref SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
-        "ID",
         "Address",
         "AssetId",
-        "Bytes4",
-        "Bytes8",
-        "Bytes32",
-        "Bytes64",
-        "Int4",
-        "Int8",
-        "Int16",
-        "UInt4",
-        "UInt8",
-        "UInt16",
-        "Timestamp",
-        "Color",
-        "ContractId",
-        "Salt",
-        "Json",
-        "MessageId",
-        "Charfield",
-        "Identity",
+        "Blob",
         "Boolean",
-        "Blob",
-    ]);
-    static ref NUMERIC_SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
-        "Int4",
-        "Int8",
-        "Int16",
-        "UInt4",
-        "UInt8",
-        "UInt16",
-        "Timestamp",
-    ]);
-    static ref STRING_SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
-        "ID",
-        "Address",
-        "AssetId",
-        "Bytes4",
-        "Bytes8",
         "Bytes32",
+        "Bytes4",
         "Bytes64",
+        "Bytes8",
+        "Charfield",
         "Color",
         "ContractId",
-        "Salt",
+        "ID",
+        "Identity",
+        "Int16",
+        "Int4",
+        "Int8",
         "Json",
         "MessageId",
-        "Charfield",
-        "Identity",
-        "Blob",
-    ]);
-    static ref SORTABLE_SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
-        "ID",
-        "Address",
-        "AssetId",
-        "Int4",
-        "Int8",
-        "Int16",
+        "Salt",
+        "Timestamp",
+        "UInt16",
         "UInt4",
         "UInt8",
-        "UInt16",
+    ]);
+
+    /// Scalar types that are represented by a numeric type. This ensures that the
+    /// value type provided for a field filter matches the type of the scalar itself.
+    static ref NUMERIC_SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
+        "Int16",
+        "Int4",
+        "Int8",
         "Timestamp",
+        "UInt16",
+        "UInt4",
+        "UInt8",
+    ]);
+
+    /// Scalar types that are represented by a string type. This ensures that the
+    /// value type provided for a field filter matches the type of the scalar itself.
+    static ref STRING_SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
+        "Address",
+        "AssetId",
+        "Blob",
+        "Bytes32",
+        "Bytes4",
+        "Bytes64",
+        "Bytes8",
+        "Charfield",
         "Color",
         "ContractId",
-        "Salt",
-        "MessageId",
-        "Charfield",
+        "ID",
         "Identity",
+        "Json",
+        "MessageId",
+        "Salt",
     ]);
+
+    /// Scalar types that can be sorted.
+    static ref SORTABLE_SCALAR_TYPES: HashSet<&'static str> = HashSet::from([
+        "Address",
+        "AssetId",
+        "Charfield",
+        "Color",
+        "ContractId",
+        "ID",
+        "Identity",
+        "Int16",
+        "Int4",
+        "Int8",
+        "MessageId",
+        "Salt",
+        "Timestamp",
+        "UInt16",
+        "UInt4",
+        "UInt8",
+    ]);
+
+    /// Entity types that should be ignored when building the dynamic schema,
+    /// so that they do not appear in the generated documentation. This is done
+    /// to hide internal Fuel indexer entity types.
     static ref IGNORED_ENTITY_TYPES: HashSet<&'static str> =
         HashSet::from(["IndexMetadataEntity", "QueryRoot"]);
+
+    /// Entity fields that should be ignored when building the dynamic schema,
+    /// so that they do not appear in the generated documentation. This is done
+    /// to hide internal Fuel indexer entity fields.
     static ref IGNORED_ENTITY_FIELD_TYPES: HashSet<&'static str> =
         HashSet::from(["object"]);
 }
@@ -99,7 +118,7 @@ pub async fn execute_query(
     user_query: String,
     pool: IndexerConnectionPool,
     schema: Schema,
-) -> Result<Value, GraphqlError> {
+) -> GraphqlResult<Value> {
     // Because the schema types from async-graphql expect each field to be resolved
     // separately, it became untenable to use the .execute() method of the dynamic
     // schema itself to resolve queries. Instead, we set it to only resolve
@@ -108,14 +127,7 @@ pub async fn execute_query(
     match dynamic_request.operation_name.as_deref() {
         Some("IntrospectionQuery") | Some("introspectionquery") => {
             let introspection_results = dynamic_schema.execute(dynamic_request).await;
-            let data = match introspection_results.data.into_json() {
-                Ok(json) => json,
-                Err(_) => {
-                    return Err(GraphqlError::DynamicQueryError(
-                        "Could not parse introspection response".to_string(),
-                    ))
-                }
-            };
+            let data = introspection_results.data.into_json()?;
 
             Ok(serde_json::json!({ "data": data }))
         }
@@ -126,43 +138,34 @@ pub async fn execute_query(
             let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
             let mut conn = match pool.acquire().await {
                 Ok(c) => c,
-                Err(e) => return Err(GraphqlError::DynamicQueryError(e.to_string())),
+                Err(e) => return Err(GraphqlError::QueryError(e.to_string())),
             };
 
-            match queries::run_query(&mut conn, queries).await {
-                Ok(val) => Ok(serde_json::json!({ "data": val })),
-                Err(e) => Err(GraphqlError::DynamicQueryError(e.to_string())),
-            }
+            let result = match queries::run_query(&mut conn, queries).await {
+                Ok(r) => Ok(r),
+                Err(e) => Err(GraphqlError::QueryError(e.to_string())),
+            };
+
+            result
         }
     }
 }
 
 /// Build a dynamic schema. This allows for introspection, which allows for extensive
 /// auto-documentation and code suggestions.
-pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, GraphqlError> {
-    let mut schema_builder: DynamicSchemaBuilder =
-        DynamicSchema::build("QueryRoot", None, None)
-            .introspection_only()
-            .register(Scalar::new("Address"))
-            .register(Scalar::new("AssetId"))
-            .register(Scalar::new("Bytes4"))
-            .register(Scalar::new("Bytes8"))
-            .register(Scalar::new("Bytes32"))
-            .register(Scalar::new("Bytes64"))
-            .register(Scalar::new("Int4"))
-            .register(Scalar::new("Int8"))
-            .register(Scalar::new("Int16"))
-            .register(Scalar::new("UInt4"))
-            .register(Scalar::new("UInt8"))
-            .register(Scalar::new("UInt16"))
-            .register(Scalar::new("Timestamp"))
-            .register(Scalar::new("ContractId"))
-            .register(Scalar::new("Salt"))
-            .register(Scalar::new("Json"))
-            .register(Scalar::new("MessageId"))
-            .register(Scalar::new("Charfield"))
-            .register(Scalar::new("Identity"))
-            .register(Scalar::new("Blob"));
+pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
+    // Register scalars into dynamic schema so that users are aware of their existence.
+    let mut schema_builder: DynamicSchemaBuilder = SCALAR_TYPES.iter().fold(
+        DynamicSchema::build("QueryRoot", None, None).introspection_only(),
+        |sb, scalar| {
+            // These types come pre-included in SchemaBuilder.
+            if *scalar == "Boolean" || *scalar == "ID" {
+                sb
+            } else {
+                sb.register(Scalar::new(*scalar))
+            }
+        },
+    );
 
     let mut input_objects = Vec::new();
     let mut filter_object_list = Vec::new();
@@ -170,6 +173,9 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
     let mut sort_object_list = Vec::new();
     let mut sorter_tracker = HashMap::new();
 
+    // async-graphql requires a root query object so that the base entity
+    // fields can be queried against. This QueryRoot does not appear anywhere
+    // in the generated documentation nor is it required for the user to create.
     let mut query_root = Object::new("QueryRoot");
 
     let sort_enum = Enum::new("SortOrder").item("asc").item("desc");
@@ -193,31 +199,21 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
                 continue;
             }
 
-            if let Some(field_type) = Type::new(&field_type) {
-                match field_type.base {
-                    BaseType::Named(field_type) => {
-                        let (field_filter_input_val, mut field_input_objects) =
-                            create_filter_val_and_objects_for_field(
-                                &field_name,
-                                field_type.as_str(),
-                                entity_type.as_str(),
-                            );
+            let (field_filter_input_val, mut field_input_objects, sort_input_val) =
+                create_input_values_and_objects_for_field(
+                    field_name.clone(),
+                    field_type,
+                    entity_type.clone(),
+                    &sort_enum,
+                )?;
 
-                        filter_input_vals.push(field_filter_input_val);
-                        input_objects.append(&mut field_input_objects);
+            filter_input_vals.push(field_filter_input_val);
+            input_objects.append(&mut field_input_objects);
 
-                        if SORTABLE_SCALAR_TYPES.contains(field_type.as_str()) {
-                            let sort_input_val = InputValue::new(
-                                field_name.clone(),
-                                TypeRef::named(sort_enum.type_name()),
-                            );
-                            sort_input_vals.push(sort_input_val);
-                        }
-                    }
-                    // TODO: Do the same as above, but with list type
-                    BaseType::List(_) => {}
-                }
+            if let Some(input_val) = sort_input_val {
+                sort_input_vals.push(input_val);
             }
+
             object_field_enum = object_field_enum.item(field_name);
         }
 
@@ -238,10 +234,9 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
             |input_obj, input_val| input_obj.field(input_val),
         );
 
-        // For some reason, async-graphql does not implement the Hash
-        // trait on any of the type that we need for dynamic schemas.
-        // So we are essentially making a hash table ourselves for
-        // the filter and sort objects.
+        // For some reason, async-graphql does not implement the Hash trait on any of the
+        // type that we need for dynamic schemas. So we are essentially making a hash table
+        // ourselves for the filter and sort objects.
         filter_object_list.push(filter_object);
         filter_tracker.insert(entity_type.to_string(), filter_object_list.len() - 1);
 
@@ -286,51 +281,15 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
                     }
                 };
 
-                // Because the dynamic schema is set to only resolve introspection
-                // queries, we set the resolvers to return a dummy value.
-                let mut field = Field::new(
-                    field_name.clone(),
-                    field_type.clone(),
-                    move |_ctx: ResolverContext| {
-                        return FieldFuture::new(async move {
-                            Ok(Some(FieldValue::value(1)))
-                        });
-                    },
+                let field = create_field_with_assoc_args(
+                    field_name,
+                    field_type,
+                    base_field_type,
+                    &filter_tracker,
+                    &filter_object_list,
+                    &sorter_tracker,
+                    &sort_object_list,
                 );
-
-                if let BaseType::Named(field_type) = base_field_type {
-                    if !SCALAR_TYPES.contains(field_type.as_str()) {
-                        if let Some(idx) = filter_tracker.get(&field_type.to_string()) {
-                            let object_filter_arg = InputValue::new(
-                                "filter",
-                                TypeRef::named(filter_object_list[*idx].type_name()),
-                            );
-                            field = field.argument(object_filter_arg)
-                        }
-
-                        if let Some(idx) = sorter_tracker.get(&field_type.to_string()) {
-                            let object_sort_arg = InputValue::new(
-                                "order",
-                                TypeRef::named(sort_object_list[*idx].type_name()),
-                            );
-                            field = field.argument(object_sort_arg);
-                        }
-
-                        let offset_arg =
-                            InputValue::new("offset", TypeRef::named(TypeRef::INT));
-
-                        let limit_arg =
-                            InputValue::new("first", TypeRef::named(TypeRef::INT));
-
-                        let id_selection_arg =
-                            InputValue::new("id", TypeRef::named(TypeRef::STRING));
-
-                        field = field
-                            .argument(offset_arg)
-                            .argument(limit_arg)
-                            .argument(id_selection_arg);
-                    }
-                }
 
                 fields.push(field);
             }
@@ -343,44 +302,20 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
             .into_iter()
             .fold(Object::new(entity_type.clone()), |obj, f| obj.field(f));
 
-        let mut field = Field::new(
+        // Create field for entity object and add it to root level query object.
+        let field = create_field_with_assoc_args(
             entity_type.to_string().to_lowercase(),
             TypeRef::named(obj.type_name()),
-            move |_ctx: ResolverContext| {
-                return FieldFuture::new(async move { Ok(Some(FieldValue::value(1))) });
-            },
+            &BaseType::Named(Name::new(obj.type_name())),
+            &filter_tracker,
+            &filter_object_list,
+            &sorter_tracker,
+            &sort_object_list,
         );
-
-        if !SCALAR_TYPES.contains(&obj.type_name().to_string().as_str()) {
-            if let Some(idx) = filter_tracker.get(&obj.type_name().to_string()) {
-                let object_filter_arg = InputValue::new(
-                    "filter",
-                    TypeRef::named(filter_object_list[*idx].type_name()),
-                );
-                field = field.argument(object_filter_arg)
-            }
-
-            if let Some(idx) = sorter_tracker.get(&obj.type_name().to_string()) {
-                let sort_obj_arg = InputValue::new(
-                    "order",
-                    TypeRef::named(sort_object_list[*idx].type_name()),
-                );
-                field = field.argument(sort_obj_arg)
-            }
-
-            let offset_arg = InputValue::new("offset", TypeRef::named(TypeRef::INT));
-
-            let limit_arg = InputValue::new("first", TypeRef::named(TypeRef::INT));
-
-            let id_selection_arg = InputValue::new("id", TypeRef::named(TypeRef::INT));
-
-            field = field
-                .argument(offset_arg)
-                .argument(limit_arg)
-                .argument(id_selection_arg);
-
+        if !SCALAR_TYPES.contains(&obj.type_name()) {
             query_root = query_root.field(field);
         }
+
         schema_builder = schema_builder.register(obj).register(object_field_enum);
     }
 
@@ -402,10 +337,109 @@ pub async fn build_dynamic_schema(schema: Schema) -> Result<DynamicSchema, Graph
     schema_builder = schema_builder.register(sort_enum);
     schema_builder = schema_builder.register(query_root);
 
-    match schema_builder.finish() {
-        Ok(schema) => Ok(schema),
-        Err(e) => Err(GraphqlError::DynamicSchemaBuildError(e)),
+    Ok(schema_builder.finish()?)
+
+    // match schema_builder.finish() {
+    //     Ok(schema) => Ok(schema),
+    //     Err(e) => Err(GraphqlError::DynamicSchemaBuildError(e)),
+    // }
+}
+
+/// Create input values and objects that are used to build introspection information for a field.
+fn create_input_values_and_objects_for_field(
+    field_name: String,
+    field_type: String,
+    entity_type: String,
+    sort_enum: &Enum,
+) -> GraphqlResult<(InputValue, Vec<InputObject>, Option<InputValue>)> {
+    let field_type =
+        Type::new(&field_type).ok_or(GraphqlError::DynamicSchemaBuildError(
+            SchemaError::from("Could not create type defintion from field type string"),
+        ))?;
+
+    match field_type.base {
+        BaseType::Named(field_type) => {
+            let (field_filter_input_val, field_input_objects) =
+                create_filter_val_and_objects_for_field(
+                    &field_name,
+                    field_type.as_str(),
+                    entity_type.as_str(),
+                );
+
+            if SORTABLE_SCALAR_TYPES.contains(field_type.as_str()) {
+                let sort_input_val = InputValue::new(
+                    field_name.clone(),
+                    TypeRef::named(sort_enum.type_name()),
+                );
+                return Ok((
+                    field_filter_input_val,
+                    field_input_objects,
+                    Some(sort_input_val),
+                ));
+            }
+
+            Ok((field_filter_input_val, field_input_objects, None))
+        }
+        // TODO: Do the same as above, but with list type
+        BaseType::List(_) => unimplemented!("List types are not currently supported"),
     }
+}
+
+fn create_field_with_assoc_args(
+    field_name: String,
+    field_type_ref: TypeRef,
+    base_field_type: &BaseType,
+    filter_tracker: &HashMap<String, usize>,
+    filter_object_list: &Vec<InputObject>,
+    sorter_tracker: &HashMap<String, usize>,
+    sort_object_list: &Vec<InputObject>,
+) -> Field {
+    // Because the dynamic schema is set to only resolve introspection
+    // queries, we set the resolvers to return a dummy value.
+    let mut field = Field::new(
+        field_name.clone(),
+        field_type_ref.clone(),
+        move |_ctx: ResolverContext| {
+            return FieldFuture::new(async move { Ok(Some(FieldValue::value(1))) });
+        },
+    );
+
+    match base_field_type {
+        BaseType::Named(field_type) => {
+            if !SCALAR_TYPES.contains(field_type.as_str()) {
+                if let Some(idx) = filter_tracker.get(&field_type.to_string()) {
+                    let object_filter_arg = InputValue::new(
+                        "filter",
+                        TypeRef::named(filter_object_list[*idx].type_name()),
+                    );
+                    field = field.argument(object_filter_arg)
+                }
+
+                if let Some(idx) = sorter_tracker.get(&field_type.to_string()) {
+                    let object_sort_arg = InputValue::new(
+                        "order",
+                        TypeRef::named(sort_object_list[*idx].type_name()),
+                    );
+                    field = field.argument(object_sort_arg);
+                }
+
+                let offset_arg = InputValue::new("offset", TypeRef::named(TypeRef::INT));
+
+                let limit_arg = InputValue::new("first", TypeRef::named(TypeRef::INT));
+
+                let id_selection_arg =
+                    InputValue::new("id", TypeRef::named(TypeRef::STRING));
+
+                field = field
+                    .argument(offset_arg)
+                    .argument(limit_arg)
+                    .argument(id_selection_arg);
+            }
+        }
+        BaseType::List(_) => unimplemented!("List types are not currently supported"),
+    }
+
+    field
 }
 
 /// Build the filter objects for a particular field. The resultant object
@@ -424,7 +458,7 @@ fn create_filter_val_and_objects_for_field<'a>(
         TypeRef::STRING
     };
 
-    // TODO: Add AND, OR, and NOT
+    // TODO: Add support for logical operators -- https://github.com/FuelLabs/fuel-indexer/issues/917
 
     let complex_comparison_obj =
         InputObject::new(format!("{obj_name}_{field_name}_ComplexComparisonObject"))

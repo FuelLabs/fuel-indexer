@@ -61,13 +61,13 @@ pub(crate) async fn query_graph(
         .await
     {
         Ok(schema) => {
-            let dynamic_schema = build_dynamic_schema(schema.clone()).await?;
+            let dynamic_schema = build_dynamic_schema(schema.clone())?;
             let user_query = req.0.query.clone();
             let response =
                 execute_query(req.into_inner(), dynamic_schema, user_query, pool, schema)
                     .await?;
-            let json_res = axum::Json(response);
-            Ok(json_res)
+            let data = serde_json::json!({ "data": response });
+            Ok(axum::Json(data))
         }
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
             "The graph '{namespace}.{identifier}' was not found."
