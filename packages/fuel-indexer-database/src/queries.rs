@@ -1,6 +1,9 @@
 use crate::{types::*, IndexerConnection};
 use fuel_indexer_postgres as postgres;
-use sqlx::types::JsonValue;
+use sqlx::types::{
+    chrono::{DateTime, Utc},
+    JsonValue,
+};
 
 pub async fn graph_root_latest(
     conn: &mut IndexerConnection,
@@ -188,7 +191,8 @@ pub async fn register_indexer(
 ) -> sqlx::Result<RegisteredIndex> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::register_indexer(c, namespace, identifier, pubkey).await
+            let created_at = DateTime::<Utc>::from(std::time::SystemTime::now());
+            postgres::register_indexer(c, namespace, identifier, pubkey, created_at).await
         }
     }
 }
