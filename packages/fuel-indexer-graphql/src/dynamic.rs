@@ -141,12 +141,10 @@ pub async fn execute_query(
                 Err(e) => return Err(GraphqlError::QueryError(e.to_string())),
             };
 
-            let result = match queries::run_query(&mut conn, queries).await {
+            match queries::run_query(&mut conn, queries).await {
                 Ok(r) => Ok(r),
                 Err(e) => Err(GraphqlError::QueryError(e.to_string())),
-            };
-
-            result
+            }
         }
     }
 }
@@ -338,11 +336,6 @@ pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
     schema_builder = schema_builder.register(query_root);
 
     Ok(schema_builder.finish()?)
-
-    // match schema_builder.finish() {
-    //     Ok(schema) => Ok(schema),
-    //     Err(e) => Err(GraphqlError::DynamicSchemaBuildError(e)),
-    // }
 }
 
 /// Create input values and objects that are used to build introspection information for a field.
@@ -367,10 +360,8 @@ fn create_input_values_and_objects_for_field(
                 );
 
             if SORTABLE_SCALAR_TYPES.contains(field_type.as_str()) {
-                let sort_input_val = InputValue::new(
-                    field_name.clone(),
-                    TypeRef::named(sort_enum.type_name()),
-                );
+                let sort_input_val =
+                    InputValue::new(field_name, TypeRef::named(sort_enum.type_name()));
                 return Ok((
                     field_filter_input_val,
                     field_input_objects,
@@ -390,19 +381,16 @@ fn create_field_with_assoc_args(
     field_type_ref: TypeRef,
     base_field_type: &BaseType,
     filter_tracker: &HashMap<String, usize>,
-    filter_object_list: &Vec<InputObject>,
+    filter_object_list: &[InputObject],
     sorter_tracker: &HashMap<String, usize>,
-    sort_object_list: &Vec<InputObject>,
+    sort_object_list: &[InputObject],
 ) -> Field {
     // Because the dynamic schema is set to only resolve introspection
     // queries, we set the resolvers to return a dummy value.
-    let mut field = Field::new(
-        field_name.clone(),
-        field_type_ref.clone(),
-        move |_ctx: ResolverContext| {
+    let mut field =
+        Field::new(field_name, field_type_ref, move |_ctx: ResolverContext| {
             return FieldFuture::new(async move { Ok(Some(FieldValue::value(1))) });
-        },
-    );
+        });
 
     match base_field_type {
         BaseType::Named(field_type) => {
