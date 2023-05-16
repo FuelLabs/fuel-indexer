@@ -117,10 +117,11 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
                 ..Config::local_node()
             };
             tokio::spawn(async move {
-                let _ = FuelService::new_node(config).await;
+                let node = FuelService::new_node(config).await.unwrap();
+                Some(node)
             })
         } else {
-            tokio::spawn(futures::future::ready(()))
+            tokio::spawn(futures::future::ready(None))
         }
     };
 
