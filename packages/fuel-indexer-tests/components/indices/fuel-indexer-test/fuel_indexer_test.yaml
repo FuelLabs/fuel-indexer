@@ -9,5 +9,5 @@ identifier: index1
 module:
   wasm: target/wasm32-unknown-unknown/release/fuel_indexer_test.wasm
 report_metrics: true
-database_sync: true
+database_sync: ~ 
 

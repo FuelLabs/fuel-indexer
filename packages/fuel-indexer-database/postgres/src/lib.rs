@@ -859,11 +859,11 @@ pub async fn remove_latest_assets_for_indexer(
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn get_last_block(
+pub async fn get_last_indexed_block(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Resukt<u64> {
+) -> sqlx::Result<i64> {
     let indexer_id = get_indexer_id(conn, namespace, identifier).await?;
 
     let row = sqlx::query(&format!(
@@ -873,7 +873,7 @@ pub async fn get_last_block(
     .fetch_one(conn)
     .await?;
 
-    let block_number: u64 = row.get(2);
+    let block_number: i64 = row.get(2);
 
     Ok(block_number)
 }

@@ -389,14 +389,14 @@ pub async fn delete_nonce(
     }
 }
 
-pub async fn get_last_block(
+pub async fn get_last_indexed_block(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<()> {
+) -> sqlx::Result<i64> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::get_last_block(c, namespace, identifier).await
+            postgres::get_last_indexed_block(c, namespace, identifier).await
         }
     }
 }

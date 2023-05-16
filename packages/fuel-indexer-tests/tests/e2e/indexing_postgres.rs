@@ -897,9 +897,31 @@ async fn test_will_sync_indexer_from_database_when_enabled() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/enum_error").to_request();
-    let _ = app.call(req).await;
+    //send the request five times
+    for _ in 0..5 {
+        let req = test::TestRequest::post().uri("/pingentity").to_request();
+        let _ = app.call(req).await;
+    }
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
     node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let block_row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.block ORDER BY height DESC LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    let height = block_row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+    let timestamp: i64 = block_row.get(2);
+    assert!(height >= 1);
+    assert!(timestamp > 0);
+
+    //restart test componenets
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+    manifest.database_sync = Some(true);
+    updated_test_manifest_asset_paths(&mut manifest);
+    srvc.register_index_from_manifest(manifest).await.unwrap();
 }

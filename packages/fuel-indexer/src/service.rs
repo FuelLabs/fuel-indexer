@@ -246,19 +246,31 @@ async fn create_service_task(
                             let mut manifest =
                                 Manifest::try_from(&assets.manifest.bytes)?;
 
+                            let mut conn = self.pool.acquire().await?;
+
                             if let Some(true) = manifest.database_sync {
                                 info!("Indexer is configured to sync database. Syncing database for Indexer({})", manifest.uid());
-                                let mut conn = self.pool.acquire().await?;
-                                queries::get_last_block(
+                                let last_indexed_block = queries::get_last_indexed_block(
                                     conn,
                                     &manifest.namespace,
                                     &manifest.identifier,
-                                );
+                                )
+                                .await?;
+                                manifest.start_block = Some(last_indexed_block)
+                            } else {
+                                let start_block =
+                                    get_start_block(&mut conn, &manifest).await?;
+                                manifest.start_block = Some(start_block);
                             }
 
-                            let start_block =
-                                get_start_block(&mut conn, &manifest).await?;
-                            manifest.start_block = Some(start_block);
+                            let (handle, _module_bytes, killer) =
+                                WasmIndexExecutor::create(
+                                    &config,
+                                    &manifest,
+                                    ExecutorSource::Registry(assets.wasm.bytes),
+                                )
+                                .await?;
+
                             let (handle, _module_bytes, killer) =
                                 WasmIndexExecutor::create(
                                     &config,
