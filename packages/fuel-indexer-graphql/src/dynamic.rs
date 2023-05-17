@@ -129,7 +129,7 @@ pub async fn execute_query(
             let introspection_results = dynamic_schema.execute(dynamic_request).await;
             let data = introspection_results.data.into_json()?;
 
-            Ok(serde_json::json!({ "data": data }))
+            Ok(data)
         }
         Some(_) | None => {
             let query =
