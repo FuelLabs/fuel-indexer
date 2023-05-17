@@ -185,8 +185,6 @@ jobs:
 
   cargo-build-test-binaries:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
-    needs: 
-      - rustup-target-add-wasm32
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
