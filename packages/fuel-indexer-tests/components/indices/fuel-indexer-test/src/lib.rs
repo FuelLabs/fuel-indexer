@@ -683,3 +683,4 @@ mod fuel_indexer_test {
         Logger::info("fuel_indexer_trigger_enum handling trigger_enum event.");
     }
 }
+
