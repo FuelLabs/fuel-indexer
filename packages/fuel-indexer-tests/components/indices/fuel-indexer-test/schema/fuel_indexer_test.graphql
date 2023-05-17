@@ -223,3 +223,4 @@ type EnumError{
     contract_id: ContractId!
     error_val: UInt8!
 }
+
