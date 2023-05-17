@@ -797,7 +797,7 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
-            r#"{"query": "query { filterentity(order: { desc: foola }) { id foola } }" }"#,
+            r#"{"query": "query { filterentity(order: { foola: desc }) { id foola } }" }"#,
         )
         .send()
         .await
@@ -849,7 +849,7 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
-            r#"{"query": "query { aliased_entities: filterentity(order: { asc: foola }, first: 1, offset: 1) { id foola } }" }"#,
+            r#"{"query": "query { aliased_entities: filterentity(order: { foola: asc }, first: 1, offset: 1) { id foola } }" }"#,
         )
         .send()
         .await
@@ -858,11 +858,13 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
     server_handle.abort();
 
     let body = resp.text().await.unwrap();
-    println!("{body}");
     let v: Value = serde_json::from_str(&body).unwrap();
-    let data = v["data"].as_object().expect("data is not an object");
+    let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data["aliased_entities"][0]["id"].as_i64(), Some(3));
-    assert_eq!(data["aliased_entities"][0]["foola"].as_str(), Some("blorp"));
-    assert_eq!(data["page_info"]["pages"].as_i64(), Some(3));
+    assert_eq!(data[0]["aliased_entities"][0]["id"].as_i64(), Some(3));
+    assert_eq!(
+        data[0]["aliased_entities"][0]["foola"].as_str(),
+        Some("blorp")
+    );
+    assert_eq!(data[0]["page_info"]["pages"].as_i64(), Some(3));
 }

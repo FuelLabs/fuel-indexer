@@ -3032,13 +3032,16 @@ dependencies = [
 name = "fuel-indexer-graphql"
 version = "0.13.2"
 dependencies = [
+ "async-graphql 5.0.8",
  "async-graphql-parser 5.0.8",
  "async-graphql-value 5.0.8",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-schema",
  "fuel-indexer-types",
+ "lazy_static",
  "pretty_assertions",
+ "serde_json",
  "thiserror",
 ]
 

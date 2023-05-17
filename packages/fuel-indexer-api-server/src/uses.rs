@@ -1,6 +1,6 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
-    models::{QueryResponse, VerifySignatureRequest},
+    models::VerifySignatureRequest,
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
@@ -17,7 +17,7 @@ use fuel_indexer_database::{
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
-use fuel_indexer_graphql::graphql::GraphqlQueryBuilder;
+use fuel_indexer_graphql::dynamic::{build_dynamic_schema, execute_query};
 use fuel_indexer_lib::{
     config::{
         auth::{AuthenticationStrategy, Claims},
@@ -29,7 +29,7 @@ use fuel_indexer_lib::{
         ServiceRequest, ServiceStatus,
     },
 };
-use fuel_indexer_schema::db::{manager::SchemaManager, tables::Schema};
+use fuel_indexer_schema::db::manager::SchemaManager;
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
@@ -60,13 +60,15 @@ pub(crate) async fn query_graph(
         .load_schema(&namespace, &identifier)
         .await
     {
-        Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
-            Ok(query_res) => Ok(axum::Json(query_res)),
-            Err(e) => {
-                error!("query_graph error: {e}");
-                Err(e)
-            }
-        },
+        Ok(schema) => {
+            let dynamic_schema = build_dynamic_schema(schema.clone())?;
+            let user_query = req.0.query.clone();
+            let response =
+                execute_query(req.into_inner(), dynamic_schema, user_query, pool, schema)
+                    .await?;
+            let data = serde_json::json!({ "data": response });
+            Ok(axum::Json(data))
+        }
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
             "The graph '{namespace}.{identifier}' was not found."
         )))),
@@ -366,44 +368,12 @@ pub(crate) async fn verify_signature(
     unreachable!();
 }
 
-pub async fn run_query(
-    query: String,
-    schema: Schema,
-    pool: &IndexerConnectionPool,
-) -> ApiResult<Value> {
-    let builder = GraphqlQueryBuilder::new(&schema, &query)?;
-    let query = builder.build()?;
-
-    let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
-
-    let mut conn = pool.acquire().await?;
-
-    match queries::run_query(&mut conn, queries).await {
-        Ok(ans) => {
-            let ans_json: Value = serde_json::from_value(ans)?;
-
-            // If the response is paginated, remove the array wrapping.
-            if ans_json[0].get("page_info").is_some() {
-                Ok(serde_json::json!(QueryResponse {
-                    data: ans_json[0].clone()
-                }))
-            } else {
-                Ok(serde_json::json!(QueryResponse { data: ans_json }))
-            }
-        }
-        Err(e) => {
-            error!("Error querying database: {e}.");
-            Err(e.into())
-        }
-    }
-}
-
 pub async fn gql_playground(
     Path((namespace, identifier)): Path<(String, String)>,
 ) -> ApiResult<impl IntoResponse> {
     let html = playground_source(
         GraphQLPlaygroundConfig::new(&format!("/api/graph/{namespace}/{identifier}"))
-            .with_setting("scehma.polling.enable", false),
+            .with_setting("schema.polling.enable", false),
     );
 
     let response = Response::builder()
