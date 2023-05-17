@@ -52,6 +52,12 @@ spec:
             - "--jwt-issuer"
             - "{{ .Values.app.jwt.issuer }}"
             - "--verbose"
+            - "--rate-limit"
+            - "--rate-limit-request-count"
+            - "3"
+            - "--rate-limit-window-size"
+            - "10"
+            - "--verbose"
           env:
           - name: POSTGRES_PASSWORD
             valueFrom:

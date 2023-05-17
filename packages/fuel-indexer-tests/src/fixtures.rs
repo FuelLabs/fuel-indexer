@@ -5,7 +5,7 @@ use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{
     config::{
         auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
-        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
+        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig, RateLimitConfig,
     },
     defaults::SERVICE_REQUEST_CHANNEL_SIZE,
     utils::{derive_socket_addr, ServiceRequest},
@@ -281,6 +281,8 @@ pub async fn api_server_app_postgres(
         });
 
     let config = IndexerConfig {
+        indexer_handler_timeout: config_defaults::INDEXER_HANDLER_TIMEOUT,
+        log_level: "info".to_string(),
         verbose: true,
         local_fuel_node: false,
         indexer_net_config: false,
@@ -291,6 +293,7 @@ pub async fn api_server_app_postgres(
         stop_idle_indexers: true,
         run_migrations: false,
         authentication: AuthenticationConfig::default(),
+        rate_limit: RateLimitConfig::default(),
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -312,6 +315,8 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
         });
 
     let config = IndexerConfig {
+        indexer_handler_timeout: config_defaults::INDEXER_HANDLER_TIMEOUT,
+        log_level: "info".to_string(),
         verbose: true,
         local_fuel_node: false,
         indexer_net_config: false,
@@ -328,6 +333,7 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
             jwt_issuer: Some("FuelLabs".to_string()),
             jwt_expiry: Some(config_defaults::JWT_EXPIRY_SECS)
         },
+        rate_limit: RateLimitConfig::default(),
     };
 
     let (tx, _rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
@@ -346,6 +352,8 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
         });
 
     let config = IndexerConfig {
+        indexer_handler_timeout: config_defaults::INDEXER_HANDLER_TIMEOUT,
+        log_level: "info".to_string(),
         verbose: true,
         local_fuel_node: false,
         indexer_net_config: false,
@@ -356,6 +364,7 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
         stop_idle_indexers: true,
         run_migrations: false,
         authentication: AuthenticationConfig::default(),
+        rate_limit: RateLimitConfig::default(),
     };
 
     let (_tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);

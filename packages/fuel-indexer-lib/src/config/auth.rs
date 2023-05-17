@@ -14,11 +14,20 @@ const JWT_ISSUER_KEY: &str = "JWT_ISSUER";
 /// Indexer service authentication configuration.
 #[derive(Clone, Deserialize)]
 pub struct AuthenticationConfig {
+    /// Require users to authenticate for some operations.
     pub enabled: bool,
+
+    /// Authentication scheme used.
     #[serde(default)]
     pub strategy: Option<AuthenticationStrategy>,
+
+    /// Secret used for JWT scheme (if JWT scheme is specified).
     pub jwt_secret: Option<String>,
+
+    /// Issuer of JWT claims (if JWT scheme is specified).
     pub jwt_issuer: Option<String>,
+
+    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
     pub jwt_expiry: Option<usize>,
 }
 
@@ -90,10 +99,13 @@ pub enum AuthenticationStrategy {
 pub struct Claims {
     /// Subject (to whom token refers).
     pub sub: String,
+
     /// Issuer.
     pub iss: String,
+
     /// Issued at (as UTC timestamp).
     pub iat: usize,
+
     /// Expiration time (as UTC timestamp).
     pub exp: usize,
 }

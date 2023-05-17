@@ -18,11 +18,22 @@ use url::{ParseError, Url};
 #[serde(rename_all = "snake_case")]
 pub enum DatabaseConfig {
     Postgres {
+        /// Postgres username.
         user: String,
+
+        /// Postgres password.
         password: String,
+
+        /// Postgres host.
         host: String,
+
+        /// Postgres port.
         port: String,
+
+        /// Postgres database.
         database: String,
+
+        /// Verbose output for database operations.
         verbose: String,
     },
 }
