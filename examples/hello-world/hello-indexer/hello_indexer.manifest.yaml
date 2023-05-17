@@ -11,3 +11,4 @@ contract_id: fuel18hchrf7f4hnpkl84sqf8k0sk8gcauzeemzwgweea8dgr7eachv4s86r9t9
 start_block: 1
 end_block: ~
 resumable: ~
+database_sync: ~

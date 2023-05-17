@@ -9,3 +9,4 @@ end_block: ~
 graphql_schema: examples/hello-world-native/hello-indexer-native/schema/hello_indexer_native.schema.graphql
 module: native
 resumable: ~
+database_sync: ~
