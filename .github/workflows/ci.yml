@@ -212,7 +212,6 @@ jobs:
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
-      - cargo-build-test-binaries
       - cargo-build-indexer
       - cargo-toml-fmt-check
       - set-env-vars
