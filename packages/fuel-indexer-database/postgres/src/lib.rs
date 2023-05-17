@@ -15,6 +15,8 @@ use fuel_indexer_metrics::METRICS;
 #[cfg(feature = "metrics")]
 use fuel_indexer_macro_utils::metrics;
 
+use chrono::{DateTime, NaiveDateTime, Utc};
+
 const NONCE_EXPIRY: u64 = 3600; // 1 hour
 
 #[cfg_attr(feature = "metrics", metrics)]
@@ -395,12 +397,20 @@ pub async fn indexer_is_registered(
     .fetch_optional(conn)
     .await?
     {
-        Some(row) => Ok(Some(RegisteredIndex {
-            id: row.get(0),
-            namespace: row.get(1),
-            identifier: row.get(2),
-            pubkey: row.get(3),
-        })),
+        Some(row) => {
+            let created_at: DateTime<Utc> = {
+                let created_at: NaiveDateTime = row.get(4);
+                DateTime::<Utc>::from_utc(created_at, Utc)
+            };
+
+            Ok(Some(RegisteredIndex {
+                id: row.get(0),
+                namespace: row.get(1),
+                identifier: row.get(2),
+                pubkey: row.get(3),
+                created_at,
+            }))
+        }
         None => Ok(None),
     }
 }
@@ -411,19 +421,21 @@ pub async fn register_indexer(
     namespace: &str,
     identifier: &str,
     pubkey: Option<&str>,
+    created_at: DateTime<Utc>,
 ) -> sqlx::Result<RegisteredIndex> {
     if let Some(index) = indexer_is_registered(conn, namespace, identifier).await? {
         return Ok(index);
     }
 
     let row = sqlx::query(
-        "INSERT INTO index_registry (namespace, identifier, pubkey)
-         VALUES ($1, $2, $3)
+        "INSERT INTO index_registry (namespace, identifier, pubkey, created_at)
+         VALUES ($1, $2, $3, $4)
          RETURNING *",
     )
     .bind(namespace)
     .bind(identifier)
     .bind(pubkey)
+    .bind(created_at)
     .fetch_one(conn)
     .await?;
 
@@ -431,12 +443,17 @@ pub async fn register_indexer(
     let namespace: String = row.get(1);
     let identifier: String = row.get(2);
     let pubkey = row.get(3);
+    let created_at: DateTime<Utc> = {
+        let created_at: NaiveDateTime = row.get(4);
+        DateTime::<Utc>::from_utc(created_at, Utc)
+    };
 
     Ok(RegisteredIndex {
         id,
         namespace,
         identifier,
         pubkey,
+        created_at,
     })
 }
 
@@ -453,12 +470,17 @@ pub async fn all_registered_indexers(
             let namespace: String = row.get(1);
             let identifier: String = row.get(2);
             let pubkey = row.get(3);
+            let created_at: DateTime<Utc> = {
+                let created_at: NaiveDateTime = row.get(4);
+                DateTime::<Utc>::from_utc(created_at, Utc)
+            };
 
             RegisteredIndex {
                 id,
                 namespace,
                 identifier,
                 pubkey,
+                created_at,
             }
         })
         .collect::<Vec<RegisteredIndex>>())
@@ -496,7 +518,10 @@ pub async fn register_indexer_asset(
 ) -> sqlx::Result<IndexAsset> {
     let index = match indexer_is_registered(conn, namespace, identifier).await? {
         Some(index) => index,
-        None => register_indexer(conn, namespace, identifier, pubkey).await?,
+        None => {
+            let created_at = DateTime::<Utc>::from(SystemTime::now());
+            register_indexer(conn, namespace, identifier, pubkey, created_at).await?
+        }
     };
 
     let digest = sha256_digest(&bytes);
