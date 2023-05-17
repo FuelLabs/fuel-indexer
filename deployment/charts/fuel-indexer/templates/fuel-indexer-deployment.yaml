@@ -53,9 +53,9 @@ spec:
             - "{{ .Values.app.jwt.issuer }}"
             - "--verbose"
             - "--rate-limit"
-            - "--rate-limit-rps"
+            - "--rate-limit-request-count"
             - "3"
-            - "--rate-limit-window"
+            - "--rate-limit-window-size"
             - "10"
             - "--verbose"
           env:
