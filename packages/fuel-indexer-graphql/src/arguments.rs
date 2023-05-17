@@ -398,9 +398,9 @@ pub fn parse_argument_into_param(
         )?))),
         "order" => {
             if let Value::Object(obj) = value {
-                if let Some((sort_order, predicate)) = obj.into_iter().next() {
-                    if let Value::Enum(field) = predicate {
-                        if schema.field_type(entity_type, field.as_str()).is_some() {
+                if let Some((field, sort_order)) = obj.into_iter().next() {
+                    if schema.field_type(entity_type, field.as_str()).is_some() {
+                        if let Value::Enum(sort_order) = sort_order {
                             match sort_order.as_str() {
                                 "asc" => {
                                     return Ok(ParamType::Sort(
@@ -420,15 +420,10 @@ pub fn parse_argument_into_param(
                                     ))
                                 }
                             }
-                        } else {
-                            return Err(GraphqlError::UnrecognizedField(
-                                entity_type.to_string(),
-                                field.to_string(),
-                            ));
                         }
                     } else {
                         return Err(GraphqlError::UnsupportedValueType(
-                            predicate.to_string(),
+                            sort_order.to_string(),
                         ));
                     }
                 }
