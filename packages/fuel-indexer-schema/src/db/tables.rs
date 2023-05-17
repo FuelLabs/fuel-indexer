@@ -110,7 +110,7 @@ impl SchemaBuilder {
             version: version.clone(),
             schema_name: namespace.clone(),
             schema_identifier: identifier.clone(),
-            schema,
+            schema: schema.clone(),
         };
         queries::new_graph_root(conn, new_root).await?;
 
@@ -323,7 +323,7 @@ impl SchemaBuilder {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Schema {
     pub version: String,
     pub namespace: String,

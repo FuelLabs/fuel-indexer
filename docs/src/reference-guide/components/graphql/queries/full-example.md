@@ -9,7 +9,7 @@ Putting all of that together, we get the following query:
 ```graphql
 query {
   transactions: tx(
-    order: { desc: timestamp },
+    order: { timestamp: desc },
     filter: { value: { gt: 0 } },
     first: 2,
     offset: 0

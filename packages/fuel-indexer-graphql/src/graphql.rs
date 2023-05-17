@@ -12,12 +12,16 @@ use fuel_indexer_schema::{
 use std::collections::HashMap;
 use thiserror::Error;
 
-type GraphqlResult<T> = Result<T, GraphqlError>;
+pub type GraphqlResult<T> = Result<T, GraphqlError>;
 
 #[derive(Debug, Error)]
 pub enum GraphqlError {
     #[error("GraphQl Parser error: {0:?}")]
     ParseError(#[from] async_graphql_parser::Error),
+    #[error("Error building dynamic schema: {0:?}")]
+    DynamicSchemaBuildError(#[from] async_graphql::dynamic::SchemaError),
+    #[error("Could not parse introspection response: {0:?}")]
+    IntrospectionQueryError(#[from] serde_json::Error),
     #[error("Unrecognized Type: {0:?}")]
     UnrecognizedType(String),
     #[error("Unrecognized Field in {0:?}: {1:?}")]
@@ -46,6 +50,8 @@ pub enum GraphqlError {
     MissingPartnerForBinaryLogicalOperator,
     #[error("Paginated query must have an order applied to at least one field")]
     UnorderedPaginatedQuery,
+    #[error("Query error: {0:?}")]
+    QueryError(String),
 }
 
 #[derive(Clone, Debug)]
