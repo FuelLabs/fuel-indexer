@@ -30,7 +30,6 @@ pub type Timestamp = u64;
 pub type Charfield = String;
 pub type Boolean = bool;
 
-
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Blob(pub Vec<u8>);
 
