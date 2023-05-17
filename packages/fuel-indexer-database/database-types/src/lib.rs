@@ -448,7 +448,7 @@ impl CreateStatement for ForeignKey {
         match self.db_type {
             DbType::Postgres => {
                 format!(
-                    "ALTER TABLE {}.{} ADD CONSTRAINT {} FOREIGN KEY ({}) REFERENCES {}.{}({}) ON DELETE {} ON UPDATE {} INITIALLY DEFERRED;",
+                    "ALTER TABLE {}.{} ADD CONSTRAINT {} FOREIGN KEY IF NOT EXISTS ({}) REFERENCES {}.{}({}) ON DELETE {} ON UPDATE {} INITIALLY DEFERRED;",
                     self.namespace,
                     self.table_name,
                     self.name(),
