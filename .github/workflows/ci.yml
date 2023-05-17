@@ -183,18 +183,6 @@ jobs:
       - name: cargo build -p fuel-indexer --locked --all-features --all-targets
         run: cargo build -p fuel-indexer --locked --all-features --all-targets
 
-  cargo-build-test-binaries:
-    if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install toolchain
-        uses: dtolnay/rust-toolchain@stable 
-        with: 
-          targets: wasm32-unknown-unknown
-      - name: bash scripts/utils/refresh_test_db.bash && bash scripts/utils/build_test_wasm_module.bash
-        run: bash scripts/utils/refresh_test_db.bash && bash scripts/utils/build_test_wasm_module.bash
-
   cargo-test-unit-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
