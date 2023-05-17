@@ -2167,7 +2167,7 @@ type Character {
 </ul>
 <p>Let's use the <a href="reference-guide/components/graphql/queries/../../../examples/block-explorer.html">block explorer</a> example to illustrate how to use pagination.</p>
 <pre><code class="language-graphql">query {
-  blocks: block(order: { asc: height }, first: 5) {
+  blocks: block(order: { height: asc }, first: 5) {
     hash
     height
     timestamp
@@ -2218,7 +2218,7 @@ type Character {
 <p>As you can see, we get the requested amount of blocks and the corresponding fields. However, there's also a <code>page_info</code> object included in the response. This object tells us if there's another page available to request along with information that we can use to construct our next response. To get the next page, we'll add an <code>offset</code> to our original query:</p>
 <pre><code class="language-graphql">query {
   blocks: block(
-    order: { asc: height },
+    order: { height: asc },
     first: 5,
     offset: 5
   ) {
@@ -2274,7 +2274,7 @@ type Character {
 <p>Putting all of that together, we get the following query:</p>
 <pre><code class="language-graphql">query {
   transactions: tx(
-    order: { desc: timestamp },
+    order: { timestamp: desc },
     filter: { value: { gt: 0 } },
     first: 2,
     offset: 0
