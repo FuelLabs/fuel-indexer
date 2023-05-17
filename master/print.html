@@ -455,6 +455,9 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --indexer-handler-timeout &lt;INDEXER_HANDLER_TIMEOUT&gt;
+            Maximum length of time (in seconds) that an indexer's event handler can run before timing out. [default: 2]
+
         --indexer-net-config
             Allow network configuration via indexer manifests.
 
@@ -498,6 +501,15 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
+        --rate-limit
+            Enable rate limiting.
+
+        --rate-limit-rps &lt;RATE_LIMIT_RPS&gt;
+            Maximum number of requests to allow over --rate-limit-window.
+
+        --rate-limit-window &lt;RATE_LIMIT_WINDOW_SIZE&gt;
+            Number of seconds over which to allow --rate-limit-rps.
+
         --run-migrations
             Run database migrations before starting service.
 
@@ -519,6 +531,9 @@ OPTIONS:
 # # For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
 # # or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
+# # Log level passed to the Fuel Indexer service.
+# log_level: info
+
 # # Use Prometheus metrics reporting.
 # metrics: true
 
@@ -536,6 +551,9 @@ OPTIONS:
 
 # # Allow network configuration via indexer manifests.
 # indexer_net_config: false
+
+# # Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
+# indexer_handler_timeout: 2
 
 # # ***********************
 # # Fuel Node configuration
@@ -604,6 +622,21 @@ OPTIONS:
 
 #   # Amount of time (seconds) before expiring token if JWT authentication is specified.
 #   # jwt_expiry: 2592000
+
+# # ********************************
+# # Rate limit configuration options
+# # ********************************
+
+# rate_limit:
+#   # Enable rate limiting.
+#   enabled: false
+
+#   # Maximum number of requests to allow over --rate-limit-window..
+#   request_count: 10
+
+#   # Number of seconds over which to allow --rate-limit-rps.
+#   window_size: 5
+
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="hello-world"><a class="header" href="#hello-world">Hello World</a></h1>
 <p>Below is a simple &quot;Hello World&quot; Sway contract that we want to index. This contract has a function called <code>new_greeting</code> that logs a <code>Greeting</code> and a <code>Person</code>.</p>
@@ -1037,9 +1070,11 @@ mod explorer_index {
     }
 }</code></pre>
 <p>Once blocks have been added to the database by the indexer, you can query for them by using a query similar to the following:</p>
-<pre><code class="language-sh">curl -X POST -H &quot;Content-Type: application/graphql&quot; 
---data '{ &quot;query&quot;: &quot;query { block { id, height, timestamp } }&quot; }' 
-http://127.0.0.1:29987/api/graph/fuel_examples/explorer_indexer
+<pre><code class="language-sh">curl \
+   --request POST \
+   --url http://127.0.0.1:29987/api/graph/fuel_examples/explorer_indexer \
+   --header &quot;Content-Type: application/graphql&quot; \
+   --data '{ &quot;query&quot;: &quot;query { block { id, height, timestamp } }&quot; }'
 </code></pre>
 <pre><code class="language-json">{
    &quot;data&quot;: [

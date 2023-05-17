@@ -185,6 +185,9 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --indexer-handler-timeout &lt;INDEXER_HANDLER_TIMEOUT&gt;
+            Maximum length of time (in seconds) that an indexer's event handler can run before timing out. [default: 2]
+
         --indexer-net-config
             Allow network configuration via indexer manifests.
 
@@ -228,6 +231,15 @@ OPTIONS:
         --postgres-user &lt;POSTGRES_USER&gt;
             Postgres username.
 
+        --rate-limit
+            Enable rate limiting.
+
+        --rate-limit-rps &lt;RATE_LIMIT_RPS&gt;
+            Maximum number of requests to allow over --rate-limit-window.
+
+        --rate-limit-window &lt;RATE_LIMIT_WINDOW_SIZE&gt;
+            Number of seconds over which to allow --rate-limit-rps.
+
         --run-migrations
             Run database migrations before starting service.
 
@@ -249,6 +261,9 @@ OPTIONS:
 # # For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
 # # or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
+# # Log level passed to the Fuel Indexer service.
+# log_level: info
+
 # # Use Prometheus metrics reporting.
 # metrics: true
 
@@ -266,6 +281,9 @@ OPTIONS:
 
 # # Allow network configuration via indexer manifests.
 # indexer_net_config: false
+
+# # Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
+# indexer_handler_timeout: 2
 
 # # ***********************
 # # Fuel Node configuration
@@ -334,6 +352,21 @@ OPTIONS:
 
 #   # Amount of time (seconds) before expiring token if JWT authentication is specified.
 #   # jwt_expiry: 2592000
+
+# # ********************************
+# # Rate limit configuration options
+# # ********************************
+
+# rate_limit:
+#   # Enable rate limiting.
+#   enabled: false
+
+#   # Maximum number of requests to allow over --rate-limit-window..
+#   request_count: 10
+
+#   # Number of seconds over which to allow --rate-limit-rps.
+#   window_size: 5
+
 </code></pre>
 
                     </main>

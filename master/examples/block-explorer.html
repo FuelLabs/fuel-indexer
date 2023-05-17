@@ -442,9 +442,11 @@ mod explorer_index {
     }
 }</code></pre>
 <p>Once blocks have been added to the database by the indexer, you can query for them by using a query similar to the following:</p>
-<pre><code class="language-sh">curl -X POST -H &quot;Content-Type: application/graphql&quot; 
---data '{ &quot;query&quot;: &quot;query { block { id, height, timestamp } }&quot; }' 
-http://127.0.0.1:29987/api/graph/fuel_examples/explorer_indexer
+<pre><code class="language-sh">curl \
+   --request POST \
+   --url http://127.0.0.1:29987/api/graph/fuel_examples/explorer_indexer \
+   --header &quot;Content-Type: application/graphql&quot; \
+   --data '{ &quot;query&quot;: &quot;query { block { id, height, timestamp } }&quot; }'
 </code></pre>
 <pre><code class="language-json">{
    &quot;data&quot;: [
