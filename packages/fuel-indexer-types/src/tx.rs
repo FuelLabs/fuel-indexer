@@ -30,7 +30,6 @@ pub enum TransactionStatus {
     },
 }
 
-
 impl Default for TransactionStatus {
     fn default() -> Self {
         Self::Success {
