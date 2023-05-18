@@ -13,3 +13,4 @@ fuel-indexer-plugin = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuels = { workspace = true }
 serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
+
