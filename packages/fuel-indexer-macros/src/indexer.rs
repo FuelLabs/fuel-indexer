@@ -683,6 +683,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         None => proc_macro2::TokenStream::new(),
     };
 
+    
     // NOTE: https://nickb.dev/blog/cargo-workspace-and-the-feature-unification-pitfall/
     let graphql_tokens = process_graphql_schema(
         namespace,
