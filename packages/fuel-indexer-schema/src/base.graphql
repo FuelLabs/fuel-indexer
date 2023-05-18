@@ -6,7 +6,6 @@ scalar Bytes
 scalar Bytes32
 scalar Bytes4
 scalar Bytes64
-scalar Bytes64
 scalar Bytes8
 scalar Charfield
 scalar Color
