@@ -1,5 +1,5 @@
 [package]
-name = "explorer_indexer"
+name = "fuel_explorer"
 version = "0.0.0"
 edition = "2021"
 publish = false
@@ -12,5 +12,3 @@ fuel-indexer-macros = { workspace = true, default-features = false }
 fuel-indexer-plugin = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuels = { workspace = true }
-serde_json = { version = "1.0", default-features = false, features = ["alloc"] }
-
