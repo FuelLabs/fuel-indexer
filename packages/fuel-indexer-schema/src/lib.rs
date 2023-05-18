@@ -4,14 +4,9 @@ extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
-<<<<<<< HEAD
     try_from_bytes, Address, AssetId, Blob, BlockHeight, Bytes32, Bytes4, Bytes64,
     Bytes8, ContractId, HexString, Identity, Int16, Int4, Int8, Json, MessageId, Nonce,
-    Salt, Signature, Tai64Timestamp, TxId, UInt16, UInt4, UInt8,
-=======
-    try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes8, ContractId, Enum,
-    Identity, Int16, Int4, Int8, Json, MessageId, Salt, UInt16, UInt4, UInt8,
->>>>>>> c421f6cb (refactor graphql schema)
+    Salt, Signature, Tai64Timestamp, TxId, UInt16, UInt4, UInt8, Int1, UInt1,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -63,13 +58,13 @@ pub enum FtColumn {
     ContractId(Option<ContractId>),
     HexString(Option<HexString>),
     ID(Option<UInt8>),
-    Identity(Option<Identity>),
     Int16(Option<Int16>),
+    UInt1(Option<UInt1>),
+    Int1(Option<Int1>),
     Int4(Option<Int4>),
     Int8(Option<Int8>),
     Json(Option<Json>),
     MessageId(Option<MessageId>),
-<<<<<<< HEAD
     Nonce(Option<Nonce>),
     Salt(Option<Salt>),
     Signature(Option<Signature>),
@@ -80,13 +75,8 @@ pub enum FtColumn {
     UInt8(Option<UInt8>),
     TxId(Option<TxId>),
     BlockHeight(Option<BlockHeight>),
-=======
-    Charfield(Option<String>),
     Identity(Option<Identity>),
-    Boolean(Option<bool>),
-    Blob(Option<Blob>),
-    Enum(Option<Enum>),
->>>>>>> c421f6cb (refactor graphql schema)
+    Enum(Option<UInt1>),
 }
 
 impl FtColumn {
@@ -167,6 +157,18 @@ impl FtColumn {
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
                 FtColumn::Int8(Some(int8))
+            }
+            ColumnType::Int1 => {
+                let int1 = i8::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
+                FtColumn::Int1(Some(int1))
+            }
+            ColumnType::UInt1 => {
+                let uint1 = u8::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
+                FtColumn::UInt1(Some(uint1))
             }
             ColumnType::Int16 => {
                 let int16 = i128::from_le_bytes(
@@ -301,6 +303,14 @@ impl FtColumn {
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Int4(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Int1(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::UInt1(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },

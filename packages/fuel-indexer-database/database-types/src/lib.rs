@@ -146,6 +146,8 @@ impl NewColumn {
             ColumnType::Tai64Timestamp => "varchar(128)",
             ColumnType::TxId => "varchar(64)",
             ColumnType::Enum => "integer",
+            ColumnType::Int1 => "integer",
+            ColumnType::UInt1 => "integer",
         }
     }
 }
@@ -192,6 +194,8 @@ pub enum ColumnType {
     TxId = 28,
     BlockHeight = 29,
     Enum = 30,
+    Int1 = 31,
+    UInt1 = 32,
 }
 
 impl From<ColumnType> for i32 {
@@ -228,6 +232,8 @@ impl From<ColumnType> for i32 {
             ColumnType::TxId => 28,
             ColumnType::BlockHeight => 29,
             ColumnType::Enum => 30,
+            ColumnType::Int1 => 31,
+            ColumnType::UInt1 => 32,
         }
     }
 }
@@ -272,6 +278,8 @@ impl From<i32> for ColumnType {
             28 => ColumnType::TxId,
             29 => ColumnType::BlockHeight,
             30 => ColumnType::Enum,
+            31 => ColumnType::Int1,
+            32 => ColumnType::UInt1,
             _ => panic!("Invalid column type."),
         }
     }
@@ -311,6 +319,8 @@ impl From<&str> for ColumnType {
             "TxId" => ColumnType::TxId,
             "BlockHeight" => ColumnType::BlockHeight,
             "Enum" => ColumnType::Enum,
+            "Int1" => ColumnType::Int1,
+            "UInt1" => ColumnType::UInt1,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }

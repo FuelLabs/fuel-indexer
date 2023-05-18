@@ -1,25 +1,24 @@
-use crate::helpers::{const_item, row_extractor};
+use crate::helpers::{const_item, row_extractor, Schema};
 use async_graphql_parser::parse_schema;
 use async_graphql_parser::types::{
-    BaseType, FieldDefinition, ServiceDocument, Type, TypeDefinition, TypeKind,
-    TypeSystemDefinition,
+    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
 use fuel_indexer_database_types::directives;
 use fuel_indexer_lib::utils::local_repository_root;
 use fuel_indexer_schema::utils::{
-    build_schema_fields_and_types_map, build_schema_types_set, get_join_directive_info,
-    inject_native_entities_into_schema, schema_version, BASE_SCHEMA,
+    get_join_directive_info, inject_native_entities_into_schema, schema_version,
+    BASE_SCHEMA,
 };
 use fuel_indexer_types::type_id;
 use lazy_static::lazy_static;
 use quote::{format_ident, quote};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-/// Set of types that should be copied instead of referenced.
 lazy_static! {
+    /// Set of types that should be copied instead of referenced.
     static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
         "Json",
         "Charfield",
@@ -32,84 +31,6 @@ lazy_static! {
         "Option<Identity>",
         "Option<HexString>",
     ]);
-}
-
-/// A wrapper object used to encapsulate a lot of the boilerplate logic related
-/// to parsing schema, creating mappings of types, fields, objects, etc.
-struct Schema {
-    /// Namespace of the indexer.
-    namespace: String,
-
-    /// Identifier of the indexer.
-    identifier: String,
-
-    /// Whether we're building schema for native execution.
-    is_native: bool,
-
-    /// All unique names of types in the schema (whether objects, enums, or scalars).
-    type_names: HashSet<String>,
-
-    /// All unique names of enums in the schema.
-    enum_names: HashSet<String>,
-
-    /// All unique names of types for which tables should _not_ be created.
-    non_indexable_type_names: HashSet<String>,
-
-    /// All unique names of types that have already been parsed.
-    parsed_type_names: HashSet<String>,
-
-    /// All unique names of types that are possible foreign keys.
-    foreign_key_names: HashSet<String>,
-
-    /// A mapping of fully qualitified field names to their field types.
-    field_type_mappings: HashMap<String, String>,
-
-    /// All unique names of scalar types in the schema.
-    scalar_names: HashSet<String>,
-}
-
-impl Schema {
-    /// Create a new Schema.
-    pub fn new(
-        namespace: &str,
-        identifier: &str,
-        is_native: bool,
-        ast: &ServiceDocument,
-    ) -> Result<Self, Box<dyn std::error::Error>> {
-        let base_ast = match parse_schema(BASE_SCHEMA) {
-            Ok(ast) => ast,
-            Err(e) => {
-                proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
-            }
-        };
-
-        let (mut type_names, _) = build_schema_types_set(&ast);
-        let (scalar_names, _) = build_schema_types_set(&base_ast);
-        type_names.extend(scalar_names.clone());
-
-        Ok(Self {
-            namespace: namespace.to_string(),
-            identifier: identifier.to_string(),
-            is_native,
-            type_names,
-            enum_names: HashSet::new(),
-            non_indexable_type_names: HashSet::new(),
-            parsed_type_names: HashSet::new(),
-            foreign_key_names: HashSet::new(),
-            field_type_mappings: build_schema_fields_and_types_map(&ast)?,
-            scalar_names,
-        })
-    }
-
-    /// Whether the schema has a scalar type with the given name.
-    pub fn has_scalar(&self, name: &str) -> bool {
-        self.scalar_names.contains(name)
-    }
-
-    /// Whether the given field type name is a possible foreign key.
-    pub fn is_possible_foreign_key(&self, name: &str) -> bool {
-        self.parsed_type_names.contains(name) && !self.has_scalar(name)
-    }
 }
 
 /// Process a named type into its type tokens, and the Ident for those type tokens.
@@ -156,8 +77,12 @@ fn process_field(
     let (typ_tokens, typ_ident) = process_type(schema, field_type);
     let name_ident = format_ident! {"{}", field_name.to_string()};
 
-    let extractor =
-        row_extractor(name_ident.clone(), typ_ident.clone(), field_type.nullable);
+    let extractor = row_extractor(
+        schema,
+        name_ident.clone(),
+        typ_ident.clone(),
+        field_type.nullable,
+    );
 
     (typ_tokens, name_ident, typ_ident, extractor)
 }
@@ -389,6 +314,7 @@ fn process_type_def(
     }
 }
 
+/// Process a schema definition into the corresponding tokens for use in an indexer module.
 fn process_definition(
     schema: &mut Schema,
     definition: &TypeSystemDefinition,
@@ -429,13 +355,6 @@ pub(crate) fn process_graphql_schema(
     file.read_to_string(&mut text).expect("IO error");
 
     let text = inject_native_entities_into_schema(&text);
-
-    let base_ast = match parse_schema(BASE_SCHEMA) {
-        Ok(ast) => ast,
-        Err(e) => {
-            proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
-        }
-    };
 
     let ast = match parse_schema(&text) {
         Ok(ast) => ast,

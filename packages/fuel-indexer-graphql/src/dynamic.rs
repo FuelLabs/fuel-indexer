@@ -50,6 +50,8 @@ lazy_static! {
         "UInt16",
         "UInt4",
         "UInt8",
+        "Int1",
+        "UInt1",
     ]);
 
     /// Scalar types that are represented by a numeric type. This ensures that the

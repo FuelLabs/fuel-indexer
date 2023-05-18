@@ -28,6 +28,8 @@ scalar TxId
 scalar UInt16
 scalar UInt4
 scalar UInt8
+scalar Int1
+scalar UInt1
 
 enum IndexType {
     Btree,
