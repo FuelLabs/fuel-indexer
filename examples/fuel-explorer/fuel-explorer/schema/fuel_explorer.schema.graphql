@@ -9,6 +9,101 @@ type TxPointer {
     tx_index: UInt4!
 }
 
+type Create {
+  id: ID!
+  gas_price: UInt8!
+  gas_limit: UInt8!
+  maturity: BlockHeight!
+  script: Blob!
+#   inputs: [Input]!
+#   outputs: [Output]!
+#   witnesses: [Witness]!
+  receipts_root: Bytes32!
+#   metadata: ScriptMetadata
+}
+
+type Script {
+  id: ID!
+  gas_price: UInt8!
+  gas_limit: UInt8!
+  maturity: BlockHeight!
+  script: Blob!
+#   inputs: [Input]!
+#   outputs: [Output]!
+#   witnesses: [Witness]!
+  receipts_root: Bytes32!
+#   metadata: ScriptMetadata
+}
+
+
+type Mint {
+  id: ID!
+  tx_pointer: TxPointer!
+#   outputs: [Output]!
+#   metadata: MintMetadata
+}
+
+
+type Transaction {
+    id: ID!
+    create: Create
+    script: Script
+    mint: Mint
+}
+
+type Header {
+    id: ID!
+    block_id: Bytes32!
+    da_height: UInt8!
+    transactions_count: UInt8!
+    message_receipt_count: UInt8!
+    transactions_root: Bytes32!
+    message_receipt_root: Bytes32!
+    height: UInt4!
+    prev_root: Bytes32!
+    time: Tai64Timestamp
+    application_hash: Bytes32
+}
+
+type Genesis {
+    id: ID!
+    name: Charfield!
+}
+
+
+type PoAConsensus {
+    id: ID!
+    name: Charfield!
+}
+
+type Unknown {
+    id: ID!
+    name: Charfield!
+}
+
+type Consensus {
+    id: ID!
+    genesis: Genesis
+    poa: PoAConsensus
+    unknown: Unknown
+}
+
+
+
+type Block {
+  id: ID!
+  block_id: UInt4!
+  header: Header!
+  consensus: Consensus!
+#   transactions: [Transaction]
+}
+
+
+type TransactionIdFragment {
+    id: ID!
+    transaction_id: Transaction!
+}
+
 type UtxoId {
     id: ID!
     tx_id: TxId!
