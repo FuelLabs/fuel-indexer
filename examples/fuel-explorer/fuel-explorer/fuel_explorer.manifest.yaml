@@ -3,7 +3,7 @@ namespace: indexer
 abi: ~
 identifier: indexer
 fuel_client: ~
-graphql_schema: examples/fuel-explorer/explorer-indexer/schema/fuel_explorer.schema.graphql
+graphql_schema: examples/fuel-explorer/fuel-explorer/schema/fuel_explorer.schema.graphql
 module:
   wasm: target/wasm32-unknown-unknown/release/fuel_explorer.wasm
 metrics: ~
