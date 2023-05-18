@@ -35,6 +35,7 @@ pub type Signature = Bytes64;
 pub type Nonce = Bytes32;
 pub type HexString = Bytes;
 pub type Tai64Timestamp = Tai64;
+pub type BlockHeight = u32;
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Blob(pub Vec<u8>);

@@ -1,0 +1,90 @@
+type ContractIdFragment {
+    id: ID!
+    contract_id: ContractId!
+}
+
+type TxPointer {
+    id: ID!
+    block_height: BlockHeight!
+    tx_index: UInt4!
+}
+
+type UtxoId {
+    id: ID!
+    tx_id: TxId!
+    output_index: UInt4!
+}
+
+type NodeInfo {
+    id: ID!
+    utxo_validation: Boolean!
+    vm_backtrace: Boolean!
+    min_gas_price: UInt8!
+    max_tx: UInt8!
+    max_depth: UInt8!
+    node_version: Charfield!
+}
+
+type ContractCreated {
+    id: ID! 
+    contract: ContractIdFragment!
+    state_root: Bytes32!
+}
+
+type VariableOutput {
+    id: ID! 
+    recipient: Address!
+    amount: UInt8!
+    asset_id: AssetId!
+}
+
+type ChangeOutput {
+    id: ID! 
+    recipient: Address!
+    amount: UInt8!
+    asset_id: AssetId!
+}
+
+type ContractOutput {
+    id: ID!
+    input_index: Int8!
+    balance_root: Bytes32!
+    state_root: Bytes32!
+}
+
+type CoinOutput {
+    id: ID!
+    recipient: Address!
+    amount: UInt8!
+    asset_id: AssetId!
+}
+
+type Output {
+    id: ID!
+    coin: CoinOutput
+    contract: ContractOutput
+    change: ChangeOutput
+    variable: VariableOutput
+    contract_created: ContractCreated
+}
+
+type InputMessage {
+    id: ID!
+    sender: Address!
+    recipient: Address!
+    amount: UInt8!
+    nonce: Nonce!
+    witness_index: Int8!
+    data: HexString!
+    predicate: HexString!
+    predicate_data: HexString!
+}
+
+type InputContract {
+    id: ID!
+    utxo_id: UtxoId!
+    balance_root: Bytes32!
+    state_root: Bytes32!
+    tx_pointer: TxPointer!
+    contract: ContractIdFragment!
+}

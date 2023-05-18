@@ -4,9 +4,9 @@ extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
-    try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
-    HexString, Identity, Int16, Int4, Int8, Json, MessageId, Nonce, Salt, Signature,
-    Tai64Timestamp, UInt16, UInt4, UInt8,
+    try_from_bytes, Address, AssetId, Blob, BlockHeight, Bytes32, Bytes4, Bytes64,
+    Bytes8, ContractId, HexString, Identity, Int16, Int4, Int8, Json, MessageId, Nonce,
+    Salt, Signature, Tai64Timestamp, TxId, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -72,6 +72,8 @@ pub enum FtColumn {
     UInt16(Option<UInt16>),
     UInt4(Option<UInt4>),
     UInt8(Option<UInt8>),
+    TxId(Option<TxId>),
+    BlockHeight(Option<BlockHeight>),
 }
 
 impl FtColumn {
@@ -107,6 +109,10 @@ impl FtColumn {
                 let bytes =
                     Bytes32::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Bytes32(Some(bytes))
+            }
+            ColumnType::TxId => {
+                let bytes = TxId::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::TxId(Some(bytes))
             }
             ColumnType::HexString => {
                 let bytes = HexString::try_from(bytes[..size].to_vec())
@@ -155,7 +161,7 @@ impl FtColumn {
                 );
                 FtColumn::Int16(Some(int16))
             }
-            ColumnType::UInt4 => {
+            ColumnType::UInt4 | ColumnType::BlockHeight => {
                 let int4 = u32::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
@@ -259,6 +265,10 @@ impl FtColumn {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
+            FtColumn::TxId(value) => match value {
+                Some(val) => format!("'{val:x}'"),
+                None => String::from(NULL_VALUE),
+            },
             FtColumn::HexString(value) => match value {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
@@ -283,7 +293,7 @@ impl FtColumn {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::UInt4(value) => match value {
+            FtColumn::UInt4(value) | FtColumn::BlockHeight(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
