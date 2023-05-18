@@ -52,7 +52,7 @@ fn main() {
         transactions: vec![TransactionData {
             id: [0u8; 32].into(),
             status: TransactionStatus::default(),
-            receipts: vec![
+            receipts: Some(vec![
                 Receipt::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
@@ -93,7 +93,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-            ],
+            ]),
             transaction: Transaction::default(),
         }],
     }];

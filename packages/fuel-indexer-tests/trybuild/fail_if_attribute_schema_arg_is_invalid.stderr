@@ -92,7 +92,6 @@ help: consider importing one of these items
    |
 2  | use fuels::prelude::Transaction;
    |
-     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
