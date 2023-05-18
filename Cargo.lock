@@ -2312,6 +2312,7 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuels",
+ "serde",
  "serde_json",
 ]
 
@@ -3081,7 +3082,6 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-indexer-types",
- "fuel-tx",
  "fuels",
  "fuels-code-gen",
  "fuels-macros",
@@ -3090,7 +3090,6 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "serde",
  "serde_json",
  "sha2 0.9.9",
  "syn 1.0.109",
@@ -3121,6 +3120,7 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "hex",
+ "serde",
  "sha2 0.10.6",
  "tokio 1.28.1",
  "tracing",
@@ -3165,10 +3165,8 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
  "serde",
- "sha2 0.10.6",
 ]
 
 [[package]]
@@ -3326,6 +3324,7 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuels",
+ "serde",
 ]
 
 [[package]]
@@ -3924,6 +3923,7 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuels",
+ "serde",
 ]
 
 [[package]]
@@ -3936,6 +3936,7 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuels",
+ "serde",
 ]
 
 [[package]]
@@ -6570,6 +6571,19 @@ name = "similar"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "420acb44afdae038210c99e69aae24109f32f15500aa708e81d46c9f29d55fcf"
+
+[[package]]
+name = "simple-wasm"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels",
+ "serde",
+ "sha2 0.10.6",
+]
 
 [[package]]
 name = "simple_asn1"

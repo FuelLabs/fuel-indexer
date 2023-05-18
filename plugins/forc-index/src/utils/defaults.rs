@@ -48,6 +48,7 @@ fuel-indexer-macros = {{ version = "0.13", default-features = false }}
 fuel-indexer-plugin = {{ version = "0.13" }}
 fuel-indexer-schema = {{ version = "0.13", default-features = false }}
 fuels = {{ version = "0.40", default-features = false }}
+serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
     )
 }

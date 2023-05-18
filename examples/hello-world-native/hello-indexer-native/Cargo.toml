@@ -11,3 +11,4 @@ fuel-indexer-macros = { workspace = true, default-features = false }
 fuel-indexer-plugin = { workspace = true, features = ["native-execution"] }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuels = { workspace = true }
+serde = { workspace = true }

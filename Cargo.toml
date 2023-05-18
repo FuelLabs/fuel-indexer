@@ -22,7 +22,7 @@ members = [
    "packages/fuel-indexer-tests",
    "packages/fuel-indexer-tests/components/fuel-node",
    "packages/fuel-indexer-tests/components/indices/fuel-indexer-test",
-   # "packages/fuel-indexer-tests/components/indices/simple-wasm/simple-wasm",
+   "packages/fuel-indexer-tests/components/indices/simple-wasm/simple-wasm",
    "packages/fuel-indexer-tests/components/web-api",
    "packages/fuel-indexer-types",
    "packages/fuel-indexer",
@@ -82,7 +82,7 @@ clap = "3.1"
 fuel-tx = { version = "0.26", default-features = false }
 fuel-types = { version = "0.26", default-features = false }
 fuels = { version = "0.40", default-features = false }
-serde = { version = "1.0", default-features = false }
+serde = { version = "1.0", default-features = false, features = ["derive"] }
 thiserror = "1.0"
 tokio = "1.17"
 tracing = "0.1"

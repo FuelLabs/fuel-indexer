@@ -36,6 +36,7 @@ lazy_static! {
         "HexString",
         "ID",
         "Identity",
+        "Int1",
         "Int16",
         "Int4",
         "Int8",
@@ -47,11 +48,10 @@ lazy_static! {
         "Tai64Timestamp",
         "Timestamp",
         "TxId",
+        "UInt1",
         "UInt16",
         "UInt4",
         "UInt8",
-        "Int1",
-        "UInt1",
     ]);
 
     /// Scalar types that are represented by a numeric type. This ensures that the

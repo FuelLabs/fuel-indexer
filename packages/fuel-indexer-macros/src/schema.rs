@@ -7,7 +7,6 @@ use fuel_indexer_database_types::directives;
 use fuel_indexer_lib::utils::local_repository_root;
 use fuel_indexer_schema::utils::{
     get_join_directive_info, inject_native_entities_into_schema, schema_version,
-    BASE_SCHEMA,
 };
 use fuel_indexer_types::type_id;
 use lazy_static::lazy_static;
@@ -147,13 +146,13 @@ fn process_type_def(
                 let field_name = &field.node.name.to_string();
                 let field_type = &field.node.ty.node;
                 let (mut typ_tokens, mut field_name, mut scalar_typ, mut ext) =
-                    process_field(&schema, field_name, field_type);
+                    process_field(schema, field_name, field_type);
 
                 let mut column_type_name = scalar_typ.to_string();
 
                 if schema.is_possible_foreign_key(&column_type_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_fk_field(
-                        &schema,
+                        schema,
                         &object_name,
                         &field.node,
                         field_type.nullable,

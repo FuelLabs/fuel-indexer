@@ -59,7 +59,7 @@ impl Schema {
             }
         };
 
-        let (mut type_names, _) = build_schema_types_set(&ast);
+        let (mut type_names, _) = build_schema_types_set(ast);
         let (scalar_names, _) = build_schema_types_set(&base_ast);
         type_names.extend(scalar_names.clone());
 
@@ -72,7 +72,7 @@ impl Schema {
             non_indexable_type_names: HashSet::new(),
             parsed_type_names: HashSet::new(),
             foreign_key_names: HashSet::new(),
-            field_type_mappings: build_schema_fields_and_types_map(&ast)?,
+            field_type_mappings: build_schema_fields_and_types_map(ast)?,
             scalar_names,
         })
     }
@@ -88,6 +88,7 @@ impl Schema {
     }
 
     /// Whether the given field type name is a type from which tables are created.
+    #[allow(unused)]
     pub fn is_non_indexable_type(&self, name: &str) -> bool {
         self.non_indexable_type_names.contains(name)
     }
@@ -333,29 +334,28 @@ pub fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
 
 pub fn row_extractor(
     schema: &Schema,
-    ident: proc_macro2::Ident,
-    mut column_scalar_type: proc_macro2::Ident,
+    field_name: proc_macro2::Ident,
+    mut field_type: proc_macro2::Ident,
     is_nullable: bool,
 ) -> proc_macro2::TokenStream {
-    let foo = column_scalar_type.to_string();
-    println!(">> FOO {}", foo);
-    if schema.is_enum_type(&foo) {
-        column_scalar_type = format_ident! {"UInt1"};
+    let type_name = field_type.to_string();
+    if schema.is_enum_type(&type_name) {
+        field_type = format_ident! {"UInt1"};
     }
 
     if is_nullable {
         quote! {
             let item = vec.pop().expect("Missing item in row.");
-            let #ident = match item {
-                FtColumn::#column_scalar_type(t) => t,
+            let #field_name = match item {
+                FtColumn::#field_type(t) => t,
                 _ => panic!("Invalid column type: {:?}.", item),
             };
         }
     } else {
         quote! {
             let item = vec.pop().expect("Missing item in row.");
-            let #ident = match item {
-                FtColumn::#column_scalar_type(t) => match t {
+            let #field_name = match item {
+                FtColumn::#field_type(t) => match t {
                     Some(inner_type) => { inner_type },
                     None => {
                         panic!("Non-nullable type is returning a None value.")
@@ -366,4 +366,3 @@ pub fn row_extractor(
         }
     }
 }
-

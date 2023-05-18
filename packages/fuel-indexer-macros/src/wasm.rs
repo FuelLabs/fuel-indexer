@@ -40,10 +40,8 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
             macros::{Parameterize, Tokenizable},
             types::{StringToken, traits::{Tokenizable, Parameterize}},
         };
-        use crate::sha2::{Sha256, Digest};
         use std::str::FromStr;
-        use fuel_indexer_plugin::wasm::bincode;
-        use serde::{Serialize, Deserialize};
+        use serde::{Deserialize, Serialize};
 
         type B256 = [u8; 32];
     }

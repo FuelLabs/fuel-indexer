@@ -5,8 +5,8 @@ use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
     try_from_bytes, Address, AssetId, Blob, BlockHeight, Bytes32, Bytes4, Bytes64,
-    Bytes8, ContractId, HexString, Identity, Int16, Int4, Int8, Json, MessageId, Nonce,
-    Salt, Signature, Tai64Timestamp, TxId, UInt16, UInt4, UInt8, Int1, UInt1,
+    Bytes8, ContractId, HexString, Identity, Int1, Int16, Int4, Int8, Json, MessageId,
+    Nonce, Salt, Signature, Tai64Timestamp, TxId, UInt1, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -49,6 +49,7 @@ pub enum FtColumn {
     Address(Option<Address>),
     AssetId(Option<AssetId>),
     Blob(Option<Blob>),
+    BlockHeight(Option<BlockHeight>),
     Boolean(Option<bool>),
     Bytes32(Option<Bytes32>),
     Bytes4(Option<Bytes4>),
@@ -56,11 +57,12 @@ pub enum FtColumn {
     Bytes8(Option<Bytes8>),
     Charfield(Option<String>),
     ContractId(Option<ContractId>),
+    Enum(Option<UInt1>),
     HexString(Option<HexString>),
     ID(Option<UInt8>),
-    Int16(Option<Int16>),
-    UInt1(Option<UInt1>),
+    Identity(Option<Identity>),
     Int1(Option<Int1>),
+    Int16(Option<Int16>),
     Int4(Option<Int4>),
     Int8(Option<Int8>),
     Json(Option<Json>),
@@ -70,13 +72,11 @@ pub enum FtColumn {
     Signature(Option<Signature>),
     Tai64Timestamp(Option<Tai64Timestamp>),
     Timestamp(Option<Int8>),
+    TxId(Option<TxId>),
+    UInt1(Option<UInt1>),
     UInt16(Option<UInt16>),
     UInt4(Option<UInt4>),
     UInt8(Option<UInt8>),
-    TxId(Option<TxId>),
-    BlockHeight(Option<BlockHeight>),
-    Identity(Option<Identity>),
-    Enum(Option<UInt1>),
 }
 
 impl FtColumn {
@@ -383,7 +383,7 @@ impl FtColumn {
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Enum(value) => match value {
-                Some(val) => format!("{}", *val as u8),
+                Some(val) => format!("{}", { *val }),
                 None => String::from(NULL_VALUE),
             },
         }
