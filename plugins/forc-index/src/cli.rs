@@ -5,7 +5,8 @@ pub(crate) use crate::commands::{
     init::Command as InitCommand, kill::Command as KillCommand,
     new::Command as NewCommand, pull_abi::Command as PullAbiCommand,
     remove::Command as RemoveCommand, revert::Command as RevertCommand,
-    start::Command as StartCommand, welcome::Command as WelcomeCommand,
+    start::Command as StartCommand, status::Command as StatusCommand,
+    welcome::Command as WelcomeCommand,
 };
 use clap::{Parser, Subcommand};
 use forc_postgres::{
@@ -36,6 +37,7 @@ pub enum ForcIndex {
     Postgres(ForcPostgresOpt),
     PullAbi(PullAbiCommand),
     Kill(KillCommand),
+    Status(StatusCommand),
     //Welcome(WelcomeCommand),
 }
 
@@ -65,5 +67,6 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
             ForcPostgres::Start(command) => pg_commands::start::exec(command).await,
         },
         ForcIndex::Kill(command) => crate::commands::kill::exec(command),
+        ForcIndex::Status(command) => crate::commands::status::exec(command),
     }
 }
