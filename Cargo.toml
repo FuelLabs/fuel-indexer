@@ -77,7 +77,7 @@ fuel-indexer-postgres = { version = "0.13.2", path = "./packages/fuel-indexer-da
 fuel-indexer-schema = { version = "0.13.2", path = "./packages/fuel-indexer-schema", default-features = false }
 fuel-indexer-types = { version = "0.13.2", path = "./packages/fuel-indexer-types" }
 clap = "3.1"
-fuel-tx = { version = "0.31", default-features = false, features = ["alloc"] }
+fuel-tx = { version = "0.31", default-features = false }
 fuel-types = { version = "0.31", default-features = false }
 fuels = { git = "https://github.com/FuelLabs/fuels-rs", branch = "feature/fuel-core-0.18", default-features = false }
 serde = { version = "1.0", default-features = false }
