@@ -1,6 +1,6 @@
 use crate::cli::StatusCommand;
-use serde_json::{to_string_pretty, value::Value, Map};
-use tracing::{error, info};
+use fuel_indexer_database_types::RegisteredIndex;
+use tracing::error;
 
 pub async fn status(StatusCommand { url }: StatusCommand) -> anyhow::Result<()> {
     let target = format!("{url}/api/status");
@@ -15,12 +15,11 @@ pub async fn status(StatusCommand { url }: StatusCommand) -> anyhow::Result<()> 
                 return Ok(());
             }
 
-            let res_json = res
-                .json::<Vec<Map<String, Value>>>()
+            let result = res
+                .json::<Vec<RegisteredIndex>>()
                 .await
                 .expect("Failed to read JSON response.");
-
-            info!("\n✅ Indexers:\n\n{}", to_string_pretty(&res_json).unwrap());
+            print_indexers(&result);
         }
         Err(e) => {
             error!("\n❌ Could not connect to indexer service:\n'{e}'");
@@ -28,4 +27,32 @@ pub async fn status(StatusCommand { url }: StatusCommand) -> anyhow::Result<()> 
     }
 
     Ok(())
+}
+
+fn print_indexers(indexers: &[RegisteredIndex]) {
+    let groupped: Vec<&[RegisteredIndex]> = indexers
+        .group_by(|x, y| x.namespace == y.namespace)
+        .collect();
+    for group in &groupped {
+        let namespace = group[0].namespace.clone();
+        println!("{}", namespace);
+        for (i, indexer) in group.iter().enumerate() {
+            let is_last = i == group.len() - 1;
+            if !is_last {
+                print!("├─ ");
+            } else {
+                print!("└─ ");
+            }
+            println!("{}", indexer.identifier);
+            if !is_last {
+                println!("|  • id: {}", indexer.id);
+                println!("|  • created_at: {}", indexer.created_at);
+                println!("|  • pubkey: {:?}", indexer.pubkey);
+            } else {
+                println!("   • id: {}", indexer.id);
+                println!("   • created_at: {}", indexer.created_at);
+                println!("   • pubkey: {:?}", indexer.pubkey);
+            }
+        }
+    }
 }
