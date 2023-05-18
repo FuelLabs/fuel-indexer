@@ -35,6 +35,7 @@ fn native_prelude() -> proc_macro2::TokenStream {
         };
         use fuel_indexer_plugin::native::bincode;
         use crate::sha2::{Sha256, Digest};
+        use serde::{Serialize, Deserialize};
 
         type B256 = [u8; 32];
 

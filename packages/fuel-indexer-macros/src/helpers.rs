@@ -238,7 +238,7 @@ pub fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
     }
 }
 
-pub fn generate_row_extractor(
+pub fn row_extractor(
     ident: proc_macro2::Ident,
     column_scalar_type: proc_macro2::Ident,
     is_nullable: bool,

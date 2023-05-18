@@ -1,8 +1,8 @@
 use crate::{
     utils::{
-        build_schema_fields_and_types_map, build_schema_objects_set,
-        field_type_table_name, get_index_directive, get_join_directive_info,
-        get_unique_directive, normalize_field_type_name, BASE_SCHEMA,
+        build_schema_fields_and_types_map, build_schema_types_set, field_type_table_name,
+        get_index_directive, get_join_directive_info, get_unique_directive,
+        normalize_field_type_name, BASE_SCHEMA,
     },
     QUERY_ROOT,
 };
@@ -53,7 +53,7 @@ impl SchemaBuilder {
             Ok(ast) => ast,
             Err(e) => return Err(IndexerSchemaDbError::ParseError(e)),
         };
-        let (primitives, _) = build_schema_objects_set(&base_ast);
+        let (primitives, _) = build_schema_types_set(&base_ast);
 
         Ok(SchemaBuilder {
             db_type,
@@ -486,7 +486,7 @@ fn parse_schema_for_ast_data(
 ) -> IndexerSchemaDbResult<ServiceDocumentBundle> {
     let base_ast = parse_schema(BASE_SCHEMA).map_err(IndexerSchemaDbError::ParseError)?;
     let ast = parse_schema(schema).map_err(IndexerSchemaDbError::ParseError)?;
-    let (primitives, _) = build_schema_objects_set(&base_ast);
+    let (primitives, _) = build_schema_types_set(&base_ast);
 
     let types_map = build_schema_fields_and_types_map(&ast)?;
 

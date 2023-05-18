@@ -4,9 +4,14 @@ extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
+<<<<<<< HEAD
     try_from_bytes, Address, AssetId, Blob, BlockHeight, Bytes32, Bytes4, Bytes64,
     Bytes8, ContractId, HexString, Identity, Int16, Int4, Int8, Json, MessageId, Nonce,
     Salt, Signature, Tai64Timestamp, TxId, UInt16, UInt4, UInt8,
+=======
+    try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes8, ContractId, Enum,
+    Identity, Int16, Int4, Int8, Json, MessageId, Salt, UInt16, UInt4, UInt8,
+>>>>>>> c421f6cb (refactor graphql schema)
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -64,6 +69,7 @@ pub enum FtColumn {
     Int8(Option<Int8>),
     Json(Option<Json>),
     MessageId(Option<MessageId>),
+<<<<<<< HEAD
     Nonce(Option<Nonce>),
     Salt(Option<Salt>),
     Signature(Option<Signature>),
@@ -74,6 +80,13 @@ pub enum FtColumn {
     UInt8(Option<UInt8>),
     TxId(Option<TxId>),
     BlockHeight(Option<BlockHeight>),
+=======
+    Charfield(Option<String>),
+    Identity(Option<Identity>),
+    Boolean(Option<bool>),
+    Blob(Option<Blob>),
+    Enum(Option<Enum>),
+>>>>>>> c421f6cb (refactor graphql schema)
 }
 
 impl FtColumn {
@@ -225,6 +238,12 @@ impl FtColumn {
             ColumnType::Object => {
                 panic!("Object not supported for FtColumn.");
             }
+            ColumnType::Enum => {
+                let enum_value = u8::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
+                FtColumn::Enum(Some(enum_value))
+            }
         }
     }
 
@@ -351,6 +370,10 @@ impl FtColumn {
                     let x = hex::encode(blob.as_ref());
                     format!("'{x}'")
                 }
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Enum(value) => match value {
+                Some(val) => format!("{}", *val as u8),
                 None => String::from(NULL_VALUE),
             },
         }

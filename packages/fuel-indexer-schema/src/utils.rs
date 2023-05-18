@@ -178,7 +178,14 @@ pub fn build_schema_fields_and_types_map(
         if let TypeSystemDefinition::Type(typ) = def {
             match &typ.node.kind {
                 TypeKind::Scalar => {}
-                TypeKind::Enum(_e) => {}
+                TypeKind::Enum(e) => {
+                    let name = &typ.node.name.to_string();
+                    for val in &e.values {
+                        let val_name = &val.node.value.to_string();
+                        let val_id = format!("{name}.{val_name}");
+                        types_map.insert(val_id, name.to_string());
+                    }
+                }
                 TypeKind::Object(obj) => {
                     for field in &obj.fields {
                         let field = &field.node;
@@ -201,7 +208,7 @@ pub fn build_schema_fields_and_types_map(
 
 /// Given a GraphQL document, return a two `HashSet`s - one for each
 /// unique field type, and one for each unique directive.
-pub fn build_schema_objects_set(
+pub fn build_schema_types_set(
     ast: &ServiceDocument,
 ) -> (HashSet<String>, HashSet<String>) {
     let types: HashSet<String> = ast
@@ -308,7 +315,7 @@ type Auditor {
 
         let ast = parse_schema(schema).unwrap();
 
-        let (obj_set, _directives_set) = build_schema_objects_set(&ast);
+        let (obj_set, _directives_set) = build_schema_types_set(&ast);
 
         assert!(!obj_set.contains("NotARealThing"));
         assert!(obj_set.contains("Borrower"));
