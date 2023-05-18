@@ -3325,11 +3325,7 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
- "serde",
- "serde_json",
 ]
 
 [[package]]
