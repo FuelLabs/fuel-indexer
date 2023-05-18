@@ -88,20 +88,17 @@ type Consensus {
     unknown: Unknown
 }
 
-
+type TransactionIdFragment {
+    id: ID!
+    transaction_id: Transaction!
+}
 
 type Block {
   id: ID!
   block_id: UInt4!
   header: Header!
   consensus: Consensus!
-#   transactions: [Transaction]
-}
-
-
-type TransactionIdFragment {
-    id: ID!
-    transaction_id: Transaction!
+#   transactions: [TransactionIdFragment]
 }
 
 type UtxoId {
