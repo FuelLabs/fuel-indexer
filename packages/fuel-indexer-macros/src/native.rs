@@ -29,7 +29,7 @@ fn native_prelude() -> proc_macro2::TokenStream {
         use fuel_indexer_plugin::prelude::*;
         use fuel_indexer_schema::utils::{serialize, deserialize};
         use fuels::{
-            core::abi_decoder::ABIDecoder,
+            core::{abi_decoder::ABIDecoder, Configurables},
             macros::{Parameterize, Tokenizable},
             types::{StringToken, traits::{Tokenizable, Parameterize}},
         };

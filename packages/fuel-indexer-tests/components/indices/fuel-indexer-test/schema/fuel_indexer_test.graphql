@@ -24,7 +24,7 @@ type PongEntity {
 
 type Block {
     id: ID!
-    height: UInt8!
+    height: UInt4!
     timestamp: Int8!
 }
 
@@ -72,7 +72,7 @@ type MessageOut {
     sender: Address!
     recipient: Address!
     amount: UInt8!
-    nonce: Bytes32!
+    nonce: Nonce!
     len: UInt8!
     digest: Bytes32!
 }

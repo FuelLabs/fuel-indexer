@@ -2914,6 +2914,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-test"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels",
+ "serde",
+ "sha2 0.10.6",
+]
+
+[[package]]
 name = "fuel-indexer-tests"
 version = "0.0.0"
 dependencies = [
@@ -3611,6 +3624,40 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 dependencies = [
  "unicode-segmentation",
+]
+
+[[package]]
+name = "hello-world-data"
+version = "0.0.0"
+dependencies = [
+ "clap 3.2.25",
+ "fuel-indexer-lib",
+ "fuel-indexer-tests",
+ "fuel-tx",
+ "fuel-types 0.31.1",
+ "fuels",
+ "rand",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
+name = "hello-world-node"
+version = "0.0.0"
+dependencies = [
+ "clap 3.2.25",
+ "fuel-indexer-tests",
+ "tokio",
+]
+
+[[package]]
+name = "hello_indexer"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuels",
 ]
 
 [[package]]
@@ -5855,6 +5902,19 @@ name = "similar"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "420acb44afdae038210c99e69aae24109f32f15500aa708e81d46c9f29d55fcf"
+
+[[package]]
+name = "simple-wasm"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuel-tx",
+ "fuels",
+ "serde",
+ "sha2 0.10.6",
+]
 
 [[package]]
 name = "simple_asn1"

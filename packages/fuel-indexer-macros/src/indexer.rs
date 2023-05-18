@@ -482,112 +482,114 @@ fn process_fn_items(
                     let mut return_types = Vec::new();
                     let mut callees = HashSet::new();
 
-                    for receipt in tx.receipts.unwrap() {
-                        match receipt {
-                            Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
-                                #check_if_subscribed_to_contract
+                    if let Some(receipts) = tx.receipts {
+                        for receipt in receipts {
+                            match receipt {
+                                Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
+                                    #check_if_subscribed_to_contract
 
-                                let fn_name = decoder.selector_to_fn_name(param1);
-                                return_types.push(param1);
-                                callees.insert(id);
+                                    let fn_name = decoder.selector_to_fn_name(param1);
+                                    return_types.push(param1);
+                                    callees.insert(id);
 
-                                let data = bincode::serialize(&abi::Call { contract_id, to: id, amount, asset_id, gas, fn_name }).expect("Bad encoding");
-                                let ty_id = abi::Call::type_id();
-                                decoder.decode_type(ty_id, data);
-                            }
-                            Receipt::Log { id, ra, rb, .. } => {
-                                #check_if_subscribed_to_contract
-                                let ty_id = abi::Log::type_id();
-                                let data = bincode::serialize(&abi::Log{ contract_id: id, ra, rb }).expect("Bad encoding,");
-                                decoder.decode_type(ty_id, data);
-                            }
-                            Receipt::LogData { rb, data, ptr, len, id, .. } => {
-                                #check_if_subscribed_to_contract
-                                decoder.decode_logdata(rb as usize, data);
-
-                            }
-                            Receipt::Return { id, val, pc, is } => {
-                                #check_if_subscribed_to_contract
-                                if callees.contains(&id) {
-                                    let ty_id = abi::Return::type_id();
-                                    let data = bincode::serialize(&abi::Return{ contract_id: id, val, pc, is }).expect("Bad encoding,");
+                                    let data = bincode::serialize(&abi::Call { contract_id, to: id, amount, asset_id, gas, fn_name }).expect("Bad encoding");
+                                    let ty_id = abi::Call::type_id();
                                     decoder.decode_type(ty_id, data);
                                 }
-                            }
-                            Receipt::ReturnData { data, id, .. } => {
-                                #check_if_subscribed_to_contract
-                                if callees.contains(&id) {
-                                    let selector = return_types.pop().expect("No return type available. <('-'<)");
-                                    decoder.decode_return_type(selector, data);
+                                Receipt::Log { id, ra, rb, .. } => {
+                                    #check_if_subscribed_to_contract
+                                    let ty_id = abi::Log::type_id();
+                                    let data = bincode::serialize(&abi::Log{ contract_id: id, ra, rb }).expect("Bad encoding,");
+                                    decoder.decode_type(ty_id, data);
+                                }
+                                Receipt::LogData { rb, data, ptr, len, id, .. } => {
+                                    #check_if_subscribed_to_contract
+                                    decoder.decode_logdata(rb as usize, data);
+
+                                }
+                                Receipt::Return { id, val, pc, is } => {
+                                    #check_if_subscribed_to_contract
+                                    if callees.contains(&id) {
+                                        let ty_id = abi::Return::type_id();
+                                        let data = bincode::serialize(&abi::Return{ contract_id: id, val, pc, is }).expect("Bad encoding,");
+                                        decoder.decode_type(ty_id, data);
+                                    }
+                                }
+                                Receipt::ReturnData { data, id, .. } => {
+                                    #check_if_subscribed_to_contract
+                                    if callees.contains(&id) {
+                                        let selector = return_types.pop().expect("No return type available. <('-'<)");
+                                        decoder.decode_return_type(selector, data);
+                                    }
+                                }
+                                Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
+                                    let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, &data[..]);
+
+                                    // It's possible that the data field was generated from an empty Sway `Bytes` array
+                                    // in the send_message() instruction in which case the data field in the receipt will
+                                    // have no type information or data to decode, so we decode an empty vector to a unit struct
+                                    let type_id = data
+                                        .get(..8)
+                                        .map(|buffer| {
+                                            u64::from_be_bytes(
+                                                <[u8; 8]>::try_from(&buffer[..])
+                                                    .expect("Could not get type ID for data in MessageOut receipt"),
+                                            )
+                                        })
+                                        .unwrap_or(u64::MAX);
+
+                                    let data = data
+                                        .get(8..)
+                                        .map(|buffer| buffer.to_vec())
+                                        .unwrap_or(Vec::<u8>::new());
+
+                                    decoder.decode_messagedata(type_id, data.clone());
+
+                                    let ty_id = abi::MessageOut::type_id();
+                                    let data = bincode::serialize(&abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data }).expect("Bad encoding");
+                                    decoder.decode_type(ty_id, data);
+                                }
+                                Receipt::ScriptResult { result, gas_used } => {
+                                    let ty_id = abi::ScriptResult::type_id();
+                                    let data = bincode::serialize(&abi::ScriptResult{ result: u64::from(result), gas_used }).expect("Bad encoding,");
+                                    decoder.decode_type(ty_id, data);
+                                }
+                                Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
+                                    #check_if_subscribed_to_contract
+                                    let ty_id = abi::Transfer::type_id();
+                                    let data = bincode::serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
+                                    decoder.decode_type(ty_id, data);
+                                }
+                                Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
+                                    #check_if_subscribed_to_contract
+                                    let ty_id = abi::TransferOut::type_id();
+                                    let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
+                                    decoder.decode_type(ty_id, data);
+                                }
+                                Receipt::Panic { id, reason, .. } => {
+                                    #check_if_subscribed_to_contract
+                                    let ty_id = abi::Panic::type_id();
+                                    let data = bincode::serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() as u32 }).expect("Bad encoding,");
+                                    decoder.decode_type(ty_id, data);
+                                }
+                                Receipt::Revert { id, ra, .. } => {
+                                    #check_if_subscribed_to_contract
+                                    let ty_id = abi::Revert::type_id();
+                                    let data = bincode::serialize(&abi::Revert{ contract_id: id, error_val: u64::from(ra & 0xF) }).expect("Bad encoding,");
+                                    decoder.decode_type(ty_id, data);
+                                }
+                                _ => {
+                                    Logger::info("This type is not handled yet. (>'.')>");
                                 }
                             }
-                            Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
-                                let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, &data[..]);
-
-                                // It's possible that the data field was generated from an empty Sway `Bytes` array
-                                // in the send_message() instruction in which case the data field in the receipt will
-                                // have no type information or data to decode, so we decode an empty vector to a unit struct
-                                let type_id = data
-                                    .get(..8)
-                                    .map(|buffer| {
-                                        u64::from_be_bytes(
-                                            <[u8; 8]>::try_from(&buffer[..])
-                                                .expect("Could not get type ID for data in MessageOut receipt"),
-                                        )
-                                    })
-                                    .unwrap_or(u64::MAX);
-
-                                let data = data
-                                    .get(8..)
-                                    .map(|buffer| buffer.to_vec())
-                                    .unwrap_or(Vec::<u8>::new());
-
-                                decoder.decode_messagedata(type_id, data.clone());
-
-                                let ty_id = abi::MessageOut::type_id();
-                                let data = bincode::serialize(&abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data }).expect("Bad encoding");
-                                decoder.decode_type(ty_id, data);
-                            }
-                            Receipt::ScriptResult { result, gas_used } => {
-                                let ty_id = abi::ScriptResult::type_id();
-                                let data = bincode::serialize(&abi::ScriptResult{ result: u64::from(result), gas_used }).expect("Bad encoding,");
-                                decoder.decode_type(ty_id, data);
-                            }
-                            Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
-                                #check_if_subscribed_to_contract
-                                let ty_id = abi::Transfer::type_id();
-                                let data = bincode::serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
-                                decoder.decode_type(ty_id, data);
-                            }
-                            Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
-                                #check_if_subscribed_to_contract
-                                let ty_id = abi::TransferOut::type_id();
-                                let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
-                                decoder.decode_type(ty_id, data);
-                            }
-                            Receipt::Panic { id, reason, .. } => {
-                                #check_if_subscribed_to_contract
-                                let ty_id = abi::Panic::type_id();
-                                let data = bincode::serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() as u32 }).expect("Bad encoding,");
-                                decoder.decode_type(ty_id, data);
-                            }
-                            Receipt::Revert { id, ra, .. } => {
-                                #check_if_subscribed_to_contract
-                                let ty_id = abi::Revert::type_id();
-                                let data = bincode::serialize(&abi::Revert{ contract_id: id, error_val: u64::from(ra & 0xF) }).expect("Bad encoding,");
-                                decoder.decode_type(ty_id, data);
-                            }
-                            _ => {
-                                Logger::info("This type is not handled yet. (>'.')>");
-                            }
                         }
+
+                        decoder.dispatch()#awaitness;
                     }
 
-                    decoder.dispatch()#awaitness;
+                    let metadata = IndexMetadataEntity{ id: block.height as u64, time: block.time };
+                    metadata.save()#awaitness;
                 }
-
-                let metadata = IndexMetadataEntity{ id: block.height as u64, time: block.time };
-                metadata.save()#awaitness;
             }
         },
         quote! {
