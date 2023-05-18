@@ -67,6 +67,6 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
             ForcPostgres::Start(command) => pg_commands::start::exec(command).await,
         },
         ForcIndex::Kill(command) => crate::commands::kill::exec(command),
-        ForcIndex::Status(command) => crate::commands::status::exec(command),
+        ForcIndex::Status(command) => crate::commands::status::exec(command).await,
     }
 }

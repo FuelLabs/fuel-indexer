@@ -9,7 +9,6 @@ pub struct Command {
     pub url: String,
 }
 
-pub fn exec(command: Command) -> anyhow::Result<()> {
-    forc_index_status::status(command)?;
-    Ok(())
+pub async fn exec(command: Command) -> anyhow::Result<()> {
+    forc_index_status::status(command).await
 }
