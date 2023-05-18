@@ -3,7 +3,6 @@ use fuel_indexer_lib::{
     config::defaults,
     utils::{center_align, find_executable_with_msg, rightpad_whitespace},
 };
-use reqwest::{blocking::Client, StatusCode};
 use serde_json::{to_string_pretty, value::Value, Map};
 use std::process::Command;
 use tracing::{error, info};
@@ -50,7 +49,7 @@ fn find_indexer_service_info(grpahql_api_port: &str) -> (String, String) {
     (emoji, msg)
 }
 
-pub fn init(command: CheckCommand) -> anyhow::Result<()> {
+pub async fn init(command: CheckCommand) -> anyhow::Result<()> {
     let CheckCommand {
         url,
         graphql_api_port,
@@ -67,9 +66,9 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
     let rustc = "rustc";
     let forc_wallet = "forc-wallet";
 
-    match Client::new().get(&target).send() {
+    match reqwest::get(&target).await {
         Ok(res) => {
-            if res.status() != StatusCode::OK {
+            if res.status() != reqwest::StatusCode::OK {
                 error!(
                     "\n❌ {target} returned a non-200 response code: {:?}",
                     res.status()
@@ -79,6 +78,7 @@ pub fn init(command: CheckCommand) -> anyhow::Result<()> {
 
             let res_json = res
                 .json::<Map<String, Value>>()
+                .await
                 .expect("Failed to read JSON response.");
 
             info!(
