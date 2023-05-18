@@ -5,18 +5,20 @@ pub mod tx;
 
 pub use crate::abi::*;
 pub use crate::tx::*;
+use bytes::Bytes;
 pub use fuel_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes8, ContractId, MessageId, Salt, Word,
+    Address, AssetId, Bytes32, Bytes4, Bytes64, Bytes8, ContractId, MessageId, Salt, Word,
 };
 pub use fuels::{
     core::try_from_bytes,
     types::{
         bech32::{Bech32Address, Bech32ContractId},
-        Bits256, SizedAsciiString,
+        Bits256, Identity, SizedAsciiString,
     },
 };
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use tai64::Tai64;
 
 pub type Error = Box<dyn std::error::Error>;
 pub type ID = u64;
@@ -29,6 +31,10 @@ pub type UInt16 = u128;
 pub type Timestamp = u64;
 pub type Charfield = String;
 pub type Boolean = bool;
+pub type Signature = Bytes64;
+pub type Nonce = Bytes32;
+pub type HexString = Bytes;
+pub type Tai64Timestamp = Tai64;
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Blob(pub Vec<u8>);

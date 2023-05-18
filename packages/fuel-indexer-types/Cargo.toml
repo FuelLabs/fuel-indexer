@@ -11,9 +11,11 @@ description = "Fuel Indexer Types"
 
 [dependencies]
 bincode = "1.3"
+bytes = "1.4"
 chrono = { version = "0.4", features = ["serde"] }
-fuel-tx = { features = ["serde"], workspace = true }
-fuel-types = "0.26.0"
-fuels = { default-features = false, workspace = true }
-serde = { default-features = false, features = ["derive", "alloc"], workspace = true }
+fuel-tx = { workspace = true }
+fuel-types = { workspace = true }
+fuels = { workspace = true }
+serde = { features = ["derive", "alloc"], workspace = true }
 sha2 = "0.9"
+tai64 = { version = "4.0", default-features = false, features = ["serde"] }

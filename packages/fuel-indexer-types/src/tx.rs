@@ -6,7 +6,7 @@ pub use fuel_tx::{
         Outputs, ReceiptsRoot, Salt as TxFieldSalt, Script, ScriptData, StorageSlots,
         TxPointer, Witnesses,
     },
-    Receipt, ScriptExecutionResult, Transaction, TxId,
+    Receipt, ScriptExecutionResult, Transaction, TxId, UtxoId,
 };
 use serde::{Deserialize, Serialize};
 
