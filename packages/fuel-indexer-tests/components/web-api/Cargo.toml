@@ -6,5 +6,5 @@ publish = false
 
 [dependencies]
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../fuel-indexer-tests" }
-fuel-types = "0.26.0"
+fuel-types = { workspace = true }
 tokio = { features = ["macros", "rt-multi-thread"], workspace = true }

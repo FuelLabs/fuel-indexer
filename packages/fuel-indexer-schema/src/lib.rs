@@ -4,8 +4,9 @@ extern crate alloc;
 use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
-    try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes8, ContractId,
-    Identity, Int16, Int4, Int8, Json, MessageId, Salt, UInt16, UInt4, UInt8,
+    try_from_bytes, Address, AssetId, Blob, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
+    HexString, Identity, Int16, Int4, Int8, Json, MessageId, Nonce, Salt, Signature,
+    Tai64Timestamp, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -45,27 +46,32 @@ pub enum IndexerSchemaError {
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
-    ID(Option<UInt8>),
     Address(Option<Address>),
     AssetId(Option<AssetId>),
-    Bytes4(Option<Bytes4>),
-    Bytes8(Option<Bytes8>),
+    Blob(Option<Blob>),
+    Boolean(Option<bool>),
     Bytes32(Option<Bytes32>),
+    Bytes4(Option<Bytes4>),
+    Bytes64(Option<Bytes64>),
+    Bytes8(Option<Bytes8>),
+    Charfield(Option<String>),
     ContractId(Option<ContractId>),
+    HexString(Option<HexString>),
+    ID(Option<UInt8>),
+    Identity(Option<Identity>),
+    Int16(Option<Int16>),
     Int4(Option<Int4>),
     Int8(Option<Int8>),
-    Int16(Option<Int16>),
-    UInt4(Option<UInt4>),
-    UInt8(Option<UInt8>),
-    UInt16(Option<UInt16>),
-    Timestamp(Option<Int8>),
-    Salt(Option<Salt>),
     Json(Option<Json>),
     MessageId(Option<MessageId>),
-    Charfield(Option<String>),
-    Identity(Option<Identity>),
-    Boolean(Option<bool>),
-    Blob(Option<Blob>),
+    Nonce(Option<Nonce>),
+    Salt(Option<Salt>),
+    Signature(Option<Signature>),
+    Tai64Timestamp(Option<Tai64Timestamp>),
+    Timestamp(Option<Int8>),
+    UInt16(Option<UInt16>),
+    UInt4(Option<UInt4>),
+    UInt8(Option<UInt8>),
 }
 
 impl FtColumn {
@@ -101,6 +107,26 @@ impl FtColumn {
                 let bytes =
                     Bytes32::try_from(&bytes[..size]).expect("Invalid slice length");
                 FtColumn::Bytes32(Some(bytes))
+            }
+            ColumnType::HexString => {
+                let bytes = HexString::try_from(bytes[..size].to_vec())
+                    .expect("Invalid slice length");
+                FtColumn::HexString(Some(bytes))
+            }
+            ColumnType::Nonce => {
+                let bytes =
+                    Nonce::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::Nonce(Some(bytes))
+            }
+            ColumnType::Bytes64 => {
+                let bytes =
+                    Bytes64::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::Bytes64(Some(bytes))
+            }
+            ColumnType::Signature => {
+                let bytes =
+                    Signature::try_from(&bytes[..size]).expect("Invalid slice length");
+                FtColumn::Signature(Some(bytes))
             }
             ColumnType::ContractId => {
                 let contract_id =
@@ -152,6 +178,11 @@ impl FtColumn {
                     bytes[..size].try_into().expect("Invalid slice length"),
                 );
                 FtColumn::Timestamp(Some(int8))
+            }
+            ColumnType::Tai64Timestamp => {
+                let x = hex::decode(&bytes[..size]).expect("Invalid slice length");
+                let ts = Tai64Timestamp::from_slice(&x).expect("Bad Tai64");
+                FtColumn::Tai64Timestamp(Some(ts))
             }
             ColumnType::Blob => FtColumn::Blob(Some(bytes[..size].to_vec().into())),
             ColumnType::ForeignKey => {
@@ -220,6 +251,22 @@ impl FtColumn {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
+            FtColumn::Nonce(value) => match value {
+                Some(val) => format!("'{val:x}'"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Bytes64(value) => match value {
+                Some(val) => format!("'{val:x}'"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::HexString(value) => match value {
+                Some(val) => format!("'{val:x}'"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Signature(value) => match value {
+                Some(val) => format!("'{val:x}'"),
+                None => String::from(NULL_VALUE),
+            },
             FtColumn::ContractId(value) => match value {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
@@ -250,6 +297,13 @@ impl FtColumn {
             },
             FtColumn::Timestamp(value) => match value {
                 Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Tai64Timestamp(value) => match value {
+                Some(val) => {
+                    let x = hex::encode(val.to_bytes());
+                    format!("'{x}'")
+                }
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Salt(value) => match value {

@@ -23,10 +23,12 @@ lazy_static! {
         "Charfield",
         "Identity",
         "Blob",
+        "HexString",
         "Option<Json>",
         "Option<Blob>",
         "Option<Charfield>",
-        "Option<Identity>"
+        "Option<Identity>",
+        "Option<HexString>",
     ]);
 }
 

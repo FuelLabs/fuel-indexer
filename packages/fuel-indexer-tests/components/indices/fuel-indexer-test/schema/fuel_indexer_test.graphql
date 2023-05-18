@@ -218,9 +218,17 @@ type FilterEntity {
     inner_entity: InnerFilterEntity!
 }
 
-type EnumError{
+type EnumError {
     id: ID!
     contract_id: ContractId!
     error_val: UInt8!
 }
 
+type ExplorerEntity {
+    id: ID!
+    nonce: Nonce!
+    time: Tai64Timestamp
+    hex: HexString
+    sig: Signature!
+    bytes: Bytes64!
+}
