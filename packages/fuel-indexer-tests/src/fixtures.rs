@@ -11,6 +11,8 @@ use fuel_indexer_lib::{
     utils::{derive_socket_addr, ServiceRequest},
 };
 use fuel_indexer_postgres;
+use fuel_indexer_types::BlockHeight;
+use fuel_tx::ConsensusParameters;
 use fuels::{
     macros::abigen,
     prelude::{
@@ -165,8 +167,7 @@ pub fn http_client() -> reqwest::Client {
 pub fn tx_params() -> TxParameters {
     let gas_price = 0;
     let gas_limit = 1_000_000;
-    let byte_price = 0;
-    TxParameters::new(gas_price, gas_limit, byte_price)
+    TxParameters::new(gas_price, gas_limit, BlockHeight::new(0))
 }
 
 pub async fn setup_test_fuel_node(
@@ -215,9 +216,10 @@ pub async fn setup_test_fuel_node(
         ..Config::local_node()
     };
 
-    let (client, _) = setup_test_client(coins, vec![], Some(config), None, None).await;
+    let (client, _addr, _consensus) =
+        setup_test_client(coins, vec![], Some(config), None).await;
 
-    let provider = Provider::new(client);
+    let provider = Provider::new(client, ConsensusParameters::default());
 
     wallet.set_provider(provider.clone());
 
@@ -529,7 +531,6 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_messageout()
-            .append_message_outputs(1)
             .tx_params(tx_params())
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")

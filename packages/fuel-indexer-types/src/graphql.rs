@@ -1,12 +1,10 @@
-use fuel_types::Bytes32;
-
 pub trait GraphqlObject {
     fn schema_fragment() -> &'static str;
 }
 
 pub struct IndexMetadata {
-    pub id: Bytes32,
-    pub block_height: u64,
+    pub id: u64,
+    pub block_height: u32,
     pub time: u64,
 }
 

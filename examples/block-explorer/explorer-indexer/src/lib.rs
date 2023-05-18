@@ -113,170 +113,178 @@ mod explorer_index {
                 }
             }
 
-            for receipt in &tx.receipts {
-                // You can handle each receipt in a transaction `TransactionData` as you like.
-                //
-                // Below demonstrates how you can use parts of a receipt `Receipt` in order
-                // to persist entities defined in your GraphQL schema, to the database.
-                match receipt {
-                    #[allow(unused)]
-                    Receipt::Call { id, .. } => {
-                        contracts.insert(Contract {
-                            id: *id,
-                            last_seen: 0,
-                        });
-                    }
-                    #[allow(unused)]
-                    Receipt::ReturnData { id, .. } => {
-                        contracts.insert(Contract {
-                            id: *id,
-                            last_seen: 0,
-                        });
-                    }
-                    #[allow(unused)]
-                    Receipt::Transfer {
-                        id,
-                        to,
-                        asset_id,
-                        amount,
-                        ..
-                    } => {
-                        contracts.insert(Contract {
-                            id: *id,
-                            last_seen: 0,
-                        });
+            if let Some(receipts) = &tx.receipts {
+                for receipt in receipts {
+                    // You can handle each receipt in a transaction `TransactionData` as you like.
+                    //
+                    // Below demonstrates how you can use parts of a receipt `Receipt` in order
+                    // to persist entities defined in your GraphQL schema, to the database.
+                    match receipt {
+                        #[allow(unused)]
+                        Receipt::Call { id, .. } => {
+                            contracts.insert(Contract {
+                                id: *id,
+                                last_seen: 0,
+                            });
+                        }
+                        #[allow(unused)]
+                        Receipt::ReturnData { id, .. } => {
+                            contracts.insert(Contract {
+                                id: *id,
+                                last_seen: 0,
+                            });
+                        }
+                        #[allow(unused)]
+                        Receipt::Transfer {
+                            id,
+                            to,
+                            asset_id,
+                            amount,
+                            ..
+                        } => {
+                            contracts.insert(Contract {
+                                id: *id,
+                                last_seen: 0,
+                            });
 
-                        let transfer = Transfer {
-                            id: first8_bytes_to_u64(bytes32_from_inputs(
-                                id,
-                                [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
-                            )),
-                            contract_id: *id,
-                            receiver: *to,
-                            amount: *amount,
-                            asset_id: *asset_id,
-                        };
+                            let transfer = Transfer {
+                                id: first8_bytes_to_u64(bytes32_from_inputs(
+                                    id,
+                                    [id.to_vec(), to.to_vec(), asset_id.to_vec()]
+                                        .concat(),
+                                )),
+                                contract_id: *id,
+                                receiver: *to,
+                                amount: *amount,
+                                asset_id: *asset_id,
+                            };
 
-                        transfer.save();
-                        tokens_transferred.push(asset_id.to_string());
-                    }
-                    #[allow(unused)]
-                    Receipt::TransferOut {
-                        id,
-                        to,
-                        amount,
-                        asset_id,
-                        ..
-                    } => {
-                        contracts.insert(Contract {
-                            id: *id,
-                            last_seen: 0,
-                        });
+                            transfer.save();
+                            tokens_transferred.push(asset_id.to_string());
+                        }
+                        #[allow(unused)]
+                        Receipt::TransferOut {
+                            id,
+                            to,
+                            amount,
+                            asset_id,
+                            ..
+                        } => {
+                            contracts.insert(Contract {
+                                id: *id,
+                                last_seen: 0,
+                            });
 
-                        accounts.insert(Account {
-                            id: *to,
-                            last_seen: 0,
-                        });
+                            accounts.insert(Account {
+                                id: *to,
+                                last_seen: 0,
+                            });
 
-                        tx_amount += amount;
-                        let transfer_out = TransferOut {
-                            id: first8_bytes_to_u64(bytes32_from_inputs(
-                                id,
-                                [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
-                            )),
-                            contract_id: *id,
-                            receiver: *to,
-                            amount: *amount,
-                            asset_id: *asset_id,
-                        };
+                            tx_amount += amount;
+                            let transfer_out = TransferOut {
+                                id: first8_bytes_to_u64(bytes32_from_inputs(
+                                    id,
+                                    [id.to_vec(), to.to_vec(), asset_id.to_vec()]
+                                        .concat(),
+                                )),
+                                contract_id: *id,
+                                receiver: *to,
+                                amount: *amount,
+                                asset_id: *asset_id,
+                            };
 
-                        transfer_out.save();
-                    }
-                    #[allow(unused)]
-                    Receipt::Log { id, rb, .. } => {
-                        contracts.insert(Contract {
-                            id: *id,
-                            last_seen: 0,
-                        });
-                        let log = Log {
-                            id: first8_bytes_to_u64(bytes32_from_inputs(
-                                id,
-                                u64::to_le_bytes(*rb).to_vec(),
-                            )),
-                            contract_id: *id,
-                            rb: *rb,
-                        };
+                            transfer_out.save();
+                        }
+                        #[allow(unused)]
+                        Receipt::Log { id, rb, .. } => {
+                            contracts.insert(Contract {
+                                id: *id,
+                                last_seen: 0,
+                            });
+                            let log = Log {
+                                id: first8_bytes_to_u64(bytes32_from_inputs(
+                                    id,
+                                    u64::to_le_bytes(*rb).to_vec(),
+                                )),
+                                contract_id: *id,
+                                rb: *rb,
+                            };
 
-                        log.save();
-                    }
-                    #[allow(unused)]
-                    Receipt::LogData { id, .. } => {
-                        contracts.insert(Contract {
-                            id: *id,
-                            last_seen: 0,
-                        });
+                            log.save();
+                        }
+                        #[allow(unused)]
+                        Receipt::LogData { id, .. } => {
+                            contracts.insert(Contract {
+                                id: *id,
+                                last_seen: 0,
+                            });
 
-                        Logger::info("LogData types are unused in this example. (>'')>");
-                    }
-                    #[allow(unused)]
-                    Receipt::ScriptResult { result, gas_used } => {
-                        let result: u64 = match result {
-                            ScriptExecutionResult::Success => 1,
-                            ScriptExecutionResult::Revert => 2,
-                            ScriptExecutionResult::Panic => 3,
-                            ScriptExecutionResult::GenericFailure(_) => 4,
-                        };
-                        let r = ScriptResult {
-                            id: first8_bytes_to_u64(bytes32_from_inputs(
-                                &[0u8; 32],
-                                u64::to_be_bytes(result).to_vec(),
-                            )),
-                            result,
-                            gas_used: *gas_used,
-                        };
-                        r.save();
-                    }
-                    #[allow(unused)]
-                    Receipt::MessageOut {
-                        sender,
-                        recipient,
-                        amount,
-                        ..
-                    } => {
-                        tx_amount += amount;
-                        accounts.insert(Account {
-                            id: *sender,
-                            last_seen: 0,
-                        });
-                        accounts.insert(Account {
-                            id: *recipient,
-                            last_seen: 0,
-                        });
+                            Logger::info(
+                                "LogData types are unused in this example. (>'')>",
+                            );
+                        }
+                        #[allow(unused)]
+                        Receipt::ScriptResult { result, gas_used } => {
+                            let result: u64 = match result {
+                                ScriptExecutionResult::Success => 1,
+                                ScriptExecutionResult::Revert => 2,
+                                ScriptExecutionResult::Panic => 3,
+                                ScriptExecutionResult::GenericFailure(_) => 4,
+                            };
+                            let r = ScriptResult {
+                                id: first8_bytes_to_u64(bytes32_from_inputs(
+                                    &[0u8; 32],
+                                    u64::to_be_bytes(result).to_vec(),
+                                )),
+                                result,
+                                gas_used: *gas_used,
+                            };
+                            r.save();
+                        }
+                        #[allow(unused)]
+                        Receipt::MessageOut {
+                            sender,
+                            recipient,
+                            amount,
+                            ..
+                        } => {
+                            tx_amount += amount;
+                            accounts.insert(Account {
+                                id: *sender,
+                                last_seen: 0,
+                            });
+                            accounts.insert(Account {
+                                id: *recipient,
+                                last_seen: 0,
+                            });
 
-                        Logger::info("LogData types are unused in this example. (>'')>");
-                    }
-                    _ => {
-                        Logger::info("This type is not handled yet.");
+                            Logger::info(
+                                "LogData types are unused in this example. (>'')>",
+                            );
+                        }
+                        _ => {
+                            Logger::info("This type is not handled yet.");
+                        }
                     }
                 }
+
+                // Persist the transaction to the database via the `Tx` object defined in the GraphQL schema.
+                let tx_entity = Tx {
+                    block: block.id,
+                    hash: tx.id,
+                    timestamp: block.timestamp,
+                    id: first8_bytes_to_u64(tx.id),
+                    value: tx_amount,
+                    status: tx.status.clone().into(),
+                    tokens_transferred: Json(
+                        serde_json::to_value(tokens_transferred)
+                            .unwrap()
+                            .to_string(),
+                    ),
+                };
+
+                tx_entity.save();
             }
-
-            // Persist the transaction to the database via the `Tx` object defined in the GraphQL schema.
-            let tx_entity = Tx {
-                block: block.id,
-                hash: tx.id,
-                timestamp: block.timestamp,
-                id: first8_bytes_to_u64(tx.id),
-                value: tx_amount,
-                status: tx.status.clone().into(),
-                tokens_transferred: Json(
-                    serde_json::to_value(tokens_transferred)
-                        .unwrap()
-                        .to_string(),
-                ),
-            };
-
-            tx_entity.save();
         }
 
         // Save all of our accounts

@@ -161,7 +161,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                     .await
                                     .unwrap_or_else(|e| {
                                         error!("Client communication error fetching receipts: {e:?}");
-                                        Vec::new()
+                                        Some(Vec::new())
                                     });
 
                                 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286

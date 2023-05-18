@@ -411,7 +411,7 @@ fn process_fn_items(
                 }
             }
 
-            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Bytes32, amount: Word, data: &[u8]) -> MessageId {
+            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Nonce, amount: Word, data: &[u8]) -> MessageId {
 
                 let raw_message_id = Sha256::new()
                     .chain_update(sender)
@@ -482,7 +482,7 @@ fn process_fn_items(
                     let mut return_types = Vec::new();
                     let mut callees = HashSet::new();
 
-                    for receipt in tx.receipts {
+                    for receipt in tx.receipts.unwrap() {
                         match receipt {
                             Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
                                 #check_if_subscribed_to_contract
@@ -586,7 +586,7 @@ fn process_fn_items(
                     decoder.dispatch()#awaitness;
                 }
 
-                let metadata = IndexMetadataEntity{ id: block.height, time: block.time };
+                let metadata = IndexMetadataEntity{ id: block.height as u64, time: block.time };
                 metadata.save()#awaitness;
             }
         },

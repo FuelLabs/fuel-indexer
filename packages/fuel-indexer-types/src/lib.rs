@@ -7,7 +7,8 @@ pub use crate::abi::*;
 pub use crate::tx::*;
 use bytes::Bytes;
 pub use fuel_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes64, Bytes8, ContractId, MessageId, Salt, Word,
+    Address, AssetId, BlockHeight, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
+    MessageId, Nonce, Salt, Word,
 };
 pub use fuels::{
     core::try_from_bytes,
@@ -32,7 +33,7 @@ pub type Timestamp = u64;
 pub type Charfield = String;
 pub type Boolean = bool;
 pub type Signature = Bytes64;
-pub type Nonce = Bytes32;
+// pub type Nonce = Bytes32;
 pub type HexString = Bytes;
 pub type Tai64Timestamp = Tai64;
 

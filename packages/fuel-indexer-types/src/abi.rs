@@ -1,6 +1,6 @@
 use crate::{
     tx::{Transaction, TransactionStatus, TxId},
-    type_id, Address, AssetId, Bytes32, ContractId, MessageId,
+    type_id, Address, AssetId, Bytes32, ContractId, MessageId, Nonce,
 };
 pub use fuel_tx::Receipt;
 use serde::{Deserialize, Serialize};
@@ -15,13 +15,13 @@ pub trait NativeFuelType {
 pub struct TransactionData {
     pub transaction: Transaction,
     pub status: TransactionStatus,
-    pub receipts: Vec<Receipt>,
+    pub receipts: Option<Vec<Receipt>>,
     pub id: TxId,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct BlockData {
-    pub height: u64,
+    pub height: u32,
     pub id: Bytes32,
     pub producer: Option<Bytes32>,
     pub time: i64,
@@ -113,7 +113,7 @@ pub struct MessageOut {
     pub sender: Address,
     pub recipient: Address,
     pub amount: u64,
-    pub nonce: Bytes32,
+    pub nonce: Nonce,
     pub len: u64,
     pub digest: Bytes32,
     pub data: Vec<u8>,

@@ -82,8 +82,8 @@ pub struct Manifest {
         deserialize_with = "ContractIds::deserialize"
     )]
     pub contract_id: ContractIds,
-    pub start_block: Option<u64>,
-    pub end_block: Option<u64>,
+    pub start_block: Option<u32>,
+    pub end_block: Option<u32>,
     #[serde(default)]
     pub resumable: Option<bool>,
 }

@@ -1,9 +1,11 @@
 use crate::{
     cli::InitCommand,
-    utils::{default_manifest_filename, default_schema_filename, defaults},
+    utils::{
+        default_manifest_filename, default_schema_filename, defaults,
+        kebab_to_snake_case, validate_name,
+    },
 };
 use anyhow::Context;
-use forc_util::{kebab_to_snake_case, validate_name};
 use std::{
     fs,
     path::{Path, PathBuf},

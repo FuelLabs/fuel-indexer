@@ -20,8 +20,8 @@ async-trait = "0.1"
 bincode = "1.3.3"
 chrono = { version = "0.4", features = ["serde"] }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
-fuel-core = { version = "0.17", optional = true }
-fuel-core-client = "0.17"
+fuel-core = { version = "0.18", optional = true }
+fuel-core-client = "0.18"
 fuel-indexer-api-server = { workspace = true, optional = true }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-lib = { workspace = true }
@@ -38,7 +38,7 @@ wasmer-engine-universal = "2.3"
 
 [dev-dependencies]
 chrono = { version = "0.4", features = ["serde"] }
-fuel-core-client = { version = "0.17.2", features = ["test-helpers"] }
+fuel-core-client = { version = "0.18", features = ["test-helpers"] }
 
 [features]
 default = ["api-server"]

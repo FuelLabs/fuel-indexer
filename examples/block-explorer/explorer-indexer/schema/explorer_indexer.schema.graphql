@@ -1,6 +1,6 @@
 type Block {
     id: ID!
-    height: UInt8!
+    height: UInt4!
     producer: Bytes32!
     timestamp: Int8!
     gas_limit: UInt8!

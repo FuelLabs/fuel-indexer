@@ -16,7 +16,6 @@ anyhow = "1"
 clap = { features = ["derive", "env"] , workspace = true }
 forc-postgres = { workspace = true }
 forc-tracing = { version = "0.31", default-features = false }
-forc-util = { version = "0.35.0" }
 fuel-indexer-lib = { workspace = true }
 fuel-tx = { features = ["builder"] , workspace = true }
 fuels = { workspace = true }
@@ -33,6 +32,7 @@ tokio = { features = ["macros", "rt-multi-thread", "process"] , workspace = true
 toml = "0.5"
 tempfile = "3.4.0"
 tracing = { workspace = true }
+unicode-xid = "0.2"
 walkdir = "2"
 
 [[bin]]
