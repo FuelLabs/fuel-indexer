@@ -1,6 +1,7 @@
 scalar Address
 scalar AssetId
 scalar Blob
+scalar BlockHeight
 scalar Boolean
 scalar Bytes
 scalar Bytes32
@@ -23,6 +24,7 @@ scalar Salt
 scalar Signature
 scalar Tai64Timestamp
 scalar Timestamp
+scalar TxId
 scalar UInt16
 scalar UInt4
 scalar UInt8

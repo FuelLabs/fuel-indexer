@@ -4,5 +4,7 @@ use fuel_indexer_plugin::prelude::*;
 
 #[indexer(manifest = "examples/fuel-explorer/fuel-explorer/fuel_explorer.manifest.yaml")]
 pub mod explorer_index {
-    fn index_block(block_data: BlockData) {}
+    fn index_block(_block_data: BlockData) {
+        Logger::info("hello, world!");
+    }
 }
