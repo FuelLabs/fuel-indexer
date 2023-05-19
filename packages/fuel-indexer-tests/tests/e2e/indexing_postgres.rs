@@ -11,7 +11,7 @@ use fuel_indexer_tests::{
     },
     utils::update_test_manifest_asset_paths,
 };
-use fuel_indexer_types::{Address, ContractId, Identity};
+use fuel_indexer_types::{Address, ContractId, HexString, Identity, Nonce};
 use sqlx::{types::BigDecimal, Row};
 use std::str::FromStr;
 use tokio::{
@@ -883,4 +883,71 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 42);
     assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_block_explorer_types_postgres() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.explorerentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 8675309);
+    let nonce = row.get::<&str, usize>(1);
+    let nonce = hex::decode(nonce).unwrap();
+    let mut buff: [u8; 32] = [0u8; 32];
+    buff.copy_from_slice(&nonce);
+    assert_eq!(Nonce::from(buff), Nonce::default());
+
+    let hexstring = row.get::<&str, usize>(3);
+    let hexstring = hex::decode(hexstring).unwrap();
+
+    assert_eq!(hexstring, HexString::from("hello world!"));
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_enum_types_postgres() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/enum").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
 }

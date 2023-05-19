@@ -24,6 +24,7 @@ fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
 hex = "0.4"
 sha2 = { version = "0.10" }
+serde = { workspace = true }
 tokio = { features = ["macros", "rt-multi-thread", "sync", "process"], optional = true, workspace = true }
 tracing = { optional = true, workspace = true }
 tracing-subscriber = { version = "0.2", features = ["env-filter"], optional = true }

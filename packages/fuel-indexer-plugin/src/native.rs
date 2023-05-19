@@ -4,7 +4,6 @@ use async_trait;
 use fuel_indexer_schema::FtColumn;
 
 pub use anyhow;
-pub use bincode;
 pub use fuel_indexer::prelude::{
     Arc, Database, IndexerError, IndexerResult, IndexerService, Mutex,
     NativeIndexExecutor,
