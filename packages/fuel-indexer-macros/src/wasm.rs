@@ -1,5 +1,6 @@
 use quote::quote;
 
+/// Generate the handler block for the wasm execution environment.
 pub fn handler_block_wasm(
     handler_block: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
@@ -29,20 +30,25 @@ pub fn handler_block_wasm(
     }
 }
 
+/// Prelude imports for the _indexer_ module.
+///
+/// These imports are placed below the top-level lib imports, so any
+/// dependencies imported here will only be within the scope of the
+/// indexer module, not within the scope of the entire lib module.
 fn wasm_prelude() -> proc_macro2::TokenStream {
     quote! {
         use alloc::{format, vec, vec::Vec};
-        use fuel_indexer_plugin::wasm::*;
-        use fuel_indexer_plugin::prelude::*;
-        use fuel_indexer_schema::utils::{serialize, deserialize};
+        use fuel_indexer_plugin::{{serialize, deserialize}, wasm::{Logger, FromHex, Digest, Sha256, Entity},
+            types::*, bincode, serde::{Deserialize, Serialize}};
+
+        // TODO: Eventually prevent these types of implicity imports and have users import
+        // all dependencies explicity (preferably through a single crate).
         use fuels::{
             core::abi_decoder::ABIDecoder,
             macros::{Parameterize, Tokenizable},
             types::{StringToken, traits::{Tokenizable, Parameterize}},
         };
-        use crate::sha2::{Sha256, Digest};
         use std::str::FromStr;
-        use fuel_indexer_plugin::wasm::bincode;
 
         type B256 = [u8; 32];
     }

@@ -14,6 +14,7 @@ scalar ContractId
 scalar HexString
 scalar ID
 scalar Identity
+scalar Int1
 scalar Int16
 scalar Int4
 scalar Int8
@@ -25,6 +26,7 @@ scalar Signature
 scalar Tai64Timestamp
 scalar Timestamp
 scalar TxId
+scalar UInt1
 scalar UInt16
 scalar UInt4
 scalar UInt8

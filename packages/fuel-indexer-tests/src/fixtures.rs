@@ -713,6 +713,20 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_trigger_enum(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_enum()
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest<WalletUnlocked>,
     }
@@ -766,8 +780,8 @@ pub mod test_web {
                     fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields,
                 ),
             )
-            .route("/vec-calldata", web::post().to(fuel_indexer_vec_calldata))
-            .route("/vec-logdata", web::post().to(fuel_indexer_vec_logdata))
+            .route("/vec_calldata", web::post().to(fuel_indexer_vec_calldata))
+            .route("/vec_logdata", web::post().to(fuel_indexer_vec_logdata))
             .route(
                 "/pure_function",
                 web::post().to(fuel_indexer_test_pure_function),
@@ -778,6 +792,7 @@ pub mod test_web {
                 "/enum_error",
                 web::post().to(fuel_indexer_test_trigger_enum_error),
             )
+            .route("/enum", web::post().to(fuel_indexer_test_trigger_enum))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

@@ -1,12 +1,13 @@
 extern crate alloc;
 
-use crate::{IndexerSchemaError, IndexerSchemaResult};
+use crate::{parser::ParsedGraphQLSchema, IndexerSchemaError, IndexerSchemaResult};
 use alloc::vec::Vec;
 use async_graphql_parser::types::{
-    Directive, FieldDefinition, ServiceDocument, TypeDefinition, TypeKind,
-    TypeSystemDefinition,
+    BaseType, Directive, FieldDefinition, ServiceDocument, Type, TypeDefinition,
+    TypeKind, TypeSystemDefinition,
 };
-pub use fuel_indexer_database_types as sql_types;
+use fuel_indexer_database_types as sql_types;
+use fuel_indexer_database_types::directives;
 use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -16,6 +17,8 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
+
+type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 
 pub fn inject_native_entities_into_schema(schema: &str) -> String {
     format!("{}{}", schema, IndexMetadata::schema_fragment())
@@ -90,6 +93,10 @@ pub fn get_unique_directive(field: &FieldDefinition) -> sql_types::directives::U
     sql_types::directives::Unique(false)
 }
 
+/// Given a field whos type references another object in the schema (i.e.,
+/// a foreign key field), return metadata about the field and the referenced object.
+///
+/// This should only be called on `ColumnType::ForeignKey`.
 pub fn get_join_directive_info(
     field: &FieldDefinition,
     type_name: &String,
@@ -135,7 +142,7 @@ pub fn get_join_directive_info(
         (ref_field_name.to_string(), ref_field_type_name)
     } else {
         let ref_field_name = sql_types::IdCol::to_lowercase_string();
-        let field_id = format!("{field_type_name}.{ref_field_name}");
+        let field_id = format!("{type_name}.{ref_field_name}");
         let mut ref_field_type_name = types_map
             .get(&field_id)
             .unwrap_or_else(|| {
@@ -143,7 +150,7 @@ pub fn get_join_directive_info(
             })
             .to_owned();
 
-        // In the case where we have an Object! foreign key reference on a  field,
+        // In the case where we have an Object! foreign key reference on a field,
         // if that object's default 'id' field is 'ID' then 'ID' is going to create
         // another primary key (can't do that in SQL) -- so we manually change that to
         // an integer type here. Might have to do this for foreign key directives (above)
@@ -178,7 +185,14 @@ pub fn build_schema_fields_and_types_map(
         if let TypeSystemDefinition::Type(typ) = def {
             match &typ.node.kind {
                 TypeKind::Scalar => {}
-                TypeKind::Enum(_e) => {}
+                TypeKind::Enum(e) => {
+                    let name = &typ.node.name.to_string();
+                    for val in &e.values {
+                        let val_name = &val.node.value.to_string();
+                        let val_id = format!("{name}.{val_name}");
+                        types_map.insert(val_id, name.to_string());
+                    }
+                }
                 TypeKind::Object(obj) => {
                     for field in &obj.fields {
                         let field = &field.node;
@@ -201,7 +215,7 @@ pub fn build_schema_fields_and_types_map(
 
 /// Given a GraphQL document, return a two `HashSet`s - one for each
 /// unique field type, and one for each unique directive.
-pub fn build_schema_objects_set(
+pub fn build_schema_types_set(
     ast: &ServiceDocument,
 ) -> (HashSet<String>, HashSet<String>) {
     let types: HashSet<String> = ast
@@ -230,6 +244,92 @@ pub fn build_schema_objects_set(
         .collect();
 
     (types, directives)
+}
+
+pub fn get_foreign_keys(
+    namespace: &str,
+    identifier: &str,
+    is_native: bool,
+    schema: &str,
+) -> IndexerSchemaResult<ForeignKeyMap> {
+    let parsed_schema =
+        ParsedGraphQLSchema::new(namespace, identifier, is_native, Some(schema))?;
+
+    let mut fks: ForeignKeyMap = HashMap::new();
+
+    for def in parsed_schema.ast.definitions.iter() {
+        if let TypeSystemDefinition::Type(t) = def {
+            if let TypeKind::Object(o) = &t.node.kind {
+                // TODO: Add more ignorable types as needed - and use lazy_static!
+                if t.node.name.to_string().to_lowercase() == *"queryroot" {
+                    continue;
+                }
+                for field in o.fields.iter() {
+                    let col_type = get_column_type(
+                        &field.node.ty.node,
+                        &parsed_schema.scalar_names,
+                    )?;
+                    #[allow(clippy::single_match)]
+                    match col_type {
+                        sql_types::ColumnType::ForeignKey => {
+                            let directives::Join {
+                                reference_field_name,
+                                ..
+                            } = get_join_directive_info(
+                                &field.node,
+                                &t.node.name.to_string(),
+                                &parsed_schema.field_type_mappings,
+                            );
+
+                            let fk = fks.get_mut(&t.node.name.to_string().to_lowercase());
+                            match fk {
+                                Some(fks_for_field) => {
+                                    fks_for_field.insert(
+                                        field.node.name.to_string(),
+                                        (
+                                            field_type_table_name(&field.node),
+                                            reference_field_name.clone(),
+                                        ),
+                                    );
+                                }
+                                None => {
+                                    let fks_for_field = HashMap::from([(
+                                        field.node.name.to_string(),
+                                        (
+                                            field_type_table_name(&field.node),
+                                            reference_field_name.clone(),
+                                        ),
+                                    )]);
+                                    fks.insert(
+                                        t.node.name.to_string().to_lowercase(),
+                                        fks_for_field,
+                                    );
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(fks)
+}
+
+pub fn get_column_type(
+    field_type: &Type,
+    primitives: &HashSet<String>,
+) -> IndexerSchemaResult<sql_types::ColumnType> {
+    match &field_type.base {
+        BaseType::Named(t) => {
+            if !primitives.contains(t.as_str()) {
+                return Ok(sql_types::ColumnType::ForeignKey);
+            }
+            Ok(sql_types::ColumnType::from(t.as_str()))
+        }
+        BaseType::List(_) => Err(IndexerSchemaError::ListTypesUnsupported),
+    }
 }
 
 #[cfg(test)]
@@ -308,7 +408,7 @@ type Auditor {
 
         let ast = parse_schema(schema).unwrap();
 
-        let (obj_set, _directives_set) = build_schema_objects_set(&ast);
+        let (obj_set, _directives_set) = build_schema_types_set(&ast);
 
         assert!(!obj_set.contains("NotARealThing"));
         assert!(obj_set.contains("Borrower"));

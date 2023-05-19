@@ -4,17 +4,14 @@ use fuel_indexer_schema::{
     utils::{deserialize, serialize},
     FtColumn,
 };
-
 use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
 };
 
 pub use bincode;
-pub use hex;
 pub use hex::FromHex;
-pub use sha2;
-pub use std::collections::HashMap;
-pub use std::collections::HashSet;
+pub use sha2::{Digest, Sha256};
+pub use std::collections::{HashMap, HashSet};
 
 extern "C" {
     // TODO: error codes? or just panic and let the runtime handle it?

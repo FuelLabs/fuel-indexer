@@ -5,8 +5,8 @@ use crate::sql_types::ColumnType;
 use core::convert::TryInto;
 use fuel_indexer_types::{
     try_from_bytes, Address, AssetId, Blob, BlockHeight, Bytes32, Bytes4, Bytes64,
-    Bytes8, ContractId, HexString, Identity, Int16, Int4, Int8, Json, MessageId, Nonce,
-    Salt, Signature, Tai64Timestamp, TxId, UInt16, UInt4, UInt8,
+    Bytes8, ContractId, HexString, Identity, Int1, Int16, Int4, Int8, Json, MessageId,
+    Nonce, Salt, Signature, Tai64Timestamp, TxId, UInt1, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -17,6 +17,7 @@ pub const QUERY_ROOT: &str = "QueryRoot";
 
 #[cfg(feature = "db-models")]
 pub mod db;
+pub mod parser;
 pub mod utils;
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
@@ -49,6 +50,7 @@ pub enum FtColumn {
     Address(Option<Address>),
     AssetId(Option<AssetId>),
     Blob(Option<Blob>),
+    BlockHeight(Option<BlockHeight>),
     Boolean(Option<bool>),
     Bytes32(Option<Bytes32>),
     Bytes4(Option<Bytes4>),
@@ -56,9 +58,11 @@ pub enum FtColumn {
     Bytes8(Option<Bytes8>),
     Charfield(Option<String>),
     ContractId(Option<ContractId>),
+    Enum(Option<String>),
     HexString(Option<HexString>),
     ID(Option<UInt8>),
     Identity(Option<Identity>),
+    Int1(Option<Int1>),
     Int16(Option<Int16>),
     Int4(Option<Int4>),
     Int8(Option<Int8>),
@@ -69,11 +73,11 @@ pub enum FtColumn {
     Signature(Option<Signature>),
     Tai64Timestamp(Option<Tai64Timestamp>),
     Timestamp(Option<Int8>),
+    TxId(Option<TxId>),
+    UInt1(Option<UInt1>),
     UInt16(Option<UInt16>),
     UInt4(Option<UInt4>),
     UInt8(Option<UInt8>),
-    TxId(Option<TxId>),
-    BlockHeight(Option<BlockHeight>),
 }
 
 impl FtColumn {
@@ -155,6 +159,18 @@ impl FtColumn {
                 );
                 FtColumn::Int8(Some(int8))
             }
+            ColumnType::Int1 => {
+                let int1 = i8::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
+                FtColumn::Int1(Some(int1))
+            }
+            ColumnType::UInt1 => {
+                let uint1 = u8::from_le_bytes(
+                    bytes[..size].try_into().expect("Invalid slice length"),
+                );
+                FtColumn::UInt1(Some(uint1))
+            }
             ColumnType::Int16 => {
                 let int16 = i128::from_le_bytes(
                     bytes[..size].try_into().expect("Invalid slice length"),
@@ -225,6 +241,10 @@ impl FtColumn {
             ColumnType::Object => {
                 panic!("Object not supported for FtColumn.");
             }
+            ColumnType::Enum => {
+                let s = String::from_utf8_lossy(&bytes[..size]).to_string();
+                FtColumn::Enum(Some(s))
+            }
         }
     }
 
@@ -282,6 +302,14 @@ impl FtColumn {
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Int4(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Int1(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::UInt1(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
@@ -351,6 +379,10 @@ impl FtColumn {
                     let x = hex::encode(blob.as_ref());
                     format!("'{x}'")
                 }
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::Enum(value) => match value {
+                Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
         }

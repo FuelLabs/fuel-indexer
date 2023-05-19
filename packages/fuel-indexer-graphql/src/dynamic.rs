@@ -36,6 +36,7 @@ lazy_static! {
         "HexString",
         "ID",
         "Identity",
+        "Int1",
         "Int16",
         "Int4",
         "Int8",
@@ -47,6 +48,7 @@ lazy_static! {
         "Tai64Timestamp",
         "Timestamp",
         "TxId",
+        "UInt1",
         "UInt16",
         "UInt4",
         "UInt8",
@@ -166,7 +168,7 @@ pub async fn execute_query(
 
 /// Build a dynamic schema. This allows for introspection, which allows for extensive
 /// auto-documentation and code suggestions.
-pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
+pub fn build_dynamic_schema(schema: &Schema) -> GraphqlResult<DynamicSchema> {
     // Register scalars into dynamic schema so that users are aware of their existence.
     let mut schema_builder: DynamicSchemaBuilder = SCALAR_TYPES.iter().fold(
         DynamicSchema::build("QueryRoot", None, None).introspection_only(),
@@ -193,7 +195,7 @@ pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
 
     let sort_enum = Enum::new("SortOrder").item("asc").item("desc");
 
-    for (entity_type, field_map) in schema.fields {
+    for (entity_type, field_map) in &schema.fields {
         if IGNORED_ENTITY_TYPES.contains(&entity_type.as_str()) {
             continue;
         }
@@ -266,7 +268,7 @@ pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
                 continue;
             }
 
-            if let Some(field_def) = Type::new(&field_type) {
+            if let Some(field_def) = Type::new(field_type) {
                 let base_field_type = &field_def.base;
                 let nullable = field_def.nullable;
 
@@ -295,7 +297,7 @@ pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
                 };
 
                 let field = create_field_with_assoc_args(
-                    field_name,
+                    field_name.to_string(),
                     field_type,
                     base_field_type,
                     &filter_tracker,

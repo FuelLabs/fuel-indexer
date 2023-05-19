@@ -86,6 +86,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
             "simple_wasm_executor",
             SIMPLE_WASM_GRAPHQL_SCHEMA,
             &mut conn,
+            manifest.is_native(),
         )
         .await;
 

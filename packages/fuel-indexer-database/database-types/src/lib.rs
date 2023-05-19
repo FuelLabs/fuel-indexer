@@ -47,6 +47,12 @@ pub struct NewGraphRoot {
     pub schema: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct VirtualColumn {
+    pub name: String,
+    pub graphql_type: String,
+}
+
 #[derive(Debug)]
 pub struct TypeId {
     pub id: i64,
@@ -55,6 +61,13 @@ pub struct TypeId {
     pub schema_identifier: String,
     pub graphql_name: String,
     pub table_name: String,
+    pub virtual_columns: Vec<VirtualColumn>,
+}
+
+impl TypeId {
+    pub fn is_non_indexable_type(&self) -> bool {
+        !self.virtual_columns.is_empty()
+    }
 }
 
 #[derive(Debug)]
@@ -145,6 +158,9 @@ impl NewColumn {
             ColumnType::HexString => "varchar(10485760)",
             ColumnType::Tai64Timestamp => "varchar(128)",
             ColumnType::TxId => "varchar(64)",
+            ColumnType::Enum => "varchar(255)",
+            ColumnType::Int1 => "integer",
+            ColumnType::UInt1 => "integer",
         }
     }
 }
@@ -190,6 +206,9 @@ pub enum ColumnType {
     Tai64Timestamp = 27,
     TxId = 28,
     BlockHeight = 29,
+    Enum = 30,
+    Int1 = 31,
+    UInt1 = 32,
 }
 
 impl From<ColumnType> for i32 {
@@ -225,6 +244,9 @@ impl From<ColumnType> for i32 {
             ColumnType::Tai64Timestamp => 27,
             ColumnType::TxId => 28,
             ColumnType::BlockHeight => 29,
+            ColumnType::Enum => 30,
+            ColumnType::Int1 => 31,
+            ColumnType::UInt1 => 32,
         }
     }
 }
@@ -268,6 +290,9 @@ impl From<i32> for ColumnType {
             27 => ColumnType::Tai64Timestamp,
             28 => ColumnType::TxId,
             29 => ColumnType::BlockHeight,
+            30 => ColumnType::Enum,
+            31 => ColumnType::Int1,
+            32 => ColumnType::UInt1,
             _ => panic!("Invalid column type."),
         }
     }
@@ -306,6 +331,9 @@ impl From<&str> for ColumnType {
             "Tai64Timestamp" => ColumnType::Tai64Timestamp,
             "TxId" => ColumnType::TxId,
             "BlockHeight" => ColumnType::BlockHeight,
+            "Enum" => ColumnType::Enum,
+            "Int1" => ColumnType::Int1,
+            "UInt1" => ColumnType::UInt1,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }

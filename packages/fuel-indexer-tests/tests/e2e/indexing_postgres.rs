@@ -11,7 +11,7 @@ use fuel_indexer_tests::{
     },
     utils::update_test_manifest_asset_paths,
 };
-use fuel_indexer_types::{Address, ContractId, Identity};
+use fuel_indexer_types::{Address, ContractId, HexString, Identity, Nonce};
 use sqlx::{types::BigDecimal, Row};
 use std::str::FromStr;
 use tokio::{
@@ -21,7 +21,7 @@ use tokio::{
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "50663bdbc1c5a768e742bb557c767b04e61c781ff077f6c063445c80ae3a07bd";
+    "d1ece60c4653e20bcf0a70c449c6e2c90731c6b78d7bd40bab16ffeb595f3150";
 
 async fn setup_test_components(
 ) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
@@ -41,7 +41,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -109,7 +109,7 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -146,7 +146,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -198,7 +198,7 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -243,7 +243,7 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -271,7 +271,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -300,7 +300,7 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -336,7 +336,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -372,7 +372,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -404,7 +404,7 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -448,7 +448,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -485,7 +485,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -524,7 +524,7 @@ async fn test_index_respects_start_block_postgres() {
     update_test_manifest_asset_paths(&mut manifest);
     manifest.start_block = Some(block_height + 2);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let pre_check = sqlx::query(&format!(
@@ -593,7 +593,7 @@ async fn test_index_respects_end_block_postgres() {
     update_test_manifest_asset_paths(&mut manifest);
     manifest.end_block = Some(block_height + 1);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let req = test::TestRequest::post().uri("/ping").to_request();
     let _ = app.call(req).await;
@@ -672,7 +672,7 @@ async fn test_index_respects_end_block_and_start_block_postgres() {
     manifest.start_block = Some(block_height + 1);
     manifest.end_block = Some(block_height + 2);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let mut conn = test_db.pool.acquire().await.unwrap();
 
@@ -741,7 +741,7 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -770,7 +770,7 @@ async fn test_can_trigger_and_index_pure_function_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -803,7 +803,7 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -835,7 +835,7 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -864,7 +864,7 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -883,4 +883,71 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 42);
     assert_eq!(row.get::<&str, usize>(1), EXPECTED_CONTRACT_ID);
     assert_eq!(row.get::<BigDecimal, usize>(2).to_u64().unwrap(), 0);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_block_explorer_types_postgres() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.explorerentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 8675309);
+    let nonce = row.get::<&str, usize>(1);
+    let nonce = hex::decode(nonce).unwrap();
+    let mut buff: [u8; 32] = [0u8; 32];
+    buff.copy_from_slice(&nonce);
+    assert_eq!(Nonce::from(buff), Nonce::default());
+
+    let hexstring = row.get::<&str, usize>(3);
+    let hexstring = hex::decode(hexstring).unwrap();
+
+    assert_eq!(hexstring, HexString::from("hello world!"));
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_enum_types_postgres() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/enum").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
 }

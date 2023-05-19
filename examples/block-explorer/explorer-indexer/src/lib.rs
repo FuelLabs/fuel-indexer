@@ -18,7 +18,6 @@
 extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
-use std::collections::HashSet;
 
 // We'll pass our manifest to our #[indexer] attribute. This manifest contains
 // all of the relevant configuration parameters in regard to how our index will
@@ -56,10 +55,6 @@ mod explorer_index {
 
         // Now that we've created the object for the database, let's save it.
         block.save();
-
-        // Keep track of some Receipt data involved in this transaction.
-        let mut accounts = HashSet::new();
-        let mut contracts = HashSet::new();
 
         for tx in block_data.transactions.iter() {
             let mut tx_amount = 0;
@@ -121,17 +116,28 @@ mod explorer_index {
                 match receipt {
                     #[allow(unused)]
                     Receipt::Call { id, .. } => {
-                        contracts.insert(Contract {
-                            id: *id,
+                        let contract = Contract {
+                            id: first8_bytes_to_u64(bytes32_from_inputs(
+                                id,
+                                [id.to_vec()].concat(),
+                            )),
+                            contract_id: *id,
                             last_seen: 0,
-                        });
+                        };
+
+                        contract.save();
                     }
                     #[allow(unused)]
                     Receipt::ReturnData { id, .. } => {
-                        contracts.insert(Contract {
-                            id: *id,
+                        let contract = Contract {
+                            id: first8_bytes_to_u64(bytes32_from_inputs(
+                                id,
+                                [id.to_vec()].concat(),
+                            )),
+                            contract_id: *id,
                             last_seen: 0,
-                        });
+                        };
+                        contract.save();
                     }
                     #[allow(unused)]
                     Receipt::Transfer {
@@ -141,17 +147,23 @@ mod explorer_index {
                         amount,
                         ..
                     } => {
-                        contracts.insert(Contract {
-                            id: *id,
+                        let contract = Contract {
+                            id: first8_bytes_to_u64(bytes32_from_inputs(
+                                id,
+                                [id.to_vec()].concat(),
+                            )),
+                            contract_id: *id,
                             last_seen: 0,
-                        });
+                        };
+
+                        contract.save();
 
                         let transfer = Transfer {
                             id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
                                 [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
                             )),
-                            contract_id: *id,
+                            contract_id: contract.id,
                             receiver: *to,
                             amount: *amount,
                             asset_id: *asset_id,
@@ -168,15 +180,20 @@ mod explorer_index {
                         asset_id,
                         ..
                     } => {
-                        contracts.insert(Contract {
-                            id: *id,
+                        let account = Account {
+                            id: 1,
+                            address: *to,
                             last_seen: 0,
-                        });
+                        };
 
-                        accounts.insert(Account {
-                            id: *to,
+                        account.save();
+
+                        let contract = Contract {
+                            id: 1,
+                            contract_id: *id,
                             last_seen: 0,
-                        });
+                        };
+                        contract.save();
 
                         tx_amount += amount;
                         let transfer_out = TransferOut {
@@ -184,8 +201,8 @@ mod explorer_index {
                                 id,
                                 [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
                             )),
-                            contract_id: *id,
-                            receiver: *to,
+                            contract_id: contract.id,
+                            receiver: account.id,
                             amount: *amount,
                             asset_id: *asset_id,
                         };
@@ -194,10 +211,6 @@ mod explorer_index {
                     }
                     #[allow(unused)]
                     Receipt::Log { id, rb, .. } => {
-                        contracts.insert(Contract {
-                            id: *id,
-                            last_seen: 0,
-                        });
                         let log = Log {
                             id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
@@ -211,11 +224,6 @@ mod explorer_index {
                     }
                     #[allow(unused)]
                     Receipt::LogData { id, .. } => {
-                        contracts.insert(Contract {
-                            id: *id,
-                            last_seen: 0,
-                        });
-
                         Logger::info("LogData types are unused in this example. (>'')>");
                     }
                     #[allow(unused)]
@@ -244,14 +252,14 @@ mod explorer_index {
                         ..
                     } => {
                         tx_amount += amount;
-                        accounts.insert(Account {
-                            id: *sender,
+
+                        let account = Account {
+                            id: 1,
+                            address: *sender,
                             last_seen: 0,
-                        });
-                        accounts.insert(Account {
-                            id: *recipient,
-                            last_seen: 0,
-                        });
+                        };
+
+                        account.save();
 
                         Logger::info("LogData types are unused in this example. (>'')>");
                     }
@@ -277,16 +285,6 @@ mod explorer_index {
             };
 
             tx_entity.save();
-        }
-
-        // Save all of our accounts
-        for account in accounts.iter() {
-            account.save();
-        }
-
-        // Save all of our contracts
-        for contract in contracts.iter() {
-            contract.save();
         }
     }
 }

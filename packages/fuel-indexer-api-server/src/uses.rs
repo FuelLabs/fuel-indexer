@@ -61,7 +61,7 @@ pub(crate) async fn query_graph(
         .await
     {
         Ok(schema) => {
-            let dynamic_schema = build_dynamic_schema(schema.clone())?;
+            let dynamic_schema = build_dynamic_schema(&schema)?;
             let user_query = req.0.query.clone();
             let response =
                 execute_query(req.into_inner(), dynamic_schema, user_query, pool, schema)
@@ -259,6 +259,8 @@ pub(crate) async fn register_indexer_assets(
                                     &identifier,
                                     &String::from_utf8_lossy(&data),
                                     &mut conn,
+                                    // Can't deploy native indexers
+                                    false,
                                 )
                                 .await?;
 

@@ -1,5 +1,6 @@
 use crate::constant::*;
 use fuel_abi_types::program_abi::{ProgramABI, TypeDeclaration};
+use fuel_indexer_schema::parser::ParsedGraphQLSchema;
 use fuels_code_gen::utils::Source;
 use quote::{format_ident, quote};
 use syn::Ident;
@@ -238,24 +239,30 @@ pub fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
     }
 }
 
-pub fn generate_row_extractor(
-    ident: proc_macro2::Ident,
-    column_scalar_type: proc_macro2::Ident,
+pub fn row_extractor(
+    schema: &ParsedGraphQLSchema,
+    field_name: proc_macro2::Ident,
+    mut field_type: proc_macro2::Ident,
     is_nullable: bool,
 ) -> proc_macro2::TokenStream {
+    let type_name = field_type.to_string();
+    if schema.is_enum_type(&type_name) {
+        field_type = format_ident! {"UInt1"};
+    }
+
     if is_nullable {
         quote! {
             let item = vec.pop().expect("Missing item in row.");
-            let #ident = match item {
-                FtColumn::#column_scalar_type(t) => t,
+            let #field_name = match item {
+                FtColumn::#field_type(t) => t,
                 _ => panic!("Invalid column type: {:?}.", item),
             };
         }
     } else {
         quote! {
             let item = vec.pop().expect("Missing item in row.");
-            let #ident = match item {
-                FtColumn::#column_scalar_type(t) => match t {
+            let #field_name = match item {
+                FtColumn::#field_type(t) => match t {
                     Some(inner_type) => { inner_type },
                     None => {
                         panic!("Non-nullable type is returning a None value.")

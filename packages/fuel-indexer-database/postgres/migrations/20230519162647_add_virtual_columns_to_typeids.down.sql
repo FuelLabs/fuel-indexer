@@ -1,0 +1,1 @@
+ALTER TABLE graph_registry_type_ids DROP COLUMN virtual_columns;
