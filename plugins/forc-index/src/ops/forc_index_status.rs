@@ -36,7 +36,7 @@ fn print_indexers(indexers: Vec<RegisteredIndex>) {
         for i in indexers.into_iter() {
             ixs.entry(i.namespace.clone()).or_insert(Vec::new()).push(i);
         }
-        ixs.into_iter().map(|(_, x)| x).collect()
+        ixs.into_values().collect()
     };
     for (namespace_i, group) in groupped.iter().enumerate() {
         let namespace = group[0].namespace.clone();
@@ -55,7 +55,7 @@ fn print_indexers(indexers: Vec<RegisteredIndex>) {
         println!("{} {}", ng1, namespace);
         for (i, indexer) in group.iter().enumerate() {
             // indexer glyphs
-            let (ig1, ig2) = if !(i == group.len() - 1) {
+            let (ig1, ig2) = if i != group.len() - 1 {
                 ("├─", "|")
             } else {
                 ("└─", " ")
