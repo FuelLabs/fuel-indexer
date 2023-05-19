@@ -17,6 +17,7 @@ pub const QUERY_ROOT: &str = "QueryRoot";
 
 #[cfg(feature = "db-models")]
 pub mod db;
+pub mod parser;
 pub mod utils;
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");

@@ -20,6 +20,7 @@ impl SchemaManager {
         identifier: &str,
         schema: &str,
         conn: &mut IndexerConnection,
+        is_native: bool,
     ) -> IndexerSchemaDbResult<()> {
         // Schema is built in serveral different places so we add default entities here
         let schema = inject_native_entities_into_schema(schema);
@@ -33,6 +34,7 @@ impl SchemaManager {
                 identifier,
                 &version,
                 self.pool.database_type(),
+                is_native,
             )?
             .build(&schema)?
             .commit_metadata(conn)

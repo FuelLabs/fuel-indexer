@@ -1,25 +1,21 @@
 use crate::{
-    utils::{
-        build_schema_fields_and_types_map, build_schema_types_set, field_type_table_name,
-        get_index_directive, get_join_directive_info, get_unique_directive,
-        normalize_field_type_name, BASE_SCHEMA,
-    },
+    db::{IndexerSchemaDbError, IndexerSchemaDbResult},
+    parser::ParsedGraphQLSchema,
+    utils::*,
     QUERY_ROOT,
 };
-use async_graphql_parser::parse_schema;
-use async_graphql_parser::types::{
-    BaseType, FieldDefinition, ServiceDocument, Type, TypeDefinition, TypeKind,
-    TypeSystemDefinition,
+use async_graphql_parser::{
+    parse_schema,
+    types::{
+        BaseType, FieldDefinition, ServiceDocument, Type, TypeDefinition, TypeKind,
+        TypeSystemDefinition,
+    },
 };
 use fuel_indexer_database::{
-    queries,
-    types::{directives, *},
-    DbType, IndexerConnection, IndexerConnectionPool,
+    queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_types::type_id;
 use std::collections::{HashMap, HashSet};
-
-use crate::db::{IndexerSchemaDbError, IndexerSchemaDbResult};
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 type ServiceDocumentBundle = (ServiceDocument, HashSet<String>, HashMap<String, String>);
@@ -40,6 +36,8 @@ pub struct SchemaBuilder {
     /// Schema field mapping is namespaced by type name
     fields: HashMap<String, HashMap<String, String>>,
     primitives: HashSet<String>,
+    parsed_schema: ParsedGraphQLSchema,
+    is_native: bool,
 }
 
 impl SchemaBuilder {
@@ -48,23 +46,26 @@ impl SchemaBuilder {
         identifier: &str,
         version: &str,
         db_type: DbType,
+        is_native: bool,
     ) -> IndexerSchemaDbResult<SchemaBuilder> {
-        let base_ast = match parse_schema(BASE_SCHEMA) {
-            Ok(ast) => ast,
-            Err(e) => return Err(IndexerSchemaDbError::ParseError(e)),
-        };
-        let (primitives, _) = build_schema_types_set(&base_ast);
+        let ast = parse_schema(BASE_SCHEMA).map_err(IndexerSchemaDbError::ParseError)?;
+
+        let parsed_schema =
+            ParsedGraphQLSchema::new(&namespace, &identifier, is_native, &ast)?;
 
         Ok(SchemaBuilder {
             db_type,
             namespace: namespace.to_string(),
             identifier: identifier.to_string(),
             version: version.to_string(),
-            primitives,
+            primitives: parsed_schema.scalar_names.clone(),
+            parsed_schema,
+            is_native,
             ..Default::default()
         })
     }
 
+    /// Generate table SQL for each object in the given schema.
     pub fn build(mut self, schema: &str) -> IndexerSchemaDbResult<Self> {
         if DbType::Postgres == self.db_type {
             let create = format!(
@@ -75,18 +76,26 @@ impl SchemaBuilder {
         }
 
         let ast = parse_schema(schema).map_err(IndexerSchemaDbError::ParseError)?;
-        let types_map = build_schema_fields_and_types_map(&ast)?;
+
+        let parsed_schema = ParsedGraphQLSchema::new(
+            &self.namespace,
+            &self.identifier,
+            self.is_native,
+            &ast,
+        )?;
 
         for def in ast.definitions.iter() {
             if let TypeSystemDefinition::Type(typ) = def {
-                self.generate_table_sql(&typ.node, &types_map)
+                self.generate_table_sql(&typ.node, &parsed_schema.field_type_mappings)
             }
         }
         self.schema = schema.to_string();
+        self.parsed_schema = parsed_schema;
 
         Ok(self)
     }
 
+    /// Commit all SQL metadata to the database.
     pub async fn commit_metadata(
         self,
         conn: &mut IndexerConnection,
@@ -159,6 +168,7 @@ impl SchemaBuilder {
     fn process_type(&self, field_type: &Type) -> (ColumnType, bool) {
         match &field_type.base {
             BaseType::Named(t) => {
+                // THIS NEEDS TO HANDLE ENUMS
                 if !self.primitives.contains(t.as_str()) {
                     return (ColumnType::ForeignKey, true);
                 }

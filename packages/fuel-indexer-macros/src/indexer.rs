@@ -741,7 +741,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
                     info!("Using manifest file located at '{}'", p.display());
                 }
                 let manifest = Manifest::from_file(&p)?;
-                service.register_native_index(manifest, handle_events).await?;
+                service.register_native_indexer(manifest, handle_events).await?;
 
                 let service_handle = tokio::spawn(service.run());
                 let gql_handle = tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));

@@ -259,6 +259,8 @@ pub(crate) async fn register_indexer_assets(
                                     &identifier,
                                     &String::from_utf8_lossy(&data),
                                     &mut conn,
+                                    // Can't deploy native indexers
+                                    false,
                                 )
                                 .await?;
 

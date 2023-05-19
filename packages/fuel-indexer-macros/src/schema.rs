@@ -1,12 +1,15 @@
-use crate::helpers::{const_item, row_extractor, Schema};
+use crate::helpers::{const_item, row_extractor};
 use async_graphql_parser::parse_schema;
 use async_graphql_parser::types::{
     BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
 use fuel_indexer_database_types::directives;
 use fuel_indexer_lib::utils::local_repository_root;
-use fuel_indexer_schema::utils::{
-    get_join_directive_info, inject_native_entities_into_schema, schema_version,
+use fuel_indexer_schema::{
+    parser::ParsedGraphQLSchema,
+    utils::{
+        get_join_directive_info, inject_native_entities_into_schema, schema_version,
+    },
 };
 use fuel_indexer_types::type_id;
 use lazy_static::lazy_static;
@@ -16,7 +19,7 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-type FieldProcessResult = (
+type ProcessedFieldResult = (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
     proc_macro2::Ident,
@@ -41,7 +44,7 @@ lazy_static! {
 
 /// Process a named type into its type tokens, and the Ident for those type tokens.
 fn process_type(
-    schema: &Schema,
+    schema: &ParsedGraphQLSchema,
     typ: &Type,
 ) -> (proc_macro2::TokenStream, proc_macro2::Ident) {
     match &typ.base {
@@ -71,7 +74,7 @@ fn process_type(
 ///     - The field's type as an Ident.
 ///     - The field's row extractor tokens.
 fn process_field(
-    schema: &Schema,
+    schema: &ParsedGraphQLSchema,
     field_name: &String,
     field_type: &Type,
 ) -> (
@@ -105,12 +108,12 @@ enum FieldType {
 ///
 /// This is the equivalent of `process_field` but with some pre/post-processing.
 fn process_special_field(
-    schema: &Schema,
+    schema: &ParsedGraphQLSchema,
     object_name: &String,
     field: &FieldDefinition,
     is_nullable: bool,
     field_type: FieldType,
-) -> FieldProcessResult {
+) -> ProcessedFieldResult {
     match field_type {
         FieldType::ForeignKey => {
             let directives::Join {
@@ -148,9 +151,10 @@ fn process_special_field(
     }
 }
 
-/// Process a schema's type definition into the corresponding tokens for use in an indexer module.
+/// Process a schema's type definition into the corresponding tokens for use
+/// in an indexer module.
 fn process_type_def(
-    schema: &mut Schema,
+    schema: &mut ParsedGraphQLSchema,
     typ: &TypeDefinition,
 ) -> Option<proc_macro2::TokenStream> {
     match &typ.kind {
@@ -383,7 +387,7 @@ fn process_type_def(
 
 /// Process a schema definition into the corresponding tokens for use in an indexer module.
 fn process_definition(
-    schema: &mut Schema,
+    schema: &mut ParsedGraphQLSchema,
     definition: &TypeSystemDefinition,
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
@@ -440,8 +444,8 @@ pub(crate) fn process_graphql_schema(
         #version_tokens
     };
 
-    let mut schema =
-        Schema::new(&namespace, &identifier, is_native, &ast).expect("Bad schema.");
+    let mut schema = ParsedGraphQLSchema::new(&namespace, &identifier, is_native, &ast)
+        .expect("Bad schema.");
 
     for definition in ast.definitions.iter() {
         if let Some(def) = process_definition(&mut schema, definition) {

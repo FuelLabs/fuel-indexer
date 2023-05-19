@@ -681,7 +681,7 @@ mod fuel_indexer_test {
         second: NestedEnum,
         third: AnotherSimpleEnum,
     ) {
-        Logger::info("fuel_indexer_trigger_enum handling trigger_enum event.");
+        Logger::info("fuel_indexer_trigger_enum handling trigger_enum event..");
 
         let e = ComplexEnumEntity {
             id: 1,
