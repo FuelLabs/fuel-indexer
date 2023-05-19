@@ -356,7 +356,6 @@ fn process_type_def(
 
             Some(quote! {
                 #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-                #[repr(u8)]
                 pub enum #name {
                     #(#values),*
                 }

@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
 /// to parsing schema, creating mappings of types, fields, objects, etc.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ParsedGraphQLSchema {
     /// Namespace of the indexer.
     pub namespace: String,
@@ -30,9 +30,6 @@ pub struct ParsedGraphQLSchema {
     /// All unique names of types that have already been parsed.
     pub parsed_type_names: HashSet<String>,
 
-    /// All unique names of types that are possible foreign keys.
-    pub foreign_key_names: HashSet<String>,
-
     /// A mapping of fully qualitified field names to their field types.
     pub field_type_mappings: HashMap<String, String>,
 
@@ -45,7 +42,7 @@ pub struct ParsedGraphQLSchema {
 
 impl Default for ParsedGraphQLSchema {
     fn default() -> Self {
-        let ast = parse_schema("")
+        let ast = parse_schema(BASE_SCHEMA)
             .map_err(IndexerSchemaError::ParseError)
             .expect("Bad schema");
 
@@ -57,7 +54,6 @@ impl Default for ParsedGraphQLSchema {
             enum_names: HashSet::new(),
             non_indexable_type_names: HashSet::new(),
             parsed_type_names: HashSet::new(),
-            foreign_key_names: HashSet::new(),
             field_type_mappings: HashMap::new(),
             scalar_names: HashSet::new(),
             ast,
@@ -73,11 +69,10 @@ impl ParsedGraphQLSchema {
         is_native: bool,
         schema: Option<&str>,
     ) -> IndexerSchemaResult<Self> {
-        let base_ast =
+        let mut ast =
             parse_schema(BASE_SCHEMA).map_err(IndexerSchemaError::ParseError)?;
-        let mut ast = base_ast.clone();
         let mut type_names = HashSet::new();
-        let (scalar_names, _) = build_schema_types_set(&base_ast);
+        let (scalar_names, _) = build_schema_types_set(&ast);
         type_names.extend(scalar_names.clone());
 
         if let Some(schema) = schema {
@@ -94,7 +89,6 @@ impl ParsedGraphQLSchema {
             enum_names: HashSet::new(),
             non_indexable_type_names: HashSet::new(),
             parsed_type_names: HashSet::new(),
-            foreign_key_names: HashSet::new(),
             field_type_mappings: build_schema_fields_and_types_map(&ast)?,
             scalar_names,
             ast,

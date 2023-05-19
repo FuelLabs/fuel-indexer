@@ -93,6 +93,10 @@ pub fn get_unique_directive(field: &FieldDefinition) -> sql_types::directives::U
     sql_types::directives::Unique(false)
 }
 
+/// Given a field whos type references another object in the schema (i.e.,
+/// a foreign key field), return metadata about the field and the referenced object.
+///
+/// This should only be called on `ColumnType::ForeignKey`.
 pub fn get_join_directive_info(
     field: &FieldDefinition,
     type_name: &String,
@@ -138,7 +142,7 @@ pub fn get_join_directive_info(
         (ref_field_name.to_string(), ref_field_type_name)
     } else {
         let ref_field_name = sql_types::IdCol::to_lowercase_string();
-        let field_id = format!("{field_type_name}.{ref_field_name}");
+        let field_id = format!("{type_name}.{ref_field_name}");
         let mut ref_field_type_name = types_map
             .get(&field_id)
             .unwrap_or_else(|| {
@@ -146,7 +150,7 @@ pub fn get_join_directive_info(
             })
             .to_owned();
 
-        // In the case where we have an Object! foreign key reference on a  field,
+        // In the case where we have an Object! foreign key reference on a field,
         // if that object's default 'id' field is 'ID' then 'ID' is going to create
         // another primary key (can't do that in SQL) -- so we manually change that to
         // an integer type here. Might have to do this for foreign key directives (above)
@@ -268,6 +272,7 @@ pub fn get_foreign_keys(
                     #[allow(clippy::single_match)]
                     match col_type {
                         sql_types::ColumnType::ForeignKey => {
+                            println!(">> I AM THERE");
                             let directives::Join {
                                 reference_field_name,
                                 ..

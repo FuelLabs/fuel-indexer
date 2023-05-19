@@ -71,13 +71,14 @@ impl SchemaBuilder {
             Some(schema),
         )?;
 
+        self.schema = schema.to_string();
+        self.parsed_schema = parsed_schema.clone();
+
         for def in parsed_schema.ast.definitions.iter() {
             if let TypeSystemDefinition::Type(typ) = def {
                 self.generate_table_sql(&typ.node)
             }
         }
-        self.schema = schema.to_string();
-        self.parsed_schema = parsed_schema;
 
         Ok(self)
     }
@@ -160,7 +161,7 @@ impl SchemaBuilder {
                     return (ColumnType::Charfield, false);
                 }
 
-                if !self.parsed_schema.is_possible_foreign_key(t.as_str()) {
+                if self.parsed_schema.is_possible_foreign_key(t.as_str()) {
                     return (ColumnType::ForeignKey, true);
                 }
 
@@ -195,6 +196,11 @@ impl SchemaBuilder {
                     field,
                     object_name,
                     &self.parsed_schema.field_type_mappings,
+                );
+
+                println!(
+                    ">> JOIN : {} | {} | {}",
+                    reference_field_name, field_type_name, reference_field_type_name
                 );
 
                 let fk = ForeignKey::new(
@@ -279,9 +285,15 @@ impl SchemaBuilder {
     fn generate_table_sql(&mut self, typ: &TypeDefinition) {
         match &typ.kind {
             TypeKind::Scalar => {}
-            TypeKind::Enum(_e) => {}
+            TypeKind::Enum(_e) => {
+                self.parsed_schema.enum_names.insert(typ.name.to_string());
+            }
             TypeKind::Object(o) => {
                 self.types.insert(typ.name.to_string());
+
+                self.parsed_schema
+                    .parsed_type_names
+                    .insert(typ.name.to_string());
 
                 let field_defs: &[FieldDefinition] = &o
                     .fields
@@ -428,18 +440,6 @@ impl Schema {
         );
     }
 }
-
-// fn parse_schema_for_ast_data(
-//     schema: &str,
-// ) -> IndexerSchemaDbResult<ServiceDocumentBundle> {
-//     let base_ast = parse_schema(BASE_SCHEMA).map_err(IndexerSchemaDbError::ParseError)?;
-//     let ast = parse_schema(schema).map_err(IndexerSchemaDbError::ParseError)?;
-//     let (primitives, _) = build_schema_types_set(&base_ast);
-
-//     let types_map = build_schema_fields_and_types_map(&ast)?;
-
-//     Ok((ast, primitives, types_map))
-// }
 
 #[cfg(test)]
 mod tests {

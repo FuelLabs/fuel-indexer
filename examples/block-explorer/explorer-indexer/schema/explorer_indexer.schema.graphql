@@ -18,12 +18,14 @@ type Tx {
 }
 
 type Account {
-    id: Address! @unique
+    id: ID! 
+    address: Address! @unique
     last_seen: UInt8!
 }
 
 type Contract {
-    id: ContractId! @unique
+    id: ID!
+    contract_id: ContractId! @unique
     last_seen: UInt8!
 }
 
