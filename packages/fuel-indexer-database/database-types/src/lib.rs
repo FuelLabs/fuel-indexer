@@ -145,7 +145,7 @@ impl NewColumn {
             ColumnType::HexString => "varchar(10485760)",
             ColumnType::Tai64Timestamp => "varchar(128)",
             ColumnType::TxId => "varchar(64)",
-            ColumnType::Enum => "integer",
+            ColumnType::Enum => "varchar(255)",
             ColumnType::Int1 => "integer",
             ColumnType::UInt1 => "integer",
         }

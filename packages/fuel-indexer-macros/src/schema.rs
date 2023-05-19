@@ -99,13 +99,9 @@ enum FieldType {
     Enum,
 }
 
-/// Process an object's foreign key field and return a group of tokens.
+/// Process an object's 'special' field and return a group of tokens.
 ///
-/// This group of tokens include:
-///     - The field's type tokens.
-///     - The field's name as an Ident.
-///     - The field's type as an Ident.
-///     - The field's row extractor tokens.
+/// Specicial fields are limited to foreign key and enum fields.
 ///
 /// This is the equivalent of `process_field` but with some pre/post-processing.
 fn process_special_field(
@@ -139,9 +135,9 @@ fn process_special_field(
             } = field;
 
             let field_type_name = if !is_nullable {
-                ["UInt1".to_string(), "!".to_string()].join("")
+                ["Charfield".to_string(), "!".to_string()].join("")
             } else {
-                "UInt1".to_string()
+                "Charfield".to_string()
             };
 
             let field_type: Type = Type::new(&field_type_name)
@@ -177,9 +173,9 @@ fn process_type_def(
                 let (mut typ_tokens, mut field_name, mut scalar_typ, mut ext) =
                     process_field(schema, field_name, field_type);
 
-                let mut column_type_name = scalar_typ.to_string();
+                let mut field_typ_name = scalar_typ.to_string();
 
-                if schema.is_possible_foreign_key(&column_type_name) {
+                if schema.is_possible_foreign_key(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
                         &object_name,
@@ -187,10 +183,10 @@ fn process_type_def(
                         field_type.nullable,
                         FieldType::ForeignKey,
                     );
-                    column_type_name = scalar_typ.to_string();
+                    field_typ_name = scalar_typ.to_string();
                 }
 
-                if schema.is_enum_type(&column_type_name) {
+                if schema.is_enum_type(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
                         &object_name,
@@ -198,12 +194,12 @@ fn process_type_def(
                         field_type.nullable,
                         FieldType::Enum,
                     );
-                    column_type_name = scalar_typ.to_string();
+                    field_typ_name = scalar_typ.to_string();
                 }
 
-                schema.parsed_type_names.insert(column_type_name.clone());
+                schema.parsed_type_names.insert(field_typ_name.clone());
 
-                let clone = if COPY_TYPES.contains(column_type_name.as_str()) {
+                let clone = if COPY_TYPES.contains(field_typ_name.as_str()) {
                     quote! {.clone()}
                 } else {
                     quote! {}
@@ -338,22 +334,20 @@ fn process_type_def(
             let to_enum = e
                 .values
                 .iter()
-                .enumerate()
-                .map(|(i, v)| {
+                .map(|v| {
                     let ident = format_ident! {"{}", v.node.value.to_string()};
-                    let i = i as u8;
-                    quote! { #i => #name::#ident, }
+                    let as_str = format!("{}::{}", name, ident);
+                    quote! { #as_str => #name::#ident, }
                 })
                 .collect::<Vec<proc_macro2::TokenStream>>();
 
             let from_enum = e
                 .values
                 .iter()
-                .enumerate()
-                .map(|(i, v)| {
+                .map(|v| {
                     let ident = format_ident! {"{}", v.node.value.to_string()};
-                    let i = i as u8;
-                    quote! { #name::#ident => #i, }
+                    let as_str = format!("{}::{}", name, ident);
+                    quote! { #name::#ident => #as_str.to_string(), }
                 })
                 .collect::<Vec<proc_macro2::TokenStream>>();
 
@@ -364,7 +358,7 @@ fn process_type_def(
                     #(#values),*
                 }
 
-                impl From<#name> for u8 {
+                impl From<#name> for String {
                     fn from(val: #name) -> Self {
                         match val {
                             #(#from_enum)*
@@ -373,9 +367,9 @@ fn process_type_def(
                     }
                 }
 
-                impl From<u8> for #name {
-                    fn from(val: u8) -> Self {
-                        match val {
+                impl From<String> for #name {
+                    fn from(val: String) -> Self {
+                        match val.as_ref() {
                             #(#to_enum)*
                             _ => panic!("Unrecognized enum value."),
                         }

@@ -57,7 +57,7 @@ pub enum FtColumn {
     Bytes8(Option<Bytes8>),
     Charfield(Option<String>),
     ContractId(Option<ContractId>),
-    Enum(Option<UInt1>),
+    Enum(Option<String>),
     HexString(Option<HexString>),
     ID(Option<UInt8>),
     Identity(Option<Identity>),
@@ -241,10 +241,8 @@ impl FtColumn {
                 panic!("Object not supported for FtColumn.");
             }
             ColumnType::Enum => {
-                let enum_value = u8::from_le_bytes(
-                    bytes[..size].try_into().expect("Invalid slice length"),
-                );
-                FtColumn::Enum(Some(enum_value))
+                let s = String::from_utf8_lossy(&bytes[..size]).to_string();
+                FtColumn::Enum(Some(s))
             }
         }
     }
@@ -383,7 +381,7 @@ impl FtColumn {
                 None => String::from(NULL_VALUE),
             },
             FtColumn::Enum(value) => match value {
-                Some(val) => format!("{}", { *val }),
+                Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
         }

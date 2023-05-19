@@ -36,7 +36,6 @@ pub type Nonce = Bytes32;
 pub type HexString = Bytes;
 pub type Tai64Timestamp = Tai64;
 pub type BlockHeight = u32;
-pub type Enum = u8;
 pub type Int1 = i8;
 pub type UInt1 = u8;
 
