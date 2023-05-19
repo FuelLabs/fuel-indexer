@@ -19,7 +19,7 @@ pub async fn status(StatusCommand { url }: StatusCommand) -> anyhow::Result<()> 
                 .json::<Vec<RegisteredIndex>>()
                 .await
                 .expect("Failed to read JSON response.");
-            print_indexers(&result);
+            print_indexers(result);
         }
         Err(e) => {
             error!("\n❌ Could not connect to indexer service:\n'{e}'");
@@ -29,30 +29,41 @@ pub async fn status(StatusCommand { url }: StatusCommand) -> anyhow::Result<()> 
     Ok(())
 }
 
-fn print_indexers(indexers: &[RegisteredIndex]) {
-    let groupped: Vec<&[RegisteredIndex]> = indexers
-        .group_by(|x, y| x.namespace == y.namespace)
-        .collect();
-    for group in &groupped {
+fn print_indexers(indexers: Vec<RegisteredIndex>) {
+    let groupped: Vec<Vec<RegisteredIndex>> = {
+        use std::collections::BTreeMap;
+        let mut ixs: BTreeMap<String, Vec<RegisteredIndex>> = BTreeMap::new();
+        for i in indexers.into_iter() {
+            ixs.entry(i.namespace.clone()).or_insert(Vec::new()).push(i);
+        }
+        ixs.into_iter().map(|(_, x)| x).collect()
+    };
+    for (namespace_i, group) in groupped.iter().enumerate() {
         let namespace = group[0].namespace.clone();
-        println!("{}", namespace);
+        // namespace glyphs
+        let (ng1, ng2) = if namespace_i == 0 {
+            // first
+            ("┌─", "|")
+        } else if !(namespace_i == groupped.len() - 1) {
+            // middle
+            ("├─", "|")
+        } else {
+            // last
+            ("└─", " ")
+        };
+        println!("{} {}", ng1, namespace);
         for (i, indexer) in group.iter().enumerate() {
-            let is_last = i == group.len() - 1;
-            if !is_last {
-                print!("├─ ");
+            // indexer glyphs
+            let (ig1, ig2) = if !(i == group.len() - 1) {
+                ("├─", "|")
             } else {
-                print!("└─ ");
-            }
-            println!("{}", indexer.identifier);
-            if !is_last {
-                println!("|  • id: {}", indexer.id);
-                println!("|  • created_at: {}", indexer.created_at);
-                println!("|  • pubkey: {:?}", indexer.pubkey);
-            } else {
-                println!("   • id: {}", indexer.id);
-                println!("   • created_at: {}", indexer.created_at);
-                println!("   • pubkey: {:?}", indexer.pubkey);
-            }
+                ("└─", " ")
+            };
+
+            println!("{}  {} {}", ng2, ig1, indexer.identifier);
+            println!("{}  {}  • id: {}", ng2, ig2, indexer.id);
+            println!("{}  {}  • created_at: {}", ng2, ig2, indexer.created_at);
+            println!("{}  {}  • pubkey: {:?}", ng2, ig2, indexer.pubkey);
         }
     }
 }
