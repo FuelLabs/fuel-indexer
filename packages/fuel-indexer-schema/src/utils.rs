@@ -1,12 +1,13 @@
 extern crate alloc;
 
-use crate::{IndexerSchemaError, IndexerSchemaResult};
+use crate::{parser::ParsedGraphQLSchema, IndexerSchemaError, IndexerSchemaResult};
 use alloc::vec::Vec;
 use async_graphql_parser::types::{
-    Directive, FieldDefinition, ServiceDocument, TypeDefinition, TypeKind,
-    TypeSystemDefinition,
+    BaseType, Directive, FieldDefinition, ServiceDocument, Type, TypeDefinition,
+    TypeKind, TypeSystemDefinition,
 };
-pub use fuel_indexer_database_types as sql_types;
+use fuel_indexer_database_types as sql_types;
+use fuel_indexer_database_types::directives;
 use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -16,6 +17,8 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
+
+type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 
 pub fn inject_native_entities_into_schema(schema: &str) -> String {
     format!("{}{}", schema, IndexMetadata::schema_fragment())
@@ -237,6 +240,92 @@ pub fn build_schema_types_set(
         .collect();
 
     (types, directives)
+}
+
+pub fn get_foreign_keys(
+    namespace: &str,
+    identifier: &str,
+    is_native: bool,
+    schema: &str,
+) -> IndexerSchemaResult<ForeignKeyMap> {
+    let parsed_schema =
+        ParsedGraphQLSchema::new(namespace, identifier, is_native, Some(schema))?;
+
+    let mut fks: ForeignKeyMap = HashMap::new();
+
+    for def in parsed_schema.ast.definitions.iter() {
+        if let TypeSystemDefinition::Type(t) = def {
+            if let TypeKind::Object(o) = &t.node.kind {
+                // TODO: Add more ignorable types as needed - and use lazy_static!
+                if t.node.name.to_string().to_lowercase() == *"queryroot" {
+                    continue;
+                }
+                for field in o.fields.iter() {
+                    let col_type = get_column_type(
+                        &field.node.ty.node,
+                        &parsed_schema.scalar_names,
+                    )?;
+                    #[allow(clippy::single_match)]
+                    match col_type {
+                        sql_types::ColumnType::ForeignKey => {
+                            let directives::Join {
+                                reference_field_name,
+                                ..
+                            } = get_join_directive_info(
+                                &field.node,
+                                &t.node.name.to_string(),
+                                &parsed_schema.field_type_mappings,
+                            );
+
+                            let fk = fks.get_mut(&t.node.name.to_string().to_lowercase());
+                            match fk {
+                                Some(fks_for_field) => {
+                                    fks_for_field.insert(
+                                        field.node.name.to_string(),
+                                        (
+                                            field_type_table_name(&field.node),
+                                            reference_field_name.clone(),
+                                        ),
+                                    );
+                                }
+                                None => {
+                                    let fks_for_field = HashMap::from([(
+                                        field.node.name.to_string(),
+                                        (
+                                            field_type_table_name(&field.node),
+                                            reference_field_name.clone(),
+                                        ),
+                                    )]);
+                                    fks.insert(
+                                        t.node.name.to_string().to_lowercase(),
+                                        fks_for_field,
+                                    );
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(fks)
+}
+
+pub fn get_column_type(
+    field_type: &Type,
+    primitives: &HashSet<String>,
+) -> IndexerSchemaResult<sql_types::ColumnType> {
+    match &field_type.base {
+        BaseType::Named(t) => {
+            if !primitives.contains(t.as_str()) {
+                return Ok(sql_types::ColumnType::ForeignKey);
+            }
+            Ok(sql_types::ColumnType::from(t.as_str()))
+        }
+        BaseType::List(_) => Err(IndexerSchemaError::ListTypesUnsupported),
+    }
 }
 
 #[cfg(test)]

@@ -3120,7 +3120,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "hex",
- "serde",
  "sha2 0.10.6",
  "tokio 1.28.1",
  "tracing",

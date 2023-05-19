@@ -1,5 +1,4 @@
 use crate::helpers::{const_item, row_extractor};
-use async_graphql_parser::parse_schema;
 use async_graphql_parser::types::{
     BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
@@ -426,14 +425,6 @@ pub(crate) fn process_graphql_schema(
     file.read_to_string(&mut text).expect("IO error");
 
     let text = inject_native_entities_into_schema(&text);
-
-    let ast = match parse_schema(&text) {
-        Ok(ast) => ast,
-        Err(e) => {
-            proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
-        }
-    };
-
     let namespace_tokens = const_item("NAMESPACE", &namespace);
     let identifer_tokens = const_item("IDENTIFIER", &identifier);
     let version_tokens = const_item("VERSION", &schema_version(&text));
@@ -444,10 +435,11 @@ pub(crate) fn process_graphql_schema(
         #version_tokens
     };
 
-    let mut schema = ParsedGraphQLSchema::new(&namespace, &identifier, is_native, &ast)
-        .expect("Bad schema.");
+    let mut schema =
+        ParsedGraphQLSchema::new(&namespace, &identifier, is_native, Some(&text))
+            .expect("Bad schema.");
 
-    for definition in ast.definitions.iter() {
+    for definition in schema.ast.clone().definitions.iter() {
         if let Some(def) = process_definition(&mut schema, definition) {
             output = quote! {
                 #output

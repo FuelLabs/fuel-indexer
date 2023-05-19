@@ -7,7 +7,7 @@ use std::collections::{HashMap, HashSet};
 
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
 /// to parsing schema, creating mappings of types, fields, objects, etc.
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct ParsedGraphQLSchema {
     /// Namespace of the indexer.
     pub namespace: String,
@@ -38,6 +38,31 @@ pub struct ParsedGraphQLSchema {
 
     /// All unique names of scalar types in the schema.
     pub scalar_names: HashSet<String>,
+
+    /// The parsed schema.
+    pub ast: ServiceDocument,
+}
+
+impl Default for ParsedGraphQLSchema {
+    fn default() -> Self {
+        let ast = parse_schema("")
+            .map_err(IndexerSchemaError::ParseError)
+            .expect("Bad schema");
+
+        Self {
+            namespace: "".to_string(),
+            identifier: "".to_string(),
+            is_native: false,
+            type_names: HashSet::new(),
+            enum_names: HashSet::new(),
+            non_indexable_type_names: HashSet::new(),
+            parsed_type_names: HashSet::new(),
+            foreign_key_names: HashSet::new(),
+            field_type_mappings: HashMap::new(),
+            scalar_names: HashSet::new(),
+            ast,
+        }
+    }
 }
 
 impl ParsedGraphQLSchema {
@@ -46,14 +71,20 @@ impl ParsedGraphQLSchema {
         namespace: &str,
         identifier: &str,
         is_native: bool,
-        ast: &ServiceDocument,
+        schema: Option<&str>,
     ) -> IndexerSchemaResult<Self> {
         let base_ast =
             parse_schema(BASE_SCHEMA).map_err(IndexerSchemaError::ParseError)?;
-
-        let (mut type_names, _) = build_schema_types_set(ast);
+        let mut ast = base_ast.clone();
+        let mut type_names = HashSet::new();
         let (scalar_names, _) = build_schema_types_set(&base_ast);
         type_names.extend(scalar_names.clone());
+
+        if let Some(schema) = schema {
+            ast = parse_schema(schema).map_err(IndexerSchemaError::ParseError)?;
+            let (other_type_names, _) = build_schema_types_set(&ast);
+            type_names.extend(other_type_names);
+        }
 
         Ok(Self {
             namespace: namespace.to_string(),
@@ -64,8 +95,9 @@ impl ParsedGraphQLSchema {
             non_indexable_type_names: HashSet::new(),
             parsed_type_names: HashSet::new(),
             foreign_key_names: HashSet::new(),
-            field_type_mappings: build_schema_fields_and_types_map(ast)?,
+            field_type_mappings: build_schema_fields_and_types_map(&ast)?,
             scalar_names,
+            ast,
         })
     }
 
