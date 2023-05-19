@@ -40,11 +40,12 @@ fn print_indexers(indexers: Vec<RegisteredIndex>) {
     };
     for (namespace_i, group) in groupped.iter().enumerate() {
         let namespace = group[0].namespace.clone();
+        let is_last_namespace = namespace_i == groupped.len() - 1;
         // namespace glyphs
         let (ng1, ng2) = if namespace_i == 0 {
             // first
             ("┌─", "|")
-        } else if !(namespace_i == groupped.len() - 1) {
+        } else if !is_last_namespace {
             // middle
             ("├─", "|")
         } else {
@@ -59,11 +60,13 @@ fn print_indexers(indexers: Vec<RegisteredIndex>) {
             } else {
                 ("└─", " ")
             };
-
             println!("{}  {} {}", ng2, ig1, indexer.identifier);
             println!("{}  {}  • id: {}", ng2, ig2, indexer.id);
             println!("{}  {}  • created_at: {}", ng2, ig2, indexer.created_at);
             println!("{}  {}  • pubkey: {:?}", ng2, ig2, indexer.pubkey);
+        }
+        if !is_last_namespace {
+            println!("{}", ng2);
         }
     }
 }
