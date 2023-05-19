@@ -198,6 +198,10 @@ pub async fn type_id_list_by_name(
         let schema_name: String = row.get(2);
         let graphql_name: String = row.get(3);
         let table_name: String = row.get(4);
+        let _schema_identifier: String = row.get(5);
+        let cols: Vec<u8> = row.get(6);
+        let virtual_columns: Vec<VirtualColumn> =
+            bincode::deserialize(&cols).expect("Bad virtual cols.");
 
         TypeId {
             id,
@@ -206,6 +210,7 @@ pub async fn type_id_list_by_name(
             table_name,
             graphql_name,
             schema_identifier: identifier.to_string(),
+            virtual_columns,
         }
     })
     .collect::<Vec<TypeId>>())
@@ -238,15 +243,18 @@ pub async fn type_id_insert(
     conn: &mut PoolConnection<Postgres>,
     type_ids: Vec<TypeId>,
 ) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name)");
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name, virtual_columns)");
 
     builder.push_values(type_ids.into_iter(), |mut b, tid| {
+        let virtual_cols =
+            bincode::serialize(&tid.virtual_columns).expect("Bad virtual cols.");
         b.push_bind(tid.id)
             .push_bind(tid.schema_version)
             .push_bind(tid.schema_name)
             .push_bind(tid.schema_identifier)
             .push_bind(tid.graphql_name)
-            .push_bind(tid.table_name);
+            .push_bind(tid.table_name)
+            .push_bind(virtual_cols);
     });
 
     let query = builder.build();

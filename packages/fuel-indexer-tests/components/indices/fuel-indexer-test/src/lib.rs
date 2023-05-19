@@ -687,5 +687,6 @@ mod fuel_indexer_test {
             id: 1,
             one: Some(EnumEntity::One.into()),
         };
+        e.save();
     }
 }

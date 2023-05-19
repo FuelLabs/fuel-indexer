@@ -272,7 +272,6 @@ pub fn get_foreign_keys(
                     #[allow(clippy::single_match)]
                     match col_type {
                         sql_types::ColumnType::ForeignKey => {
-                            println!(">> I AM THERE");
                             let directives::Join {
                                 reference_field_name,
                                 ..

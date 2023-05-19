@@ -33,6 +33,7 @@ pub struct SchemaBuilder {
 }
 
 impl SchemaBuilder {
+    /// Create a new `SchemaBuilder`.
     pub fn new(
         namespace: &str,
         identifier: &str,
@@ -198,11 +199,6 @@ impl SchemaBuilder {
                     &self.parsed_schema.field_type_mappings,
                 );
 
-                println!(
-                    ">> JOIN : {} | {} | {}",
-                    reference_field_name, field_type_name, reference_field_type_name
-                );
-
                 let fk = ForeignKey::new(
                     self.db_type.clone(),
                     self.namespace(),
@@ -285,8 +281,35 @@ impl SchemaBuilder {
     fn generate_table_sql(&mut self, typ: &TypeDefinition) {
         match &typ.kind {
             TypeKind::Scalar => {}
-            TypeKind::Enum(_e) => {
+            TypeKind::Enum(e) => {
                 self.parsed_schema.enum_names.insert(typ.name.to_string());
+
+                self.fields.insert(
+                    typ.name.to_string(),
+                    e.values
+                        .iter()
+                        .map(|v| (v.node.value.to_string(), "".to_string()))
+                        .collect::<HashMap<String, String>>(),
+                );
+
+                let type_id = type_id(&self.namespace(), &typ.name.to_string());
+                let table_name = typ.name.to_string().to_lowercase();
+                self.type_ids.push(TypeId {
+                    id: type_id,
+                    schema_version: self.version.to_string(),
+                    schema_name: self.namespace.to_string(),
+                    schema_identifier: self.identifier.to_string(),
+                    graphql_name: typ.name.to_string(),
+                    table_name,
+                    virtual_columns: e
+                        .values
+                        .iter()
+                        .map(|v| VirtualColumn {
+                            name: v.node.value.to_string(),
+                            graphql_type: typ.name.to_string(),
+                        })
+                        .collect::<Vec<VirtualColumn>>(),
+                });
             }
             TypeKind::Object(o) => {
                 self.types.insert(typ.name.to_string());
@@ -331,6 +354,7 @@ impl SchemaBuilder {
                     schema_identifier: self.identifier.to_string(),
                     graphql_name: typ.name.to_string(),
                     table_name,
+                    virtual_columns: Vec::new(),
                 });
             }
             // TODO: Don't panic, return Err
@@ -354,6 +378,9 @@ pub struct Schema {
 
 impl Schema {
     /// Load a `Schema` from the database.
+
+    // TODO: Might be expensive to always load this from the DB each time. Maybe
+    // we can cache and stash this somewhere?
     pub async fn load_from_db(
         pool: &IndexerConnectionPool,
         namespace: &str,
@@ -375,14 +402,25 @@ impl Schema {
         for tyid in &typeids {
             types.insert(tyid.graphql_name.clone());
 
-            let columns = queries::list_column_by_id(&mut conn, tyid.id).await?;
-            fields.insert(
-                tyid.graphql_name.to_owned(),
-                columns
-                    .into_iter()
-                    .map(|c| (c.column_name, c.graphql_type))
-                    .collect(),
-            );
+            if tyid.is_non_indexable_type() {
+                let columns = tyid.virtual_columns.clone();
+                fields.insert(
+                    tyid.graphql_name.to_owned(),
+                    columns
+                        .into_iter()
+                        .map(|c| (c.name, c.graphql_type))
+                        .collect(),
+                );
+            } else {
+                let columns = queries::list_column_by_id(&mut conn, tyid.id).await?;
+                fields.insert(
+                    tyid.graphql_name.to_owned(),
+                    columns
+                        .into_iter()
+                        .map(|c| (c.column_name, c.graphql_type))
+                        .collect(),
+                );
+            }
         }
 
         let foreign_keys = get_foreign_keys(namespace, identifier, false, &root.schema)?;

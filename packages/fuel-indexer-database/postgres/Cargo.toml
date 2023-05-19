@@ -10,6 +10,7 @@ rust-version = { workspace = true }
 description = "Fuel Indexer Postgres"
 
 [dependencies]
+bincode = { workspace = true }
 chrono = "0.4.24"
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true }

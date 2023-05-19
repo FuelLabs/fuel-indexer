@@ -47,6 +47,12 @@ pub struct NewGraphRoot {
     pub schema: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct VirtualColumn {
+    pub name: String,
+    pub graphql_type: String,
+}
+
 #[derive(Debug)]
 pub struct TypeId {
     pub id: i64,
@@ -55,6 +61,13 @@ pub struct TypeId {
     pub schema_identifier: String,
     pub graphql_name: String,
     pub table_name: String,
+    pub virtual_columns: Vec<VirtualColumn>,
+}
+
+impl TypeId {
+    pub fn is_non_indexable_type(&self) -> bool {
+        !self.virtual_columns.is_empty()
+    }
 }
 
 #[derive(Debug)]
