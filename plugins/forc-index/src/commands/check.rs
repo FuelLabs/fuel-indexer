@@ -14,7 +14,6 @@ pub struct Command {
     pub graphql_api_port: String,
 }
 
-pub fn exec(command: Command) -> Result<()> {
-    forc_index_check::init(command)?;
-    Ok(())
+pub async fn exec(command: Command) -> Result<()> {
+    forc_index_check::init(command).await
 }

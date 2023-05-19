@@ -20,7 +20,7 @@ forc-util = { version = "0.35.0" }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-database-types = { workspace = true }
 fuel-tx = { features = ["builder"] , workspace = true }
-fuels = { default-features = false , workspace = true }
+fuels = { workspace = true }
 hex = "0.4.3"
 hyper-rustls = { version = "0.23", features = ["http2"] }
 indicatif = "0.17"

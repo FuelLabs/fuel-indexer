@@ -53,7 +53,7 @@ pub async fn run_cli() -> Result<(), anyhow::Error> {
         ForcIndex::New(command) => crate::commands::new::exec(command),
         ForcIndex::Deploy(command) => crate::commands::deploy::exec(command),
         ForcIndex::Start(command) => crate::commands::start::exec(command).await,
-        ForcIndex::Check(command) => crate::commands::check::exec(command),
+        ForcIndex::Check(command) => crate::commands::check::exec(command).await,
         ForcIndex::Remove(command) => crate::commands::remove::exec(command),
         ForcIndex::Revert(command) => crate::commands::revert::exec(command).await,
         ForcIndex::Build(command) => crate::commands::build::exec(command),

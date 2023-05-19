@@ -2311,10 +2311,7 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
- "serde",
  "serde_json",
 ]
 
@@ -3171,7 +3168,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
  "serde",
  "sha2 0.10.6",
 ]
@@ -3222,12 +3218,14 @@ name = "fuel-indexer-types"
 version = "0.13.2"
 dependencies = [
  "bincode",
+ "bytes 1.4.0",
  "chrono",
  "fuel-tx",
  "fuel-types 0.26.3",
  "fuels",
  "serde",
  "sha2 0.9.9",
+ "tai64",
 ]
 
 [[package]]
@@ -3319,6 +3317,16 @@ dependencies = [
  "sha3 0.10.8",
  "tai64",
  "thiserror",
+]
+
+[[package]]
+name = "fuel_explorer"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuels",
 ]
 
 [[package]]
@@ -3916,11 +3924,7 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
- "instant",
- "serde",
 ]
 
 [[package]]
@@ -3932,11 +3936,7 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
- "instant",
- "serde",
 ]
 
 [[package]]
@@ -6546,7 +6546,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
  "serde",
  "sha2 0.10.6",
 ]
