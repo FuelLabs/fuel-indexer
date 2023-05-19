@@ -154,7 +154,7 @@ impl SchemaBuilder {
         Ok(schema)
     }
 
-    /// Derive the ColumnType and indicator of whether or not this field is a `ColumnType::ForeighKey`.
+    /// Return a field's ColumnType and whether it is nullable.
     fn process_type(&self, field_type: &Type) -> (ColumnType, bool) {
         match &field_type.base {
             BaseType::Named(t) => {

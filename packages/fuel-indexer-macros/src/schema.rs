@@ -103,7 +103,7 @@ enum FieldType {
 
 /// Process an object's 'special' field and return a group of tokens.
 ///
-/// Specicial fields are limited to foreign key and enum fields.
+/// Special fields are limited to foreign key and enum fields.
 ///
 /// This is the equivalent of `process_field` but with some pre/post-processing.
 fn process_special_field(

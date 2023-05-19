@@ -30,7 +30,7 @@ pub struct ParsedGraphQLSchema {
     /// All unique names of types that have already been parsed.
     pub parsed_type_names: HashSet<String>,
 
-    /// A mapping of fully qualitified field names to their field types.
+    /// A mapping of fully qualified field names to their field types.
     pub field_type_mappings: HashMap<String, String>,
 
     /// All unique names of scalar types in the schema.
