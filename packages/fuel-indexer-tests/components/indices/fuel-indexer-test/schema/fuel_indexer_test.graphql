@@ -232,3 +232,14 @@ type ExplorerEntity {
     sig: Signature!
     bytes: Bytes64!
 }
+
+enum EnumEntity {
+    One
+    Two
+    Three
+}
+
+type ComplexEnumEntity {
+    id: ID!
+    one: EnumEntity
+}

@@ -93,6 +93,7 @@ impl Schema {
         self.non_indexable_type_names.contains(name)
     }
 
+    /// Whether the given field type name is an enum type.
     pub fn is_enum_type(&self, name: &str) -> bool {
         self.enum_names.contains(name)
     }

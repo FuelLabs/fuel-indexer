@@ -16,6 +16,13 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+type FieldProcessResult = (
+    proc_macro2::TokenStream,
+    proc_macro2::Ident,
+    proc_macro2::Ident,
+    proc_macro2::TokenStream,
+);
+
 lazy_static! {
     /// Set of types that should be copied instead of referenced.
     static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
@@ -86,6 +93,12 @@ fn process_field(
     (typ_tokens, name_ident, typ_ident, extractor)
 }
 
+/// Type of special fields in GraphQL schema.
+enum FieldType {
+    ForeignKey,
+    Enum,
+}
+
 /// Process an object's foreign key field and return a group of tokens.
 ///
 /// This group of tokens include:
@@ -94,33 +107,49 @@ fn process_field(
 ///     - The field's type as an Ident.
 ///     - The field's row extractor tokens.
 ///
-/// This is the equivalent of `process_field` but with some pre-processing.
-fn process_fk_field(
+/// This is the equivalent of `process_field` but with some pre/post-processing.
+fn process_special_field(
     schema: &Schema,
     object_name: &String,
     field: &FieldDefinition,
     is_nullable: bool,
-) -> (
-    proc_macro2::TokenStream,
-    proc_macro2::Ident,
-    proc_macro2::Ident,
-    proc_macro2::TokenStream,
-) {
-    let directives::Join {
-        field_name,
-        reference_field_type_name,
-        ..
-    } = get_join_directive_info(field, object_name, &schema.field_type_mappings);
+    field_type: FieldType,
+) -> FieldProcessResult {
+    match field_type {
+        FieldType::ForeignKey => {
+            let directives::Join {
+                field_name,
+                reference_field_type_name,
+                ..
+            } = get_join_directive_info(field, object_name, &schema.field_type_mappings);
 
-    let field_type_name = if !is_nullable {
-        [reference_field_type_name, "!".to_string()].join("")
-    } else {
-        reference_field_type_name
-    };
-    let field_type: Type =
-        Type::new(&field_type_name).expect("Could not construct type for processing");
+            let field_type_name = if !is_nullable {
+                [reference_field_type_name, "!".to_string()].join("")
+            } else {
+                reference_field_type_name
+            };
+            let field_type: Type = Type::new(&field_type_name)
+                .expect("Could not construct type for processing");
 
-    process_field(schema, &field_name, &field_type)
+            process_field(schema, &field_name, &field_type)
+        }
+        FieldType::Enum => {
+            let FieldDefinition {
+                name: field_name, ..
+            } = field;
+
+            let field_type_name = if !is_nullable {
+                ["UInt1".to_string(), "!".to_string()].join("")
+            } else {
+                "UInt1".to_string()
+            };
+
+            let field_type: Type = Type::new(&field_type_name)
+                .expect("Could not construct type for processing");
+
+            process_field(schema, &field_name.to_string(), &field_type)
+        }
+    }
 }
 
 /// Process a schema's type definition into the corresponding tokens for use in an indexer module.
@@ -151,25 +180,28 @@ fn process_type_def(
                 let mut column_type_name = scalar_typ.to_string();
 
                 if schema.is_possible_foreign_key(&column_type_name) {
-                    (typ_tokens, field_name, scalar_typ, ext) = process_fk_field(
+                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
                         &object_name,
                         &field.node,
                         field_type.nullable,
+                        FieldType::ForeignKey,
+                    );
+                    column_type_name = scalar_typ.to_string();
+                }
+
+                if schema.is_enum_type(&column_type_name) {
+                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
+                        schema,
+                        &object_name,
+                        &field.node,
+                        field_type.nullable,
+                        FieldType::Enum,
                     );
                     column_type_name = scalar_typ.to_string();
                 }
 
                 schema.parsed_type_names.insert(column_type_name.clone());
-
-                if schema.non_indexable_type_names.contains(&column_type_name) {
-                    if schema.enum_names.contains(&column_type_name) {
-                        scalar_typ = format_ident!("{}", "Enum");
-                        column_type_name = "u8".to_string();
-                    } else {
-                        continue;
-                    }
-                }
 
                 let clone = if COPY_TYPES.contains(column_type_name.as_str()) {
                     quote! {.clone()}
@@ -302,10 +334,52 @@ fn process_type_def(
                 let ident = format_ident! {"{}", v.node.value.to_string()};
                 quote! { #ident }
             });
+
+            let to_enum = e
+                .values
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let ident = format_ident! {"{}", v.node.value.to_string()};
+                    let i = i as u8;
+                    quote! { #i => #name::#ident, }
+                })
+                .collect::<Vec<proc_macro2::TokenStream>>();
+
+            let from_enum = e
+                .values
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    let ident = format_ident! {"{}", v.node.value.to_string()};
+                    let i = i as u8;
+                    quote! { #name::#ident => #i, }
+                })
+                .collect::<Vec<proc_macro2::TokenStream>>();
+
             Some(quote! {
                 #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+                #[repr(u8)]
                 pub enum #name {
                     #(#values),*
+                }
+
+                impl From<#name> for u8 {
+                    fn from(val: #name) -> Self {
+                        match val {
+                            #(#from_enum)*
+                            _ => panic!("Unrecognized enum value."),
+                        }
+                    }
+                }
+
+                impl From<u8> for #name {
+                    fn from(val: u8) -> Self {
+                        match val {
+                            #(#to_enum)*
+                            _ => panic!("Unrecognized enum value."),
+                        }
+                    }
                 }
             })
         }
