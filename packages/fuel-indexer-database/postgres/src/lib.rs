@@ -394,7 +394,7 @@ pub async fn indexer_is_registered(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<Option<RegisteredIndex>> {
+) -> sqlx::Result<Option<RegisteredIndexer>> {
     match sqlx::query(
         "SELECT * FROM index_registry
         WHERE namespace = $1
@@ -411,7 +411,7 @@ pub async fn indexer_is_registered(
                 DateTime::<Utc>::from_utc(created_at, Utc)
             };
 
-            Ok(Some(RegisteredIndex {
+            Ok(Some(RegisteredIndexer {
                 id: row.get(0),
                 namespace: row.get(1),
                 identifier: row.get(2),
@@ -430,7 +430,7 @@ pub async fn register_indexer(
     identifier: &str,
     pubkey: Option<&str>,
     created_at: DateTime<Utc>,
-) -> sqlx::Result<RegisteredIndex> {
+) -> sqlx::Result<RegisteredIndexer> {
     if let Some(index) = indexer_is_registered(conn, namespace, identifier).await? {
         return Ok(index);
     }
@@ -456,7 +456,7 @@ pub async fn register_indexer(
         DateTime::<Utc>::from_utc(created_at, Utc)
     };
 
-    Ok(RegisteredIndex {
+    Ok(RegisteredIndexer {
         id,
         namespace,
         identifier,
@@ -468,7 +468,7 @@ pub async fn register_indexer(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn all_registered_indexers(
     conn: &mut PoolConnection<Postgres>,
-) -> sqlx::Result<Vec<RegisteredIndex>> {
+) -> sqlx::Result<Vec<RegisteredIndexer>> {
     Ok(sqlx::query("SELECT * FROM index_registry")
         .fetch_all(conn)
         .await?
@@ -483,7 +483,7 @@ pub async fn all_registered_indexers(
                 DateTime::<Utc>::from_utc(created_at, Utc)
             };
 
-            RegisteredIndex {
+            RegisteredIndexer {
                 id,
                 namespace,
                 identifier,
@@ -491,14 +491,14 @@ pub async fn all_registered_indexers(
                 created_at,
             }
         })
-        .collect::<Vec<RegisteredIndex>>())
+        .collect::<Vec<RegisteredIndexer>>())
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn indexer_asset_version(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
-    asset_type: &IndexAssetType,
+    asset_type: &IndexerAssetType,
 ) -> sqlx::Result<i64> {
     match sqlx::query(&format!(
         "SELECT COUNT(*)
@@ -521,9 +521,9 @@ pub async fn register_indexer_asset(
     namespace: &str,
     identifier: &str,
     bytes: Vec<u8>,
-    asset_type: IndexAssetType,
+    asset_type: IndexerAssetType,
     pubkey: Option<&str>,
-) -> sqlx::Result<IndexAsset> {
+) -> sqlx::Result<IndexerAsset> {
     let index = match indexer_is_registered(conn, namespace, identifier).await? {
         Some(index) => index,
         None => {
@@ -573,7 +573,7 @@ pub async fn register_indexer_asset(
     let digest = row.get(3);
     let bytes = row.get(4);
 
-    Ok(IndexAsset {
+    Ok(IndexerAsset {
         id,
         index_id,
         version,
@@ -586,8 +586,8 @@ pub async fn register_indexer_asset(
 pub async fn latest_asset_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
-    asset_type: IndexAssetType,
-) -> sqlx::Result<IndexAsset> {
+    asset_type: IndexerAssetType,
+) -> sqlx::Result<IndexerAsset> {
     let query = format!(
         "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1",
         asset_type.as_ref(),
@@ -602,7 +602,7 @@ pub async fn latest_asset_for_indexer(
     let digest = row.get(3);
     let bytes = row.get(4);
 
-    Ok(IndexAsset {
+    Ok(IndexerAsset {
         id,
         index_id,
         version,
@@ -615,13 +615,14 @@ pub async fn latest_asset_for_indexer(
 pub async fn latest_assets_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
-) -> sqlx::Result<IndexAssetBundle> {
-    let wasm = latest_asset_for_indexer(conn, index_id, IndexAssetType::Wasm).await?;
-    let schema = latest_asset_for_indexer(conn, index_id, IndexAssetType::Schema).await?;
+) -> sqlx::Result<IndexerAssetBundle> {
+    let wasm = latest_asset_for_indexer(conn, index_id, IndexerAssetType::Wasm).await?;
+    let schema =
+        latest_asset_for_indexer(conn, index_id, IndexerAssetType::Schema).await?;
     let manifest =
-        latest_asset_for_indexer(conn, index_id, IndexAssetType::Manifest).await?;
+        latest_asset_for_indexer(conn, index_id, IndexerAssetType::Manifest).await?;
 
-    Ok(IndexAssetBundle {
+    Ok(IndexerAssetBundle {
         wasm,
         schema,
         manifest,
@@ -651,10 +652,10 @@ pub async fn last_block_height_for_indexer(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Postgres>,
-    asset_type: &IndexAssetType,
+    asset_type: &IndexerAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
-) -> sqlx::Result<Option<IndexAsset>> {
+) -> sqlx::Result<Option<IndexerAsset>> {
     let digest = sha256_digest(bytes);
 
     let query = format!(
@@ -672,7 +673,7 @@ pub async fn asset_already_exists(
             let digest = row.get(3);
             let bytes = row.get(4);
 
-            Ok(Some(IndexAsset {
+            Ok(Some(IndexerAsset {
                 id,
                 index_id,
                 version,
@@ -710,8 +711,8 @@ pub async fn penultimate_asset_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-    asset_type: IndexAssetType,
-) -> sqlx::Result<IndexAsset> {
+    asset_type: IndexerAssetType,
+) -> sqlx::Result<IndexerAsset> {
     let index_id = get_indexer_id(conn, namespace, identifier).await?;
     let query = format!(
         "SELECT * FROM index_asset_registry_{}
@@ -727,7 +728,7 @@ pub async fn penultimate_asset_for_indexer(
     let digest = row.get(3);
     let bytes = row.get(4);
 
-    Ok(IndexAsset {
+    Ok(IndexerAsset {
         id,
         index_id,
         version,
@@ -797,7 +798,7 @@ pub async fn remove_asset_by_version(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
     version: &i32,
-    asset_type: IndexAssetType,
+    asset_type: IndexerAssetType,
 ) -> sqlx::Result<()> {
     execute_query(
         conn,
@@ -870,22 +871,23 @@ pub async fn remove_latest_assets_for_indexer(
 ) -> sqlx::Result<()> {
     let indexer_id = get_indexer_id(conn, namespace, identifier).await?;
 
-    let wasm = latest_asset_for_indexer(conn, &indexer_id, IndexAssetType::Wasm).await?;
+    let wasm =
+        latest_asset_for_indexer(conn, &indexer_id, IndexerAssetType::Wasm).await?;
     let manifest =
-        latest_asset_for_indexer(conn, &indexer_id, IndexAssetType::Manifest).await?;
+        latest_asset_for_indexer(conn, &indexer_id, IndexerAssetType::Manifest).await?;
     let schema =
-        latest_asset_for_indexer(conn, &indexer_id, IndexAssetType::Schema).await?;
+        latest_asset_for_indexer(conn, &indexer_id, IndexerAssetType::Schema).await?;
 
-    remove_asset_by_version(conn, &indexer_id, &wasm.version, IndexAssetType::Wasm)
+    remove_asset_by_version(conn, &indexer_id, &wasm.version, IndexerAssetType::Wasm)
         .await?;
     remove_asset_by_version(
         conn,
         &indexer_id,
         &manifest.version,
-        IndexAssetType::Manifest,
+        IndexerAssetType::Manifest,
     )
     .await?;
-    remove_asset_by_version(conn, &indexer_id, &schema.version, IndexAssetType::Schema)
+    remove_asset_by_version(conn, &indexer_id, &schema.version, IndexerAssetType::Schema)
         .await?;
 
     Ok(())

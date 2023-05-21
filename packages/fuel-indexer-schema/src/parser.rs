@@ -38,6 +38,9 @@ pub struct ParsedGraphQLSchema {
 
     /// The parsed schema.
     pub ast: ServiceDocument,
+
+    /// Indicator of whether the next type is a no table type.
+    pub next_is_no_table: bool,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -57,6 +60,7 @@ impl Default for ParsedGraphQLSchema {
             field_type_mappings: HashMap::new(),
             scalar_names: HashSet::new(),
             ast,
+            next_is_no_table: false,
         }
     }
 }
@@ -92,6 +96,7 @@ impl ParsedGraphQLSchema {
             field_type_mappings: build_schema_fields_and_types_map(&ast)?,
             scalar_names,
             ast,
+            next_is_no_table: false,
         })
     }
 
@@ -106,9 +111,13 @@ impl ParsedGraphQLSchema {
     }
 
     /// Whether the given field type name is a type from which tables are created.
-    #[allow(unused)]
     pub fn is_non_indexable_type(&self, name: &str) -> bool {
         self.non_indexable_type_names.contains(name)
+    }
+
+    /// Whether the given field type name is a type from which tables are created.
+    pub fn is_non_indexable_non_enum(&self, name: &str) -> bool {
+        self.non_indexable_type_names.contains(name) && !self.is_enum_type(name)
     }
 
     /// Whether the given field type name is an enum type.

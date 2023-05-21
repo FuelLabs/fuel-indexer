@@ -99,6 +99,7 @@ fn process_field(
 enum FieldType {
     ForeignKey,
     Enum,
+    ReferenceOnly,
 }
 
 /// Process an object's 'special' field and return a group of tokens.
@@ -147,6 +148,22 @@ fn process_special_field(
 
             process_field(schema, &field_name.to_string(), &field_type)
         }
+        FieldType::ReferenceOnly => {
+            let FieldDefinition {
+                name: field_name, ..
+            } = field;
+
+            let field_type_name = if !is_nullable {
+                ["Blob".to_string(), "!".to_string()].join("")
+            } else {
+                "Blob".to_string()
+            };
+
+            let field_type: Type = Type::new(&field_type_name)
+                .expect("Could not construct type for processing");
+
+            process_field(schema, &field_name.to_string(), &field_type)
+        }
     }
 }
 
@@ -178,7 +195,16 @@ fn process_type_def(
 
                 let mut field_typ_name = scalar_typ.to_string();
 
-                if schema.is_possible_foreign_key(&field_typ_name) {
+                if schema.is_non_indexable_non_enum(&field_typ_name) {
+                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
+                        schema,
+                        &object_name,
+                        &field.node,
+                        field_type.nullable,
+                        FieldType::ReferenceOnly,
+                    );
+                    field_typ_name = scalar_typ.to_string();
+                } else if schema.is_possible_foreign_key(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
                         &object_name,
@@ -187,9 +213,7 @@ fn process_type_def(
                         FieldType::ForeignKey,
                     );
                     field_typ_name = scalar_typ.to_string();
-                }
-
-                if schema.is_enum_type(&field_typ_name) {
+                } else if schema.is_enum_type(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
                         &object_name,

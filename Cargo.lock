@@ -2305,18 +2305,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "explorer_indexer"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuels",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "extension-trait"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3319,17 +3307,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuel_explorer"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuels",
- "serde",
-]
-
-[[package]]
 name = "fuels"
 version = "0.40.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3891,54 +3868,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
 dependencies = [
  "unicode-segmentation",
-]
-
-[[package]]
-name = "hello-world-data"
-version = "0.0.0"
-dependencies = [
- "clap 3.2.25",
- "fuel-indexer-lib",
- "fuel-indexer-tests",
- "fuel-tx",
- "fuel-types 0.26.3",
- "fuels",
- "rand 0.8.5",
- "thiserror",
- "tokio 1.28.1",
-]
-
-[[package]]
-name = "hello-world-node"
-version = "0.0.0"
-dependencies = [
- "clap 3.2.25",
- "fuel-indexer-tests",
- "tokio 1.28.1",
-]
-
-[[package]]
-name = "hello_indexer"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuels",
- "serde",
-]
-
-[[package]]
-name = "hello_indexer_native"
-version = "0.0.0"
-dependencies = [
- "async-trait",
- "fuel-indexer",
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuels",
- "serde",
 ]
 
 [[package]]
@@ -6573,19 +6502,6 @@ name = "similar"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "420acb44afdae038210c99e69aae24109f32f15500aa708e81d46c9f29d55fcf"
-
-[[package]]
-name = "simple-wasm"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuel-tx",
- "fuels",
- "serde",
- "sha2 0.10.6",
-]
 
 [[package]]
 name = "simple_asn1"

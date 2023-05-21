@@ -1,6 +1,12 @@
+//! # fuel-indexer-database-types
+//!
+//! `fuel-indexer-database-types` is a collection of data models used to create SQL tables
+//!  from parsed GraphQL schema.
+
 #![deny(unused_crate_dependencies)]
 
 use crate::directives::IndexMethod;
+use chrono::{serde::ts_microseconds, DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt,
@@ -10,11 +16,9 @@ use std::{
 };
 use strum::{AsRefStr, EnumString};
 
-use chrono::serde::ts_microseconds;
-use chrono::{DateTime, Utc};
-
 pub mod directives;
 
+/// Root column used to identify to which graph registry a given column belongs.
 #[derive(Debug)]
 pub struct RootColumns {
     pub id: i64,
@@ -23,6 +27,7 @@ pub struct RootColumns {
     pub graphql_type: String,
 }
 
+/// New root column data model.
 #[derive(Debug)]
 pub struct NewRootColumns {
     pub root_id: i64,
@@ -30,6 +35,7 @@ pub struct NewRootColumns {
     pub graphql_type: String,
 }
 
+/// Represents a graph root.
 #[derive(Debug)]
 pub struct GraphRoot {
     pub id: i64,
@@ -39,6 +45,7 @@ pub struct GraphRoot {
     pub schema: String,
 }
 
+/// Graph root data model.
 #[derive(Debug)]
 pub struct NewGraphRoot {
     pub version: String,
@@ -47,12 +54,14 @@ pub struct NewGraphRoot {
     pub schema: String,
 }
 
+/// A database column that does not result in SQL tables being generated.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct VirtualColumn {
     pub name: String,
     pub graphql_type: String,
 }
 
+/// Represents a database type within GraphQL schema.
 #[derive(Debug)]
 pub struct TypeId {
     pub id: i64,
@@ -65,6 +74,7 @@ pub struct TypeId {
 }
 
 impl TypeId {
+    /// Determine whether or not this type can be used to create SQL tables.
     pub fn is_non_indexable_type(&self) -> bool {
         !self.virtual_columns.is_empty()
     }
@@ -75,11 +85,13 @@ pub struct IdLatest {
     pub schema_version: String,
 }
 
+/// Represents the number of versions for a given shcema.
 #[derive(Debug)]
 pub struct NumVersions {
     pub num: Option<i64>,
 }
 
+/// Represents a database column.
 #[derive(Clone, Debug)]
 pub struct NewColumn {
     pub type_id: i64,
@@ -91,6 +103,8 @@ pub struct NewColumn {
     pub unique: bool,
 }
 
+/// Similar to `NewColumn`, but is used to create the SQL
+/// from which the actual database column is created
 #[derive(Debug)]
 pub struct Columns {
     pub id: i64,
@@ -103,6 +117,7 @@ pub struct Columns {
 }
 
 impl NewColumn {
+    /// Create a SQL fragment for the given column.
     pub fn sql_fragment(&self) -> String {
         let null_frag = if self.nullable { "" } else { "not null" };
         let unique_frag = if self.unique { "unique" } else { "" };
@@ -165,6 +180,7 @@ impl NewColumn {
     }
 }
 
+/// Metadata about a given column.
 #[derive(Debug)]
 pub struct ColumnInfo {
     pub type_id: i64,
@@ -174,6 +190,7 @@ pub struct ColumnInfo {
     pub column_type: String,
 }
 
+/// Represents all types that can be persisted into the database.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ColumnType {
     ID = 0,
@@ -339,8 +356,9 @@ impl From<&str> for ColumnType {
     }
 }
 
+/// Represents an indexer asset (e.g., schema, manifest, WASM binary)
 #[derive(Debug, Serialize, Deserialize)]
-pub struct IndexAsset {
+pub struct IndexerAsset {
     pub id: i64,
     pub index_id: i64,
     pub version: i32,
@@ -349,15 +367,17 @@ pub struct IndexAsset {
     pub bytes: Vec<u8>,
 }
 
+/// Represents all assets for a given indexer.
 #[derive(Debug)]
-pub struct IndexAssetBundle {
-    pub schema: IndexAsset,
-    pub manifest: IndexAsset,
-    pub wasm: IndexAsset,
+pub struct IndexerAssetBundle {
+    pub schema: IndexerAsset,
+    pub manifest: IndexerAsset,
+    pub wasm: IndexerAsset,
 }
 
+/// Represents the distinct types of assets that can be associated with an indexer.
 #[derive(Debug, Eq, PartialEq, Hash, Clone, EnumString, AsRefStr)]
-pub enum IndexAssetType {
+pub enum IndexerAssetType {
     #[strum(serialize = "wasm")]
     Wasm,
     #[strum(serialize = "manifest")]
@@ -366,8 +386,9 @@ pub enum IndexAssetType {
     Schema,
 }
 
+/// Represents a registered indexer.
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RegisteredIndex {
+pub struct RegisteredIndexer {
     pub id: i64,
     pub namespace: String,
     pub identifier: String,
@@ -376,12 +397,14 @@ pub struct RegisteredIndex {
     pub created_at: DateTime<Utc>,
 }
 
-impl RegisteredIndex {
+impl RegisteredIndexer {
+    /// Get the fully qualified identifier for this indexer.
     pub fn uid(&self) -> String {
         format!("{}.{}", self.namespace, self.identifier)
     }
 }
 
+/// Represents each type of database supported by the Fuel indexer.
 #[derive(Eq, PartialEq, Debug, Clone, Default)]
 pub enum DbType {
     #[default]
@@ -389,6 +412,7 @@ pub enum DbType {
 }
 
 impl DbType {
+    /// Get the fully qualified table name for a given table.
     pub fn table_name(&self, namespace: &str, table_name: &str) -> String {
         match self {
             DbType::Postgres => format!("{namespace}.{table_name}"),
@@ -396,10 +420,12 @@ impl DbType {
     }
 }
 
+/// Encapsulates all logic concerned with creating a given SQL abstraction.
 pub trait CreateStatement {
     fn create_statement(&self) -> String;
 }
 
+/// Represents a SQL index on a given column.
 #[derive(Debug)]
 pub struct ColumnIndex {
     pub db_type: DbType,
@@ -411,12 +437,14 @@ pub struct ColumnIndex {
 }
 
 impl ColumnIndex {
+    /// Return the index name for this column.
     pub fn name(&self) -> String {
         format!("{}_{}_idx", &self.table_name, &self.column_name)
     }
 }
 
 impl CreateStatement for ColumnIndex {
+    /// Generate the create statement for this index.
     fn create_statement(&self) -> String {
         let mut frag = "CREATE ".to_string();
         if self.unique {
@@ -441,6 +469,7 @@ impl CreateStatement for ColumnIndex {
     }
 }
 
+/// Represents the SQL 'ON DELETE' action
 #[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
 pub enum OnDelete {
     #[default]
@@ -452,6 +481,7 @@ pub enum OnDelete {
     SetNull,
 }
 
+/// Represents the SQL 'ON UPDATE' action
 #[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
 pub enum OnUpdate {
     #[default]
@@ -459,6 +489,7 @@ pub enum OnUpdate {
     NoAction,
 }
 
+/// Represents a SQL foreign key constraint.
 #[derive(Debug, Clone, Default)]
 pub struct ForeignKey {
     pub db_type: DbType,
@@ -473,6 +504,7 @@ pub struct ForeignKey {
 }
 
 impl ForeignKey {
+    /// Create a new foreign key constraint.
     pub fn new(
         db_type: DbType,
         namespace: String,
@@ -494,6 +526,7 @@ impl ForeignKey {
         }
     }
 
+    /// Get the fully qualified name for this foreign key.
     pub fn name(&self) -> String {
         format!(
             "fk_{}_{}__{}_{}",
@@ -506,6 +539,7 @@ impl ForeignKey {
 }
 
 impl CreateStatement for ForeignKey {
+    /// Generate the create statement for this foreign key.
     fn create_statement(&self) -> String {
         match self.db_type {
             DbType::Postgres => {
@@ -526,17 +560,22 @@ impl CreateStatement for ForeignKey {
     }
 }
 
+/// Holder type of the 'id' column.
 pub struct IdCol {}
+
 impl IdCol {
+    /// Get the ID column in lowercase.
     pub fn to_lowercase_string() -> String {
         "id".to_string()
     }
 
+    /// Get the ID column in uppercase.
     pub fn to_uppercase_string() -> String {
         "ID".to_string()
     }
 }
 
+/// Represents a nonce for authentication.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Nonce {
     pub uid: String,
@@ -544,6 +583,7 @@ pub struct Nonce {
 }
 
 impl Nonce {
+    /// Determine whether the given nonce has expired.
     pub fn is_expired(&self) -> bool {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)

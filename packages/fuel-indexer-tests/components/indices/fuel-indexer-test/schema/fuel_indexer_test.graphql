@@ -243,3 +243,9 @@ type ComplexEnumEntity {
     id: ID!
     one: EnumEntity
 }
+
+type NoTableEntity {
+    id: ID! @notable
+    name: Charfield
+    size: UInt1!
+}

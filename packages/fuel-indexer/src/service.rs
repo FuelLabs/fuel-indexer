@@ -5,7 +5,7 @@ use crate::{
 use async_std::sync::{Arc, Mutex};
 use fuel_indexer_database::{
     queries,
-    types::{IndexAssetBundle, IndexAssetType},
+    types::{IndexerAssetBundle, IndexerAssetType},
     IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::{
@@ -89,12 +89,12 @@ impl IndexerService {
                 .await?;
 
         let mut items = vec![
-            (IndexAssetType::Wasm, exec_source.to_vec()),
+            (IndexerAssetType::Wasm, exec_source.to_vec()),
             (
-                IndexAssetType::Manifest,
+                IndexerAssetType::Manifest,
                 Manifest::try_into(manifest.clone())?,
             ),
-            (IndexAssetType::Schema, schema_bytes),
+            (IndexerAssetType::Schema, schema_bytes),
         ];
 
         while let Some((asset_type, bytes)) = items.pop() {
@@ -300,7 +300,7 @@ async fn create_service_task(
                         queries::get_indexer_id(&mut conn, &namespace, &identifier)
                             .await?;
 
-                    let IndexAssetBundle { wasm, manifest, .. } =
+                    let IndexerAssetBundle { wasm, manifest, .. } =
                         queries::latest_assets_for_indexer(&mut conn, &indexer_id)
                             .await?;
 

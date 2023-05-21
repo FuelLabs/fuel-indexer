@@ -14,7 +14,7 @@ use axum::{
 use fuel_crypto::{Message, Signature};
 use fuel_indexer_database::{
     queries,
-    types::{IndexAsset, IndexAssetType},
+    types::{IndexerAsset, IndexerAssetType},
     IndexerConnectionPool,
 };
 use fuel_indexer_graphql::dynamic::{build_dynamic_schema, execute_query};
@@ -171,14 +171,14 @@ pub(crate) async fn revert_indexer(
 
     let indexer_id = queries::get_indexer_id(&mut conn, &namespace, &identifier).await?;
     let wasm =
-        queries::latest_asset_for_indexer(&mut conn, &indexer_id, IndexAssetType::Wasm)
+        queries::latest_asset_for_indexer(&mut conn, &indexer_id, IndexerAssetType::Wasm)
             .await?;
 
     if let Err(e) = queries::remove_asset_by_version(
         &mut conn,
         &indexer_id,
         &wasm.version,
-        IndexAssetType::Wasm,
+        IndexerAssetType::Wasm,
     )
     .await
     {
@@ -214,7 +214,7 @@ pub(crate) async fn register_indexer_assets(
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
-    let mut assets: Vec<IndexAsset> = Vec::new();
+    let mut assets: Vec<IndexerAsset> = Vec::new();
 
     if let Some(mut multipart) = multipart {
         let mut conn = pool.acquire().await?;
@@ -225,10 +225,10 @@ pub(crate) async fn register_indexer_assets(
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
             let asset_type =
-                IndexAssetType::from_str(&name).expect("Invalid asset type.");
+                IndexerAssetType::from_str(&name).expect("Invalid asset type.");
 
-            let asset: IndexAsset = match asset_type {
-                IndexAssetType::Wasm | IndexAssetType::Manifest => {
+            let asset: IndexerAsset = match asset_type {
+                IndexerAssetType::Wasm | IndexerAssetType::Manifest => {
                     queries::register_indexer_asset(
                         &mut conn,
                         &namespace,
@@ -239,13 +239,13 @@ pub(crate) async fn register_indexer_assets(
                     )
                     .await?
                 }
-                IndexAssetType::Schema => {
+                IndexerAssetType::Schema => {
                     match queries::register_indexer_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
                         data.to_vec(),
-                        IndexAssetType::Schema,
+                        IndexerAssetType::Schema,
                         Some(&claims.sub),
                     )
                     .await
