@@ -1,11 +1,24 @@
 use crate::cli::StatusCommand;
 use fuel_indexer_database_types::RegisteredIndex;
 use tracing::error;
+use reqwest::{
+    //blocking::{multipart::Form, Client},
+    header::{HeaderMap, AUTHORIZATION, CONNECTION},
+    //StatusCode,
+};
 
-pub async fn status(StatusCommand { url }: StatusCommand) -> anyhow::Result<()> {
+pub async fn status(StatusCommand { url, auth }: StatusCommand) -> anyhow::Result<()> {
     let target = format!("{url}/api/status");
 
-    match reqwest::get(&target).await {
+    let mut headers = HeaderMap::new();
+    headers.insert(CONNECTION, "keep-alive".parse()?);
+    if let Some(auth) = auth {
+        headers.insert(AUTHORIZATION, auth.parse()?);
+    }
+
+    let client = reqwest::Client::new();
+
+    match client.get(&target).headers(headers).send().await {
         Ok(res) => {
             if res.status() != reqwest::StatusCode::OK {
                 error!(

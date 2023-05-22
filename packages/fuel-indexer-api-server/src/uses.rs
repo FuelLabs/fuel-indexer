@@ -123,7 +123,14 @@ pub(crate) async fn health_check(
 
 pub(crate) async fn status(
     Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
+    tracing::info!("CLAIMS: {}", &claims.sub);
+
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
     let mut conn = pool.acquire().await?;
     let indexers = queries::all_registered_indexers(&mut conn).await?;
     let json: serde_json::Value = serde_json::to_value(indexers).unwrap();

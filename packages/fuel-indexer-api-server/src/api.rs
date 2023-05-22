@@ -230,6 +230,7 @@ impl GraphQlApi {
         let root_routes = Router::new()
             .route("/health", get(health_check))
             .route("/status", get(status))
+            .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(config.clone()))
             .layer(Extension(pool.clone()))
             .layer(Extension(start_time));
