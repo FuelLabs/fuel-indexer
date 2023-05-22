@@ -26,6 +26,7 @@ actix-web = { version = "4", default-features = false, features = ["macros"] }
 async-std = "1"
 axum = { version = "0.6", features = ["multipart"] }
 bigdecimal = { version = "0.3" }
+bincode = { workspace  = true }
 chrono = { version = "0.4", features = ["serde"] }
 fuel-indexer = { workspace = true }
 fuel-indexer-api-server = { workspace = true }

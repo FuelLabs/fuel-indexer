@@ -3180,6 +3180,7 @@ dependencies = [
  "async-std",
  "axum 0.6.18",
  "bigdecimal",
+ "bincode",
  "chrono",
  "fuel-indexer",
  "fuel-indexer-api-server",

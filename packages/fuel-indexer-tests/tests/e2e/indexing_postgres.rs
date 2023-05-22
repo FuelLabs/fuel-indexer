@@ -1,8 +1,10 @@
 use actix_service::Service;
 use actix_web::test;
 use bigdecimal::ToPrimitive;
+use bincode;
 use fuel_indexer::IndexerService;
 use fuel_indexer_lib::manifest::Manifest;
+use fuel_indexer_schema::FtColumn;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
@@ -12,6 +14,7 @@ use fuel_indexer_tests::{
     utils::update_test_manifest_asset_paths,
 };
 use fuel_indexer_types::{Address, ContractId, HexString, Identity, Nonce};
+use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
 use std::str::FromStr;
 use tokio::{
@@ -950,4 +953,47 @@ async fn test_can_trigger_and_index_enum_types_postgres() {
 
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
+}
+
+// Taken from fuel_indexer_test.graphql
+#[derive(Serialize, Deserialize)]
+struct NoTableEntity {
+    name: Option<String>,
+    size: u8,
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_nonindexable_events() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.usesnotableentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<&str, usize>(1), "hello world");
+
+    let blob = hex::decode(row.get::<&str, usize>(2)).unwrap();
+    let cols: Vec<FtColumn> = bincode::deserialize(&blob).unwrap();
+    assert_eq!(cols.len(), 2);
+
+    assert_eq!(cols[0], FtColumn::Charfield(Some("notable".to_string())));
+    assert_eq!(cols[1], FtColumn::UInt1(Some(1)));
 }

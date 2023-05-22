@@ -279,7 +279,7 @@ fn process_type_def(
 
             if schema.is_native {
                 Some(quote! {
-                    #[derive(Debug, PartialEq, Eq, Hash)]
+                    #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
                     pub struct #strct {
                         #block
                     }
@@ -337,14 +337,14 @@ fn process_type_def(
 
                     impl From<#strct> for Blob {
                         fn from(value: #strct) -> Self {
-                            Self(serialize(&value.to_row()))
+                            Self(serialize(&value))
                         }
                     }
 
                     impl From<Blob> for #strct {
                         fn from(value: Blob) -> Self {
-                            let columns: Vec<FtColumn> = bincode::deserialize(&value.0).expect("Serde error.");
-                            Self::from_row(columns)
+                            let x: Self = bincode::deserialize(&value.0).expect("Serde error.");
+                            x
                         }
                     }
                 })
@@ -376,6 +376,13 @@ fn process_type_def(
                     impl From<#strct> for Blob {
                         fn from(value: #strct) -> Self {
                             Self(serialize(&value.to_row()))
+                        }
+                    }
+
+                    impl From<Blob> for #strct {
+                        fn from(value: Blob) -> Self {
+                            let columns: Vec<FtColumn> = bincode::deserialize(&value.0).expect("Serde error.");
+                            Self::from_row(columns)
                         }
                     }
                 })
