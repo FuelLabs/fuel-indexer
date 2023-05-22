@@ -125,8 +125,6 @@ pub(crate) async fn status(
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
-    tracing::info!("CLAIMS: {}", &claims.sub);
-
     if claims.is_unauthenticated() {
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
