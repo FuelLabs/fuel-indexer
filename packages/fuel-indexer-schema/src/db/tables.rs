@@ -148,6 +148,7 @@ impl SchemaBuilder {
             types,
             fields,
             foreign_keys: HashMap::new(),
+            non_indexable_types: HashSet::new(),
         };
         schema.register_queryroot_fields();
 
@@ -374,6 +375,7 @@ pub struct Schema {
     /// Schema field mapping is namespaced by type name
     pub fields: HashMap<String, HashMap<String, String>>,
     pub foreign_keys: HashMap<String, HashMap<String, (String, String)>>,
+    pub non_indexable_types: HashSet<String>,
 }
 
 impl Schema {
@@ -397,6 +399,7 @@ impl Schema {
         .await?;
 
         let mut types = HashSet::new();
+        let mut non_indexable_types = HashSet::new();
         let mut fields = HashMap::new();
 
         for tyid in &typeids {
@@ -405,12 +408,13 @@ impl Schema {
             if tyid.is_non_indexable_type() {
                 let columns = tyid.virtual_columns.clone();
                 fields.insert(
-                    tyid.graphql_name.to_owned(),
+                    tyid.graphql_name.clone(),
                     columns
                         .into_iter()
                         .map(|c| (c.name, c.graphql_type))
                         .collect(),
                 );
+                non_indexable_types.insert(tyid.graphql_name.to_owned());
             } else {
                 let columns = queries::list_column_by_id(&mut conn, tyid.id).await?;
                 fields.insert(
@@ -432,6 +436,7 @@ impl Schema {
             types,
             fields,
             foreign_keys,
+            non_indexable_types,
         };
 
         schema.register_queryroot_fields();

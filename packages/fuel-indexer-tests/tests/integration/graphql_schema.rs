@@ -37,6 +37,7 @@ fn generate_schema() -> Schema {
         types,
         fields,
         foreign_keys: HashMap::new(),
+        non_indexable_types: HashSet::new(),
     };
 
     schema.register_queryroot_fields();
