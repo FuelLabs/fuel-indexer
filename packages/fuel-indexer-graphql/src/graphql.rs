@@ -764,6 +764,7 @@ mod tests {
             types: HashSet::from(["Tx".to_string(), "Block".to_string()]),
             fields,
             foreign_keys,
+            non_indexable_types: HashSet::new(),
         };
 
         schema.register_queryroot_fields();
