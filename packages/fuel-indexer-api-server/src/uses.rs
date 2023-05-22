@@ -132,7 +132,18 @@ pub(crate) async fn status(
     }
 
     let mut conn = pool.acquire().await?;
-    let indexers = queries::all_registered_indexers(&mut conn).await?;
+    let indexers: Vec<_> = {
+        let indexers = queries::all_registered_indexers(&mut conn).await?;
+
+        if (&claims.sub).is_empty() {
+            indexers
+        } else {
+            indexers
+                .into_iter()
+                .filter(|i| i.pubkey.as_ref() == Some(&claims.sub))
+                .collect()
+        }
+    };
     let json: serde_json::Value = serde_json::to_value(indexers).unwrap();
     Ok(Json(json))
 }
