@@ -3,8 +3,8 @@
 extern crate alloc;
 use fuel_indexer_types::{
     Address, AssetId, Blob, BlockHeight, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
-    HexString, Identity, Int1, Int16, Int4, Int8, Json, MessageId, Nonce, Salt,
-    Signature, Tai64Timestamp, TxId, UInt1, UInt16, UInt4, UInt8,
+    HexString, Identity, Int1, Int16, Int4, Int8, Json, MessageId, NoRelation, Nonce,
+    Salt, Signature, Tai64Timestamp, TxId, UInt1, UInt16, UInt4, UInt8,
 };
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -19,7 +19,6 @@ pub mod parser;
 pub mod utils;
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
-pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 const NULL_VALUE: &str = "NULL";
 
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
@@ -75,7 +74,7 @@ pub enum FtColumn {
     UInt16(Option<UInt16>),
     UInt4(Option<UInt4>),
     UInt8(Option<UInt8>),
-    NoRelation(Option<Blob>),
+    NoRelation(Option<NoRelation>),
 }
 
 impl FtColumn {
@@ -179,7 +178,7 @@ impl FtColumn {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::Json(value) => match value {
+            FtColumn::Json(value) | FtColumn::NoRelation(value) => match value {
                 Some(val) => {
                     let x = &val.0;
                     format!("'{x}'")
@@ -205,7 +204,7 @@ impl FtColumn {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::Blob(value) | FtColumn::NoRelation(value) => match value {
+            FtColumn::Blob(value) => match value {
                 Some(blob) => {
                     let x = hex::encode(blob.as_ref());
                     format!("'{x}'")

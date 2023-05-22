@@ -26,6 +26,6 @@ home = "0.5"
 indicatif = "0.17"
 pg-embed = { version = "0.7" }
 serde = { features = ["derive"] , workspace = true }
-serde_json = { version = "1.0" }
+serde_json = { workspace = true }
 tokio = { features = ["macros", "rt-multi-thread", "process"] , workspace = true }
 tracing = { workspace = true }

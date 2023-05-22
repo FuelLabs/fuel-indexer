@@ -31,6 +31,7 @@ pub use fuel_indexer_schema::utils::{deserialize, serialize};
 // Specifically we import serde here for the `Serialize` and `Deserialize` traits
 // else the user would have to explicity import these in their indexer modules.
 pub use serde;
+pub use serde_json;
 
 pub mod prelude {
     pub use super::{bincode, deserialize, serde, serialize, types::*, utils::*};

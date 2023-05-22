@@ -60,7 +60,7 @@ impl From<Blob> for Vec<u8> {
     }
 }
 
-pub type NoRelation = Blob;
+pub type NoRelation = Json;
 
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash, Default)]
 pub struct Json(pub String);

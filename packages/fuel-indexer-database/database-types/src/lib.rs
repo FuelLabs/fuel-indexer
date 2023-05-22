@@ -161,7 +161,7 @@ impl NewColumn {
             ColumnType::Enum => "varchar(255)",
             ColumnType::Int1 => "integer",
             ColumnType::UInt1 => "integer",
-            ColumnType::NoRelation => "varchar(10485760)",
+            ColumnType::NoRelation => "Json",
         }
     }
 }

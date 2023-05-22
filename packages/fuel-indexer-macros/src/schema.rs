@@ -335,16 +335,17 @@ fn process_type_def(
                         }
                     }
 
-                    impl From<#strct> for Blob {
+                    impl From<#strct> for Json {
                         fn from(value: #strct) -> Self {
-                            Self(serialize(&value))
+                            let s = serde_json::to_string(&value).expect("Serde error.");
+                            Self(s)
                         }
                     }
 
-                    impl From<Blob> for #strct {
-                        fn from(value: Blob) -> Self {
-                            let x: Self = bincode::deserialize(&value.0).expect("Serde error.");
-                            x
+                    impl From<Json> for #strct {
+                        fn from(value: Json) -> Self {
+                            let s: #strct = serde_json::from_str(&value.0).expect("Serde error.");
+                            s
                         }
                     }
                 })
@@ -373,16 +374,17 @@ fn process_type_def(
                         }
                     }
 
-                    impl From<#strct> for Blob {
+                    impl From<#strct> for Json {
                         fn from(value: #strct) -> Self {
-                            Self(serialize(&value.to_row()))
+                            let s = serde_json::to_string(&value).expect("Serde error.");
+                            Self(s)
                         }
                     }
 
-                    impl From<Blob> for #strct {
-                        fn from(value: Blob) -> Self {
-                            let columns: Vec<FtColumn> = bincode::deserialize(&value.0).expect("Serde error.");
-                            Self::from_row(columns)
+                    impl From<Json> for #strct {
+                        fn from(value: Json) -> Self {
+                            let s: #strct = serde_json::from_str(&value.0).expect("Serde error.");
+                            s
                         }
                     }
                 })
