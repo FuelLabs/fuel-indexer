@@ -43,6 +43,7 @@ lazy_static! {
         "Json",
         "MessageId",
         "Nonce",
+        "NoRelation",
         "Salt",
         "Signature",
         "Tai64Timestamp",
