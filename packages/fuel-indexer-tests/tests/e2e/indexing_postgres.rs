@@ -1,10 +1,8 @@
 use actix_service::Service;
 use actix_web::test;
 use bigdecimal::ToPrimitive;
-use bincode;
 use fuel_indexer::IndexerService;
 use fuel_indexer_lib::manifest::Manifest;
-use fuel_indexer_schema::FtColumn;
 use fuel_indexer_tests::{
     assets, defaults,
     fixtures::{
@@ -990,10 +988,8 @@ async fn test_can_trigger_and_index_nonindexable_events() {
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(1), "hello world");
 
-    let blob = hex::decode(row.get::<&str, usize>(2)).unwrap();
-    let cols: Vec<FtColumn> = bincode::deserialize(&blob).unwrap();
-    assert_eq!(cols.len(), 2);
+    let entity: NoTableEntity = serde_json::from_str(row.get::<&str, usize>(2)).unwrap();
 
-    assert_eq!(cols[0], FtColumn::Charfield(Some("notable".to_string())));
-    assert_eq!(cols[1], FtColumn::UInt1(Some(1)));
+    assert_eq!(entity.name, Some("notable".to_string()));
+    assert_eq!(entity.size, 1);
 }

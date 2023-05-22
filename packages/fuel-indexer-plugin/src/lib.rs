@@ -28,9 +28,11 @@ pub mod utils {
 pub use bincode;
 pub use fuel_indexer_schema::utils::{deserialize, serialize};
 
-// Specifically we import serde here for the `Serialize` and `Deserialize` traits
+// Specifically we import `serde` here for the `Serialize` and `Deserialize` traits
 // else the user would have to explicity import these in their indexer modules.
 pub use serde;
+
+// We import `serde_json` for the `From<T> for Json` in the `fuel-indexer-macro/schema` module.
 pub use serde_json;
 
 pub mod prelude {
