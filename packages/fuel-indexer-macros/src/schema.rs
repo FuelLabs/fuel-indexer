@@ -340,6 +340,13 @@ fn process_type_def(
                             Self(serialize(&value.to_row()))
                         }
                     }
+
+                    impl From<Blob> for #strct {
+                        fn from(value: Blob) -> Self {
+                            let columns: Vec<FtColumn> = bincode::deserialize(&value.0).expect("Serde error.");
+                            Self::from_row(columns)
+                        }
+                    }
                 })
             } else {
                 // TOOD: derive Default here
