@@ -52,8 +52,13 @@ fn print_indexers(indexers: Vec<RegisteredIndex>) {
         let is_last_namespace = namespace_i == groupped.len() - 1;
         // namespace glyphs
         let (ng1, ng2) = if namespace_i == 0 {
+            // first and only
+            if is_last_namespace {
+                ("─", " ")
             // first
-            ("┌─", "|")
+            } else {
+                ("┌─", "|")
+            }
         } else if !is_last_namespace {
             // middle
             ("├─", "|")
