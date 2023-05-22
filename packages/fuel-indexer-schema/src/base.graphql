@@ -21,6 +21,7 @@ scalar Int8
 scalar Json
 scalar MessageId
 scalar Nonce
+scalar NoRelation
 scalar Salt
 scalar Signature
 scalar Tai64Timestamp
@@ -41,3 +42,5 @@ directive @indexed(type: IndexType = Btree) on FIELD_DEFINITION | ENUM_VALUE
 directive @join(on: String) on OBJECT
 
 directive @unique on FIELD_DEFINITION | ENUM_VALUE
+
+directive @notable on FIELD_DEFINITION

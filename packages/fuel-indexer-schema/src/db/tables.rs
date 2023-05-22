@@ -2,7 +2,7 @@ use crate::{
     db::IndexerSchemaDbResult, parser::ParsedGraphQLSchema, utils::*, QUERY_ROOT,
 };
 use async_graphql_parser::types::{
-    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
+    BaseType, FieldDefinition, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
@@ -77,7 +77,7 @@ impl SchemaBuilder {
 
         for def in parsed_schema.ast.definitions.iter() {
             if let TypeSystemDefinition::Type(typ) = def {
-                self.generate_table_sql(&typ.node)
+                self.generate_table_sql(&typ.node)?;
             }
         }
 
@@ -154,19 +154,28 @@ impl SchemaBuilder {
         Ok(schema)
     }
 
-    /// Return a field's ColumnType and whether it is nullable.
-    fn process_type(&self, field_type: &Type) -> (ColumnType, bool) {
-        match &field_type.base {
+    /// Return a field's `ColumnType` and whether it is nullable.
+    fn process_type(
+        &self,
+        field: &FieldDefinition,
+    ) -> IndexerSchemaDbResult<(ColumnType, bool)> {
+        let ty = &field.ty.node;
+
+        match &ty.base {
             BaseType::Named(t) => {
                 if self.parsed_schema.is_enum_type(t.as_str()) {
-                    return (ColumnType::Charfield, false);
+                    return Ok((ColumnType::Charfield, false));
+                }
+
+                if self.parsed_schema.is_non_indexable_non_enum(t.as_str()) {
+                    return Ok((ColumnType::Blob, true));
                 }
 
                 if self.parsed_schema.is_possible_foreign_key(t.as_str()) {
-                    return (ColumnType::ForeignKey, true);
+                    return Ok((ColumnType::ForeignKey, true));
                 }
 
-                (ColumnType::from(t.as_str()), field_type.nullable)
+                Ok((ColumnType::from(t.as_str()), ty.nullable))
             }
             BaseType::List(_) => panic!("List types not supported yet."),
         }
@@ -179,80 +188,117 @@ impl SchemaBuilder {
         type_id: i64,
         fields: &[FieldDefinition],
         table_name: &str,
-    ) -> String {
+    ) -> IndexerSchemaDbResult<String> {
         let mut fragments = Vec::new();
 
         for (pos, field) in fields.iter().enumerate() {
-            let (typ, nullable) = self.process_type(&field.ty.node);
+            let directives::NoRelation(no_table) = get_notable_directive_info(field)?;
+            if no_table {
+                self.parsed_schema
+                    .non_indexable_type_names
+                    .insert(object_name.to_string());
+            }
+
+            let (typ, nullable) = self.process_type(field)?;
 
             let directives::Unique(unique) = get_unique_directive(field);
 
-            if typ == ColumnType::ForeignKey {
-                let directives::Join {
-                    reference_field_name,
-                    field_type_name,
-                    reference_field_type_name,
-                    ..
-                } = get_join_directive_info(
-                    field,
-                    object_name,
-                    &self.parsed_schema.field_type_mappings,
-                );
+            match typ {
+                ColumnType::ForeignKey => {
+                    let directives::Join {
+                        reference_field_name,
+                        field_type_name,
+                        reference_field_type_name,
+                        ..
+                    } = get_join_directive_info(
+                        field,
+                        object_name,
+                        &self.parsed_schema.field_type_mappings,
+                    );
 
-                let fk = ForeignKey::new(
-                    self.db_type.clone(),
-                    self.namespace(),
-                    table_name.to_string(),
-                    field.name.to_string(),
-                    field_type_table_name(field),
-                    reference_field_name.clone(),
-                    reference_field_type_name.to_owned(),
-                );
+                    let fk = ForeignKey::new(
+                        self.db_type.clone(),
+                        self.namespace(),
+                        table_name.to_string(),
+                        field.name.to_string(),
+                        field_type_table_name(field),
+                        reference_field_name.clone(),
+                        reference_field_type_name.to_owned(),
+                    );
 
-                let column = NewColumn {
-                    type_id,
-                    column_position: pos as i32,
-                    column_name: field.name.to_string(),
-                    column_type: reference_field_type_name.to_owned(),
-                    graphql_type: field_type_name,
-                    nullable,
-                    unique,
-                };
+                    let column = NewColumn {
+                        type_id,
+                        column_position: pos as i32,
+                        column_name: field.name.to_string(),
+                        column_type: reference_field_type_name.to_owned(),
+                        graphql_type: field_type_name,
+                        nullable,
+                        unique,
+                    };
 
-                fragments.push(column.sql_fragment());
-                self.columns.push(column);
-                self.foreign_keys.push(fk);
+                    fragments.push(column.sql_fragment());
+                    self.columns.push(column);
+                    self.foreign_keys.push(fk);
+                }
+                ColumnType::NoRelation => {
+                    let column = NewColumn {
+                        type_id,
+                        column_position: pos as i32,
+                        column_name: field.name.to_string(),
+                        column_type: typ.to_string(),
+                        graphql_type: field.ty.to_string(),
+                        nullable,
+                        unique,
+                    };
 
-                continue;
+                    if let Some(directives::Index {
+                        column_name,
+                        method,
+                    }) = get_index_directive(field)
+                    {
+                        self.indices.push(ColumnIndex {
+                            db_type: self.db_type.clone(),
+                            table_name: table_name.to_string(),
+                            namespace: self.namespace(),
+                            method,
+                            unique,
+                            column_name,
+                        });
+                    }
+
+                    fragments.push(column.sql_fragment());
+                    self.columns.push(column);
+                }
+                _ => {
+                    let column = NewColumn {
+                        type_id,
+                        column_position: pos as i32,
+                        column_name: field.name.to_string(),
+                        column_type: typ.to_string(),
+                        graphql_type: field.ty.to_string(),
+                        nullable,
+                        unique,
+                    };
+
+                    if let Some(directives::Index {
+                        column_name,
+                        method,
+                    }) = get_index_directive(field)
+                    {
+                        self.indices.push(ColumnIndex {
+                            db_type: self.db_type.clone(),
+                            table_name: table_name.to_string(),
+                            namespace: self.namespace(),
+                            method,
+                            unique,
+                            column_name,
+                        });
+                    }
+
+                    fragments.push(column.sql_fragment());
+                    self.columns.push(column);
+                }
             }
-
-            let column = NewColumn {
-                type_id,
-                column_position: pos as i32,
-                column_name: field.name.to_string(),
-                column_type: typ.to_string(),
-                graphql_type: field.ty.to_string(),
-                nullable,
-                unique,
-            };
-
-            if let Some(directives::Index {
-                column_name,
-                method,
-            }) = get_index_directive(field)
-            {
-                self.indices.push(ColumnIndex {
-                    db_type: self.db_type.clone(),
-                    table_name: table_name.to_string(),
-                    namespace: self.namespace(),
-                    method,
-                    unique,
-                    column_name,
-                });
-            }
-
-            fragments.push(column.sql_fragment());
-            self.columns.push(column);
         }
 
         let object_column = NewColumn {
@@ -268,7 +314,7 @@ impl SchemaBuilder {
         fragments.push(object_column.sql_fragment());
         self.columns.push(object_column);
 
-        fragments.join(",\n")
+        Ok(fragments.join(",\n"))
     }
 
     /// In SQL, we namespace a table by the schema name and the identifier, so
@@ -278,7 +324,7 @@ impl SchemaBuilder {
     }
 
     /// Generate table SQL for a given type definition
-    fn generate_table_sql(&mut self, typ: &TypeDefinition) {
+    fn generate_table_sql(&mut self, typ: &TypeDefinition) -> IndexerSchemaDbResult<()> {
         match &typ.kind {
             TypeKind::Scalar => {}
             TypeKind::Enum(e) => {
@@ -339,7 +385,7 @@ impl SchemaBuilder {
                     type_id,
                     field_defs,
                     &table_name,
-                );
+                )?;
 
                 let sql_table = self.db_type.table_name(&self.namespace(), &table_name);
 
@@ -360,6 +406,8 @@ impl SchemaBuilder {
             // TODO: Don't panic, return Err
             other_type => panic!("Got a non-object type: '{other_type:?}'"),
         }
+
+        Ok(())
     }
 }
 

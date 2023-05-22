@@ -17,6 +17,7 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
+pub const NOTABLE_DIRECTIVE_NAME: &str = "notable";
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 
@@ -317,6 +318,7 @@ pub fn get_foreign_keys(
     Ok(fks)
 }
 
+/// Given a GraphQL field, return its associated `ColumnType`.
 pub fn get_column_type(
     field_type: &Type,
     primitives: &HashSet<String>,
@@ -330,6 +332,26 @@ pub fn get_column_type(
         }
         BaseType::List(_) => Err(IndexerSchemaError::ListTypesUnsupported),
     }
+}
+
+pub fn get_notable_directive_info(
+    field: &FieldDefinition,
+) -> IndexerSchemaResult<sql_types::directives::NoRelation> {
+    let FieldDefinition { directives, .. } = field.clone();
+
+    let mut directives: Vec<Directive> = directives
+        .into_iter()
+        .map(|d| d.into_inner().into_directive())
+        .collect();
+
+    if directives.len() == 1 {
+        let Directive { name, .. } = directives.pop().unwrap();
+        if name.to_string().as_str() == NOTABLE_DIRECTIVE_NAME {
+            return Ok(sql_types::directives::NoRelation(true));
+        }
+    }
+
+    Ok(sql_types::directives::NoRelation(false))
 }
 
 #[cfg(test)]

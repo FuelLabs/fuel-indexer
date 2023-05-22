@@ -7,7 +7,8 @@ use fuel_indexer_lib::utils::local_repository_root;
 use fuel_indexer_schema::{
     parser::ParsedGraphQLSchema,
     utils::{
-        get_join_directive_info, inject_native_entities_into_schema, schema_version,
+        get_join_directive_info, get_notable_directive_info,
+        inject_native_entities_into_schema, schema_version,
     },
 };
 use fuel_indexer_types::type_id;
@@ -28,16 +29,18 @@ type ProcessedFieldResult = (
 lazy_static! {
     /// Set of types that should be copied instead of referenced.
     static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
-        "Json",
-        "Charfield",
-        "Identity",
         "Blob",
+        "Charfield",
         "HexString",
-        "Option<Json>",
+        "Identity",
+        "Json",
+        "NoRelation",
         "Option<Blob>",
         "Option<Charfield>",
-        "Option<Identity>",
         "Option<HexString>",
+        "Option<Identity>",
+        "Option<Json>",
+        "Option<NoRelation>",
     ]);
 }
 
@@ -99,6 +102,10 @@ fn process_field(
 enum FieldType {
     ForeignKey,
     Enum,
+<<<<<<< HEAD
+=======
+    NoRelation,
+>>>>>>> a6714f04 (enhancement: allow unindexable objects)
 }
 
 /// Process an object's 'special' field and return a group of tokens.
@@ -147,11 +154,29 @@ fn process_special_field(
 
             process_field(schema, &field_name.to_string(), &field_type)
         }
+<<<<<<< HEAD
+=======
+        FieldType::NoRelation => {
+            let FieldDefinition {
+                name: field_name, ..
+            } = field;
+
+            let field_type_name = if !is_nullable {
+                ["NoRelation".to_string(), "!".to_string()].join("")
+            } else {
+                "NoRelation".to_string()
+            };
+
+            let field_type: Type = Type::new(&field_type_name)
+                .expect("Could not construct type for processing");
+
+            process_field(schema, &field_name.to_string(), &field_type)
+        }
+>>>>>>> a6714f04 (enhancement: allow unindexable objects)
     }
 }
 
-/// Process a schema's type definition into the corresponding tokens for use
-/// in an indexer module.
+/// Process a schema's type definition into the corresponding tokens for use in an indexer module.
 fn process_type_def(
     schema: &mut ParsedGraphQLSchema,
     typ: &TypeDefinition,
@@ -178,6 +203,13 @@ fn process_type_def(
 
                 let mut field_typ_name = scalar_typ.to_string();
 
+                let directives::NoRelation(is_no_table) =
+                    get_notable_directive_info(&field.node).unwrap();
+
+                if is_no_table {
+                    schema.non_indexable_type_names.insert(object_name.clone());
+                }
+                
                 if schema.is_possible_foreign_key(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
@@ -199,10 +231,23 @@ fn process_type_def(
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
+                
+                if schema.is_non_indexable_non_enum(&field_typ_name) {
+                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
+                        schema,
+                        &object_name,
+                        &field.node,
+                        field_type.nullable,
+                        FieldType::NoRelation,
+                    );
+                    field_typ_name = scalar_typ.to_string();
+                }
 
                 schema.parsed_type_names.insert(field_typ_name.clone());
+                let is_copyable = COPY_TYPES.contains(field_typ_name.as_str())
+                    || schema.is_non_indexable_non_enum(&object_name);
 
-                let clone = if COPY_TYPES.contains(field_typ_name.as_str()) {
+                let clone = if is_copyable {
                     quote! {.clone()}
                 } else {
                     quote! {}
@@ -295,8 +340,15 @@ fn process_type_def(
                             }
                         }
                     }
+
+                    impl From<#strct> for Blob {
+                        fn from(value: #strct) -> Self {
+                            Self(serialize(&value.to_row()))
+                        }
+                    }
                 })
             } else {
+                // TOOD: derive Default here
                 Some(quote! {
                     #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
                     pub struct #strct {
@@ -317,6 +369,12 @@ fn process_type_def(
                             vec![
                                 #flattened
                             ]
+                        }
+                    }
+
+                    impl From<#strct> for Blob {
+                        fn from(value: #strct) -> Self {
+                            Self(serialize(&value.to_row()))
                         }
                     }
                 })
@@ -354,6 +412,7 @@ fn process_type_def(
                 })
                 .collect::<Vec<proc_macro2::TokenStream>>();
 
+            // TOOD: derive Default here
             Some(quote! {
                 #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
                 pub enum #name {
