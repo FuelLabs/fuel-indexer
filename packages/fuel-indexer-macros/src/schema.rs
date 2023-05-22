@@ -102,10 +102,7 @@ fn process_field(
 enum FieldType {
     ForeignKey,
     Enum,
-<<<<<<< HEAD
-=======
     NoRelation,
->>>>>>> a6714f04 (enhancement: allow unindexable objects)
 }
 
 /// Process an object's 'special' field and return a group of tokens.
@@ -154,8 +151,6 @@ fn process_special_field(
 
             process_field(schema, &field_name.to_string(), &field_type)
         }
-<<<<<<< HEAD
-=======
         FieldType::NoRelation => {
             let FieldDefinition {
                 name: field_name, ..
@@ -172,7 +167,6 @@ fn process_special_field(
 
             process_field(schema, &field_name.to_string(), &field_type)
         }
->>>>>>> a6714f04 (enhancement: allow unindexable objects)
     }
 }
 
@@ -209,7 +203,7 @@ fn process_type_def(
                 if is_no_table {
                     schema.non_indexable_type_names.insert(object_name.clone());
                 }
-                
+
                 if schema.is_possible_foreign_key(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
@@ -231,7 +225,7 @@ fn process_type_def(
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
-                
+
                 if schema.is_non_indexable_non_enum(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
