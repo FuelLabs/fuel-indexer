@@ -133,7 +133,7 @@ pub(crate) async fn status(
     let indexers: Vec<_> = {
         let indexers = queries::all_registered_indexers(&mut conn).await?;
 
-        if (&claims.sub).is_empty() {
+        if claims.sub.is_empty() {
             indexers
         } else {
             indexers
