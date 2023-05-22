@@ -3068,7 +3068,7 @@ dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.16",
 ]
 
 [[package]]
@@ -3093,7 +3093,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.9.9",
- "syn 1.0.109",
+ "syn 2.0.16",
  "trybuild",
 ]
 
