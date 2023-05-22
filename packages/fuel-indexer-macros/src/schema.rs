@@ -203,7 +203,7 @@ fn process_type_def(
                 if is_no_table {
                     schema.non_indexable_type_names.insert(object_name.clone());
                 }
-                
+
                 if schema.is_possible_foreign_key(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
@@ -214,7 +214,7 @@ fn process_type_def(
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
-                
+
                 if schema.is_enum_type(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
@@ -225,7 +225,7 @@ fn process_type_def(
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
-                
+
                 if schema.is_non_indexable_non_enum(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
                         schema,
@@ -338,6 +338,13 @@ fn process_type_def(
                     impl From<#strct> for Blob {
                         fn from(value: #strct) -> Self {
                             Self(serialize(&value.to_row()))
+                        }
+                    }
+
+                    impl From<Blob> for #strct {
+                        fn from(value: Blob) -> Self {
+                            let columns: Vec<FtColumn> = bincode::deserialize(&value.0).expect("Serde error.");
+                            Self::from_row(columns)
                         }
                     }
                 })
