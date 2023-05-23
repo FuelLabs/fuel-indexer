@@ -696,7 +696,7 @@ mod fuel_indexer_test {
             id: 1,
             name: "hello world".to_string(),
             no_table: NoTableEntity {
-                name: Some("notable".to_string()),
+                name: Some("norelation".to_string()),
                 size: 1,
             }
             .into(),

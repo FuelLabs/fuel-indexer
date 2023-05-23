@@ -16,7 +16,7 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
-pub const NOTABLE_DIRECTIVE_NAME: &str = "notable";
+pub const NOTABLE_DIRECTIVE_NAME: &str = "norelation";
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 

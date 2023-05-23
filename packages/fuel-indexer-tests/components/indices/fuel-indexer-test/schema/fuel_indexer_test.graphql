@@ -245,7 +245,7 @@ type ComplexEnumEntity {
 }
 
 type NoTableEntity {
-    name: Charfield @notable
+    name: Charfield @norelation
     size: UInt1!
 }
 
