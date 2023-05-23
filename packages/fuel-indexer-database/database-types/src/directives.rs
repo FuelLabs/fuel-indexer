@@ -38,3 +38,6 @@ impl Index {
         }
     }
 }
+
+/// Directive specifying to not build SQL tables for object.
+pub struct NoRelation(pub bool);

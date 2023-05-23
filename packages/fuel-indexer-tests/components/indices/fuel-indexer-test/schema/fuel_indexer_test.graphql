@@ -243,3 +243,15 @@ type ComplexEnumEntity {
     id: ID!
     one: EnumEntity
 }
+
+type NoTableEntity {
+    name: Charfield @norelation
+    size: UInt1!
+}
+
+
+type UsesNoTableEntity {
+    id: ID!
+    name: Charfield!
+    no_table: NoTableEntity!
+}

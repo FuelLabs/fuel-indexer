@@ -689,4 +689,19 @@ mod fuel_indexer_test {
         };
         e.save();
     }
+
+    fn fuel_indexer_trigger_non_indexable_type(_b: BlockData) {
+        Logger::info("fuel_indexer_trigger_non_indexable_type handling trigger_non_indexable_type event.");
+        let e = UsesNoTableEntity {
+            id: 1,
+            name: "hello world".to_string(),
+            no_table: NoTableEntity {
+                name: Some("norelation".to_string()),
+                size: 1,
+            }
+            .into(),
+        };
+
+        e.save();
+    }
 }

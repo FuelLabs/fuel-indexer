@@ -102,9 +102,9 @@ error[E0425]: cannot find function `serialize` in this scope
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::serialize;
+2  | use fuel_indexer_lib::utils::serialize;
    |
-2  | use fuel_indexer_schema::utils::serialize;
+2  | use fuel_indexer_plugin::serialize;
    |
 
 error[E0425]: cannot find function `handle_events` in this scope

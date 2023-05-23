@@ -21,6 +21,19 @@ const HUMAN_LOGGING: &str = "HUMAN_LOGGING";
 
 const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
 
+/// Serialize a generic item.
+pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
+    bincode::serialize(obj).expect("Serialize failed")
+}
+
+/// Deserialize a generic item.
+pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
+    match bincode::deserialize(bytes) {
+        Ok(obj) => Ok(obj),
+        Err(e) => Err(format!("Bincode serde error {e:?}")),
+    }
+}
+
 // Testing assets use relative paths, while production assets will use absolute paths
 //
 // If we can successfully find the local project root, then we're in the repository,

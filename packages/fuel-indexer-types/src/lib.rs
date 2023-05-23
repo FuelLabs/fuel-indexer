@@ -39,7 +39,7 @@ pub type BlockHeight = u32;
 pub type Int1 = i8;
 pub type UInt1 = u8;
 
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
+#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash, Default)]
 pub struct Blob(pub Vec<u8>);
 
 impl From<Vec<u8>> for Blob {
@@ -60,7 +60,9 @@ impl From<Blob> for Vec<u8> {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
+pub type NoRelation = Json;
+
+#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash, Default)]
 pub struct Json(pub String);
 
 macro_rules! json_impl {

@@ -10,8 +10,7 @@ use fuel_core_client::client::{
     types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
-use fuel_indexer_lib::{defaults::*, manifest::Manifest};
-use fuel_indexer_schema::utils::serialize;
+use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
     abi::{BlockData, TransactionData},
     tx::{TransactionStatus, TxId},

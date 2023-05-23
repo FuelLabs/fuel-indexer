@@ -45,7 +45,7 @@ lazy_static = "1.4"
 rand = "0.8"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls", "multipart"] }
 serde = { features = ["derive"], workspace = true }
-serde_json = "1.0"
+serde_json = { workspace = true }
 serde_yaml = "0.8"
 sqlx = { version = "0.6", features = ["bigdecimal"] }
 thiserror = { workspace = true }

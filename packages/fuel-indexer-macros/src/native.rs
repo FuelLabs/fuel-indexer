@@ -32,7 +32,7 @@ pub fn handler_block_native(
 fn native_prelude() -> proc_macro2::TokenStream {
     quote! {
         use fuel_indexer_plugin::native::*;
-        use fuel_indexer_plugin::{{serialize, deserialize}, types::*, serde::{Deserialize, Serialize}};
+        use fuel_indexer_plugin::{{serialize, deserialize}, types::*, serde::{Deserialize, Serialize}, serde_json};
 
         // TODO: Eventually prevent these types of implicity imports and have users import
         // all dependencies explicity (preferably through a single crate).

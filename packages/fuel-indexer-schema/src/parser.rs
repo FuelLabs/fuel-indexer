@@ -102,13 +102,15 @@ impl ParsedGraphQLSchema {
 
     /// Whether the given field type name is a possible foreign key.
     pub fn is_possible_foreign_key(&self, name: &str) -> bool {
-        self.parsed_type_names.contains(name) && !self.has_scalar(name)
+        self.parsed_type_names.contains(name)
+            && !self.has_scalar(name)
+            && !self.is_non_indexable_non_enum(name)
     }
 
     /// Whether the given field type name is a type from which tables are created.
     #[allow(unused)]
-    pub fn is_non_indexable_type(&self, name: &str) -> bool {
-        self.non_indexable_type_names.contains(name)
+    pub fn is_non_indexable_non_enum(&self, name: &str) -> bool {
+        self.non_indexable_type_names.contains(name) && !self.is_enum_type(name)
     }
 
     /// Whether the given field type name is an enum type.
