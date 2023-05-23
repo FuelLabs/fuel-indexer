@@ -17,7 +17,7 @@
 
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_plugin::utils::*;
 
 // We'll pass our manifest to our #[indexer] attribute. This manifest contains
 // all of the relevant configuration parameters in regard to how our index will
@@ -44,7 +44,7 @@ mod explorer_index {
         // save to our database.
         let producer = block_data.producer.unwrap_or(Bytes32::zeroed());
 
-        let block = Block {
+        let block = BlockEntity {
             id: first8_bytes_to_u64(block_data.id),
             height: block_data.height,
             producer,
@@ -116,7 +116,7 @@ mod explorer_index {
                 match receipt {
                     #[allow(unused)]
                     Receipt::Call { id, .. } => {
-                        let contract = Contract {
+                        let contract = ContractEntity {
                             id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
                                 [id.to_vec()].concat(),
@@ -129,7 +129,7 @@ mod explorer_index {
                     }
                     #[allow(unused)]
                     Receipt::ReturnData { id, .. } => {
-                        let contract = Contract {
+                        let contract = ContractEntity {
                             id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
                                 [id.to_vec()].concat(),
@@ -147,7 +147,7 @@ mod explorer_index {
                         amount,
                         ..
                     } => {
-                        let contract = Contract {
+                        let contract = ContractEntity {
                             id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
                                 [id.to_vec()].concat(),
@@ -158,7 +158,7 @@ mod explorer_index {
 
                         contract.save();
 
-                        let transfer = Transfer {
+                        let transfer = TransferEntity {
                             id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
                                 [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
@@ -180,7 +180,7 @@ mod explorer_index {
                         asset_id,
                         ..
                     } => {
-                        let account = Account {
+                        let account = AccountEntity {
                             id: 1,
                             address: *to,
                             last_seen: 0,
@@ -188,7 +188,7 @@ mod explorer_index {
 
                         account.save();
 
-                        let contract = Contract {
+                        let contract = ContractEntity {
                             id: 1,
                             contract_id: *id,
                             last_seen: 0,
@@ -196,7 +196,7 @@ mod explorer_index {
                         contract.save();
 
                         tx_amount += amount;
-                        let transfer_out = TransferOut {
+                        let transfer_out = TransferOutEntity {
                             id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
                                 [id.to_vec(), to.to_vec(), asset_id.to_vec()].concat(),
@@ -211,7 +211,7 @@ mod explorer_index {
                     }
                     #[allow(unused)]
                     Receipt::Log { id, rb, .. } => {
-                        let log = Log {
+                        let log = LogEntity {
                             id: first8_bytes_to_u64(bytes32_from_inputs(
                                 id,
                                 u64::to_le_bytes(*rb).to_vec(),
@@ -234,7 +234,7 @@ mod explorer_index {
                             ScriptExecutionResult::Panic => 3,
                             ScriptExecutionResult::GenericFailure(_) => 4,
                         };
-                        let r = ScriptResult {
+                        let r = ScriptResultEntity {
                             id: first8_bytes_to_u64(bytes32_from_inputs(
                                 &[0u8; 32],
                                 u64::to_be_bytes(result).to_vec(),
@@ -253,7 +253,7 @@ mod explorer_index {
                     } => {
                         tx_amount += amount;
 
-                        let account = Account {
+                        let account = AccountEntity {
                             id: 1,
                             address: *sender,
                             last_seen: 0,
@@ -270,7 +270,7 @@ mod explorer_index {
             }
 
             // Persist the transaction to the database via the `Tx` object defined in the GraphQL schema.
-            let tx_entity = Tx {
+            let tx_entity = TxEntity {
                 block: block.id,
                 hash: tx.id,
                 timestamp: block.timestamp,

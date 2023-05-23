@@ -93,7 +93,7 @@ type TransactionIdFragment {
     transaction_id: Transaction!
 }
 
-type Block {
+type BlockData {
   id: ID!
   block_id: UInt4!
   header: Header!

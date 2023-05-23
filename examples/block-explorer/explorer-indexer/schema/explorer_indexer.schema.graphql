@@ -1,4 +1,4 @@
-type Block {
+type BlockEntity {
     id: ID!
     height: UInt8!
     producer: Bytes32!
@@ -7,9 +7,9 @@ type Block {
     hash: Bytes32! @unique
 }
 
-type Tx {
+type TxEntity {
     id: ID!
-    block: Block!
+    block: BlockEntity!
     hash: Bytes32! @unique
     timestamp: Int8!
     status: Json!
@@ -17,49 +17,49 @@ type Tx {
     tokens_transferred: Json!
 }
 
-type Account {
+type AccountEntity {
     id: ID! 
     address: Address! @unique
     last_seen: UInt8!
 }
 
-type Contract {
+type ContractEntity {
     id: ID!
     contract_id: ContractId! @unique
     last_seen: UInt8!
 }
 
-type Transfer {
+type TransferEntity {
     id: ID!
-    contract_id: Contract!
+    contract_id: ContractEntity!
     # `to` is a reserved SQL keyword
     receiver: ContractId! @indexed
     amount: UInt8!
     asset_id: AssetId! @indexed
 }
 
-type TransferOut {
+type TransferOutEntity {
     id: ID!
-    contract_id: Contract!
+    contract_id: ContractEntity!
     # `to` is a reserved SQL keyword
-    receiver: Account!
+    receiver: AccountEntity!
     amount: UInt8!
     asset_id: AssetId! @indexed
 }
 
-type ScriptResult {
+type ScriptResultEntity {
     id: ID!
     result: UInt8!
     gas_used: UInt8!
 }
 
-type Log {
+type LogEntity {
     id: ID!
     contract_id: ContractId!
     rb: UInt8!
 }
 
-type MessageOut {
+type MessageOutEntity {
     id: MessageId! @unique
     sender: Address!
     recipient: Address!
