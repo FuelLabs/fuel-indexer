@@ -99,7 +99,7 @@ fn process_field(
 }
 
 /// Type of special fields in GraphQL schema.
-enum FieldType {
+enum SpecialFieldType {
     ForeignKey,
     Enum,
     NoRelation,
@@ -115,10 +115,10 @@ fn process_special_field(
     object_name: &String,
     field: &FieldDefinition,
     is_nullable: bool,
-    field_type: FieldType,
+    field_type: SpecialFieldType,
 ) -> ProcessedFieldResult {
     match field_type {
-        FieldType::ForeignKey => {
+        SpecialFieldType::ForeignKey => {
             let directives::Join {
                 field_name,
                 reference_field_type_name,
@@ -135,7 +135,7 @@ fn process_special_field(
 
             process_field(schema, &field_name, &field_type)
         }
-        FieldType::Enum => {
+        SpecialFieldType::Enum => {
             let FieldDefinition {
                 name: field_name, ..
             } = field;
@@ -151,7 +151,7 @@ fn process_special_field(
 
             process_field(schema, &field_name.to_string(), &field_type)
         }
-        FieldType::NoRelation => {
+        SpecialFieldType::NoRelation => {
             let FieldDefinition {
                 name: field_name, ..
             } = field;
@@ -210,7 +210,7 @@ fn process_type_def(
                         &object_name,
                         &field.node,
                         field_type.nullable,
-                        FieldType::ForeignKey,
+                        SpecialFieldType::ForeignKey,
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -221,7 +221,7 @@ fn process_type_def(
                         &object_name,
                         &field.node,
                         field_type.nullable,
-                        FieldType::Enum,
+                        SpecialFieldType::Enum,
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -232,7 +232,7 @@ fn process_type_def(
                         &object_name,
                         &field.node,
                         field_type.nullable,
-                        FieldType::NoRelation,
+                        SpecialFieldType::NoRelation,
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -350,7 +350,7 @@ fn process_type_def(
                     }
                 })
             } else {
-                // TOOD: derive Default here
+                // TODO: derive Default here https://github.com/FuelLabs/fuels-rs/pull/977
                 Some(quote! {
                     #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
                     pub struct #strct {
@@ -422,7 +422,7 @@ fn process_type_def(
                 })
                 .collect::<Vec<proc_macro2::TokenStream>>();
 
-            // TOOD: derive Default here
+            // TODO: derive Default here https://github.com/FuelLabs/fuels-rs/pull/977
             Some(quote! {
                 #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
                 pub enum #name {

@@ -16,7 +16,7 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
-pub const NOTABLE_DIRECTIVE_NAME: &str = "norelation";
+pub const NORELATION_DIRECTIVE_NAME: &str = "norelation";
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 
@@ -337,7 +337,7 @@ pub fn get_notable_directive_info(
 
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
-        if name.to_string().as_str() == NOTABLE_DIRECTIVE_NAME {
+        if name.to_string().as_str() == NORELATION_DIRECTIVE_NAME {
             return Ok(sql_types::directives::NoRelation(true));
         }
     }
