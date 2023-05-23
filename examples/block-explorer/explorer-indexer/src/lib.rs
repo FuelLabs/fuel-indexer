@@ -31,14 +31,14 @@ mod explorer_index {
     // When specifying args to your handler functions, you can either use types defined
     // in your ABI JSON file, or you can use native Fuel types. These native Fuel types
     // include various `Receipt`s, as well as more comprehensive data, in the form of
-    // blocks `BlockData` and transactions `TransactionData`. A list of native Fuel
+    // blocks `Block` and transactions `TransactionData`. A list of native Fuel
     // types can be found at:
     //
     //  https://github.com/FuelLabs/fuel-indexer/blob/master/fuel-indexer-schema/src/types/fuel.rs#L28
-    fn index_explorer_data(block_data: BlockData) {
+    fn index_explorer_data(block_data: Block) {
         let mut block_gas_limit = 0;
 
-        // Convert the deserialized block `BlockData` struct that we get from our Fuel node, into
+        // Convert the deserialized block `Block` struct that we get from our Fuel node, into
         // a block entity `Block` that we can persist to the database. The `Block` type below is
         // defined in our schema/explorer.graphql and represents the type that we will
         // save to our database.

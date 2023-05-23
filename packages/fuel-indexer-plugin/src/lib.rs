@@ -36,5 +36,7 @@ pub use serde;
 pub use serde_json;
 
 pub mod prelude {
-    pub use super::{bincode, deserialize, serde, serde_json, serialize, types::*, utils::*};
+    pub use super::{
+        bincode, deserialize, serde, serde_json, serialize, types::*, utils::*,
+    };
 }

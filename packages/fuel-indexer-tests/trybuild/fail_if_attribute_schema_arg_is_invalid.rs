@@ -25,10 +25,22 @@ fn main() {
     let encoded = ABIEncoder::encode(&[s.into_token()]).expect("Failed compile test");
     let bytes = encoded.resolve(0);
 
-    let data: Vec<BlockData> = vec![BlockData {
+    let data: Vec<Block> = vec![Block {
         id: [0u8; 32].into(),
         time: 1,
         height: 0,
+        header: Header {
+            id: [0u8; 32].into(),
+            da_height: 1,
+            transactions_count: 1,
+            output_messages_count: 1,
+            transactions_root: [0u8; 32].into(),
+            output_messages_root: [0u8; 32].into(),
+            height: 1,
+            prev_root: [0u8; 32].into(),
+            time: None,
+            application_hash: [0u8; 32].into(),
+        },
         transactions: vec![TransactionData {
             id: [0u8; 32].into(),
             status: TransactionStatus::default(),

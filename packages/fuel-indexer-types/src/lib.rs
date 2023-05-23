@@ -40,7 +40,7 @@ pub fn type_id(namespace: &str, name: &str) -> i64 {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::prelude::*;
 
     #[test]
     fn test_into_json_blob_id() {

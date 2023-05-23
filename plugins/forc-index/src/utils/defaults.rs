@@ -132,12 +132,12 @@ pub fn default_index_lib(
     format!(
         r#"extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_plugin::utils::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {index_name}_index_mod {{
 
-    fn {index_name}_handler(block_data: BlockData) {{
+    fn {index_name}_handler(block_data: Block) {{
         Logger::info("Processing a block. (>'.')>");
 
         let block_id = first8_bytes_to_u64(block_data.id);

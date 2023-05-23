@@ -22,20 +22,20 @@ type PongEntity {
     value: UInt8!
 }
 
-type Block {
+type BlockEntity {
     id: ID!
     height: UInt8!
     timestamp: Int8!
 }
 
-type Tx {
+type TxEntity {
     id: ID!
-    block: Block!
+    block: BlockEntity!
     input_data: Json!
     timestamp: Int8!
 }
 
-type Transfer {
+type TransferEntity {
     id: ID!
     contract_id: ContractId!
     # 'to' is a reserved SQL word, so using 'recipient'
@@ -44,7 +44,7 @@ type Transfer {
     asset_id: AssetId!
 }
 
-type TransferOut {
+type TransferOutEntity  {
     id: ID!
     contract_id: ContractId!
     recipient: Address!
@@ -52,21 +52,21 @@ type TransferOut {
     asset_id: AssetId!
 }
 
-type Log {
+type LogEntity  {
     id: ID!
     contract_id: ContractId!
     ra: UInt8!
     rb: UInt8!
 }
 
-type ScriptResult {
+type ScriptResultEntity  {
     id: ID!
     result: UInt8!
     gas_used: UInt8!
     blob: Blob!
 }
 
-type MessageOut {
+type MessageOutEntity  {
     id: ID!
     message_id: MessageId!
     sender: Address!

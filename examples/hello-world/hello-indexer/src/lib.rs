@@ -33,7 +33,7 @@ use fuel_indexer_plugin::prelude::*;
 #[indexer(manifest = "examples/hello-world/hello-indexer/hello_indexer.manifest.yaml")]
 mod hello_world_indexer {
 
-    fn index_logged_greeting(event: Greeting, block: BlockData) {
+    fn index_logged_greeting(event: Greeting, block: Block) {
         // Since all events require a u64 ID field, let's derive an ID using the
         // name of the person in the Greeting
         let greeter_name = trim_sized_ascii_string(&event.person.name);

@@ -14,7 +14,7 @@ pub fn handler_block_wasm(
         fn handle_events(blob: *mut u8, len: usize) {
             use fuel_indexer_plugin::deserialize;
             let bytes = unsafe { Vec::from_raw_parts(blob, len, len) };
-            let blocks: Vec<BlockData> = match deserialize(&bytes) {
+            let blocks: Vec<Block> = match deserialize(&bytes) {
                 Ok(blocks) => blocks,
                 Err(msg) => {
                     // TODO: probably need some error codes to send back to runtime.
@@ -40,11 +40,11 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         use alloc::{format, vec, vec::Vec};
         use fuel_indexer_plugin::{
             serialize,
-            deserialize, 
+            deserialize,
             wasm::{Logger, FromHex, Digest, Sha256, Entity},
-            types::{Log}, 
-            bincode, 
-            serde::{Deserialize, Serialize}, 
+            types::*,
+            bincode,
+            serde::{Deserialize, Serialize},
             serde_json
         };
 

@@ -123,7 +123,7 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u32" => quote! { u32 },
             "u64" => quote! { u64 },
             "u8" => quote! { u8 },
-            "BlockData" => quote! { BlockData },
+            "Block" => quote! { Block },
             "Call" => quote! { Call },
             "Identity" => quote! { Identity },
             "Log" => quote! { Log },

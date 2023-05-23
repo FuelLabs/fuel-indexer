@@ -13,7 +13,7 @@ use fuel_indexer_lib::{
     utils::{IndexRevertRequest, ServiceRequest},
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
-use fuel_indexer_types::block::BlockData;
+use fuel_indexer_types::block::Block;
 use futures::{
     stream::{FuturesUnordered, StreamExt},
     Future,
@@ -153,7 +153,7 @@ impl IndexerService {
     >(
         &mut self,
         mut manifest: Manifest,
-        handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
+        handle_events: fn(Vec<Block>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
         let _index = queries::register_indexer(

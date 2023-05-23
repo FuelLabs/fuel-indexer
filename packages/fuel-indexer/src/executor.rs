@@ -12,7 +12,7 @@ use fuel_core_client::client::{
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
-    block::BlockData,
+    block::{Block, Header},
     scalar::Bytes32,
     transaction::{TransactionData, TransactionStatus, TxId},
 };
@@ -64,12 +64,19 @@ impl ExecutorSource {
     }
 }
 
+/// Run the executor task until the kill switch is flipped, or until some other
+/// stop criteria is met.
+///
+/// In general the logic in this function isn't very idiomatic, but that's because
+/// types in `fuel_core_client` don't compile to WASM.
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
     config: &IndexerConfig,
     manifest: &Manifest,
     mut executor: T,
     kill_switch: Arc<AtomicBool>,
 ) -> impl Future<Output = ()> {
+    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
+
     let start_block = manifest.start_block.expect("Failed to detect start_block.");
     let end_block = manifest.end_block;
     if end_block.is_none() {
@@ -146,9 +153,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
                 let mut transactions = Vec::new();
 
-                for tx in &block.transactions {
+                for trans in block.transactions {
                     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/288
-                    match client.transaction(&tx.id.to_string()).await {
+                    match client.transaction(&trans.id.to_string()).await {
                         Ok(result) => {
                             if let Some(TransactionResponse {
                                 transaction,
@@ -156,20 +163,57 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             }) = result
                             {
                                 let receipts = client
-                                    .receipts(&tx.id.to_string())
+                                    .receipts(&trans.id.to_string())
                                     .await
                                     .unwrap_or_else(|e| {
                                         error!("Client communication error fetching receipts: {e:?}");
                                         Vec::new()
                                     });
 
-                                let status = status.into();
+                                // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
+                                let status = match status {
+                                    GqlTransactionStatus::Success {
+                                        block_id,
+                                        time,
+                                        ..
+                                    } => TransactionStatus::Success {
+                                        block_id,
+                                        time: Utc
+                                            .timestamp_opt(time.to_unix(), 0)
+                                            .single()
+                                            .unwrap(),
+                                    },
+                                    GqlTransactionStatus::Failure {
+                                        block_id,
+                                        time,
+                                        reason,
+                                        ..
+                                    } => TransactionStatus::Failure {
+                                        block_id,
+                                        time: Utc
+                                            .timestamp_opt(time.to_unix(), 0)
+                                            .single()
+                                            .unwrap(),
+                                        reason,
+                                    },
+                                    GqlTransactionStatus::Submitted { submitted_at } => {
+                                        TransactionStatus::Submitted {
+                                            submitted_at: Utc
+                                                .timestamp_opt(submitted_at.to_unix(), 0)
+                                                .single()
+                                                .unwrap(),
+                                        }
+                                    }
+                                    GqlTransactionStatus::SqueezedOut { reason } => {
+                                        TransactionStatus::SqueezedOut { reason }
+                                    }
+                                };
 
                                 let tx_data = TransactionData {
                                     receipts,
                                     status,
                                     transaction,
-                                    id: tx.id.clone().into(),
+                                    id: TxId::from(trans.id),
                                 };
                                 transactions.push(tx_data);
                             }
@@ -180,7 +224,32 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     };
                 }
 
-                block_info.push(block.into());
+                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
+                let block = Block {
+                    height: block.header.height.0,
+                    id: Bytes32::from(block.id),
+                    producer,
+                    time: block.header.time.0.to_unix(),
+                    header: Header {
+                        id: Bytes32::from(block.header.id),
+                        da_height: block.header.da_height.0,
+                        transactions_count: block.header.transactions_count.0,
+                        output_messages_count: block.header.output_messages_count.0,
+                        transactions_root: Bytes32::from(block.header.transactions_root),
+                        output_messages_root: Bytes32::from(
+                            block.header.output_messages_root,
+                        ),
+                        height: block.header.height.0,
+                        prev_root: Bytes32::from(block.header.prev_root),
+                        time: Utc
+                            .timestamp_opt(block.header.time.0.to_unix(), 0)
+                            .single(),
+                        application_hash: Bytes32::from(block.header.application_hash),
+                    },
+                    transactions,
+                };
+
+                block_info.push(block);
             }
 
             let result = executor.handle_events(block_info).await;
@@ -226,7 +295,7 @@ pub trait Executor
 where
     Self: Sized,
 {
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
+    async fn handle_events(&mut self, blocks: Vec<Block>) -> IndexerResult<()>;
 }
 
 #[derive(Error, Debug)]
@@ -275,7 +344,7 @@ where
     db: Arc<Mutex<Database>>,
     #[allow(unused)]
     manifest: Manifest,
-    handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
+    handle_events_fn: fn(Vec<Block>, Arc<Mutex<Database>>) -> F,
 }
 
 impl<F> NativeIndexExecutor<F>
@@ -285,7 +354,7 @@ where
     pub async fn new(
         config: &IndexerConfig,
         manifest: &Manifest,
-        handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
+        handle_events_fn: fn(Vec<Block>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
         let db_url = config.database.to_string();
         let db = Arc::new(Mutex::new(Database::new(&db_url).await?));
@@ -300,7 +369,7 @@ where
     pub async fn create<T: Future<Output = IndexerResult<()>> + Send + 'static>(
         config: &IndexerConfig,
         manifest: &Manifest,
-        handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
+        handle_events: fn(Vec<Block>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let executor = NativeIndexExecutor::new(config, manifest, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
@@ -319,7 +388,7 @@ impl<F> Executor for NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+    async fn handle_events(&mut self, blocks: Vec<Block>) -> IndexerResult<()> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
         if let Err(e) = res {
@@ -443,7 +512,7 @@ impl WasmIndexExecutor {
 #[async_trait]
 impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+    async fn handle_events(&mut self, blocks: Vec<Block>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);
         let arg = ffi::WasmArg::new(&self.instance, bytes)?;
 
