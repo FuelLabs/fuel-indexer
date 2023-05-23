@@ -168,7 +168,7 @@ impl SchemaBuilder {
                 }
 
                 if self.parsed_schema.is_non_indexable_non_enum(t.as_str()) {
-                    return Ok((ColumnType::Blob, true));
+                    return Ok((ColumnType::NoRelation, true));
                 }
 
                 if self.parsed_schema.is_possible_foreign_key(t.as_str()) {
@@ -379,13 +379,37 @@ impl SchemaBuilder {
                 );
 
                 let table_name = typ.name.to_string().to_lowercase();
-                let type_id = type_id(&self.namespace(), &typ.name.to_string());
+                let ty_id = type_id(&self.namespace(), &typ.name.to_string());
                 let columns = self.generate_columns(
                     &typ.name.to_string(),
-                    type_id,
+                    ty_id,
                     field_defs,
                     &table_name,
                 )?;
+
+                if self
+                    .parsed_schema
+                    .is_non_indexable_non_enum(typ.name.node.as_str())
+                {
+                    let ty_id = type_id(&self.namespace(), &typ.name.to_string());
+                    let table_name = typ.name.to_string().to_lowercase();
+                    self.type_ids.push(TypeId {
+                        id: ty_id,
+                        schema_version: self.version.to_string(),
+                        schema_name: self.namespace.to_string(),
+                        schema_identifier: self.identifier.to_string(),
+                        graphql_name: typ.name.to_string(),
+                        table_name,
+                        virtual_columns: field_defs
+                            .iter()
+                            .map(|f| VirtualColumn {
+                                name: f.name.to_string(),
+                                graphql_type: f.ty.to_string(),
+                            })
+                            .collect::<Vec<VirtualColumn>>(),
+                    });
+                    return Ok(());
+                }
 
                 let sql_table = self.db_type.table_name(&self.namespace(), &table_name);
 
@@ -394,7 +418,7 @@ impl SchemaBuilder {
 
                 self.statements.push(create);
                 self.type_ids.push(TypeId {
-                    id: type_id,
+                    id: ty_id,
                     schema_version: self.version.to_string(),
                     schema_name: self.namespace.to_string(),
                     schema_identifier: self.identifier.to_string(),

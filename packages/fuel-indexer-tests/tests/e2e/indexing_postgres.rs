@@ -988,7 +988,8 @@ async fn test_can_trigger_and_index_nonindexable_events() {
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(1), "hello world");
 
-    let entity: NoTableEntity = serde_json::from_str(row.get::<&str, usize>(2)).unwrap();
+    let entity: NoTableEntity =
+        serde_json::from_value(row.get::<serde_json::Value, usize>(2)).unwrap();
 
     assert_eq!(entity.name, Some("norelation".to_string()));
     assert_eq!(entity.size, 1);
