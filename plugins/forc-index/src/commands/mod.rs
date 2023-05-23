@@ -9,4 +9,5 @@ pub mod pull_abi;
 pub mod remove;
 pub mod revert;
 pub mod start;
+pub mod status;
 pub mod welcome;
