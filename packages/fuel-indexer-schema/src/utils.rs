@@ -9,7 +9,6 @@ use async_graphql_parser::types::{
 use fuel_indexer_database_types as sql_types;
 use fuel_indexer_database_types::directives;
 use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
-use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 
@@ -21,28 +20,19 @@ pub const NOTABLE_DIRECTIVE_NAME: &str = "notable";
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 
+/// Inject the default GraphQL entities used by the indexer into the user's GraphQL schema.
 pub fn inject_native_entities_into_schema(schema: &str) -> String {
     format!("{}{}", schema, IndexMetadata::schema_fragment())
 }
 
+/// Remove special chars from GraphQL field type name.
 pub fn normalize_field_type_name(name: &str) -> String {
     name.replace('!', "")
 }
 
+/// Convert GraphQL field type name to SQL table name.
 pub fn field_type_table_name(f: &FieldDefinition) -> String {
     normalize_field_type_name(&f.ty.to_string()).to_lowercase()
-}
-
-// serde_scale for now, can look at other options if necessary.
-pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
-    bincode::serialize(obj).expect("Serialize failed")
-}
-
-pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
-    match bincode::deserialize(bytes) {
-        Ok(obj) => Ok(obj),
-        Err(e) => Err(format!("Bincode serde error {e:?}")),
-    }
 }
 
 pub fn schema_version(schema: &str) -> String {
@@ -334,6 +324,7 @@ pub fn get_column_type(
     }
 }
 
+/// Get directive determining whether or not field's object should not be used to create SQL tables.
 pub fn get_notable_directive_info(
     field: &FieldDefinition,
 ) -> IndexerSchemaResult<sql_types::directives::NoRelation> {

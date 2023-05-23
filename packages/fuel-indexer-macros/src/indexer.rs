@@ -474,7 +474,7 @@ fn process_fn_items(
                 let mut decoder = Decoders::default();
 
                 let ty_id = abi::BlockData::type_id();
-                let data = bincode::serialize(&block).expect("Bad serialization.");
+                let data = serialize(&block);
                 decoder.decode_type(ty_id, data);
 
                 for tx in block.transactions {
@@ -491,14 +491,14 @@ fn process_fn_items(
                                 return_types.push(param1);
                                 callees.insert(id);
 
-                                let data = bincode::serialize(&abi::Call { contract_id, to: id, amount, asset_id, gas, fn_name }).expect("Bad encoding");
+                                let data = serialize(&abi::Call { contract_id, to: id, amount, asset_id, gas, fn_name });
                                 let ty_id = abi::Call::type_id();
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = abi::Log::type_id();
-                                let data = bincode::serialize(&abi::Log{ contract_id: id, ra, rb }).expect("Bad encoding,");
+                                let data = serialize(&abi::Log{ contract_id: id, ra, rb });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
@@ -510,7 +510,7 @@ fn process_fn_items(
                                 #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
                                     let ty_id = abi::Return::type_id();
-                                    let data = bincode::serialize(&abi::Return{ contract_id: id, val, pc, is }).expect("Bad encoding,");
+                                    let data = serialize(&abi::Return{ contract_id: id, val, pc, is });
                                     decoder.decode_type(ty_id, data);
                                 }
                             }
@@ -545,36 +545,36 @@ fn process_fn_items(
                                 decoder.decode_messagedata(type_id, data.clone());
 
                                 let ty_id = abi::MessageOut::type_id();
-                                let data = bincode::serialize(&abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data }).expect("Bad encoding");
+                                let data = serialize(&abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::ScriptResult { result, gas_used } => {
                                 let ty_id = abi::ScriptResult::type_id();
-                                let data = bincode::serialize(&abi::ScriptResult{ result: u64::from(result), gas_used }).expect("Bad encoding,");
+                                let data = serialize(&abi::ScriptResult{ result: u64::from(result), gas_used });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = abi::Transfer::type_id();
-                                let data = bincode::serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
+                                let data = serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = abi::TransferOut::type_id();
-                                let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
+                                let data = serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Panic { id, reason, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = abi::Panic::type_id();
-                                let data = bincode::serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() as u32 }).expect("Bad encoding,");
+                                let data = serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() as u32 });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Revert { id, ra, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = abi::Revert::type_id();
-                                let data = bincode::serialize(&abi::Revert{ contract_id: id, error_val: u64::from(ra & 0xF) }).expect("Bad encoding,");
+                                let data = serialize(&abi::Revert{ contract_id: id, error_val: u64::from(ra & 0xF) });
                                 decoder.decode_type(ty_id, data);
                             }
                             _ => {

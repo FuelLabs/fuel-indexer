@@ -12,7 +12,7 @@ pub fn handler_block_wasm(
 
         #[no_mangle]
         fn handle_events(blob: *mut u8, len: usize) {
-            use fuel_indexer_schema::utils::deserialize;
+            use fuel_indexer_plugin::deserialize;
             let bytes = unsafe { Vec::from_raw_parts(blob, len, len) };
             let blocks: Vec<BlockData> = match deserialize(&bytes) {
                 Ok(blocks) => blocks,
