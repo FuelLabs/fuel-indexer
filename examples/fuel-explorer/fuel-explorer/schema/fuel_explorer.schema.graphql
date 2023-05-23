@@ -98,7 +98,7 @@ type Block {
   block_id: UInt4!
   header: Header!
   consensus: Consensus!
-#   transactions: [TransactionIdFragment]
+#   transactions: [TransactionIdFragment]!
 }
 
 type UtxoId {

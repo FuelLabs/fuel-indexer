@@ -12,9 +12,9 @@ use fuel_core_client::client::{
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
-    abi::{BlockData, TransactionData},
-    tx::{TransactionStatus, TxId},
-    Bytes32,
+    block::BlockData,
+    scalar::Bytes32,
+    transaction::{TransactionData, TransactionStatus, TxId},
 };
 use futures::Future;
 use std::{
@@ -146,9 +146,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
                 let mut transactions = Vec::new();
 
-                for trans in block.transactions {
+                for tx in &block.transactions {
                     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/288
-                    match client.transaction(&trans.id.to_string()).await {
+                    match client.transaction(&tx.id.to_string()).await {
                         Ok(result) => {
                             if let Some(TransactionResponse {
                                 transaction,
@@ -156,57 +156,20 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             }) = result
                             {
                                 let receipts = client
-                                    .receipts(&trans.id.to_string())
+                                    .receipts(&tx.id.to_string())
                                     .await
                                     .unwrap_or_else(|e| {
                                         error!("Client communication error fetching receipts: {e:?}");
                                         Vec::new()
                                     });
 
-                                // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
-                                let status = match status {
-                                    GqlTransactionStatus::Success {
-                                        block_id,
-                                        time,
-                                        ..
-                                    } => TransactionStatus::Success {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .unwrap(),
-                                    },
-                                    GqlTransactionStatus::Failure {
-                                        block_id,
-                                        time,
-                                        reason,
-                                        ..
-                                    } => TransactionStatus::Failure {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .unwrap(),
-                                        reason,
-                                    },
-                                    GqlTransactionStatus::Submitted { submitted_at } => {
-                                        TransactionStatus::Submitted {
-                                            submitted_at: Utc
-                                                .timestamp_opt(submitted_at.to_unix(), 0)
-                                                .single()
-                                                .unwrap(),
-                                        }
-                                    }
-                                    GqlTransactionStatus::SqueezedOut { reason } => {
-                                        TransactionStatus::SqueezedOut { reason }
-                                    }
-                                };
+                                let status = status.into();
 
                                 let tx_data = TransactionData {
                                     receipts,
                                     status,
                                     transaction,
-                                    id: TxId::from(trans.id),
+                                    id: tx.id.clone().into(),
                                 };
                                 transactions.push(tx_data);
                             }
@@ -217,15 +180,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     };
                 }
 
-                let block = BlockData {
-                    height: block.header.height.0,
-                    id: Bytes32::from(block.id),
-                    producer,
-                    time: block.header.time.0.to_unix(),
-                    transactions,
-                };
-
-                block_info.push(block);
+                block_info.push(block.into());
             }
 
             let result = executor.handle_events(block_info).await;

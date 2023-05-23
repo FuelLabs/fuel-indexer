@@ -19,3 +19,4 @@ fuels = { workspace = true }
 serde = { features = ["derive", "alloc"], workspace = true }
 sha2 = "0.9"
 tai64 = { version = "4.0", default-features = false, features = ["serde"] }
+fuel-core-client = { version = "0.17", default-features = false }

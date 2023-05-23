@@ -8,7 +8,7 @@ extern crate alloc;
 
 pub mod types {
     pub use fuel_indexer_schema::FtColumn;
-    pub use fuel_indexer_types::*;
+    pub use fuel_indexer_types::prelude::*;
 
     // These imports are used in the indexer.rs module when iterating over
     // block transactions, in order to cache contract IDs.
@@ -36,5 +36,5 @@ pub use serde;
 pub use serde_json;
 
 pub mod prelude {
-    pub use super::{bincode, deserialize, serde, serialize, types::*, utils::*};
+    pub use super::{bincode, deserialize, serde, serde_json, serialize, types::*, utils::*};
 }

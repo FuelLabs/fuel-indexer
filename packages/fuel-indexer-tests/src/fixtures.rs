@@ -412,7 +412,7 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
-    use fuel_indexer_types::{AssetId, Bech32ContractId};
+    use fuel_indexer_types::scalar::{AssetId, Bech32ContractId};
     use fuels::prelude::{CallParameters, Provider, WalletUnlocked};
     use std::path::Path;
 

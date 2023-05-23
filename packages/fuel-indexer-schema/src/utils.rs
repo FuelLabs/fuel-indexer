@@ -6,8 +6,7 @@ use async_graphql_parser::types::{
     BaseType, Directive, FieldDefinition, ServiceDocument, Type, TypeDefinition,
     TypeKind, TypeSystemDefinition,
 };
-use fuel_indexer_database_types as sql_types;
-use fuel_indexer_database_types::directives;
+use fuel_indexer_database_types::{directives, ColumnType, IdCol};
 use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
@@ -43,9 +42,7 @@ pub fn type_name(typ: &TypeDefinition) -> String {
     typ.name.clone().to_string()
 }
 
-pub fn get_index_directive(
-    field: &FieldDefinition,
-) -> Option<sql_types::directives::Index> {
+pub fn get_index_directive(field: &FieldDefinition) -> Option<directives::Index> {
     let FieldDefinition {
         directives,
         name: field_name,
@@ -60,14 +57,14 @@ pub fn get_index_directive(
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
         if name.to_string().as_str() == INDEX_DIRECTIVE_NAME {
-            return Some(sql_types::directives::Index::new(field_name.to_string()));
+            return Some(directives::Index::new(field_name.to_string()));
         }
     }
 
     None
 }
 
-pub fn get_unique_directive(field: &FieldDefinition) -> sql_types::directives::Unique {
+pub fn get_unique_directive(field: &FieldDefinition) -> directives::Unique {
     let FieldDefinition { directives, .. } = field.clone();
     let mut directives: Vec<Directive> = directives
         .into_iter()
@@ -77,11 +74,11 @@ pub fn get_unique_directive(field: &FieldDefinition) -> sql_types::directives::U
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
         if name.to_string().as_str() == UNIQUE_DIRECTIVE_NAME {
-            return sql_types::directives::Unique(true);
+            return directives::Unique(true);
         }
     }
 
-    sql_types::directives::Unique(false)
+    directives::Unique(false)
 }
 
 /// Given a field whos type references another object in the schema (i.e.,
@@ -92,7 +89,7 @@ pub fn get_join_directive_info(
     field: &FieldDefinition,
     type_name: &String,
     types_map: &HashMap<String, String>,
-) -> sql_types::directives::Join {
+) -> directives::Join {
     let FieldDefinition {
         name: field_name,
         directives,
@@ -132,7 +129,7 @@ pub fn get_join_directive_info(
 
         (ref_field_name.to_string(), ref_field_type_name)
     } else {
-        let ref_field_name = sql_types::IdCol::to_lowercase_string();
+        let ref_field_name = IdCol::to_lowercase_string();
         let field_id = format!("{type_name}.{ref_field_name}");
         let mut ref_field_type_name = types_map
             .get(&field_id)
@@ -146,15 +143,15 @@ pub fn get_join_directive_info(
         // another primary key (can't do that in SQL) -- so we manually change that to
         // an integer type here. Might have to do this for foreign key directives (above)
         // as well
-        let non_primary_key_int = sql_types::ColumnType::UInt8.to_string();
-        if ref_field_type_name == sql_types::IdCol::to_uppercase_string() {
+        let non_primary_key_int = ColumnType::UInt8.to_string();
+        if ref_field_type_name == IdCol::to_uppercase_string() {
             ref_field_type_name = non_primary_key_int;
         }
 
         (ref_field_name, ref_field_type_name)
     };
 
-    sql_types::directives::Join {
+    directives::Join {
         field_type_name,
         field_name: field_name.to_string(),
         reference_field_name,
@@ -262,7 +259,7 @@ pub fn get_foreign_keys(
                     )?;
                     #[allow(clippy::single_match)]
                     match col_type {
-                        sql_types::ColumnType::ForeignKey => {
+                        ColumnType::ForeignKey => {
                             let directives::Join {
                                 reference_field_name,
                                 ..
@@ -312,13 +309,13 @@ pub fn get_foreign_keys(
 pub fn get_column_type(
     field_type: &Type,
     primitives: &HashSet<String>,
-) -> IndexerSchemaResult<sql_types::ColumnType> {
+) -> IndexerSchemaResult<ColumnType> {
     match &field_type.base {
         BaseType::Named(t) => {
             if !primitives.contains(t.as_str()) {
-                return Ok(sql_types::ColumnType::ForeignKey);
+                return Ok(ColumnType::ForeignKey);
             }
-            Ok(sql_types::ColumnType::from(t.as_str()))
+            Ok(ColumnType::from(t.as_str()))
         }
         BaseType::List(_) => Err(IndexerSchemaError::ListTypesUnsupported),
     }
@@ -327,7 +324,7 @@ pub fn get_column_type(
 /// Get directive determining whether or not field's object should not be used to create SQL tables.
 pub fn get_notable_directive_info(
     field: &FieldDefinition,
-) -> IndexerSchemaResult<sql_types::directives::NoRelation> {
+) -> IndexerSchemaResult<directives::NoRelation> {
     let FieldDefinition { directives, .. } = field.clone();
 
     let mut directives: Vec<Directive> = directives
@@ -338,11 +335,11 @@ pub fn get_notable_directive_info(
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
         if name.to_string().as_str() == NORELATION_DIRECTIVE_NAME {
-            return Ok(sql_types::directives::NoRelation(true));
+            return Ok(directives::NoRelation(true));
         }
     }
 
-    Ok(sql_types::directives::NoRelation(false))
+    Ok(directives::NoRelation(false))
 }
 
 #[cfg(test)]

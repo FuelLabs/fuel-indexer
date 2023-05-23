@@ -5,10 +5,8 @@ use async_graphql_parser::types::{
     DocumentOperations, ExecutableDocument, Field, FragmentDefinition, FragmentSpread,
     OperationDefinition, OperationType, SelectionSet, TypeCondition,
 };
-use fuel_indexer_schema::{
-    QUERY_ROOT,
-    {db::tables::Schema, sql_types::DbType},
-};
+use fuel_indexer_database_types::DbType;
+use fuel_indexer_schema::{db::tables::Schema, QUERY_ROOT};
 use std::collections::HashMap;
 use thiserror::Error;
 

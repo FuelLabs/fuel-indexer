@@ -1,14 +1,10 @@
-pub mod abi;
+pub mod block;
 pub mod ffi;
 pub mod graphql;
-pub mod tx;
+pub mod receipt;
+pub mod scalar;
+pub mod transaction;
 
-pub use crate::abi::*;
-pub use crate::tx::*;
-use bytes::Bytes;
-pub use fuel_types::{
-    Address, AssetId, Bytes32, Bytes4, Bytes64, Bytes8, ContractId, MessageId, Salt, Word,
-};
 pub use fuels::{
     core::try_from_bytes,
     types::{
@@ -16,88 +12,29 @@ pub use fuels::{
         Bits256, Identity, SizedAsciiString,
     },
 };
-use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use tai64::Tai64;
 
-pub type Error = Box<dyn std::error::Error>;
-pub type ID = u64;
-pub type Int4 = i32;
-pub type Int8 = i64;
-pub type Int16 = i128;
-pub type UInt4 = u32;
-pub type UInt8 = u64;
-pub type UInt16 = u128;
-pub type Timestamp = u64;
-pub type Charfield = String;
-pub type Boolean = bool;
-pub type Signature = Bytes64;
-pub type Nonce = Bytes32;
-pub type HexString = Bytes;
-pub type Tai64Timestamp = Tai64;
-pub type BlockHeight = u32;
-pub type Int1 = i8;
-pub type UInt1 = u8;
+pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
 
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash, Default)]
-pub struct Blob(pub Vec<u8>);
-
-impl From<Vec<u8>> for Blob {
-    fn from(value: Vec<u8>) -> Self {
-        Blob(value)
-    }
+pub trait TypeId {
+    fn type_id() -> usize;
 }
 
-impl AsRef<[u8]> for Blob {
-    fn as_ref(&self) -> &[u8] {
-        &self.0
-    }
+pub mod prelude {
+    pub use crate::block::*;
+    pub use crate::ffi::*;
+    pub use crate::graphql::*;
+    pub use crate::receipt::*;
+    pub use crate::scalar::*;
+    pub use crate::transaction::*;
+    pub use crate::{TypeId, FUEL_TYPES_NAMESPACE};
 }
 
-impl From<Blob> for Vec<u8> {
-    fn from(value: Blob) -> Self {
-        value.0
-    }
-}
-
-pub type NoRelation = Json;
-
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash, Default)]
-pub struct Json(pub String);
-
-macro_rules! json_impl {
-    ($($ty:ty),*) => {
-        $(
-            impl From<$ty> for Json {
-                fn from(value: $ty) -> Self {
-                    Json(value.to_string())
-                }
-            }
-        )*
-    }
-}
-
-macro_rules! blob_impl {
-    ($($ty:ty),*) => {
-        $(
-            impl From<$ty> for Blob {
-                fn from(value: $ty) -> Self {
-                    Blob::from(bincode::serialize(&value).unwrap().to_vec())
-                }
-            }
-        )*
-    }
-}
-
-json_impl!(i32, i64, i128, u32, u64, u128);
-blob_impl!(i32, i64, i128, u32, u64, u128);
-
-// IMPORTANT: https://github.com/launchbadge/sqlx/issues/499
-pub fn type_id(namespace: &str, type_name: &str) -> i64 {
+/// Derive a type ID from a namespace and given abstraction name.
+pub fn type_id(namespace: &str, name: &str) -> i64 {
+    // IMPORTANT: https://github.com/launchbadge/sqlx/issues/499
     let mut bytes = [0u8; 8];
-    bytes.copy_from_slice(
-        &Sha256::digest(format!("{namespace}:{type_name}").as_bytes())[..8],
-    );
+    bytes.copy_from_slice(&Sha256::digest(format!("{namespace}:{name}").as_bytes())[..8]);
     i64::from_le_bytes(bytes)
 }
 

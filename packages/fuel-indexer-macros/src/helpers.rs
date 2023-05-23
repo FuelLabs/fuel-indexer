@@ -124,17 +124,17 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u64" => quote! { u64 },
             "u8" => quote! { u8 },
             "BlockData" => quote! { BlockData },
-            "Call" => quote! { abi::Call },
-            "Identity" => quote! { abi::Identity },
-            "Log" => quote! { abi::Log },
-            "LogData" => quote! { abi::LogData },
-            "MessageOut" => quote! { abi::MessageOut },
-            "Return" => quote! { abi::Return },
-            "ScriptResult" => quote! { abi::ScriptResult },
-            "Transfer" => quote! { abi::Transfer },
-            "TransferOut" => quote! { abi::TransferOut },
-            "Panic" => quote! { abi::Panic },
-            "Revert" => quote! { abi::Revert },
+            "Call" => quote! { Call },
+            "Identity" => quote! { Identity },
+            "Log" => quote! { Log },
+            "LogData" => quote! { LogData },
+            "MessageOut" => quote! { MessageOut },
+            "Return" => quote! { Return },
+            "ScriptResult" => quote! { ScriptResult },
+            "Transfer" => quote! { Transfer },
+            "TransferOut" => quote! { TransferOut },
+            "Panic" => quote! { Panic },
+            "Revert" => quote! { Revert },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!(
@@ -150,7 +150,6 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
 pub fn is_fuel_primitive(ty: &proc_macro2::TokenStream) -> bool {
     let ident_str = ty.to_string();
     FUEL_PRIMITIVES.contains(ident_str.as_str())
-        || FUEL_PRIMITIVES_NAMESPACED.contains(ident_str.as_str())
 }
 
 /// Whether or not the given token is a Rust primitive

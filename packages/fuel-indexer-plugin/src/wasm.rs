@@ -1,10 +1,9 @@
 extern crate alloc;
+
 use alloc::vec::Vec;
 use fuel_indexer_lib::utils::{deserialize, serialize};
 use fuel_indexer_schema::FtColumn;
-use fuel_indexer_types::ffi::{
-    LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
-};
+use fuel_indexer_types::ffi::*;
 
 pub use bincode;
 pub use hex::FromHex;
