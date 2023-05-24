@@ -2,6 +2,7 @@ scalar Address
 scalar AssetId
 scalar Blob
 scalar BlockHeight
+scalar BlockId
 scalar Boolean
 scalar Bytes
 scalar Bytes32

@@ -42,6 +42,58 @@ lazy_static! {
         "Option<Json>",
         "Option<NoRelation>",
     ]);
+
+    static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
+        // Native types.
+        "Block",
+        "Receipt",
+        "Transaction",
+        "TransactionData",
+        "TransactionStatus",
+        "Header",
+        "MessageId",
+        "Transfer",
+        "TransferOut",
+        "Log",
+        "LogData",
+        "ScriptResult",
+
+        // Scalars.
+        "Address",
+        "AssetId",
+        "Blob",
+        "BlockHeight",
+        "BlockId",
+        "Boolean",
+        "Bytes",
+        "Bytes32",
+        "Bytes4",
+        "Bytes64",
+        "Bytes8",
+        "Charfield",
+        "Color",
+        "ContractId",
+        "HexString",
+        "ID",
+        "Identity",
+        "Int1",
+        "Int16",
+        "Int4",
+        "Int8",
+        "Json",
+        "MessageId",
+        "Nonce",
+        "NoRelation",
+        "Salt",
+        "Signature",
+        "Tai64Timestamp",
+        "Timestamp",
+        "TxId",
+        "UInt1",
+        "UInt16",
+        "UInt4",
+        "UInt8",
+    ]);
 }
 
 /// Process a named type into its type tokens, and the Ident for those type tokens.
@@ -178,6 +230,10 @@ fn process_type_def(
     match &typ.kind {
         TypeKind::Object(obj) => {
             let object_name = typ.name.to_string();
+
+            if DISALLOWED_OBJECT_NAMES.contains(object_name.as_str()) {
+                panic!("Object name '{object_name}' is reserved.",);
+            }
 
             let namespace = &schema.namespace;
             let identifier = &schema.identifier;

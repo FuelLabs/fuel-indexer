@@ -57,6 +57,9 @@ pub type Tai64Timestamp = Tai64;
 /// Scalar for 4-byte usigned integers aliased as `BlockHeight`.
 pub type BlockHeight = u32;
 
+/// Scalar for 32-byte payloads aliased as `BlockId`.
+pub type BlockId = Bytes32;
+
 /// Scalar for 1-byte signed integers.
 pub type Int1 = i8;
 

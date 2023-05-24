@@ -1,7 +1,6 @@
 use crate::{
     scalar::Bytes32, transaction::TransactionData, type_id, TypeId, FUEL_TYPES_NAMESPACE,
 };
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 /// Block header.
@@ -16,7 +15,7 @@ pub struct Header {
     pub output_messages_root: Bytes32,
     pub height: u64,
     pub prev_root: Bytes32,
-    pub time: Option<DateTime<Utc>>,
+    pub time: i64,
     pub application_hash: Bytes32,
 }
 

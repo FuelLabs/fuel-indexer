@@ -241,9 +241,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         ),
                         height: block.header.height.0,
                         prev_root: Bytes32::from(block.header.prev_root),
-                        time: Utc
-                            .timestamp_opt(block.header.time.0.to_unix(), 0)
-                            .single(),
+                        time: block.header.time.0.to_unix(),
                         application_hash: Bytes32::from(block.header.application_hash),
                     },
                     transactions,

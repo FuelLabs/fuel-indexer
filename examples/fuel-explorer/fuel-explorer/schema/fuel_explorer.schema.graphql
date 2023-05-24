@@ -44,24 +44,25 @@ type Mint {
 }
 
 
-type Transaction {
+type Transactions {
     id: ID!
     create: Create
     script: Script
     mint: Mint
 }
 
-type Header {
+type Headers {
     id: ID!
-    block_id: Bytes32!
+    block_id: BlockId!
     da_height: UInt8!
     transactions_count: UInt8!
     message_receipt_count: UInt8!
     transactions_root: Bytes32!
     message_receipt_root: Bytes32!
-    height: UInt4!
+    height: UInt8!
     prev_root: Bytes32!
-    time: Tai64Timestamp
+    # time: Tai64Timestamp
+    timestamp: Int8
     application_hash: Bytes32
 }
 
@@ -90,13 +91,13 @@ type Consensus {
 
 type TransactionIdFragment {
     id: ID!
-    transaction_id: Transaction!
+    transaction_id: Transactions!
 }
 
-type BlockData {
+type Blocks {
   id: ID!
   block_id: UInt4!
-  header: Header!
+  header: Headers!
   consensus: Consensus!
 #   transactions: [TransactionIdFragment]!
 }

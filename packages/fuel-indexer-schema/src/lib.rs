@@ -70,6 +70,7 @@ pub enum FtColumn {
     UInt4(Option<UInt4>),
     UInt8(Option<UInt8>),
     NoRelation(Option<NoRelation>),
+    BlockId(Option<BlockId>),
 }
 
 impl FtColumn {
@@ -98,7 +99,7 @@ impl FtColumn {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::Bytes32(value) => match value {
+            FtColumn::Bytes32(value) | FtColumn::BlockId(value) => match value {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
