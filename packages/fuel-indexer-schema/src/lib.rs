@@ -5,6 +5,7 @@ extern crate alloc;
 use fuel_indexer_database_types::ColumnType;
 use fuel_indexer_types::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 use thiserror::Error;
 
 pub const QUERY_ROOT: &str = "QueryRoot";
@@ -72,7 +73,7 @@ pub enum FtColumn {
     UInt8(Option<UInt8>),
     NoRelation(Option<NoRelation>),
     BlockId(Option<BlockId>),
-    List(String, Option<Box<Vec<FtColumn>>>),
+    List(Option<Vec<FtColumn>>),
 }
 
 impl FtColumn {
@@ -213,18 +214,19 @@ impl FtColumn {
                 Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::List(column_type, value) => {
-                let type_id = i32::from(ColumnType::from(column_type.as_str()));
-                let type_bytes = hex::encode(type_id.to_be_bytes());
+            FtColumn::List(value) => {
                 match value {
                     Some(list) => {
                         let discriminant = std::mem::discriminant(&list[0]);
+                        let type_id =
+                            i32::from(ColumnType::from(list[0].to_string().as_str()));
+                        let type_bytes = hex::encode(type_id.to_be_bytes());
                         let elems = list
                             .iter()
                             .map(|e| {
                                 if std::mem::discriminant(e) != discriminant {
                                     panic!(
-                                        "List elements are not of the same type; expected: {:#?}, actual: {:#?}",
+                                        "List elements are not of the same column type; expected: {:#?}, actual: {:#?}",
                                         discriminant,
                                         std::mem::discriminant(e)
                                     )
@@ -243,13 +245,25 @@ impl FtColumn {
                         )
                     }
                     None => {
-                        format!("'{}{}'", type_bytes, String::from(NULL_VALUE))
+                        format!("'{}'", String::from(NULL_VALUE))
                     }
                 }
             }
         }
     }
 }
+
+impl fmt::Display for FtColumn {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = format!("{self:#?}");
+        if let Some(variant) = s.split('(').next() {
+            write!(f, "{}", variant)
+        } else {
+            write!(f, "{:#?}", self)
+        }
+    }
+}
+
 mod tests {
     #[test]
     fn test_fragments_some_types() {
@@ -285,14 +299,11 @@ mod tests {
         let identity = FtColumn::Identity(Some(Identity::Address(
             Address::try_from([0x12; 32]).unwrap(),
         )));
-        let list = FtColumn::List(
-            "ID".to_string(),
-            Some(Box::new(vec![
-                FtColumn::ID(Some(123)),
-                FtColumn::ID(Some(456)),
-                FtColumn::ID(Some(789)),
-            ])),
-        );
+        let list = FtColumn::List(Some(vec![
+            FtColumn::ID(Some(123)),
+            FtColumn::ID(Some(456)),
+            FtColumn::ID(Some(789)),
+        ]));
 
         insta::assert_yaml_snapshot!(id.query_fragment());
         insta::assert_yaml_snapshot!(addr.query_fragment());
@@ -338,7 +349,7 @@ mod tests {
         let charfield_none = FtColumn::Charfield(None);
         let json_none = FtColumn::Json(None);
         let identity_none = FtColumn::Identity(None);
-        let list_none = FtColumn::List("ID".to_string(), None);
+        let list_none = FtColumn::List(None);
 
         insta::assert_yaml_snapshot!(addr_none.query_fragment());
         insta::assert_yaml_snapshot!(asset_id_none.query_fragment());
@@ -372,17 +383,14 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "List elements are not of the same type")]
+    #[should_panic(expected = "List elements are not of the same column type")]
     fn test_panic_on_heterogeneous_list_elements_fragment() {
         use super::*;
 
-        let list = FtColumn::List(
-            "ID".to_string(),
-            Some(Box::new(vec![
-                FtColumn::ID(Some(123)),
-                FtColumn::UInt4(Some(456)),
-            ])),
-        );
+        let list = FtColumn::List(Some(vec![
+            FtColumn::ID(Some(123)),
+            FtColumn::UInt4(Some(456)),
+        ]));
 
         insta::assert_yaml_snapshot!(list.query_fragment());
     }

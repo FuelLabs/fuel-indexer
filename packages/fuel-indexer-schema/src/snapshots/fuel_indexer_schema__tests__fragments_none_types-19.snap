@@ -2,5 +2,5 @@
 source: packages/fuel-indexer-schema/src/lib.rs
 expression: list_none.query_fragment()
 ---
-"'00000000NULL'"
+"'NULL'"
 
