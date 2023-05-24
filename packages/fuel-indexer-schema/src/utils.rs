@@ -350,7 +350,7 @@ mod tests {
     #[test]
     fn test_build_schema_fields_and_types_map_properly_builds_schema_types_map() {
         let schema = r#"
-type Block {
+type BlockData {
     id: Bytes32! @unique
     height: UInt8!
     timestamp: Int8!
@@ -360,7 +360,7 @@ type Block {
 
 type Tx {
     id: Bytes32! @unique
-    block: Block!
+    block: BlockData!
     timestamp: Int8!
     status: Json!
     value: UInt8!
@@ -379,8 +379,11 @@ type Contract {
         let ast = parse_schema(schema).unwrap();
         let types_map = build_schema_fields_and_types_map(&ast).unwrap();
 
-        assert_eq!(*types_map.get("Block.id").unwrap(), "Bytes32".to_string());
-        assert_eq!(*types_map.get("Tx.block").unwrap(), "Block".to_string());
+        assert_eq!(
+            *types_map.get("BlockData.id").unwrap(),
+            "Bytes32".to_string()
+        );
+        assert_eq!(*types_map.get("Tx.block").unwrap(), "BlockData".to_string());
         assert_eq!(
             *types_map.get("Account.address").unwrap(),
             "Address".to_string()
@@ -390,10 +393,10 @@ type Contract {
             "ContractId".to_string()
         );
         assert_eq!(
-            *types_map.get("Block.extra_data").unwrap(),
+            *types_map.get("BlockData.extra_data").unwrap(),
             "MessageId".to_string()
         );
-        assert_eq!(types_map.get("Block.doesNotExist"), None);
+        assert_eq!(types_map.get("BlockData.doesNotExist"), None);
     }
 
     #[test]

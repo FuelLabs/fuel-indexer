@@ -52,8 +52,8 @@ impl From<Consensus> for BlockConensus {
 #[indexer(manifest = "examples/fuel-explorer/fuel-explorer/fuel_explorer.manifest.yaml")]
 pub mod explorer_index {
 
-    fn index_block(block: Block) {
-        let header = Headers {
+    fn index_block(block: BlockData) {
+        let header = Header {
             id: 1,
             block_id: block.header.id,
             da_height: block.header.da_height,
@@ -72,7 +72,7 @@ pub mod explorer_index {
         let consensus = BlockConensus::from(block.consensus);
         consensus.save();
 
-        let block = Blocks {
+        let block = Block {
             id: 1,
             block_id: block.header.id,
             header: header.id,

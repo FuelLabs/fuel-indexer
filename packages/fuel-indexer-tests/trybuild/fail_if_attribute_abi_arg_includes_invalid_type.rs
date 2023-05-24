@@ -26,11 +26,11 @@ fn main() {
     let encoded = ABIEncoder::encode(&[s.into_token()]).expect("Failed compile test");
     let bytes = encoded.resolve(0);
 
-    let data: Vec<Block> = vec![Block {
+    let data: Vec<BlockData> = vec![BlockData {
         id: [0u8; 32].into(),
         time: 1,
         height: 0,
-        header: Header {
+        header: HeaderData {
             id: [0u8; 32].into(),
             da_height: 1,
             transactions_count: 1,

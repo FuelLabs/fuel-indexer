@@ -1,11 +1,11 @@
 # Blocks and Transactions
 
-You can use the `Block` and `TransactionData` data structures to index important information about the Fuel network for your dApp.
+You can use the `BlockData` and `TransactionData` data structures to index important information about the Fuel network for your dApp.
 
-## `Block`
+## `BlockData`
 
 ```rust,ignore
-pub struct Block {
+pub struct BlockData {
     pub height: u64,
     pub id: Bytes32,
     pub producer: Option<Bytes32>,
@@ -14,7 +14,7 @@ pub struct Block {
 }
 ```
 
-The `Block` struct is how blocks are represented in the Fuel indexer. It contains metadata such as the ID, height, and time, as well as a list of the transactions it contains (represented by `TransactionData`). It also contains the public key hash of the block producer, if present.
+The `BlockData` struct is how blocks are represented in the Fuel indexer. It contains metadata such as the ID, height, and time, as well as a list of the transactions it contains (represented by `TransactionData`). It also contains the public key hash of the block producer, if present.
 
 ## `TransactionData`
 

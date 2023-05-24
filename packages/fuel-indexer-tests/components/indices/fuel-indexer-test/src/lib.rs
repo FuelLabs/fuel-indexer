@@ -8,7 +8,7 @@ use fuel_indexer_plugin::utils::*;
 )]
 mod fuel_indexer_test {
 
-    fn fuel_indexer_test_blocks(block_data: Block) {
+    fn fuel_indexer_test_blocks(block_data: BlockData) {
         let block = BlockEntity {
             id: first8_bytes_to_u64(block_data.id),
             height: block_data.height,
@@ -201,10 +201,10 @@ mod fuel_indexer_test {
         pung: Pung,
         pong: Pong,
         ping: Ping,
-        block_data: Block,
+        block_data: BlockData,
     ) {
         Logger::info(
-            "fuel_indexer_test_multiargs handling Pung, Pong, Ping, and Block events.",
+            "fuel_indexer_test_multiargs handling Pung, Pong, Ping, and BlockData events.",
         );
 
         let block = BlockEntity {
@@ -662,7 +662,7 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_block_explorer_types(_b: Block) {
+    fn fuel_indexer_block_explorer_types(_b: BlockData) {
         Logger::info("fuel_indexer_block_explorer_types handling explorer_types event.");
         let e = ExplorerEntity {
             id: 8675309,
@@ -692,7 +692,7 @@ mod fuel_indexer_test {
         e.save();
     }
 
-    fn fuel_indexer_trigger_non_indexable_type(_b: Block) {
+    fn fuel_indexer_trigger_non_indexable_type(_b: BlockData) {
         Logger::info("fuel_indexer_trigger_non_indexable_type handling trigger_non_indexable_type event.");
         let e = UsesNoTableEntity {
             id: 1,

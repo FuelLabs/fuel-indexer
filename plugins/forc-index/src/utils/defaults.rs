@@ -137,11 +137,11 @@ use fuel_indexer_plugin::utils::*;
 #[indexer(manifest = "{manifest_path}")]
 pub mod {index_name}_index_mod {{
 
-    fn {index_name}_handler(block_data: Block) {{
+    fn {index_name}_handler(block_data: BlockData) {{
         Logger::info("Processing a block. (>'.')>");
 
         let block_id = first8_bytes_to_u64(block_data.id);
-        let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
+        let block = BlockData{{ id: block_id, height: block_data.height, hash: block_data.id }};
         block.save();
 
         for transaction in block_data.transactions.iter() {{
@@ -157,7 +157,7 @@ pub mod {index_name}_index_mod {{
 }
 
 pub fn default_index_schema() -> String {
-    r#"type Block {
+    r#"type BlockData {
     id: ID!
     height: UInt8!
     hash: Bytes32! @unique
@@ -165,7 +165,7 @@ pub fn default_index_schema() -> String {
 
 type Tx {
     id: ID!
-    block: Block!
+    block: BlockData!
     hash: Bytes32! @unique
 }
 

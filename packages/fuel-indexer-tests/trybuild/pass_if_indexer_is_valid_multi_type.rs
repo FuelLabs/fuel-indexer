@@ -44,12 +44,12 @@ fn main() {
     let encoded2 = ABIEncoder::encode(&[s2.into_token()]).expect("Failed compile test");
     let bytes2 = encoded2.resolve(0);
 
-    let data: Vec<Block> = vec![Block {
+    let data: Vec<BlockData> = vec![BlockData {
         id: [0u8; 32].into(),
         time: 1,
         producer: None,
         height: 0,
-        header: Header {
+        header: HeaderData {
             id: [0u8; 32].into(),
             da_height: 1,
             transactions_count: 1,

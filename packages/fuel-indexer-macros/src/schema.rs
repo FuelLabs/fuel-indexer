@@ -45,18 +45,18 @@ lazy_static! {
 
     static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
         // Native types.
-        "Block",
+        "BlockData",
+        "HeaderData",
+        "Log",
+        "LogData",
+        "MessageId",
         "Receipt",
+        "ScriptResult",
         "Transaction",
         "TransactionData",
         "TransactionStatus",
-        "Header",
-        "MessageId",
         "Transfer",
         "TransferOut",
-        "Log",
-        "LogData",
-        "ScriptResult",
 
         // Scalars.
         "Address",
@@ -95,10 +95,10 @@ lazy_static! {
         "UInt8",
 
         // Temporary types: https://github.com/FuelLabs/fuel-indexer/issues/286
-        "Genesis",
-        "PoA",
         "Consensus",
         "Genesis",
+        "Genesis",
+        "PoA",
         "Unknown",
 
     ]);

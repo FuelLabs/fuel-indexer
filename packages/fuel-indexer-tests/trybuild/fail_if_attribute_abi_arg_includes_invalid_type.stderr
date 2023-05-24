@@ -24,49 +24,49 @@ error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scop
   |     let s = SomeEvent {
   |             ^^^^^^^^^ not found in this scope
 
-error[E0412]: cannot find type `Block` in this scope
+error[E0412]: cannot find type `BlockData` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |     let data: Vec<Block> = vec![Block {
+  |     let data: Vec<BlockData> = vec![BlockData {
   |                   ^^^^^ not found in this scope
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::Block;
+2  | use fuel_indexer_plugin::prelude::BlockData;
    |
-2  | use fuel_indexer_types::prelude::Block;
+2  | use fuel_indexer_types::prelude::BlockData;
    |
-2  | use syn::Block;
+2  | use syn::BlockData;
    |
 
-error[E0422]: cannot find struct, variant or union type `Block` in this scope
+error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |     let data: Vec<Block> = vec![Block {
+  |     let data: Vec<BlockData> = vec![BlockData {
   |                                 ^^^^^ not found in this scope
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::Block;
+2  | use fuel_indexer_plugin::prelude::BlockData;
    |
-2  | use fuel_indexer_types::prelude::Block;
+2  | use fuel_indexer_types::prelude::BlockData;
    |
-2  | use syn::Block;
+2  | use syn::BlockData;
    |
-2  | use syn::Expr::Block;
+2  | use syn::Expr::BlockData;
    |
 
-error[E0422]: cannot find struct, variant or union type `Header` in this scope
+error[E0422]: cannot find struct, variant or union type `HeaderData` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |         header: Header {
+  |         header: HeaderData {
   |                 ^^^^^^ not found in this scope
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::Header;
+2  | use fuel_indexer_plugin::prelude::HeaderData;
    |
-2  | use fuel_indexer_types::prelude::Header;
+2  | use fuel_indexer_types::prelude::HeaderData;
    |
 
 error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope

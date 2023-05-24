@@ -10,7 +10,7 @@ pub fn handler_block_native(
 
         #native_prelude
 
-        async fn handle_events(blocks: Vec<Block>, db_conn: Arc<Mutex<Database>>) -> IndexerResult<()> {
+        async fn handle_events(blocks: Vec<BlockData>, db_conn: Arc<Mutex<Database>>) -> IndexerResult<()> {
 
             unsafe {
                 db = Some(db_conn);

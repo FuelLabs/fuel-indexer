@@ -13,7 +13,7 @@ use fuel_core_client::client::{
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
-    block::{Block, Consensus, Genesis, Header, PoA},
+    block::{BlockData, Consensus, Genesis, HeaderData, PoA},
     scalar::Bytes32,
     transaction::{TransactionData, TransactionStatus, TxId},
 };
@@ -248,13 +248,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 };
 
                 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
-                let block = Block {
+                let block = BlockData {
                     height: block.header.height.0,
                     id: Bytes32::from(block.id),
                     producer,
                     time: block.header.time.0.to_unix(),
                     consensus,
-                    header: Header {
+                    header: HeaderData {
                         id: Bytes32::from(block.header.id),
                         da_height: block.header.da_height.0,
                         transactions_count: block.header.transactions_count.0,
@@ -317,7 +317,7 @@ pub trait Executor
 where
     Self: Sized,
 {
-    async fn handle_events(&mut self, blocks: Vec<Block>) -> IndexerResult<()>;
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()>;
 }
 
 #[derive(Error, Debug)]
@@ -366,7 +366,7 @@ where
     db: Arc<Mutex<Database>>,
     #[allow(unused)]
     manifest: Manifest,
-    handle_events_fn: fn(Vec<Block>, Arc<Mutex<Database>>) -> F,
+    handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
 }
 
 impl<F> NativeIndexExecutor<F>
@@ -376,7 +376,7 @@ where
     pub async fn new(
         config: &IndexerConfig,
         manifest: &Manifest,
-        handle_events_fn: fn(Vec<Block>, Arc<Mutex<Database>>) -> F,
+        handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
         let db_url = config.database.to_string();
         let db = Arc::new(Mutex::new(Database::new(&db_url).await?));
@@ -391,7 +391,7 @@ where
     pub async fn create<T: Future<Output = IndexerResult<()>> + Send + 'static>(
         config: &IndexerConfig,
         manifest: &Manifest,
-        handle_events: fn(Vec<Block>, Arc<Mutex<Database>>) -> T,
+        handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let executor = NativeIndexExecutor::new(config, manifest, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
@@ -410,7 +410,7 @@ impl<F> Executor for NativeIndexExecutor<F>
 where
     F: Future<Output = IndexerResult<()>> + Send,
 {
-    async fn handle_events(&mut self, blocks: Vec<Block>) -> IndexerResult<()> {
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         self.db.lock().await.start_transaction().await?;
         let res = (self.handle_events_fn)(blocks, self.db.clone()).await;
         if let Err(e) = res {
@@ -534,7 +534,7 @@ impl WasmIndexExecutor {
 #[async_trait]
 impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
-    async fn handle_events(&mut self, blocks: Vec<Block>) -> IndexerResult<()> {
+    async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);
         let arg = ffi::WasmArg::new(&self.instance, bytes)?;
 

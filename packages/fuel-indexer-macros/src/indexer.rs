@@ -430,8 +430,8 @@ fn process_fn_items(
                 }
             }
 
-            pub fn decode_block(&mut self, data: Block) {
-                self.block_decoded.push(data);
+            pub fn decode_block(&mut self, data: BlockData) {
+                self.blockdata_decoded.push(data);
             }
 
             pub fn decode_return_type(&mut self, sel: u64, data: Vec<u8>) {
@@ -468,7 +468,7 @@ fn process_fn_items(
 
                 let mut decoder = Decoders::default();
 
-                let ty_id = Block::type_id();
+                let ty_id = BlockData::type_id();
                 let data = serialize(&block);
                 decoder.decode_type(ty_id, data);
 

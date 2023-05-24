@@ -3,7 +3,7 @@ use std::collections::HashSet;
 
 lazy_static! {
     pub static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
-        "Block",
+        "BlockData",
         "Call",
         "Log",
         "LogData",

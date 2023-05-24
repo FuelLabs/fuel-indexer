@@ -27,7 +27,7 @@ use fuel_indexer_plugin::prelude::*;
 )]
 mod hello_world_native {
 
-    async fn index_logged_greeting(event: Greeting, block: Block) {
+    async fn index_logged_greeting(event: Greeting, block: BlockData) {
         // Since all events require a u64 ID field, let's derive an ID using the
         // name of the person in the Greeting
         let greeter_name = trim_sized_ascii_string(&event.person.name);

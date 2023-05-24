@@ -51,7 +51,7 @@ type Transactions {
     mint: Mint
 }
 
-type Headers {
+type Header {
     id: ID!
     block_id: BlockId!
     da_height: UInt8!
@@ -98,10 +98,10 @@ type TransactionIdFragment {
     transaction_id: Transactions!
 }
 
-type Blocks {
+type Block {
   id: ID!
   block_id: BlockId!
-  header: Headers!
+  header: Header!
   consensus: BlockConensus!
 #   transactions: [TransactionIdFragment]!
 }

@@ -7,9 +7,9 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-/// Block header.
+/// Fuel indexer-specific `Header`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Header {
+pub struct HeaderData {
     pub id: Bytes32,
     pub da_height: u64,
     pub transactions_count: u64,
@@ -22,21 +22,21 @@ pub struct Header {
     pub application_hash: Bytes32,
 }
 
-/// Fuel indexer-specific block.
+/// Fuel indexer-specific `Block`.
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct Block {
+pub struct BlockData {
     pub height: u64,
     pub id: Bytes32,
-    pub header: Header,
+    pub header: HeaderData,
     pub producer: Option<Bytes32>,
     pub time: i64,
     pub consensus: Consensus,
     pub transactions: Vec<TransactionData>,
 }
 
-impl TypeId for Block {
+impl TypeId for BlockData {
     fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, "Block") as usize
+        type_id(FUEL_TYPES_NAMESPACE, "BlockData") as usize
     }
 }
 
