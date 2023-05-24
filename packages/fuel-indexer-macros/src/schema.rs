@@ -93,6 +93,14 @@ lazy_static! {
         "UInt16",
         "UInt4",
         "UInt8",
+
+        // Temporary types: https://github.com/FuelLabs/fuel-indexer/issues/286
+        "Genesis",
+        "PoA",
+        "Consensus",
+        "Genesis",
+        "Unknown",
+
     ]);
 }
 

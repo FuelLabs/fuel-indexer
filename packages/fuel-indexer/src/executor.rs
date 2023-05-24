@@ -7,12 +7,13 @@ use async_std::{
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
 use fuel_core_client::client::{
-    types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
+    schema::block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
+    types::{TransactionResponse, TransactionStatus as ClientTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
-    block::{Block, Header},
+    block::{Block, Consensus, Genesis, Header, PoA},
     scalar::Bytes32,
     transaction::{TransactionData, TransactionStatus, TxId},
 };
@@ -172,7 +173,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
                                 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
                                 let status = match status {
-                                    GqlTransactionStatus::Success {
+                                    ClientTransactionStatus::Success {
                                         block_id,
                                         time,
                                         ..
@@ -183,7 +184,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                             .single()
                                             .unwrap(),
                                     },
-                                    GqlTransactionStatus::Failure {
+                                    ClientTransactionStatus::Failure {
                                         block_id,
                                         time,
                                         reason,
@@ -196,15 +197,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                             .unwrap(),
                                         reason,
                                     },
-                                    GqlTransactionStatus::Submitted { submitted_at } => {
-                                        TransactionStatus::Submitted {
-                                            submitted_at: Utc
-                                                .timestamp_opt(submitted_at.to_unix(), 0)
-                                                .single()
-                                                .unwrap(),
-                                        }
-                                    }
-                                    GqlTransactionStatus::SqueezedOut { reason } => {
+                                    ClientTransactionStatus::Submitted {
+                                        submitted_at,
+                                    } => TransactionStatus::Submitted {
+                                        submitted_at: Utc
+                                            .timestamp_opt(submitted_at.to_unix(), 0)
+                                            .single()
+                                            .unwrap(),
+                                    },
+                                    ClientTransactionStatus::SqueezedOut { reason } => {
                                         TransactionStatus::SqueezedOut { reason }
                                     }
                                 };
@@ -224,12 +225,35 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     };
                 }
 
+                let consensus = match &block.consensus {
+                    ClientConsensus::Unknown => Consensus::Unknown,
+                    ClientConsensus::Genesis(g) => {
+                        let ClientGenesis {
+                            chain_config_hash,
+                            coins_root,
+                            contracts_root,
+                            messages_root,
+                        } = g.to_owned();
+
+                        Consensus::Genesis(Genesis {
+                            chain_config_hash: chain_config_hash.to_owned().into(),
+                            coins_root: coins_root.to_owned().into(),
+                            contracts_root: contracts_root.to_owned().into(),
+                            messages_root: messages_root.to_owned().into(),
+                        })
+                    }
+                    ClientConsensus::PoAConsensus(poa) => Consensus::PoA(PoA {
+                        signature: poa.signature.to_owned().into(),
+                    }),
+                };
+
                 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
                 let block = Block {
                     height: block.header.height.0,
                     id: Bytes32::from(block.id),
                     producer,
                     time: block.header.time.0.to_unix(),
+                    consensus,
                     header: Header {
                         id: Bytes32::from(block.header.id),
                         da_height: block.header.da_height.0,

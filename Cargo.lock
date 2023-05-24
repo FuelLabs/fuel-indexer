@@ -3309,6 +3309,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel_explorer"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuels",
+ "serde",
+]
+
+[[package]]
 name = "fuels"
 version = "0.40.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

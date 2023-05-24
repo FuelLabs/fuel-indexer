@@ -66,27 +66,31 @@ type Headers {
     application_hash: Bytes32
 }
 
-type Genesis {
+# TODO: Should this be a FK?
+type GenesisConsensus {
     id: ID!
-    name: Charfield!
+    chain_config_hash: Bytes32!
+    coins_root: Bytes32!
+    contracts_root: Bytes32!
+    messages_root: Bytes32!
 }
 
 
+# TODO: Should this be a FK?
 type PoAConsensus {
-    id: ID!
-    name: Charfield!
+    signature: Signature! @norelation
 }
 
-type Unknown {
-    id: ID!
-    name: Charfield!
+# TODO: Should this be a FK?
+type UnknownConsensus {
+    value: Boolean! @norelation
 }
 
-type Consensus {
+type BlockConensus {
     id: ID!
-    genesis: Genesis
+    genesis: GenesisConsensus
     poa: PoAConsensus
-    unknown: Unknown
+    unknown: UnknownConsensus
 }
 
 type TransactionIdFragment {
@@ -96,9 +100,9 @@ type TransactionIdFragment {
 
 type Blocks {
   id: ID!
-  block_id: UInt4!
+  block_id: BlockId!
   header: Headers!
-  consensus: Consensus!
+  consensus: BlockConensus!
 #   transactions: [TransactionIdFragment]!
 }
 
