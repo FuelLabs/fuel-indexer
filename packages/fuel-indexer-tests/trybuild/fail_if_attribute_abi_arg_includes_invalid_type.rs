@@ -39,7 +39,7 @@ fn main() {
             output_messages_root: [0u8; 32].into(),
             height: 1,
             prev_root: [0u8; 32].into(),
-            time: None,
+            time: 1,
             application_hash: [0u8; 32].into(),
         },
         transactions: vec![TransactionData {
@@ -67,7 +67,7 @@ fn main() {
                     is: 0,
                 },
             ],
-            transaction: Transaction::default(),
+            transaction: ClientTransaction::default(),
         }],
     }];
 

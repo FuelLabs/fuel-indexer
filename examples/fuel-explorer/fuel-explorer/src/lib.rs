@@ -2,18 +2,34 @@ extern crate alloc;
 use fuel_indexer_macros::indexer;
 use fuel_indexer_plugin::prelude::*;
 
+pub enum ConsensusLabel {
+    Unknown,
+    Genesis,
+    PoA,
+}
+
+impl ToString for ConsensusLabel {
+    fn to_string(&self) -> String {
+        match self {
+            ConsensusLabel::Unknown => "Consensus::Unknown".to_string(),
+            ConsensusLabel::Genesis => "Consensus::Genesis".to_string(),
+            ConsensusLabel::PoA => "Consensus::PoA".to_string(),
+        }
+    }
+}
+
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
-impl From<Consensus> for BlockConensus {
-    fn from(consensus: Consensus) -> Self {
+impl From<ConsensusData> for Consensus {
+    fn from(consensus: ConsensusData) -> Self {
         match consensus {
-            Consensus::Genesis(Genesis {
+            ConsensusData::Genesis(GenesisConsensus {
                 chain_config_hash,
                 coins_root,
                 contracts_root,
                 messages_root,
             }) => {
                 let id = 1;
-                let genesis = GenesisConsensus::load(id).unwrap_or(GenesisConsensus {
+                let genesis = Genesis::load(id).unwrap_or(Genesis {
                     chain_config_hash,
                     coins_root,
                     contracts_root,
@@ -21,27 +37,30 @@ impl From<Consensus> for BlockConensus {
                     id,
                 });
 
-                BlockConensus {
+                Consensus {
                     unknown: None,
                     poa: None,
                     genesis: Some(genesis.id),
+                    label: ConsensusLabel::Genesis.to_string(),
                     id: 1,
                 }
             }
-            Consensus::PoA(poa) => BlockConensus {
+            ConsensusData::PoA(poa) => Consensus {
                 unknown: None,
                 genesis: None,
+                label: ConsensusLabel::PoA.to_string(),
                 poa: Some(
-                    PoAConsensus {
+                    PoA {
                         signature: poa.signature,
                     }
                     .into(),
                 ),
                 id: 1,
             },
-            Consensus::Unknown => BlockConensus {
-                unknown: Some(UnknownConsensus { value: true }.into()),
+            ConsensusData::UnknownConsensus => Consensus {
+                unknown: Some(Unknown { value: true }.into()),
                 genesis: None,
+                label: ConsensusLabel::Unknown.to_string(),
                 poa: None,
                 id: 1,
             },
@@ -69,7 +88,7 @@ pub mod explorer_index {
 
         header.save();
 
-        let consensus = BlockConensus::from(block.consensus);
+        let consensus = Consensus::from(block.consensus);
         consensus.save();
 
         let block = Block {
@@ -79,7 +98,7 @@ pub mod explorer_index {
             consensus: consensus.id,
         };
 
-        Logger::info("hello, john!");
+        Logger::info("hello, world!");
 
         block.save();
     }

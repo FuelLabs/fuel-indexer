@@ -3148,6 +3148,7 @@ dependencies = [
  "sha2 0.9.9",
  "sqlx",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

@@ -52,7 +52,6 @@ lazy_static! {
         "MessageId",
         "Receipt",
         "ScriptResult",
-        "Transaction",
         "TransactionData",
         "TransactionStatus",
         "Transfer",
@@ -95,11 +94,11 @@ lazy_static! {
         "UInt8",
 
         // Temporary types: https://github.com/FuelLabs/fuel-indexer/issues/286
-        "Consensus",
-        "Genesis",
-        "Genesis",
-        "PoA",
-        "Unknown",
+        "ClientTransaction",
+        "ConsensusData",
+        "GenesisConensus",
+        "PoAConsensus",
+        "UnknownConsensus",
 
     ]);
 }

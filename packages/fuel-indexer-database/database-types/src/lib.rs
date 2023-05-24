@@ -162,6 +162,7 @@ impl NewColumn {
             ColumnType::Int1 => "integer",
             ColumnType::UInt1 => "integer",
             ColumnType::NoRelation => "Json",
+            ColumnType::BlockId => "varchar(64)",
         }
     }
 }
@@ -211,6 +212,7 @@ pub enum ColumnType {
     Int1 = 31,
     UInt1 = 32,
     NoRelation = 33,
+    BlockId = 34,
 }
 
 impl From<ColumnType> for i32 {
@@ -250,6 +252,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Int1 => 31,
             ColumnType::UInt1 => 32,
             ColumnType::NoRelation => 33,
+            ColumnType::BlockId => 34,
         }
     }
 }
@@ -297,6 +300,7 @@ impl From<i32> for ColumnType {
             31 => ColumnType::Int1,
             32 => ColumnType::UInt1,
             33 => ColumnType::NoRelation,
+            34 => ColumnType::BlockId,
             _ => panic!("Invalid column type."),
         }
     }
@@ -339,6 +343,7 @@ impl From<&str> for ColumnType {
             "Int1" => ColumnType::Int1,
             "UInt1" => ColumnType::UInt1,
             "NoRelation" => ColumnType::NoRelation,
+            "BlockId" => ColumnType::BlockId,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }

@@ -19,6 +19,7 @@ serde = { default-features = false, features = ["derive"], workspace = true }
 sha2 = "0.9"
 sqlx = { version = "0.6", optional = true, features = ["postgres", "runtime-tokio-rustls", "bigdecimal"] }
 thiserror = { workspace = true }
+tracing = { workspace = true, optional = true }
 
 [dev-dependencies]
 insta = { version = "1.8", features = ["yaml"] }
@@ -28,5 +29,6 @@ default = ["db-models"]
 db-models = [
     "sqlx",
     "fuel-indexer-database",
+    "tracing",
 ]
 

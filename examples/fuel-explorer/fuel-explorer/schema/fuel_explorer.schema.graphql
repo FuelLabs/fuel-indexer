@@ -9,7 +9,7 @@ type TxPointer {
     tx_index: UInt4!
 }
 
-type Create {
+type CreateTransaction {
   id: ID!
   gas_price: UInt8!
   gas_limit: UInt8!
@@ -22,7 +22,7 @@ type Create {
 #   metadata: ScriptMetadata
 }
 
-type Script {
+type ScriptTransaction {
   id: ID!
   gas_price: UInt8!
   gas_limit: UInt8!
@@ -36,7 +36,7 @@ type Script {
 }
 
 
-type Mint {
+type MintTransaction {
   id: ID!
   tx_pointer: TxPointer!
 #   outputs: [Output]!
@@ -44,11 +44,11 @@ type Mint {
 }
 
 
-type Transactions {
+type Transaction {
     id: ID!
-    create: Create
-    script: Script
-    mint: Mint
+    creates: CreateTransaction
+    scripts: ScriptTransaction
+    mints: MintTransaction
 }
 
 type Header {
@@ -67,7 +67,7 @@ type Header {
 }
 
 # TODO: Should this be a FK?
-type GenesisConsensus {
+type Genesis {
     id: ID!
     chain_config_hash: Bytes32!
     coins_root: Bytes32!
@@ -77,32 +77,34 @@ type GenesisConsensus {
 
 
 # TODO: Should this be a FK?
-type PoAConsensus {
+type PoA {
     signature: Signature! @norelation
 }
 
 # TODO: Should this be a FK?
-type UnknownConsensus {
+type Unknown {
     value: Boolean! @norelation
 }
 
-type BlockConensus {
+# TODO: Should this be a FK?
+type Consensus {
     id: ID!
-    genesis: GenesisConsensus
-    poa: PoAConsensus
-    unknown: UnknownConsensus
+    genesis: Genesis
+    poa: PoA
+    unknown: Unknown
+    label: Charfield!
 }
 
 type TransactionIdFragment {
     id: ID!
-    transaction_id: Transactions!
+    transaction_id: Transaction!
 }
 
 type Block {
   id: ID!
   block_id: BlockId!
   header: Header!
-  consensus: BlockConensus!
+  consensus: Consensus!
 #   transactions: [TransactionIdFragment]!
 }
 

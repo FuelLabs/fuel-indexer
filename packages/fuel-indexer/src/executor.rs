@@ -13,7 +13,7 @@ use fuel_core_client::client::{
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
-    block::{BlockData, Consensus, Genesis, HeaderData, PoA},
+    block::{BlockData, ConsensusData, GenesisConsensus, HeaderData, PoAConsensus},
     scalar::Bytes32,
     transaction::{TransactionData, TransactionStatus, TxId},
 };
@@ -226,7 +226,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
 
                 let consensus = match &block.consensus {
-                    ClientConsensus::Unknown => Consensus::Unknown,
+                    ClientConsensus::Unknown => ConsensusData::UnknownConsensus,
                     ClientConsensus::Genesis(g) => {
                         let ClientGenesis {
                             chain_config_hash,
@@ -235,16 +235,18 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             messages_root,
                         } = g.to_owned();
 
-                        Consensus::Genesis(Genesis {
+                        ConsensusData::Genesis(GenesisConsensus {
                             chain_config_hash: chain_config_hash.to_owned().into(),
                             coins_root: coins_root.to_owned().into(),
                             contracts_root: contracts_root.to_owned().into(),
                             messages_root: messages_root.to_owned().into(),
                         })
                     }
-                    ClientConsensus::PoAConsensus(poa) => Consensus::PoA(PoA {
-                        signature: poa.signature.to_owned().into(),
-                    }),
+                    ClientConsensus::PoAConsensus(poa) => {
+                        ConsensusData::PoA(PoAConsensus {
+                            signature: poa.signature.to_owned().into(),
+                        })
+                    }
                 };
 
                 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286

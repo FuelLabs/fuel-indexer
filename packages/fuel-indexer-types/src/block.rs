@@ -30,7 +30,7 @@ pub struct BlockData {
     pub header: HeaderData,
     pub producer: Option<Bytes32>,
     pub time: i64,
-    pub consensus: Consensus,
+    pub consensus: ConsensusData,
     pub transactions: Vec<TransactionData>,
 }
 
@@ -42,7 +42,7 @@ impl TypeId for BlockData {
 
 /// Fuel indexer-specific `Genesis`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Genesis {
+pub struct GenesisConsensus {
     pub chain_config_hash: Bytes32,
     pub coins_root: Bytes32,
     pub contracts_root: Bytes32,
@@ -51,14 +51,15 @@ pub struct Genesis {
 
 /// Fuel indexer-specific `PoA`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct PoA {
+pub struct PoAConsensus {
     pub signature: Signature,
 }
 
 /// Fuel indexer-specific `Consensus`.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Consensus {
-    Genesis(Genesis),
-    PoA(PoA),
-    Unknown,
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+pub enum ConsensusData {
+    Genesis(GenesisConsensus),
+    PoA(PoAConsensus),
+    #[default]
+    UnknownConsensus,
 }

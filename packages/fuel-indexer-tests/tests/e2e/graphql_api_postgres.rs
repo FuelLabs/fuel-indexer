@@ -59,7 +59,7 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(r#"{ "query": "query { block { id height timestamp }}" }"#)
+        .body(r#"{ "query": "query { blockentity { id height timestamp }}" }"#)
         .send()
         .await
         .unwrap();
@@ -142,7 +142,7 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(r#"{ "query": "query { tx { block { id height } id timestamp } }" }"#)
+        .body(r#"{ "query": "query { txentity { block { id height } id timestamp } }" }"#)
         .send()
         .await
         .unwrap();
