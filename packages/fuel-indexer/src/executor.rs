@@ -65,11 +65,11 @@ impl ExecutorSource {
     }
 }
 
-/// Run the executor task until the kill switch is flipped, or until some other
-/// stop criteria is met.
-///
-/// In general the logic in this function isn't very idiomatic, but that's because
-/// types in `fuel_core_client` don't compile to WASM.
+// Run the executor task until the kill switch is flipped, or until some other
+// stop criteria is met.
+//
+// In general the logic in this function isn't very idiomatic, but that's because
+// types in `fuel_core_client` don't compile to WASM.
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
     config: &IndexerConfig,
     manifest: &Manifest,
