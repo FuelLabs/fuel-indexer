@@ -4,6 +4,7 @@ use crate::{
     utils::{inject_native_entities_into_schema, schema_version},
 };
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
+use tracing::info;
 
 pub struct SchemaManager {
     pool: IndexerConnectionPool,
@@ -29,6 +30,7 @@ impl SchemaManager {
         let version = schema_version(&schema);
 
         if !queries::schema_exists(conn, namespace, identifier, &version).await? {
+            info!("Creating schema for Indexer({namespace}.{identifier}) with Version({version}).");
             let _db_schema = SchemaBuilder::new(
                 namespace,
                 identifier,

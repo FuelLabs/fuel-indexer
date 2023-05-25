@@ -2305,18 +2305,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "explorer_indexer"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuels",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "extension-trait"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3160,6 +3148,7 @@ dependencies = [
  "sha2 0.9.9",
  "sqlx",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]

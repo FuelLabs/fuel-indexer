@@ -1,15 +1,10 @@
 #![deny(unused_crate_dependencies)]
 
 extern crate alloc;
-use fuel_indexer_types::{
-    Address, AssetId, Blob, BlockHeight, Bytes32, Bytes4, Bytes64, Bytes8, ContractId,
-    HexString, Identity, Int1, Int16, Int4, Int8, Json, MessageId, NoRelation, Nonce,
-    Salt, Signature, Tai64Timestamp, TxId, UInt1, UInt16, UInt4, UInt8,
-};
+
+use fuel_indexer_types::prelude::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-pub use fuel_indexer_database_types as sql_types;
 
 pub const QUERY_ROOT: &str = "QueryRoot";
 
@@ -75,6 +70,7 @@ pub enum FtColumn {
     UInt4(Option<UInt4>),
     UInt8(Option<UInt8>),
     NoRelation(Option<NoRelation>),
+    BlockId(Option<BlockId>),
 }
 
 impl FtColumn {
@@ -103,7 +99,7 @@ impl FtColumn {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::Bytes32(value) => match value {
+            FtColumn::Bytes32(value) | FtColumn::BlockId(value) => match value {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },

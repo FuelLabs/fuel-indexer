@@ -1,6 +1,6 @@
 use crate::{config::IndexerConfig, defaults};
 use anyhow::Result;
-use fuel_indexer_types::Bytes32;
+use fuel_indexer_types::scalar::Bytes32;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{

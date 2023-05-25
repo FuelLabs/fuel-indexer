@@ -5,10 +5,8 @@ use async_graphql_parser::types::{
     DocumentOperations, ExecutableDocument, Field, FragmentDefinition, FragmentSpread,
     OperationDefinition, OperationType, SelectionSet, TypeCondition,
 };
-use fuel_indexer_schema::{
-    QUERY_ROOT,
-    {db::tables::Schema, sql_types::DbType},
-};
+use fuel_indexer_database_types::DbType;
+use fuel_indexer_schema::{db::tables::Schema, QUERY_ROOT};
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -651,7 +649,7 @@ mod tests {
     #[test]
     fn test_operation_parse_into_user_query() {
         let selections_on_block_field = Selections {
-            field_type: "Block".to_string(),
+            field_type: "BlockData".to_string(),
             has_fragments: false,
             selections: vec![
                 Selection::Field {
@@ -735,11 +733,11 @@ mod tests {
                     ("input_data".to_string(), "Json!".to_string()),
                     ("id".to_string(), "ID!".to_string()),
                     ("object".to_string(), "__".to_string()),
-                    ("block".to_string(), "Block".to_string()),
+                    ("block".to_string(), "BlockData".to_string()),
                 ]),
             ),
             (
-                "Block".to_string(),
+                "BlockData".to_string(),
                 HashMap::from([
                     ("id".to_string(), "ID!".to_string()),
                     ("height".to_string(), "UInt8!".to_string()),
@@ -761,7 +759,7 @@ mod tests {
             version: "test_version".to_string(),
             namespace: "fuel_indexer_test".to_string(),
             identifier: "test_index".to_string(),
-            types: HashSet::from(["Tx".to_string(), "Block".to_string()]),
+            types: HashSet::from(["Tx".to_string(), "BlockData".to_string()]),
             fields,
             foreign_keys,
             non_indexable_types: HashSet::new(),

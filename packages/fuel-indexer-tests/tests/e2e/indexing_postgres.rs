@@ -11,7 +11,7 @@ use fuel_indexer_tests::{
     },
     utils::update_test_manifest_asset_paths,
 };
-use fuel_indexer_types::{Address, ContractId, HexString, Identity, Nonce};
+use fuel_indexer_types::prelude::*;
 use serde::{Deserialize, Serialize};
 use sqlx::{types::BigDecimal, Row};
 use std::str::FromStr;
@@ -54,7 +54,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let block_row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.block ORDER BY height DESC LIMIT 1",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity ORDER BY height DESC LIMIT 1",
     )
     .fetch_one(&mut conn)
     .await
@@ -166,7 +166,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.block ORDER BY timestamp DESC LIMIT 1",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity ORDER BY timestamp DESC LIMIT 1",
     )
     .fetch_one(&mut conn)
     .await
@@ -182,7 +182,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.tx WHERE block = {id}",
+        "SELECT * FROM fuel_indexer_test_index1.txentity WHERE block = {id}",
     ))
     .fetch_all(&mut conn)
     .await
@@ -255,10 +255,11 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
     node_handle.abort();
 
     let mut conn = test_db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transfer LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1); // value is defined in test contract
     assert_eq!(row.get::<&str, usize>(4), defaults::TRANSFER_BASE_ASSET_ID);
@@ -284,7 +285,7 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.log WHERE ra = 8675309 LIMIT 1",
+        "SELECT * FROM fuel_indexer_test_index1.logentity WHERE ra = 8675309 LIMIT 1",
     )
     .fetch_one(&mut conn)
     .await
@@ -348,10 +349,11 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     node_handle.abort();
 
     let mut conn = test_db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.scriptresult LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.scriptresultentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     let expected = hex::decode(row.get::<String, usize>(3))
         .unwrap()
@@ -384,10 +386,11 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
     node_handle.abort();
 
     let mut conn = test_db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferout LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.transferoutentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     assert_eq!(
         row.get::<&str, usize>(2),
@@ -416,10 +419,11 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
     node_handle.abort();
 
     let mut conn = test_db.pool.acquire().await.unwrap();
-    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageout LIMIT 1")
-        .fetch_one(&mut conn)
-        .await
-        .unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.messageoutentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
 
     let recipient = row.get::<&str, usize>(3);
     let amount = row.get::<BigDecimal, usize>(4).to_u64().unwrap();
@@ -480,7 +484,7 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
+async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
@@ -509,7 +513,7 @@ async fn test_index_metadata_is_saved_when_indexer_macro_is_called_postgres() {
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_index_respects_start_block_postgres() {
+async fn test_indexer_respects_start_block_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let contract = connect_to_deployed_contract().await.unwrap();
@@ -529,7 +533,7 @@ async fn test_index_respects_start_block_postgres() {
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let pre_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height + 1,
     ))
     .fetch_optional(&mut conn)
@@ -544,7 +548,7 @@ async fn test_index_respects_start_block_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let first_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height + 1,
     ))
     .fetch_optional(&mut conn)
@@ -560,7 +564,7 @@ async fn test_index_respects_start_block_postgres() {
     node_handle.abort();
 
     let final_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height + 2,
     ))
     .fetch_optional(&mut conn)
@@ -578,7 +582,7 @@ async fn test_index_respects_start_block_postgres() {
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
-async fn test_index_respects_end_block_postgres() {
+async fn test_indexer_respects_end_block_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
     let contract = connect_to_deployed_contract().await.unwrap();
@@ -603,7 +607,7 @@ async fn test_index_respects_end_block_postgres() {
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let first_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height,
     ))
     .fetch_optional(&mut conn)
@@ -623,7 +627,7 @@ async fn test_index_respects_end_block_postgres() {
     node_handle.abort();
 
     let second_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height + 1,
     ))
     .fetch_optional(&mut conn)
@@ -643,7 +647,7 @@ async fn test_index_respects_end_block_postgres() {
     node_handle.abort();
 
     let final_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height + 2,
     ))
     .fetch_optional(&mut conn)
@@ -679,7 +683,7 @@ async fn test_index_respects_end_block_and_start_block_postgres() {
 
     // Check block before start block is not indexed
     let pre_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height,
     ))
     .fetch_optional(&mut conn)
@@ -695,7 +699,7 @@ async fn test_index_respects_end_block_and_start_block_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let start_block_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height + 1,
     ))
     .fetch_optional(&mut conn)
@@ -711,7 +715,7 @@ async fn test_index_respects_end_block_and_start_block_postgres() {
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
 
     let end_block_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height + 2,
     ))
     .fetch_optional(&mut conn)
@@ -722,7 +726,7 @@ async fn test_index_respects_end_block_and_start_block_postgres() {
 
     // Check block after end block is not indexed
     let post_check = sqlx::query(&format!(
-        "SELECT * FROM fuel_indexer_test_index1.block where height = {}",
+        "SELECT * FROM fuel_indexer_test_index1.blockentity where height = {}",
         block_height + 3,
     ))
     .fetch_optional(&mut conn)

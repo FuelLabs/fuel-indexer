@@ -16,10 +16,10 @@ pub struct TransferOut {
 - Every other field of the receipt works the same way as it does in the `Transfer` receipt.
 - [Read more about `TransferOut` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#transferout-receipt)
 
-You can handle functions that produce a `TransferOut` receipt type by adding a parameter with the type `abi::TransferOut`.
+You can handle functions that produce a `TransferOut` receipt type by adding a parameter with the type `TransferOut`.
 
 ```rust, ignore
-fn handle_transferout(transfer_out: abi::TransferOut) {
+fn handle_transferout(transfer_out: TransferOut) {
   // handle the emitted TransferOut receipt
 }
 ```

@@ -18,10 +18,10 @@ pub struct MessageOut {
 - The `data` field supports data of an arbitrary type `T` and will be decoded by the indexer upon receipt.
 - [Read more about `MessageOut` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#messageout-receipt)
 
-You can handle functions that produce a `MessageOut` receipt type by adding a parameter with the type `abi::MessageOut`.
+You can handle functions that produce a `MessageOut` receipt type by adding a parameter with the type `MessageOut`.
 
 ```rust, ignore
-fn handle_message_out(message_out: abi::MessageOut) {
+fn handle_message_out(message_out: MessageOut) {
   // handle the emitted MessageOut receipt
 }
 ```

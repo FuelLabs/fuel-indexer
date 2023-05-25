@@ -1,4 +1,4 @@
-use crate::Json;
+use crate::scalar::Json;
 use chrono::{DateTime, NaiveDateTime, Utc};
 pub use fuel_tx::{
     field::{
@@ -6,9 +6,17 @@ pub use fuel_tx::{
         Outputs, ReceiptsRoot, Salt as TxFieldSalt, Script, ScriptData, StorageSlots,
         TxPointer, Witnesses,
     },
-    Receipt, ScriptExecutionResult, Transaction, TxId, UtxoId,
+    Receipt, ScriptExecutionResult, Transaction as ClientTransaction, TxId, UtxoId,
 };
 use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+pub struct TransactionData {
+    pub transaction: ClientTransaction,
+    pub status: TransactionStatus,
+    pub receipts: Vec<Receipt>,
+    pub id: TxId,
+}
 
 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
 #[derive(Debug, Clone, Serialize, Deserialize)]

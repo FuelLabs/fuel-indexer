@@ -6,7 +6,7 @@ use fuel_abi_types::program_abi::TypeDeclaration;
 use fuel_indexer_lib::{
     manifest::ContractIds, manifest::Manifest, utils::local_repository_root,
 };
-use fuel_indexer_types::{abi, type_id};
+use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels::{
     core::function_selector::resolve_fn_selector, types::param_types::ParamType,
 };
@@ -48,7 +48,7 @@ fn process_fn_items(
     let fuel_types = FUEL_PRIMITIVES
         .iter()
         .map(|x| {
-            let type_id = type_id(abi::FUEL_TYPES_NAMESPACE, x) as usize;
+            let type_id = type_id(FUEL_TYPES_NAMESPACE, x) as usize;
             let typ = TypeDeclaration {
                 type_id,
                 type_field: x.to_string(),
@@ -61,12 +61,7 @@ fn process_fn_items(
 
     let mut type_ids = FUEL_PRIMITIVES
         .iter()
-        .map(|x| {
-            (
-                x.to_string(),
-                type_id(abi::FUEL_TYPES_NAMESPACE, x) as usize,
-            )
-        })
+        .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
     let abi_types_tyid = abi_types
@@ -473,7 +468,7 @@ fn process_fn_items(
 
                 let mut decoder = Decoders::default();
 
-                let ty_id = abi::BlockData::type_id();
+                let ty_id = BlockData::type_id();
                 let data = serialize(&block);
                 decoder.decode_type(ty_id, data);
 
@@ -491,14 +486,14 @@ fn process_fn_items(
                                 return_types.push(param1);
                                 callees.insert(id);
 
-                                let data = serialize(&abi::Call { contract_id, to: id, amount, asset_id, gas, fn_name });
-                                let ty_id = abi::Call::type_id();
+                                let data = serialize(&Call { contract_id, to: id, amount, asset_id, gas, fn_name });
+                                let ty_id = Call::type_id();
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Log { id, ra, rb, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::Log::type_id();
-                                let data = serialize(&abi::Log{ contract_id: id, ra, rb });
+                                let ty_id = Log::type_id();
+                                let data = serialize(&Log{ contract_id: id, ra, rb });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::LogData { rb, data, ptr, len, id, .. } => {
@@ -509,8 +504,8 @@ fn process_fn_items(
                             Receipt::Return { id, val, pc, is } => {
                                 #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
-                                    let ty_id = abi::Return::type_id();
-                                    let data = serialize(&abi::Return{ contract_id: id, val, pc, is });
+                                    let ty_id = Return::type_id();
+                                    let data = serialize(&Return{ contract_id: id, val, pc, is });
                                     decoder.decode_type(ty_id, data);
                                 }
                             }
@@ -544,37 +539,37 @@ fn process_fn_items(
 
                                 decoder.decode_messagedata(type_id, data.clone());
 
-                                let ty_id = abi::MessageOut::type_id();
-                                let data = serialize(&abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data });
+                                let ty_id = MessageOut::type_id();
+                                let data = serialize(&MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::ScriptResult { result, gas_used } => {
-                                let ty_id = abi::ScriptResult::type_id();
-                                let data = serialize(&abi::ScriptResult{ result: u64::from(result), gas_used });
+                                let ty_id = ScriptResult::type_id();
+                                let data = serialize(&ScriptResult{ result: u64::from(result), gas_used });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::Transfer::type_id();
-                                let data = serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is });
+                                let ty_id = Transfer::type_id();
+                                let data = serialize(&Transfer{ contract_id: id, to, asset_id, amount, pc, is });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::TransferOut::type_id();
-                                let data = serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is });
+                                let ty_id = TransferOut::type_id();
+                                let data = serialize(&TransferOut{ contract_id: id, to, asset_id, amount, pc, is });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Panic { id, reason, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::Panic::type_id();
-                                let data = serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() as u32 });
+                                let ty_id = Panic::type_id();
+                                let data = serialize(&Panic{ contract_id: id, reason: *reason.reason() as u32 });
                                 decoder.decode_type(ty_id, data);
                             }
                             Receipt::Revert { id, ra, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::Revert::type_id();
-                                let data = serialize(&abi::Revert{ contract_id: id, error_val: u64::from(ra & 0xF) });
+                                let ty_id = Revert::type_id();
+                                let data = serialize(&Revert{ contract_id: id, error_val: u64::from(ra & 0xF) });
                                 decoder.decode_type(ty_id, data);
                             }
                             _ => {

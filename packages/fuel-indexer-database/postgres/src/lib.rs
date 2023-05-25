@@ -351,8 +351,7 @@ pub async fn columns_get_schema(
     version: &str,
 ) -> sqlx::Result<Vec<ColumnInfo>> {
     Ok(sqlx::query(
-        "
-            SELECT
+        "SELECT
             c.type_id as type_id,
             t.table_name as table_name,
             c.column_position as column_position,

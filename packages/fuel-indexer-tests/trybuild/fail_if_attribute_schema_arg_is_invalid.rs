@@ -29,6 +29,19 @@ fn main() {
         id: [0u8; 32].into(),
         time: 1,
         height: 0,
+        header: HeaderData {
+            id: [0u8; 32].into(),
+            da_height: 1,
+            transactions_count: 1,
+            output_messages_count: 1,
+            transactions_root: [0u8; 32].into(),
+            output_messages_root: [0u8; 32].into(),
+            height: 1,
+            prev_root: [0u8; 32].into(),
+            time: 1,
+            application_hash: [0u8; 32].into(),
+        },
+        consensus: ConsensusData::default(),
         transactions: vec![TransactionData {
             id: [0u8; 32].into(),
             status: TransactionStatus::default(),
@@ -54,7 +67,7 @@ fn main() {
                     is: 0,
                 },
             ],
-            transaction: Transaction::default(),
+            transaction: ClientTransaction::default(),
         }],
     }];
 

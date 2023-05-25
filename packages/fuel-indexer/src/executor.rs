@@ -7,14 +7,15 @@ use async_std::{
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
 use fuel_core_client::client::{
-    types::{TransactionResponse, TransactionStatus as GqlTransactionStatus},
+    schema::block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
+    types::{TransactionResponse, TransactionStatus as ClientTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
-    abi::{BlockData, TransactionData},
-    tx::{TransactionStatus, TxId},
-    Bytes32,
+    block::{BlockData, ConsensusData, GenesisConsensus, HeaderData, PoAConsensus},
+    scalar::Bytes32,
+    transaction::{TransactionData, TransactionStatus, TxId},
 };
 use futures::Future;
 use std::{
@@ -64,12 +65,19 @@ impl ExecutorSource {
     }
 }
 
+/// Run the executor task until the kill switch is flipped, or until some other
+/// stop criteria is met.
+///
+/// In general the logic in this function isn't very idiomatic, but that's because
+/// types in `fuel_core_client` don't compile to WASM.
 pub fn run_executor<T: 'static + Executor + Send + Sync>(
     config: &IndexerConfig,
     manifest: &Manifest,
     mut executor: T,
     kill_switch: Arc<AtomicBool>,
 ) -> impl Future<Output = ()> {
+    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
+
     let start_block = manifest.start_block.expect("Failed to detect start_block.");
     let end_block = manifest.end_block;
     if end_block.is_none() {
@@ -165,7 +173,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
                                 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
                                 let status = match status {
-                                    GqlTransactionStatus::Success {
+                                    ClientTransactionStatus::Success {
                                         block_id,
                                         time,
                                         ..
@@ -176,7 +184,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                             .single()
                                             .unwrap(),
                                     },
-                                    GqlTransactionStatus::Failure {
+                                    ClientTransactionStatus::Failure {
                                         block_id,
                                         time,
                                         reason,
@@ -189,15 +197,15 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                             .unwrap(),
                                         reason,
                                     },
-                                    GqlTransactionStatus::Submitted { submitted_at } => {
-                                        TransactionStatus::Submitted {
-                                            submitted_at: Utc
-                                                .timestamp_opt(submitted_at.to_unix(), 0)
-                                                .single()
-                                                .unwrap(),
-                                        }
-                                    }
-                                    GqlTransactionStatus::SqueezedOut { reason } => {
+                                    ClientTransactionStatus::Submitted {
+                                        submitted_at,
+                                    } => TransactionStatus::Submitted {
+                                        submitted_at: Utc
+                                            .timestamp_opt(submitted_at.to_unix(), 0)
+                                            .single()
+                                            .unwrap(),
+                                    },
+                                    ClientTransactionStatus::SqueezedOut { reason } => {
                                         TransactionStatus::SqueezedOut { reason }
                                     }
                                 };
@@ -217,11 +225,51 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     };
                 }
 
+                let consensus = match &block.consensus {
+                    ClientConsensus::Unknown => ConsensusData::UnknownConsensus,
+                    ClientConsensus::Genesis(g) => {
+                        let ClientGenesis {
+                            chain_config_hash,
+                            coins_root,
+                            contracts_root,
+                            messages_root,
+                        } = g.to_owned();
+
+                        ConsensusData::Genesis(GenesisConsensus {
+                            chain_config_hash: chain_config_hash.to_owned().into(),
+                            coins_root: coins_root.to_owned().into(),
+                            contracts_root: contracts_root.to_owned().into(),
+                            messages_root: messages_root.to_owned().into(),
+                        })
+                    }
+                    ClientConsensus::PoAConsensus(poa) => {
+                        ConsensusData::PoA(PoAConsensus {
+                            signature: poa.signature.to_owned().into(),
+                        })
+                    }
+                };
+
+                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
                 let block = BlockData {
                     height: block.header.height.0,
                     id: Bytes32::from(block.id),
                     producer,
                     time: block.header.time.0.to_unix(),
+                    consensus,
+                    header: HeaderData {
+                        id: Bytes32::from(block.header.id),
+                        da_height: block.header.da_height.0,
+                        transactions_count: block.header.transactions_count.0,
+                        output_messages_count: block.header.output_messages_count.0,
+                        transactions_root: Bytes32::from(block.header.transactions_root),
+                        output_messages_root: Bytes32::from(
+                            block.header.output_messages_root,
+                        ),
+                        height: block.header.height.0,
+                        prev_root: Bytes32::from(block.header.prev_root),
+                        time: block.header.time.0.to_unix(),
+                        application_hash: Bytes32::from(block.header.application_hash),
+                    },
                     transactions,
                 };
 
