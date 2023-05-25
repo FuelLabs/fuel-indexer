@@ -1,5 +1,6 @@
 extern crate alloc;
-use fuel_indexer_macros::indexer;
+use fuel_indexer_utils::macros::indexer;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(
     manifest = "packages/fuel-indexer-tests/components/indices/simple-wasm/simple_wasm.yaml"

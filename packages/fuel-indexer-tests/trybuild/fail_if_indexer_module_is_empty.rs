@@ -1,10 +1,8 @@
 extern crate alloc;
-use fuel_indexer_macros::indexer;
+use fuel_indexer_utils::macros::indexer;
 
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
 
-#[indexer(
-    manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml"
-)]
+#[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
 mod indexer {}

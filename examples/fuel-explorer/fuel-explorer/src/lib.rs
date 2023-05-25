@@ -1,5 +1,8 @@
 extern crate alloc;
-use fuel_indexer_macros::indexer;
+use fuel_indexer_utils::macros::indexer;
+use fuel_indexer_utils::prelude::*;
+#[allow(unused_imports)]
+use fuel_indexer_utils::utilities::*;
 
 pub enum ConsensusLabel {
     Unknown,

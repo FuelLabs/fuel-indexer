@@ -19,8 +19,9 @@
 //! ```
 extern crate alloc;
 use fuel_indexer::prelude::*;
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_utils::macros::indexer;
+use fuel_indexer_utils::prelude::*;
+use fuel_indexer_utils::utilities::*;
 
 #[indexer(
     manifest = "examples/hello-world-native/hello-indexer-native/hello_indexer_native.manifest.yaml"

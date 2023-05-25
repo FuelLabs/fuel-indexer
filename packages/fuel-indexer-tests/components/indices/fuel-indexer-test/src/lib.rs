@@ -1,7 +1,8 @@
 extern crate alloc;
 
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::utils::*;
+use fuel_indexer_utils::macros::indexer;
+use fuel_indexer_utils::prelude::*;
+use fuel_indexer_utils::utilities::*;
 
 #[indexer(
     manifest = "packages/fuel-indexer-tests/components/indices/fuel-indexer-test/fuel_indexer_test.yaml"
