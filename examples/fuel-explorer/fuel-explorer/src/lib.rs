@@ -17,7 +17,6 @@ impl ToString for ConsensusLabel {
     }
 }
 
-// TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 impl From<ConsensusData> for Consensus {
     fn from(consensus: ConsensusData) -> Self {
         match consensus {

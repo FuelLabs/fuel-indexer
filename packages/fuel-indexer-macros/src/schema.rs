@@ -100,7 +100,7 @@ lazy_static! {
         "GenesisConensus",
         "HeaderData",
         "PoAConsensus",
-        "TmpClientTransactionStatus",
+        "ClientTransactionStatus",
         "UnknownConsensus",
         "TmpInputCoin",
 

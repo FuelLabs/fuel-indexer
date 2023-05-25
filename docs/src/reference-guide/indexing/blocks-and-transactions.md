@@ -21,7 +21,7 @@ The `BlockData` struct is how blocks are represented in the Fuel indexer. It con
 ```rust,ignore
 pub struct TransactionData {
     pub transaction: Transaction,
-    pub status: TmpClientTransactionStatus,
+    pub status: ClientTransactionStatus,
     pub receipts: Vec<Receipt>,
     pub id: ClientTxId,
 }

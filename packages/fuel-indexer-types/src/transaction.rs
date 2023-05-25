@@ -14,14 +14,14 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Serialize, Debug, Clone, Default)]
 pub struct TransactionData {
     pub transaction: ClientTransaction,
-    pub status: TmpClientTransactionStatus,
+    pub status: ClientTransactionStatusData,
     pub receipts: Vec<ClientReceipt>,
     pub id: TxId,
 }
 
 // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum TmpClientTransactionStatus {
+pub enum ClientTransactionStatusData {
     Failure {
         block_id: String,
         time: DateTime<Utc>,
@@ -39,7 +39,7 @@ pub enum TmpClientTransactionStatus {
     },
 }
 
-impl Default for TmpClientTransactionStatus {
+impl Default for ClientTransactionStatusData {
     fn default() -> Self {
         Self::Success {
             block_id: "0".into(),
@@ -52,23 +52,23 @@ impl Default for TmpClientTransactionStatus {
     }
 }
 
-impl From<TmpClientTransactionStatus> for Json {
-    fn from(t: TmpClientTransactionStatus) -> Json {
+impl From<ClientTransactionStatusData> for Json {
+    fn from(t: ClientTransactionStatusData) -> Json {
         match t {
-            TmpClientTransactionStatus::Failure {
+            ClientTransactionStatusData::Failure {
                 block_id,
                 time,
                 reason,
             } => Json(format!(
                 r#"{{"status":"failed","block":"{block_id}","time":"{time}","reason":"{reason}"}}"#
             )),
-            TmpClientTransactionStatus::SqueezedOut { reason } => Json(format!(
+            ClientTransactionStatusData::SqueezedOut { reason } => Json(format!(
                 r#"{{"status":"squeezed_out","reason":"{reason}"}}"#
             )),
-            TmpClientTransactionStatus::Submitted { submitted_at } => Json(format!(
+            ClientTransactionStatusData::Submitted { submitted_at } => Json(format!(
                 r#"{{"status":"submitted","time":"{submitted_at}"}}"#
             )),
-            TmpClientTransactionStatus::Success { block_id, time } => Json(format!(
+            ClientTransactionStatusData::Success { block_id, time } => Json(format!(
                 r#"{{"status":"success","block":"{block_id}","time":"{time}"}}"#
             )),
         }

@@ -47,7 +47,7 @@ fn main() {
             application_hash: [0u8; 32].into(),
         },
         transactions: vec![TransactionData {
-            status: TmpClientTransactionStatus::default(),
+            status: ClientTransactionStatusData::default(),
             id: [0u8; 32].into(),
             receipts: vec![
                 ClientReceipt::Call {

@@ -64,7 +64,7 @@ fn main() {
         },
         transactions: vec![TransactionData {
             id: [0u8; 32].into(),
-            status: TmpClientTransactionStatus::default(),
+            status: ClientTransactionStatusData::default(),
             receipts: vec![
                 ClientReceipt::Call {
                     id: [0u8; 32].into(),
