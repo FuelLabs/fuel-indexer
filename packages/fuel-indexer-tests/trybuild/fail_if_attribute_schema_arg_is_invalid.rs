@@ -44,9 +44,9 @@ fn main() {
         consensus: ConsensusData::default(),
         transactions: vec![TransactionData {
             id: [0u8; 32].into(),
-            status: TransactionStatus::default(),
+            status: ClientTransactionStatusData::default(),
             receipts: vec![
-                Receipt::Call {
+                ClientReciept::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
                     amount: 400,
@@ -57,7 +57,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-                Receipt::ReturnData {
+                ClientReciept::ReturnData {
                     id: [0u8; 32].into(),
                     ptr: 2342143,
                     len: bytes.len() as u64,

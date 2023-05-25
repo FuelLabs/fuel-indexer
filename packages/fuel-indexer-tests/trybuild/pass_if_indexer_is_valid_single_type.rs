@@ -47,10 +47,10 @@ fn main() {
             application_hash: [0u8; 32].into(),
         },
         transactions: vec![TransactionData {
-            status: TransactionStatus::default(),
+            status: ClientTransactionStatusData::default(),
             id: [0u8; 32].into(),
             receipts: vec![
-                Receipt::Call {
+                ClientReceipt::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
                     amount: 400,
@@ -61,7 +61,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-                Receipt::ReturnData {
+                ClientReceipt::ReturnData {
                     id: [0u8; 32].into(),
                     ptr: 2342143,
                     len: bytes.len() as u64,

@@ -6,17 +6,17 @@ error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(217..224) }' no
   |
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0433]: failed to resolve: use of undeclared type `Receipt`
+error[E0433]: failed to resolve: use of undeclared type `ClientReceipt`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |                 Receipt::Call {
-  |                 ^^^^^^^ use of undeclared type `Receipt`
+  |                 ClientReceipt::Call {
+  |                 ^^^^^^^^^^^^^ use of undeclared type `ClientReceipt`
 
-error[E0433]: failed to resolve: use of undeclared type `Receipt`
+error[E0433]: failed to resolve: use of undeclared type `ClientReceipt`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |                 Receipt::ReturnData {
-  |                 ^^^^^^^ use of undeclared type `Receipt`
+  |                 ClientReceipt::ReturnData {
+  |                 ^^^^^^^^^^^^^ use of undeclared type `ClientReceipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -76,17 +76,17 @@ help: consider importing one of these items
 2  | use fuel_indexer_types::prelude::TransactionData;
    |
 
-error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
+error[E0433]: failed to resolve: use of undeclared type `ClientTransactionStatusData`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |             status: TransactionStatus::default(),
-  |                     ^^^^^^^^^^^^^^^^^ use of undeclared type `TransactionStatus`
+  |             status: ClientTransactionStatusData::default(),
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ use of undeclared type `ClientTransactionStatusData`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::TransactionStatus;
+2  | use fuel_indexer_plugin::prelude::ClientTransactionStatusData;
    |
-2  | use fuel_indexer_types::prelude::TransactionStatus;
+2  | use fuel_indexer_types::prelude::ClientTransactionStatusData;
    |
 
 error[E0433]: failed to resolve: use of undeclared type `ClientTransaction`
