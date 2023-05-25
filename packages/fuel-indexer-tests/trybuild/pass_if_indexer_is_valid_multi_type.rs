@@ -66,7 +66,7 @@ fn main() {
             id: [0u8; 32].into(),
             status: TmpClientTransactionStatus::default(),
             receipts: vec![
-                Receipt::Call {
+                ClientReceipt::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
                     amount: 400,
@@ -77,7 +77,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-                Receipt::ReturnData {
+                ClientReceipt::ReturnData {
                     id: [0u8; 32].into(),
                     ptr: 2342143,
                     len: bytes1.len() as u64,
@@ -86,7 +86,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-                Receipt::Call {
+                ClientReceipt::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
                     amount: 400,
@@ -97,7 +97,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-                Receipt::ReturnData {
+                ClientReceipt::ReturnData {
                     id: [0u8; 32].into(),
                     ptr: 2342143,
                     len: bytes2.len() as u64,

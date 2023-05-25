@@ -6,17 +6,17 @@ error: custom attribute panicked
   |
   = help: message: Bad schema.: ParseError(Syntax { message: " --> 1:1\n  |\n1 | namespace: test_namespace\n  | ^---\n  |\n  = expected type_system_definition", start: Pos(1:1), end: None })
 
-error[E0433]: failed to resolve: use of undeclared type `Receipt`
+error[E0433]: failed to resolve: use of undeclared type `ClientReciept`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |                 Receipt::Call {
-  |                 ^^^^^^^ use of undeclared type `Receipt`
+  |                 ClientReciept::Call {
+  |                 ^^^^^^^^^^^^^ use of undeclared type `ClientReciept`
 
-error[E0433]: failed to resolve: use of undeclared type `Receipt`
+error[E0433]: failed to resolve: use of undeclared type `ClientReciept`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |                 Receipt::ReturnData {
-  |                 ^^^^^^^ use of undeclared type `Receipt`
+  |                 ClientReciept::ReturnData {
+  |                 ^^^^^^^^^^^^^ use of undeclared type `ClientReciept`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
