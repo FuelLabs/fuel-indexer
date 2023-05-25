@@ -44,7 +44,7 @@ fn main() {
         consensus: ConsensusData::default(),
         transactions: vec![TransactionData {
             id: [0u8; 32].into(),
-            status: TransactionStatus::default(),
+            status: TmpClientTransactionStatus::default(),
             receipts: vec![
                 Receipt::Call {
                     id: [0u8; 32].into(),

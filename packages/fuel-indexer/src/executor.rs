@@ -15,7 +15,7 @@ use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
     block::{BlockData, ConsensusData, GenesisConsensus, HeaderData, PoAConsensus},
     scalar::Bytes32,
-    transaction::{TransactionData, TransactionStatus, TxId},
+    transaction::{TmpClientTransactionStatus, TransactionData, TxId},
 };
 use futures::Future;
 use std::{
@@ -177,7 +177,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                         block_id,
                                         time,
                                         ..
-                                    } => TransactionStatus::Success {
+                                    } => TmpClientTransactionStatus::Success {
                                         block_id,
                                         time: Utc
                                             .timestamp_opt(time.to_unix(), 0)
@@ -189,7 +189,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                         time,
                                         reason,
                                         ..
-                                    } => TransactionStatus::Failure {
+                                    } => TmpClientTransactionStatus::Failure {
                                         block_id,
                                         time: Utc
                                             .timestamp_opt(time.to_unix(), 0)
@@ -199,14 +199,14 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                     },
                                     ClientTransactionStatus::Submitted {
                                         submitted_at,
-                                    } => TransactionStatus::Submitted {
+                                    } => TmpClientTransactionStatus::Submitted {
                                         submitted_at: Utc
                                             .timestamp_opt(submitted_at.to_unix(), 0)
                                             .single()
                                             .unwrap(),
                                     },
                                     ClientTransactionStatus::SqueezedOut { reason } => {
-                                        TransactionStatus::SqueezedOut { reason }
+                                        TmpClientTransactionStatus::SqueezedOut { reason }
                                     }
                                 };
 

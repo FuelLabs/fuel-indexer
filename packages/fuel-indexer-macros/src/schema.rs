@@ -44,16 +44,13 @@ lazy_static! {
     ]);
 
     static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
-        // Native types.
-        "BlockData",
-        "HeaderData",
+        // Native receipt types.
         "Log",
         "LogData",
         "MessageId",
         "Receipt",
         "ScriptResult",
         "TransactionData",
-        "TransactionStatus",
         "Transfer",
         "TransferOut",
 
@@ -94,9 +91,12 @@ lazy_static! {
         "UInt8",
 
         // Temporary types: https://github.com/FuelLabs/fuel-indexer/issues/286
+        "BlockData",
         "ClientTransaction",
+        "TmpClientTransactionStatus",
         "ConsensusData",
         "GenesisConensus",
+        "HeaderData",
         "PoAConsensus",
         "UnknownConsensus",
 

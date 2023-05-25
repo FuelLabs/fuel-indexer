@@ -89,17 +89,17 @@ help: consider importing one of these items
 2  | use fuel_indexer_types::prelude::TransactionData;
    |
 
-error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
+error[E0433]: failed to resolve: use of undeclared type `TmpClientTransactionStatus`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |             status: TransactionStatus::default(),
-  |                     ^^^^^^^^^^^^^^^^^ use of undeclared type `TransactionStatus`
+  |             status: TmpClientTransactionStatus::default(),
+  |                     ^^^^^^^^^^^^^^^^^ use of undeclared type `TmpClientTransactionStatus`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::TransactionStatus;
+2  | use fuel_indexer_plugin::prelude::TmpClientTransactionStatus;
    |
-2  | use fuel_indexer_types::prelude::TransactionStatus;
+2  | use fuel_indexer_types::prelude::TmpClientTransactionStatus;
    |
 
 error[E0433]: failed to resolve: use of undeclared type `ClientTransaction`

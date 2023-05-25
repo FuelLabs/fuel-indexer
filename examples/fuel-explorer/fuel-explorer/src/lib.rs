@@ -82,8 +82,8 @@ pub mod explorer_index {
             message_receipt_root: block.header.output_messages_root,
             height: block.header.height,
             prev_root: block.header.prev_root,
-            timestamp: Some(block.header.time),
-            application_hash: Some(block.header.application_hash),
+            time: block.header.time,
+            application_hash: block.header.application_hash,
         };
 
         header.save();
