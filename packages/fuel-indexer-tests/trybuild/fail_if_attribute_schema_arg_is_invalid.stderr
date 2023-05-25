@@ -93,7 +93,7 @@ error[E0433]: failed to resolve: use of undeclared type `TmpClientTransactionSta
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
   |             status: TmpClientTransactionStatus::default(),
-  |                     ^^^^^^^^^^^^^^^^^ use of undeclared type `TmpClientTransactionStatus`
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^ use of undeclared type `TmpClientTransactionStatus`
   |
 help: consider importing one of these items
    |
