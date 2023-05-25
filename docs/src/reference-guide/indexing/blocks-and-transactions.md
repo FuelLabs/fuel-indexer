@@ -41,10 +41,10 @@ pub enum Transaction {
 
 `Transaction` refers to the Fuel transaction entity and can be one of three distinct types: `Script`, `Create`, or `Mint`. Explaining the differences between each of the types is out of scope for the Fuel indexer; however, you can find information about the `Transaction` type in the [Fuel specifications](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/tx_format/transaction.md).
 
-### `TmpClientTransactionStatus`
+### `TransactionStatus`
 
 ```rust,ignore
-pub enum TmpClientTransactionStatus {
+pub enum TransactionStatus {
     Failure {
         block_id: String,
         time: DateTime<Utc>,
@@ -63,4 +63,4 @@ pub enum TmpClientTransactionStatus {
 }
 ```
 
-`TmpClientTransactionStatus` refers to the status of a `Transaction` in the Fuel network.
+`TransactionStatus` refers to the status of a `Transaction` in the Fuel network.

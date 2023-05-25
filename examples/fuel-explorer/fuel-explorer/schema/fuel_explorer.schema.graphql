@@ -1,6 +1,6 @@
 # https://github.com/FuelLabs/fuel-indexer/issues/897
 
-type TxPointer {
+type TransactionPointer {
   id: ID!
   block_height: BlockHeight!
   tx_index: UInt4!
@@ -58,7 +58,7 @@ type InputCoin {
   owner: Address!
   amount: UInt8!
   asset_id: AssetId!
-  tx_pointer: TxPointer!
+  tx_pointer: TransactionPointer!
   witness_index: Int8!
   maturity: UInt8!
   predicate: HexString!
@@ -70,7 +70,7 @@ type InputContract {
   utxo_id: UtxoId!
   balance_root: Bytes32!
   state_root: Bytes32!
-  tx_pointer: TxPointer!
+  tx_pointer: TransactionPointer!
   contract: ContractIdFragment!
 }
 
@@ -123,7 +123,7 @@ type ScriptTransaction {
 
 type MintTransaction {
   id: ID!
-  tx_pointer: TxPointer!
+  tx_pointer: TransactionPointer!
   #   outputs: [Output]!
   metadata: Json
 }
