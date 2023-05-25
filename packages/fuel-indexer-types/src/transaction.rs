@@ -4,9 +4,10 @@ pub use fuel_tx::{
     field::{
         BytecodeLength, BytecodeWitnessIndex, GasLimit, GasPrice, Inputs, Maturity,
         Outputs, ReceiptsRoot, Salt as TxFieldSalt, Script, ScriptData, StorageSlots,
-        TxPointer, Witnesses,
+        TxPointer as ClientFieldTxPointer, Witnesses,
     },
-    Receipt, ScriptExecutionResult, Transaction as ClientTransaction, TxId, UtxoId,
+    Receipt as ClientReceipt, ScriptExecutionResult, Transaction as ClientTransaction,
+    TxId, Witness as ClientWitness,
 };
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +15,7 @@ use serde::{Deserialize, Serialize};
 pub struct TransactionData {
     pub transaction: ClientTransaction,
     pub status: TmpClientTransactionStatus,
-    pub receipts: Vec<Receipt>,
+    pub receipts: Vec<ClientReceipt>,
     pub id: TxId,
 }
 

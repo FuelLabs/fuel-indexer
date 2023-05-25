@@ -23,7 +23,7 @@ pub struct TransactionData {
     pub transaction: Transaction,
     pub status: TmpClientTransactionStatus,
     pub receipts: Vec<Receipt>,
-    pub id: TxId,
+    pub id: ClientTxId,
 }
 ```
 

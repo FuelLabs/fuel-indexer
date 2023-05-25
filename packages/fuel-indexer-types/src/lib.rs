@@ -1,6 +1,7 @@
 pub mod block;
 pub mod ffi;
 pub mod graphql;
+pub mod io;
 pub mod receipt;
 pub mod scalar;
 pub mod transaction;
@@ -24,6 +25,7 @@ pub mod prelude {
     pub use crate::block::*;
     pub use crate::ffi::*;
     pub use crate::graphql::*;
+    pub use crate::io::*;
     pub use crate::receipt::*;
     pub use crate::scalar::*;
     pub use crate::transaction::*;

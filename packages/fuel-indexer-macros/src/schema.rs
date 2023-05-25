@@ -48,7 +48,6 @@ lazy_static! {
         "Log",
         "LogData",
         "MessageId",
-        "Receipt",
         "ScriptResult",
         "TransactionData",
         "Transfer",
@@ -92,13 +91,18 @@ lazy_static! {
 
         // Temporary types: https://github.com/FuelLabs/fuel-indexer/issues/286
         "BlockData",
+        "ClientInput",
+        "ClientOutput",
+        "ClientReceipt",
         "ClientTransaction",
-        "TmpClientTransactionStatus",
+        "ClientUtxoId",
         "ConsensusData",
         "GenesisConensus",
         "HeaderData",
         "PoAConsensus",
+        "TmpClientTransactionStatus",
         "UnknownConsensus",
+        "TmpInputCoin",
 
     ]);
 }

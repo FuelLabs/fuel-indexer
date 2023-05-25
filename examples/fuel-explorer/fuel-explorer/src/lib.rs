@@ -1,6 +1,5 @@
 extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
 
 pub enum ConsensusLabel {
     Unknown,
@@ -68,6 +67,89 @@ impl From<ConsensusData> for Consensus {
     }
 }
 
+impl From<ClientWitness> for Witness {
+    fn from(w: ClientWitness) -> Self {
+        Self {
+            data: Blob(w.into_inner()),
+        }
+    }
+}
+
+impl From<ClientTxPointer> for TxPointer {
+    fn from(tx_pointer: ClientTxPointer) -> Self {
+        let ClientTxPointer {
+            block_height,
+            tx_index,
+        } = tx_pointer;
+        Self {
+            id: 1,
+            block_height,
+            tx_index: tx_index as u32,
+        }
+    }
+}
+
+impl From<ClientInputCoin> for InputCoin {
+    fn from(input: ClientInputCoin) -> Self {
+        let ClientInputCoin {
+            #[allow(unused)]
+            utxo_id,
+            owner,
+            amount,
+            asset_id,
+            tx_pointer,
+            witness_index,
+            maturity,
+            predicate,
+            predicate_data,
+        } = input;
+
+        let pointer = TxPointer::load(1).unwrap_or_else(|| {
+            let pointer = TxPointer::from(tx_pointer);
+            pointer.save();
+            pointer
+        });
+
+        Self {
+            id: 1,
+            utxo_id: 1,
+            owner,
+            amount,
+            asset_id,
+            tx_pointer: pointer.id,
+            witness_index: witness_index as i64,
+            maturity: maturity as u64,
+            predicate,
+            predicate_data,
+        }
+    }
+}
+
+impl From<ClientInput> for Input {
+    fn from(input: ClientInput) -> Self {
+        match input {
+            ClientInput::Coin(input) => {
+                let coin = InputCoin::load(1).unwrap_or_else(|| {
+                    let coin = InputCoin::from(input);
+                    coin.save();
+                    coin
+                });
+                let input = Input {
+                    id: 1,
+                    coin: Some(coin.id),
+                    contract: None,
+                    message: None,
+                };
+                input.save();
+                input
+            }
+            _ => unimplemented!(),
+            // ClientInput::Contract(input) => Input::Contract(input.into()),
+            // ClientInput::Message(input) => Input::Message(input.into()),
+        }
+    }
+}
+
 #[indexer(manifest = "examples/fuel-explorer/fuel-explorer/fuel_explorer.manifest.yaml")]
 pub mod explorer_index {
 
@@ -85,11 +167,14 @@ pub mod explorer_index {
             time: block_data.header.time,
             application_hash: block_data.header.application_hash,
         };
-
         header.save();
 
         let consensus = Consensus::from(block_data.consensus);
         consensus.save();
+
+        let block_frag = BlockIdFragment { id: 1 };
+
+        block_frag.save();
 
         let block = Block {
             id: 1,
@@ -113,7 +198,38 @@ pub mod explorer_index {
                     let receipts_root = t.receipts_root();
                     let inputs = t.inputs();
                     let outputs = t.outputs();
-                    let witnesses = t.witnesses();
+                    let witnesses = t
+                        .witnesses()
+                        .iter()
+                        .map(|w| w.to_owned().into())
+                        .collect::<Vec<Witness>>();
+
+                    let script_tx_frag = TransactionIdFragment { id: 1 };
+                    script_tx_frag.save();
+
+                    let create_tx = CreateTransaction {
+                        id: 1,
+                        gas_limit: *gas_limit,
+                        gas_price: *gas_price,
+                        maturity: *maturity as u32,
+
+                        // TODO: Where do these come from?
+                        bytecode_length: 0,
+                        bytecode_witness_index: 0,
+
+                        // TODO: Pending list types
+                        // storage_slots: [],
+                        // inputs: [],
+                        // inputs: [],
+                        // outputs: [],
+                        // witnesses: [],
+                        salt: Salt::default(),
+
+                        // TODO: Where do these come from?
+                        metadata: Some(Json::default()),
+                    };
+
+                    create_tx.save();
                 }
                 #[allow(unused)]
                 ClientTransaction::Create(t) => {
@@ -127,31 +243,37 @@ pub mod explorer_index {
                     let outputs = t.outputs();
                     let witnesses = t.witnesses();
                     let storage_slots = t.storage_slots();
+
+                    let create_tx_frag = TransactionIdFragment { id: 1 };
+                    create_tx_frag.save();
                 }
                 #[allow(unused)]
                 ClientTransaction::Mint(t) => {
                     let tx_pointer = t.tx_pointer();
                     let outputs = t.outputs();
+
+                    let mint_tx_frag = TransactionIdFragment { id: 1 };
+                    mint_tx_frag.save();
                 }
             }
 
             for receipt in transaction.receipts.iter() {
                 match receipt {
-                    Receipt::Call { .. } => {}
+                    ClientReceipt::Call { .. } => {}
                     #[allow(unused)]
-                    Receipt::ReturnData { .. } => {}
+                    ClientReceipt::ReturnData { .. } => {}
                     #[allow(unused)]
-                    Receipt::Transfer { .. } => {}
+                    ClientReceipt::Transfer { .. } => {}
                     #[allow(unused)]
-                    Receipt::TransferOut { .. } => {}
+                    ClientReceipt::TransferOut { .. } => {}
                     #[allow(unused)]
-                    Receipt::Log { .. } => {}
+                    ClientReceipt::Log { .. } => {}
                     #[allow(unused)]
-                    Receipt::LogData { .. } => {}
+                    ClientReceipt::LogData { .. } => {}
                     #[allow(unused)]
-                    Receipt::ScriptResult { .. } => {}
+                    ClientReceipt::ScriptResult { .. } => {}
                     #[allow(unused)]
-                    Receipt::MessageOut { .. } => {}
+                    ClientReceipt::MessageOut { .. } => {}
                     _ => {
                         Logger::info("This Receipt type is not handled yet.");
                     }

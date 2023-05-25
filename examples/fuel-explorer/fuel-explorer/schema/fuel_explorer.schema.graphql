@@ -6,10 +6,22 @@ type TransactionPointer {
   tx_index: UInt4!
 }
 
+
+type TransactionIdFragment {
+  id: ID!
+}
+
 type UtxoId {
   id: ID!
   tx_id: TxId!
   output_index: UInt4!
+}
+
+
+type TxPointer {
+  id: ID!
+  block_height: BlockHeight!
+  tx_index: UInt4!
 }
 
 type ContractIdFragment {
@@ -193,11 +205,6 @@ type Transaction {
   creates: CreateTransaction
   scripts: ScriptTransaction
   mints: MintTransaction
-}
-
-type TransactionIdFragment {
-  id: ID!
-  transaction_id: Transaction!
 }
 
 type Header {

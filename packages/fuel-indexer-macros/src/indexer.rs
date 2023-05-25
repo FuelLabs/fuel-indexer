@@ -479,7 +479,7 @@ fn process_fn_items(
 
                     for receipt in tx.receipts {
                         match receipt {
-                            Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
+                            ClientReceipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
                                 #check_if_subscribed_to_contract
 
                                 let fn_name = decoder.selector_to_fn_name(param1);
@@ -490,18 +490,18 @@ fn process_fn_items(
                                 let ty_id = Call::type_id();
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::Log { id, ra, rb, .. } => {
+                            ClientReceipt::Log { id, ra, rb, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = Log::type_id();
                                 let data = serialize(&Log{ contract_id: id, ra, rb });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::LogData { rb, data, ptr, len, id, .. } => {
+                            ClientReceipt::LogData { rb, data, ptr, len, id, .. } => {
                                 #check_if_subscribed_to_contract
                                 decoder.decode_logdata(rb as usize, data);
 
                             }
-                            Receipt::Return { id, val, pc, is } => {
+                            ClientReceipt::Return { id, val, pc, is } => {
                                 #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
                                     let ty_id = Return::type_id();
@@ -509,14 +509,14 @@ fn process_fn_items(
                                     decoder.decode_type(ty_id, data);
                                 }
                             }
-                            Receipt::ReturnData { data, id, .. } => {
+                            ClientReceipt::ReturnData { data, id, .. } => {
                                 #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
                                     decoder.decode_return_type(selector, data);
                                 }
                             }
-                            Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
+                            ClientReceipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
                                 let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, &data[..]);
 
                                 // It's possible that the data field was generated from an empty Sway `Bytes` array
@@ -543,30 +543,30 @@ fn process_fn_items(
                                 let data = serialize(&MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::ScriptResult { result, gas_used } => {
+                            ClientReceipt::ScriptResult { result, gas_used } => {
                                 let ty_id = ScriptResult::type_id();
                                 let data = serialize(&ScriptResult{ result: u64::from(result), gas_used });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
+                            ClientReceipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = Transfer::type_id();
                                 let data = serialize(&Transfer{ contract_id: id, to, asset_id, amount, pc, is });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
+                            ClientReceipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = TransferOut::type_id();
                                 let data = serialize(&TransferOut{ contract_id: id, to, asset_id, amount, pc, is });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::Panic { id, reason, .. } => {
+                            ClientReceipt::Panic { id, reason, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = Panic::type_id();
                                 let data = serialize(&Panic{ contract_id: id, reason: *reason.reason() as u32 });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::Revert { id, ra, .. } => {
+                            ClientReceipt::Revert { id, ra, .. } => {
                                 #check_if_subscribed_to_contract
                                 let ty_id = Revert::type_id();
                                 let data = serialize(&Revert{ contract_id: id, error_val: u64::from(ra & 0xF) });
