@@ -24,7 +24,22 @@ type ProcessedFieldResult = (
     proc_macro2::Ident,
     proc_macro2::Ident,
     proc_macro2::TokenStream,
+    Option<bool>,
 );
+
+/// Processed type variants.
+#[derive(Clone)]
+pub enum ProcessedTypeResult {
+    Named {
+        tokens: proc_macro2::TokenStream,
+        name: proc_macro2::Ident,
+    },
+    List {
+        tokens: proc_macro2::TokenStream,
+        name: proc_macro2::Ident,
+        nullable_elements: bool,
+    },
+}
 
 lazy_static! {
     /// Set of types that should be copied instead of referenced.
@@ -110,10 +125,7 @@ lazy_static! {
 }
 
 /// Process a named type into its type tokens, and the Ident for those type tokens.
-fn process_type(
-    schema: &ParsedGraphQLSchema,
-    typ: &Type,
-) -> (proc_macro2::TokenStream, proc_macro2::Ident) {
+fn process_type(schema: &ParsedGraphQLSchema, typ: &Type) -> ProcessedTypeResult {
     match &typ.base {
         BaseType::Named(t) => {
             let name = t.to_string();
@@ -124,12 +136,43 @@ fn process_type(
             let name = format_ident! {"{}", name};
 
             if typ.nullable {
-                (quote! { Option<#name> }, name)
+                ProcessedTypeResult::Named {
+                    tokens: quote! { Option<#name> },
+                    name,
+                }
             } else {
-                (quote! { #name }, name)
+                ProcessedTypeResult::Named {
+                    tokens: quote! { #name },
+                    name,
+                }
             }
         }
-        BaseType::List(_t) => panic!("Got a list type, we don't handle this yet..."),
+        BaseType::List(t) => {
+            let processed_inner_type = process_type(schema, t);
+            match processed_inner_type {
+                ProcessedTypeResult::Named {
+                    tokens: inner_type,
+                    name,
+                } => {
+                    if typ.nullable {
+                        ProcessedTypeResult::List {
+                            tokens: quote! { Option<Vec<#inner_type>> },
+                            name: format_ident! {"{}", name},
+                            nullable_elements: t.nullable,
+                        }
+                    } else {
+                        ProcessedTypeResult::List {
+                            tokens: quote! { Vec<#inner_type> },
+                            name: format_ident! {"{}", name},
+                            nullable_elements: t.nullable,
+                        }
+                    }
+                }
+                ProcessedTypeResult::List { .. } => {
+                    unimplemented!("List of lists currently unsupported")
+                }
+            }
+        }
     }
 }
 
@@ -144,23 +187,28 @@ fn process_field(
     schema: &ParsedGraphQLSchema,
     field_name: &String,
     field_type: &Type,
-) -> (
-    proc_macro2::TokenStream,
-    proc_macro2::Ident,
-    proc_macro2::Ident,
-    proc_macro2::TokenStream,
-) {
-    let (typ_tokens, typ_ident) = process_type(schema, field_type);
+) -> ProcessedFieldResult {
+    let processed_type_result = process_type(schema, field_type);
     let name_ident = format_ident! {"{}", field_name.to_string()};
 
     let extractor = row_extractor(
         schema,
         name_ident.clone(),
-        typ_ident.clone(),
         field_type.nullable,
+        processed_type_result.clone(),
     );
 
-    (typ_tokens, name_ident, typ_ident, extractor)
+    match processed_type_result {
+        ProcessedTypeResult::Named { tokens, name } => {
+            (tokens, name_ident, name, extractor, None)
+        }
+        ProcessedTypeResult::List {
+            tokens,
+            name,
+            nullable_elements,
+            ..
+        } => (tokens, name_ident, name, extractor, Some(nullable_elements)),
+    }
 }
 
 /// Type of special fields in GraphQL schema.
@@ -261,8 +309,13 @@ fn process_type_def(
             for field in &obj.fields {
                 let field_name = &field.node.name.to_string();
                 let field_type = &field.node.ty.node;
-                let (mut typ_tokens, mut field_name, mut scalar_typ, mut ext) =
-                    process_field(schema, field_name, field_type);
+                let (
+                    mut typ_tokens,
+                    mut field_name,
+                    mut scalar_typ,
+                    mut ext,
+                    is_list_with_nullable_elements,
+                ) = process_field(schema, field_name, field_type);
 
                 let mut field_typ_name = scalar_typ.to_string();
 
@@ -274,7 +327,7 @@ fn process_type_def(
                 }
 
                 if schema.is_possible_foreign_key(&field_typ_name) {
-                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
+                    (typ_tokens, field_name, scalar_typ, ext, _) = process_special_field(
                         schema,
                         &object_name,
                         &field.node,
@@ -285,7 +338,7 @@ fn process_type_def(
                 }
 
                 if schema.is_enum_type(&field_typ_name) {
-                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
+                    (typ_tokens, field_name, scalar_typ, ext, _) = process_special_field(
                         schema,
                         &object_name,
                         &field.node,
@@ -296,7 +349,7 @@ fn process_type_def(
                 }
 
                 if schema.is_non_indexable_non_enum(&field_typ_name) {
-                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
+                    (typ_tokens, field_name, scalar_typ, ext, _) = process_special_field(
                         schema,
                         &object_name,
                         &field.node,
@@ -316,10 +369,69 @@ fn process_type_def(
                     quote! {}
                 };
 
-                let decoder = if field_type.nullable {
-                    quote! { FtColumn::#scalar_typ(self.#field_name #clone), }
-                } else {
-                    quote! { FtColumn::#scalar_typ(Some(self.#field_name #clone)), }
+                let decoder = match is_list_with_nullable_elements {
+                    Some(nullable_elements) => {
+                        // Nullable list of nullable elements: [Entity]
+                        if field_type.nullable && nullable_elements {
+                            // `.and_then()` is used to ensure that we can store
+                            // a None value while also instantiating FtColumns
+                            // from a list, if it exists.
+                            quote! {
+                                FtColumn::List(
+                                self.#field_name
+                                    .clone()
+                                    .and_then(
+                                        |list| Some(list.into_iter()
+                                            .map(|item| FtColumn::#scalar_typ(item))
+                                            .collect::<Vec<FtColumn>>())
+                                    )
+                                ),
+                            }
+                        // Nullable list of non-nullable elements: [Entity!]
+                        } else if field_type.nullable && !nullable_elements {
+                            quote! {
+                                FtColumn::List(
+                                self.#field_name
+                                    .clone()
+                                    .and_then(
+                                        |list| Some(list.into_iter()
+                                            .map(|item| FtColumn::#scalar_typ(Some(item)))
+                                            .collect::<Vec<FtColumn>>())
+                                    )
+                                ),
+                            }
+                        // Non-nullable list of nullable elements: [Entity]!
+                        } else if !field_type.nullable && nullable_elements {
+                            quote! {
+                                FtColumn::List(
+                                Some(self.#field_name
+                                        .iter()
+                                        .map(|item| FtColumn::#scalar_typ(item.clone()))
+                                        .collect::<Vec<FtColumn>>()
+                                    )
+                                ),
+                            }
+                        // Non-nullable list of non-nullable elements: [Entity!]!
+                        } else {
+                            quote! {
+                                FtColumn::List(
+                                Some(
+                                    self.#field_name
+                                        .iter()
+                                        .map(|item| FtColumn::#scalar_typ(Some(item.clone())))
+                                        .collect::<Vec<FtColumn>>()
+                                    )
+                                ),
+                            }
+                        }
+                    }
+                    None => {
+                        if field_type.nullable {
+                            quote! { FtColumn::#scalar_typ(self.#field_name #clone), }
+                        } else {
+                            quote! { FtColumn::#scalar_typ(Some(self.#field_name #clone)), }
+                        }
+                    }
                 };
 
                 block = quote! {

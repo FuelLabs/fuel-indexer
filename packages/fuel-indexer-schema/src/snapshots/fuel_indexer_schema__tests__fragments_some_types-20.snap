@@ -1,0 +1,6 @@
+---
+source: packages/fuel-indexer-schema/src/lib.rs
+expression: list.query_fragment()
+---
+"'000000003132332c203435362c20373839'"
+
