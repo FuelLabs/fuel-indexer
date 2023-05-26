@@ -1,5 +1,5 @@
 use crate::ffi;
-use crate::{IndexerError, IndexerResult, Manifest};
+use crate::{IndexerResult, Manifest};
 use fuel_indexer_database::{
     queries, types::IdCol, IndexerConnection, IndexerConnectionPool,
 };
@@ -11,7 +11,7 @@ use wasmer::Instance;
 /// Database for an executor instance, with schema info.
 #[derive(Debug)]
 pub struct Database {
-    pub pool: IndexerConnectionPool,
+    pool: IndexerConnectionPool,
     stashed: Option<IndexerConnection>,
     pub namespace: String,
     pub identifier: String,
@@ -40,28 +40,32 @@ impl Database {
     }
 
     pub async fn start_transaction(&mut self) -> IndexerResult<usize> {
-        let mut conn = self.pool.acquire().await?;
-        let result = queries::execute_query(&mut conn, "BEGIN".into()).await?;
-
+        let conn = self.pool.acquire().await?;
         self.stashed = Some(conn);
-
+        info!("Connection stashed as: {:?}", self.stashed);
+        let conn = self.stashed.as_mut().expect(
+            "No stashed connection for start transaction. Was a transaction started?",
+        );
+        let result = queries::start_transaction(conn).await?;
         Ok(result)
     }
 
     pub async fn commit_transaction(&mut self) -> IndexerResult<usize> {
-        let mut conn = self
+        let conn = self
             .stashed
-            .take()
-            .ok_or(IndexerError::NoTransactionError)?;
-        Ok(queries::execute_query(&mut conn, "COMMIT".into()).await?)
+            .as_mut()
+            .expect("No stashed connection for commit. Was a transaction started?");
+        let res = queries::commit_transaction(conn).await?;
+        Ok(res)
     }
 
     pub async fn revert_transaction(&mut self) -> IndexerResult<usize> {
-        let mut conn = self
+        let conn = self
             .stashed
-            .take()
-            .ok_or(IndexerError::NoTransactionError)?;
-        Ok(queries::execute_query(&mut conn, "ROLLBACK".into()).await?)
+            .as_mut()
+            .expect("No stashed connection for revert. Was a transaction started?");
+        let res = queries::revert_transaction(conn).await?;
+        Ok(res)
     }
 
     fn upsert_query(
@@ -134,7 +138,7 @@ Do your WASM modules need to be rebuilt?"#,
         let conn = self
             .stashed
             .as_mut()
-            .expect("No transaction has been opened.");
+            .expect("No stashed connection for put. Was a transaction started?");
 
         queries::put_object(conn, query_text, bytes)
             .await
@@ -147,7 +151,7 @@ Do your WASM modules need to be rebuilt?"#,
         let conn = self
             .stashed
             .as_mut()
-            .expect("No transaction has been opened.");
+            .expect("No stashed connection for get. Was a transaction started?");
 
         match queries::get_object(conn, query).await {
             Ok(v) => Some(v),

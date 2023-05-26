@@ -862,6 +862,7 @@ pub async fn get_nonce(
     Ok(Nonce { uid, expiry })
 }
 
+#[cfg_attr(feature = "metrics", metrics)]
 pub async fn remove_latest_assets_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,

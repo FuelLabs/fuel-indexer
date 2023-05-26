@@ -28,7 +28,10 @@ pub const POSTGRES_PORT: &str = "5432";
 /// Postgres password.
 pub const POSTGRES_PASSWORD: &str = "postgres";
 
+/// Number of failed calls to allow before stopping the indexer.
 pub const INDEX_FAILED_CALLS: usize = 10;
+
+/// Stop indexers that have seen `MAX_EMPTY_BLOCK_REQUESTS`.
 pub const STOP_IDLE_INDEXERS: bool = false;
 
 /// Max body size for GraphQL API requests.
@@ -122,4 +125,4 @@ pub const RATE_LIMIT_WINDOW_SIZE: u64 = 5;
 pub const LOG_LEVEL: &str = "info";
 
 /// Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out.
-pub const INDEXER_HANDLER_TIMEOUT: u64 = 2;
+pub const INDEXER_HANDLER_TIMEOUT: u64 = 5;
