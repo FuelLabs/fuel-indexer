@@ -131,10 +131,17 @@ Do your WASM modules need to be rebuilt?"#,
 
         let query_text = self.upsert_query(table, &columns, inserts, updates);
 
-        let conn = self
-            .stashed
-            .as_mut()
-            .expect("No transaction has been opened.");
+        let conn = match self.stashed.as_mut() {
+            Some(conn) => conn,
+            None => {
+                error!("(put_object) No transaction has been opened.");
+                let _ = self.start_transaction().await.unwrap();
+
+                self.stashed
+                    .as_mut()
+                    .expect("Failed to re-open transaction.")
+            }
+        };
 
         queries::put_object(conn, query_text, bytes)
             .await
@@ -144,10 +151,17 @@ Do your WASM modules need to be rebuilt?"#,
     pub async fn get_object(&mut self, type_id: i64, object_id: u64) -> Option<Vec<u8>> {
         let table = &self.tables[&type_id];
         let query = self.get_query(table, object_id);
-        let conn = self
-            .stashed
-            .as_mut()
-            .expect("No transaction has been opened.");
+        let conn = match self.stashed.as_mut() {
+            Some(conn) => conn,
+            None => {
+                error!("(get_object) No transaction has been opened.");
+                let _ = self.start_transaction().await.unwrap();
+
+                self.stashed
+                    .as_mut()
+                    .expect("Failed to re-open transaction.")
+            }
+        };
 
         match queries::get_object(conn, query).await {
             Ok(v) => Some(v),
