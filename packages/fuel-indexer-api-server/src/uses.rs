@@ -252,9 +252,9 @@ pub(crate) async fn register_indexer_assets(
             let asset_type =
                 IndexAssetType::from_str(&name).expect("Invalid asset type.");
 
-            let asset: IndexAsset = match asset_type {
+            match asset_type {
                 IndexAssetType::Wasm | IndexAssetType::Manifest => {
-                    queries::register_indexer_asset(
+                    match queries::register_indexer_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
@@ -262,7 +262,16 @@ pub(crate) async fn register_indexer_assets(
                         asset_type,
                         Some(&claims.sub),
                     )
-                    .await?
+                    .await
+                    {
+                        Ok(result) => {
+                            assets.push(result);
+                        }
+                        Err(e) => {
+                            let _res = queries::revert_transaction(&mut conn).await?;
+                            return Err(e.into());
+                        }
+                    }
                 }
                 IndexAssetType::Schema => {
                     match queries::register_indexer_asset(
@@ -276,7 +285,7 @@ pub(crate) async fn register_indexer_assets(
                     .await
                     {
                         Ok(result) => {
-                            schema_manager
+                            match schema_manager
                                 .write()
                                 .await
                                 .new_schema(
@@ -287,18 +296,25 @@ pub(crate) async fn register_indexer_assets(
                                     // Can't deploy native indexers
                                     false,
                                 )
-                                .await?;
-
-                            result
+                                .await
+                            {
+                                Ok(_) => {
+                                    assets.push(result);
+                                }
+                                Err(e) => {
+                                    let _res =
+                                        queries::revert_transaction(&mut conn).await?;
+                                    return Err(e.into());
+                                }
+                            }
                         }
                         Err(e) => {
+                            let _res = queries::revert_transaction(&mut conn).await?;
                             return Err(e.into());
                         }
                     }
                 }
-            };
-
-            assets.push(asset);
+            }
         }
 
         let _ = queries::commit_transaction(&mut conn).await?;
