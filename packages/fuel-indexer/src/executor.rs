@@ -14,8 +14,9 @@ use fuel_core_client::client::{
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
     block::{BlockData, ConsensusData, GenesisConsensus, HeaderData, PoAConsensus},
+    fuel_client_schema::ClientTransactionStatusData,
     scalar::Bytes32,
-    transaction::{ClientTransactionStatusData, TransactionData, TxId},
+    transaction::{TransactionData, TxId},
 };
 use futures::Future;
 use std::{

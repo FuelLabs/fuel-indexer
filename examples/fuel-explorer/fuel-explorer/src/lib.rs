@@ -40,28 +40,34 @@ impl From<ConsensusData> for Consensus {
                     poa: None,
                     genesis: Some(genesis.id),
                     label: ConsensusLabel::Genesis.to_string(),
-                    id: 1,
+                    id,
                 }
             }
-            ConsensusData::PoA(poa) => Consensus {
-                unknown: None,
-                genesis: None,
-                label: ConsensusLabel::PoA.to_string(),
-                poa: Some(
-                    PoA {
-                        signature: poa.signature,
-                    }
-                    .into(),
-                ),
-                id: 1,
-            },
-            ConsensusData::UnknownConsensus => Consensus {
-                unknown: Some(Unknown { value: true }.into()),
-                genesis: None,
-                label: ConsensusLabel::Unknown.to_string(),
-                poa: None,
-                id: 1,
-            },
+            ConsensusData::PoA(poa) => {
+                let id = 1;
+                Consensus {
+                    unknown: None,
+                    genesis: None,
+                    label: ConsensusLabel::PoA.to_string(),
+                    poa: Some(
+                        PoA {
+                            signature: poa.signature,
+                        }
+                        .into(),
+                    ),
+                    id,
+                }
+            }
+            ConsensusData::UnknownConsensus => {
+                let id = 1;
+                Consensus {
+                    unknown: Some(Unknown { value: true }.into()),
+                    genesis: None,
+                    label: ConsensusLabel::Unknown.to_string(),
+                    poa: None,
+                    id,
+                }
+            }
         }
     }
 }
@@ -69,7 +75,7 @@ impl From<ConsensusData> for Consensus {
 impl From<ClientWitness> for Witness {
     fn from(w: ClientWitness) -> Self {
         Self {
-            data: Blob(w.into_inner()),
+            data: w.into_inner().into(),
         }
     }
 }
@@ -103,10 +109,11 @@ impl From<ClientInputCoin> for InputCoin {
             predicate_data,
         } = input;
 
-        let pointer = TxPointer::load(1).unwrap_or_else(|| {
-            let pointer = TxPointer::from(tx_pointer);
-            pointer.save();
-            pointer
+        let id = 1; // Create u64 from input parts
+        let ptr = TxPointer::load(id).unwrap_or_else(|| {
+            let ptr = TxPointer::from(tx_pointer);
+            ptr.save();
+            ptr
         });
 
         Self {
@@ -115,7 +122,7 @@ impl From<ClientInputCoin> for InputCoin {
             owner,
             amount,
             asset_id,
-            tx_pointer: pointer.id,
+            tx_pointer: ptr.id,
             witness_index: witness_index as i64,
             maturity: maturity as u64,
             predicate,
@@ -124,17 +131,62 @@ impl From<ClientInputCoin> for InputCoin {
     }
 }
 
+impl From<u64> for ContractIdFragment {
+    fn from(id: u64) -> Self {
+        Self { id }
+    }
+}
+
+#[allow(unused)]
+impl From<ClientInputContract> for InputContract {
+    fn from(input: ClientInputContract) -> Self {
+        let ClientInputContract {
+            utxo_id,
+            balance_root,
+            state_root,
+            tx_pointer,
+            contract_id,
+        } = input;
+
+        let id = 1; // Create u64 from `contract_id`
+        let contract = ContractIdFragment::load(id).unwrap_or_else(|| {
+            let contract = ContractIdFragment::from(id);
+            contract.save();
+            contract
+        });
+
+        let id = 1; // Create u64 from input parts
+        let ptr = TxPointer::load(id).unwrap_or_else(|| {
+            let ptr = TxPointer::from(tx_pointer);
+            ptr.save();
+            ptr
+        });
+
+        Self {
+            id,
+            utxo_id: 1,
+            balance_root,
+            state_root,
+            tx_pointer: ptr.id,
+            contract: contract.id,
+        }
+    }
+}
+
 impl From<ClientInput> for Input {
     fn from(input: ClientInput) -> Self {
         match input {
             ClientInput::Coin(input) => {
-                let coin = InputCoin::load(1).unwrap_or_else(|| {
+                let id = 1; // Create u64 from input parts
+                let coin = InputCoin::load(id).unwrap_or_else(|| {
                     let coin = InputCoin::from(input);
                     coin.save();
                     coin
                 });
+
+                let id = 1;
                 let input = Input {
-                    id: 1,
+                    id,
                     coin: Some(coin.id),
                     contract: None,
                     message: None,
@@ -142,8 +194,25 @@ impl From<ClientInput> for Input {
                 input.save();
                 input
             }
+            ClientInput::Contract(input) => {
+                let id = 1; // Create u64 from input parts
+                let contract = InputContract::load(id).unwrap_or_else(|| {
+                    let contract = InputContract::from(input);
+                    contract.save();
+                    contract
+                });
+
+                let id = 1;
+                let input = Input {
+                    id,
+                    coin: None,
+                    contract: Some(contract.id),
+                    message: None,
+                };
+                input.save();
+                input
+            }
             _ => unimplemented!(),
-            // ClientInput::Contract(input) => Input::Contract(input.into()),
             // ClientInput::Message(input) => Input::Message(input.into()),
         }
     }
@@ -153,8 +222,9 @@ impl From<ClientInput> for Input {
 pub mod explorer_index {
 
     fn index_block(block_data: BlockData) {
+        let id = 1; // Create u64 from block parts
         let header = Header {
-            id: 1,
+            id, // Create u64 from header parts
             block_id: block_data.header.id,
             da_height: block_data.header.da_height,
             transactions_count: block_data.header.transactions_count,
@@ -171,12 +241,13 @@ pub mod explorer_index {
         let consensus = Consensus::from(block_data.consensus);
         consensus.save();
 
-        let block_frag = BlockIdFragment { id: 1 };
+        let id = 1;
+        let block_frag = BlockIdFragment { id };
 
         block_frag.save();
 
         let block = Block {
-            id: 1,
+            id, // Create u64 from block parts
             block_id: block_data.header.id,
             header: header.id,
             consensus: consensus.id,
@@ -196,7 +267,11 @@ pub mod explorer_index {
                     let script_data = t.script_data();
                     let receipts_root = t.receipts_root();
                     let inputs = t.inputs();
-                    let outputs = t.outputs();
+                    // let outputs = t
+                    //     .outputs()
+                    //     .iter()
+                    //     .map(|o| o.to_owned().into())
+                    //     .collect::<Vec<Output>>();
                     let witnesses = t
                         .witnesses()
                         .iter()
@@ -207,7 +282,7 @@ pub mod explorer_index {
                     script_tx_frag.save();
 
                     let create_tx = CreateTransaction {
-                        id: 1,
+                        id: 1, // Create u64 from tx parts
                         gas_limit: *gas_limit,
                         gas_price: *gas_price,
                         maturity: *maturity as u32,
@@ -240,9 +315,14 @@ pub mod explorer_index {
                     let bytecode_witness_index = t.bytecode_witness_index();
                     let inputs = t.inputs();
                     let outputs = t.outputs();
-                    let witnesses = t.witnesses();
+                    let witnesses = t
+                        .witnesses()
+                        .iter()
+                        .map(|w| w.to_owned().into())
+                        .collect::<Vec<Witness>>();
                     let storage_slots = t.storage_slots();
 
+                    // Create u64 from tx parts
                     let create_tx_frag = TransactionIdFragment { id: 1 };
                     create_tx_frag.save();
                 }
@@ -251,6 +331,7 @@ pub mod explorer_index {
                     let tx_pointer = t.tx_pointer();
                     let outputs = t.outputs();
 
+                    // Create u64 from tx parts
                     let mint_tx_frag = TransactionIdFragment { id: 1 };
                     mint_tx_frag.save();
                 }

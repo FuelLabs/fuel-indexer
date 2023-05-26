@@ -6,7 +6,6 @@ type TransactionPointer {
   tx_index: UInt4!
 }
 
-
 type TransactionIdFragment {
   id: ID!
 }
@@ -142,7 +141,6 @@ type MintTransaction {
 
 type SubmittedStatus {
   id: ID!
-  # time: Tai64Timestamp!
   time: UInt8!
 }
 
@@ -172,7 +170,6 @@ type ProgramState {
 type FailureStatus {
   id: ID!
   block: BlockIdFragment!
-  # time: Tai64Timestamp!
   time: UInt8!
   reason: Charfield!
   program_state: ProgramState
@@ -180,7 +177,6 @@ type FailureStatus {
 
 type SuccessStatus {
   id: ID!
-  # time: Tai64Timestamp!
   time: UInt8!
   block: BlockIdFragment!
   program_state: ProgramState
@@ -217,7 +213,6 @@ type Header {
   message_receipt_root: Bytes32!
   height: UInt8!
   prev_root: Bytes32!
-  # time: Tai64Timestamp
   time: Int8!
   application_hash: Bytes32!
 }
