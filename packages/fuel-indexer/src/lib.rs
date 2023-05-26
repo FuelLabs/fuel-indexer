@@ -18,6 +18,9 @@ pub use service::IndexerService;
 use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
 
+// required for vendored openssl
+use openssl as _;
+
 pub mod prelude {
     pub use super::{
         Database, Executor, FtColumn, IndexEnv, IndexerConfig, IndexerError,

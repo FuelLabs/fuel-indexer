@@ -38,6 +38,10 @@ wasmer = "2.3"
 wasmer-compiler-cranelift = { version = "2.3" }
 wasmer-engine-universal = "2.3"
 
+[dependencies.openssl]
+version = "0.10.52"
+features = ["vendored"]
+
 [dev-dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 fuel-core-client = { version = "0.17.2", features = ["test-helpers"] }
