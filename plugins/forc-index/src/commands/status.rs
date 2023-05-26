@@ -1,7 +1,7 @@
 use crate::{ops::forc_index_status, utils::defaults};
 use clap::Parser;
 
-/// Get a basic status check of registered indexers.
+/// Check the status of a registered indexer.
 #[derive(Debug, Parser)]
 pub struct Command {
     /// Authentication header value
@@ -11,6 +11,10 @@ pub struct Command {
     /// URL at which to find indexer service.
     #[clap(long, default_value = defaults::INDEXER_SERVICE_HOST, help = "URL at which to find indexer service.")]
     pub url: String,
+
+    /// Enable verbose logging.
+    #[clap(short, long, help = "Enable verbose logging.")]
+    pub verbose: bool,
 }
 
 pub async fn exec(command: Command) -> anyhow::Result<()> {

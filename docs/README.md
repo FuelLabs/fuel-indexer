@@ -46,6 +46,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
     - [`forc index remove`](#forc-index-remove)
     - [`forc index auth`](#forc-index-auth)
     - [`forc index start`](#forc-index-start)
+    - [`forc index status`](#forc-index-status)
   - [Schema](#schema)
   - [Modules](#modules)
     - [WebAssembly (WASM) modules](#webassembly-wasm-modules)
@@ -169,6 +170,14 @@ Start the indexer service.
 
 ```bash
 forc index start
+```
+
+### `forc index status`
+
+Check the status of a registered indexer.
+
+```bash
+forc index status
 ```
 
 ## Schema

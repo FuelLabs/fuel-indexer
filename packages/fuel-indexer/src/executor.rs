@@ -284,7 +284,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 error!("Indexer executor failed {e:?}, retrying.");
                 sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
                 retry_count += 1;
-                if retry_count < INDEX_FAILED_CALLS {
+                if retry_count < INDEXER_FAILED_CALLS {
                     println!("Retrying indexer, attempt: {retry_count}");
                     continue;
                 } else {
@@ -548,7 +548,7 @@ impl Executor for WasmIndexExecutor {
             .exports
             .get_native_function::<(u32, u32), ()>(ffi::MODULE_ENTRYPOINT)?;
 
-        let _res = self.db.lock().await.start_transaction().await?;
+        let _ = self.db.lock().await.start_transaction().await?;
 
         let ptr = arg.get_ptr();
         let len = arg.get_len();
@@ -561,7 +561,7 @@ impl Executor for WasmIndexExecutor {
 
         if let Err(e) = res {
             error!("WasmIndexExecutor handle_events timed out: {e:?}.");
-            let _res = self.db.lock().await.revert_transaction().await?;
+            let _ = self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::from(e));
         } else {
             let inner = res.unwrap();
@@ -570,7 +570,7 @@ impl Executor for WasmIndexExecutor {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }
-            let _res = self.db.lock().await.commit_transaction().await?;
+            let _ = self.db.lock().await.commit_transaction().await?;
         }
         Ok(())
     }

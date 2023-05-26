@@ -29,6 +29,8 @@ pub enum IndexerDatabaseError {
     SqlxError(#[from] SqlxError),
     #[error("Unknown error")]
     Unknown,
+    #[error("You don't own this indexer.")]
+    NotYourIndexer,
 }
 
 #[derive(Debug)]

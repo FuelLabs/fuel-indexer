@@ -1,8 +1,8 @@
 use crate::{
     middleware::AuthenticationMiddleware,
     uses::{
-        get_nonce, gql_playground, health_check, query_graph, register_indexer_assets,
-        revert_indexer, status, stop_indexer, verify_signature,
+        get_nonce, gql_playground, health_check, indexer_status, query_graph,
+        register_indexer_assets, remove_indexer, revert_indexer, verify_signature,
     },
 };
 
@@ -211,33 +211,37 @@ impl GraphQlApi {
         #[cfg(feature = "metrics")]
         let graph_routes = graph_routes.layer(MetricsMiddleware::default());
 
-        let index_routes = Router::new()
+        let indexer_routes = Router::new()
             .route("/:namespace/:identifier", post(register_indexer_assets))
             .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx.clone()))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
-            .route("/:namespace/:identifier", delete(stop_indexer))
+            .layer(Extension(config.clone()))
+            .route("/:namespace/:identifier", delete(remove_indexer))
             .route("/:namespace/:identifier", put(revert_indexer))
             .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx))
             .layer(Extension(pool.clone()))
+            .layer(Extension(config.clone()))
             .layer(RequestBodyLimitLayer::new(max_body_size));
 
         #[cfg(feature = "metrics")]
-        let index_routes = index_routes.layer(MetricsMiddleware::default());
+        let indexer_routes = indexer_routes.layer(MetricsMiddleware::default());
 
         let root_routes = Router::new()
-            .route("/health", get(health_check))
-            .route("/status", get(status))
+            .route("/status", get(indexer_status))
+            .layer(Extension(pool.clone()))
             .layer(AuthenticationMiddleware::from(&config))
+            .layer(Extension(config.clone()))
+            .route("/health", get(health_check))
             .layer(Extension(config.clone()))
             .layer(Extension(pool.clone()))
             .layer(Extension(start_time));
 
         #[cfg(feature = "metrics")]
         let root_routes = root_routes
-            .route("/metrics", get(crate::uses::metrics))
+            .route("/metrics", get(crate::uses::get_metrics))
             .layer(MetricsMiddleware::default());
 
         let auth_routes = Router::new()
@@ -262,7 +266,7 @@ impl GraphQlApi {
         let api_routes = Router::new()
             .nest("/", root_routes)
             .nest("/playground", playground_route)
-            .nest("/index", index_routes)
+            .nest("/index", indexer_routes)
             .nest("/graph", graph_routes)
             .nest("/auth", auth_routes);
 

@@ -389,11 +389,11 @@ pub async fn columns_get_schema(
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn indexer_is_registered(
+pub async fn get_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<Option<RegisteredIndex>> {
+) -> sqlx::Result<Option<RegisteredIndexer>> {
     match sqlx::query(
         "SELECT * FROM index_registry
         WHERE namespace = $1
@@ -410,7 +410,7 @@ pub async fn indexer_is_registered(
                 DateTime::<Utc>::from_utc(created_at, Utc)
             };
 
-            Ok(Some(RegisteredIndex {
+            Ok(Some(RegisteredIndexer {
                 id: row.get(0),
                 namespace: row.get(1),
                 identifier: row.get(2),
@@ -429,8 +429,8 @@ pub async fn register_indexer(
     identifier: &str,
     pubkey: Option<&str>,
     created_at: DateTime<Utc>,
-) -> sqlx::Result<RegisteredIndex> {
-    if let Some(index) = indexer_is_registered(conn, namespace, identifier).await? {
+) -> sqlx::Result<RegisteredIndexer> {
+    if let Some(index) = get_indexer(conn, namespace, identifier).await? {
         return Ok(index);
     }
 
@@ -455,7 +455,7 @@ pub async fn register_indexer(
         DateTime::<Utc>::from_utc(created_at, Utc)
     };
 
-    Ok(RegisteredIndex {
+    Ok(RegisteredIndexer {
         id,
         namespace,
         identifier,
@@ -467,7 +467,7 @@ pub async fn register_indexer(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn all_registered_indexers(
     conn: &mut PoolConnection<Postgres>,
-) -> sqlx::Result<Vec<RegisteredIndex>> {
+) -> sqlx::Result<Vec<RegisteredIndexer>> {
     Ok(sqlx::query("SELECT * FROM index_registry")
         .fetch_all(conn)
         .await?
@@ -482,7 +482,7 @@ pub async fn all_registered_indexers(
                 DateTime::<Utc>::from_utc(created_at, Utc)
             };
 
-            RegisteredIndex {
+            RegisteredIndexer {
                 id,
                 namespace,
                 identifier,
@@ -490,7 +490,7 @@ pub async fn all_registered_indexers(
                 created_at,
             }
         })
-        .collect::<Vec<RegisteredIndex>>())
+        .collect::<Vec<RegisteredIndexer>>())
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
@@ -523,7 +523,7 @@ pub async fn register_indexer_asset(
     asset_type: IndexAssetType,
     pubkey: Option<&str>,
 ) -> sqlx::Result<IndexAsset> {
-    let index = match indexer_is_registered(conn, namespace, identifier).await? {
+    let index = match get_indexer(conn, namespace, identifier).await? {
         Some(index) => index,
         None => {
             let created_at = DateTime::<Utc>::from(SystemTime::now());
@@ -889,4 +889,23 @@ pub async fn remove_latest_assets_for_indexer(
         .await?;
 
     Ok(())
+}
+
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn indexer_owned_by(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+    pubkey: &str,
+) -> sqlx::Result<()> {
+    let row = sqlx::query(&format!("SELECT COUNT(*) FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' AND pubkey = '{pubkey}'"))
+        .fetch_one(conn)
+        .await?;
+
+    let count: i32 = row.get(0);
+    if count == 1 {
+        return Ok(());
+    }
+
+    Err(sqlx::Error::RowNotFound)
 }
