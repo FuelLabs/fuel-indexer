@@ -122,4 +122,4 @@ pub const RATE_LIMIT_WINDOW_SIZE: u64 = 5;
 pub const LOG_LEVEL: &str = "info";
 
 /// Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out.
-pub const INDEXER_HANDLER_TIMEOUT: u64 = 2;
+pub const INDEXER_HANDLER_TIMEOUT: u64 = 5;
