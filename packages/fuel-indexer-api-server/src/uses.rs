@@ -158,7 +158,7 @@ pub(crate) async fn stop_indexer(
 
     let mut conn = pool.acquire().await?;
 
-    let _ = queries::start_transaction(&mut conn).await?;
+    let _res = queries::start_transaction(&mut conn).await?;
 
     if let Err(e) = queries::remove_indexer(&mut conn, &namespace, &identifier).await {
         queries::revert_transaction(&mut conn).await?;
@@ -192,7 +192,7 @@ pub(crate) async fn revert_indexer(
     }
 
     let mut conn = pool.acquire().await?;
-    let _ = queries::start_transaction(&mut conn).await?;
+    let _res = queries::start_transaction(&mut conn).await?;
 
     let indexer_id = queries::get_indexer_id(&mut conn, &namespace, &identifier).await?;
     let wasm =
@@ -244,7 +244,7 @@ pub(crate) async fn register_indexer_assets(
     if let Some(mut multipart) = multipart {
         let mut conn = pool.acquire().await?;
 
-        let _ = queries::start_transaction(&mut conn).await?;
+        let _res = queries::start_transaction(&mut conn).await?;
 
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap_or("").to_string();
