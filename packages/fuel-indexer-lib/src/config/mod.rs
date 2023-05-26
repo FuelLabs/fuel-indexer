@@ -1,6 +1,7 @@
 pub mod auth;
 pub mod database;
 pub mod graphql;
+pub mod limit;
 pub mod node;
 pub mod utils;
 
@@ -9,6 +10,7 @@ pub use crate::{
         auth::{AuthenticationConfig, AuthenticationStrategy},
         database::DatabaseConfig,
         graphql::GraphQLConfig,
+        limit::RateLimitConfig,
         node::FuelNodeConfig,
     },
     defaults,
@@ -72,7 +74,7 @@ pub fn env_or_default(var: EnvVar, default: String) -> String {
 )]
 pub struct IndexerArgs {
     /// Log level passed to the Fuel Indexer service.
-    #[clap(long, default_value = "info", value_parser(["info", "debug", "error", "warn"]), help = "Log level passed to the Fuel Indexer service.")]
+    #[clap(long, default_value = defaults::LOG_LEVEL, value_parser(["info", "debug", "error", "warn"]), help = "Log level passed to the Fuel Indexer service.")]
     pub log_level: String,
 
     /// Indexer service config file.
@@ -199,6 +201,29 @@ pub struct IndexerArgs {
     /// Allow network configuration via indexer manifests.
     #[clap(long, help = "Allow network configuration via indexer manifests.")]
     pub indexer_net_config: bool,
+
+    /// Enable rate limiting.
+    #[clap(long, help = "Enable rate limiting.")]
+    pub rate_limit: bool,
+
+    /// Maximum number of requests to allow over --rate-limit-window..
+    #[clap(
+        long,
+        help = "Maximum number of requests to allow over --rate-limit-window.."
+    )]
+    pub rate_limit_request_count: Option<u64>,
+
+    /// Number of seconds over which to allow --rate-limit-rps.
+    #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
+    pub rate_limit_window_size: Option<u64>,
+
+    /// Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
+    #[clap(
+        long,
+        default_value_t = defaults::INDEXER_HANDLER_TIMEOUT,
+        help = "Maximum length of time (in seconds) that an indexer's event handler can run before timing out."
+    )]
+    pub indexer_handler_timeout: u64,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -208,6 +233,10 @@ pub struct IndexerArgs {
     version
 )]
 pub struct ApiServerArgs {
+    /// Log level passed to the Fuel Indexer service.
+    #[clap(long, default_value = defaults::LOG_LEVEL, value_parser(["info", "debug", "error", "warn"]), help = "Log level passed to the Fuel Indexer service.")]
+    pub log_level: String,
+
     /// API server config file.
     #[clap(short, long, help = "API server config file.")]
     pub config: Option<PathBuf>,
@@ -301,37 +330,56 @@ pub struct ApiServerArgs {
     /// Enable verbose logging.
     #[clap(short, long, help = "Enable verbose logging.")]
     pub verbose: bool,
+
+    /// Enable rate limiting.
+    #[clap(long, help = "Enable rate limiting.")]
+    pub rate_limit: bool,
+
+    /// Maximum number of requests to allow over --rate-limit-window..
+    #[clap(
+        long,
+        help = "Maximum number of requests to allow over --rate-limit-window.."
+    )]
+    pub rate_limit_request_count: Option<u64>,
+
+    /// Number of seconds over which to allow --rate-limit-rps.
+    #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
+    pub rate_limit_window_size: Option<u64>,
 }
 
 impl Default for IndexerArgs {
     fn default() -> Self {
         Self {
-            log_level: "info".to_string(),
+            indexer_handler_timeout: defaults::INDEXER_HANDLER_TIMEOUT,
+            log_level: defaults::LOG_LEVEL.to_string(),
             config: None,
-            manifest: Some(std::path::PathBuf::from(".")),
-            fuel_node_host: String::new(),
-            fuel_node_port: String::new(),
-            graphql_api_host: String::new(),
-            graphql_api_port: String::new(),
+            manifest: None,
+            fuel_node_host: defaults::FUEL_NODE_HOST.to_string(),
+            fuel_node_port: defaults::FUEL_NODE_PORT.to_string(),
+            graphql_api_host: defaults::GRAPHQL_API_HOST.to_string(),
+            graphql_api_port: defaults::GRAPHQL_API_PORT.to_string(),
             database: defaults::DATABASE.to_string(),
             max_body_size: defaults::MAX_BODY_SIZE,
-            postgres_user: None,
-            postgres_database: None,
+            postgres_user: Some(defaults::POSTGRES_USER.to_string()),
+            postgres_database: Some(defaults::POSTGRES_DATABASE.to_string()),
             postgres_password: None,
-            postgres_host: None,
-            postgres_port: None,
-            run_migrations: true,
-            metrics: false,
-            stop_idle_indexers: false,
-            embedded_database: false,
-            auth_enabled: false,
+            postgres_host: Some(defaults::POSTGRES_HOST.to_string()),
+            postgres_port: Some(defaults::POSTGRES_PORT.to_string()),
+            run_migrations: defaults::RUN_MIGRATIONS,
+            metrics: defaults::USE_METRICS,
+            stop_idle_indexers: defaults::STOP_IDLE_INDEXERS,
+            embedded_database: defaults::EMBEDDED_DATABASE,
+            auth_enabled: defaults::AUTH_ENABLED,
             auth_strategy: None,
             jwt_secret: None,
             jwt_issuer: None,
             jwt_expiry: None,
-            verbose: false,
-            local_fuel_node: false,
-            indexer_net_config: false,
+            verbose: defaults::VERBOSE_LOGGING,
+            local_fuel_node: defaults::LOCAL_FUEL_NODE,
+            indexer_net_config: defaults::INDEXER_NET_CONFIG,
+            rate_limit: defaults::RATE_LIMIT_ENABLED,
+            rate_limit_request_count: Some(defaults::RATE_LIMIT_REQUEST_COUNT),
+            rate_limit_window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
         }
     }
 }
@@ -343,6 +391,8 @@ pub trait Env {
 /// Fuel indexer service configuration.
 #[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
+    pub indexer_handler_timeout: u64,
+    pub log_level: String,
     #[serde(default)]
     pub verbose: bool,
     #[serde(default)]
@@ -359,6 +409,7 @@ pub struct IndexerConfig {
     pub stop_idle_indexers: bool,
     pub run_migrations: bool,
     pub authentication: AuthenticationConfig,
+    pub rate_limit: RateLimitConfig,
 }
 
 impl From<IndexerArgs> for IndexerConfig {
@@ -403,6 +454,8 @@ impl From<IndexerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            indexer_handler_timeout: args.indexer_handler_timeout,
+            log_level: args.log_level,
             verbose: args.verbose,
             local_fuel_node: args.local_fuel_node,
             indexer_net_config: args.indexer_net_config,
@@ -427,6 +480,11 @@ impl From<IndexerArgs> for IndexerConfig {
                 jwt_secret: args.jwt_secret,
                 jwt_issuer: args.jwt_issuer,
                 jwt_expiry: args.jwt_expiry,
+            },
+            rate_limit: RateLimitConfig {
+                enabled: args.rate_limit,
+                request_count: args.rate_limit_request_count,
+                window_size: args.rate_limit_window_size,
             },
         };
 
@@ -480,6 +538,8 @@ impl From<ApiServerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
+            indexer_handler_timeout: defaults::INDEXER_HANDLER_TIMEOUT,
+            log_level: args.log_level,
             verbose: args.verbose,
             local_fuel_node: defaults::LOCAL_FUEL_NODE,
             indexer_net_config: defaults::INDEXER_NET_CONFIG,
@@ -505,6 +565,11 @@ impl From<ApiServerArgs> for IndexerConfig {
                 jwt_issuer: args.jwt_issuer,
                 jwt_expiry: args.jwt_expiry,
             },
+            rate_limit: RateLimitConfig {
+                enabled: args.rate_limit,
+                request_count: args.rate_limit_request_count,
+                window_size: args.rate_limit_window_size,
+            },
         };
 
         config
@@ -526,6 +591,9 @@ impl IndexerConfig {
 
         let content: serde_yaml::Value = serde_yaml::from_reader(file)?;
 
+        let log_level_key = serde_yaml::Value::String("log_level".into());
+        let indexer_handler_timeout_key =
+            serde_yaml::Value::String("indexer_handler_timeout".into());
         let metrics_key = serde_yaml::Value::String("metrics".into());
         let stop_idle_indexers_key =
             serde_yaml::Value::String("stop_idle_indexers".into());
@@ -534,6 +602,14 @@ impl IndexerConfig {
         let local_fuel_node_key = serde_yaml::Value::String("local_fuel_node".into());
         let indexer_net_config_key =
             serde_yaml::Value::String("indexer_net_config".into());
+
+        if let Some(indexer_handler_timeout) = content.get(indexer_handler_timeout_key) {
+            config.indexer_handler_timeout = indexer_handler_timeout.as_u64().unwrap();
+        }
+
+        if let Some(log_level) = content.get(log_level_key) {
+            config.log_level = log_level.as_str().unwrap().to_string();
+        }
 
         if let Some(metrics) = content.get(metrics_key) {
             config.metrics = metrics.as_bool().unwrap();
@@ -563,6 +639,7 @@ impl IndexerConfig {
         let graphql_config_key = serde_yaml::Value::String("graphql_api".into());
         let database_config_key = serde_yaml::Value::String("database".into());
         let auth_config_key = serde_yaml::Value::String("authentication".into());
+        let rate_limit_config_key = serde_yaml::Value::String("rate_limit".into());
 
         if let Some(section) = content.get(fuel_config_key) {
             let fuel_node_host = section.get(&serde_yaml::Value::String("host".into()));
@@ -649,8 +726,7 @@ impl IndexerConfig {
         }
 
         if let Some(section) = content.get(auth_config_key) {
-            let auth_enabled =
-                section.get(&serde_yaml::Value::String("auth_enabled".into()));
+            let auth_enabled = section.get(&serde_yaml::Value::String("enabled".into()));
             if let Some(auth_enabled) = auth_enabled {
                 config.authentication.enabled = auth_enabled.as_bool().unwrap();
             }
@@ -673,6 +749,25 @@ impl IndexerConfig {
             if let Some(jwt_issuer) = jwt_issuer {
                 config.authentication.jwt_issuer =
                     Some(jwt_issuer.as_str().unwrap().to_string());
+            }
+        }
+
+        if let Some(section) = content.get(rate_limit_config_key) {
+            let limit_enabled = section.get(&serde_yaml::Value::String("enabled".into()));
+            if let Some(limit_enabled) = limit_enabled {
+                config.rate_limit.enabled = limit_enabled.as_bool().unwrap();
+            }
+
+            let request_count =
+                section.get(&serde_yaml::Value::String("request_count".into()));
+            if let Some(request_count) = request_count {
+                config.rate_limit.request_count = Some(request_count.as_u64().unwrap());
+            }
+
+            let window_size =
+                section.get(&serde_yaml::Value::String("window_size".into()));
+            if let Some(window_size) = window_size {
+                config.rate_limit.window_size = Some(window_size.as_u64().unwrap());
             }
         }
 

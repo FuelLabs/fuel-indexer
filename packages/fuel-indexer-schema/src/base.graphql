@@ -1,26 +1,37 @@
-scalar ID
 scalar Address
 scalar AssetId
-scalar Bytes4
-scalar Bytes8
+scalar Blob
+scalar BlockHeight
+scalar BlockId
+scalar Boolean
+scalar Bytes
 scalar Bytes32
+scalar Bytes4
 scalar Bytes64
-scalar Int4
-scalar Int8
-scalar Int16
-scalar UInt4
-scalar UInt8
-scalar UInt16
-scalar Timestamp
+scalar Bytes8
+scalar Charfield
 scalar Color
 scalar ContractId
-scalar Salt
+scalar HexString
+scalar ID
+scalar Identity
+scalar Int1
+scalar Int16
+scalar Int4
+scalar Int8
 scalar Json
 scalar MessageId
-scalar Charfield
-scalar Identity
-scalar Boolean
-scalar Blob
+scalar Nonce
+scalar NoRelation
+scalar Salt
+scalar Signature
+scalar Tai64Timestamp
+scalar Timestamp
+scalar TxId
+scalar UInt1
+scalar UInt16
+scalar UInt4
+scalar UInt8
 
 enum IndexType {
     Btree,
@@ -32,3 +43,5 @@ directive @indexed(type: IndexType = Btree) on FIELD_DEFINITION | ENUM_VALUE
 directive @join(on: String) on OBJECT
 
 directive @unique on FIELD_DEFINITION | ENUM_VALUE
+
+directive @norelation on FIELD_DEFINITION

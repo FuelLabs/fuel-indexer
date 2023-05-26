@@ -8,8 +8,6 @@ A paginated query can be made using three keywords:
 - `first` - limit on number of results (required)
 - `offset` - the amount of records to skip before returning results (optional)
 
-Let's use the [block explorer](../../../examples/block-explorer.md) example to illustrate how to use pagination.
-
 ```graphql
 query {
   blocks: block(order: { height: asc }, first: 5) {

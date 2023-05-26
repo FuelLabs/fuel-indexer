@@ -5,7 +5,7 @@ use fuel_indexer_database::{
 };
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
-use tracing::error;
+use tracing::{error, info};
 use wasmer::Instance;
 
 /// Database for an executor instance, with schema info.
@@ -75,7 +75,7 @@ impl Database {
             "INSERT INTO {}
                 ({})
              VALUES
-                ({}, $1)
+                ({}, $1::bytea)
              ON CONFLICT(id)
              DO UPDATE SET {}",
             table,
@@ -102,7 +102,14 @@ impl Database {
         let table = match self.tables.get(&type_id) {
             Some(t) => t,
             None => {
-                error!("TypeId({}) not found in tables: {:?}", type_id, self.tables,);
+                error!(
+                    r#"TypeId({}) not found in tables: {:?}. 
+
+Does the schema version in SchemaManager::new_schema match the schema version in Database::load_schema?
+
+Do your WASM modules need to be rebuilt?"#,
+                    type_id, self.tables,
+                );
                 return;
             }
         };
@@ -192,6 +199,11 @@ impl Database {
                 self.namespace = ffi::get_namespace(instance)?;
                 self.identifier = ffi::get_identifier(instance)?;
                 self.version = ffi::get_version(instance)?;
+
+                info!(
+                    "Loading schema for Indexer({}.{}) with Version({}).",
+                    self.namespace, self.identifier, self.version
+                );
 
                 let mut conn = self.pool.acquire().await?;
                 let results = queries::columns_get_schema(

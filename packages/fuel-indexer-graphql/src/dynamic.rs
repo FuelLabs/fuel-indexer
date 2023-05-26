@@ -24,6 +24,8 @@ lazy_static! {
         "Address",
         "AssetId",
         "Blob",
+        "BlockHeight",
+        "BlockId",
         "Boolean",
         "Bytes32",
         "Bytes4",
@@ -32,15 +34,23 @@ lazy_static! {
         "Charfield",
         "Color",
         "ContractId",
+        "HexString",
         "ID",
         "Identity",
+        "Int1",
         "Int16",
         "Int4",
         "Int8",
         "Json",
         "MessageId",
+        "Nonce",
+        "NoRelation",
         "Salt",
+        "Signature",
+        "Tai64Timestamp",
         "Timestamp",
+        "TxId",
+        "UInt1",
         "UInt16",
         "UInt4",
         "UInt8",
@@ -53,6 +63,7 @@ lazy_static! {
         "Int4",
         "Int8",
         "Timestamp",
+        "Tai64Timestamp",
         "UInt16",
         "UInt4",
         "UInt8",
@@ -64,18 +75,24 @@ lazy_static! {
         "Address",
         "AssetId",
         "Blob",
+        "BlockHeight",
+        "BlockId",
         "Bytes32",
         "Bytes4",
+        "Bytes64",
         "Bytes64",
         "Bytes8",
         "Charfield",
         "Color",
         "ContractId",
+        "HexString",
         "ID",
         "Identity",
         "Json",
         "MessageId",
+        "Nonce",
         "Salt",
+        "Signature",
     ]);
 
     /// Scalar types that can be sorted.
@@ -85,13 +102,17 @@ lazy_static! {
         "Charfield",
         "Color",
         "ContractId",
+        "HexString",
         "ID",
         "Identity",
         "Int16",
         "Int4",
         "Int8",
         "MessageId",
+        "Nonce",
         "Salt",
+        "Signature",
+        "Tai64Timestamp",
         "Timestamp",
         "UInt16",
         "UInt4",
@@ -129,7 +150,7 @@ pub async fn execute_query(
             let introspection_results = dynamic_schema.execute(dynamic_request).await;
             let data = introspection_results.data.into_json()?;
 
-            Ok(serde_json::json!({ "data": data }))
+            Ok(data)
         }
         Some(_) | None => {
             let query =
@@ -151,7 +172,7 @@ pub async fn execute_query(
 
 /// Build a dynamic schema. This allows for introspection, which allows for extensive
 /// auto-documentation and code suggestions.
-pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
+pub fn build_dynamic_schema(schema: &Schema) -> GraphqlResult<DynamicSchema> {
     // Register scalars into dynamic schema so that users are aware of their existence.
     let mut schema_builder: DynamicSchemaBuilder = SCALAR_TYPES.iter().fold(
         DynamicSchema::build("QueryRoot", None, None).introspection_only(),
@@ -166,6 +187,10 @@ pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
     );
 
     let mut input_objects = Vec::new();
+
+    // For some reason, async-graphql does not implement the Hash trait on any of the
+    // type that we need for dynamic schemas. So we are essentially making a hash table
+    // ourselves for the filter and sort objects.
     let mut filter_object_list = Vec::new();
     let mut filter_tracker = HashMap::new();
     let mut sort_object_list = Vec::new();
@@ -178,7 +203,7 @@ pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
 
     let sort_enum = Enum::new("SortOrder").item("asc").item("desc");
 
-    for (entity_type, field_map) in schema.fields {
+    for (entity_type, field_map) in &schema.fields {
         if IGNORED_ENTITY_TYPES.contains(&entity_type.as_str()) {
             continue;
         }
@@ -215,31 +240,31 @@ pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
             object_field_enum = object_field_enum.item(field_name);
         }
 
-        // Fold corresponding input values into objects for that particular field.
-        let filter_object = filter_input_vals
-            .into_iter()
-            .fold(
-                InputObject::new(format!("{entity_type}Filter")),
+        if !filter_input_vals.is_empty() {
+            let filter_object = filter_input_vals
+                .into_iter()
+                .fold(
+                    InputObject::new(format!("{entity_type}Filter")),
+                    |input_obj, input_val| input_obj.field(input_val),
+                )
+                .field(InputValue::new(
+                    "has",
+                    TypeRef::named_nn_list(object_field_enum.type_name()),
+                ));
+
+            filter_object_list.push(filter_object);
+            filter_tracker.insert(entity_type.to_string(), filter_object_list.len() - 1);
+        }
+
+        if !sort_input_vals.is_empty() {
+            let sort_object = sort_input_vals.into_iter().fold(
+                InputObject::new(format!("{entity_type}Sort")),
                 |input_obj, input_val| input_obj.field(input_val),
-            )
-            .field(InputValue::new(
-                "has",
-                TypeRef::named_nn_list(object_field_enum.type_name()),
-            ));
+            );
 
-        let sort_object = sort_input_vals.into_iter().fold(
-            InputObject::new(format!("{entity_type}Sort")),
-            |input_obj, input_val| input_obj.field(input_val),
-        );
-
-        // For some reason, async-graphql does not implement the Hash trait on any of the
-        // type that we need for dynamic schemas. So we are essentially making a hash table
-        // ourselves for the filter and sort objects.
-        filter_object_list.push(filter_object);
-        filter_tracker.insert(entity_type.to_string(), filter_object_list.len() - 1);
-
-        sort_object_list.push(sort_object);
-        sorter_tracker.insert(entity_type.to_string(), sort_object_list.len() - 1);
+            sort_object_list.push(sort_object);
+            sorter_tracker.insert(entity_type.to_string(), sort_object_list.len() - 1);
+        }
 
         // Additionally, because we cannot refer to the object fields directly and
         // associate the field arguments to them, we iterate through the fields a
@@ -251,14 +276,25 @@ pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
                 continue;
             }
 
-            if let Some(field_def) = Type::new(&field_type) {
+            if let Some(field_def) = Type::new(field_type) {
                 let base_field_type = &field_def.base;
                 let nullable = field_def.nullable;
 
                 let field_type = match base_field_type {
                     BaseType::Named(type_name) => {
                         if nullable {
-                            TypeRef::named(type_name.to_string())
+                            // TODO: If we do not check for non-indexable types,
+                            // enums become recursively self-referential and the playground
+                            // will report errors related to enum subfields not being
+                            // supplied. For now, setting them to a String type does not
+                            // cause errors, but we should decide what the final process is.
+                            if schema.non_indexable_types.contains(field_type) {
+                                TypeRef::named(TypeRef::STRING)
+                            } else {
+                                TypeRef::named(type_name.to_string())
+                            }
+                        } else if schema.non_indexable_types.contains(field_type) {
+                            TypeRef::named_nn(TypeRef::STRING)
                         } else {
                             TypeRef::named_nn(type_name.to_string())
                         }
@@ -280,7 +316,7 @@ pub fn build_dynamic_schema(schema: Schema) -> GraphqlResult<DynamicSchema> {
                 };
 
                 let field = create_field_with_assoc_args(
-                    field_name,
+                    field_name.to_string(),
                     field_type,
                     base_field_type,
                     &filter_tracker,

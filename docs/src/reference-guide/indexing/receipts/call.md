@@ -16,10 +16,10 @@ pub struct Call {
 - The `fn_name` field contains the name of the called function from the aforementioned contract.
 - [Read more about `Call` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#return-receipt)
 
-You can handle functions that produce a `Call` receipt type by adding a parameter with the type `abi::Call`.
+You can handle functions that produce a `Call` receipt type by adding a parameter with the type `Call`.
 
 ```rust, ignore
-fn handle_call(call: abi::Call) {
+fn handle_call(call: Call) {
   // handle the emitted Call receipt
 }
 ```

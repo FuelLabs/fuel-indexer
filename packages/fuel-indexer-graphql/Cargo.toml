@@ -18,7 +18,7 @@ fuel-indexer-database-types = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
 lazy_static = "1.4"
-serde_json = "1.0"
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

@@ -1,39 +1,8 @@
 use crate::{
-    tx::{Transaction, TransactionStatus, TxId},
-    type_id, Address, AssetId, Bytes32, ContractId, MessageId,
+    scalar::{Address, AssetId, Bytes32, ContractId, MessageId},
+    type_id, TypeId, FUEL_TYPES_NAMESPACE,
 };
-pub use fuel_tx::Receipt;
-pub use fuels::types::Identity;
 use serde::{Deserialize, Serialize};
-
-pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
-
-pub trait NativeFuelType {
-    fn type_id() -> usize;
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone, Default)]
-pub struct TransactionData {
-    pub transaction: Transaction,
-    pub status: TransactionStatus,
-    pub receipts: Vec<Receipt>,
-    pub id: TxId,
-}
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct BlockData {
-    pub height: u64,
-    pub id: Bytes32,
-    pub producer: Option<Bytes32>,
-    pub time: i64,
-    pub transactions: Vec<TransactionData>,
-}
-
-impl NativeFuelType for BlockData {
-    fn type_id() -> usize {
-        type_id(FUEL_TYPES_NAMESPACE, "BlockData") as usize
-    }
-}
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Transfer {
@@ -45,7 +14,7 @@ pub struct Transfer {
     pub is: u64,
 }
 
-impl NativeFuelType for Transfer {
+impl TypeId for Transfer {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Transfer") as usize
     }
@@ -58,13 +27,12 @@ pub struct Log {
     pub rb: u64,
 }
 
-impl NativeFuelType for Log {
+impl TypeId for Log {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Log") as usize
     }
 }
 
-// NOTE: Keeping for now, but I don't believe we need this.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct LogData {
     pub contract_id: ContractId,
@@ -74,7 +42,7 @@ pub struct LogData {
     pub ptr: u64,
 }
 
-impl NativeFuelType for LogData {
+impl TypeId for LogData {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "LogData") as usize
     }
@@ -86,7 +54,7 @@ pub struct ScriptResult {
     pub gas_used: u64,
 }
 
-impl NativeFuelType for ScriptResult {
+impl TypeId for ScriptResult {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "ScriptResult") as usize
     }
@@ -102,7 +70,7 @@ pub struct TransferOut {
     pub is: u64,
 }
 
-impl NativeFuelType for TransferOut {
+impl TypeId for TransferOut {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "TransferOut") as usize
     }
@@ -120,7 +88,7 @@ pub struct MessageOut {
     pub data: Vec<u8>,
 }
 
-impl NativeFuelType for MessageOut {
+impl TypeId for MessageOut {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "MessageOut") as usize
     }
@@ -134,7 +102,7 @@ pub struct Return {
     pub is: u64,
 }
 
-impl NativeFuelType for Return {
+impl TypeId for Return {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Return") as usize
     }
@@ -150,7 +118,7 @@ pub struct Call {
     pub fn_name: String,
 }
 
-impl NativeFuelType for Call {
+impl TypeId for Call {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Call") as usize
     }
@@ -162,7 +130,7 @@ pub struct Panic {
     pub reason: u32,
 }
 
-impl NativeFuelType for Panic {
+impl TypeId for Panic {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Panic") as usize
     }
@@ -174,7 +142,7 @@ pub struct Revert {
     pub error_val: u64,
 }
 
-impl NativeFuelType for Revert {
+impl TypeId for Revert {
     fn type_id() -> usize {
         type_id(FUEL_TYPES_NAMESPACE, "Revert") as usize
     }

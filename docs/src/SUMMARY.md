@@ -15,7 +15,6 @@
 # Examples
 
 - [Hello World](./examples/hello-world.md)
-- [Block Explorer](./examples/block-explorer.md)
 
 # Reference Guide
 

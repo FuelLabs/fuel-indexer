@@ -24,13 +24,10 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.13", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.13", features = ["native-execution"] }}
-fuel-indexer-schema = {{ version = "0.13", default-features = false }}
-fuel-tx = "0.26"
+fuel-indexer-macros = {{ version = "0.15", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.15", features = ["native-execution"] }}
+fuel-indexer-schema = {{ version = "0.15", default-features = false }}
 fuels = {{ version = "0.40", default-features = false, features = ["std"] }}
-getrandom = {{ version = "0.2", features = ["js"] }}
-serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
     )
 }
@@ -47,12 +44,10 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.13", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.13" }}
-fuel-indexer-schema = {{ version = "0.13", default-features = false }}
-fuel-tx = "0.26"
+fuel-indexer-macros = {{ version = "0.15", default-features = false }}
+fuel-indexer-plugin = {{ version = "0.15" }}
+fuel-indexer-schema = {{ version = "0.15", default-features = false }}
 fuels = {{ version = "0.40", default-features = false }}
-getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
     )
@@ -137,7 +132,7 @@ pub fn default_index_lib(
     format!(
         r#"extern crate alloc;
 use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_plugin::utils::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {index_name}_index_mod {{
@@ -152,7 +147,7 @@ pub mod {index_name}_index_mod {{
         for transaction in block_data.transactions.iter() {{
             Logger::info("Handling a transaction (>'.')>");
 
-            let tx = Tx{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
+            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
             tx.save();
         }}
     }}
@@ -168,7 +163,7 @@ pub fn default_index_schema() -> String {
     hash: Bytes32! @unique
 }
 
-type Tx {
+type Transaction {
     id: ID!
     block: Block!
     hash: Bytes32! @unique

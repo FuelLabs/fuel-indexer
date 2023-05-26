@@ -2305,20 +2305,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "explorer_indexer"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-macros",
- "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuel-tx",
- "fuels",
- "getrandom 0.2.9",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "extension-trait"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2427,7 +2413,7 @@ checksum = "3f9eec918d3f24069decb9af1554cad7c880e2da24a9afd88aca000531ab82c1"
 
 [[package]]
 name = "forc-index"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "actix-web",
  "anyhow",
@@ -2435,6 +2421,7 @@ dependencies = [
  "forc-postgres",
  "forc-tracing 0.31.3",
  "forc-util",
+ "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "fuel-tx",
  "fuels",
@@ -2456,7 +2443,7 @@ dependencies = [
 
 [[package]]
 name = "forc-postgres"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "anyhow",
  "clap 3.2.25",
@@ -2948,7 +2935,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "anyhow",
  "async-std",
@@ -2978,7 +2965,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-api-server"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "anyhow",
  "async-graphql 5.0.8",
@@ -3010,7 +2997,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3022,7 +3009,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-database-types"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "chrono",
  "serde",
@@ -3031,7 +3018,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-graphql"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "async-graphql 5.0.8",
  "async-graphql-parser 5.0.8",
@@ -3048,9 +3035,10 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-lib"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "anyhow",
+ "bincode",
  "clap 3.2.25",
  "fuel-indexer-types",
  "http",
@@ -3068,17 +3056,17 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-macro-utils"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.16",
 ]
 
 [[package]]
 name = "fuel-indexer-macros"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "async-graphql-parser 5.0.8",
  "fuel-abi-types 0.2.1",
@@ -3087,7 +3075,6 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-indexer-types",
- "fuel-tx",
  "fuels",
  "fuels-code-gen",
  "fuels-macros",
@@ -3099,13 +3086,13 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2 0.9.9",
- "syn 1.0.109",
+ "syn 2.0.16",
  "trybuild",
 ]
 
 [[package]]
 name = "fuel-indexer-metrics"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "axum 0.6.18",
  "lazy_static",
@@ -3115,7 +3102,7 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-plugin"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3127,6 +3114,8 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "hex",
+ "serde",
+ "serde_json",
  "sha2 0.10.6",
  "tokio 1.28.1",
  "tracing",
@@ -3135,8 +3124,9 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-postgres"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
+ "bincode",
  "chrono",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3149,10 +3139,9 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-schema"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "async-graphql-parser 5.0.8",
- "bincode",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-types",
@@ -3162,6 +3151,7 @@ dependencies = [
  "sha2 0.9.9",
  "sqlx",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -3171,11 +3161,8 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
  "serde",
- "sha2 0.10.6",
 ]
 
 [[package]]
@@ -3221,15 +3208,17 @@ dependencies = [
 
 [[package]]
 name = "fuel-indexer-types"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "bincode",
+ "bytes 1.4.0",
  "chrono",
  "fuel-tx",
  "fuel-types 0.26.3",
  "fuels",
  "serde",
  "sha2 0.9.9",
+ "tai64",
 ]
 
 [[package]]
@@ -3321,6 +3310,17 @@ dependencies = [
  "sha3 0.10.8",
  "tai64",
  "thiserror",
+]
+
+[[package]]
+name = "fuel_explorer"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-macros",
+ "fuel-indexer-plugin",
+ "fuel-indexer-schema",
+ "fuels",
+ "serde",
 ]
 
 [[package]]
@@ -3918,10 +3918,7 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
- "instant",
  "serde",
 ]
 
@@ -3934,10 +3931,7 @@ dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
- "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
- "instant",
  "serde",
 ]
 
@@ -5431,7 +5425,7 @@ checksum = "26072860ba924cbfa98ea39c8c19b4dd6a4a25423dbdf219c1eca91aa0cf6964"
 
 [[package]]
 name = "plugin-tests"
-version = "0.13.2"
+version = "0.15.0"
 dependencies = [
  "forc-index",
  "fuel-indexer-plugin",
@@ -6593,7 +6587,6 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-tx",
  "fuels",
- "getrandom 0.2.9",
  "serde",
  "sha2 0.10.6",
 ]
@@ -7419,6 +7412,7 @@ dependencies = [
  "pin-project",
  "pin-project-lite 0.2.9",
  "tokio 1.28.1",
+ "tokio-util 0.7.8",
  "tower-layer",
  "tower-service",
  "tracing",

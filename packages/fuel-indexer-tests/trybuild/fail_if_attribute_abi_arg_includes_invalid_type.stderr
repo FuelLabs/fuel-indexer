@@ -6,17 +6,17 @@ error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(217..224) }' no
   |
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 
-error[E0433]: failed to resolve: use of undeclared type `Receipt`
+error[E0433]: failed to resolve: use of undeclared type `ClientReceipt`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |                 Receipt::Call {
-  |                 ^^^^^^^ use of undeclared type `Receipt`
+  |                 ClientReceipt::Call {
+  |                 ^^^^^^^^^^^^^ use of undeclared type `ClientReceipt`
 
-error[E0433]: failed to resolve: use of undeclared type `Receipt`
+error[E0433]: failed to resolve: use of undeclared type `ClientReceipt`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |                 Receipt::ReturnData {
-  |                 ^^^^^^^ use of undeclared type `Receipt`
+  |                 ClientReceipt::ReturnData {
+  |                 ^^^^^^^^^^^^^ use of undeclared type `ClientReceipt`
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -34,7 +34,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::prelude::BlockData;
    |
-2  | use fuel_indexer_types::BlockData;
+2  | use fuel_indexer_types::prelude::BlockData;
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
@@ -47,7 +47,20 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::prelude::BlockData;
    |
-2  | use fuel_indexer_types::BlockData;
+2  | use fuel_indexer_types::prelude::BlockData;
+   |
+
+error[E0422]: cannot find struct, variant or union type `HeaderData` in this scope
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
+  |
+  |         header: HeaderData {
+  |                 ^^^^^^^^^^ not found in this scope
+  |
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::prelude::HeaderData;
+   |
+2  | use fuel_indexer_types::prelude::HeaderData;
    |
 
 error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
@@ -60,39 +73,34 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::prelude::TransactionData;
    |
-2  | use fuel_indexer_types::TransactionData;
+2  | use fuel_indexer_types::prelude::TransactionData;
    |
 
-error[E0433]: failed to resolve: use of undeclared type `TransactionStatus`
+error[E0433]: failed to resolve: use of undeclared type `ClientTransactionStatusData`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |             status: TransactionStatus::default(),
-  |                     ^^^^^^^^^^^^^^^^^ use of undeclared type `TransactionStatus`
+  |             status: ClientTransactionStatusData::default(),
+  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ use of undeclared type `ClientTransactionStatusData`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::TransactionStatus;
+2  | use fuel_indexer_plugin::prelude::ClientTransactionStatusData;
    |
-2  | use fuel_indexer_types::TransactionStatus;
+2  | use fuel_indexer_types::prelude::ClientTransactionStatusData;
    |
 
-error[E0433]: failed to resolve: use of undeclared type `Transaction`
+error[E0433]: failed to resolve: use of undeclared type `ClientTransaction`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |             transaction: Transaction::default(),
-  |                          ^^^^^^^^^^^ use of undeclared type `Transaction`
+  |             transaction: ClientTransaction::default(),
+  |                          ^^^^^^^^^^^^^^^^^ use of undeclared type `ClientTransaction`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::Transaction;
+2  | use fuel_indexer_plugin::prelude::ClientTransaction;
    |
-2  | use fuel_indexer_types::Transaction;
+2  | use fuel_indexer_types::prelude::ClientTransaction;
    |
-2  | use fuel_tx::Transaction;
-   |
-2  | use fuels::prelude::Transaction;
-   |
-     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -100,9 +108,11 @@ error[E0425]: cannot find function `serialize` in this scope
   |     let mut bytes = serialize(&data);
   |                     ^^^^^^^^^ not found in this scope
   |
-help: consider importing this function
+help: consider importing one of these items
    |
-2  | use fuel_indexer_schema::utils::serialize;
+2  | use fuel_indexer_lib::utils::serialize;
+   |
+2  | use fuel_indexer_plugin::serialize;
    |
 
 error[E0425]: cannot find function `handle_events` in this scope

@@ -1,0 +1,12 @@
+---
+namespace: fuel
+abi: ~
+identifier: explorer
+fuel_client: ~
+graphql_schema: examples/fuel-explorer/fuel-explorer/schema/fuel_explorer.schema.graphql
+module:
+  wasm: target/wasm32-unknown-unknown/release/fuel_explorer.wasm
+metrics: true
+contract_id: ~
+start_block: ~
+resumable: true

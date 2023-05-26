@@ -1,6 +1,6 @@
 use crate::{config::IndexerConfig, defaults};
 use anyhow::Result;
-use fuel_indexer_types::Bytes32;
+use fuel_indexer_types::scalar::Bytes32;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -18,6 +18,21 @@ use tracing_subscriber::filter::EnvFilter;
 
 const RUST_LOG: &str = "RUST_LOG";
 const HUMAN_LOGGING: &str = "HUMAN_LOGGING";
+
+const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
+
+/// Serialize a generic item.
+pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
+    bincode::serialize(obj).expect("Serialize failed")
+}
+
+/// Deserialize a generic item.
+pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
+    match bincode::deserialize(bytes) {
+        Ok(obj) => Ok(obj),
+        Err(e) => Err(format!("Bincode serde error {e:?}")),
+    }
+}
 
 // Testing assets use relative paths, while production assets will use absolute paths
 //
@@ -44,9 +59,7 @@ pub fn local_repository_root() -> Option<String> {
         }
     }
 
-    if !curr_dir.is_dir()
-        || curr_dir.file_name().unwrap() != defaults::ROOT_DIRECTORY_NAME
-    {
+    if !curr_dir.is_dir() || curr_dir.file_name().unwrap() != ROOT_DIRECTORY_NAME {
         return None;
     }
 

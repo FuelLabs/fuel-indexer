@@ -169,7 +169,7 @@ async fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Resul
             input = process_std(input);
             match input.trim().to_lowercase().as_str() {
                 "1" => {
-                    //init for local node
+                    // init for local node
                     let start_command = StartCommand {
                         fuel_node_host: "http://127.0.0.1:29987".to_string(),
                         fuel_node_port: "29987".to_string(),
@@ -182,7 +182,7 @@ async fn deploy_to_network(mut input: String, manifest: String) -> anyhow::Resul
                     deploy(deploy_command)?;
                 }
                 "2" => {
-                    //init for testnet
+                    // init for testnet
                     let start_command = StartCommand {
                         fuel_node_host: "https://node-beta-2.fuel.network/graphql"
                             .to_string(),

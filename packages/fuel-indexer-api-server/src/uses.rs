@@ -61,7 +61,7 @@ pub(crate) async fn query_graph(
         .await
     {
         Ok(schema) => {
-            let dynamic_schema = build_dynamic_schema(schema.clone())?;
+            let dynamic_schema = build_dynamic_schema(&schema)?;
             let user_query = req.0.query.clone();
             let response =
                 execute_query(req.into_inner(), dynamic_schema, user_query, pool, schema)
@@ -119,6 +119,31 @@ pub(crate) async fn health_check(
         "uptime(seconds)": uptime,
         "database_status": db_status,
     })))
+}
+
+pub(crate) async fn status(
+    Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(claims): Extension<Claims>,
+) -> ApiResult<axum::Json<Value>> {
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
+    let mut conn = pool.acquire().await?;
+    let indexers: Vec<_> = {
+        let indexers = queries::all_registered_indexers(&mut conn).await?;
+
+        if claims.sub.is_empty() {
+            indexers
+        } else {
+            indexers
+                .into_iter()
+                .filter(|i| i.pubkey.as_ref() == Some(&claims.sub))
+                .collect()
+        }
+    };
+    let json: serde_json::Value = serde_json::to_value(indexers).unwrap();
+    Ok(Json(json))
 }
 
 pub(crate) async fn stop_indexer(
@@ -259,6 +284,8 @@ pub(crate) async fn register_indexer_assets(
                                     &identifier,
                                     &String::from_utf8_lossy(&data),
                                     &mut conn,
+                                    // Can't deploy native indexers
+                                    false,
                                 )
                                 .await?;
 

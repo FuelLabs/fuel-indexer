@@ -23,14 +23,10 @@ pub enum Indexer {
 
 pub async fn run_cli() -> anyhow::Result<()> {
     let opt = Opt::try_parse();
-
     match opt {
         Ok(opt) => match opt.command {
             Indexer::Run(args) => run::exec(args).await,
         },
-        Err(e) => {
-            // Prints the error and exits.
-            e.exit()
-        }
+        Err(e) => e.exit(),
     }
 }

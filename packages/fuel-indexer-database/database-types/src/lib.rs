@@ -47,6 +47,12 @@ pub struct NewGraphRoot {
     pub schema: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct VirtualColumn {
+    pub name: String,
+    pub graphql_type: String,
+}
+
 #[derive(Debug)]
 pub struct TypeId {
     pub id: i64,
@@ -55,6 +61,13 @@ pub struct TypeId {
     pub schema_identifier: String,
     pub graphql_name: String,
     pub table_name: String,
+    pub virtual_columns: Vec<VirtualColumn>,
+}
+
+impl TypeId {
+    pub fn is_non_indexable_type(&self) -> bool {
+        !self.virtual_columns.is_empty()
+    }
 }
 
 #[derive(Debug)]
@@ -125,7 +138,7 @@ impl NewColumn {
             ColumnType::Int4 => "integer",
             ColumnType::Int8 => "bigint",
             ColumnType::Int16 => "numeric(39, 0)",
-            ColumnType::UInt4 => "integer",
+            ColumnType::UInt4 | ColumnType::BlockHeight => "integer",
             ColumnType::UInt8 => "numeric(20, 0)",
             ColumnType::UInt16 => "numeric(39, 0)",
             ColumnType::Timestamp => "timestamp",
@@ -139,6 +152,17 @@ impl NewColumn {
             ColumnType::Charfield => "varchar(255)",
             ColumnType::Identity => "varchar(66)",
             ColumnType::Boolean => "boolean",
+            ColumnType::Bytes64 => "varchar(128)",
+            ColumnType::Signature => "varchar(128)",
+            ColumnType::Nonce => "varchar(64)",
+            ColumnType::HexString => "varchar(10485760)",
+            ColumnType::Tai64Timestamp => "varchar(128)",
+            ColumnType::TxId => "varchar(64)",
+            ColumnType::Enum => "varchar(255)",
+            ColumnType::Int1 => "integer",
+            ColumnType::UInt1 => "integer",
+            ColumnType::NoRelation => "Json",
+            ColumnType::BlockId => "varchar(64)",
         }
     }
 }
@@ -177,6 +201,18 @@ pub enum ColumnType {
     Object = 20,
     UInt16 = 21,
     Int16 = 22,
+    Bytes64 = 23,
+    Signature = 24,
+    Nonce = 25,
+    HexString = 26,
+    Tai64Timestamp = 27,
+    TxId = 28,
+    BlockHeight = 29,
+    Enum = 30,
+    Int1 = 31,
+    UInt1 = 32,
+    NoRelation = 33,
+    BlockId = 34,
 }
 
 impl From<ColumnType> for i32 {
@@ -205,6 +241,18 @@ impl From<ColumnType> for i32 {
             ColumnType::Object => 20,
             ColumnType::UInt16 => 21,
             ColumnType::Int16 => 22,
+            ColumnType::Bytes64 => 23,
+            ColumnType::Signature => 24,
+            ColumnType::Nonce => 25,
+            ColumnType::HexString => 26,
+            ColumnType::Tai64Timestamp => 27,
+            ColumnType::TxId => 28,
+            ColumnType::BlockHeight => 29,
+            ColumnType::Enum => 30,
+            ColumnType::Int1 => 31,
+            ColumnType::UInt1 => 32,
+            ColumnType::NoRelation => 33,
+            ColumnType::BlockId => 34,
         }
     }
 }
@@ -241,6 +289,18 @@ impl From<i32> for ColumnType {
             20 => ColumnType::Object,
             21 => ColumnType::Int16,
             22 => ColumnType::UInt16,
+            23 => ColumnType::Bytes64,
+            24 => ColumnType::Signature,
+            25 => ColumnType::Nonce,
+            26 => ColumnType::HexString,
+            27 => ColumnType::Tai64Timestamp,
+            28 => ColumnType::TxId,
+            29 => ColumnType::BlockHeight,
+            30 => ColumnType::Enum,
+            31 => ColumnType::Int1,
+            32 => ColumnType::UInt1,
+            33 => ColumnType::NoRelation,
+            34 => ColumnType::BlockId,
             _ => panic!("Invalid column type."),
         }
     }
@@ -272,6 +332,18 @@ impl From<&str> for ColumnType {
             "Object" => ColumnType::Object,
             "UInt16" => ColumnType::UInt16,
             "Int16" => ColumnType::Int16,
+            "Bytes64" => ColumnType::Bytes64,
+            "Signature" => ColumnType::Signature,
+            "Nonce" => ColumnType::Nonce,
+            "HexString" => ColumnType::HexString,
+            "Tai64Timestamp" => ColumnType::Tai64Timestamp,
+            "TxId" => ColumnType::TxId,
+            "BlockHeight" => ColumnType::BlockHeight,
+            "Enum" => ColumnType::Enum,
+            "Int1" => ColumnType::Int1,
+            "UInt1" => ColumnType::UInt1,
+            "NoRelation" => ColumnType::NoRelation,
+            "BlockId" => ColumnType::BlockId,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }

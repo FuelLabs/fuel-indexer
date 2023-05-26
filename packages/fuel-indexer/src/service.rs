@@ -13,7 +13,7 @@ use fuel_indexer_lib::{
     utils::{IndexRevertRequest, ServiceRequest},
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
-use fuel_indexer_types::abi::BlockData;
+use fuel_indexer_types::block::BlockData;
 use futures::{
     stream::{FuturesUnordered, StreamExt},
     Future,
@@ -55,7 +55,7 @@ impl IndexerService {
         })
     }
 
-    pub async fn register_index_from_manifest(
+    pub async fn register_indexer_from_manifest(
         &mut self,
         mut manifest: Manifest,
     ) -> IndexerResult<()> {
@@ -77,6 +77,7 @@ impl IndexerService {
                 &manifest.identifier,
                 &schema,
                 &mut conn,
+                manifest.is_native(),
             )
             .await?;
 
@@ -123,7 +124,7 @@ impl IndexerService {
         Ok(())
     }
 
-    pub async fn register_indices_from_registry(&mut self) -> IndexerResult<()> {
+    pub async fn register_indexers_from_registry(&mut self) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
         let indices = queries::all_registered_indexers(&mut conn).await?;
         for index in indices {
@@ -147,7 +148,7 @@ impl IndexerService {
         Ok(())
     }
 
-    pub async fn register_native_index<
+    pub async fn register_native_indexer<
         T: Future<Output = IndexerResult<()>> + Send + 'static,
     >(
         &mut self,
@@ -171,6 +172,7 @@ impl IndexerService {
                 &manifest.identifier,
                 &schema,
                 &mut conn,
+                true,
             )
             .await?;
 

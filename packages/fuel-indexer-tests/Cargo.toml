@@ -36,7 +36,7 @@ fuel-indexer-postgres = { workspace = true, features = ["metrics"] }
 fuel-indexer-schema = { workspace = true, default-features = true }
 fuel-indexer-types = { workspace = true }
 fuel-tx = { workspace = true }
-fuels = { default-features = true, features = ["fuel-core-lib"], workspace = true }
+fuels = { features = ["fuel-core-lib", "std"], workspace = true }
 futures = "0.3"
 hex = "0.4"
 hyper = { version = "0.14", features = ["client", "http2", "http1", "runtime" ] }
@@ -45,7 +45,7 @@ lazy_static = "1.4"
 rand = "0.8"
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls", "multipart"] }
 serde = { features = ["derive"], workspace = true }
-serde_json = "1.0"
+serde_json = { workspace = true }
 serde_yaml = "0.8"
 sqlx = { version = "0.6", features = ["bigdecimal"] }
 thiserror = { workspace = true }
