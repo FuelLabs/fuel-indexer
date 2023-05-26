@@ -139,7 +139,7 @@ Do your WASM modules need to be rebuilt?"#,
 
                 self.stashed
                     .as_mut()
-                    .expect("Failed to re-open transaction.")
+                    .expect("(put_object) Failed to re-open transaction.")
             }
         };
 
@@ -159,7 +159,7 @@ Do your WASM modules need to be rebuilt?"#,
 
                 self.stashed
                     .as_mut()
-                    .expect("Failed to re-open transaction.")
+                    .expect("(get_object) Failed to re-open transaction.")
             }
         };
 
