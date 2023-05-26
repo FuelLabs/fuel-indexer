@@ -27,7 +27,6 @@ members = [
    "packages/fuel-indexer-types",
    "plugins/forc-index",
    "plugins/forc-index-tests",
-   "plugins/forc-index-tests",
    "plugins/forc-postgres",
 ]
 default-members = [
