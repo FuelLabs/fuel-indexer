@@ -232,6 +232,182 @@ impl From<fuel::Input> for Input {
     }
 }
 
+impl From<fuel::CoinOutput> for CoinOutput {
+    fn from(output: fuel::CoinOutput) -> Self {
+        let fuel::CoinOutput {
+            to,
+            amount,
+            asset_id,
+        } = output;
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            recipient: to,
+            amount,
+            asset_id,
+        }
+    }
+}
+
+impl From<fuel::ContractOutput> for ContractOutput {
+    fn from(output: fuel::ContractOutput) -> Self {
+        let fuel::ContractOutput {
+            input_index,
+            balance_root,
+            state_root,
+        } = output;
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            input_index: input_index as i64,
+            balance_root,
+            state_root,
+        }
+    }
+}
+
+impl From<fuel::ChangeOutput> for ChangeOutput {
+    fn from(output: fuel::ChangeOutput) -> Self {
+        let fuel::ChangeOutput {
+            to,
+            amount,
+            asset_id,
+        } = output;
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            recipient: to,
+            amount,
+            asset_id,
+        }
+    }
+}
+
+impl From<fuel::VariableOutput> for VariableOutput {
+    fn from(output: fuel::VariableOutput) -> Self {
+        let fuel::VariableOutput {
+            to,
+            amount,
+            asset_id,
+        } = output;
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            recipient: to,
+            amount,
+            asset_id,
+        }
+    }
+}
+
+impl From<fuel::Output> for Output {
+    fn from(output: fuel::Output) -> Self {
+        match output {
+            fuel::Output::CoinOutput(output) => {
+                let coin = CoinOutput::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: Some(coin.id),
+                    contract: None,
+                    change: None,
+                    variable: None,
+                    contract_created: None,
+                    unknown: None,
+                }
+            }
+            fuel::Output::ContractOutput(output) => {
+                let contract = ContractOutput::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: None,
+                    contract: Some(contract.id),
+                    change: None,
+                    variable: None,
+                    contract_created: None,
+                    unknown: None,
+                }
+            }
+            fuel::Output::ChangeOutput(output) => {
+                let change = ChangeOutput::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: None,
+                    contract: None,
+                    change: Some(change.id),
+                    variable: None,
+                    contract_created: None,
+                    unknown: None,
+                }
+            }
+            fuel::Output::VariableOutput(output) => {
+                let var = VariableOutput::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: None,
+                    contract: None,
+                    change: None,
+                    variable: Some(var.id),
+                    contract_created: None,
+                    unknown: None,
+                }
+            }
+            fuel::Output::ContractCreated(output) => {
+                let contract = ContractCreated::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: None,
+                    contract: None,
+                    change: None,
+                    variable: None,
+                    contract_created: Some(contract.id),
+                    unknown: None,
+                }
+            }
+            _ => {
+                Logger::warn("Unrecognized output type.");
+                Self {
+                    id: 1,
+                    coin: None,
+                    contract: None,
+                    change: None,
+                    variable: None,
+                    contract_created: None,
+                    unknown: Some(Unknown { value: true }.into()),
+                }
+            }
+        }
+    }
+}
+
+impl From<fuel::ContractCreated> for ContractCreated {
+    fn from(output: fuel::ContractCreated) -> Self {
+        let fuel::ContractCreated {
+            #[allow(unused)]
+            contract,
+            state_root,
+        } = output;
+
+        let id = 1; // Create u64 from contract ID
+        let contract = Contract::load(id).unwrap();
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            contract: contract.id,
+            state_root,
+        }
+    }
+}
+
 #[indexer(manifest = "examples/fuel-explorer/fuel-explorer/fuel_explorer.manifest.yaml")]
 pub mod explorer_index {
 

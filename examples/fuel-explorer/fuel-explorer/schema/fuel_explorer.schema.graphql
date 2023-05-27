@@ -276,6 +276,7 @@ type Output {
   change: ChangeOutput
   variable: VariableOutput
   contract_created: ContractCreated
+  unknown: Unknown
 }
 
 type DryRun {
