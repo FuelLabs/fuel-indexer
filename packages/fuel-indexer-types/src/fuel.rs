@@ -17,7 +17,7 @@ pub use fuel_tx::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionData {
     pub transaction: Transaction,
     pub status: TransactionStatusData,
@@ -39,7 +39,7 @@ pub struct Header {
     pub application_hash: Bytes32,
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockData {
     pub height: u64,
     pub id: Bytes32,
@@ -56,20 +56,20 @@ impl TypeId for BlockData {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub enum Input {
     Coin(InputCoin),
     Contract(InputContract),
     Message(InputMessage),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct TxPointer {
     pub block_height: u32,
     pub tx_index: u64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct InputCoin {
     pub utxo_id: UtxoId,
     pub owner: Address,
@@ -82,7 +82,7 @@ pub struct InputCoin {
     pub predicate_data: HexString,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct InputContract {
     pub utxo_id: UtxoId,
     pub balance_root: Bytes32,
@@ -91,7 +91,7 @@ pub struct InputContract {
     pub contract_id: ContractId,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct InputMessage {
     pub sender: Address,
     pub recipient: Address,
@@ -130,12 +130,12 @@ impl Default for TransactionStatusData {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct ContractIdFragment {
     pub id: ContractId,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Default)]
 pub enum Output {
     CoinOutput(CoinOutput),
     ContractOutput(ContractOutput),
@@ -146,35 +146,35 @@ pub enum Output {
     Unknown,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct CoinOutput {
     pub to: Address,
     pub amount: u64,
     pub asset_id: AssetId,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct ContractOutput {
     pub input_index: i32,
     pub balance_root: Bytes32,
     pub state_root: Bytes32,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct ChangeOutput {
     pub to: Address,
     pub amount: u64,
     pub asset_id: AssetId,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct VariableOutput {
     pub to: Address,
     pub amount: u64,
     pub asset_id: AssetId,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
 pub struct ContractCreated {
     pub contract: ContractIdFragment,
     pub state_root: Bytes32,
@@ -193,7 +193,7 @@ pub struct PoA {
     pub signature: Signature,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub enum Consensus {
     Genesis(Genesis),
     PoA(PoA),
