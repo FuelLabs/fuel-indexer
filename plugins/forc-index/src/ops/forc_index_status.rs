@@ -50,7 +50,7 @@ pub async fn status(
             if verbose {
                 error!("\n❌ Status check failed. Could not connect to indexer service:\n'{e}'");
             } else {
-                error!("\n❌ Status check failed.")
+                error!("\n❌ Status check failed.");
             }
         }
     }
