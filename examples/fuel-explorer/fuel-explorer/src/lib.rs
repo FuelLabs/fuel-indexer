@@ -17,33 +17,47 @@ impl ToString for ConsensusLabel {
     }
 }
 
-impl From<ConsensusData> for Consensus {
-    fn from(consensus: ConsensusData) -> Self {
+impl From<fuel::Genesis> for Genesis {
+    fn from(genesis: fuel::Genesis) -> Self {
+        let fuel::Genesis {
+            chain_config_hash,
+            coins_root,
+            contracts_root,
+            messages_root,
+            ..
+        } = genesis;
+
+        let id = 1;
+        Self {
+            id,
+            chain_config_hash,
+            coins_root,
+            contracts_root,
+            messages_root,
+        }
+    }
+}
+
+impl From<fuel::Consensus> for Consensus {
+    fn from(consensus: fuel::Consensus) -> Self {
         match consensus {
-            ConsensusData::Genesis(GenesisConsensus {
-                chain_config_hash,
-                coins_root,
-                contracts_root,
-                messages_root,
-            }) => {
+            fuel::Consensus::Genesis(g) => {
                 let id = 1;
-                let genesis = Genesis::load(id).unwrap_or(Genesis {
-                    chain_config_hash,
-                    coins_root,
-                    contracts_root,
-                    messages_root,
-                    id,
+                let genesis = Genesis::load(id).unwrap_or_else(|| {
+                    let g: Genesis = g.into();
+                    g.save();
+                    g
                 });
 
                 Consensus {
                     unknown: None,
-                    poa: None,
                     genesis: Some(genesis.id),
                     label: ConsensusLabel::Genesis.to_string(),
+                    poa: None,
                     id,
                 }
             }
-            ConsensusData::PoA(poa) => {
+            fuel::Consensus::PoA(poa) => {
                 let id = 1;
                 Consensus {
                     unknown: None,
@@ -58,7 +72,7 @@ impl From<ConsensusData> for Consensus {
                     id,
                 }
             }
-            ConsensusData::UnknownConsensus => {
+            fuel::Consensus::Unknown => {
                 let id = 1;
                 Consensus {
                     unknown: Some(Unknown { value: true }.into()),
@@ -72,17 +86,17 @@ impl From<ConsensusData> for Consensus {
     }
 }
 
-impl From<ClientWitness> for Witness {
-    fn from(w: ClientWitness) -> Self {
+impl From<fuel::Witness> for Witness {
+    fn from(w: fuel::Witness) -> Self {
         Self {
             data: w.into_inner().into(),
         }
     }
 }
 
-impl From<ClientTxPointer> for TxPointer {
-    fn from(tx_pointer: ClientTxPointer) -> Self {
-        let ClientTxPointer {
+impl From<fuel::TxPointer> for TxPointer {
+    fn from(tx_pointer: fuel::TxPointer) -> Self {
+        let fuel::TxPointer {
             block_height,
             tx_index,
         } = tx_pointer;
@@ -94,9 +108,9 @@ impl From<ClientTxPointer> for TxPointer {
     }
 }
 
-impl From<ClientInputCoin> for InputCoin {
-    fn from(input: ClientInputCoin) -> Self {
-        let ClientInputCoin {
+impl From<fuel::InputCoin> for InputCoin {
+    fn from(input: fuel::InputCoin) -> Self {
+        let fuel::InputCoin {
             #[allow(unused)]
             utxo_id,
             owner,
@@ -138,9 +152,9 @@ impl From<u64> for ContractIdFragment {
 }
 
 #[allow(unused)]
-impl From<ClientInputContract> for InputContract {
-    fn from(input: ClientInputContract) -> Self {
-        let ClientInputContract {
+impl From<fuel::InputContract> for InputContract {
+    fn from(input: fuel::InputContract) -> Self {
+        let fuel::InputContract {
             utxo_id,
             balance_root,
             state_root,
@@ -173,10 +187,10 @@ impl From<ClientInputContract> for InputContract {
     }
 }
 
-impl From<ClientInput> for Input {
-    fn from(input: ClientInput) -> Self {
+impl From<fuel::Input> for Input {
+    fn from(input: fuel::Input) -> Self {
         match input {
-            ClientInput::Coin(input) => {
+            fuel::Input::Coin(input) => {
                 let id = 1; // Create u64 from input parts
                 let coin = InputCoin::load(id).unwrap_or_else(|| {
                     let coin = InputCoin::from(input);
@@ -194,7 +208,7 @@ impl From<ClientInput> for Input {
                 input.save();
                 input
             }
-            ClientInput::Contract(input) => {
+            fuel::Input::Contract(input) => {
                 let id = 1; // Create u64 from input parts
                 let contract = InputContract::load(id).unwrap_or_else(|| {
                     let contract = InputContract::from(input);
@@ -213,7 +227,7 @@ impl From<ClientInput> for Input {
                 input
             }
             _ => unimplemented!(),
-            // ClientInput::Message(input) => Input::Message(input.into()),
+            // fuel::Input::Message(input) => Input::Message(input.into()),
         }
     }
 }
@@ -242,6 +256,7 @@ pub mod explorer_index {
         consensus.save();
 
         let id = 1;
+        let _foo = "bar";
         let block_frag = BlockIdFragment { id };
 
         block_frag.save();
@@ -259,7 +274,7 @@ pub mod explorer_index {
         for transaction in block_data.transactions.iter() {
             match &transaction.transaction {
                 #[allow(unused)]
-                ClientTransaction::Script(t) => {
+                fuel::Transaction::Script(t) => {
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
                     let maturity = t.maturity();
@@ -306,7 +321,7 @@ pub mod explorer_index {
                     create_tx.save();
                 }
                 #[allow(unused)]
-                ClientTransaction::Create(t) => {
+                fuel::Transaction::Create(t) => {
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
                     let maturity = t.maturity();
@@ -327,7 +342,7 @@ pub mod explorer_index {
                     create_tx_frag.save();
                 }
                 #[allow(unused)]
-                ClientTransaction::Mint(t) => {
+                fuel::Transaction::Mint(t) => {
                     let tx_pointer = t.tx_pointer();
                     let outputs = t.outputs();
 
@@ -339,21 +354,21 @@ pub mod explorer_index {
 
             for receipt in transaction.receipts.iter() {
                 match receipt {
-                    ClientReceipt::Call { .. } => {}
+                    fuel::Receipt::Call { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::ReturnData { .. } => {}
+                    fuel::Receipt::ReturnData { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::Transfer { .. } => {}
+                    fuel::Receipt::Transfer { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::TransferOut { .. } => {}
+                    fuel::Receipt::TransferOut { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::Log { .. } => {}
+                    fuel::Receipt::Log { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::LogData { .. } => {}
+                    fuel::Receipt::LogData { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::ScriptResult { .. } => {}
+                    fuel::Receipt::ScriptResult { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::MessageOut { .. } => {}
+                    fuel::Receipt::MessageOut { .. } => {}
                     _ => {
                         Logger::info("This Receipt type is not handled yet.");
                     }

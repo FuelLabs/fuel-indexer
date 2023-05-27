@@ -1,10 +1,8 @@
-pub mod block;
 pub mod ffi;
-pub mod fuel_client_schema;
+pub mod fuel;
 pub mod graphql;
 pub mod receipt;
 pub mod scalar;
-pub mod transaction;
 
 pub use fuels::{
     core::try_from_bytes,
@@ -22,13 +20,11 @@ pub trait TypeId {
 }
 
 pub mod prelude {
-    pub use crate::block::*;
     pub use crate::ffi::*;
-    pub use crate::fuel_client_schema::*;
+    pub use crate::fuel;
     pub use crate::graphql::*;
     pub use crate::receipt::*;
     pub use crate::scalar::*;
-    pub use crate::transaction::*;
     pub use crate::{TypeId, FUEL_TYPES_NAMESPACE};
 }
 

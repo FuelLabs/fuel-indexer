@@ -93,8 +93,14 @@ impl From<Blob> for Vec<u8> {
 pub type NoRelation = Json;
 
 /// JSON type used to store arbitrary object payloads.
-#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash, Default)]
+#[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Json(pub String);
+
+impl Default for Json {
+    fn default() -> Self {
+        Json("{}".to_string())
+    }
+}
 
 macro_rules! json_impl {
     ($($ty:ty),*) => {

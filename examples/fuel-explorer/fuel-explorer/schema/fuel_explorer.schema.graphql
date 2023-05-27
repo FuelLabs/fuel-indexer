@@ -387,8 +387,8 @@ type CallReceipt {
   gas: UInt8!
   param1: UInt8!
   param2: UInt8!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 type ReturnDataReceipt {
@@ -398,8 +398,8 @@ type ReturnDataReceipt {
   len: UInt8!
   digest: Bytes32!
   data: Blob!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 enum PanicReason {
@@ -453,8 +453,8 @@ type PanicReceipt {
   id: ID!
   some_id: ContractId!
   reason: InstructionResult
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
   contract_id: ContractId
 }
 
@@ -462,8 +462,8 @@ type RevertReceipt {
   id: ID!
   some_id: ContractId!
   ra: UInt8!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 type LogReceipt {
@@ -473,8 +473,8 @@ type LogReceipt {
   rb: UInt8!
   rc: UInt8!
   rd: UInt8!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 type LogDataReceipt {
@@ -486,8 +486,8 @@ type LogDataReceipt {
   len: UInt8!
   digest: Bytes32!
   data: Blob!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 # TODO: Finish this?

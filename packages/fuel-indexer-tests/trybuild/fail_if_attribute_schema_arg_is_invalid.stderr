@@ -6,17 +6,49 @@ error: custom attribute panicked
   |
   = help: message: Bad schema.: ParseError(Syntax { message: " --> 1:1\n  |\n1 | namespace: test_namespace\n  | ^---\n  |\n  = expected type_system_definition", start: Pos(1:1), end: None })
 
-error[E0433]: failed to resolve: use of undeclared type `ClientReciept`
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |                 ClientReciept::Call {
-  |                 ^^^^^^^^^^^^^ use of undeclared type `ClientReciept`
+  |         header: fuel::Header {
+  |                 ^^^^ use of undeclared crate or module `fuel`
+  |
+help: there is a crate or module with a similar name
+   |
+32 |         header: fuels::Header {
+   |                 ~~~~~
 
-error[E0433]: failed to resolve: use of undeclared type `ClientReciept`
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |                 ClientReciept::ReturnData {
-  |                 ^^^^^^^^^^^^^ use of undeclared type `ClientReciept`
+  |         transactions: vec![fuel::TransactionData {
+  |                            ^^^^ use of undeclared crate or module `fuel`
+  |
+help: there is a crate or module with a similar name
+   |
+45 |         transactions: vec![fuels::TransactionData {
+   |                            ~~~~~
+
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |                 fuel::Receipt::Call {
+  |                 ^^^^ use of undeclared crate or module `fuel`
+  |
+help: there is a crate or module with a similar name
+   |
+49 |                 fuels::Receipt::Call {
+   |                 ~~~~~
+
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |                 fuel::Receipt::ReturnData {
+  |                 ^^^^ use of undeclared crate or module `fuel`
+  |
+help: there is a crate or module with a similar name
+   |
+60 |                 fuels::Receipt::ReturnData {
+   |                 ~~~~~
 
 error[E0422]: cannot find struct, variant or union type `SomeEvent` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
@@ -34,7 +66,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::prelude::BlockData;
    |
-2  | use fuel_indexer_types::prelude::BlockData;
+2  | use fuel_indexer_types::fuel::BlockData;
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
@@ -47,73 +79,61 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::prelude::BlockData;
    |
-2  | use fuel_indexer_types::prelude::BlockData;
+2  | use fuel_indexer_types::fuel::BlockData;
    |
 
-error[E0422]: cannot find struct, variant or union type `HeaderData` in this scope
+error[E0433]: failed to resolve: use of undeclared type `Consensus`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |         header: HeaderData {
-  |                 ^^^^^^^^^^ not found in this scope
+  |         consensus: Consensus::default(),
+  |                    ^^^^^^^^^ use of undeclared type `Consensus`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::HeaderData;
+2  | use fuel_indexer_plugin::prelude::fuel::Consensus;
    |
-2  | use fuel_indexer_types::prelude::HeaderData;
+2  | use fuel_indexer_types::fuel::Consensus;
    |
 
-error[E0433]: failed to resolve: use of undeclared type `ConsensusData`
+error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |         consensus: ConsensusData::default(),
-  |                    ^^^^^^^^^^^^^ use of undeclared type `ConsensusData`
+  |             status: fuel::TransactionStatusData::default(),
+  |                     ^^^^ use of undeclared crate or module `fuel`
+  |
+help: there is a crate or module with a similar name
+   |
+47 |             status: fuels::TransactionStatusData::default(),
+   |                     ~~~~~
+help: consider importing one of these items
+   |
+2  | use fuel_indexer_plugin::prelude::fuel::TransactionStatusData;
+   |
+2  | use fuel_indexer_types::fuel::TransactionStatusData;
+   |
+help: if you import `TransactionStatusData`, refer to it directly
+   |
+47 -             status: fuel::TransactionStatusData::default(),
+47 +             status: TransactionStatusData::default(),
+   |
+
+error[E0433]: failed to resolve: use of undeclared type `Transaction`
+ --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
+  |
+  |             transaction: Transaction::default(),
+  |                          ^^^^^^^^^^^ use of undeclared type `Transaction`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::ConsensusData;
+2  | use fuel_indexer_plugin::prelude::fuel::Transaction;
    |
-2  | use fuel_indexer_types::prelude::ConsensusData;
+2  | use fuel_indexer_types::fuel::Transaction;
    |
-
-error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |         transactions: vec![TransactionData {
-  |                            ^^^^^^^^^^^^^^^ not found in this scope
-  |
-help: consider importing one of these items
+2  | use fuels::prelude::Transaction;
    |
-2  | use fuel_indexer_plugin::prelude::TransactionData;
+2  | use fuels::tx::Transaction;
    |
-2  | use fuel_indexer_types::prelude::TransactionData;
-   |
-
-error[E0433]: failed to resolve: use of undeclared type `ClientTransactionStatusData`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |             status: ClientTransactionStatusData::default(),
-  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ use of undeclared type `ClientTransactionStatusData`
-  |
-help: consider importing one of these items
-   |
-2  | use fuel_indexer_plugin::prelude::ClientTransactionStatusData;
-   |
-2  | use fuel_indexer_types::prelude::ClientTransactionStatusData;
-   |
-
-error[E0433]: failed to resolve: use of undeclared type `ClientTransaction`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |             transaction: ClientTransaction::default(),
-  |                          ^^^^^^^^^^^^^^^^^ use of undeclared type `ClientTransaction`
-  |
-help: consider importing one of these items
-   |
-2  | use fuel_indexer_plugin::prelude::ClientTransaction;
-   |
-2  | use fuel_indexer_types::prelude::ClientTransaction;
-   |
+     and 1 other candidate
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
