@@ -17,66 +17,86 @@ impl ToString for ConsensusLabel {
     }
 }
 
-impl From<ConsensusData> for Consensus {
-    fn from(consensus: ConsensusData) -> Self {
+impl From<fuel::Genesis> for Genesis {
+    fn from(genesis: fuel::Genesis) -> Self {
+        let fuel::Genesis {
+            chain_config_hash,
+            coins_root,
+            contracts_root,
+            messages_root,
+            ..
+        } = genesis;
+
+        let id = 1;
+        Self {
+            id,
+            chain_config_hash,
+            coins_root,
+            contracts_root,
+            messages_root,
+        }
+    }
+}
+
+impl From<fuel::Consensus> for Consensus {
+    fn from(consensus: fuel::Consensus) -> Self {
         match consensus {
-            ConsensusData::Genesis(GenesisConsensus {
-                chain_config_hash,
-                coins_root,
-                contracts_root,
-                messages_root,
-            }) => {
+            fuel::Consensus::Genesis(g) => {
                 let id = 1;
-                let genesis = Genesis::load(id).unwrap_or(Genesis {
-                    chain_config_hash,
-                    coins_root,
-                    contracts_root,
-                    messages_root,
-                    id,
+                let genesis = Genesis::load(id).unwrap_or_else(|| {
+                    let g: Genesis = g.into();
+                    g.save();
+                    g
                 });
 
                 Consensus {
                     unknown: None,
-                    poa: None,
                     genesis: Some(genesis.id),
                     label: ConsensusLabel::Genesis.to_string(),
-                    id: 1,
+                    poa: None,
+                    id,
                 }
             }
-            ConsensusData::PoA(poa) => Consensus {
-                unknown: None,
-                genesis: None,
-                label: ConsensusLabel::PoA.to_string(),
-                poa: Some(
-                    PoA {
-                        signature: poa.signature,
-                    }
-                    .into(),
-                ),
-                id: 1,
-            },
-            ConsensusData::UnknownConsensus => Consensus {
-                unknown: Some(Unknown { value: true }.into()),
-                genesis: None,
-                label: ConsensusLabel::Unknown.to_string(),
-                poa: None,
-                id: 1,
-            },
+            fuel::Consensus::PoA(poa) => {
+                let id = 1;
+                Consensus {
+                    unknown: None,
+                    genesis: None,
+                    label: ConsensusLabel::PoA.to_string(),
+                    poa: Some(
+                        PoA {
+                            signature: poa.signature,
+                        }
+                        .into(),
+                    ),
+                    id,
+                }
+            }
+            fuel::Consensus::Unknown => {
+                let id = 1;
+                Consensus {
+                    unknown: Some(Unknown { value: true }.into()),
+                    genesis: None,
+                    label: ConsensusLabel::Unknown.to_string(),
+                    poa: None,
+                    id,
+                }
+            }
         }
     }
 }
 
-impl From<ClientWitness> for Witness {
-    fn from(w: ClientWitness) -> Self {
+impl From<fuel::Witness> for Witness {
+    fn from(w: fuel::Witness) -> Self {
         Self {
-            data: Blob(w.into_inner()),
+            data: w.into_inner().into(),
         }
     }
 }
 
-impl From<ClientTxPointer> for TxPointer {
-    fn from(tx_pointer: ClientTxPointer) -> Self {
-        let ClientTxPointer {
+impl From<fuel::TxPointer> for TxPointer {
+    fn from(tx_pointer: fuel::TxPointer) -> Self {
+        let fuel::TxPointer {
             block_height,
             tx_index,
         } = tx_pointer;
@@ -88,9 +108,9 @@ impl From<ClientTxPointer> for TxPointer {
     }
 }
 
-impl From<ClientInputCoin> for InputCoin {
-    fn from(input: ClientInputCoin) -> Self {
-        let ClientInputCoin {
+impl From<fuel::InputCoin> for InputCoin {
+    fn from(input: fuel::InputCoin) -> Self {
+        let fuel::InputCoin {
             #[allow(unused)]
             utxo_id,
             owner,
@@ -103,10 +123,11 @@ impl From<ClientInputCoin> for InputCoin {
             predicate_data,
         } = input;
 
-        let pointer = TxPointer::load(1).unwrap_or_else(|| {
-            let pointer = TxPointer::from(tx_pointer);
-            pointer.save();
-            pointer
+        let id = 1; // Create u64 from input parts
+        let ptr = TxPointer::load(id).unwrap_or_else(|| {
+            let ptr = TxPointer::from(tx_pointer);
+            ptr.save();
+            ptr
         });
 
         Self {
@@ -115,7 +136,7 @@ impl From<ClientInputCoin> for InputCoin {
             owner,
             amount,
             asset_id,
-            tx_pointer: pointer.id,
+            tx_pointer: ptr.id,
             witness_index: witness_index as i64,
             maturity: maturity as u64,
             predicate,
@@ -124,17 +145,62 @@ impl From<ClientInputCoin> for InputCoin {
     }
 }
 
-impl From<ClientInput> for Input {
-    fn from(input: ClientInput) -> Self {
+impl From<u64> for ContractIdFragment {
+    fn from(id: u64) -> Self {
+        Self { id }
+    }
+}
+
+#[allow(unused)]
+impl From<fuel::InputContract> for InputContract {
+    fn from(input: fuel::InputContract) -> Self {
+        let fuel::InputContract {
+            utxo_id,
+            balance_root,
+            state_root,
+            tx_pointer,
+            contract_id,
+        } = input;
+
+        let id = 1; // Create u64 from `contract_id`
+        let contract = ContractIdFragment::load(id).unwrap_or_else(|| {
+            let contract = ContractIdFragment::from(id);
+            contract.save();
+            contract
+        });
+
+        let id = 1; // Create u64 from input parts
+        let ptr = TxPointer::load(id).unwrap_or_else(|| {
+            let ptr = TxPointer::from(tx_pointer);
+            ptr.save();
+            ptr
+        });
+
+        Self {
+            id,
+            utxo_id: 1,
+            balance_root,
+            state_root,
+            tx_pointer: ptr.id,
+            contract: contract.id,
+        }
+    }
+}
+
+impl From<fuel::Input> for Input {
+    fn from(input: fuel::Input) -> Self {
         match input {
-            ClientInput::Coin(input) => {
-                let coin = InputCoin::load(1).unwrap_or_else(|| {
+            fuel::Input::Coin(input) => {
+                let id = 1; // Create u64 from input parts
+                let coin = InputCoin::load(id).unwrap_or_else(|| {
                     let coin = InputCoin::from(input);
                     coin.save();
                     coin
                 });
+
+                let id = 1;
                 let input = Input {
-                    id: 1,
+                    id,
                     coin: Some(coin.id),
                     contract: None,
                     message: None,
@@ -142,9 +208,202 @@ impl From<ClientInput> for Input {
                 input.save();
                 input
             }
+            fuel::Input::Contract(input) => {
+                let id = 1; // Create u64 from input parts
+                let contract = InputContract::load(id).unwrap_or_else(|| {
+                    let contract = InputContract::from(input);
+                    contract.save();
+                    contract
+                });
+
+                let id = 1;
+                let input = Input {
+                    id,
+                    coin: None,
+                    contract: Some(contract.id),
+                    message: None,
+                };
+                input.save();
+                input
+            }
             _ => unimplemented!(),
-            // ClientInput::Contract(input) => Input::Contract(input.into()),
-            // ClientInput::Message(input) => Input::Message(input.into()),
+            // fuel::Input::Message(input) => Input::Message(input.into()),
+        }
+    }
+}
+
+impl From<fuel::CoinOutput> for CoinOutput {
+    fn from(output: fuel::CoinOutput) -> Self {
+        let fuel::CoinOutput {
+            to,
+            amount,
+            asset_id,
+        } = output;
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            recipient: to,
+            amount,
+            asset_id,
+        }
+    }
+}
+
+impl From<fuel::ContractOutput> for ContractOutput {
+    fn from(output: fuel::ContractOutput) -> Self {
+        let fuel::ContractOutput {
+            input_index,
+            balance_root,
+            state_root,
+        } = output;
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            input_index: input_index as i64,
+            balance_root,
+            state_root,
+        }
+    }
+}
+
+impl From<fuel::ChangeOutput> for ChangeOutput {
+    fn from(output: fuel::ChangeOutput) -> Self {
+        let fuel::ChangeOutput {
+            to,
+            amount,
+            asset_id,
+        } = output;
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            recipient: to,
+            amount,
+            asset_id,
+        }
+    }
+}
+
+impl From<fuel::VariableOutput> for VariableOutput {
+    fn from(output: fuel::VariableOutput) -> Self {
+        let fuel::VariableOutput {
+            to,
+            amount,
+            asset_id,
+        } = output;
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            recipient: to,
+            amount,
+            asset_id,
+        }
+    }
+}
+
+impl From<fuel::Output> for Output {
+    fn from(output: fuel::Output) -> Self {
+        match output {
+            fuel::Output::CoinOutput(output) => {
+                let coin = CoinOutput::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: Some(coin.id),
+                    contract: None,
+                    change: None,
+                    variable: None,
+                    contract_created: None,
+                    unknown: None,
+                }
+            }
+            fuel::Output::ContractOutput(output) => {
+                let contract = ContractOutput::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: None,
+                    contract: Some(contract.id),
+                    change: None,
+                    variable: None,
+                    contract_created: None,
+                    unknown: None,
+                }
+            }
+            fuel::Output::ChangeOutput(output) => {
+                let change = ChangeOutput::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: None,
+                    contract: None,
+                    change: Some(change.id),
+                    variable: None,
+                    contract_created: None,
+                    unknown: None,
+                }
+            }
+            fuel::Output::VariableOutput(output) => {
+                let var = VariableOutput::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: None,
+                    contract: None,
+                    change: None,
+                    variable: Some(var.id),
+                    contract_created: None,
+                    unknown: None,
+                }
+            }
+            fuel::Output::ContractCreated(output) => {
+                let contract = ContractCreated::from(output);
+                let id = 1; // Create u64 from output parts
+                Self {
+                    id,
+                    coin: None,
+                    contract: None,
+                    change: None,
+                    variable: None,
+                    contract_created: Some(contract.id),
+                    unknown: None,
+                }
+            }
+            _ => {
+                Logger::warn("Unrecognized output type.");
+                Self {
+                    id: 1,
+                    coin: None,
+                    contract: None,
+                    change: None,
+                    variable: None,
+                    contract_created: None,
+                    unknown: Some(Unknown { value: true }.into()),
+                }
+            }
+        }
+    }
+}
+
+impl From<fuel::ContractCreated> for ContractCreated {
+    fn from(output: fuel::ContractCreated) -> Self {
+        let fuel::ContractCreated {
+            #[allow(unused)]
+            contract,
+            state_root,
+        } = output;
+
+        let id = 1; // Create u64 from contract ID
+        let contract = Contract::load(id).unwrap();
+
+        let id = 1; // Create u64 from output parts
+        Self {
+            id,
+            contract: contract.id,
+            state_root,
         }
     }
 }
@@ -153,8 +412,9 @@ impl From<ClientInput> for Input {
 pub mod explorer_index {
 
     fn index_block(block_data: BlockData) {
+        let id = 1; // Create u64 from block parts
         let header = Header {
-            id: 1,
+            id, // Create u64 from header parts
             block_id: block_data.header.id,
             da_height: block_data.header.da_height,
             transactions_count: block_data.header.transactions_count,
@@ -171,12 +431,14 @@ pub mod explorer_index {
         let consensus = Consensus::from(block_data.consensus);
         consensus.save();
 
-        let block_frag = BlockIdFragment { id: 1 };
+        let id = 1;
+        let _foo = "bar";
+        let block_frag = BlockIdFragment { id };
 
         block_frag.save();
 
         let block = Block {
-            id: 1,
+            id, // Create u64 from block parts
             block_id: block_data.header.id,
             header: header.id,
             consensus: consensus.id,
@@ -188,7 +450,7 @@ pub mod explorer_index {
         for transaction in block_data.transactions.iter() {
             match &transaction.transaction {
                 #[allow(unused)]
-                ClientTransaction::Script(t) => {
+                fuel::Transaction::Script(t) => {
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
                     let maturity = t.maturity();
@@ -196,7 +458,11 @@ pub mod explorer_index {
                     let script_data = t.script_data();
                     let receipts_root = t.receipts_root();
                     let inputs = t.inputs();
-                    let outputs = t.outputs();
+                    // let outputs = t
+                    //     .outputs()
+                    //     .iter()
+                    //     .map(|o| o.to_owned().into())
+                    //     .collect::<Vec<Output>>();
                     let witnesses = t
                         .witnesses()
                         .iter()
@@ -207,7 +473,7 @@ pub mod explorer_index {
                     script_tx_frag.save();
 
                     let create_tx = CreateTransaction {
-                        id: 1,
+                        id: 1, // Create u64 from tx parts
                         gas_limit: *gas_limit,
                         gas_price: *gas_price,
                         maturity: *maturity as u32,
@@ -231,7 +497,7 @@ pub mod explorer_index {
                     create_tx.save();
                 }
                 #[allow(unused)]
-                ClientTransaction::Create(t) => {
+                fuel::Transaction::Create(t) => {
                     let gas_limit = t.gas_limit();
                     let gas_price = t.gas_price();
                     let maturity = t.maturity();
@@ -240,17 +506,23 @@ pub mod explorer_index {
                     let bytecode_witness_index = t.bytecode_witness_index();
                     let inputs = t.inputs();
                     let outputs = t.outputs();
-                    let witnesses = t.witnesses();
+                    let witnesses = t
+                        .witnesses()
+                        .iter()
+                        .map(|w| w.to_owned().into())
+                        .collect::<Vec<Witness>>();
                     let storage_slots = t.storage_slots();
 
+                    // Create u64 from tx parts
                     let create_tx_frag = TransactionIdFragment { id: 1 };
                     create_tx_frag.save();
                 }
                 #[allow(unused)]
-                ClientTransaction::Mint(t) => {
+                fuel::Transaction::Mint(t) => {
                     let tx_pointer = t.tx_pointer();
                     let outputs = t.outputs();
 
+                    // Create u64 from tx parts
                     let mint_tx_frag = TransactionIdFragment { id: 1 };
                     mint_tx_frag.save();
                 }
@@ -258,21 +530,21 @@ pub mod explorer_index {
 
             for receipt in transaction.receipts.iter() {
                 match receipt {
-                    ClientReceipt::Call { .. } => {}
+                    fuel::Receipt::Call { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::ReturnData { .. } => {}
+                    fuel::Receipt::ReturnData { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::Transfer { .. } => {}
+                    fuel::Receipt::Transfer { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::TransferOut { .. } => {}
+                    fuel::Receipt::TransferOut { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::Log { .. } => {}
+                    fuel::Receipt::Log { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::LogData { .. } => {}
+                    fuel::Receipt::LogData { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::ScriptResult { .. } => {}
+                    fuel::Receipt::ScriptResult { .. } => {}
                     #[allow(unused)]
-                    ClientReceipt::MessageOut { .. } => {}
+                    fuel::Receipt::MessageOut { .. } => {}
                     _ => {
                         Logger::info("This Receipt type is not handled yet.");
                     }

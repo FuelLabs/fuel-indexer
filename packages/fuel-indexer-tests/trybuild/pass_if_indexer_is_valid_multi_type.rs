@@ -49,8 +49,8 @@ fn main() {
         time: 1,
         producer: None,
         height: 0,
-        consensus: ConsensusData::default(),
-        header: HeaderData {
+        consensus: fuel::Consensus::default(),
+        header: fuel::Header {
             id: [0u8; 32].into(),
             da_height: 1,
             transactions_count: 1,
@@ -62,11 +62,11 @@ fn main() {
             time: 1,
             application_hash: [0u8; 32].into(),
         },
-        transactions: vec![TransactionData {
+        transactions: vec![fuel::TransactionData {
             id: [0u8; 32].into(),
-            status: ClientTransactionStatusData::default(),
+            status: fuel::TransactionStatusData::default(),
             receipts: vec![
-                ClientReceipt::Call {
+                fuel::Receipt::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
                     amount: 400,
@@ -77,7 +77,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-                ClientReceipt::ReturnData {
+                fuel::Receipt::ReturnData {
                     id: [0u8; 32].into(),
                     ptr: 2342143,
                     len: bytes1.len() as u64,
@@ -86,7 +86,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-                ClientReceipt::Call {
+                fuel::Receipt::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
                     amount: 400,
@@ -97,7 +97,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-                ClientReceipt::ReturnData {
+                fuel::Receipt::ReturnData {
                     id: [0u8; 32].into(),
                     ptr: 2342143,
                     len: bytes2.len() as u64,
@@ -107,7 +107,7 @@ fn main() {
                     is: 0,
                 },
             ],
-            transaction: ClientTransaction::default(),
+            transaction: fuel::Transaction::default(),
         }],
     }];
 

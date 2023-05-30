@@ -6,7 +6,6 @@ type TransactionPointer {
   tx_index: UInt4!
 }
 
-
 type TransactionIdFragment {
   id: ID!
 }
@@ -142,7 +141,6 @@ type MintTransaction {
 
 type SubmittedStatus {
   id: ID!
-  # time: Tai64Timestamp!
   time: UInt8!
 }
 
@@ -172,7 +170,6 @@ type ProgramState {
 type FailureStatus {
   id: ID!
   block: BlockIdFragment!
-  # time: Tai64Timestamp!
   time: UInt8!
   reason: Charfield!
   program_state: ProgramState
@@ -180,7 +177,6 @@ type FailureStatus {
 
 type SuccessStatus {
   id: ID!
-  # time: Tai64Timestamp!
   time: UInt8!
   block: BlockIdFragment!
   program_state: ProgramState
@@ -217,7 +213,6 @@ type Header {
   message_receipt_root: Bytes32!
   height: UInt8!
   prev_root: Bytes32!
-  # time: Tai64Timestamp
   time: Int8!
   application_hash: Bytes32!
 }
@@ -281,6 +276,7 @@ type Output {
   change: ChangeOutput
   variable: VariableOutput
   contract_created: ContractCreated
+  unknown: Unknown
 }
 
 type DryRun {
@@ -392,8 +388,8 @@ type CallReceipt {
   gas: UInt8!
   param1: UInt8!
   param2: UInt8!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 type ReturnDataReceipt {
@@ -403,8 +399,8 @@ type ReturnDataReceipt {
   len: UInt8!
   digest: Bytes32!
   data: Blob!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 enum PanicReason {
@@ -458,8 +454,8 @@ type PanicReceipt {
   id: ID!
   some_id: ContractId!
   reason: InstructionResult
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
   contract_id: ContractId
 }
 
@@ -467,8 +463,8 @@ type RevertReceipt {
   id: ID!
   some_id: ContractId!
   ra: UInt8!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 type LogReceipt {
@@ -478,8 +474,8 @@ type LogReceipt {
   rb: UInt8!
   rc: UInt8!
   rd: UInt8!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 type LogDataReceipt {
@@ -491,8 +487,8 @@ type LogDataReceipt {
   len: UInt8!
   digest: Bytes32!
   data: Blob!
-  pc: UInt8!
-  is: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
 }
 
 # TODO: Finish this?

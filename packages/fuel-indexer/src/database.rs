@@ -24,6 +24,10 @@ pub struct Database {
 unsafe impl Sync for Database {}
 unsafe impl Send for Database {}
 
+fn is_id_only_upsert(columns: &[String]) -> bool {
+    columns.len() == 2 && columns[0] == IdCol::to_lowercase_string()
+}
+
 impl Database {
     pub async fn new(conn_uri: &str) -> IndexerResult<Database> {
         let pool = IndexerConnectionPool::connect(conn_uri).await?;
@@ -75,18 +79,32 @@ impl Database {
         inserts: Vec<String>,
         updates: Vec<String>,
     ) -> String {
-        format!(
-            "INSERT INTO {}
-                ({})
-             VALUES
-                ({}, $1::bytea)
-             ON CONFLICT(id)
-             DO UPDATE SET {}",
-            table,
-            columns.join(", "),
-            inserts.join(", "),
-            updates.join(", "),
-        )
+        if is_id_only_upsert(columns) {
+            format!(
+                "INSERT INTO {}
+                    ({})
+                 VALUES
+                    ({}, $1::bytea)
+                 ON CONFLICT(id)
+                 DO NOTHING",
+                table,
+                columns.join(", "),
+                inserts.join(", "),
+            )
+        } else {
+            format!(
+                "INSERT INTO {}
+                    ({})
+                 VALUES
+                    ({}, $1::bytea)
+                 ON CONFLICT(id)
+                 DO UPDATE SET {}",
+                table,
+                columns.join(", "),
+                inserts.join(", "),
+                updates.join(", "),
+            )
+        }
     }
 
     fn namespace(&self) -> String {
@@ -122,13 +140,7 @@ Do your WASM modules need to be rebuilt?"#,
         let updates: Vec<_> = self.schema[table]
             .iter()
             .zip(columns.iter())
-            .filter_map(|(colname, value)| {
-                if colname == &IdCol::to_lowercase_string() {
-                    None
-                } else {
-                    Some(format!("{} = {}", colname, value.query_fragment()))
-                }
-            })
+            .map(|(colname, value)| format!("{} = {}", colname, value.query_fragment()))
             .collect();
 
         let columns = self.schema[table].clone();

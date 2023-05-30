@@ -13,9 +13,11 @@ use fuel_core_client::client::{
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
-    block::{BlockData, ConsensusData, GenesisConsensus, HeaderData, PoAConsensus},
+    fuel::{
+        BlockData, Consensus, Genesis, Header, PoA, TransactionData,
+        TransactionStatusData, TxId,
+    },
     scalar::Bytes32,
-    transaction::{ClientTransactionStatusData, TransactionData, TxId},
 };
 use futures::Future;
 use std::{
@@ -177,7 +179,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                         block_id,
                                         time,
                                         ..
-                                    } => ClientTransactionStatusData::Success {
+                                    } => TransactionStatusData::Success {
                                         block_id,
                                         time: Utc
                                             .timestamp_opt(time.to_unix(), 0)
@@ -189,7 +191,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                         time,
                                         reason,
                                         ..
-                                    } => ClientTransactionStatusData::Failure {
+                                    } => TransactionStatusData::Failure {
                                         block_id,
                                         time: Utc
                                             .timestamp_opt(time.to_unix(), 0)
@@ -199,16 +201,14 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                     },
                                     ClientTransactionStatus::Submitted {
                                         submitted_at,
-                                    } => ClientTransactionStatusData::Submitted {
+                                    } => TransactionStatusData::Submitted {
                                         submitted_at: Utc
                                             .timestamp_opt(submitted_at.to_unix(), 0)
                                             .single()
                                             .unwrap(),
                                     },
                                     ClientTransactionStatus::SqueezedOut { reason } => {
-                                        ClientTransactionStatusData::SqueezedOut {
-                                            reason,
-                                        }
+                                        TransactionStatusData::SqueezedOut { reason }
                                     }
                                 };
 
@@ -228,7 +228,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
 
                 let consensus = match &block.consensus {
-                    ClientConsensus::Unknown => ConsensusData::UnknownConsensus,
+                    ClientConsensus::Unknown => Consensus::Unknown,
                     ClientConsensus::Genesis(g) => {
                         let ClientGenesis {
                             chain_config_hash,
@@ -237,18 +237,16 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             messages_root,
                         } = g.to_owned();
 
-                        ConsensusData::Genesis(GenesisConsensus {
+                        Consensus::Genesis(Genesis {
                             chain_config_hash: chain_config_hash.to_owned().into(),
                             coins_root: coins_root.to_owned().into(),
                             contracts_root: contracts_root.to_owned().into(),
                             messages_root: messages_root.to_owned().into(),
                         })
                     }
-                    ClientConsensus::PoAConsensus(poa) => {
-                        ConsensusData::PoA(PoAConsensus {
-                            signature: poa.signature.to_owned().into(),
-                        })
-                    }
+                    ClientConsensus::PoAConsensus(poa) => Consensus::PoA(PoA {
+                        signature: poa.signature.to_owned().into(),
+                    }),
                 };
 
                 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
@@ -258,7 +256,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     producer,
                     time: block.header.time.0.to_unix(),
                     consensus,
-                    header: HeaderData {
+                    header: Header {
                         id: Bytes32::from(block.header.id),
                         da_height: block.header.da_height.0,
                         transactions_count: block.header.transactions_count.0,
