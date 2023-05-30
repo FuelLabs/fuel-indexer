@@ -90,7 +90,7 @@ type InputMessage {
   sender: Address!
   recipient: Address!
   amount: UInt8!
-  nonce: Nonce!
+  nonce: UInt8!
   witness_index: Int8!
   data: HexString!
   predicate: HexString!

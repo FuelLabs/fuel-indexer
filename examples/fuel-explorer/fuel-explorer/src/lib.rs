@@ -187,6 +187,35 @@ impl From<fuel::InputContract> for InputContract {
     }
 }
 
+impl From<fuel::InputMessage> for InputMessage {
+    fn from(input: fuel::InputMessage) -> Self {
+        let fuel::InputMessage {
+            sender,
+            recipient,
+            amount,
+            nonce,
+            witness_index,
+            data,
+            predicate,
+            predicate_data,
+        } = input;
+
+        let id = 1; // Create u64 from input parts
+
+        Self {
+            id,
+            sender,
+            recipient,
+            amount,
+            nonce,
+            witness_index: witness_index.into(),
+            data,
+            predicate,
+            predicate_data,
+        }
+    }
+}
+
 impl From<fuel::Input> for Input {
     fn from(input: fuel::Input) -> Self {
         match input {
@@ -226,8 +255,24 @@ impl From<fuel::Input> for Input {
                 input.save();
                 input
             }
-            _ => unimplemented!(),
-            // fuel::Input::Message(input) => Input::Message(input.into()),
+            fuel::Input::Message(input) => {
+                let id = 1; // Create u64 from input parts
+                let message = InputMessage::load(id).unwrap_or_else(|| {
+                    let message = InputMessage::from(input);
+                    message.save();
+                    message
+                });
+
+                let id = 1;
+                let input = Input {
+                    id,
+                    coin: None,
+                    contract: None,
+                    message: Some(message.id),
+                };
+                input.save();
+                input
+            }
         }
     }
 }
@@ -392,7 +437,7 @@ impl From<fuel::ContractCreated> for ContractCreated {
     fn from(output: fuel::ContractCreated) -> Self {
         let fuel::ContractCreated {
             #[allow(unused)]
-            contract,
+            contract_id,
             state_root,
         } = output;
 
@@ -450,21 +495,23 @@ pub mod explorer_index {
         for transaction in block_data.transactions.iter() {
             match &transaction.transaction {
                 #[allow(unused)]
-                fuel::Transaction::Script(t) => {
-                    let gas_limit = t.gas_limit();
-                    let gas_price = t.gas_price();
-                    let maturity = t.maturity();
-                    let script = t.script();
-                    let script_data = t.script_data();
-                    let receipts_root = t.receipts_root();
-                    let inputs = t.inputs();
-                    // let outputs = t
-                    //     .outputs()
-                    //     .iter()
-                    //     .map(|o| o.to_owned().into())
-                    //     .collect::<Vec<Output>>();
-                    let witnesses = t
-                        .witnesses()
+                fuel::Transaction::Script(fuel::Script {
+                    gas_limit,
+                    gas_price,
+                    maturity,
+                    script,
+                    script_data,
+                    receipts_root,
+                    inputs,
+                    outputs,
+                    witnesses,
+                    metadata,
+                }) => {
+                    let outputs = outputs
+                        .iter()
+                        .map(|o| Output::from(o.to_owned()))
+                        .collect::<Vec<Output>>();
+                    let witnesses = witnesses
                         .iter()
                         .map(|w| w.to_owned().into())
                         .collect::<Vec<Witness>>();
@@ -497,31 +544,38 @@ pub mod explorer_index {
                     create_tx.save();
                 }
                 #[allow(unused)]
-                fuel::Transaction::Create(t) => {
-                    let gas_limit = t.gas_limit();
-                    let gas_price = t.gas_price();
-                    let maturity = t.maturity();
-                    let salt = t.salt();
-                    let bytecode_length = t.bytecode_length();
-                    let bytecode_witness_index = t.bytecode_witness_index();
-                    let inputs = t.inputs();
-                    let outputs = t.outputs();
-                    let witnesses = t
-                        .witnesses()
+                fuel::Transaction::Create(fuel::Create {
+                    gas_limit,
+                    gas_price,
+                    maturity,
+                    bytecode_length,
+                    bytecode_witness_index,
+                    inputs,
+                    outputs,
+                    witnesses,
+                    salt,
+                    storage_slots,
+                    metadata,
+                }) => {
+                    let outputs = outputs
+                        .iter()
+                        .map(|o| Output::from(o.to_owned()))
+                        .collect::<Vec<Output>>();
+                    let witnesses = witnesses
                         .iter()
                         .map(|w| w.to_owned().into())
                         .collect::<Vec<Witness>>();
-                    let storage_slots = t.storage_slots();
 
                     // Create u64 from tx parts
                     let create_tx_frag = TransactionIdFragment { id: 1 };
                     create_tx_frag.save();
                 }
                 #[allow(unused)]
-                fuel::Transaction::Mint(t) => {
-                    let tx_pointer = t.tx_pointer();
-                    let outputs = t.outputs();
-
+                fuel::Transaction::Mint(fuel::Mint {
+                    tx_pointer,
+                    outputs,
+                    metadata,
+                }) => {
                     // Create u64 from tx parts
                     let mint_tx_frag = TransactionIdFragment { id: 1 };
                     mint_tx_frag.save();

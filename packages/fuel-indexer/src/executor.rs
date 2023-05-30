@@ -7,15 +7,23 @@ use async_std::{
 use async_trait::async_trait;
 use chrono::{TimeZone, Utc};
 use fuel_core_client::client::{
-    schema::block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
+    schema::{
+        block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
+        tx::transparent_tx::{
+            Input as ClientInput, InputCoin as ClientInputCoin,
+            InputContract as ClientInputContract, InputMessage as ClientInputMessage,
+            Output as ClientOutput,
+        },
+    },
     types::{TransactionResponse, TransactionStatus as ClientTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
     fuel::{
-        BlockData, Consensus, Genesis, Header, PoA, TransactionData,
-        TransactionStatusData, TxId,
+        field::*, BlockData, ClientTransaction, Consensus, Create, Genesis, Header,
+        Input, InputCoin, Mint, Output, PoA, Script, StorageSlot, Transaction,
+        TransactionData, TransactionStatusData, TxId,
     },
     scalar::Bytes32,
 };
@@ -210,6 +218,41 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                     ClientTransactionStatus::SqueezedOut { reason } => {
                                         TransactionStatusData::SqueezedOut { reason }
                                     }
+                                };
+
+                                let transaction = match transaction {
+                                    ClientTransaction::Create(tx) => {
+                                        Transaction::Create(Create {
+                                            gas_price: *tx.gas_price(),
+                                            gas_limit: *tx.gas_limit(),
+                                            maturity: *tx.maturity() as u32,
+                                            bytecode_length: *tx.bytecode_length(),
+                                            bytecode_witness_index: *tx
+                                                .bytecode_witness_index(),
+                                            storage_slots: tx
+                                                .storage_slots()
+                                                .iter()
+                                                .map(|x| StorageSlot {
+                                                    key: *x.key(),
+                                                    value: *x.value(),
+                                                })
+                                                .collect(),
+                                            inputs: tx
+                                                .inputs()
+                                                .iter()
+                                                .map(|i| i.to_owned().into())
+                                                .collect(),
+                                            outputs: tx
+                                                .outputs()
+                                                .iter()
+                                                .map(|o| o.to_owned().into())
+                                                .collect(),
+                                            witnesses: tx.witnesses().to_vec(),
+                                            salt: *tx.salt(),
+                                            metadata: None,
+                                        })
+                                    }
+                                    _ => Transaction::default(),
                                 };
 
                                 let tx_data = TransactionData {
