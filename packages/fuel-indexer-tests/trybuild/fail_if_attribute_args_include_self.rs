@@ -1,4 +1,4 @@
-use fuel_indexer_utils::macros::indexer;
+use fuel_indexer_utils::prelude::indexer;
 
 #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
 mod indexer {

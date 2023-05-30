@@ -68,7 +68,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_types::fuel::BlockData;
    |
-2  | use fuel_indexer_utils::prelude::BlockData;
+2  | use fuel_indexer_utils::plugin::prelude::BlockData;
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
@@ -83,7 +83,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_types::fuel::BlockData;
    |
-2  | use fuel_indexer_utils::prelude::BlockData;
+2  | use fuel_indexer_utils::plugin::prelude::BlockData;
    |
 
 error[E0433]: failed to resolve: use of undeclared type `Consensus`
@@ -98,7 +98,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_types::fuel::Consensus;
    |
-2  | use fuel_indexer_utils::prelude::HeaderData;
+2  | use fuel_indexer_utils::plugin::prelude::fuel::Consensus;
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -116,6 +116,8 @@ help: consider importing one of these items
 2  | use fuel_indexer_plugin::prelude::fuel::TransactionStatusData;
    |
 2  | use fuel_indexer_types::fuel::TransactionStatusData;
+   |
+2  | use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatusData;
    |
 help: if you import `TransactionStatusData`, refer to it directly
    |
@@ -135,53 +137,11 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_types::fuel::Transaction;
    |
-2  | use fuel_indexer_utils::prelude::ConsensusData;
+2  | use fuel_indexer_utils::plugin::prelude::fuel::Transaction;
    |
-
-error[E0422]: cannot find struct, variant or union type `TransactionData` in this scope
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |         transactions: vec![TransactionData {
-  |                            ^^^^^^^^^^^^^^^ not found in this scope
-  |
-help: consider importing one of these items
+2  | use fuels::prelude::Transaction;
    |
-2  | use fuel_indexer_plugin::prelude::TransactionData;
-   |
-2  | use fuel_indexer_types::prelude::TransactionData;
-   |
-2  | use fuel_indexer_utils::prelude::TransactionData;
-   |
-
-error[E0433]: failed to resolve: use of undeclared type `ClientTransactionStatusData`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |             status: ClientTransactionStatusData::default(),
-  |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ use of undeclared type `ClientTransactionStatusData`
-  |
-help: consider importing one of these items
-   |
-2  | use fuel_indexer_plugin::prelude::ClientTransactionStatusData;
-   |
-2  | use fuel_indexer_types::prelude::ClientTransactionStatusData;
-   |
-2  | use fuel_indexer_utils::prelude::ClientTransactionStatusData;
-   |
-
-error[E0433]: failed to resolve: use of undeclared type `ClientTransaction`
- --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
-  |
-  |             transaction: ClientTransaction::default(),
-  |                          ^^^^^^^^^^^^^^^^^ use of undeclared type `ClientTransaction`
-  |
-help: consider importing one of these items
-   |
-2  | use fuel_indexer_plugin::prelude::ClientTransaction;
-   |
-2  | use fuel_indexer_types::prelude::ClientTransaction;
-   |
-2  | use fuel_indexer_utils::prelude::ClientTransaction;
-   |
+     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
@@ -195,7 +155,7 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_plugin::serialize;
    |
-2  | use fuel_indexer_utils::serialize;
+2  | use fuel_indexer_utils::plugin::serialize;
    |
 
 error[E0425]: cannot find function `handle_events` in this scope
