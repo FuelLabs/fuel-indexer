@@ -2,20 +2,20 @@
 //!
 //! Build this example's binary using the following command.
 //!
-//! ```bash
-//! cargo run --bin hello_indexer_native -- --manifest examples/hello-world-native/hello-indexer-native/hello_indexer_native.manifest.yaml
-//! ```
-//!
 //! Start a local test Fuel node
 //!
 //! ```bash
-//! cargo run --bin fuel-node
+//! cargo run -p hello-world-node --bin hello-world-node
+//! ```
+//!
+//! ```bash
+//! cargo run -p hello_indexer_native --bin hello_indexer_native -- --manifest examples/hello-world-native/hello-indexer-native/hello_indexer_native.manifest.yaml
 //! ```
 //!
 //! Now trigger an event.
 //!
 //! ```bash
-//! cargo run --bin hello-world-data
+//! cargo run -p hello-world-data --bin hello-world-data
 //! ```
 extern crate alloc;
 use fuel_indexer::prelude::*;
