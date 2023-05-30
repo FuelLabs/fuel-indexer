@@ -30,6 +30,7 @@ pub struct NewRootColumns {
     pub graphql_type: String,
 }
 
+/// Contains identifying metadata for a stored indexer.
 #[derive(Debug)]
 pub struct GraphRoot {
     pub id: i64,
@@ -39,6 +40,7 @@ pub struct GraphRoot {
     pub schema: String,
 }
 
+/// Contains identifying metadata for a soon-to-be-stored indexer.
 #[derive(Debug)]
 pub struct NewGraphRoot {
     pub version: String,
@@ -53,6 +55,8 @@ pub struct VirtualColumn {
     pub graphql_type: String,
 }
 
+/// Represents an entity to be used in an indexer. Contains metadata about its schema name,
+/// database table name, virtual columns, and information regarding its associated schema.
 #[derive(Debug)]
 pub struct TypeId {
     pub id: i64,
@@ -65,6 +69,7 @@ pub struct TypeId {
 }
 
 impl TypeId {
+    /// Whether an entity does not have a corresponding database table.
     pub fn is_non_indexable_type(&self) -> bool {
         !self.virtual_columns.is_empty()
     }
@@ -163,6 +168,7 @@ impl NewColumn {
             ColumnType::UInt1 => "integer",
             ColumnType::NoRelation => "Json",
             ColumnType::BlockId => "varchar(64)",
+            ColumnType::List => "varchar(10485760)",
         }
     }
 }
@@ -213,6 +219,7 @@ pub enum ColumnType {
     UInt1 = 32,
     NoRelation = 33,
     BlockId = 34,
+    List = 35,
 }
 
 impl From<ColumnType> for i32 {
@@ -253,6 +260,7 @@ impl From<ColumnType> for i32 {
             ColumnType::UInt1 => 32,
             ColumnType::NoRelation => 33,
             ColumnType::BlockId => 34,
+            ColumnType::List => 35,
         }
     }
 }
@@ -301,6 +309,7 @@ impl From<i32> for ColumnType {
             32 => ColumnType::UInt1,
             33 => ColumnType::NoRelation,
             34 => ColumnType::BlockId,
+            35 => ColumnType::List,
             _ => panic!("Invalid column type."),
         }
     }
@@ -344,6 +353,7 @@ impl From<&str> for ColumnType {
             "UInt1" => ColumnType::UInt1,
             "NoRelation" => ColumnType::NoRelation,
             "BlockId" => ColumnType::BlockId,
+            "List" => ColumnType::List,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }

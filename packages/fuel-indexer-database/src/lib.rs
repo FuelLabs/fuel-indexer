@@ -112,6 +112,7 @@ impl IndexerConnectionPool {
         }
     }
 
+    /// Acquire an `IndexerConnection` from an `IndexerConnectionPool`.
     pub async fn acquire(&self) -> sqlx::Result<IndexerConnection> {
         match self {
             IndexerConnectionPool::Postgres(p) => {

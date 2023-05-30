@@ -34,14 +34,17 @@ pub fn field_type_table_name(f: &FieldDefinition) -> String {
     normalize_field_type_name(&f.ty.to_string()).to_lowercase()
 }
 
+/// Returns a SHA-256 hash of a schema's content.
 pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
 }
 
+/// Returns the name of a type in a type defintion.
 pub fn type_name(typ: &TypeDefinition) -> String {
     typ.name.clone().to_string()
 }
 
+/// Returns the index directive of a field, if present.
 pub fn get_index_directive(field: &FieldDefinition) -> Option<directives::Index> {
     let FieldDefinition {
         directives,
@@ -234,6 +237,8 @@ pub fn build_schema_types_set(
     (types, directives)
 }
 
+/// Iterates through a schema's type defintions and returns a map of entities with
+/// their foreign keys.
 pub fn get_foreign_keys(
     namespace: &str,
     identifier: &str,

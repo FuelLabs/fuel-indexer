@@ -5,6 +5,7 @@ use sqlx::types::{
     JsonValue,
 };
 
+/// Get the latest graph root object for an indexer.
 pub async fn graph_root_latest(
     conn: &mut IndexerConnection,
     namespace: &str,
@@ -17,6 +18,7 @@ pub async fn graph_root_latest(
     }
 }
 
+/// Store a new graph root into the database.
 pub async fn new_graph_root(
     conn: &mut IndexerConnection,
     root: NewGraphRoot,
@@ -26,6 +28,7 @@ pub async fn new_graph_root(
     }
 }
 
+/// Get a list of type IDs associated with a particular indexer version.
 pub async fn type_id_list_by_name(
     conn: &mut IndexerConnection,
     name: &str,
