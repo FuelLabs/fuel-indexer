@@ -229,6 +229,7 @@ fn process_special_field(
     field: &FieldDefinition,
     is_nullable: bool,
     field_type: SpecialFieldType,
+    is_list_type_with_nullable_elements: Option<bool>,
 ) -> ProcessedFieldResult {
     match field_type {
         SpecialFieldType::ForeignKey => {
@@ -238,11 +239,29 @@ fn process_special_field(
                 ..
             } = get_join_directive_info(field, object_name, &schema.field_type_mappings);
 
-            let field_type_name = if !is_nullable {
-                [reference_field_type_name, "!".to_string()].join("")
-            } else {
-                reference_field_type_name
+            let field_type_name = match is_list_type_with_nullable_elements {
+                Some(has_nullable_elements) => {
+                    let inner_element_field_type_name = if !has_nullable_elements {
+                        [reference_field_type_name, "!".to_string()].join("")
+                    } else {
+                        reference_field_type_name
+                    };
+
+                    if !is_nullable {
+                        format!("[{inner_element_field_type_name}]!")
+                    } else {
+                        format!("[{inner_element_field_type_name}]")
+                    }
+                }
+                None => {
+                    if !is_nullable {
+                        [reference_field_type_name, "!".to_string()].join("")
+                    } else {
+                        reference_field_type_name
+                    }
+                }
             };
+
             let field_type: Type = Type::new(&field_type_name)
                 .expect("Could not construct type for processing");
 
@@ -252,11 +271,27 @@ fn process_special_field(
             let FieldDefinition {
                 name: field_name, ..
             } = field;
+            let field_type_name = match is_list_type_with_nullable_elements {
+                Some(has_nullable_elements) => {
+                    let inner_element_field_type_name = if !has_nullable_elements {
+                        ["Charfield".to_string(), "!".to_string()].join("")
+                    } else {
+                        "Charfield".to_string()
+                    };
 
-            let field_type_name = if !is_nullable {
-                ["Charfield".to_string(), "!".to_string()].join("")
-            } else {
-                "Charfield".to_string()
+                    if !is_nullable {
+                        format!("[{inner_element_field_type_name}]!")
+                    } else {
+                        format!("[{inner_element_field_type_name}]")
+                    }
+                }
+                None => {
+                    if !is_nullable {
+                        ["Charfield".to_string(), "!".to_string()].join("")
+                    } else {
+                        "Charfield".to_string()
+                    }
+                }
             };
 
             let field_type: Type = Type::new(&field_type_name)
@@ -269,10 +304,27 @@ fn process_special_field(
                 name: field_name, ..
             } = field;
 
-            let field_type_name = if !is_nullable {
-                ["NoRelation".to_string(), "!".to_string()].join("")
-            } else {
-                "NoRelation".to_string()
+            let field_type_name = match is_list_type_with_nullable_elements {
+                Some(has_nullable_elements) => {
+                    let inner_element_field_type_name = if !has_nullable_elements {
+                        ["NoRelation".to_string(), "!".to_string()].join("")
+                    } else {
+                        "NoRelation".to_string()
+                    };
+
+                    if !is_nullable {
+                        format!("[{inner_element_field_type_name}]!")
+                    } else {
+                        format!("[{inner_element_field_type_name}]")
+                    }
+                }
+                None => {
+                    if !is_nullable {
+                        ["NoRelation".to_string(), "!".to_string()].join("")
+                    } else {
+                        "NoRelation".to_string()
+                    }
+                }
             };
 
             let field_type: Type = Type::new(&field_type_name)
@@ -333,6 +385,7 @@ fn process_type_def(
                         &field.node,
                         field_type.nullable,
                         SpecialFieldType::ForeignKey,
+                        is_list_with_nullable_elements,
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -344,6 +397,7 @@ fn process_type_def(
                         &field.node,
                         field_type.nullable,
                         SpecialFieldType::Enum,
+                        is_list_with_nullable_elements,
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -355,6 +409,7 @@ fn process_type_def(
                         &field.node,
                         field_type.nullable,
                         SpecialFieldType::NoRelation,
+                        is_list_with_nullable_elements,
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
