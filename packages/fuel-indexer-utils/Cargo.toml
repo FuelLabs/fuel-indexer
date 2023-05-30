@@ -12,9 +12,7 @@ description = "Utilities for use in an indexer to be deployed on the Fuel indexe
 [dependencies]
 fuel-indexer-macros = { default-features = false, workspace = true }
 fuel-indexer-plugin = { workspace = true }
-fuel-indexer-schema = { default-features = false, workspace = true }
-fuels = { default-features = false, workspace = true }
 serde = { workspace = true, features = ["derive"] }
 
 [features]
-native-execution = ["fuel-indexer-plugin/native-execution", "fuels/default"]
+native-execution = ["fuel-indexer-plugin/native-execution"]

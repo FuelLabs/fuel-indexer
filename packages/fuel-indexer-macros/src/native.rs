@@ -35,22 +35,26 @@ fn native_prelude() -> proc_macro2::TokenStream {
 
         static mut db: Option<Arc<Mutex<Database>>> = None;
 
+        // TODO: Eventually prevent these types of implicity imports and have users import
+        // all dependencies explicity (preferably through a single crate).
         use fuel_indexer_utils::{
-            fuels::{
-                core::abi_decoder::ABIDecoder,
-                macros::{Parameterize, Tokenizable},
-                types::{
-                    traits::{Parameterize, Tokenizable},
-                    StringToken,
-                },
+            plugin::{
+                native::*,
+                serde::{Deserialize, Serialize},
+                types::*,
             },
-            native::*,
             prelude::{
                 bincode, deserialize,
                 serde_json, serialize,
             },
-            serde::{Deserialize, Serialize},
-            types::*,
+        };
+        use fuels::{
+            core::abi_decoder::ABIDecoder,
+            macros::{Parameterize, Tokenizable},
+            types::{
+                traits::{Parameterize, Tokenizable},
+                StringToken,
+            },
         };
     }
 }

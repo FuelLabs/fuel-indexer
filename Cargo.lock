@@ -3222,8 +3222,6 @@ version = "0.15.1"
 dependencies = [
  "fuel-indexer-macros",
  "fuel-indexer-plugin",
- "fuel-indexer-schema",
- "fuels",
  "serde",
 ]
 

@@ -1,5 +1,4 @@
 extern crate alloc;
-use fuel_indexer_utils::macros::indexer;
 use fuel_indexer_utils::prelude::*;
 
 #[indexer(

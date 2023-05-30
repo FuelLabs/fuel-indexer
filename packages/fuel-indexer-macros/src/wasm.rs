@@ -12,7 +12,7 @@ pub fn handler_block_wasm(
 
         #[no_mangle]
         fn handle_events(blob: *mut u8, len: usize) {
-            use fuel_indexer_utils::prelude::deserialize;
+            use fuel_indexer_utils::plugin::deserialize;
             let bytes = unsafe { Vec::from_raw_parts(blob, len, len) };
             let blocks: Vec<BlockData> = match deserialize(&bytes) {
                 Ok(blocks) => blocks,
@@ -42,22 +42,26 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
 
         type B256 = [u8; 32];
 
+        // TODO: Eventually prevent these types of implicity imports and have users import
+        // all dependencies explicity (preferably through a single crate).
         use fuel_indexer_utils::{
-            fuels::{
-                core::abi_decoder::ABIDecoder,
-                macros::{Parameterize, Tokenizable},
-                types::{
-                    traits::{Parameterize, Tokenizable},
-                    StringToken,
-                },
+            plugin::{
+                serde::{Deserialize, Serialize},
+                types::*,
+                wasm::{Digest, Entity, FromHex, Logger, Sha256},
             },
             prelude::{
                 bincode, deserialize,
                 serde_json, serialize,
             },
-            serde::{Deserialize, Serialize},
-            types::*,
-            wasm::{Digest, Entity, FromHex, Logger, Sha256},
+        };
+        use fuels::{
+            core::abi_decoder::ABIDecoder,
+            macros::{Parameterize, Tokenizable},
+            types::{
+                traits::{Parameterize, Tokenizable},
+                StringToken,
+            },
         };
     }
 }
