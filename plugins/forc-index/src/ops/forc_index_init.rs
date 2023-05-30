@@ -50,7 +50,9 @@ fn print_welcome_message() {
 `forc index revert`
     Revert a deployed indexer.
 `forc index auth`
-    Authenticate against an indexer service."#;
+    Authenticate against an indexer service.
+`forc index status`
+    Check the status of an indexer."#;
 
     let ascii_tag = r#"
 ███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 
