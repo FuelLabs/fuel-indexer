@@ -715,8 +715,7 @@ type Salutation {
 //! ```
 
 extern crate alloc;
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = &quot;examples/hello-world/hello-indexer/hello_indexer.manifest.yaml&quot;)]
 mod hello_world_indexer {
