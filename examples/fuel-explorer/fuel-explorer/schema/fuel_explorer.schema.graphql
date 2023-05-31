@@ -29,6 +29,7 @@ type ContractIdFragment {
 
 type BlockIdFragment {
   id: ID!
+  hash: Bytes32!
 }
 
 # TODO: Should this be a FK?

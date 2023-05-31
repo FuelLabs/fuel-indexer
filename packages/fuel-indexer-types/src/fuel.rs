@@ -170,8 +170,6 @@ impl From<ClientInput> for Input {
                 tx_pointer,
                 witness_index,
                 maturity,
-                // predicate,
-                // predicate_data,
             } => Input::Coin(InputCoin {
                 utxo_id,
                 owner,
@@ -189,7 +187,6 @@ impl From<ClientInput> for Input {
                 amount,
                 asset_id,
                 tx_pointer,
-                // witness_index,
                 maturity,
                 predicate,
                 predicate_data,
@@ -301,7 +298,7 @@ pub struct InputMessage {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum TransactionStatus {
     Failure {
-        block: BlockHeight,
+        block: Bytes32,
         time: u64,
         reason: String,
         program_state: Option<ProgramState>,
@@ -313,7 +310,7 @@ pub enum TransactionStatus {
         submitted_at: u64,
     },
     Success {
-        block: BlockHeight,
+        block: Bytes32,
         time: u64,
         program_state: Option<ProgramState>,
     },

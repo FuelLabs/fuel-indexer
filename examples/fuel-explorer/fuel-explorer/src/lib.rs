@@ -477,13 +477,15 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
     fn from(status: fuel::TransactionStatus) -> Self {
         match status {
             fuel::TransactionStatus::Failure {
+                #[allow(unused)]
                 block,
                 time,
                 reason,
                 program_state,
             } => {
                 let id = 1; // Create u64 from status parts
-                let block = BlockIdFragment::load(block as u64).unwrap();
+                let block_id = 1; // derive ID from block_hash
+                let block = BlockIdFragment::load(block_id).unwrap();
                 let program_state = program_state.map(|p| p.into());
                 let failure = FailureStatus::load(id).unwrap_or_else(|| {
                     let failure = FailureStatus {
@@ -537,7 +539,10 @@ pub mod explorer_index {
 
         let id = 1;
         let _foo = "bar";
-        let block_frag = BlockIdFragment { id };
+        let block_frag = BlockIdFragment {
+            id,
+            hash: Bytes32::default(),
+        };
 
         block_frag.save();
 
