@@ -1,10 +1,8 @@
 error: No module body, must specify at least one handler function.
  --> ../fuel-indexer-tests/trybuild/fail_if_indexer_module_is_empty.rs
   |
-  | / #[indexer(
-  | |     manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml"
-  | | )]
-  | |__^
+  | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   |
   = note: this error originates in the attribute macro `indexer` (in Nightly builds, run with -Z macro-backtrace for more info)
 

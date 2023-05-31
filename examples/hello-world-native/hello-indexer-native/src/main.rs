@@ -18,9 +18,7 @@
 //! cargo run -p hello-world-data --bin hello-world-data
 //! ```
 extern crate alloc;
-use fuel_indexer::prelude::*;
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(
     manifest = "examples/hello-world-native/hello-indexer-native/hello_indexer_native.manifest.yaml"

@@ -1,0 +1,18 @@
+[package]
+name = "fuel-indexer-utils"
+version = { workspace = true }
+authors = { workspace = true }
+edition = { workspace = true }
+homepage = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+rust-version = { workspace = true }
+description = "Utilities for use in an indexer to be deployed on the Fuel indexer"
+
+[dependencies]
+fuel-indexer-macros = { default-features = false, workspace = true }
+fuel-indexer-plugin = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+
+[features]
+native-execution = ["fuel-indexer-plugin/native-execution"]

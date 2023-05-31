@@ -1,4 +1,4 @@
-error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(217..224) }' not defined in the ABI.
+error: Type with ident 'Ident { ident: "BadType", span: #0 bytes(225..232) }' not defined in the ABI.
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
   | #[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
@@ -68,6 +68,8 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_types::fuel::BlockData;
    |
+2  | use fuel_indexer_utils::plugin::prelude::BlockData;
+   |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -80,6 +82,8 @@ help: consider importing one of these items
 2  | use fuel_indexer_plugin::prelude::BlockData;
    |
 2  | use fuel_indexer_types::fuel::BlockData;
+   |
+2  | use fuel_indexer_utils::plugin::prelude::BlockData;
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
@@ -97,6 +101,8 @@ help: consider importing one of these items
 2  | use fuel_indexer_plugin::prelude::fuel::TransactionStatusData;
    |
 2  | use fuel_indexer_types::fuel::TransactionStatusData;
+   |
+2  | use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatusData;
    |
 help: if you import `TransactionStatusData`, refer to it directly
    |
@@ -116,11 +122,11 @@ help: consider importing one of these items
    |
 2  | use fuel_indexer_types::fuel::Transaction;
    |
+2  | use fuel_indexer_utils::plugin::prelude::fuel::Transaction;
+   |
 2  | use fuels::prelude::Transaction;
    |
-2  | use fuels::tx::Transaction;
-   |
-     and 1 other candidate
+     and 2 other candidates
 
 error[E0425]: cannot find function `serialize` in this scope
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
@@ -133,6 +139,8 @@ help: consider importing one of these items
 2  | use fuel_indexer_lib::utils::serialize;
    |
 2  | use fuel_indexer_plugin::serialize;
+   |
+2  | use fuel_indexer_utils::plugin::serialize;
    |
 
 error[E0425]: cannot find function `handle_events` in this scope

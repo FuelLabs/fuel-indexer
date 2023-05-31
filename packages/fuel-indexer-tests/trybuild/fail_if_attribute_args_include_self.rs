@@ -1,8 +1,6 @@
-use fuel_indexer_macros::indexer;
+use fuel_indexer_utils::prelude::indexer;
 
-#[indexer(
-    manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml"
-)]
+#[indexer(manifest = "packages/fuel-indexer-tests/trybuild/simple_wasm.yaml")]
 mod indexer {
     fn function_one(self, event: SomeEvent) {
         let SomeEvent { id, account } = event;

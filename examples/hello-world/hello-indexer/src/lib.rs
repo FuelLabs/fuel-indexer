@@ -27,8 +27,7 @@
 //! ```
 
 extern crate alloc;
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "examples/hello-world/hello-indexer/hello_indexer.manifest.yaml")]
 mod hello_world_indexer {
