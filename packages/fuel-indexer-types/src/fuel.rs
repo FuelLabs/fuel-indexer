@@ -456,6 +456,7 @@ pub enum ReturnType {
     Revert,
 }
 
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProgramState {
     pub return_type: ReturnType,
