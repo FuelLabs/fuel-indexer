@@ -150,20 +150,13 @@ type SqueezedOutStatus {
 }
 
 enum ReturnType {
-  RETURN
-  RETURNDATA
-  REVERT
+  Return
+  ReturnData
+  Revert
 }
 
-type TransactionReturnType {
-  id: ID!
-  return_type: ReturnType!
-}
-
-# TODO: Should this be a FK?
 type ProgramState {
-  id: ID!
-  return_type: TransactionReturnType!
+  return_type: ReturnType! @norelation
   data: HexString!
 }
 

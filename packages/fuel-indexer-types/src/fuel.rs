@@ -4,11 +4,11 @@
 
 use crate::{
     scalar::{
-        Address, AssetId, BlockHeight, Bytes32, ContractId, HexString, Salt, Signature,
+        Address, AssetId, BlockHeight, Bytes32, ContractId, HexString, Json, Salt,
+        Signature,
     },
     type_id, TypeId, FUEL_TYPES_NAMESPACE,
 };
-use chrono::{DateTime, Utc};
 pub use fuel_tx::{
     Input as ClientInput, Output as ClientOutput, Receipt, ScriptExecutionResult,
     Transaction as ClientTransaction, TxId, TxPointer as ClientTxPointer, UtxoId,
@@ -107,7 +107,7 @@ pub struct MintMetadata {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionData {
     pub transaction: Transaction,
-    pub status: TransactionStatusData,
+    pub status: TransactionStatus,
     pub receipts: Vec<Receipt>,
     pub id: TxId,
 }
@@ -202,7 +202,7 @@ impl From<ClientInput> for Input {
                 witness_index: 0,
                 maturity,
                 predicate: predicate.into(),
-                predicate_data:predicate_data.into(),
+                predicate_data: predicate_data.into(),
             }),
             ClientInput::Contract {
                 utxo_id,
@@ -217,119 +217,43 @@ impl From<ClientInput> for Input {
                 tx_pointer: tx_pointer.into(),
                 contract_id,
             }),
-            _ => unimplemented!("What to do with this?")
-            // ClientInput::MessageSigned {
-            //     amount,
-            //     witness_index,
-            //     sender,
-            //     recipient,
-            //     nonce,
-            //     data,
-            //     message_id,
-            // } => Input::Message(InputMessage {
-            //     amount,
-            //     nonce,
-            //     witness_index,
-            //     data: data.into(),
-            //     predicate: "".into(),
-            //     predicate_data: "".into(),
-            // }),
-            // ClientInput::MessageCoinPredicate {
-            //     utxo_id,
-            //     owner,
-            //     amount,
-            //     asset_id,
-            //     tx_pointer,
-            //     witness_index,
-            //     maturity,
-            //     predicate,
-            //     predicate_data,
-            //     sender,
-            //     recipient,
-            //     nonce,
-            //     data,
-            // } => Input::Message(InputMessage {
-            //     sender,
-            //     recipient,
-            //     amount,
-            //     nonce,
-            //     witness_index,
-            //     data,
-            //     predicate,
-            //     predicate_data,
-            // }),
-            // ClientInput::MessageDataSigned {
-            //     utxo_id,
-            //     owner,
-            //     amount,
-            //     asset_id,
-            //     tx_pointer,
-            //     witness_index,
-            //     maturity,
-            //     predicate,
-            //     predicate_data,
-            //     sender,
-            //     recipient,
-            //     nonce,
-            //     data,
-            // } => Input::Message(InputMessage {
-            //     sender,
-            //     recipient,
-            //     amount,
-            //     nonce,
-            //     witness_index,
-            //     data,
-            //     predicate,
-            //     predicate_data,
-            // }),
-            // ClientInput::MessageCoinPredicate {
-            //     utxo_id,
-            //     owner,
-            //     amount,
-            //     asset_id,
-            //     tx_pointer,
-            //     witness_index,
-            //     maturity,
-            //     predicate,
-            //     predicate_data,
-            //     sender,
-            //     recipient,
-            //     nonce,
-            //     data,
-            // } => Input::Message(InputMessage {
-            //     sender,
-            //     recipient,
-            //     amount,
-            //     nonce,
-            //     witness_index,
-            //     data: data.into(),
-            //     predicate: predicate.into(),
-            //     predicate_data: predicate_data.into(),
-            // }),
-            // ClientInput::MessageDataPredicate {
-            //     utxo_id,
-            //     owner,
-            //     amount,
-            //     asset_id,
-            //     tx_pointer,
-            //     witness_index,
-            //     maturity,
-            //     predicate,
-            //     predicate_data,
-            //     sender,
-            //     recipient,
-            //     nonce,
-            //     data,
-            // } => Input::Message(InputMessage {
-            //     sender,
-            //     recipient,
-            //     amount,
-            //     nonce,
-            //     witness_index,
-            //     data: data.into(),
-            //     predicate: predicate.into(),
-            //     predicate_data: predicate_data.into(),
-            // }),
+            ClientInput::MessageSigned {
+                amount,
+                witness_index,
+                sender,
+                recipient,
+                nonce,
+                data,
+                ..
+            } => Input::Message(InputMessage {
+                amount,
+                nonce,
+                recipient,
+                sender,
+                witness_index,
+                data: data.into(),
+                predicate: "".into(),
+                predicate_data: "".into(),
+            }),
+            ClientInput::MessagePredicate {
+                amount,
+                predicate,
+                predicate_data,
+                sender,
+                recipient,
+                nonce,
+                data,
+                ..
+            } => Input::Message(InputMessage {
+                sender,
+                recipient,
+                amount,
+                nonce,
+                witness_index: 0,
+                data: data.into(),
+                predicate: predicate.into(),
+                predicate_data: predicate_data.into(),
+            }),
         }
     }
 }
@@ -375,28 +299,30 @@ pub struct InputMessage {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum TransactionStatusData {
+pub enum TransactionStatus {
     Failure {
-        block_id: String,
-        time: DateTime<Utc>,
+        block: BlockHeight,
+        time: u64,
         reason: String,
+        program_state: Option<ProgramState>,
     },
     SqueezedOut {
         reason: String,
     },
     Submitted {
-        submitted_at: DateTime<Utc>,
+        submitted_at: u64,
     },
     Success {
-        block_id: String,
-        time: DateTime<Utc>,
+        block: BlockHeight,
+        time: u64,
+        program_state: Option<ProgramState>,
     },
 }
 
-impl Default for TransactionStatusData {
+impl Default for TransactionStatus {
     fn default() -> Self {
-        TransactionStatusData::SqueezedOut {
-            reason: "squeezed out".to_string(),
+        TransactionStatus::SqueezedOut {
+            reason: "default".to_string(),
         }
     }
 }
@@ -521,4 +447,31 @@ pub enum Consensus {
     PoA(PoA),
     #[default]
     Unknown,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum ReturnType {
+    Return,
+    ReturnData,
+    Revert,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ProgramState {
+    pub return_type: ReturnType,
+    pub data: HexString,
+}
+
+impl From<ProgramState> for Json {
+    fn from(state: ProgramState) -> Self {
+        let s = serde_json::to_string(&state).expect("Serde error.");
+        Self(s)
+    }
+}
+
+impl From<Json> for ProgramState {
+    fn from(json: Json) -> Self {
+        let state: ProgramState = serde_json::from_str(&json.0).expect("Serde error.");
+        state
+    }
 }

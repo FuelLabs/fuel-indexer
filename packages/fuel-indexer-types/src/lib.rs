@@ -1,3 +1,4 @@
+#![deny(unused_crate_dependencies)]
 pub mod ffi;
 pub mod fuel;
 pub mod graphql;

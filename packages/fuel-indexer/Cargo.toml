@@ -18,7 +18,6 @@ anyhow = { version = "1.0", default-features = false }
 async-std = "1"
 async-trait = "0.1"
 bincode = { workspace = true }
-chrono = { version = "0.4", features = ["serde"] }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
 fuel-core = { version = "0.17", optional = true }
 fuel-core-client = "0.17"
@@ -27,6 +26,7 @@ fuel-indexer-database = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
+fuel-vm = { version = "0.26" }
 futures = "0.3"
 sqlx = { version = "0.6", features = ["bigdecimal"] }
 thiserror = { workspace = true }
@@ -37,7 +37,6 @@ wasmer-compiler-cranelift = { version = "2.3" }
 wasmer-engine-universal = "2.3"
 
 [dev-dependencies]
-chrono = { version = "0.4", features = ["serde"] }
 fuel-core-client = { version = "0.17.2", features = ["test-helpers"] }
 
 [features]

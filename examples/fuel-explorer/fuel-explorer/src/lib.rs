@@ -1,6 +1,26 @@
 extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
+impl From<fuel::ReturnType> for ReturnType {
+    fn from(value: fuel::ReturnType) -> Self {
+        match value {
+            fuel::ReturnType::Return => ReturnType::Return,
+            fuel::ReturnType::Revert => ReturnType::Revert,
+            fuel::ReturnType::ReturnData => ReturnType::ReturnData,
+        }
+    }
+}
+
+impl From<fuel::ProgramState> for ProgramState {
+    fn from(state: fuel::ProgramState) -> Self {
+        let fuel::ProgramState { return_type, data } = state;
+        Self {
+            return_type: ReturnType::from(return_type).into(),
+            data,
+        }
+    }
+}
+
 pub enum ConsensusLabel {
     Unknown,
     Genesis,
@@ -453,6 +473,45 @@ impl From<fuel::ContractCreated> for ContractCreated {
     }
 }
 
+impl From<fuel::TransactionStatus> for TransactionStatus {
+    fn from(status: fuel::TransactionStatus) -> Self {
+        match status {
+            fuel::TransactionStatus::Failure {
+                block,
+                time,
+                reason,
+                program_state,
+            } => {
+                let id = 1; // Create u64 from status parts
+                let block = BlockIdFragment::load(block as u64).unwrap();
+                let program_state = program_state.map(|p| p.into());
+                let failure = FailureStatus::load(id).unwrap_or_else(|| {
+                    let failure = FailureStatus {
+                        id,
+                        block: block.id,
+                        time,
+                        reason: reason.into(),
+                        program_state,
+                    };
+
+                    failure.save();
+                    failure
+                });
+
+                Self {
+                    id,
+                    submitted_status: None,
+                    squeezed_out_status: None,
+                    failure_status: Some(failure.id),
+                    success_status: None,
+                    unknown_status: None,
+                }
+            }
+            _ => unimplemented!(),
+        }
+    }
+}
+
 #[indexer(manifest = "examples/fuel-explorer/fuel-explorer/fuel_explorer.manifest.yaml")]
 pub mod explorer_index {
 
@@ -493,6 +552,8 @@ pub mod explorer_index {
         block.save();
 
         for transaction in block_data.transactions.iter() {
+            let _tx_status = &transaction.status;
+
             match &transaction.transaction {
                 #[allow(unused)]
                 fuel::Transaction::Script(fuel::Script {
@@ -519,15 +580,12 @@ pub mod explorer_index {
                     let script_tx_frag = TransactionIdFragment { id: 1 };
                     script_tx_frag.save();
 
-                    let create_tx = CreateTransaction {
+                    let script_tx = ScriptTransaction {
                         id: 1, // Create u64 from tx parts
                         gas_limit: *gas_limit,
                         gas_price: *gas_price,
                         maturity: *maturity as u32,
-
-                        // TODO: Where do these come from?
-                        bytecode_length: 0,
-                        bytecode_witness_index: 0,
+                        script: script.to_owned().into(),
 
                         // TODO: Pending list types
                         // storage_slots: [],
@@ -535,13 +593,11 @@ pub mod explorer_index {
                         // inputs: [],
                         // outputs: [],
                         // witnesses: [],
-                        salt: Salt::default(),
-
-                        // TODO: Where do these come from?
+                        receipts_root: *receipts_root,
                         metadata: Some(Json::default()),
                     };
 
-                    create_tx.save();
+                    script_tx.save();
                 }
                 #[allow(unused)]
                 fuel::Transaction::Create(fuel::Create {
@@ -569,6 +625,30 @@ pub mod explorer_index {
                     // Create u64 from tx parts
                     let create_tx_frag = TransactionIdFragment { id: 1 };
                     create_tx_frag.save();
+
+                    let create_tx = CreateTransaction {
+                        id: 1, // Create u64 from tx parts
+                        gas_limit: *gas_limit,
+                        gas_price: *gas_price,
+                        maturity: *maturity as u32,
+
+                        // TODO: Where do these come from?
+                        bytecode_length: 0,
+                        bytecode_witness_index: 0,
+
+                        // TODO: Pending list types
+                        // storage_slots: [],
+                        // inputs: [],
+                        // inputs: [],
+                        // outputs: [],
+                        // witnesses: [],
+                        salt: Salt::default(),
+
+                        // TODO: Where do these come from?
+                        metadata: Some(Json::default()),
+                    };
+
+                    create_tx.save();
                 }
                 #[allow(unused)]
                 fuel::Transaction::Mint(fuel::Mint {

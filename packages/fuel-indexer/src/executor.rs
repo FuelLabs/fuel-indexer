@@ -5,28 +5,17 @@ use async_std::{
     sync::{Arc, Mutex},
 };
 use async_trait::async_trait;
-use chrono::{TimeZone, Utc};
 use fuel_core_client::client::{
-    schema::{
-        block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
-        tx::transparent_tx::{
-            Input as ClientInput, InputCoin as ClientInputCoin,
-            InputContract as ClientInputContract, InputMessage as ClientInputMessage,
-            Output as ClientOutput,
-        },
-    },
+    schema::block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
     types::{TransactionResponse, TransactionStatus as ClientTransactionStatus},
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
-    fuel::{
-        field::*, BlockData, ClientTransaction, Consensus, Create, Genesis, Header,
-        Input, InputCoin, Mint, Output, PoA, Script, StorageSlot, Transaction,
-        TransactionData, TransactionStatusData, TxId,
-    },
-    scalar::Bytes32,
+    fuel::{field::*, *},
+    scalar::{Bytes32, HexString},
 };
+use fuel_vm::state::ProgramState as ClientProgramState;
 use futures::Future;
 use std::{
     marker::{Send, Sync},
@@ -181,45 +170,109 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                         Vec::new()
                                     });
 
-                                // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
+                                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
                                 let status = match status {
                                     ClientTransactionStatus::Success {
                                         block_id,
                                         time,
-                                        ..
-                                    } => TransactionStatusData::Success {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .unwrap(),
-                                    },
+                                        program_state,
+                                    } => {
+                                        let program_state =
+                                            program_state.map(|p| match p {
+                                                ClientProgramState::Return(w) => {
+                                                    ProgramState {
+                                                        return_type: ReturnType::Return,
+                                                        data: HexString::from(
+                                                            w.to_le_bytes().to_vec(),
+                                                        ),
+                                                    }
+                                                }
+                                                ClientProgramState::ReturnData(d) => {
+                                                    ProgramState {
+                                                        return_type:
+                                                            ReturnType::ReturnData,
+                                                        data: HexString::from(d.to_vec()),
+                                                    }
+                                                }
+                                                ClientProgramState::Revert(w) => {
+                                                    ProgramState {
+                                                        return_type: ReturnType::Revert,
+                                                        data: HexString::from(
+                                                            w.to_le_bytes().to_vec(),
+                                                        ),
+                                                    }
+                                                }
+                                                // Either `cargo watch` complains that this is unreachable, or `clippy` complains
+                                                // that all patterns are not matched. These other program states are only used in 
+                                                // debug modes.
+                                                #[allow(unreachable_patterns)]
+                                                _ => unreachable!("Reached invalid/debug program state.")
+                                            });
+                                        TransactionStatus::Success {
+                                            block: block_id
+                                                .parse()
+                                                .expect("Bad block height."),
+                                            time: time.to_unix() as u64,
+                                            program_state,
+                                        }
+                                    }
                                     ClientTransactionStatus::Failure {
                                         block_id,
                                         time,
                                         reason,
-                                        ..
-                                    } => TransactionStatusData::Failure {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .unwrap(),
-                                        reason,
-                                    },
+                                        program_state,
+                                    } => {
+                                        let program_state =
+                                            program_state.map(|p| match p {
+                                                ClientProgramState::Return(w) => {
+                                                    ProgramState {
+                                                        return_type: ReturnType::Return,
+                                                        data: HexString::from(
+                                                            w.to_le_bytes().to_vec(),
+                                                        ),
+                                                    }
+                                                }
+                                                ClientProgramState::ReturnData(d) => {
+                                                    ProgramState {
+                                                        return_type:
+                                                            ReturnType::ReturnData,
+                                                        data: HexString::from(d.to_vec()),
+                                                    }
+                                                }
+                                                ClientProgramState::Revert(w) => {
+                                                    ProgramState {
+                                                        return_type: ReturnType::Revert,
+                                                        data: HexString::from(
+                                                            w.to_le_bytes().to_vec(),
+                                                        ),
+                                                    }
+                                                }
+                                                // Either `cargo watch` complains that this is unreachable, or `clippy` complains
+                                                // that all patterns are not matched. These other program states are only used in 
+                                                // debug modes.
+                                                #[allow(unreachable_patterns)]
+                                                _ => unreachable!("Reached invalid/debug program state.")
+                                            });
+                                        TransactionStatus::Failure {
+                                            block: block_id
+                                                .parse()
+                                                .expect("Bad block height."),
+                                            time: time.to_unix() as u64,
+                                            program_state,
+                                            reason,
+                                        }
+                                    }
                                     ClientTransactionStatus::Submitted {
                                         submitted_at,
-                                    } => TransactionStatusData::Submitted {
-                                        submitted_at: Utc
-                                            .timestamp_opt(submitted_at.to_unix(), 0)
-                                            .single()
-                                            .unwrap(),
+                                    } => TransactionStatus::Submitted {
+                                        submitted_at: submitted_at.to_unix() as u64,
                                     },
                                     ClientTransactionStatus::SqueezedOut { reason } => {
-                                        TransactionStatusData::SqueezedOut { reason }
+                                        TransactionStatus::SqueezedOut { reason }
                                     }
                                 };
 
+                                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
                                 let transaction = match transaction {
                                     ClientTransaction::Create(tx) => {
                                         Transaction::Create(Create {
@@ -270,6 +323,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     };
                 }
 
+                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
                 let consensus = match &block.consensus {
                     ClientConsensus::Unknown => Consensus::Unknown,
                     ClientConsensus::Genesis(g) => {

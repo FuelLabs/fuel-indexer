@@ -47,7 +47,7 @@ fn main() {
             application_hash: [0u8; 32].into(),
         },
         transactions: vec![fuel::TransactionData {
-            status: fuel::TransactionStatusData::default(),
+            status: fuel::TransactionStatus::default(),
             id: [0u8; 32].into(),
             receipts: vec![
                 fuel::Receipt::Call {
