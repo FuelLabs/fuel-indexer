@@ -1,10 +1,30 @@
+use std::collections::HashSet;
+
 use crate::constant::*;
 use fuel_abi_types::program_abi::{ProgramABI, TypeDeclaration};
 use fuel_indexer_schema::parser::ParsedGraphQLSchema;
 use fuels_code_gen::utils::Source;
+use lazy_static::lazy_static;
 use quote::{format_ident, quote};
 use syn::Ident;
 
+lazy_static! {
+    /// Set of internal indexer entities.
+    pub static ref INTERNAL_INDEXER_ENTITIES: HashSet<&'static str> = HashSet::from([
+        "IndexMetadataEntity",
+    ]);
+
+    /// Set of types that implement `AsRef<[u8]>`.
+    pub static ref ASREF_BYTE_TYPES: HashSet<&'static str> = HashSet::from([
+        "Boolean",
+        "Bytes32",
+        "Bytes4",
+        "Bytes64",
+        "Bytes8",
+        "Blob",
+        "Charfield",
+    ]);
+}
 /// If TypeDeclaration is tuple type
 pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
     typ.type_field.as_str().starts_with('(')
@@ -272,6 +292,37 @@ pub fn field_extractor(
             };
         }
     }
+}
+
+pub fn generate_struct_new_method_impl(
+    strct: Ident,
+    parameters: proc_macro2::TokenStream,
+    hasher: proc_macro2::TokenStream,
+    object_name: String,
+    struct_fields: proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    let new_method_impl = if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str()) {
+        quote! {
+            impl #strct {
+                pub fn new(#parameters) -> Self {
+                    let raw_bytes = #hasher.chain_update(#object_name).finalize();
+
+                    let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
+
+                    let id = u64::from_be_bytes(id_bytes);
+
+                    Self {
+                        id,
+                        #struct_fields
+                    }
+                }
+            }
+        }
+    } else {
+        quote! {}
+    };
+
+    new_method_impl
 }
 
 /// Given a set of idents and tokens, construct the `Entity` and `Json` implementations

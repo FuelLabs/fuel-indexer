@@ -256,6 +256,10 @@ fn process_type_def(
             let mut from_row = quote! {};
             let mut to_row = quote! {};
 
+            let mut parameters = quote! {};
+            let mut hasher = quote! { Sha256::new() };
+            let mut construction_for_auto_id = quote! {};
+
             for field in &obj.fields {
                 let field_name = &field.node.name.to_string();
                 let field_type = &field.node.ty.node;
@@ -350,6 +354,23 @@ fn process_type_def(
                     #to_row
                     #decoder
                 };
+
+                if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str())
+                    && field_name != "id".to_string()
+                {
+                    parameters = quote! { #parameters #field_name: #typ_tokens, };
+
+                    if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
+                        hasher = quote! { #hasher.chain_update(#field_name #clone.to_be_bytes())};
+                    } else {
+                        hasher = quote! { #hasher.chain_update(#field_name #clone)};
+                    }
+
+                    construction_for_auto_id = quote! {
+                        #construction_for_auto_id
+                        #field_name,
+                    };
+                }
             }
 
             schema
@@ -357,7 +378,15 @@ fn process_type_def(
                 .insert(object_name.clone(), fields_map);
             let strct = format_ident! {"{}", object_name};
 
-            Some(generate_object_trait_impls(
+            let new_method_impl = generate_struct_new_method_impl(
+                strct.clone(),
+                parameters,
+                hasher,
+                object_name,
+                construction_for_auto_id,
+            );
+
+            let object_trait_impls = generate_object_trait_impls(
                 strct,
                 strct_fields,
                 type_id,
@@ -365,7 +394,13 @@ fn process_type_def(
                 from_row,
                 to_row,
                 schema.is_native,
-            ))
+            );
+
+            Some(quote! {
+                #new_method_impl
+
+                #object_trait_impls
+            })
         }
         TypeKind::Enum(e) => {
             let name = typ.name.to_string();
