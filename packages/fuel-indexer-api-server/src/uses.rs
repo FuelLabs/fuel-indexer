@@ -261,6 +261,36 @@ pub(crate) async fn register_indexer_assets(
     if let Some(mut multipart) = multipart {
         queries::start_transaction(&mut conn).await?;
 
+        if config.replace_indexer {
+            // Check that at least one indexer exists
+            if let Ok(_) =
+                queries::get_indexer_id(&mut conn, &namespace, &identifier).await
+            {
+                tracing::info!(
+                    "--replace-indexer enabled. Removing existing indexer {}.{}",
+                    &namespace,
+                    &identifier
+                );
+
+                if let Err(e) =
+                    queries::remove_indexers(&mut conn, &namespace, &identifier, None)
+                        .await
+                {
+                    error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
+                    queries::revert_transaction(&mut conn).await?;
+                    return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
+                }
+
+                if let Err(e) =
+                    queries::remove_graph(&mut conn, &namespace, &identifier).await
+                {
+                    error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
+                    queries::revert_transaction(&mut conn).await?;
+                    return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
+                }
+            }
+        }
+
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();

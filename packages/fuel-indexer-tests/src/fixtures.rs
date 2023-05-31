@@ -294,6 +294,7 @@ pub async fn api_server_app_postgres(
         run_migrations: false,
         authentication: AuthenticationConfig::default(),
         rate_limit: RateLimitConfig::default(),
+        replace_indexer: false,
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -334,6 +335,7 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
             jwt_expiry: Some(config_defaults::JWT_EXPIRY_SECS)
         },
         rate_limit: RateLimitConfig::default(),
+        replace_indexer: false,
     };
 
     let (tx, _rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
@@ -365,6 +367,7 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
         run_migrations: false,
         authentication: AuthenticationConfig::default(),
         rate_limit: RateLimitConfig::default(),
+        replace_indexer: false,
     };
 
     let (_tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
