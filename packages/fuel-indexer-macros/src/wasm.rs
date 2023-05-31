@@ -46,13 +46,11 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         // all dependencies explicity (preferably through a single crate).
         use fuel_indexer_utils::{
             plugin::{
+                bincode, deserialize,
+                serde_json, serialize,
                 serde::{Deserialize, Serialize},
                 types::*,
                 wasm::{Digest, Entity, FromHex, Logger, Sha256},
-            },
-            prelude::{
-                bincode, deserialize,
-                serde_json, serialize,
             },
         };
         use fuels::{

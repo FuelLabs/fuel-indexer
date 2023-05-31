@@ -39,13 +39,11 @@ fn native_prelude() -> proc_macro2::TokenStream {
         // all dependencies explicity (preferably through a single crate).
         use fuel_indexer_utils::{
             plugin::{
+                bincode, deserialize,
+                serde_json, serialize,
                 native::*,
                 serde::{Deserialize, Serialize},
                 types::*,
-            },
-            prelude::{
-                bincode, deserialize,
-                serde_json, serialize,
             },
         };
         use fuels::{
