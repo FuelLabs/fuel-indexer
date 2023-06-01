@@ -476,8 +476,8 @@ impl From<fuel::ContractCreated> for ContractCreated {
 impl From<fuel::TransactionStatus> for TransactionStatus {
     fn from(status: fuel::TransactionStatus) -> Self {
         match status {
+            #[allow(unused)]
             fuel::TransactionStatus::Failure {
-                #[allow(unused)]
                 block,
                 time,
                 reason,
@@ -509,7 +509,79 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                     unknown_status: None,
                 }
             }
-            _ => unimplemented!(),
+            fuel::TransactionStatus::SqueezedOut { reason } => {
+                let id = 1; // Create u64 from status parts
+                let squeezed_out = SqueezedOutStatus::load(id).unwrap_or_else(|| {
+                    let squeezed_out = SqueezedOutStatus {
+                        id,
+                        reason: reason.into(),
+                    };
+
+                    squeezed_out.save();
+                    squeezed_out
+                });
+
+                Self {
+                    id,
+                    submitted_status: None,
+                    squeezed_out_status: Some(squeezed_out.id),
+                    failure_status: None,
+                    success_status: None,
+                    unknown_status: None,
+                }
+            }
+            #[allow(unused)]
+            fuel::TransactionStatus::Success {
+                block,
+                time,
+                program_state,
+            } => {
+                let id = 1; // Create u64 from status parts
+                let block_id = 1; // derive ID from block_hash
+                let block = BlockIdFragment::load(block_id).unwrap();
+                let program_state = program_state.map(|p| p.into());
+                let success = SuccessStatus::load(id).unwrap_or_else(|| {
+                    let success = SuccessStatus {
+                        id,
+                        block: block.id,
+                        time,
+                        program_state,
+                    };
+
+                    success.save();
+                    success
+                });
+
+                Self {
+                    id,
+                    submitted_status: None,
+                    squeezed_out_status: None,
+                    failure_status: None,
+                    success_status: Some(success.id),
+                    unknown_status: None,
+                }
+            }
+            fuel::TransactionStatus::Submitted { submitted_at } => {
+                let id = 1; // Create u64 from status parts
+                let submitted = SubmittedStatus::load(id).unwrap_or_else(|| {
+                    let submitted = SubmittedStatus {
+                        id,
+                        time: submitted_at,
+                    };
+
+                    submitted.save();
+                    submitted
+                });
+
+                Self {
+                    id,
+                    submitted_status: Some(submitted.id),
+                    squeezed_out_status: None,
+                    failure_status: None,
+                    success_status: None,
+                    unknown_status: None,
+                }
+            }
         }
     }
 }
