@@ -2941,7 +2941,6 @@ dependencies = [
  "async-std",
  "async-trait",
  "bincode",
- "chrono",
  "clap 3.2.25",
  "fuel-core",
  "fuel-core-client",
@@ -2950,6 +2949,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
+ "fuel-vm",
  "futures",
  "sqlx",
  "thiserror",
@@ -3207,11 +3207,11 @@ version = "0.15.1"
 dependencies = [
  "bincode",
  "bytes 1.4.0",
- "chrono",
  "fuel-tx",
  "fuel-types 0.26.3",
  "fuels",
  "serde",
+ "serde_json",
  "sha2 0.9.9",
  "tai64",
 ]

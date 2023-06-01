@@ -8,15 +8,11 @@ extern crate alloc;
 
 pub mod types {
     pub use fuel_indexer_schema::FtColumn;
-    pub use fuel_indexer_types::fuel::BlockData;
+    pub use fuel_indexer_types::fuel::{BlockData, TxId};
 
     // Traits needed to access client type fields. Could also include this as a sub-module
     // of `fuel_indexer_types::fuel`.
-    pub use fuel_indexer_types::fuel::{
-        BytecodeLength, BytecodeWitnessIndex, FieldTxPointer, GasLimit, GasPrice, Inputs,
-        Maturity, Outputs, ReceiptsRoot, Script, ScriptData, StorageSlots, TxFieldSalt,
-        TxId, Witnesses,
-    };
+    pub use fuel_indexer_types::fuel::field::*;
     pub use fuel_indexer_types::{fuel, prelude::*};
 
     // These imports are used in the indexer.rs module when iterating over

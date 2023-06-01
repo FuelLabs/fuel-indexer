@@ -89,25 +89,25 @@ help: consider importing one of these items
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_abi_arg_includes_invalid_type.rs
   |
-  |             status: fuel::TransactionStatusData::default(),
+  |             status: fuel::TransactionStatus::default(),
   |                     ^^^^ use of undeclared crate or module `fuel`
   |
 help: there is a crate or module with a similar name
    |
-46 |             status: fuels::TransactionStatusData::default(),
+46 |             status: fuels::TransactionStatus::default(),
    |                     ~~~~~
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::fuel::TransactionStatusData;
+2  | use fuel_indexer_plugin::prelude::fuel::TransactionStatus;
    |
-2  | use fuel_indexer_types::fuel::TransactionStatusData;
+2  | use fuel_indexer_types::fuel::TransactionStatus;
    |
-2  | use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatusData;
+2  | use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatus;
    |
-help: if you import `TransactionStatusData`, refer to it directly
+help: if you import `TransactionStatus`, refer to it directly
    |
-46 -             status: fuel::TransactionStatusData::default(),
-46 +             status: TransactionStatusData::default(),
+46 -             status: fuel::TransactionStatus::default(),
+46 +             status: TransactionStatus::default(),
    |
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
