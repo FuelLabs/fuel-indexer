@@ -740,6 +740,8 @@ pub mod explorer_index {
             }
 
             for receipt in transaction.receipts.iter() {
+                // TODO: Capture all contract IDs from all receipts
+                // TODO: Capture all addresses from all receipts
                 match receipt {
                     fuel::Receipt::Call { .. } => {}
                     #[allow(unused)]

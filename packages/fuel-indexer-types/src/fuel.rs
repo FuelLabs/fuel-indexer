@@ -24,6 +24,8 @@ pub mod field {
     };
 }
 
+pub type RawInstruction = u32;
+
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct StorageSlot {
     pub key: Bytes32,
@@ -471,4 +473,90 @@ impl From<Json> for ProgramState {
         let state: ProgramState = serde_json::from_str(&json.0).expect("Serde error.");
         state
     }
+}
+
+pub enum PanicReason {
+    /// 0 is reserved for success, while any non-zero value indicates a failure.
+    Success = 0x00,
+    /// Found `RVRT` instruction.
+    Revert = 0x01,
+    /// Execution ran out of gas.
+    OutOfGas = 0x02,
+    /// The transaction validity is violated.
+    TransactionValidity = 0x03,
+    /// Attempt to write outside interpreter memory boundaries.
+    MemoryOverflow = 0x04,
+    /// Overflow while executing arithmetic operation.
+    /// These errors are ignored using the WRAPPING flag.
+    ArithmeticOverflow = 0x05,
+    /// Designed contract was not found in the storage.
+    ContractNotFound = 0x06,
+    /// Memory ownership rules are violated.
+    MemoryOwnership = 0x07,
+    /// The asset ID balance isn't enough for the instruction.
+    NotEnoughBalance = 0x08,
+    /// The interpreter is expected to be in internal context.
+    ExpectedInternalContext = 0x09,
+    /// The queried asset ID was not found in the state.
+    AssetIdNotFound = 0x0a,
+    /// The provided input is not found in the transaction.
+    InputNotFound = 0x0b,
+    /// The provided output is not found in the transaction.
+    OutputNotFound = 0x0c,
+    /// The provided witness is not found in the transaction.
+    WitnessNotFound = 0x0d,
+    /// The transaction maturity is not valid for this request.
+    TransactionMaturity = 0x0e,
+    /// The metadata identifier is invalid.
+    InvalidMetadataIdentifier = 0x0f,
+    /// The call structure is not valid.
+    MalformedCallStructure = 0x10,
+    /// The provided register does not allow write operations.
+    ReservedRegisterNotWritable = 0x11,
+    /// The execution resulted in an erroneous state of the interpreter.
+    ErrorFlag = 0x12,
+    /// The provided immediate value is not valid for this instruction.
+    InvalidImmediateValue = 0x13,
+    /// The provided transaction input is not of type `Coin`.
+    ExpectedCoinInput = 0x14,
+    /// The requested memory access exceeds the limits of the interpreter.
+    MaxMemoryAccess = 0x15,
+    /// Two segments of the interpreter memory should not intersect for write operations.
+    MemoryWriteOverlap = 0x16,
+    /// The requested contract is not listed in the transaction inputs.
+    ContractNotInInputs = 0x17,
+    /// The internal asset ID balance overflowed with the provided instruction.
+    InternalBalanceOverflow = 0x18,
+    /// The maximum allowed contract size is violated.
+    ContractMaxSize = 0x19,
+    /// This instruction expects the stack area to be unallocated for this call.
+    ExpectedUnallocatedStack = 0x1a,
+    /// The maximum allowed number of static contracts was reached for this transaction.
+    MaxStaticContractsReached = 0x1b,
+    /// The requested transfer amount cannot be zero.
+    TransferAmountCannotBeZero = 0x1c,
+    /// The provided transaction output should be of type `Variable`.
+    ExpectedOutputVariable = 0x1d,
+    /// The expected context of the stack parent is internal.
+    ExpectedParentInternalContext = 0x1e,
+    /// The jump instruction cannot move backwards in predicate verification.
+    IllegalJump = 0x1f,
+    /// The contract ID is already deployed and can't be overwritten.
+    ContractIdAlreadyDeployed = 0x20,
+    /// The loaded contract mismatch expectations.
+    ContractMismatch = 0x21,
+    /// Attempting to send message data longer than `MAX_MESSAGE_DATA_LENGTH`
+    MessageDataTooLong = 0x22,
+    /// Mathimatically invalid arguments where given to an arithmetic instruction.
+    /// For instance, division by zero produces this.
+    /// These errors are ignored using the UNSAFEMATH flag.
+    ArithmeticError = 0x23,
+    /// The byte can't be mapped to any known `PanicReason`.
+    UnknownPanicReason = 0x24,
+}
+
+#[allow(unused)]
+pub struct InstructionResult {
+    reason: PanicReason,
+    instruction: RawInstruction,
 }
