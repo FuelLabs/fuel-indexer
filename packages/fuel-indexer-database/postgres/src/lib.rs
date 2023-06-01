@@ -757,26 +757,6 @@ pub async fn revert_transaction(
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn get_graph_root_id(
-    conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-    identifier: &str,
-) -> sqlx::Result<i64> {
-    let root_id: i64 = sqlx::query(
-        "SELECT id FROM graph_registry_root_columns
-        WHERE namespace = $1
-        AND identifier = $2",
-    )
-    .bind(namespace)
-    .bind(identifier)
-    .fetch_one(conn)
-    .await?
-    .get(0);
-
-    Ok(root_id)
-}
-
-#[cfg_attr(feature = "metrics", metrics)]
 pub async fn remove_graph(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
