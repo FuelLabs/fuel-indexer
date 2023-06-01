@@ -5,7 +5,7 @@ use fuel_indexer_database::{
 };
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 use wasmer::Instance;
 
 /// Database for an executor instance, with schema info.
@@ -46,7 +46,7 @@ impl Database {
     pub async fn start_transaction(&mut self) -> IndexerResult<usize> {
         let conn = self.pool.acquire().await?;
         self.stashed = Some(conn);
-        info!("Connection stashed as: {:?}", self.stashed);
+        debug!("Connection stashed as: {:?}", self.stashed);
         let conn = self.stashed.as_mut().expect(
             "No stashed connection for start transaction. Was a transaction started?",
         );
