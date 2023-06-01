@@ -13,29 +13,29 @@ use serde::{Deserialize, Serialize};
 use tai64::Tai64;
 
 /// Scalar for arbitrarily sized byte payloads aliased as `HexString`.
-///
-/// `HexString` from `fuel-core` is `Bytes` but for `Serialize` and `Deserialize` we use `Vec<u8>`.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
-pub struct HexString(pub Vec<u8>);
+//
+//`HexString` from `fuel-core` is `Bytes` but for `Serialize` and `Deserialize` we use `Vec<u8>`.
+// #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, Hash)]
+// pub struct HexString(pub Vec<u8>);
 
-impl From<Vec<u8>> for HexString {
-    fn from(value: Vec<u8>) -> Self {
-        HexString(value)
-    }
-}
+// impl From<Vec<u8>> for HexString {
+//     fn from(value: Vec<u8>) -> Self {
+//         HexString(value)
+//     }
+// }
 
-impl From<&str> for HexString {
-    fn from(value: &str) -> Self {
-        HexString(value.as_bytes().to_vec())
-    }
-}
+// impl From<&str> for HexString {
+//     fn from(value: &str) -> Self {
+//         HexString(value.as_bytes().to_vec())
+//     }
+// }
 
-impl std::fmt::LowerHex for HexString {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let val = Bytes::from(self.0.to_owned());
-        std::fmt::LowerHex::fmt(&val, f)
-    }
-}
+// impl std::fmt::LowerHex for HexString {
+//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//         let val = Bytes::from(self.0.to_owned());
+//         std::fmt::LowerHex::fmt(&val, f)
+//     }
+// }
 
 /// Scalar for object IDs.
 pub type ID = u64;
@@ -72,6 +72,9 @@ pub type Signature = Bytes64;
 
 /// Scalar for 32-byte payloads aliased as `Nonce`.
 pub type Nonce = Bytes32;
+
+/// Scalar for arbitrarily sized byte payloads aliased as `HexString`.
+pub type HexString = Bytes;
 
 /// Scalar for `Tai64` timestamps aliased as `Tai64Timestamp`.
 pub type Tai64Timestamp = Tai64;
