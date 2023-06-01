@@ -45,12 +45,8 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
         // TODO: Eventually prevent these types of implicity imports and have users import
         // all dependencies explicity (preferably through a single crate).
         use fuel_indexer_utils::{
-            plugin::{
-                bincode, deserialize,
-                serde_json, serialize,
-                serde::{Deserialize, Serialize},
-                types::*,
-                wasm::{Digest, Entity, FromHex, Logger, Sha256},
+            plugin::{bincode, deserialize, serde_json, serialize, types::*,
+                serde::{Deserialize, Serialize}, wasm::{Digest, Entity, FromHex, Logger, Sha256},
             },
         };
         use fuels::{
