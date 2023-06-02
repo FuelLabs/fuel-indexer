@@ -1,5 +1,5 @@
 extern crate alloc;
-use fuel_indexer_utils::prelude::indexer;
+use fuel_indexer_utils::prelude::*;
 
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
