@@ -2645,9 +2645,9 @@ dependencies = [
 
 [[package]]
 name = "fuel-core-client"
-version = "0.17.11"
+version = "0.17.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "808f7273c7ea1ad10766794701f4dfc234426aa5a8b7e69720af007cd551889d"
+checksum = "4cc0830731d96e7f5ce0e8a18c3d0fbc20ce84f9b879e0bc3afa73e63ae5ce25"
 dependencies = [
  "anyhow",
  "cynic",
@@ -2810,9 +2810,9 @@ dependencies = [
 
 [[package]]
 name = "fuel-core-types"
-version = "0.17.11"
+version = "0.17.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83b7da3d01bd0cc89a8e74f4b40bd5bf160fcec3b506d8503bdb0703846fc567"
+checksum = "8ac1234394c27638b57adb9f7e36bbcb9bff3abfd484fc794c9962cdc4e60180"
 dependencies = [
  "anyhow",
  "derive_more",
@@ -2942,15 +2942,19 @@ dependencies = [
  "async-trait",
  "bincode",
  "clap 3.2.25",
+ "cynic",
  "fuel-core",
  "fuel-core-client",
+ "fuel-crypto 0.26.3",
  "fuel-indexer-api-server",
  "fuel-indexer-database",
  "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
+ "fuel-tx",
  "fuel-vm",
  "futures",
+ "itertools 0.10.5",
  "sqlx",
  "thiserror",
  "tokio 1.28.1",

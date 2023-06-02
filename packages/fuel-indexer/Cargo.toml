@@ -19,15 +19,19 @@ async-std = "1"
 async-trait = "0.1"
 bincode = { workspace = true }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
+cynic = "2.2"
 fuel-core = { version = "0.17", optional = true }
-fuel-core-client = "0.17"
+fuel-core-client = "0.17.12"
+fuel-crypto = { version = "0.26" }
 fuel-indexer-api-server = { workspace = true, optional = true }
 fuel-indexer-database = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
+fuel-tx = { workspace = true }
 fuel-vm = { version = "0.26" }
 futures = "0.3"
+itertools = "0.10"
 sqlx = { version = "0.6", features = ["bigdecimal"] }
 thiserror = { workspace = true }
 tokio = { features = ["macros", "rt-multi-thread", "sync", "process"], workspace = true }
