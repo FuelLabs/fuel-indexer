@@ -20,6 +20,7 @@ pub fn indexer(attrs: TokenStream, item: TokenStream) -> TokenStream {
 
 #[cfg(test)]
 mod tests {
+    #[allow(unused)]
     #[ignore = "Currently fails due to dependency issues in fuel-indexer-macros"]
     fn test_success_and_failure_macros() {
         let t = trybuild::TestCases::new();
