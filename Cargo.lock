@@ -2941,7 +2941,6 @@ dependencies = [
  "async-std",
  "async-trait",
  "bincode",
- "chrono",
  "clap 3.2.25",
  "cynic",
  "fuel-core",

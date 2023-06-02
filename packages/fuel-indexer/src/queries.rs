@@ -16,7 +16,7 @@ use std::io;
 
 #[derive(cynic::QueryFragment, Debug)]
 #[cynic(
-    schema_path = "assets/schema.sdl",
+    schema_path = "./assets/schema.sdl",
     graphql_type = "Query",
     variables = "ConnectionArgs"
 )]
@@ -26,14 +26,14 @@ pub struct FullBlocksQuery {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(schema_path = "assets/schema.sdl", graphql_type = "BlockConnection")]
+#[cynic(schema_path = "./assets/schema.sdl", graphql_type = "BlockConnection")]
 pub struct FullBlockConnection {
     pub edges: Vec<FullBlockEdge>,
     pub page_info: PageInfo,
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(schema_path = "assets/schema.sdl", graphql_type = "BlockEdge")]
+#[cynic(schema_path = "./assets/schema.sdl", graphql_type = "BlockEdge")]
 pub struct FullBlockEdge {
     pub cursor: String,
     pub node: FullBlock,
@@ -41,7 +41,7 @@ pub struct FullBlockEdge {
 
 #[derive(cynic::QueryFragment, Debug)]
 #[cynic(
-    schema_path = "assets/schema.sdl",
+    schema_path = "./assets/schema.sdl",
     graphql_type = "Query",
     variables = "BlockByHeightArgs"
 )]
@@ -51,7 +51,7 @@ pub struct FullBlockByHeightQuery {
 }
 
 #[derive(cynic::QueryFragment, Debug)]
-#[cynic(schema_path = "assets/schema.sdl", graphql_type = "Block")]
+#[cynic(schema_path = "./assets/schema.sdl", graphql_type = "Block")]
 pub struct FullBlock {
     pub id: BlockId,
     pub header: Header,
@@ -73,24 +73,6 @@ impl FullBlock {
             Consensus::Unknown => None,
         }
     }
-
-    // async fn query<ResponseData, Vars>(
-    //     &self,
-    //     q: Operation<ResponseData, Vars>,
-    // ) -> io::Result<ResponseData>
-    // where
-    //     Vars: serde::Serialize,
-    //     ResponseData: serde::de::DeserializeOwned + 'static,
-    // {
-    //     let response = self
-    //     .client
-    //     .post(self.url.clone())
-    //     .run_graphql(q)
-    //     .await
-    //     .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-
-    //     decode_response(response)
-    // }
 }
 
 impl From<FullBlockConnection> for PaginatedResult<FullBlock, String> {
@@ -126,6 +108,24 @@ fn url(str: &str) -> reqwest::Url {
         .expect("Should be able to parse");
     url.set_path("/graphql");
     url
+}
+
+async fn query<ResponseData, Vars>(
+    url_str: &str,
+    q: Operation<ResponseData, Vars>,
+) -> io::Result<ResponseData>
+where
+    Vars: serde::Serialize,
+    ResponseData: serde::de::DeserializeOwned + 'static,
+{
+    let client = reqwest::Client::builder().build().expect("Should connect");
+    let response = client
+        .post(url(url_str))
+        .run_graphql(q)
+        .await
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+
+    decode_response(response)
 }
 
 fn decode_response<R>(response: GraphQlResponse<R>) -> io::Result<R>
