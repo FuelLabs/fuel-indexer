@@ -127,7 +127,7 @@ pub fn default_index_lib(
 
     format!(
         r#"extern crate alloc;
-use fuel_indexer_utils::*;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {index_name}_index_mod {{
