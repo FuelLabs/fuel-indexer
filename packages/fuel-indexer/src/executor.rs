@@ -168,9 +168,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         .try_collect()
                         .expect("Bad receipts.");
 
-                    let status = trans
-                        .status
-                        .expect("Bad transaction status.");
+                    let status = trans.status.expect("Bad transaction status.");
                     // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
                     let status = match status.try_into().unwrap() {
                         ClientTransactionStatus::Success {
