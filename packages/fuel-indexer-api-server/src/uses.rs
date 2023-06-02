@@ -277,7 +277,7 @@ pub(crate) async fn register_indexer_assets(
                 {
                     error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
                     queries::revert_transaction(&mut conn).await?;
-                    return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
+                    return Err(e.into());
                 }
 
                 if let Err(e) =
@@ -285,7 +285,7 @@ pub(crate) async fn register_indexer_assets(
                 {
                     error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
                     queries::revert_transaction(&mut conn).await?;
-                    return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
+                    return Err(e.into());
                 }
             }
         }
