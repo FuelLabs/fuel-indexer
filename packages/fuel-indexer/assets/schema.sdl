@@ -51,6 +51,13 @@ type Block {
 	transactions: [Transaction!]!
 }
 
+type FullBlock {
+	id: BlockId!
+	header: Header!
+	consensus: Consensus!
+	transactions: [Transaction!]!
+}
+
 type BlockConnection {
 	"""
 	Information to aid in pagination.
@@ -66,6 +73,22 @@ type BlockConnection {
 	nodes: [Block!]!
 }
 
+
+type FullBlockConnection {
+	"""
+	Information to aid in pagination.
+	"""
+	pageInfo: PageInfo!
+	"""
+	A list of edges.
+	"""
+	edges: [FullBlockEdge!]!
+	"""
+	A list of nodes.
+	"""
+	nodes: [FullBlock!]!
+}
+
 """
 An edge in a connection.
 """
@@ -79,6 +102,21 @@ type BlockEdge {
 	"""
 	node: Block!
 }
+
+"""
+An edge in a connection.
+"""
+type FullBlockEdge {
+	"""
+	A cursor for use in pagination
+	"""
+	cursor: String!
+	"""
+	The item at the end of the edge
+	"""
+	node: FullBlock!
+}
+
 
 scalar BlockId
 
@@ -509,6 +547,7 @@ type Query {
 	balances(filter: BalanceFilterInput!, first: Int, after: String, last: Int, before: String): BalanceConnection!
 	block(id: BlockId, height: U64): Block
 	blocks(first: Int, after: String, last: Int, before: String): BlockConnection!
+	fullBlocks(first: Int, after: String, last: Int, before: String): FullBlockConnection!
 	chain: ChainInfo!
 	transaction(id: TransactionId!): Transaction
 	transactions(first: Int, after: String, last: Int, before: String): TransactionConnection!

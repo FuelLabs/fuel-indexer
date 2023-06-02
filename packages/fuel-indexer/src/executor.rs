@@ -1,5 +1,5 @@
 use crate::{
-    database::Database, ffi, queries::full_block_by_page, IndexerConfig, IndexerError,
+    database::Database, ffi, queries::ClientExt, IndexerConfig, IndexerError,
     IndexerResult,
 };
 use async_std::{
@@ -10,7 +10,7 @@ use async_std::{
 use async_trait::async_trait;
 use fuel_core_client::client::{
     schema::block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
-    types::{TransactionResponse, TransactionStatus as ClientTransactionStatus},
+    types::TransactionStatus as ClientTransactionStatus,
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
@@ -129,24 +129,22 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             let PaginatedResult {
                 cursor, results, ..
-            } = full_block_by_page(
-                &fuel_node_addr,
-                PaginationRequest {
+            } = client
+                .full_blocks(PaginationRequest {
                     cursor: next_cursor.clone(),
                     results: NODE_GRAPHQL_PAGE_SIZE,
                     direction: PageDirection::Forward,
-                },
-            )
-            .await
-            .unwrap_or_else(|e| {
-                error!("Failed to retrieve blocks: {e}");
-                PaginatedResult {
-                    cursor: None,
-                    results: vec![],
-                    has_next_page: false,
-                    has_previous_page: false,
-                }
-            });
+                })
+                .await
+                .unwrap_or_else(|e| {
+                    error!("Failed to retrieve blocks: {e}");
+                    PaginatedResult {
+                        cursor: None,
+                        results: vec![],
+                        has_next_page: false,
+                        has_previous_page: false,
+                    }
+                });
 
             let mut block_info = Vec::new();
             for block in results.into_iter() {
