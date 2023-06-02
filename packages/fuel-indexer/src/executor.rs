@@ -166,11 +166,11 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         .into_iter()
                         .map(TryInto::try_into)
                         .try_collect()
-                        .expect("Should convert receipts");
+                        .expect("Bad receipts.");
 
                     let status = trans
                         .status
-                        .expect("Commited transaction always has a status");
+                        .expect("Bad transaction status.");
                     // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
                     let status = match status.try_into().unwrap() {
                         ClientTransactionStatus::Success {
@@ -195,7 +195,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 // that all patterns are not matched. These other program states are only used in
                                 // debug modes.
                                 #[allow(unreachable_patterns)]
-                                _ => unreachable!("Reached invalid/debug program state."),
+                                _ => unreachable!("Bad program state."),
                             });
                             TransactionStatus::Success {
                                 block: block_id.parse().expect("Bad block height."),
@@ -226,10 +226,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 // that all patterns are not matched. These other program states are only used in
                                 // debug modes.
                                 #[allow(unreachable_patterns)]
-                                _ => unreachable!("Reached invalid/debug program state."),
+                                _ => unreachable!("Bad program state."),
                             });
                             TransactionStatus::Failure {
-                                block: block_id.parse().expect("Bad block height."),
+                                block: block_id.parse().expect("Bad block ID."),
                                 time: time.to_unix() as u64,
                                 program_state,
                                 reason,
@@ -283,8 +283,6 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         }),
                         _ => Transaction::default(),
                     };
-
-                    // let id = transaction.id();
 
                     let tx_data = TransactionData {
                         receipts,
