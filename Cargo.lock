@@ -3071,7 +3071,6 @@ dependencies = [
  "fuel-indexer-plugin",
  "fuel-indexer-schema",
  "fuel-indexer-types",
- "fuel-indexer-utils",
  "fuels",
  "fuels-code-gen",
  "fuels-macros",
