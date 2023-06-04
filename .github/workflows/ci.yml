@@ -542,8 +542,6 @@ jobs:
   # TODO: publish these in parallel
   publish:
     needs:
-      - publish-fuel-indexer-binaries
-      - publish-docker-image
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
     runs-on: ubuntu-latest
