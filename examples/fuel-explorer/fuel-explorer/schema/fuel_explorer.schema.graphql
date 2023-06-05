@@ -29,6 +29,7 @@ type ContractIdFragment {
 
 type BlockIdFragment {
   id: ID!
+  hash: Bytes32!
 }
 
 # TODO: Should this be a FK?
@@ -90,7 +91,7 @@ type InputMessage {
   sender: Address!
   recipient: Address!
   amount: UInt8!
-  nonce: Nonce!
+  nonce: UInt8!
   witness_index: Int8!
   data: HexString!
   predicate: HexString!
@@ -150,20 +151,13 @@ type SqueezedOutStatus {
 }
 
 enum ReturnType {
-  RETURN
-  RETURNDATA
-  REVERT
+  Return
+  ReturnData
+  Revert
 }
 
-type TransactionReturnType {
-  id: ID!
-  return_type: ReturnType!
-}
-
-# TODO: Should this be a FK?
 type ProgramState {
-  id: ID!
-  return_type: TransactionReturnType!
+  return_type: ReturnType! @norelation
   data: HexString!
 }
 

@@ -64,11 +64,11 @@ error[E0412]: cannot find type `BlockData` in this scope
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::BlockData;
+2  + use fuel_indexer_plugin::prelude::BlockData;
    |
-2  | use fuel_indexer_types::fuel::BlockData;
+2  + use fuel_indexer_types::fuel::BlockData;
    |
-2  | use fuel_indexer_utils::plugin::prelude::BlockData;
+2  + use fuel_indexer_utils::plugin::prelude::BlockData;
    |
 
 error[E0422]: cannot find struct, variant or union type `BlockData` in this scope
@@ -79,11 +79,11 @@ error[E0422]: cannot find struct, variant or union type `BlockData` in this scop
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::BlockData;
+2  + use fuel_indexer_plugin::prelude::BlockData;
    |
-2  | use fuel_indexer_types::fuel::BlockData;
+2  + use fuel_indexer_types::fuel::BlockData;
    |
-2  | use fuel_indexer_utils::plugin::prelude::BlockData;
+2  + use fuel_indexer_utils::plugin::prelude::BlockData;
    |
 
 error[E0433]: failed to resolve: use of undeclared type `Consensus`
@@ -94,35 +94,35 @@ error[E0433]: failed to resolve: use of undeclared type `Consensus`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::fuel::Consensus;
+2  + use fuel_indexer_plugin::prelude::fuel::Consensus;
    |
-2  | use fuel_indexer_types::fuel::Consensus;
+2  + use fuel_indexer_types::fuel::Consensus;
    |
-2  | use fuel_indexer_utils::plugin::prelude::fuel::Consensus;
+2  + use fuel_indexer_utils::plugin::prelude::fuel::Consensus;
    |
 
 error[E0433]: failed to resolve: use of undeclared crate or module `fuel`
  --> ../fuel-indexer-tests/trybuild/fail_if_attribute_schema_arg_is_invalid.rs
   |
-  |             status: fuel::TransactionStatusData::default(),
+  |             status: fuel::TransactionStatus::default(),
   |                     ^^^^ use of undeclared crate or module `fuel`
   |
 help: there is a crate or module with a similar name
    |
-47 |             status: fuels::TransactionStatusData::default(),
+47 |             status: fuels::TransactionStatus::default(),
    |                     ~~~~~
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::fuel::TransactionStatusData;
+2  + use fuel_indexer_plugin::prelude::fuel::TransactionStatus;
    |
-2  | use fuel_indexer_types::fuel::TransactionStatusData;
+2  + use fuel_indexer_types::fuel::TransactionStatus;
    |
-2  | use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatusData;
+2  + use fuel_indexer_utils::plugin::prelude::fuel::TransactionStatus;
    |
-help: if you import `TransactionStatusData`, refer to it directly
+help: if you import `TransactionStatus`, refer to it directly
    |
-47 -             status: fuel::TransactionStatusData::default(),
-47 +             status: TransactionStatusData::default(),
+47 -             status: fuel::TransactionStatus::default(),
+47 +             status: TransactionStatus::default(),
    |
 
 error[E0433]: failed to resolve: use of undeclared type `Transaction`
@@ -133,13 +133,13 @@ error[E0433]: failed to resolve: use of undeclared type `Transaction`
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_plugin::prelude::fuel::Transaction;
+2  + use fuel_indexer_plugin::prelude::fuel::Transaction;
    |
-2  | use fuel_indexer_types::fuel::Transaction;
+2  + use fuel_indexer_types::fuel::Transaction;
    |
-2  | use fuel_indexer_utils::plugin::prelude::fuel::Transaction;
+2  + use fuel_indexer_utils::plugin::prelude::fuel::Transaction;
    |
-2  | use fuels::prelude::Transaction;
+2  + use fuels::prelude::Transaction;
    |
      and 2 other candidates
 
@@ -151,11 +151,11 @@ error[E0425]: cannot find function `serialize` in this scope
   |
 help: consider importing one of these items
    |
-2  | use fuel_indexer_lib::utils::serialize;
+2  + use fuel_indexer_lib::utils::serialize;
    |
-2  | use fuel_indexer_plugin::serialize;
+2  + use fuel_indexer_plugin::serialize;
    |
-2  | use fuel_indexer_utils::plugin::serialize;
+2  + use fuel_indexer_utils::plugin::serialize;
    |
 
 error[E0425]: cannot find function `handle_events` in this scope

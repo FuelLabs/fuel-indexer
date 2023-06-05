@@ -1,4 +1,4 @@
-use fuel_indexer_utils::prelude::indexer;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer()]
 mod indexer {

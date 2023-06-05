@@ -24,9 +24,7 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.15", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.15", features = ["native-execution"] }}
-fuel-indexer-schema = {{ version = "0.15", default-features = false }}
+fuel-indexer-utils = {{ version = "0.16.0" }}
 fuels = {{ version = "0.40", default-features = false, features = ["std"] }}
 "#
     )
@@ -44,9 +42,7 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.15", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.15" }}
-fuel-indexer-schema = {{ version = "0.15", default-features = false }}
+fuel-indexer-utils = {{ version = "0.16.0", features = ["native-execution"] }}
 fuels = {{ version = "0.40", default-features = false }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
@@ -131,8 +127,7 @@ pub fn default_index_lib(
 
     format!(
         r#"extern crate alloc;
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::utils::*;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "{manifest_path}")]
 pub mod {index_name}_index_mod {{

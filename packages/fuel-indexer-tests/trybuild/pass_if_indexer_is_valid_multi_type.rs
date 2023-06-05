@@ -1,5 +1,5 @@
 extern crate alloc;
-use fuel_indexer_utils::prelude::indexer;
+use fuel_indexer_utils::prelude::*;
 
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
@@ -64,7 +64,7 @@ fn main() {
         },
         transactions: vec![fuel::TransactionData {
             id: [0u8; 32].into(),
-            status: fuel::TransactionStatusData::default(),
+            status: fuel::TransactionStatus::default(),
             receipts: vec![
                 fuel::Receipt::Call {
                     id: [0u8; 32].into(),
