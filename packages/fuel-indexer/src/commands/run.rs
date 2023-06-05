@@ -2,7 +2,7 @@ use crate::IndexerService;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
 use fuel_indexer_lib::{
     config::{IndexerArgs, IndexerConfig},
-    defaults::SERVICE_REQUEST_CHANNEL_SIZE,
+    defaults,
     manifest::Manifest,
     utils::{init_logging, ServiceRequest},
 };
@@ -26,8 +26,6 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     let args_config = args.config.clone();
 
     if embedded_database {
-        use fuel_indexer_lib::defaults;
-
         let name = postgres_database
             .clone()
             .unwrap_or(defaults::POSTGRES_DATABASE.to_string());
@@ -66,7 +64,7 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     info!("Configuration: {:?}", config);
 
     #[allow(unused)]
-    let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+    let (tx, rx) = channel::<ServiceRequest>(defaults::SERVICE_REQUEST_CHANNEL_SIZE);
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
@@ -159,7 +157,6 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
     }
 
     if embedded_database {
-        use fuel_indexer_lib::defaults;
         let name = postgres_database.unwrap_or(defaults::POSTGRES_DATABASE.to_string());
 
         let stop_db_cmd = forc_postgres::cli::StopDbCommand {
