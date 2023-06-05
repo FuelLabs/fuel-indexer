@@ -3161,6 +3161,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-test-redeploy"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-utils",
+ "fuels",
+ "serde",
+]
+
+[[package]]
 name = "fuel-indexer-tests"
 version = "0.0.0"
 dependencies = [
