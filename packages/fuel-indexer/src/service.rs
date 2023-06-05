@@ -60,46 +60,57 @@ impl IndexerService {
         mut manifest: Manifest,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
-        queries::start_transaction(&mut conn).await?;
 
-        if self.config.replace_indexer
-            && (queries::get_indexer_id(
+        if self.config.replace_indexer {
+            // Remove all indexers, if any exists
+            if (queries::get_indexer_id(
                 &mut conn,
                 &manifest.namespace,
                 &manifest.identifier,
             )
             .await)
                 .is_ok()
-        {
-            if let Err(e) = queries::remove_indexers(
-                &mut conn,
-                &manifest.namespace,
-                &manifest.identifier,
-                None,
-            )
-            .await
             {
-                error!(
-                    "Failed to remove Indexer({}.{}): {e}",
-                    &manifest.namespace, &manifest.identifier
-                );
-                queries::revert_transaction(&mut conn).await?;
-                return Err(e.into());
+                if let Err(e) = queries::remove_indexers(
+                    &mut conn,
+                    &manifest.namespace,
+                    &manifest.identifier,
+                    None,
+                )
+                .await
+                {
+                    error!(
+                        "Failed to remove Indexer({}.{}): {e}",
+                        &manifest.namespace, &manifest.identifier
+                    );
+                    queries::revert_transaction(&mut conn).await?;
+                    return Err(e.into());
+                }
             }
 
-            if let Err(e) = queries::remove_graph(
+            // Remove GraphQL entries, and schema tales, if exist
+            if (queries::graph_root_latest(
                 &mut conn,
                 &manifest.namespace,
                 &manifest.identifier,
             )
-            .await
+            .await)
+                .is_ok()
             {
-                error!(
-                    "Failed to remove GraphQL Schema({}.{}): {e}",
-                    &manifest.namespace, &manifest.identifier
-                );
-                queries::revert_transaction(&mut conn).await?;
-                return Err(e.into());
+                if let Err(e) = queries::remove_graph(
+                    &mut conn,
+                    &manifest.namespace,
+                    &manifest.identifier,
+                )
+                .await
+                {
+                    error!(
+                        "Failed to remove GraphQL tables and Schema({}.{}): {e}",
+                        &manifest.namespace, &manifest.identifier
+                    );
+                    queries::revert_transaction(&mut conn).await?;
+                    return Err(e.into());
+                }
             }
         }
 
@@ -162,7 +173,6 @@ impl IndexerService {
         self.handles.insert(manifest.uid(), handle);
         self.killers.insert(manifest.uid(), killer);
 
-        queries::commit_transaction(&mut conn).await?;
         Ok(())
     }
 
