@@ -60,6 +60,43 @@ impl IndexerService {
         mut manifest: Manifest,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
+        queries::start_transaction(&mut conn).await?;
+
+        if self.config.replace_indexer
+            && (queries::get_indexer_id(
+                &mut conn,
+                &manifest.namespace,
+                &manifest.identifier,
+            )
+            .await)
+                .is_ok()
+        {
+            if let Err(e) = queries::remove_indexers(
+                &mut conn,
+                &manifest.namespace,
+                &manifest.identifier,
+                None,
+            )
+            .await
+            {
+                error!("Failed to remove Indexer({}.{}): {e}", &manifest.namespace, &manifest.identifier);
+                queries::revert_transaction(&mut conn).await?;
+                return Err(e.into());
+            }
+
+            if let Err(e) = queries::remove_graph(
+                &mut conn,
+                &manifest.namespace,
+                &manifest.identifier,
+            )
+            .await
+            {
+                error!("Failed to remove GraphQL Schema({}.{}): {e}", &manifest.namespace, &manifest.identifier);
+                queries::revert_transaction(&mut conn).await?;
+                return Err(e.into());
+            }
+        }
+
         let index = queries::register_indexer(
             &mut conn,
             &manifest.namespace,
@@ -81,7 +118,6 @@ impl IndexerService {
             )
             .await?;
 
-        let mut conn = self.pool.acquire().await?;
         let start_block = get_start_block(&mut conn, &manifest).await?;
         manifest.start_block = Some(start_block);
         let (handle, exec_source, killer) =
@@ -116,11 +152,12 @@ impl IndexerService {
                 .await?;
             }
         }
-
+;
         info!("Registered Indexer({})", &manifest.uid());
         self.handles.insert(manifest.uid(), handle);
         self.killers.insert(manifest.uid(), killer);
 
+        queries::commit_transaction(&mut conn).await?;
         Ok(())
     }
 
