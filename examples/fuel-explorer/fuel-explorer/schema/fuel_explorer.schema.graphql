@@ -20,7 +20,7 @@ type UtxoId {
 type TxPointer {
   id: ID!
   block_height: BlockHeight!
-  tx_index: UInt4!
+  tx_index: UInt8!
 }
 
 type ContractIdFragment {
@@ -111,7 +111,7 @@ type CreateTransaction {
   gas_limit: UInt8!
   maturity: BlockHeight!
   bytecode_length: UInt8!
-  bytecode_witness_index: UInt4!
+  bytecode_witness_index: UInt1!
   #   storage_slots: [StorageSlot]!
   #   inputs: [Input]!
   #   outputs: [Output]!

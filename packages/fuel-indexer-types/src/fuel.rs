@@ -72,6 +72,13 @@ pub struct CommonMetadata {
     pub witnesses_offset_at: Vec<usize>,
 }
 
+impl From<CommonMetadata> for Json {
+    fn from(metadata: CommonMetadata) -> Self {
+        let s = serde_json::to_string(&metadata).expect("Serde error.");
+        Self(s)
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Script {
     pub gas_price: Word,
@@ -90,6 +97,13 @@ pub struct Script {
 pub struct ScriptMetadata {
     pub common: CommonMetadata,
     pub script_data_offset: usize,
+}
+
+impl From<ScriptMetadata> for Json {
+    fn from(metadata: ScriptMetadata) -> Self {
+        let s = serde_json::to_string(&metadata).expect("Serde error.");
+        Self(s)
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
