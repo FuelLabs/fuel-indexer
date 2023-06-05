@@ -79,7 +79,10 @@ impl IndexerService {
             )
             .await
             {
-                error!("Failed to remove Indexer({}.{}): {e}", &manifest.namespace, &manifest.identifier);
+                error!(
+                    "Failed to remove Indexer({}.{}): {e}",
+                    &manifest.namespace, &manifest.identifier
+                );
                 queries::revert_transaction(&mut conn).await?;
                 return Err(e.into());
             }
@@ -91,7 +94,10 @@ impl IndexerService {
             )
             .await
             {
-                error!("Failed to remove GraphQL Schema({}.{}): {e}", &manifest.namespace, &manifest.identifier);
+                error!(
+                    "Failed to remove GraphQL Schema({}.{}): {e}",
+                    &manifest.namespace, &manifest.identifier
+                );
                 queries::revert_transaction(&mut conn).await?;
                 return Err(e.into());
             }
@@ -152,7 +158,6 @@ impl IndexerService {
                 .await?;
             }
         }
-;
         info!("Registered Indexer({})", &manifest.uid());
         self.handles.insert(manifest.uid(), handle);
         self.killers.insert(manifest.uid(), killer);

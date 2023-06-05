@@ -347,7 +347,10 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
     GraphQlApi::build(config, pool, tx).await.unwrap()
 }
 
-pub async fn indexer_service_postgres(database_url: Option<&str>, modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>) -> IndexerService {
+pub async fn indexer_service_postgres(
+    database_url: Option<&str>,
+    modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+) -> IndexerService {
     let database: DatabaseConfig = database_url
         .map_or(DatabaseConfig::default(), |url| {
             DatabaseConfig::from_str(url).unwrap()
