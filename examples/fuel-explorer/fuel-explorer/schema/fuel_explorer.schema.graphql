@@ -330,6 +330,7 @@ type MessageCoin {
   da_height: UInt8!
 }
 
+# TODO: Remove this
 type ContractBalance {
   id: ID!
   contract_id: ContractId!

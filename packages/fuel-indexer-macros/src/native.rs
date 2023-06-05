@@ -13,7 +13,9 @@ pub fn handler_block_native(
         async fn handle_events(blocks: Vec<BlockData>, db_conn: Arc<Mutex<Database>>) -> IndexerResult<()> {
 
             unsafe {
-                db = Some(db_conn);
+                if db.is_none() {
+                    db = Some(db_conn);
+                }
             }
 
             #handler_block
@@ -38,12 +40,8 @@ fn native_prelude() -> proc_macro2::TokenStream {
         // TODO: Eventually prevent these types of implicity imports and have users import
         // all dependencies explicity (preferably through a single crate).
         use fuel_indexer_utils::{
-            plugin::{
-                bincode, deserialize,
-                serde_json, serialize,
-                native::*,
-                serde::{Deserialize, Serialize},
-                types::*,
+            plugin::{bincode, deserialize, serde_json, serialize, native::*,
+                serde::{Deserialize, Serialize}, types::*,
             },
         };
         use fuels::{
