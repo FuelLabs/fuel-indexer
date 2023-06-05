@@ -1,23 +1,18 @@
-use crate::utils::{
-    build_schema_fields_and_types_map, build_schema_objects_set, field_type_table_name,
-    get_index_directive, get_join_directive_info, get_unique_directive,
-    normalize_field_type_name, BASE_SCHEMA,
+use crate::{
+    db::IndexerSchemaDbResult, parser::ParsedGraphQLSchema, utils::*, QUERY_ROOT,
 };
-use async_graphql_parser::parse_schema;
 use async_graphql_parser::types::{
-    BaseType, FieldDefinition, ServiceDocument, Type, TypeDefinition, TypeKind,
-    TypeSystemDefinition,
+    BaseType, FieldDefinition, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
 use fuel_indexer_database::{
-    queries,
-    types::{directives, *},
-    DbType, IndexerConnection, IndexerConnectionPool,
+    queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_types::type_id;
 use std::collections::{HashMap, HashSet};
 
-use super::IndexerSchemaError;
-
+/// SchemaBuilder is used to encapsulate most of the logic related to parsing
+/// GraphQL types, generating SQL from those types, and committing that SQL to
+/// the database.
 #[derive(Default)]
 pub struct SchemaBuilder {
     db_type: DbType,
@@ -31,36 +26,37 @@ pub struct SchemaBuilder {
     version: String,
     schema: String,
     types: HashSet<String>,
+    /// Schema field mapping is namespaced by type name
     fields: HashMap<String, HashMap<String, String>>,
-    query: String,
-    query_fields: HashMap<String, HashMap<String, String>>,
-    primitives: HashSet<String>,
+    parsed_schema: ParsedGraphQLSchema,
+    is_native: bool,
 }
 
 impl SchemaBuilder {
+    /// Create a new `SchemaBuilder`.
     pub fn new(
         namespace: &str,
         identifier: &str,
         version: &str,
         db_type: DbType,
-    ) -> Result<SchemaBuilder, IndexerSchemaError> {
-        let base_ast = match parse_schema(BASE_SCHEMA) {
-            Ok(ast) => ast,
-            Err(e) => return Err(IndexerSchemaError::ParseError(e)),
-        };
-        let (primitives, _) = build_schema_objects_set(&base_ast);
+        is_native: bool,
+    ) -> IndexerSchemaDbResult<SchemaBuilder> {
+        let parsed_schema =
+            ParsedGraphQLSchema::new(namespace, identifier, is_native, None)?;
 
         Ok(SchemaBuilder {
             db_type,
             namespace: namespace.to_string(),
             identifier: identifier.to_string(),
             version: version.to_string(),
-            primitives,
+            parsed_schema,
+            is_native,
             ..Default::default()
         })
     }
 
-    pub fn build(mut self, schema: &str) -> Result<Self, IndexerSchemaError> {
+    /// Generate table SQL for each object in the given schema.
+    pub fn build(mut self, schema: &str) -> IndexerSchemaDbResult<Self> {
         if DbType::Postgres == self.db_type {
             let create = format!(
                 "CREATE SCHEMA IF NOT EXISTS {}_{}",
@@ -69,43 +65,30 @@ impl SchemaBuilder {
             self.statements.push(create);
         }
 
-        let ast = match parse_schema(schema) {
-            Ok(ast) => ast,
-            Err(e) => return Err(IndexerSchemaError::ParseError(e)),
-        };
+        let parsed_schema = ParsedGraphQLSchema::new(
+            &self.namespace,
+            &self.identifier,
+            self.is_native,
+            Some(schema),
+        )?;
 
-        // Find a nicer way of doing all of this
-        let query: String = ast
-            .definitions
-            .iter()
-            .find_map(|s| {
-                if let TypeSystemDefinition::Schema(def) = s {
-                    def.node.query.as_ref().map(|query| query.to_string())
-                } else {
-                    None
-                }
-            })
-            .expect("Return an error here");
+        self.schema = schema.to_string();
+        self.parsed_schema = parsed_schema.clone();
 
-        let types_map = build_schema_fields_and_types_map(&ast);
-
-        for def in ast.definitions.iter() {
+        for def in parsed_schema.ast.definitions.iter() {
             if let TypeSystemDefinition::Type(typ) = def {
-                self.generate_table_sql(&query, &typ.node, &types_map)
+                self.generate_table_sql(&typ.node)?;
             }
         }
-
-        self.query = query;
-        self.schema = schema.to_string();
 
         Ok(self)
     }
 
+    /// Commit all SQL metadata to the database.
     pub async fn commit_metadata(
         self,
         conn: &mut IndexerConnection,
-    ) -> sqlx::Result<Schema> {
-        #[allow(unused_variables)]
+    ) -> IndexerSchemaDbResult<Schema> {
         let SchemaBuilder {
             version,
             statements,
@@ -117,10 +100,7 @@ impl SchemaBuilder {
             identifier,
             types,
             fields,
-            query,
-            query_fields,
             schema,
-            db_type,
             ..
         } = self;
 
@@ -128,21 +108,19 @@ impl SchemaBuilder {
             version: version.clone(),
             schema_name: namespace.clone(),
             schema_identifier: identifier.clone(),
-            query: query.clone(),
-            schema,
+            schema: schema.clone(),
         };
         queries::new_graph_root(conn, new_root).await?;
 
         let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
 
-        let field_defs = query_fields.get(&query).expect("No query root.");
+        let type_names = fields.keys();
 
-        let cols: Vec<_> = field_defs
-            .iter()
-            .map(|(key, val)| NewRootColumns {
+        let cols: Vec<_> = type_names
+            .map(|t| NewRootColumns {
                 root_id: latest.id,
-                column_name: key.to_string(),
-                graphql_type: val.to_string(),
+                column_name: t.to_string(),
+                graphql_type: t.to_string(),
             })
             .collect();
 
@@ -163,112 +141,170 @@ impl SchemaBuilder {
         queries::type_id_insert(conn, type_ids).await?;
         queries::new_column_insert(conn, columns).await?;
 
-        Ok(Schema {
+        let mut schema = Schema {
             version,
             namespace,
             identifier,
-            query,
             types,
             fields,
             foreign_keys: HashMap::new(),
-        })
+            non_indexable_types: HashSet::new(),
+        };
+        schema.register_queryroot_fields();
+
+        Ok(schema)
     }
 
-    fn process_type(&self, field_type: &Type) -> (ColumnType, bool) {
-        match &field_type.base {
+    /// Return a field's `ColumnType` and whether it is nullable.
+    fn process_type(
+        &self,
+        field: &FieldDefinition,
+    ) -> IndexerSchemaDbResult<(ColumnType, bool)> {
+        let ty = &field.ty.node;
+
+        match &ty.base {
             BaseType::Named(t) => {
-                if !self.primitives.contains(t.as_str()) {
-                    return (ColumnType::ForeignKey, true);
+                if self.parsed_schema.is_enum_type(t.as_str()) {
+                    return Ok((ColumnType::Charfield, false));
                 }
-                (ColumnType::from(t.as_str()), field_type.nullable)
+
+                if self.parsed_schema.is_non_indexable_non_enum(t.as_str()) {
+                    return Ok((ColumnType::NoRelation, true));
+                }
+
+                if self.parsed_schema.is_possible_foreign_key(t.as_str()) {
+                    return Ok((ColumnType::ForeignKey, true));
+                }
+
+                Ok((ColumnType::from(t.as_str()), ty.nullable))
             }
             BaseType::List(_) => panic!("List types not supported yet."),
         }
     }
 
+    /// Generate column SQL for each field in the given set of fields.
     fn generate_columns(
         &mut self,
-        type_name: &String,
+        object_name: &String,
         type_id: i64,
         fields: &[FieldDefinition],
         table_name: &str,
-        types_map: &HashMap<String, String>,
-    ) -> String {
+    ) -> IndexerSchemaDbResult<String> {
         let mut fragments = Vec::new();
 
         for (pos, field) in fields.iter().enumerate() {
-            let (typ, nullable) = self.process_type(&field.ty.node);
+            let directives::NoRelation(no_table) = get_notable_directive_info(field)?;
+            if no_table {
+                self.parsed_schema
+                    .non_indexable_type_names
+                    .insert(object_name.to_string());
+            }
+
+            let (typ, nullable) = self.process_type(field)?;
 
             let directives::Unique(unique) = get_unique_directive(field);
 
-            if typ == ColumnType::ForeignKey {
-                let directives::Join {
-                    reference_field_name,
-                    field_type_name,
-                    reference_field_type_name,
-                    ..
-                } = get_join_directive_info(field, type_name, types_map);
+            match typ {
+                ColumnType::ForeignKey => {
+                    let directives::Join {
+                        reference_field_name,
+                        field_type_name,
+                        reference_field_type_name,
+                        ..
+                    } = get_join_directive_info(
+                        field,
+                        object_name,
+                        &self.parsed_schema.field_type_mappings,
+                    );
 
-                let fk = ForeignKey::new(
-                    self.db_type.clone(),
-                    self.namespace(),
-                    table_name.to_string(),
-                    field.name.to_string(),
-                    field_type_table_name(field),
-                    reference_field_name.clone(),
-                    reference_field_type_name.to_owned(),
-                );
+                    let fk = ForeignKey::new(
+                        self.db_type.clone(),
+                        self.namespace(),
+                        table_name.to_string(),
+                        field.name.to_string(),
+                        field_type_table_name(field),
+                        reference_field_name.clone(),
+                        reference_field_type_name.to_owned(),
+                    );
 
-                let column = NewColumn {
-                    type_id,
-                    column_position: pos as i32,
-                    column_name: field.name.to_string(),
-                    column_type: reference_field_type_name.to_owned(),
-                    graphql_type: field_type_name,
-                    nullable,
-                    unique,
-                };
+                    let column = NewColumn {
+                        type_id,
+                        column_position: pos as i32,
+                        column_name: field.name.to_string(),
+                        column_type: reference_field_type_name.to_owned(),
+                        graphql_type: field_type_name,
+                        nullable,
+                        unique,
+                    };
 
-                fragments.push(column.sql_fragment());
-                self.columns.push(column);
-                self.foreign_keys.push(fk);
+                    fragments.push(column.sql_fragment());
+                    self.columns.push(column);
+                    self.foreign_keys.push(fk);
+                }
+                ColumnType::NoRelation => {
+                    let column = NewColumn {
+                        type_id,
+                        column_position: pos as i32,
+                        column_name: field.name.to_string(),
+                        column_type: typ.to_string(),
+                        graphql_type: field.ty.to_string(),
+                        nullable,
+                        unique,
+                    };
 
-                continue;
+                    if let Some(directives::Index {
+                        column_name,
+                        method,
+                    }) = get_index_directive(field)
+                    {
+                        self.indices.push(ColumnIndex {
+                            db_type: self.db_type.clone(),
+                            table_name: table_name.to_string(),
+                            namespace: self.namespace(),
+                            method,
+                            unique,
+                            column_name,
+                        });
+                    }
+
+                    fragments.push(column.sql_fragment());
+                    self.columns.push(column);
+                }
+                _ => {
+                    let column = NewColumn {
+                        type_id,
+                        column_position: pos as i32,
+                        column_name: field.name.to_string(),
+                        column_type: typ.to_string(),
+                        graphql_type: field.ty.to_string(),
+                        nullable,
+                        unique,
+                    };
+
+                    if let Some(directives::Index {
+                        column_name,
+                        method,
+                    }) = get_index_directive(field)
+                    {
+                        self.indices.push(ColumnIndex {
+                            db_type: self.db_type.clone(),
+                            table_name: table_name.to_string(),
+                            namespace: self.namespace(),
+                            method,
+                            unique,
+                            column_name,
+                        });
+                    }
+
+                    fragments.push(column.sql_fragment());
+                    self.columns.push(column);
+                }
             }
-
-            let column = NewColumn {
-                type_id,
-                column_position: pos as i32,
-                column_name: field.name.to_string(),
-                column_type: typ.to_string(),
-                graphql_type: field.ty.to_string(),
-                nullable,
-                unique,
-            };
-
-            if let Some(directives::Index {
-                column_name,
-                method,
-            }) = get_index_directive(field)
-            {
-                self.indices.push(ColumnIndex {
-                    db_type: self.db_type.clone(),
-                    table_name: table_name.to_string(),
-                    namespace: self.namespace(),
-                    method,
-                    unique,
-                    column_name,
-                });
-            }
-
-            fragments.push(column.sql_fragment());
-            self.columns.push(column);
         }
 
         let object_column = NewColumn {
             type_id,
             column_position: fragments.len() as i32,
-            // FIXME: Magic strings here
             column_name: "object".to_string(),
             column_type: "Object".to_string(),
             graphql_type: "__".into(),
@@ -279,53 +315,102 @@ impl SchemaBuilder {
         fragments.push(object_column.sql_fragment());
         self.columns.push(object_column);
 
-        fragments.join(",\n")
+        Ok(fragments.join(",\n"))
     }
 
+    /// In SQL, we namespace a table by the schema name and the identifier, so
+    /// as to allow for the same object names to be used across indexer namespaces.
     fn namespace(&self) -> String {
         format!("{}_{}", self.namespace, self.identifier)
     }
 
-    fn generate_table_sql(
-        &mut self,
-        root: &str,
-        typ: &TypeDefinition,
-        types_map: &HashMap<String, String>,
-    ) {
-        fn map_fields(fields: &[FieldDefinition]) -> HashMap<String, String> {
-            fields
-                .iter()
-                .map(|f| (f.name.to_string(), f.ty.to_string()))
-                .collect()
-        }
-
+    /// Generate table SQL for a given type definition
+    fn generate_table_sql(&mut self, typ: &TypeDefinition) -> IndexerSchemaDbResult<()> {
         match &typ.kind {
+            TypeKind::Scalar => {}
+            TypeKind::Enum(e) => {
+                self.parsed_schema.enum_names.insert(typ.name.to_string());
+
+                self.fields.insert(
+                    typ.name.to_string(),
+                    e.values
+                        .iter()
+                        .map(|v| (v.node.value.to_string(), "".to_string()))
+                        .collect::<HashMap<String, String>>(),
+                );
+
+                let type_id = type_id(&self.namespace(), &typ.name.to_string());
+                let table_name = typ.name.to_string().to_lowercase();
+                self.type_ids.push(TypeId {
+                    id: type_id,
+                    schema_version: self.version.to_string(),
+                    schema_name: self.namespace.to_string(),
+                    schema_identifier: self.identifier.to_string(),
+                    graphql_name: typ.name.to_string(),
+                    table_name,
+                    virtual_columns: e
+                        .values
+                        .iter()
+                        .map(|v| VirtualColumn {
+                            name: v.node.value.to_string(),
+                            graphql_type: typ.name.to_string(),
+                        })
+                        .collect::<Vec<VirtualColumn>>(),
+                });
+            }
             TypeKind::Object(o) => {
                 self.types.insert(typ.name.to_string());
+
+                self.parsed_schema
+                    .parsed_type_names
+                    .insert(typ.name.to_string());
 
                 let field_defs: &[FieldDefinition] = &o
                     .fields
                     .iter()
                     .map(|f| f.node.clone())
                     .collect::<Vec<FieldDefinition>>()[..];
-                self.fields
-                    .insert(typ.name.to_string(), map_fields(field_defs));
 
-                if typ.name.to_string().as_str() == root {
-                    self.query_fields
-                        .insert(root.to_string(), map_fields(field_defs));
-                    return;
-                }
+                self.fields.insert(
+                    typ.name.to_string(),
+                    field_defs
+                        .iter()
+                        .map(|f| (f.name.to_string(), f.ty.to_string()))
+                        .collect(),
+                );
 
                 let table_name = typ.name.to_string().to_lowercase();
-                let type_id = type_id(&self.namespace(), &typ.name.to_string());
+                let ty_id = type_id(&self.namespace(), &typ.name.to_string());
                 let columns = self.generate_columns(
                     &typ.name.to_string(),
-                    type_id,
+                    ty_id,
                     field_defs,
                     &table_name,
-                    types_map,
-                );
+                )?;
+
+                if self
+                    .parsed_schema
+                    .is_non_indexable_non_enum(typ.name.node.as_str())
+                {
+                    let ty_id = type_id(&self.namespace(), &typ.name.to_string());
+                    let table_name = typ.name.to_string().to_lowercase();
+                    self.type_ids.push(TypeId {
+                        id: ty_id,
+                        schema_version: self.version.to_string(),
+                        schema_name: self.namespace.to_string(),
+                        schema_identifier: self.identifier.to_string(),
+                        graphql_name: typ.name.to_string(),
+                        table_name,
+                        virtual_columns: field_defs
+                            .iter()
+                            .map(|f| VirtualColumn {
+                                name: f.name.to_string(),
+                                graphql_type: f.ty.to_string(),
+                            })
+                            .collect::<Vec<VirtualColumn>>(),
+                    });
+                    return Ok(());
+                }
 
                 let sql_table = self.db_type.table_name(&self.namespace(), &table_name);
 
@@ -334,38 +419,49 @@ impl SchemaBuilder {
 
                 self.statements.push(create);
                 self.type_ids.push(TypeId {
-                    id: type_id,
+                    id: ty_id,
                     schema_version: self.version.to_string(),
                     schema_name: self.namespace.to_string(),
                     schema_identifier: self.identifier.to_string(),
                     graphql_name: typ.name.to_string(),
                     table_name,
+                    virtual_columns: Vec::new(),
                 });
             }
+            // TODO: Don't panic, return Err
             other_type => panic!("Got a non-object type: '{other_type:?}'"),
         }
+
+        Ok(())
     }
 }
-#[derive(Debug)]
+
+/// Schema is a `SchemaBuilder`-friendly representation of the parsed GraphQL schema
+/// as it exists in the database.
+#[derive(Debug, Clone)]
 pub struct Schema {
     pub version: String,
     pub namespace: String,
     pub identifier: String,
-    pub query: String,
     pub types: HashSet<String>,
+    /// Schema field mapping is namespaced by type name
     pub fields: HashMap<String, HashMap<String, String>>,
     pub foreign_keys: HashMap<String, HashMap<String, (String, String)>>,
+    pub non_indexable_types: HashSet<String>,
 }
 
 impl Schema {
+    /// Load a `Schema` from the database.
+
+    // TODO: Might be expensive to always load this from the DB each time. Maybe
+    // we can cache and stash this somewhere?
     pub async fn load_from_db(
         pool: &IndexerConnectionPool,
         namespace: &str,
         identifier: &str,
-    ) -> Result<Self, IndexerSchemaError> {
+    ) -> IndexerSchemaDbResult<Self> {
         let mut conn = pool.acquire().await?;
         let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
-        let root_cols = queries::root_columns_list_by_id(&mut conn, root.id).await?;
         let typeids = queries::type_id_list_by_name(
             &mut conn,
             &root.schema_name,
@@ -375,46 +471,52 @@ impl Schema {
         .await?;
 
         let mut types = HashSet::new();
+        let mut non_indexable_types = HashSet::new();
         let mut fields = HashMap::new();
 
-        types.insert(root.query.clone());
-        fields.insert(
-            root.query.clone(),
-            root_cols
-                .into_iter()
-                .map(|c| (c.column_name, c.graphql_type))
-                .collect(),
-        );
-        for tid in typeids {
-            types.insert(tid.graphql_name.clone());
+        for tyid in &typeids {
+            types.insert(tyid.graphql_name.clone());
 
-            let columns = queries::list_column_by_id(&mut conn, tid.id).await?;
-            fields.insert(
-                tid.graphql_name,
-                columns
-                    .into_iter()
-                    .map(|c| (c.column_name, c.graphql_type))
-                    .collect(),
-            );
+            if tyid.is_non_indexable_type() {
+                let columns = tyid.virtual_columns.clone();
+                fields.insert(
+                    tyid.graphql_name.clone(),
+                    columns
+                        .into_iter()
+                        .map(|c| (c.name, c.graphql_type))
+                        .collect(),
+                );
+                non_indexable_types.insert(tyid.graphql_name.to_owned());
+            } else {
+                let columns = queries::list_column_by_id(&mut conn, tyid.id).await?;
+                fields.insert(
+                    tyid.graphql_name.to_owned(),
+                    columns
+                        .into_iter()
+                        .map(|c| (c.column_name, c.graphql_type))
+                        .collect(),
+                );
+            }
         }
 
-        let foreign_keys = get_foreign_keys(&root.schema)?;
+        let foreign_keys = get_foreign_keys(namespace, identifier, false, &root.schema)?;
 
-        Ok(Schema {
+        let mut schema = Schema {
             version: root.version,
             namespace: root.schema_name,
             identifier: root.schema_identifier,
-            query: root.query,
             types,
             fields,
             foreign_keys,
-        })
+            non_indexable_types,
+        };
+
+        schema.register_queryroot_fields();
+
+        Ok(schema)
     }
 
-    pub fn check_type(&self, type_name: &str) -> bool {
-        self.types.contains(type_name)
-    }
-
+    /// Return the field type for a given field name on a given type name.
     pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
         match self.fields.get(cond) {
             Some(fieldset) => fieldset.get(name),
@@ -427,99 +529,30 @@ impl Schema {
             }
         }
     }
-}
 
-#[allow(clippy::type_complexity)]
-fn get_foreign_keys(
-    schema: &str,
-) -> Result<HashMap<String, HashMap<String, (String, String)>>, IndexerSchemaError> {
-    let (ast, primitives, types_map) = parse_schema_for_ast_data(schema)?;
-    let mut foreign_keys: HashMap<String, HashMap<String, (String, String)>> =
-        HashMap::new();
-
-    for def in ast.definitions.iter() {
-        if let TypeSystemDefinition::Type(t) = def {
-            if let TypeKind::Object(o) = &t.node.kind {
-                if t.node.name.to_string().to_lowercase() == *"queryroot" {
-                    continue;
-                }
-                for field in o.fields.iter() {
-                    if let ColumnType::ForeignKey =
-                        get_column_type(&field.node.ty.node, &primitives)
-                    {
-                        let directives::Join {
-                            reference_field_name,
-                            ..
-                        } = get_join_directive_info(
-                            &field.node,
-                            &t.node.name.to_string(),
-                            &types_map,
-                        );
-
-                        match foreign_keys
-                            .get_mut(&t.node.name.to_string().to_lowercase())
-                        {
-                            Some(foreign_keys_for_field) => {
-                                foreign_keys_for_field.insert(
-                                    field.node.name.to_string(),
-                                    (
-                                        field_type_table_name(&field.node),
-                                        reference_field_name.clone(),
-                                    ),
-                                );
-                            }
-                            None => {
-                                let foreign_keys_for_field = HashMap::from([(
-                                    field.node.name.to_string(),
-                                    (
-                                        field_type_table_name(&field.node),
-                                        reference_field_name.clone(),
-                                    ),
-                                )]);
-                                foreign_keys.insert(
-                                    t.node.name.to_string().to_lowercase(),
-                                    foreign_keys_for_field,
-                                );
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    /// Ensure the given type is included in this `Schema`'s types
+    pub fn check_type(&self, type_name: &str) -> bool {
+        self.types.contains(type_name)
     }
 
-    Ok(foreign_keys)
-}
+    // **** HACK ****
 
-#[allow(clippy::type_complexity)]
-fn parse_schema_for_ast_data(
-    schema: &str,
-) -> Result<(ServiceDocument, HashSet<String>, HashMap<String, String>), IndexerSchemaError>
-{
-    let base_ast = match parse_schema(BASE_SCHEMA) {
-        Ok(ast) => ast,
-        Err(e) => return Err(IndexerSchemaError::ParseError(e)),
-    };
-    let (primitives, _) = build_schema_objects_set(&base_ast);
+    // Below we manually add a `QueryRoot` type, with its corresponding field types
+    // data being each `Object` defined in the schema.
 
-    let ast = match parse_schema(schema) {
-        Ok(ast) => ast,
-        Err(e) => return Err(IndexerSchemaError::ParseError(e)),
-    };
-    let types_map = build_schema_fields_and_types_map(&ast);
+    // We need this because at the moment our GraphQL query parsing is tightly-coupled
+    // to our old way of resolving GraphQL types (which was using a `QueryType` object
+    // defined in a `TypeSystemDefinition::Schema`)
 
-    Ok((ast, primitives, types_map))
-}
-
-fn get_column_type(field_type: &Type, primitives: &HashSet<String>) -> ColumnType {
-    match &field_type.base {
-        BaseType::Named(t) => {
-            if !primitives.contains(t.as_str()) {
-                return ColumnType::ForeignKey;
-            }
-            ColumnType::from(t.as_str())
-        }
-        BaseType::List(_) => panic!("List types not supported yet."),
+    /// Register the `QueryRoot` type and its corresponding field types.
+    pub fn register_queryroot_fields(&mut self) {
+        self.fields.insert(
+            QUERY_ROOT.to_string(),
+            self.fields
+                .keys()
+                .map(|k| (k.to_lowercase(), k.clone()))
+                .collect::<HashMap<String, String>>(),
+        );
     }
 }
 
@@ -530,15 +563,6 @@ mod tests {
     #[test]
     fn test_schema_builder_for_basic_postgres_schema_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            thing1: Thing1
-            thing2: Thing2
-        }
-
         type Thing1 {
             id: ID!
             account: Address!
@@ -575,6 +599,7 @@ mod tests {
             "index1",
             "a_version_string",
             DbType::Postgres,
+            false,
         );
 
         let SchemaBuilder { statements, .. } = sb.unwrap().build(graphql_schema).unwrap();
@@ -588,15 +613,6 @@ mod tests {
     fn test_schema_builder_for_basic_postgres_schema_with_optional_types_returns_proper_create_sql(
     ) {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            thing1: Thing1
-            thing2: Thing2
-        }
-
         type Thing1 {
             id: ID!
             account: Address
@@ -633,6 +649,7 @@ mod tests {
             "index1",
             "a_version_string",
             DbType::Postgres,
+            false,
         );
 
         let SchemaBuilder { statements, .. } = sb.unwrap().build(graphql_schema).unwrap();
@@ -645,15 +662,6 @@ mod tests {
     #[test]
     fn test_schema_builder_for_postgres_indices_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            thing1: Thing1
-            thing2: Thing2
-        }
-
         type Payer {
             id: ID!
             account: Address! @indexed
@@ -666,7 +674,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres, false);
 
         let SchemaBuilder { indices, .. } = sb.unwrap().build(graphql_schema).unwrap();
 
@@ -686,16 +694,6 @@ mod tests {
     #[test]
     fn test_schema_builder_for_postgres_foreign_keys_returns_proper_create_sql() {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
         type Borrower {
             id: ID!
             account: Address! @indexed
@@ -716,7 +714,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres, false);
 
         let SchemaBuilder { foreign_keys, .. } =
             sb.unwrap().build(graphql_schema).unwrap();
@@ -730,16 +728,6 @@ mod tests {
     fn test_schema_builder_for_postgres_foreign_keys_with_directive_returns_proper_create_sql(
     ) {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
         type Borrower {
             account: Address! @indexed
         }
@@ -757,7 +745,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres, false);
 
         let SchemaBuilder { foreign_keys, .. } =
             sb.unwrap().build(graphql_schema).unwrap();
@@ -770,15 +758,6 @@ mod tests {
     #[test]
     fn test_schema_builder_for_postgres_creates_fk_with_proper_column_names() {
         let graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            account: Account
-            message: Message
-        }
-
         type Account {
             id: ID!
             account: Address! @indexed
@@ -791,7 +770,7 @@ mod tests {
         }
     "#;
 
-        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres);
+        let sb = SchemaBuilder::new("namespace", "index1", "v1", DbType::Postgres, false);
 
         let SchemaBuilder { foreign_keys, .. } =
             sb.unwrap().build(graphql_schema).unwrap();
@@ -803,17 +782,7 @@ mod tests {
 
     #[test]
     fn test_get_implicit_foreign_keys_for_schema() {
-        let implicit_fk_graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
+        let implicit_schema: &str = r#"
         type Borrower {
             id: ID!
             account: Address! @indexed
@@ -850,24 +819,14 @@ mod tests {
             )]),
         );
 
-        let implicit_fk_foreign_keys =
-            get_foreign_keys(implicit_fk_graphql_schema).unwrap();
-        assert_eq!(expected, implicit_fk_foreign_keys);
+        let implicit_fks =
+            get_foreign_keys("foo", "bar", false, implicit_schema).unwrap();
+        assert_eq!(expected, implicit_fks);
     }
 
     #[test]
     fn test_get_explicit_foreign_keys_for_schema() {
-        let explicit_fk_graphql_schema: &str = r#"
-        schema {
-            query: QueryRoot
-        }
-
-        type QueryRoot {
-            borrower: Borrower
-            lender: Lender
-            auditor: Auditor
-        }
-
+        let explicit_schema: &str = r#"
         type Borrower {
             account: Address! @indexed
         }
@@ -901,8 +860,8 @@ mod tests {
             )]),
         );
 
-        let explicit_fk_foreign_keys =
-            get_foreign_keys(explicit_fk_graphql_schema).unwrap();
-        assert_eq!(expected, explicit_fk_foreign_keys);
+        let explicit_fks =
+            get_foreign_keys("foo", "bar", false, explicit_schema).unwrap();
+        assert_eq!(expected, explicit_fks);
     }
 }

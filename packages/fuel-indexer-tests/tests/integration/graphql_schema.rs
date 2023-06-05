@@ -8,45 +8,41 @@ use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 fn generate_schema() -> Schema {
-    let t = ["Address", "Bytes32", "ID", "Thing1", "Thing2", "UInt16"]
+    let types = ["Address", "Bytes32", "ID", "Thing1", "Thing2", "UInt16"]
         .iter()
-        .map(|s| s.to_string());
-    let types = HashSet::from_iter(t);
+        .map(|s| s.to_string())
+        .collect::<HashSet<String>>();
 
-    let f1 = HashMap::from_iter(
-        [("thing1", "Thing1"), ("thing2", "Thing2")]
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string())),
-    );
-    let f2 = HashMap::from_iter(
-        [
-            ("id", "ID"),
-            ("account", "Address"),
-            ("huge_number", "UInt16"),
-        ]
-        .iter()
-        .map(|(k, v)| (k.to_string(), v.to_string())),
-    );
+    let f2 = [
+        ("id", "ID"),
+        ("account", "Address"),
+        ("huge_number", "UInt16"),
+    ]
+    .iter()
+    .map(|(k, v)| (k.to_string(), v.to_string()))
+    .collect::<HashMap<String, String>>();
+
     let f3 = HashMap::from_iter(
         [("id", "ID"), ("account", "Address"), ("hash", "Bytes32")]
             .iter()
             .map(|(k, v)| (k.to_string(), v.to_string())),
     );
-    let fields = HashMap::from_iter([
-        ("Query".to_string(), f1),
-        ("Thing1".to_string(), f2),
-        ("Thing2".to_string(), f3),
-    ]);
+    let fields =
+        HashMap::from_iter([("Thing1".to_string(), f2), ("Thing2".to_string(), f3)]);
 
-    Schema {
-        version: "".into(),
+    let mut schema = Schema {
+        version: "123456".into(),
         namespace: "test_namespace".to_string(),
         identifier: "index1".to_string(),
-        query: "Query".into(),
         types,
         fields,
         foreign_keys: HashMap::new(),
-    }
+        non_indexable_types: HashSet::new(),
+    };
+
+    schema.register_queryroot_fields();
+
+    schema
 }
 
 #[test]

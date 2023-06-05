@@ -1,5 +1,6 @@
 use crate::constant::*;
 use fuel_abi_types::program_abi::{ProgramABI, TypeDeclaration};
+use fuel_indexer_schema::parser::ParsedGraphQLSchema;
 use fuels_code_gen::utils::Source;
 use quote::{format_ident, quote};
 use syn::Ident;
@@ -123,17 +124,17 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
             "u64" => quote! { u64 },
             "u8" => quote! { u8 },
             "BlockData" => quote! { BlockData },
-            "Call" => quote! { abi::Call },
-            "Identity" => quote! { abi::Identity },
-            "Log" => quote! { abi::Log },
-            "LogData" => quote! { abi::LogData },
-            "MessageOut" => quote! { abi::MessageOut },
-            "Return" => quote! { abi::Return },
-            "ScriptResult" => quote! { abi::ScriptResult },
-            "Transfer" => quote! { abi::Transfer },
-            "TransferOut" => quote! { abi::TransferOut },
-            "Panic" => quote! { abi::Panic },
-            "Revert" => quote! { abi::Revert },
+            "Call" => quote! { Call },
+            "Identity" => quote! { Identity },
+            "Log" => quote! { Log },
+            "LogData" => quote! { LogData },
+            "MessageOut" => quote! { MessageOut },
+            "Return" => quote! { Return },
+            "ScriptResult" => quote! { ScriptResult },
+            "Transfer" => quote! { Transfer },
+            "TransferOut" => quote! { TransferOut },
+            "Panic" => quote! { Panic },
+            "Revert" => quote! { Revert },
             o if o.starts_with("str[") => quote! { String },
             o => {
                 proc_macro_error::abort_call_site!(
@@ -149,7 +150,6 @@ pub fn rust_type_token(ty: &TypeDeclaration) -> proc_macro2::TokenStream {
 pub fn is_fuel_primitive(ty: &proc_macro2::TokenStream) -> bool {
     let ident_str = ty.to_string();
     FUEL_PRIMITIVES.contains(ident_str.as_str())
-        || FUEL_PRIMITIVES_NAMESPACED.contains(ident_str.as_str())
 }
 
 /// Whether or not the given token is a Rust primitive
@@ -213,5 +213,62 @@ impl Codegen for TypeDeclaration {
 
     fn rust_type_token_string(&self) -> String {
         self.rust_type_token().to_string()
+    }
+}
+
+/// Generate tokens for retrieving necessary indexer data through FFI.
+pub fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
+    let ident = format_ident! {"{}", id};
+
+    let fn_ptr = format_ident! {"get_{}_ptr", id.to_lowercase()};
+    let fn_len = format_ident! {"get_{}_len", id.to_lowercase()};
+
+    quote! {
+        const #ident: &'static str = #value;
+
+        #[no_mangle]
+        fn #fn_ptr() -> *const u8 {
+            #ident.as_ptr()
+        }
+
+        #[no_mangle]
+        fn #fn_len() -> u32 {
+            #ident.len() as u32
+        }
+    }
+}
+
+pub fn row_extractor(
+    schema: &ParsedGraphQLSchema,
+    field_name: proc_macro2::Ident,
+    mut field_type: proc_macro2::Ident,
+    is_nullable: bool,
+) -> proc_macro2::TokenStream {
+    let type_name = field_type.to_string();
+    if schema.is_enum_type(&type_name) {
+        field_type = format_ident! {"UInt1"};
+    }
+
+    if is_nullable {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #field_name = match item {
+                FtColumn::#field_type(t) => t,
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    } else {
+        quote! {
+            let item = vec.pop().expect("Missing item in row.");
+            let #field_name = match item {
+                FtColumn::#field_type(t) => match t {
+                    Some(inner_type) => { inner_type },
+                    None => {
+                        panic!("Non-nullable type is returning a None value.")
+                    }
+                },
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
     }
 }

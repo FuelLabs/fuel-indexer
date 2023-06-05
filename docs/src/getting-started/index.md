@@ -12,7 +12,6 @@ After you've installed all required dependencies. Feel free to checkout a few ex
 
 - [Examples](./../examples/index.md)
   - [Hello World](./../examples/hello-world.md)
-  - [Block Explorer](./../examples/block-explorer.md)
 
 ## Architecture
 

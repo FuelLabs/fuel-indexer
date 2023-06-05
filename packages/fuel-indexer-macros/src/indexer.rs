@@ -6,7 +6,7 @@ use fuel_abi_types::program_abi::TypeDeclaration;
 use fuel_indexer_lib::{
     manifest::ContractIds, manifest::Manifest, utils::local_repository_root,
 };
-use fuel_indexer_types::{abi, type_id};
+use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels::{
     core::function_selector::resolve_fn_selector, types::param_types::ParamType,
 };
@@ -48,7 +48,7 @@ fn process_fn_items(
     let fuel_types = FUEL_PRIMITIVES
         .iter()
         .map(|x| {
-            let type_id = type_id(abi::FUEL_TYPES_NAMESPACE, x) as usize;
+            let type_id = type_id(FUEL_TYPES_NAMESPACE, x) as usize;
             let typ = TypeDeclaration {
                 type_id,
                 type_field: x.to_string(),
@@ -61,12 +61,7 @@ fn process_fn_items(
 
     let mut type_ids = FUEL_PRIMITIVES
         .iter()
-        .map(|x| {
-            (
-                x.to_string(),
-                type_id(abi::FUEL_TYPES_NAMESPACE, x) as usize,
-            )
-        })
+        .map(|x| (x.to_string(), type_id(FUEL_TYPES_NAMESPACE, x) as usize))
         .collect::<HashMap<String, usize>>();
 
     let abi_types_tyid = abi_types
@@ -284,7 +279,7 @@ fn process_fn_items(
                     let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
                     let bech32_id = Bech32ContractId::from(id);
                     if bech32_id != manifest_contract_id {
-                        Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
+                        Logger::debug("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                         continue;
                     }
                 }
@@ -296,7 +291,7 @@ fn process_fn_items(
                 let bech32_id = Bech32ContractId::from(id);
 
                 if !contract_ids.contains(&bech32_id) {
-                    Logger::info("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
+                    Logger::debug("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                     continue;
                 }
             }
@@ -395,7 +390,7 @@ fn process_fn_items(
                 match sel {
                     #(#abi_selectors)*
                     _ => {
-                        Logger::warn("Unknown selector; check ABI to make sure function outputs match to types");
+                        Logger::debug("Unknown selector; check ABI to make sure function outputs match to types");
                         usize::MAX
                     }
                 }
@@ -405,7 +400,7 @@ fn process_fn_items(
                 match sel {
                     #(#abi_selectors_to_fn_names)*
                     _ => {
-                        Logger::warn("Unknown selector; check ABI to make sure function outputs match to types");
+                        Logger::debug("Unknown selector; check ABI to make sure function outputs match to types");
                         "".to_string()
                     }
                 }
@@ -430,7 +425,7 @@ fn process_fn_items(
                 match ty_id {
                     #(#decoders),*
                     _ => {
-                        Logger::warn("Unknown type ID; check ABI to make sure types are correct.");
+                        Logger::debug("Unknown type ID; check ABI to make sure types are correct.");
                     },
                 }
             }
@@ -447,14 +442,14 @@ fn process_fn_items(
             pub fn decode_logdata(&mut self, rb: usize, data: Vec<u8>) {
                 match rb {
                     #(#log_type_decoders),*
-                    _ => Logger::warn("Unknown logged type ID; check ABI to make sure that logged types are correct.")
+                    _ => Logger::debug("Unknown logged type ID; check ABI to make sure that logged types are correct.")
                 }
             }
 
             pub fn decode_messagedata(&mut self, type_id: u64, data: Vec<u8>) {
                 match type_id {
                     #(#message_types_decoders),*
-                    _ => Logger::warn("Unknown message type ID; check ABI to make sure that message types are correct.")
+                    _ => Logger::debug("Unknown message type ID; check ABI to make sure that message types are correct.")
                 }
             }
 
@@ -473,8 +468,8 @@ fn process_fn_items(
 
                 let mut decoder = Decoders::default();
 
-                let ty_id = abi::BlockData::type_id();
-                let data = bincode::serialize(&block).expect("Bad serialization.");
+                let ty_id = BlockData::type_id();
+                let data = serialize(&block);
                 decoder.decode_type(ty_id, data);
 
                 for tx in block.transactions {
@@ -484,44 +479,44 @@ fn process_fn_items(
 
                     for receipt in tx.receipts {
                         match receipt {
-                            Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
+                            fuel::Receipt::Call { id: contract_id, amount, asset_id, gas, param1, to: id, .. } => {
                                 #check_if_subscribed_to_contract
 
                                 let fn_name = decoder.selector_to_fn_name(param1);
                                 return_types.push(param1);
                                 callees.insert(id);
 
-                                let data = bincode::serialize(&abi::Call { contract_id, to: id, amount, asset_id, gas, fn_name }).expect("Bad encoding");
-                                let ty_id = abi::Call::type_id();
+                                let data = serialize(&Call { contract_id, to: id, amount, asset_id, gas, fn_name });
+                                let ty_id = Call::type_id();
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::Log { id, ra, rb, .. } => {
+                            fuel::Receipt::Log { id, ra, rb, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::Log::type_id();
-                                let data = bincode::serialize(&abi::Log{ contract_id: id, ra, rb }).expect("Bad encoding,");
+                                let ty_id = Log::type_id();
+                                let data = serialize(&Log{ contract_id: id, ra, rb });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::LogData { rb, data, ptr, len, id, .. } => {
+                            fuel::Receipt::LogData { rb, data, ptr, len, id, .. } => {
                                 #check_if_subscribed_to_contract
                                 decoder.decode_logdata(rb as usize, data);
 
                             }
-                            Receipt::Return { id, val, pc, is } => {
+                            fuel::Receipt::Return { id, val, pc, is } => {
                                 #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
-                                    let ty_id = abi::Return::type_id();
-                                    let data = bincode::serialize(&abi::Return{ contract_id: id, val, pc, is }).expect("Bad encoding,");
+                                    let ty_id = Return::type_id();
+                                    let data = serialize(&Return{ contract_id: id, val, pc, is });
                                     decoder.decode_type(ty_id, data);
                                 }
                             }
-                            Receipt::ReturnData { data, id, .. } => {
+                            fuel::Receipt::ReturnData { data, id, .. } => {
                                 #check_if_subscribed_to_contract
                                 if callees.contains(&id) {
                                     let selector = return_types.pop().expect("No return type available. <('-'<)");
                                     decoder.decode_return_type(selector, data);
                                 }
                             }
-                            Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
+                            fuel::Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
                                 let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, &data[..]);
 
                                 // It's possible that the data field was generated from an empty Sway `Bytes` array
@@ -544,37 +539,37 @@ fn process_fn_items(
 
                                 decoder.decode_messagedata(type_id, data.clone());
 
-                                let ty_id = abi::MessageOut::type_id();
-                                let data = bincode::serialize(&abi::MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data }).expect("Bad encoding");
+                                let ty_id = MessageOut::type_id();
+                                let data = serialize(&MessageOut{ message_id, sender, recipient, amount, nonce, len, digest, data });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::ScriptResult { result, gas_used } => {
-                                let ty_id = abi::ScriptResult::type_id();
-                                let data = bincode::serialize(&abi::ScriptResult{ result: u64::from(result), gas_used }).expect("Bad encoding,");
+                            fuel::Receipt::ScriptResult { result, gas_used } => {
+                                let ty_id = ScriptResult::type_id();
+                                let data = serialize(&ScriptResult{ result: u64::from(result), gas_used });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
+                            fuel::Receipt::Transfer { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::Transfer::type_id();
-                                let data = bincode::serialize(&abi::Transfer{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
+                                let ty_id = Transfer::type_id();
+                                let data = serialize(&Transfer{ contract_id: id, to, asset_id, amount, pc, is });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
+                            fuel::Receipt::TransferOut { id, to, asset_id, amount, pc, is, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::TransferOut::type_id();
-                                let data = bincode::serialize(&abi::TransferOut{ contract_id: id, to, asset_id, amount, pc, is }).expect("Bad encoding,");
+                                let ty_id = TransferOut::type_id();
+                                let data = serialize(&TransferOut{ contract_id: id, to, asset_id, amount, pc, is });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::Panic { id, reason, .. } => {
+                            fuel::Receipt::Panic { id, reason, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::Panic::type_id();
-                                let data = bincode::serialize(&abi::Panic{ contract_id: id, reason: *reason.reason() as u32 }).expect("Bad encoding,");
+                                let ty_id = Panic::type_id();
+                                let data = serialize(&Panic{ contract_id: id, reason: *reason.reason() as u32 });
                                 decoder.decode_type(ty_id, data);
                             }
-                            Receipt::Revert { id, ra, .. } => {
+                            fuel::Receipt::Revert { id, ra, .. } => {
                                 #check_if_subscribed_to_contract
-                                let ty_id = abi::Revert::type_id();
-                                let data = bincode::serialize(&abi::Revert{ contract_id: id, error_val: u64::from(ra & 0xF) }).expect("Bad encoding,");
+                                let ty_id = Revert::type_id();
+                                let data = serialize(&Revert{ contract_id: id, error_val: u64::from(ra & 0xF) });
                                 decoder.decode_type(ty_id, data);
                             }
                             _ => {
@@ -741,7 +736,7 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
                     info!("Using manifest file located at '{}'", p.display());
                 }
                 let manifest = Manifest::from_file(&p)?;
-                service.register_native_index(manifest, handle_events).await?;
+                service.register_native_indexer(manifest, handle_events).await?;
 
                 let service_handle = tokio::spawn(service.run());
                 let gql_handle = tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));

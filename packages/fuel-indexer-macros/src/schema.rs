@@ -1,225 +1,335 @@
-use async_graphql_parser::parse_schema;
+use crate::helpers::{const_item, row_extractor};
 use async_graphql_parser::types::{
-    BaseType, FieldDefinition, SchemaDefinition, ServiceDocument, Type, TypeDefinition,
-    TypeKind, TypeSystemDefinition,
+    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
 use fuel_indexer_database_types::directives;
 use fuel_indexer_lib::utils::local_repository_root;
-use fuel_indexer_schema::utils::{
-    build_schema_fields_and_types_map, build_schema_objects_set, get_join_directive_info,
-    inject_native_entities_into_schema, schema_version, BASE_SCHEMA,
+use fuel_indexer_schema::{
+    parser::ParsedGraphQLSchema,
+    utils::{
+        get_join_directive_info, get_notable_directive_info,
+        inject_native_entities_into_schema, schema_version,
+    },
 };
 use fuel_indexer_types::type_id;
 use lazy_static::lazy_static;
-use proc_macro2::{TokenStream, TokenTree};
 use quote::{format_ident, quote};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+type ProcessedFieldResult = (
+    proc_macro2::TokenStream,
+    proc_macro2::Ident,
+    proc_macro2::Ident,
+    proc_macro2::TokenStream,
+);
+
 lazy_static! {
+    /// Set of types that should be copied instead of referenced.
     static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
-        "Json",
-        "Charfield",
-        "Identity",
         "Blob",
-        "Option<Json>",
+        "Charfield",
+        "HexString",
+        "Identity",
+        "Json",
+        "NoRelation",
         "Option<Blob>",
         "Option<Charfield>",
-        "Option<Identity>"
+        "Option<HexString>",
+        "Option<Identity>",
+        "Option<Json>",
+        "Option<NoRelation>",
+    ]);
+
+    static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
+        // Scalars.
+        "Address",
+        "AssetId",
+        "Blob",
+        "BlockHeight",
+        "BlockId",
+        "Boolean",
+        "Bytes",
+        "Bytes32",
+        "Bytes4",
+        "Bytes64",
+        "Bytes8",
+        "Charfield",
+        "Color",
+        "ContractId",
+        "HexString",
+        "ID",
+        "Identity",
+        "Int1",
+        "Int16",
+        "Int4",
+        "Int8",
+        "Json",
+        "MessageId",
+        "Nonce",
+        "NoRelation",
+        "Salt",
+        "Signature",
+        "Tai64Timestamp",
+        "Timestamp",
+        "TxId",
+        "UInt1",
+        "UInt16",
+        "UInt4",
+        "UInt8",
+
+        // Imports for transaction fields.
+        // https://github.com/FuelLabs/fuel-indexer/issues/286
+        "BlockData",
+        "BytecodeLength",
+        "BytecodeWitnessIndex",
+        "FieldTxPointer",
+        "GasLimit",
+        "GasPrice",
+        "Inputs",
+        "Log",
+        "LogData",
+        "Maturity",
+        "MessageId",
+        "Outputs",
+        "Receipt",
+        "ReceiptsRoot",
+        "Script",
+        "ScriptData",
+        "ScriptResult",
+        "StorageSlots",
+        "TransactionData",
+        "Transfer",
+        "TransferOut",
+        "TxFieldSalt",
+        "TxFieldScript",
+        "TxId",
+        "Witnesses",
     ]);
 }
 
-fn process_type(types: &HashSet<String>, typ: &Type) -> proc_macro2::TokenStream {
+/// Process a named type into its type tokens, and the Ident for those type tokens.
+fn process_type(
+    schema: &ParsedGraphQLSchema,
+    typ: &Type,
+) -> (proc_macro2::TokenStream, proc_macro2::Ident) {
     match &typ.base {
         BaseType::Named(t) => {
             let name = t.to_string();
-            if !types.contains(&name) {
-                panic!("Type '{name}' is undefined.",);
+            if !schema.type_names.contains(&name) {
+                panic!("Type '{name}' is not defined in the schema.",);
             }
 
-            let id = format_ident! {"{}", name};
+            let name = format_ident! {"{}", name};
 
             if typ.nullable {
-                quote! { Option<#id> }
+                (quote! { Option<#name> }, name)
             } else {
-                quote! { #id }
+                (quote! { #name }, name)
             }
         }
         BaseType::List(_t) => panic!("Got a list type, we don't handle this yet..."),
     }
 }
 
+/// Process an object's field and return a group of tokens.
+///
+/// This group of tokens include:
+///     - The field's type tokens.
+///     - The field's name as an Ident.
+///     - The field's type as an Ident.
+///     - The field's row extractor tokens.
 fn process_field(
-    types: &HashSet<String>,
-    field: &FieldDefinition,
+    schema: &ParsedGraphQLSchema,
+    field_name: &String,
+    field_type: &Type,
 ) -> (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
+    proc_macro2::Ident,
     proc_macro2::TokenStream,
 ) {
-    let FieldDefinition {
-        name,
-        ty: field_type,
-        ..
-    } = field;
-    let typ = process_type(types, &field_type.node);
-    let ident = format_ident! {"{}", name.to_string()};
+    let (typ_tokens, typ_ident) = process_type(schema, field_type);
+    let name_ident = format_ident! {"{}", field_name.to_string()};
 
-    let (is_nullable, column_type) = get_column_type(typ.clone());
+    let extractor = row_extractor(
+        schema,
+        name_ident.clone(),
+        typ_ident.clone(),
+        field_type.nullable,
+    );
 
-    let extractor = if is_nullable {
-        quote! {
-            let item = vec.pop().expect("Missing item in row.");
-            let #ident = match item {
-                FtColumn::#column_type(t) => t,
-                _ => panic!("Invalid column type: {:?}.", item),
-            };
-        }
-    } else {
-        quote! {
-            let item = vec.pop().expect("Missing item in row.");
-            let #ident = match item {
-                FtColumn::#column_type(t) => match t {
-                    Some(inner_type) => { inner_type },
-                    None => {
-                        panic!("Non-nullable type is returning a None value.")
-                    }
-                },
-                _ => panic!("Invalid column type: {:?}.", item),
-            };
-        }
-    };
-
-    (typ, ident, extractor)
+    (typ_tokens, name_ident, typ_ident, extractor)
 }
 
-fn process_fk_field(
-    types: &HashSet<String>,
-    type_name_string: String,
+/// Type of special fields in GraphQL schema.
+enum SpecialFieldType {
+    ForeignKey,
+    Enum,
+    NoRelation,
+}
+
+/// Process an object's 'special' field and return a group of tokens.
+///
+/// Special fields are limited to foreign key and enum fields.
+///
+/// This is the equivalent of `process_field` but with some pre/post-processing.
+fn process_special_field(
+    schema: &ParsedGraphQLSchema,
+    object_name: &String,
     field: &FieldDefinition,
-    types_map: &HashMap<String, String>,
     is_nullable: bool,
-) -> (
-    proc_macro2::TokenStream,
-    proc_macro2::Ident,
-    proc_macro2::TokenStream,
-) {
-    let directives::Join {
-        field_name,
-        reference_field_type_name,
-        ..
-    } = get_join_directive_info(field, &type_name_string, types_map);
+    field_type: SpecialFieldType,
+) -> ProcessedFieldResult {
+    match field_type {
+        SpecialFieldType::ForeignKey => {
+            let directives::Join {
+                field_name,
+                reference_field_type_name,
+                ..
+            } = get_join_directive_info(field, object_name, &schema.field_type_mappings);
 
-    let field_type_name = if !is_nullable {
-        [reference_field_type_name, "!".to_string()].join("")
-    } else {
-        reference_field_type_name
-    };
-
-    let field_type: Type = Type::new(&field_type_name).expect("Could not construct type");
-    let typ = process_type(types, &field_type);
-    let ident = format_ident! {"{}", field_name.to_lowercase()};
-
-    let (_, column_type) = get_column_type(typ.clone());
-
-    let extractor = if is_nullable {
-        quote! {
-            let item = vec.pop().expect("Missing item in row.");
-            let #ident = match item {
-                FtColumn::#column_type(t) => t,
-                _ => panic!("Invalid column type: {:?}.", item),
+            let field_type_name = if !is_nullable {
+                [reference_field_type_name, "!".to_string()].join("")
+            } else {
+                reference_field_type_name
             };
-        }
-    } else {
-        quote! {
-            let item = vec.pop().expect("Missing item in row.");
-            let #ident = match item {
-                FtColumn::#column_type(t) => match t {
-                    Some(inner_type) => { inner_type },
-                    None => {
-                        panic!("Non-nullable type is returning a None value.")
-                    }
-                },
-                _ => panic!("Invalid column type: {:?}.", item),
-            };
-        }
-    };
+            let field_type: Type = Type::new(&field_type_name)
+                .expect("Could not construct type for processing");
 
-    (typ, ident, extractor)
+            process_field(schema, &field_name, &field_type)
+        }
+        SpecialFieldType::Enum => {
+            let FieldDefinition {
+                name: field_name, ..
+            } = field;
+
+            let field_type_name = if !is_nullable {
+                ["Charfield".to_string(), "!".to_string()].join("")
+            } else {
+                "Charfield".to_string()
+            };
+
+            let field_type: Type = Type::new(&field_type_name)
+                .expect("Could not construct type for processing");
+
+            process_field(schema, &field_name.to_string(), &field_type)
+        }
+        SpecialFieldType::NoRelation => {
+            let FieldDefinition {
+                name: field_name, ..
+            } = field;
+
+            let field_type_name = if !is_nullable {
+                ["NoRelation".to_string(), "!".to_string()].join("")
+            } else {
+                "NoRelation".to_string()
+            };
+
+            let field_type: Type = Type::new(&field_type_name)
+                .expect("Could not construct type for processing");
+
+            process_field(schema, &field_name.to_string(), &field_type)
+        }
+    }
 }
 
-#[allow(clippy::too_many_arguments)]
+/// Process a schema's type definition into the corresponding tokens for use in an indexer module.
 fn process_type_def(
-    query_root: &str,
-    namespace: &str,
-    identifier: &str,
-    types: &HashSet<String>,
+    schema: &mut ParsedGraphQLSchema,
     typ: &TypeDefinition,
-    processed: &mut HashSet<String>,
-    primitives: &HashSet<String>,
-    types_map: &HashMap<String, String>,
-    is_native: bool,
 ) -> Option<proc_macro2::TokenStream> {
     match &typ.kind {
         TypeKind::Object(obj) => {
-            if typ.name.to_string().as_str() == query_root {
-                return None;
+            let object_name = typ.name.to_string();
+
+            if DISALLOWED_OBJECT_NAMES.contains(object_name.as_str()) {
+                panic!("Object name '{object_name}' is reserved.",);
             }
 
-            let name = typ.name.to_string();
-            let type_id = type_id(&format!("{namespace}_{identifier}"), name.as_str());
+            let namespace = &schema.namespace;
+            let identifier = &schema.identifier;
+
+            let type_id =
+                type_id(&format!("{namespace}_{identifier}"), object_name.as_str());
             let mut block = quote! {};
             let mut row_extractors = quote! {};
             let mut construction = quote! {};
             let mut flattened = quote! {};
 
             for field in &obj.fields {
-                let (mut type_name, mut field_name, mut ext) =
-                    process_field(types, &field.node);
+                let field_name = &field.node.name.to_string();
+                let field_type = &field.node.ty.node;
+                let (mut typ_tokens, mut field_name, mut scalar_typ, mut ext) =
+                    process_field(schema, field_name, field_type);
 
-                let (is_nullable, mut column_type_name) =
-                    get_column_type(type_name.clone());
+                let mut field_typ_name = scalar_typ.to_string();
 
-                let mut column_type_name_str = column_type_name.to_string();
+                let directives::NoRelation(is_no_table) =
+                    get_notable_directive_info(&field.node).unwrap();
 
-                if processed.contains(&column_type_name_str)
-                    && !primitives.contains(&column_type_name_str)
-                {
-                    (type_name, field_name, ext) = process_fk_field(
-                        types,
-                        typ.name.to_string(),
-                        &field.node,
-                        types_map,
-                        is_nullable,
-                    );
-                    column_type_name = type_name.clone();
-                    column_type_name_str = column_type_name.to_string();
+                if is_no_table {
+                    schema.non_indexable_type_names.insert(object_name.clone());
                 }
 
-                processed.insert(column_type_name_str.clone());
+                if schema.is_possible_foreign_key(&field_typ_name) {
+                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
+                        schema,
+                        &object_name,
+                        &field.node,
+                        field_type.nullable,
+                        SpecialFieldType::ForeignKey,
+                    );
+                    field_typ_name = scalar_typ.to_string();
+                }
 
-                let clone = if COPY_TYPES.contains(column_type_name_str.as_str()) {
+                if schema.is_enum_type(&field_typ_name) {
+                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
+                        schema,
+                        &object_name,
+                        &field.node,
+                        field_type.nullable,
+                        SpecialFieldType::Enum,
+                    );
+                    field_typ_name = scalar_typ.to_string();
+                }
+
+                if schema.is_non_indexable_non_enum(&field_typ_name) {
+                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
+                        schema,
+                        &object_name,
+                        &field.node,
+                        field_type.nullable,
+                        SpecialFieldType::NoRelation,
+                    );
+                    field_typ_name = scalar_typ.to_string();
+                }
+
+                schema.parsed_type_names.insert(field_typ_name.clone());
+                let is_copyable = COPY_TYPES.contains(field_typ_name.as_str())
+                    || schema.is_non_indexable_non_enum(&object_name);
+
+                let clone = if is_copyable {
                     quote! {.clone()}
                 } else {
                     quote! {}
                 };
 
-                let decoder = if is_nullable {
-                    quote! { FtColumn::#column_type_name(self.#field_name #clone), }
+                let decoder = if field_type.nullable {
+                    quote! { FtColumn::#scalar_typ(self.#field_name #clone), }
                 } else {
-                    quote! { FtColumn::#column_type_name(Some(self.#field_name #clone)), }
+                    quote! { FtColumn::#scalar_typ(Some(self.#field_name #clone)), }
                 };
 
                 block = quote! {
                     #block
-                    #field_name: #type_name,
+                    #field_name: #typ_tokens,
                 };
 
                 row_extractors = quote! {
                     #ext
-
                     #row_extractors
                 };
 
@@ -233,13 +343,13 @@ fn process_type_def(
                     #decoder
                 };
             }
-            let strct = format_ident! {"{}", name};
+            let strct = format_ident! {"{}", object_name};
 
-            processed.insert(strct.to_string());
+            schema.parsed_type_names.insert(strct.to_string());
 
-            if is_native {
+            if schema.is_native {
                 Some(quote! {
-                    #[derive(Debug, PartialEq, Eq, Hash)]
+                    #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
                     pub struct #strct {
                         #block
                     }
@@ -294,10 +404,25 @@ fn process_type_def(
                             }
                         }
                     }
+
+                    impl From<#strct> for Json {
+                        fn from(value: #strct) -> Self {
+                            let s = serde_json::to_string(&value).expect("Serde error.");
+                            Self(s)
+                        }
+                    }
+
+                    impl From<Json> for #strct {
+                        fn from(value: Json) -> Self {
+                            let s: #strct = serde_json::from_str(&value.0).expect("Serde error.");
+                            s
+                        }
+                    }
                 })
             } else {
+                // TODO: derive Default here https://github.com/FuelLabs/fuels-rs/pull/977
                 Some(quote! {
-                    #[derive(Debug, PartialEq, Eq, Hash)]
+                    #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
                     pub struct #strct {
                         #block
                     }
@@ -318,30 +443,92 @@ fn process_type_def(
                             ]
                         }
                     }
+
+                    impl From<#strct> for Json {
+                        fn from(value: #strct) -> Self {
+                            let s = serde_json::to_string(&value).expect("Serde error.");
+                            Self(s)
+                        }
+                    }
+
+                    impl From<Json> for #strct {
+                        fn from(value: Json) -> Self {
+                            let s: #strct = serde_json::from_str(&value.0).expect("Serde error.");
+                            s
+                        }
+                    }
                 })
             }
         }
-        obj => panic!("Unexpected type: {obj:?}"),
+        TypeKind::Enum(e) => {
+            let name = typ.name.to_string();
+            schema.non_indexable_type_names.insert(name.clone());
+            schema.enum_names.insert(name.clone());
+
+            let name = format_ident!("{}", name);
+
+            let values = e.values.iter().map(|v| {
+                let ident = format_ident! {"{}", v.node.value.to_string()};
+                quote! { #ident }
+            });
+
+            let to_enum = e
+                .values
+                .iter()
+                .map(|v| {
+                    let ident = format_ident! {"{}", v.node.value.to_string()};
+                    let as_str = format!("{}::{}", name, ident);
+                    quote! { #as_str => #name::#ident, }
+                })
+                .collect::<Vec<proc_macro2::TokenStream>>();
+
+            let from_enum = e
+                .values
+                .iter()
+                .map(|v| {
+                    let ident = format_ident! {"{}", v.node.value.to_string()};
+                    let as_str = format!("{}::{}", name, ident);
+                    quote! { #name::#ident => #as_str.to_string(), }
+                })
+                .collect::<Vec<proc_macro2::TokenStream>>();
+
+            // TODO: derive Default here https://github.com/FuelLabs/fuels-rs/pull/977
+            Some(quote! {
+                #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+                pub enum #name {
+                    #(#values),*
+                }
+
+                impl From<#name> for String {
+                    fn from(val: #name) -> Self {
+                        match val {
+                            #(#from_enum)*
+                            _ => panic!("Unrecognized enum value."),
+                        }
+                    }
+                }
+
+                impl From<String> for #name {
+                    fn from(val: String) -> Self {
+                        match val.as_ref() {
+                            #(#to_enum)*
+                            _ => panic!("Unrecognized enum value."),
+                        }
+                    }
+                }
+            })
+        }
+        _ => panic!("Unexpected type: '{:?}'", typ.kind),
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+/// Process a schema definition into the corresponding tokens for use in an indexer module.
 fn process_definition(
-    query_root: &str,
-    namespace: &str,
-    identifier: &str,
-    types: &HashSet<String>,
+    schema: &mut ParsedGraphQLSchema,
     definition: &TypeSystemDefinition,
-    processed: &mut HashSet<String>,
-    primitives: &HashSet<String>,
-    types_map: &HashMap<String, String>,
-    is_native: bool,
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
-        TypeSystemDefinition::Type(def) => process_type_def(
-            query_root, namespace, identifier, types, &def.node, processed, primitives,
-            types_map, is_native,
-        ),
+        TypeSystemDefinition::Type(def) => process_type_def(schema, &def.node),
         TypeSystemDefinition::Schema(_def) => None,
         def => {
             panic!("Unhandled definition type: {def:?}");
@@ -349,50 +536,7 @@ fn process_definition(
     }
 }
 
-fn get_query_root(types: &HashSet<String>, ast: &ServiceDocument) -> String {
-    let schema = ast.definitions.iter().find_map(|def| {
-        if let TypeSystemDefinition::Schema(d) = def {
-            Some(d.node.clone())
-        } else {
-            None
-        }
-    });
-
-    let SchemaDefinition { query, .. } = schema.expect("Schema definition not found.");
-
-    let name = query
-        .as_ref()
-        .expect("Schema definition must specify a query root.")
-        .to_string();
-
-    if !types.contains(&name) {
-        panic!("Query root not defined.");
-    }
-
-    name
-}
-
-fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
-    let ident = format_ident! {"{}", id};
-
-    let fn_ptr = format_ident! {"get_{}_ptr", id.to_lowercase()};
-    let fn_len = format_ident! {"get_{}_len", id.to_lowercase()};
-
-    quote! {
-        const #ident: &'static str = #value;
-
-        #[no_mangle]
-        fn #fn_ptr() -> *const u8 {
-            #ident.as_ptr()
-        }
-
-        #[no_mangle]
-        fn #fn_len() -> u32 {
-            #ident.len() as u32
-        }
-    }
-}
-
+/// Process user-supplied GraphQL schema into code for indexer module.
 pub(crate) fn process_graphql_schema(
     namespace: String,
     identifier: String,
@@ -419,24 +563,6 @@ pub(crate) fn process_graphql_schema(
     file.read_to_string(&mut text).expect("IO error");
 
     let text = inject_native_entities_into_schema(&text);
-
-    let base_ast = match parse_schema(BASE_SCHEMA) {
-        Ok(ast) => ast,
-        Err(e) => {
-            proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
-        }
-    };
-    let (primitives, _) = build_schema_objects_set(&base_ast);
-
-    let ast = match parse_schema(&text) {
-        Ok(ast) => ast,
-        Err(e) => {
-            proc_macro_error::abort_call_site!("Error parsing graphql schema {:?}", e)
-        }
-    };
-    let (mut types, _) = build_schema_objects_set(&ast);
-    types.extend(primitives.clone());
-
     let namespace_tokens = const_item("NAMESPACE", &namespace);
     let identifer_tokens = const_item("IDENTIFIER", &identifier);
     let version_tokens = const_item("VERSION", &schema_version(&text));
@@ -447,23 +573,12 @@ pub(crate) fn process_graphql_schema(
         #version_tokens
     };
 
-    let query_root = get_query_root(&types, &ast);
+    let mut schema =
+        ParsedGraphQLSchema::new(&namespace, &identifier, is_native, Some(&text))
+            .expect("Bad schema.");
 
-    let mut processed: HashSet<String> = HashSet::new();
-    let types_map: HashMap<String, String> = build_schema_fields_and_types_map(&ast);
-
-    for definition in ast.definitions.iter() {
-        if let Some(def) = process_definition(
-            &query_root,
-            &namespace,
-            &identifier,
-            &types,
-            definition,
-            &mut processed,
-            &primitives,
-            &types_map,
-            is_native,
-        ) {
+    for definition in schema.ast.clone().definitions.iter() {
+        if let Some(def) = process_definition(&mut schema, definition) {
             output = quote! {
                 #output
                 #def
@@ -471,27 +586,4 @@ pub(crate) fn process_graphql_schema(
         }
     }
     output
-}
-
-// Note: This may have to change once we support list types -- deekerno
-fn get_column_type(typ: TokenStream) -> (bool, TokenStream) {
-    let mut is_option_type = false;
-    let tokens: TokenStream = typ
-        .into_iter()
-        .filter(|token| {
-            if let TokenTree::Ident(ident) = token {
-                let is_option_token = *ident == "Option";
-                if is_option_token {
-                    is_option_type = true;
-                    return false;
-                }
-
-                // Keep ident tokens that are not "Option"
-                return true;
-            }
-            false
-        })
-        .collect::<TokenStream>();
-
-    (is_option_type, tokens)
 }

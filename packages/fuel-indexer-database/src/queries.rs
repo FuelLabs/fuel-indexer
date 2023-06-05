@@ -1,6 +1,9 @@
 use crate::{types::*, IndexerConnection};
 use fuel_indexer_postgres as postgres;
-use sqlx::types::JsonValue;
+use sqlx::types::{
+    chrono::{DateTime, Utc},
+    JsonValue,
+};
 
 pub async fn graph_root_latest(
     conn: &mut IndexerConnection,
@@ -168,14 +171,14 @@ pub async fn new_root_columns(
     }
 }
 
-pub async fn indexer_is_registered(
+pub async fn get_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<Option<RegisteredIndex>> {
+) -> sqlx::Result<Option<RegisteredIndexer>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::indexer_is_registered(c, namespace, identifier).await
+            postgres::get_indexer(c, namespace, identifier).await
         }
     }
 }
@@ -185,17 +188,18 @@ pub async fn register_indexer(
     namespace: &str,
     identifier: &str,
     pubkey: Option<&str>,
-) -> sqlx::Result<RegisteredIndex> {
+) -> sqlx::Result<RegisteredIndexer> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::register_indexer(c, namespace, identifier, pubkey).await
+            let created_at = DateTime::<Utc>::from(std::time::SystemTime::now());
+            postgres::register_indexer(c, namespace, identifier, pubkey, created_at).await
         }
     }
 }
 
 pub async fn all_registered_indexers(
     conn: &mut IndexerConnection,
-) -> sqlx::Result<Vec<RegisteredIndex>> {
+) -> sqlx::Result<Vec<RegisteredIndexer>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::all_registered_indexers(c).await
@@ -386,5 +390,18 @@ pub async fn delete_nonce(
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::delete_nonce(c, nonce).await,
+    }
+}
+
+pub async fn indexer_owned_by(
+    conn: &mut IndexerConnection,
+    namespace: &str,
+    identifier: &str,
+    pubkey: &str,
+) -> sqlx::Result<()> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::indexer_owned_by(c, namespace, identifier, pubkey).await
+        }
     }
 }

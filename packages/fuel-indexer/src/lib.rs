@@ -4,6 +4,7 @@ pub(crate) mod commands;
 mod database;
 pub mod executor;
 pub mod ffi;
+pub(crate) mod queries;
 mod service;
 
 pub use database::Database;
@@ -13,7 +14,7 @@ pub use fuel_indexer_lib::{
     config::IndexerConfig,
     manifest::{Manifest, ManifestError, Module},
 };
-pub use fuel_indexer_schema::{db::IndexerSchemaError, FtColumn};
+pub use fuel_indexer_schema::{db::IndexerSchemaDbError, FtColumn};
 pub use service::IndexerService;
 use thiserror::Error;
 use wasmer::{ExportError, HostEnvInitError, InstantiationError, RuntimeError};
@@ -70,11 +71,13 @@ pub enum IndexerError {
     #[error("Unknown error")]
     Unknown,
     #[error("Indexer schema error: {0:?}")]
-    SchemaError(#[from] IndexerSchemaError),
+    SchemaError(#[from] IndexerSchemaDbError),
     #[error("Manifest error: {0:?}")]
     ManifestError(#[from] ManifestError),
     #[error("Error creating native executor.")]
     NativeExecutionInstantiationError,
     #[error("Native execution runtime error.")]
     NativeExecutionRuntimeError,
+    #[error("Tokio time error: {0:?}")]
+    Elapsed(#[from] tokio::time::error::Elapsed),
 }

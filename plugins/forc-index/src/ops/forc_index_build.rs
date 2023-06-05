@@ -79,9 +79,11 @@ pub fn init(command: BuildCommand) -> anyhow::Result<()> {
     let mut cmd = Command::new("cargo");
     cmd.arg("build")
         .arg("--manifest-path")
-        .arg(&cargo_manifest_path)
-        .arg("--target")
-        .arg(&target_triple);
+        .arg(&cargo_manifest_path);
+
+    if !native {
+        cmd.arg("--target").arg(&target_triple);
+    }
 
     let bool_opts = [
         (release, "--release"),

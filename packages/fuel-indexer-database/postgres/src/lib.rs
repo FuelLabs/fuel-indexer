@@ -15,6 +15,8 @@ use fuel_indexer_metrics::METRICS;
 #[cfg(feature = "metrics")]
 use fuel_indexer_macro_utils::metrics;
 
+use chrono::{DateTime, NaiveDateTime, Utc};
+
 const NONCE_EXPIRY: u64 = 3600; // 1 hour
 
 #[cfg_attr(feature = "metrics", metrics)]
@@ -126,14 +128,13 @@ pub async fn new_graph_root(
     root: NewGraphRoot,
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new(
-        "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, query, schema)",
+        "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, schema)",
     );
 
     builder.push_values(std::iter::once(root), |mut b, root| {
         b.push_bind(root.version)
             .push_bind(root.schema_name)
             .push_bind(root.schema_identifier)
-            .push_bind(root.query)
             .push_bind(root.schema);
     });
 
@@ -161,14 +162,12 @@ pub async fn graph_root_latest(
     let id: i64 = row.get(0);
     let version: String = row.get(1);
     let schema_name: String = row.get(2);
-    let query: String = row.get(3);
-    let schema: String = row.get(4);
+    let schema: String = row.get(3);
 
     Ok(GraphRoot {
         id,
         version,
         schema_name,
-        query,
         schema,
         schema_identifier: identifier.to_string(),
     })
@@ -199,6 +198,10 @@ pub async fn type_id_list_by_name(
         let schema_name: String = row.get(2);
         let graphql_name: String = row.get(3);
         let table_name: String = row.get(4);
+        let _schema_identifier: String = row.get(5);
+        let cols: Vec<u8> = row.get(6);
+        let virtual_columns: Vec<VirtualColumn> =
+            bincode::deserialize(&cols).expect("Bad virtual cols.");
 
         TypeId {
             id,
@@ -207,6 +210,7 @@ pub async fn type_id_list_by_name(
             table_name,
             graphql_name,
             schema_identifier: identifier.to_string(),
+            virtual_columns,
         }
     })
     .collect::<Vec<TypeId>>())
@@ -239,15 +243,18 @@ pub async fn type_id_insert(
     conn: &mut PoolConnection<Postgres>,
     type_ids: Vec<TypeId>,
 ) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name)");
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name, virtual_columns)");
 
     builder.push_values(type_ids.into_iter(), |mut b, tid| {
+        let virtual_cols =
+            bincode::serialize(&tid.virtual_columns).expect("Bad virtual cols.");
         b.push_bind(tid.id)
             .push_bind(tid.schema_version)
             .push_bind(tid.schema_name)
             .push_bind(tid.schema_identifier)
             .push_bind(tid.graphql_name)
-            .push_bind(tid.table_name);
+            .push_bind(tid.table_name)
+            .push_bind(virtual_cols);
     });
 
     let query = builder.build();
@@ -344,8 +351,7 @@ pub async fn columns_get_schema(
     version: &str,
 ) -> sqlx::Result<Vec<ColumnInfo>> {
     Ok(sqlx::query(
-        "
-            SELECT
+        "SELECT
             c.type_id as type_id,
             t.table_name as table_name,
             c.column_position as column_position,
@@ -383,11 +389,11 @@ pub async fn columns_get_schema(
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn indexer_is_registered(
+pub async fn get_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<Option<RegisteredIndex>> {
+) -> sqlx::Result<Option<RegisteredIndexer>> {
     match sqlx::query(
         "SELECT * FROM index_registry
         WHERE namespace = $1
@@ -398,12 +404,20 @@ pub async fn indexer_is_registered(
     .fetch_optional(conn)
     .await?
     {
-        Some(row) => Ok(Some(RegisteredIndex {
-            id: row.get(0),
-            namespace: row.get(1),
-            identifier: row.get(2),
-            pubkey: row.get(3),
-        })),
+        Some(row) => {
+            let created_at: DateTime<Utc> = {
+                let created_at: NaiveDateTime = row.get(4);
+                DateTime::<Utc>::from_utc(created_at, Utc)
+            };
+
+            Ok(Some(RegisteredIndexer {
+                id: row.get(0),
+                namespace: row.get(1),
+                identifier: row.get(2),
+                pubkey: row.get(3),
+                created_at,
+            }))
+        }
         None => Ok(None),
     }
 }
@@ -414,19 +428,21 @@ pub async fn register_indexer(
     namespace: &str,
     identifier: &str,
     pubkey: Option<&str>,
-) -> sqlx::Result<RegisteredIndex> {
-    if let Some(index) = indexer_is_registered(conn, namespace, identifier).await? {
+    created_at: DateTime<Utc>,
+) -> sqlx::Result<RegisteredIndexer> {
+    if let Some(index) = get_indexer(conn, namespace, identifier).await? {
         return Ok(index);
     }
 
     let row = sqlx::query(
-        "INSERT INTO index_registry (namespace, identifier, pubkey)
-         VALUES ($1, $2, $3)
+        "INSERT INTO index_registry (namespace, identifier, pubkey, created_at)
+         VALUES ($1, $2, $3, $4)
          RETURNING *",
     )
     .bind(namespace)
     .bind(identifier)
     .bind(pubkey)
+    .bind(created_at)
     .fetch_one(conn)
     .await?;
 
@@ -434,19 +450,24 @@ pub async fn register_indexer(
     let namespace: String = row.get(1);
     let identifier: String = row.get(2);
     let pubkey = row.get(3);
+    let created_at: DateTime<Utc> = {
+        let created_at: NaiveDateTime = row.get(4);
+        DateTime::<Utc>::from_utc(created_at, Utc)
+    };
 
-    Ok(RegisteredIndex {
+    Ok(RegisteredIndexer {
         id,
         namespace,
         identifier,
         pubkey,
+        created_at,
     })
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn all_registered_indexers(
     conn: &mut PoolConnection<Postgres>,
-) -> sqlx::Result<Vec<RegisteredIndex>> {
+) -> sqlx::Result<Vec<RegisteredIndexer>> {
     Ok(sqlx::query("SELECT * FROM index_registry")
         .fetch_all(conn)
         .await?
@@ -456,15 +477,20 @@ pub async fn all_registered_indexers(
             let namespace: String = row.get(1);
             let identifier: String = row.get(2);
             let pubkey = row.get(3);
+            let created_at: DateTime<Utc> = {
+                let created_at: NaiveDateTime = row.get(4);
+                DateTime::<Utc>::from_utc(created_at, Utc)
+            };
 
-            RegisteredIndex {
+            RegisteredIndexer {
                 id,
                 namespace,
                 identifier,
                 pubkey,
+                created_at,
             }
         })
-        .collect::<Vec<RegisteredIndex>>())
+        .collect::<Vec<RegisteredIndexer>>())
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
@@ -497,9 +523,12 @@ pub async fn register_indexer_asset(
     asset_type: IndexAssetType,
     pubkey: Option<&str>,
 ) -> sqlx::Result<IndexAsset> {
-    let index = match indexer_is_registered(conn, namespace, identifier).await? {
+    let index = match get_indexer(conn, namespace, identifier).await? {
         Some(index) => index,
-        None => register_indexer(conn, namespace, identifier, pubkey).await?,
+        None => {
+            let created_at = DateTime::<Utc>::from(SystemTime::now());
+            register_indexer(conn, namespace, identifier, pubkey, created_at).await?
+        }
     };
 
     let digest = sha256_digest(&bytes);
@@ -833,6 +862,7 @@ pub async fn get_nonce(
     Ok(Nonce { uid, expiry })
 }
 
+#[cfg_attr(feature = "metrics", metrics)]
 pub async fn remove_latest_assets_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -859,4 +889,23 @@ pub async fn remove_latest_assets_for_indexer(
         .await?;
 
     Ok(())
+}
+
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn indexer_owned_by(
+    conn: &mut PoolConnection<Postgres>,
+    namespace: &str,
+    identifier: &str,
+    pubkey: &str,
+) -> sqlx::Result<()> {
+    let row = sqlx::query(&format!("SELECT COUNT(*) FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' AND pubkey = '{pubkey}'"))
+        .fetch_one(conn)
+        .await?;
+
+    let count: i32 = row.get(0);
+    if count == 1 {
+        return Ok(());
+    }
+
+    Err(sqlx::Error::RowNotFound)
 }

@@ -2,7 +2,8 @@ use fuel_indexer_lib::defaults;
 use std::path::PathBuf;
 
 pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
-pub const INDEX_LIB_FILENAME: &str = "lib.rs";
+pub const INDEXER_LIB_FILENAME: &str = "lib.rs";
+pub const INDEXER_BINARY_FILENAME: &str = "main.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
 pub const CARGO_CONFIG_FILENAME: &str = "config";
 pub const INDEXER_SERVICE_HOST: &str = "http://127.0.0.1:29987";
@@ -12,33 +13,30 @@ pub const WASM_TARGET: &str = "wasm32-unknown-unknown";
 pub const INDEXER_TARGET: &str = "wasm32-unknown-unknown";
 pub const BUILD_RELEASE_PROFILE: &str = "true";
 
-pub fn default_native_index_cargo_toml(index_name: &str) -> String {
+pub fn default_native_indexer_cargo_toml(indexer_name: &str) -> String {
     format!(
         r#"[package]
-name = "{index_name}"
+name = "{indexer_name}"
 version = "0.0.0"
 edition = "2021"
 publish = false
 
-[lib]
-crate-type = ['cdylib']
+[[bin]]
+name = "{indexer_name}"
+path = "src/main.rs"
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.12", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.12", features = ["native-execution"] }}
-fuel-indexer-schema = {{ version = "0.12", default-features = false }}
-fuel-tx = "0.26"
+fuel-indexer-utils = {{ version = "0.16.0", features = ["native-execution"] }}
 fuels = {{ version = "0.40", default-features = false, features = ["std"] }}
-getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
     )
 }
 
-pub fn default_index_cargo_toml(index_name: &str) -> String {
+pub fn default_indexer_cargo_toml(indexer_name: &str) -> String {
     format!(
         r#"[package]
-name = "{index_name}"
+name = "{indexer_name}"
 version = "0.0.0"
 edition = "2021"
 publish = false
@@ -47,22 +45,19 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-macros = {{ version = "0.12", default-features = false }}
-fuel-indexer-plugin = {{ version = "0.12" }}
-fuel-indexer-schema = {{ version = "0.12", default-features = false }}
-fuel-tx = "0.26"
+fuel-indexer-utils = {{ version = "0.16.0" }}
 fuels = {{ version = "0.40", default-features = false }}
-getrandom = {{ version = "0.2", features = ["js"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
     )
 }
 
-pub fn default_index_manifest(
+pub fn default_indexer_manifest(
     namespace: &str,
     schema_filename: &str,
-    index_name: &str,
+    indexer_name: &str,
     project_path: Option<&PathBuf>,
+    is_native: bool,
 ) -> String {
     let schema_path = match project_path {
         Some(p) => p.join("schema").join(schema_filename),
@@ -70,6 +65,14 @@ pub fn default_index_manifest(
             let p = format!("schema/{schema_filename}");
             PathBuf::from(&p)
         }
+    };
+
+    let module = if is_native {
+        r#"
+    native: ~"#
+    } else {
+        r#"
+    wasm: ~"#
     };
 
     let schema_path = schema_path.display();
@@ -80,7 +83,7 @@ pub fn default_index_manifest(
 namespace: {namespace}
 
 # The identifier field is used to identify the given index.
-identifier: {index_name}
+identifier: {indexer_name}
 
 # The abi option is used to provide a link to the Sway JSON ABI that is generated when you
 # build your project.
@@ -108,8 +111,7 @@ graphql_schema: {schema_path}
 # The module field contains a file path that points to code that will be run as an executor inside
 # of the indexer.
 # Important: At this time, wasm is the preferred method of execution.
-module:
-    wasm: ~
+module: {module}
 
 # The report_metrics field contains boolean whether or not to report Prometheus  metrics to the
 # Fuel backend
@@ -122,8 +124,8 @@ resumable: ~
     )
 }
 
-pub fn default_index_lib(
-    index_name: &str,
+pub fn default_indexer_lib(
+    indexer_name: &str,
     manifest_filename: &str,
     project_path: Option<&PathBuf>,
 ) -> String {
@@ -136,13 +138,12 @@ pub fn default_index_lib(
 
     format!(
         r#"extern crate alloc;
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "{manifest_path}")]
-pub mod {index_name}_index_mod {{
+pub mod {indexer_name}_index_mod {{
 
-    fn {index_name}_handler(block_data: BlockData) {{
+    fn {indexer_name}_handler(block_data: BlockData) {{
         Logger::info("Processing a block. (>'.')>");
 
         let block_id = first8_bytes_to_u64(block_data.id);
@@ -152,7 +153,7 @@ pub mod {index_name}_index_mod {{
         for transaction in block_data.transactions.iter() {{
             Logger::info("Handling a transaction (>'.')>");
 
-            let tx = Tx{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
+            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
             tx.save();
         }}
     }}
@@ -161,23 +162,52 @@ pub mod {index_name}_index_mod {{
     )
 }
 
-pub fn default_index_schema() -> String {
-    r#"schema {
-    query: QueryRoot
+pub fn default_indexer_binary(
+    indexer_name: &str,
+    manifest_filename: &str,
+    project_path: Option<&PathBuf>,
+) -> String {
+    let manifest_path = match project_path {
+        Some(p) => p.join(manifest_filename),
+        None => PathBuf::from(manifest_filename),
+    };
+
+    let manifest_path = manifest_path.display();
+
+    format!(
+        r#"extern crate alloc;
+use fuel_indexer_utils::prelude::*;
+
+#[indexer(manifest = "{manifest_path}")]
+pub mod {indexer_name}_index_mod {{
+
+    async fn {indexer_name}_handler(block_data: BlockData) {{
+        Logger::info("Processing a block. (>'.')>");
+
+        let block_id = first8_bytes_to_u64(block_data.id);
+        let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
+        block.save().await;
+
+        for transaction in block_data.transactions.iter() {{
+            Logger::info("Handling a transaction (>'.')>");
+
+            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
+            tx.save().await;
+        }}
+    }}
+}}
+"#
+    )
 }
 
-type QueryRoot {
-    block: Block
-    tx: Tx
-}
-
-type Block {
+pub fn default_indexer_schema() -> String {
+    r#"type Block {
     id: ID!
     height: UInt8!
     hash: Bytes32! @unique
 }
 
-type Tx {
+type Transaction {
     id: ID!
     block: Block!
     hash: Bytes32! @unique
@@ -194,6 +224,6 @@ target = "wasm32-unknown-unknown"
     .to_string()
 }
 
-pub fn manifest_name(index_name: &str) -> String {
-    format!("{index_name}.manifest.yaml")
+pub fn manifest_name(indexer_name: &str) -> String {
+    format!("{indexer_name}.manifest.yaml")
 }

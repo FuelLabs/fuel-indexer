@@ -10,5 +10,6 @@ rust-version = { workspace = true }
 description = "Fuel Indexer Database Types"
 
 [dependencies]
-serde = { default-features = false, features = ["derive", "alloc"], workspace = true }
+chrono = { version = "0.4.24", features = ["serde"] }
+serde = { features = ["derive", "alloc"], workspace = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }

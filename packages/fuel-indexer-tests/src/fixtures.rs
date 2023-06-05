@@ -5,7 +5,7 @@ use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{
     config::{
         auth::AuthenticationStrategy, defaults as config_defaults, AuthenticationConfig,
-        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig,
+        DatabaseConfig, FuelNodeConfig, GraphQLConfig, IndexerConfig, RateLimitConfig,
     },
     defaults::SERVICE_REQUEST_CHANNEL_SIZE,
     utils::{derive_socket_addr, ServiceRequest},
@@ -281,6 +281,8 @@ pub async fn api_server_app_postgres(
         });
 
     let config = IndexerConfig {
+        indexer_handler_timeout: config_defaults::INDEXER_HANDLER_TIMEOUT,
+        log_level: "info".to_string(),
         verbose: true,
         local_fuel_node: false,
         indexer_net_config: false,
@@ -291,6 +293,7 @@ pub async fn api_server_app_postgres(
         stop_idle_indexers: true,
         run_migrations: false,
         authentication: AuthenticationConfig::default(),
+        rate_limit: RateLimitConfig::default(),
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -312,6 +315,8 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
         });
 
     let config = IndexerConfig {
+        indexer_handler_timeout: config_defaults::INDEXER_HANDLER_TIMEOUT,
+        log_level: "info".to_string(),
         verbose: true,
         local_fuel_node: false,
         indexer_net_config: false,
@@ -328,6 +333,7 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
             jwt_issuer: Some("FuelLabs".to_string()),
             jwt_expiry: Some(config_defaults::JWT_EXPIRY_SECS)
         },
+        rate_limit: RateLimitConfig::default(),
     };
 
     let (tx, _rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
@@ -346,6 +352,8 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
         });
 
     let config = IndexerConfig {
+        indexer_handler_timeout: config_defaults::INDEXER_HANDLER_TIMEOUT,
+        log_level: "info".to_string(),
         verbose: true,
         local_fuel_node: false,
         indexer_net_config: false,
@@ -356,6 +364,7 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
         stop_idle_indexers: true,
         run_migrations: false,
         authentication: AuthenticationConfig::default(),
+        rate_limit: RateLimitConfig::default(),
     };
 
     let (_tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
@@ -395,8 +404,7 @@ pub async fn connect_to_deployed_contract(
 }
 
 pub mod test_web {
-    use std::path::Path;
-
+    use crate::{defaults, fixtures::get_test_contract_id};
     use actix_service::ServiceFactory;
     use actix_web::{
         body::MessageBody,
@@ -404,11 +412,9 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
+    use fuel_indexer_types::scalar::{AssetId, Bech32ContractId};
     use fuels::prelude::{CallParameters, Provider, WalletUnlocked};
-
-    use fuel_indexer_types::{AssetId, Bech32ContractId};
-
-    use crate::{defaults, fixtures::get_test_contract_id};
+    use std::path::Path;
 
     use super::{tx_params, FuelIndexerTest};
 
@@ -707,6 +713,20 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_trigger_enum(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_enum()
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest<WalletUnlocked>,
     }
@@ -760,8 +780,8 @@ pub mod test_web {
                     fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields,
                 ),
             )
-            .route("/vec-calldata", web::post().to(fuel_indexer_vec_calldata))
-            .route("/vec-logdata", web::post().to(fuel_indexer_vec_logdata))
+            .route("/vec_calldata", web::post().to(fuel_indexer_vec_calldata))
+            .route("/vec_logdata", web::post().to(fuel_indexer_vec_logdata))
             .route(
                 "/pure_function",
                 web::post().to(fuel_indexer_test_pure_function),
@@ -772,6 +792,7 @@ pub mod test_web {
                 "/enum_error",
                 web::post().to(fuel_indexer_test_trigger_enum_error),
             )
+            .route("/enum", web::post().to(fuel_indexer_test_trigger_enum))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {

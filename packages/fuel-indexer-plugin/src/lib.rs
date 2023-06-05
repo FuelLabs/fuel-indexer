@@ -8,21 +8,34 @@ extern crate alloc;
 
 pub mod types {
     pub use fuel_indexer_schema::FtColumn;
-    pub use fuel_indexer_types::*;
+    pub use fuel_indexer_types::fuel::{BlockData, TxId};
+
+    // Traits needed to access client type fields. Could also include this as a sub-module
+    // of `fuel_indexer_types::fuel`.
+    pub use fuel_indexer_types::fuel::field::*;
+    pub use fuel_indexer_types::{fuel, prelude::*};
+
+    // These imports are used in the indexer.rs module when iterating over
+    // block transactions, in order to cache contract IDs.
+    pub use std::collections::{HashMap, HashSet};
 }
 
 pub mod utils {
-    pub use fuel_indexer_lib::utils::{
-        indexer_utils::{
-            bytes32_from_inputs, first32_bytes_to_bytes32, first8_bytes_to_u64,
-            trim_sized_ascii_string, u64_id, u64_id_from_inputs,
-        },
-        sha256_digest,
-    };
+    pub use fuel_indexer_lib::utils::sha256_digest;
 }
 
-pub mod prelude {
-    pub use super::types::*;
+pub use bincode;
+pub use fuel_indexer_lib::utils::{deserialize, serialize};
 
-    pub use super::utils::*;
+// Specifically we import `serde` here for the `Serialize` and `Deserialize` traits
+// else the user would have to explicity import these in their indexer modules.
+pub use serde;
+
+// We import `serde_json` for the `From<T> for Json` in the `fuel-indexer-macro/schema` module.
+pub use serde_json;
+
+pub mod prelude {
+    pub use super::{
+        bincode, deserialize, serde, serde_json, serialize, types::*, utils::*,
+    };
 }

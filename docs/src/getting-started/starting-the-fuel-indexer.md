@@ -39,6 +39,9 @@ OPTIONS:
     -h, --help
             Print help information
 
+        --indexer-handler-timeout <INDEXER_HANDLER_TIMEOUT>
+            Maximum length of time (in seconds) that an indexer's event handler can run before timing out. [default: 2]
+
         --indexer-net-config
             Allow network configuration via indexer manifests.
 
@@ -81,6 +84,15 @@ OPTIONS:
 
         --postgres-user <POSTGRES_USER>
             Postgres username.
+
+        --rate-limit
+            Enable rate limiting.
+
+        --rate-limit-rps <RATE_LIMIT_RPS>
+            Maximum number of requests to allow over --rate-limit-window.
+
+        --rate-limit-window <RATE_LIMIT_WINDOW_SIZE>
+            Number of seconds over which to allow --rate-limit-rps.
 
         --run-migrations
             Run database migrations before starting service.

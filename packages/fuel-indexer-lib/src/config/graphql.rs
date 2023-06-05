@@ -1,7 +1,7 @@
 use crate::{
     config::{utils::derive_http_url, Env, IndexerConfigResult},
     defaults,
-    utils::{derive_socket_addr, is_opt_env_var, trim_opt_env_key},
+    utils::derive_socket_addr,
 };
 pub use clap::Parser;
 use http::Uri;
@@ -10,10 +10,15 @@ use std::net::SocketAddr;
 
 #[derive(Clone, Deserialize, Debug)]
 pub struct GraphQLConfig {
+    /// GraphQL API host.
     #[serde(default)]
     pub host: String,
+
+    /// GraphQL API port.
     #[serde(default)]
     pub port: String,
+
+    /// Max body size for GraphQL API requests.
     #[serde(default)]
     pub max_body_size: usize,
 }
@@ -51,14 +56,6 @@ impl From<GraphQLConfig> for SocketAddr {
 
 impl Env for GraphQLConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
-        if is_opt_env_var(&self.host) {
-            self.host = std::env::var(trim_opt_env_key(&self.host))?;
-        }
-
-        if is_opt_env_var(&self.port) {
-            self.port = std::env::var(trim_opt_env_key(&self.port))?;
-        }
-
         Ok(())
     }
 }

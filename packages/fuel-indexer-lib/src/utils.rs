@@ -1,6 +1,5 @@
 use crate::{config::IndexerConfig, defaults};
 use anyhow::Result;
-use fuel_indexer_types::Bytes32;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::{
@@ -18,6 +17,21 @@ use tracing_subscriber::filter::EnvFilter;
 
 const RUST_LOG: &str = "RUST_LOG";
 const HUMAN_LOGGING: &str = "HUMAN_LOGGING";
+
+const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
+
+/// Serialize a generic item.
+pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
+    bincode::serialize(obj).expect("Serialize failed")
+}
+
+/// Deserialize a generic item.
+pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
+    match bincode::deserialize(bytes) {
+        Ok(obj) => Ok(obj),
+        Err(e) => Err(format!("Bincode serde error {e:?}")),
+    }
+}
 
 // Testing assets use relative paths, while production assets will use absolute paths
 //
@@ -44,9 +58,7 @@ pub fn local_repository_root() -> Option<String> {
         }
     }
 
-    if !curr_dir.is_dir()
-        || curr_dir.file_name().unwrap() != defaults::ROOT_DIRECTORY_NAME
-    {
+    if !curr_dir.is_dir() || curr_dir.file_name().unwrap() != ROOT_DIRECTORY_NAME {
         return None;
     }
 
@@ -180,7 +192,10 @@ pub async fn init_logging(config: &IndexerConfig) -> anyhow::Result<()> {
         .unwrap_or("info".to_string());
 
     if !config.verbose {
-        std::env::set_var(RUST_LOG, format!("{level},wasmer_compiler_cranelift=warn"));
+        std::env::set_var(
+            RUST_LOG,
+            format!("{level},wasmer_compiler_cranelift=warn,regalloc=warn,cranelift_codegen=warn"),
+        );
     }
 
     let filter = match env::var_os(RUST_LOG) {
@@ -214,49 +229,6 @@ pub async fn init_logging(config: &IndexerConfig) -> anyhow::Result<()> {
             .init();
     }
     Ok(())
-}
-
-pub mod indexer_utils {
-    use fuel_indexer_types::SizedAsciiString;
-
-    use super::{sha256_digest, Bytes32};
-
-    pub fn u64_id(d: &[u8; 8]) -> u64 {
-        u64::from_le_bytes(*d)
-    }
-
-    pub fn first8_bytes_to_u64(data: impl AsRef<[u8]>) -> u64 {
-        let data = sha256_digest(&data);
-        let mut buff = [0u8; 8];
-        buff.copy_from_slice(&data.as_bytes()[..8]);
-        u64_id(&buff)
-    }
-
-    pub fn first32_bytes_to_bytes32(data: impl AsRef<[u8]>) -> Bytes32 {
-        let data = sha256_digest(&data);
-        let mut buff = [0u8; 32];
-        buff.copy_from_slice(&data.as_bytes()[..32]);
-        Bytes32::from(buff)
-    }
-
-    pub fn u64_id_from_inputs(id: &[u8; 32], inputs: Vec<u8>) -> u64 {
-        let inputs = [id.to_vec(), inputs].concat();
-        first8_bytes_to_u64(inputs)
-    }
-
-    pub fn bytes32_from_inputs(id: &[u8; 32], inputs: Vec<u8>) -> Bytes32 {
-        let inputs = [id.to_vec(), inputs].concat();
-        first32_bytes_to_bytes32(inputs)
-    }
-
-    pub fn trim_sized_ascii_string<const LEN: usize>(
-        s: &SizedAsciiString<LEN>,
-    ) -> String {
-        let mut s = s.to_string();
-        let n = s.trim_end_matches(' ').len();
-        s.truncate(n);
-        s
-    }
 }
 
 pub fn format_exec_msg(exec_name: &str, path: Option<String>) -> String {

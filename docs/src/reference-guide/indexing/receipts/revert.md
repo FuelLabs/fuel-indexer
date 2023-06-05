@@ -22,10 +22,10 @@ pub struct Revert {
 
 - [Read more about `Revert` in the Fuel Protocol spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#revert-receipt)
 
-You can handle functions that could produce a `Revert` receipt by adding a parameter with the type `abi::Revert`.
+You can handle functions that could produce a `Revert` receipt by adding a parameter with the type `Revert`.
 
 ```rust, ignore
-fn handle_revert(revert: abi::Revert) {
+fn handle_revert(revert: Revert) {
   // handle the emitted Revert receipt
 }
 ```

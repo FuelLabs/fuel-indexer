@@ -45,7 +45,7 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -59,7 +59,7 @@ async fn test_can_return_query_response_with_all_fields_required_postgres() {
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(r#"{ "query": "query { block { id height timestamp }}" }"#)
+        .body(r#"{ "query": "query { blockentity { id height timestamp }}" }"#)
         .send()
         .await
         .unwrap();
@@ -86,7 +86,7 @@ async fn test_can_return_query_response_with_nullable_fields_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -128,7 +128,7 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -142,7 +142,7 @@ async fn test_can_return_nested_query_response_with_implicit_foreign_keys_postgr
     let resp = client
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
-        .body(r#"{ "query": "query { tx { block { id height } id timestamp } }" }"#)
+        .body(r#"{ "query": "query { txentity { block { id height } id timestamp } }" }"#)
         .send()
         .await
         .unwrap();
@@ -175,7 +175,7 @@ async fn test_can_return_query_response_with_deeply_nested_query_postgres() {
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -322,7 +322,7 @@ async fn test_can_return_nested_query_response_with_explicit_foreign_keys_postgr
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest).await.unwrap();
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
@@ -372,7 +372,7 @@ async fn test_can_return_query_response_with_filter_id_selection_postgres() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -419,7 +419,7 @@ async fn test_can_return_query_response_with_filter_membership_postgres() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -472,7 +472,7 @@ async fn test_can_return_query_response_with_filter_non_null_postgres() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -525,7 +525,7 @@ async fn test_can_return_query_response_with_filter_complex_comparison_postgres(
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -578,7 +578,7 @@ async fn test_can_return_query_response_with_filter_simple_comparison_postgres()
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -629,7 +629,7 @@ async fn test_can_return_query_response_with_filter_nested_postgres() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -682,7 +682,7 @@ async fn test_can_return_query_response_with_filter_multiple_on_single_entity_po
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -731,7 +731,7 @@ async fn test_can_return_query_response_with_filter_negation_postgres() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -780,7 +780,7 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -797,7 +797,7 @@ async fn test_can_return_query_response_with_sorted_results_postgres() {
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
-            r#"{"query": "query { filterentity(order: { desc: foola }) { id foola } }" }"#,
+            r#"{"query": "query { filterentity(order: { foola: desc }) { id foola } }" }"#,
         )
         .send()
         .await
@@ -832,7 +832,7 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
 
     update_test_manifest_asset_paths(&mut manifest);
 
-    srvc.register_index_from_manifest(manifest)
+    srvc.register_indexer_from_manifest(manifest)
         .await
         .expect("Failed to initialize indexer.");
 
@@ -849,7 +849,7 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
         .post("http://127.0.0.1:29987/api/graph/fuel_indexer_test/index1")
         .header(CONTENT_TYPE, "application/graphql".to_owned())
         .body(
-            r#"{"query": "query { aliased_entities: filterentity(order: { asc: foola }, first: 1, offset: 1) { id foola } }" }"#,
+            r#"{"query": "query { aliased_entities: filterentity(order: { foola: asc }, first: 1, offset: 1) { id foola } }" }"#,
         )
         .send()
         .await
@@ -858,11 +858,13 @@ async fn test_can_return_query_response_with_alias_and_ascending_offset_and_limi
     server_handle.abort();
 
     let body = resp.text().await.unwrap();
-    println!("{body}");
     let v: Value = serde_json::from_str(&body).unwrap();
-    let data = v["data"].as_object().expect("data is not an object");
+    let data = v["data"].as_array().expect("data is not an array");
 
-    assert_eq!(data["aliased_entities"][0]["id"].as_i64(), Some(3));
-    assert_eq!(data["aliased_entities"][0]["foola"].as_str(), Some("blorp"));
-    assert_eq!(data["page_info"]["pages"].as_i64(), Some(3));
+    assert_eq!(data[0]["aliased_entities"][0]["id"].as_i64(), Some(3));
+    assert_eq!(
+        data[0]["aliased_entities"][0]["foola"].as_str(),
+        Some("blorp")
+    );
+    assert_eq!(data[0]["page_info"]["pages"].as_i64(), Some(3));
 }

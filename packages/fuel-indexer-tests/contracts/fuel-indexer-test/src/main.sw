@@ -59,6 +59,22 @@ pub struct ExampleMessageStruct {
     message: str[32]
 }
 
+pub enum SimpleEnum {
+    One: (),
+    Two: (),
+    Three: (),
+}
+
+pub enum AnotherSimpleEnum {
+    Ping: Ping,
+    Pung: Pung,
+    Call: SimpleEnum,
+}
+
+pub enum NestedEnum {
+    Inner: AnotherSimpleEnum
+}
+
 abi FuelIndexer {
     fn trigger_multiargs() -> Ping;
     fn trigger_callreturn() -> Pung;
@@ -83,6 +99,7 @@ abi FuelIndexer {
     fn trigger_panic() -> u64;
     fn trigger_revert();
     fn trigger_enum_error(num: u64);
+    fn trigger_enum() -> AnotherSimpleEnum;
 }
 
 impl FuelIndexer for Contract {
@@ -208,7 +225,7 @@ impl FuelIndexer for Contract {
     }
 
     fn trigger_pure_function() {
-        let sum = 1 + 2;
+        let _sum = 1 + 2;
     }
 
     fn trigger_panic() -> u64 {
@@ -225,6 +242,23 @@ impl FuelIndexer for Contract {
     }
 
     fn trigger_enum_error(num: u64) {
-            require(num != 69, UserError::Unauthorized);
-        }
+        require(num != 69, UserError::Unauthorized);
+    }
+
+    fn trigger_enum() -> AnotherSimpleEnum {
+        log(AnotherSimpleEnum::Pung(Pung {
+            id: 91231,
+            value: 888777,
+            is_pung: true,
+            pung_from: Identity::ContractId(ContractId::from(0x322ee5fb2cabec472409eb5f9b42b59644edb7bf9943eda9c2e3947305ed5e96)),
+        }));
+
+        log(NestedEnum::Inner(AnotherSimpleEnum::Call(SimpleEnum::Three)));
+
+        AnotherSimpleEnum::Ping(Ping {
+            id: 7777, 
+            value: 7775, 
+            message: "hello world! I am, a log event!!"
+        })
+    }
 }

@@ -46,6 +46,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
     - [`forc index remove`](#forc-index-remove)
     - [`forc index auth`](#forc-index-auth)
     - [`forc index start`](#forc-index-start)
+    - [`forc index status`](#forc-index-status)
   - [Schema](#schema)
   - [Modules](#modules)
     - [WebAssembly (WASM) modules](#webassembly-wasm-modules)
@@ -171,24 +172,28 @@ Start the indexer service.
 forc index start
 ```
 
+### `forc index status`
+
+Check the status of a registered indexer.
+
+```bash
+forc index status
+```
+
 ## Schema
 
 The Fuel indexer uses data models derived from GraphQL schema types in order to persist data to a database backend.
 
 ```graphql
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    account: Account
-}
-
 type Account {
     id: ID!
     address: Address! @unique
 }
 ```
+
+### GraphQL Functionality
+
+While we do our best to maintain compliance with the GraphQL specification and parity with other implementations, there are a few things that are under development or will not be implemented. You can find more information in [the GraphQL chapter of the book](https://fuellabs.github.io/fuel-indexer/master/reference-guide/components/graphql/index.html).
 
 ## Modules
 

@@ -1,0 +1,13 @@
+[package]
+name = "fuel_explorer"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fuel-indexer-utils = { workspace = true }
+fuels = { workspace = true }
+serde = { workspace = true }

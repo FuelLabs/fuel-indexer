@@ -1,5 +1,5 @@
 extern crate alloc;
-use fuel_indexer_macros::indexer;
+use fuel_indexer_utils::prelude::indexer;
 
 #[no_mangle]
 fn ff_log_data(_inp: ()) {}
@@ -30,11 +30,23 @@ fn main() {
         id: [0u8; 32].into(),
         time: 1,
         height: 0,
-        transactions: vec![TransactionData {
-            status: TransactionStatus::default(),
+        header: fuel::Header {
+            id: [0u8; 32].into(),
+            da_height: 1,
+            transactions_count: 1,
+            output_messages_count: 1,
+            transactions_root: [0u8; 32].into(),
+            output_messages_root: [0u8; 32].into(),
+            height: 1,
+            prev_root: [0u8; 32].into(),
+            time: 1,
+            application_hash: [0u8; 32].into(),
+        },
+        transactions: vec![fuel::TransactionData {
+            status: fuel::TransactionStatus::default(),
             id: [0u8; 32].into(),
             receipts: vec![
-                Receipt::Call {
+                fuel::Receipt::Call {
                     id: [0u8; 32].into(),
                     to: [0u8; 32].into(),
                     amount: 400,
@@ -45,7 +57,7 @@ fn main() {
                     pc: 0,
                     is: 0,
                 },
-                Receipt::ReturnData {
+                fuel::Receipt::ReturnData {
                     id: [0u8; 32].into(),
                     ptr: 2342143,
                     len: bytes.len() as u64,

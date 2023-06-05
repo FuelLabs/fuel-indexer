@@ -17,10 +17,10 @@ pub struct Transfer {
   - The `pc` and `is` fields aren't currently used for anything, but are included for completeness.
 - [Read more about `Transfer` in the Fuel protocol ABI spec](https://github.com/FuelLabs/fuel-specs/blob/master/src/protocol/abi/receipts.md#transfer-receipt)
 
-You can handle functions that produce a `Transfer` receipt type by adding a parameter with the type `abi::Transfer`.
+You can handle functions that produce a `Transfer` receipt type by adding a parameter with the type `Transfer`.
 
 ```rust, ignore
-fn handle_transfer(transfer: abi::Transfer) {
+fn handle_transfer(transfer: Transfer) {
   // handle the emitted Transfer receipt
 }
 ```

@@ -18,15 +18,6 @@ Let's learn how to use each foreign key type by looking at some GraphQL schema e
 ### Implicit foreign keys
 
 ```graphql
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
 type Book {
     id: ID!
     name: Bytes8!
@@ -45,15 +36,6 @@ Given the above schema, two entities will be created: a `Book` entity, and a `Li
 ### Explicit foreign keys
 
 ```graphql
-schema {
-    query: QueryRoot
-}
-
-type QueryRoot {
-    book: Book
-    library: Library
-}
-
 type Book {
     id: ID!
     name: Bytes8! @unique

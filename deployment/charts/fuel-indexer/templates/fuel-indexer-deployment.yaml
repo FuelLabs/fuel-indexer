@@ -3,14 +3,14 @@ kind: Deployment
 metadata:
   name: {{ .Release.Name }}
   labels:
-    app: {{ .Release.Name }} 
+    app: {{ .Release.Name }}
     chart: {{ template "fuel-indexer.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
 spec:
   selector:
     matchLabels:
-      app: {{ .Release.Name }} 
+      app: {{ .Release.Name }}
       release: {{ .Release.Name }}
   replicas: {{ .Values.app.replicas }}
   strategy:
@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.app.name }}
-          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}" 
+          image: "{{ .Values.app.image.repository }}:{{ .Values.app.image.tag }}"
           command: ["./fuel-indexer"]
           args:
             - "run"
@@ -51,6 +51,11 @@ spec:
             - "{{ .Values.app.jwt.secret }}"
             - "--jwt-issuer"
             - "{{ .Values.app.jwt.issuer }}"
+            - "--rate-limit"
+            - "--rate-limit-request-count"
+            - "3"
+            - "--rate-limit-window-size"
+            - "10"
             - "--verbose"
           env:
           - name: POSTGRES_PASSWORD

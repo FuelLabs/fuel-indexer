@@ -1,7 +1,6 @@
 extern crate alloc;
 
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(
     manifest = "packages/fuel-indexer-tests/components/indices/fuel-indexer-test/fuel_indexer_test.yaml"
@@ -9,7 +8,7 @@ use fuel_indexer_plugin::prelude::*;
 mod fuel_indexer_test {
 
     fn fuel_indexer_test_blocks(block_data: BlockData) {
-        let block = Block {
+        let block = BlockEntity {
             id: first8_bytes_to_u64(block_data.id),
             height: block_data.height,
             timestamp: block_data.time,
@@ -20,7 +19,7 @@ mod fuel_indexer_test {
         let input_data = r#"{"foo":"bar"}"#.to_string();
 
         for tx in block_data.transactions.iter() {
-            let tx = Tx {
+            let tx = TxEntity {
                 id: first8_bytes_to_u64(tx.id),
                 block: block.id,
                 timestamp: block_data.time,
@@ -53,10 +52,10 @@ mod fuel_indexer_test {
         u16entity.save();
     }
 
-    fn fuel_indexer_test_transfer(transfer: abi::Transfer) {
+    fn fuel_indexer_test_transfer(transfer: Transfer) {
         Logger::info("fuel_indexer_test_transfer handling Transfer event.");
 
-        let abi::Transfer {
+        let Transfer {
             contract_id,
             to,
             asset_id,
@@ -64,7 +63,7 @@ mod fuel_indexer_test {
             ..
         } = transfer;
 
-        let entity = Transfer {
+        let entity = TransferEntity {
             id: first8_bytes_to_u64(contract_id),
             contract_id,
             recipient: to,
@@ -75,10 +74,10 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_transferout(transferout: abi::TransferOut) {
+    fn fuel_indexer_test_transferout(transferout: TransferOut) {
         Logger::info("fuel_indexer_test_transferout handling TransferOut event.");
 
-        let abi::TransferOut {
+        let TransferOut {
             contract_id,
             to,
             asset_id,
@@ -86,7 +85,7 @@ mod fuel_indexer_test {
             ..
         } = transferout;
 
-        let entity = TransferOut {
+        let entity = TransferOutEntity {
             id: first8_bytes_to_u64(contract_id),
             contract_id,
             recipient: to,
@@ -97,17 +96,17 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_log(log: abi::Log) {
+    fn fuel_indexer_test_log(log: Log) {
         Logger::info("fuel_indexer_test_log handling Log event.");
 
-        let abi::Log {
+        let Log {
             contract_id,
             rb,
             ra,
             ..
         } = log;
 
-        let entity = Log {
+        let entity = LogEntity {
             id: first8_bytes_to_u64(contract_id),
             contract_id: log.contract_id,
             ra,
@@ -130,12 +129,12 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_scriptresult(scriptresult: abi::ScriptResult) {
+    fn fuel_indexer_test_scriptresult(scriptresult: ScriptResult) {
         Logger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
 
-        let abi::ScriptResult { result, gas_used } = scriptresult;
+        let ScriptResult { result, gas_used } = scriptresult;
 
-        let entity = ScriptResult {
+        let entity = ScriptResultEntity {
             id: result,
             result,
             gas_used,
@@ -156,10 +155,10 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_messageout(messageout: abi::MessageOut) {
+    fn fuel_indexer_test_messageout(messageout: MessageOut) {
         Logger::info("fuel_indexer_test_messageout handling MessageOut event");
 
-        let abi::MessageOut {
+        let MessageOut {
             sender,
             message_id,
             recipient,
@@ -170,7 +169,7 @@ mod fuel_indexer_test {
             ..
         } = messageout;
 
-        let entity = MessageOut {
+        let entity = MessageOutEntity {
             id: first8_bytes_to_u64(message_id),
             message_id,
             sender,
@@ -203,9 +202,11 @@ mod fuel_indexer_test {
         ping: Ping,
         block_data: BlockData,
     ) {
-        Logger::info("fuel_indexer_test_multiargs handling Pung, Pong, Ping, and BlockData events.");
+        Logger::info(
+            "fuel_indexer_test_multiargs handling Pung, Pong, Ping, and BlockData events.",
+        );
 
-        let block = Block {
+        let block = BlockEntity {
             id: first8_bytes_to_u64(block_data.id),
             height: block_data.height,
             timestamp: block_data.time,
@@ -266,10 +267,10 @@ mod fuel_indexer_test {
         entity.save();
     }
 
-    fn fuel_indexer_test_pure_function(call: abi::Call) {
+    fn fuel_indexer_test_pure_function(call: Call) {
         Logger::info("fuel_indexer_test_tuple handling Call event.");
 
-        let abi::Call {
+        let Call {
             contract_id,
             to,
             asset_id,
@@ -552,10 +553,10 @@ mod fuel_indexer_test {
         team.save();
     }
 
-    fn fuel_indexer_test_panic(panic: abi::Panic) {
+    fn fuel_indexer_test_panic(panic: Panic) {
         Logger::info("fuel_indexer_test_panic handling Panic event.");
 
-        let abi::Panic {
+        let Panic {
             contract_id,
             reason,
         } = panic;
@@ -569,10 +570,10 @@ mod fuel_indexer_test {
         panic.save();
     }
 
-    fn fuel_indexer_trigger_revert(revert: abi::Revert) {
+    fn fuel_indexer_trigger_revert(revert: Revert) {
         Logger::info("fuel_indexer_trigger_revert handling trigger_revert event.");
 
-        let abi::Revert {
+        let Revert {
             contract_id,
             error_val,
         } = revert;
@@ -641,10 +642,12 @@ mod fuel_indexer_test {
         f3.save();
     }
 
-    fn fuel_indexer_triger_enum_error(enum_error: abi::Revert) {
-        Logger::info("fuel_indexer_triger_enum_error handling trigger_enum_error event.");
+    fn fuel_indexer_trigger_enum_error(enum_error: Revert) {
+        Logger::info(
+            "fuel_indexer_trigger_enum_error handling trigger_enum_error event.",
+        );
 
-        let abi::Revert {
+        let Revert {
             contract_id,
             error_val,
         } = enum_error;
@@ -656,5 +659,50 @@ mod fuel_indexer_test {
         };
 
         entity.save();
+    }
+
+    fn fuel_indexer_block_explorer_types(_b: BlockData) {
+        Logger::info("fuel_indexer_block_explorer_types handling explorer_types event.");
+        let e = ExplorerEntity {
+            id: 8675309,
+            nonce: Nonce::default(),
+            // TOOD: Finish
+            time: None,
+            hex: Some(HexString::from("hello world!")),
+            sig: Signature::default(),
+            bytes: Bytes64::default(),
+        };
+
+        e.save();
+    }
+
+    #[allow(unused)]
+    fn fuel_indexer_trigger_enum(
+        first: AnotherSimpleEnum,
+        second: NestedEnum,
+        third: AnotherSimpleEnum,
+    ) {
+        Logger::info("fuel_indexer_trigger_enum handling trigger_enum event..");
+
+        let e = ComplexEnumEntity {
+            id: 1,
+            one: Some(EnumEntity::One.into()),
+        };
+        e.save();
+    }
+
+    fn fuel_indexer_trigger_non_indexable_type(_b: BlockData) {
+        Logger::info("fuel_indexer_trigger_non_indexable_type handling trigger_non_indexable_type event.");
+        let e = UsesNoTableEntity {
+            id: 1,
+            name: "hello world".to_string(),
+            no_table: NoTableEntity {
+                name: Some("norelation".to_string()),
+                size: 1,
+            }
+            .into(),
+        };
+
+        e.save();
     }
 }

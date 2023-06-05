@@ -14,11 +14,20 @@ const JWT_ISSUER_KEY: &str = "JWT_ISSUER";
 /// Indexer service authentication configuration.
 #[derive(Clone, Deserialize)]
 pub struct AuthenticationConfig {
+    /// Require users to authenticate for some operations.
     pub enabled: bool,
+
+    /// Authentication scheme used.
     #[serde(default)]
     pub strategy: Option<AuthenticationStrategy>,
+
+    /// Secret used for JWT scheme (if JWT scheme is specified).
     pub jwt_secret: Option<String>,
+
+    /// Issuer of JWT claims (if JWT scheme is specified).
     pub jwt_issuer: Option<String>,
+
+    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
     pub jwt_expiry: Option<usize>,
 }
 
@@ -84,38 +93,4 @@ impl Env for AuthenticationConfig {
 pub enum AuthenticationStrategy {
     #[strum(ascii_case_insensitive)]
     JWT,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
-pub struct Claims {
-    /// Subject (to whom token refers).
-    pub sub: String,
-    /// Issuer.
-    pub iss: String,
-    /// Issued at (as UTC timestamp).
-    pub iat: usize,
-    /// Expiration time (as UTC timestamp).
-    pub exp: usize,
-}
-
-/// JWT authentication claims.
-///
-/// The payload of the JWT token if JWT authentication is enabled.
-/// Note that `Claims` are _only_ used by JWT authentication.
-impl Claims {
-    /// Like `Claims::new`, but with `iat` and `exp` values that indicate
-    /// the claims have yet to be authenticated.
-    pub fn unauthenticated() -> Self {
-        Self {
-            sub: "".to_string(),
-            iss: "".to_string(),
-            iat: 1,
-            exp: 1,
-        }
-    }
-
-    /// Whether or not the given set of claims have been authenticated.
-    pub fn is_unauthenticated(&self) -> bool {
-        self.exp == 1 && self.iat == 1
-    }
 }

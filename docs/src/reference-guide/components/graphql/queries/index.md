@@ -19,8 +19,6 @@ query {
 
 The `entity` field corresponds to the name of an entity defined in your [schema](./schema.md) and the sub-fields are the fields defined on that entity type; entities and fields are stored in the database using the names defined in the schema, so make sure that your query uses those same names as well.
 
-Let's refer back to the [block explorer](../../../examples/block-explorer.md) example for an illustration. After the block data has been indexed, we can retrieve information about the blocks by querying for information on the indexer's playground; you can get to the playground by starting the block explorer example using the instructions on the page and navigating to `http://localhost:29987/api/graph/fuel_examples/explorer_indexer`.
-
 ```txt
 query {
     block {
@@ -90,13 +88,6 @@ Essentially, it's the same as the basic query example with an added sub-block to
 We'll start with the following example schema:
 
 ```graphql
-type QueryRoot {
-    character: Character
-    book: Book
-    library: Library
-    city: City
-}
-
 type City {
     id: ID!
     name: Charfield!

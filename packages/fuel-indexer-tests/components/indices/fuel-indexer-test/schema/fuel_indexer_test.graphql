@@ -1,50 +1,3 @@
-schema {
-    query: QueryRoot
-}
-
-# IMPORTANT: Appending 'Entity' to some object name's in order to avoid
-# naming collisions with the ABI JSON
-
-type QueryRoot {
-    pingentity: PingEntity
-    pungentity: PungEntity
-    pongentity: PongEntity
-    block: Block
-    tx: Tx
-    transfer: Transfer
-    transferout: TransferOut
-    log: Log
-    scriptresult: ScriptResult
-    messageout: MessageOut
-    optionentity: OptionEntity
-    tupleentity: TupleEntity
-    u16entity: U16Entity
-    messageentity: MessageEntity
-    callentity: CallEntity
-    panicentity: PanicEntity
-    revertentity: RevertEntity 
-    enumerror: EnumError
-
-    # GraphQL API test entities
-    genre: Genre
-    person: Person
-    planet: Planet
-    continent: Continent
-    country: Country
-    region: Region
-    author: Author
-    city: City
-    library: Library
-    book: Book
-    sponsor: Sponsor
-    chapter: Chapter
-    bookclub: BookClub
-    municipality: Municipality
-    sportsteam: SportsTeam
-    innerfilterentity: InnerFilterEntity
-    filterentity: FilterEntity
-}
-
 type PingEntity {
     id: ID!
     value: UInt8!
@@ -69,20 +22,20 @@ type PongEntity {
     value: UInt8!
 }
 
-type Block {
+type BlockEntity {
     id: ID!
     height: UInt8!
     timestamp: Int8!
 }
 
-type Tx {
+type TxEntity {
     id: ID!
-    block: Block!
+    block: BlockEntity!
     input_data: Json!
     timestamp: Int8!
 }
 
-type Transfer {
+type TransferEntity {
     id: ID!
     contract_id: ContractId!
     # 'to' is a reserved SQL word, so using 'recipient'
@@ -91,7 +44,7 @@ type Transfer {
     asset_id: AssetId!
 }
 
-type TransferOut {
+type TransferOutEntity  {
     id: ID!
     contract_id: ContractId!
     recipient: Address!
@@ -99,21 +52,21 @@ type TransferOut {
     asset_id: AssetId!
 }
 
-type Log {
+type LogEntity  {
     id: ID!
     contract_id: ContractId!
     ra: UInt8!
     rb: UInt8!
 }
 
-type ScriptResult {
+type ScriptResultEntity  {
     id: ID!
     result: UInt8!
     gas_used: UInt8!
     blob: Blob!
 }
 
-type MessageOut {
+type MessageOutEntity  {
     id: ID!
     message_id: MessageId!
     sender: Address!
@@ -265,8 +218,40 @@ type FilterEntity {
     inner_entity: InnerFilterEntity!
 }
 
-type EnumError{
+type EnumError {
     id: ID!
     contract_id: ContractId!
     error_val: UInt8!
+}
+
+type ExplorerEntity {
+    id: ID!
+    nonce: Nonce!
+    time: Tai64Timestamp
+    hex: HexString
+    sig: Signature!
+    bytes: Bytes64!
+}
+
+enum EnumEntity {
+    One
+    Two
+    Three
+}
+
+type ComplexEnumEntity {
+    id: ID!
+    one: EnumEntity
+}
+
+type NoTableEntity {
+    name: Charfield @norelation
+    size: UInt1!
+}
+
+
+type UsesNoTableEntity {
+    id: ID!
+    name: Charfield!
+    no_table: NoTableEntity!
 }

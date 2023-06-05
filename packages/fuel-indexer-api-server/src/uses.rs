@@ -1,6 +1,6 @@
 use crate::{
     api::{ApiError, ApiResult, HttpError},
-    models::{QueryResponse, VerifySignatureRequest},
+    models::{Claims, VerifySignatureRequest},
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql_axum::GraphQLRequest;
@@ -17,28 +17,21 @@ use fuel_indexer_database::{
     types::{IndexAsset, IndexAssetType},
     IndexerConnectionPool,
 };
-use fuel_indexer_graphql::graphql::GraphqlQueryBuilder;
+use fuel_indexer_graphql::dynamic::{build_dynamic_schema, execute_query};
 use fuel_indexer_lib::{
-    config::{
-        auth::{AuthenticationStrategy, Claims},
-        IndexerConfig,
-    },
+    config::{auth::AuthenticationStrategy, IndexerConfig},
     defaults,
     utils::{
         AssetReloadRequest, FuelNodeHealthResponse, IndexRevertRequest, IndexStopRequest,
         ServiceRequest, ServiceStatus,
     },
 };
-use fuel_indexer_schema::db::{manager::SchemaManager, tables::Schema};
+use fuel_indexer_schema::db::manager::SchemaManager;
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
 use serde_json::{json, Value};
-use std::{
-    convert::From,
-    str::FromStr,
-    time::{Instant, SystemTime, UNIX_EPOCH},
-};
+use std::{convert::From, str::FromStr, time::Instant};
 use tokio::sync::mpsc::Sender;
 use tracing::error;
 
@@ -60,13 +53,15 @@ pub(crate) async fn query_graph(
         .load_schema(&namespace, &identifier)
         .await
     {
-        Ok(schema) => match run_query(req.into_inner().query, schema, &pool).await {
-            Ok(query_res) => Ok(axum::Json(query_res)),
-            Err(e) => {
-                error!("query_graph error: {e}");
-                Err(e)
-            }
-        },
+        Ok(schema) => {
+            let dynamic_schema = build_dynamic_schema(&schema)?;
+            let user_query = req.0.query.clone();
+            let response =
+                execute_query(req.into_inner(), dynamic_schema, user_query, pool, schema)
+                    .await?;
+            let data = serde_json::json!({ "data": response });
+            Ok(axum::Json(data))
+        }
         Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
             "The graph '{namespace}.{identifier}' was not found."
         )))),
@@ -119,9 +114,7 @@ pub(crate) async fn health_check(
     })))
 }
 
-pub(crate) async fn stop_indexer(
-    Path((namespace, identifier)): Path<(String, String)>,
-    Extension(tx): Extension<Sender<ServiceRequest>>,
+pub(crate) async fn indexer_status(
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(claims): Extension<Claims>,
 ) -> ApiResult<axum::Json<Value>> {
@@ -131,13 +124,47 @@ pub(crate) async fn stop_indexer(
 
     let mut conn = pool.acquire().await?;
 
-    let _ = queries::start_transaction(&mut conn).await?;
+    let indexers: Vec<_> = {
+        let indexers = queries::all_registered_indexers(&mut conn).await?;
+        if claims.sub().is_empty() {
+            indexers
+        } else {
+            indexers
+                .into_iter()
+                .filter(|i| i.pubkey.as_ref() == Some(&claims.sub().to_string()))
+                .collect()
+        }
+    };
+
+    let json: serde_json::Value = serde_json::to_value(indexers)?;
+
+    Ok(Json(json!(json)))
+}
+
+pub(crate) async fn remove_indexer(
+    Path((namespace, identifier)): Path<(String, String)>,
+    Extension(tx): Extension<Sender<ServiceRequest>>,
+    Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(claims): Extension<Claims>,
+    Extension(config): Extension<IndexerConfig>,
+) -> ApiResult<axum::Json<Value>> {
+    if claims.is_unauthenticated() {
+        return Err(ApiError::Http(HttpError::Unauthorized));
+    }
+
+    let mut conn = pool.acquire().await?;
+
+    queries::start_transaction(&mut conn).await?;
+
+    if config.authentication.enabled {
+        queries::indexer_owned_by(&mut conn, &namespace, &identifier, claims.iss())
+            .await
+            .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
+    }
 
     if let Err(e) = queries::remove_indexer(&mut conn, &namespace, &identifier).await {
-        queries::revert_transaction(&mut conn).await?;
-
         error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
-
+        queries::revert_transaction(&mut conn).await?;
         return Err(ApiError::Sqlx(sqlx::Error::RowNotFound));
     }
 
@@ -159,13 +186,21 @@ pub(crate) async fn revert_indexer(
     Extension(tx): Extension<Sender<ServiceRequest>>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(claims): Extension<Claims>,
+    Extension(config): Extension<IndexerConfig>,
 ) -> ApiResult<axum::Json<Value>> {
     if claims.is_unauthenticated() {
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
     let mut conn = pool.acquire().await?;
-    let _ = queries::start_transaction(&mut conn).await?;
+
+    if config.authentication.enabled {
+        queries::indexer_owned_by(&mut conn, &namespace, &identifier, claims.iss())
+            .await
+            .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
+    }
+
+    queries::start_transaction(&mut conn).await?;
 
     let indexer_id = queries::get_indexer_id(&mut conn, &namespace, &identifier).await?;
     let wasm =
@@ -183,11 +218,11 @@ pub(crate) async fn revert_indexer(
         error!(
             "Could not remove latest WASM asset for Indexer({namespace}.{identifier}): {e}"
         );
-        let _ = queries::revert_transaction(&mut conn).await?;
+        queries::revert_transaction(&mut conn).await?;
         return Err(ApiError::default());
     }
 
-    let _ = queries::commit_transaction(&mut conn).await?;
+    queries::commit_transaction(&mut conn).await?;
 
     tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
         namespace,
@@ -206,18 +241,25 @@ pub(crate) async fn register_indexer_assets(
     Extension(schema_manager): Extension<Arc<RwLock<SchemaManager>>>,
     Extension(claims): Extension<Claims>,
     Extension(pool): Extension<IndexerConnectionPool>,
+    Extension(config): Extension<IndexerConfig>,
     multipart: Option<Multipart>,
 ) -> ApiResult<axum::Json<Value>> {
     if claims.is_unauthenticated() {
         return Err(ApiError::Http(HttpError::Unauthorized));
     }
 
+    let mut conn = pool.acquire().await?;
+
+    if config.authentication.enabled {
+        queries::indexer_owned_by(&mut conn, &namespace, &identifier, claims.iss())
+            .await
+            .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
+    }
+
     let mut assets: Vec<IndexAsset> = Vec::new();
 
     if let Some(mut multipart) = multipart {
-        let mut conn = pool.acquire().await?;
-
-        let _ = queries::start_transaction(&mut conn).await?;
+        queries::start_transaction(&mut conn).await?;
 
         while let Some(field) = multipart.next_field().await.unwrap() {
             let name = field.name().unwrap_or("").to_string();
@@ -225,17 +267,26 @@ pub(crate) async fn register_indexer_assets(
             let asset_type =
                 IndexAssetType::from_str(&name).expect("Invalid asset type.");
 
-            let asset: IndexAsset = match asset_type {
+            match asset_type {
                 IndexAssetType::Wasm | IndexAssetType::Manifest => {
-                    queries::register_indexer_asset(
+                    match queries::register_indexer_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
                         data.to_vec(),
                         asset_type,
-                        Some(&claims.sub),
+                        Some(claims.sub()),
                     )
-                    .await?
+                    .await
+                    {
+                        Ok(result) => {
+                            assets.push(result);
+                        }
+                        Err(e) => {
+                            let _res = queries::revert_transaction(&mut conn).await?;
+                            return Err(e.into());
+                        }
+                    }
                 }
                 IndexAssetType::Schema => {
                     match queries::register_indexer_asset(
@@ -244,12 +295,12 @@ pub(crate) async fn register_indexer_assets(
                         &identifier,
                         data.to_vec(),
                         IndexAssetType::Schema,
-                        Some(&claims.sub),
+                        Some(claims.sub()),
                     )
                     .await
                     {
                         Ok(result) => {
-                            schema_manager
+                            match schema_manager
                                 .write()
                                 .await
                                 .new_schema(
@@ -257,22 +308,31 @@ pub(crate) async fn register_indexer_assets(
                                     &identifier,
                                     &String::from_utf8_lossy(&data),
                                     &mut conn,
+                                    // Can't deploy native indexers
+                                    false,
                                 )
-                                .await?;
-
-                            result
+                                .await
+                            {
+                                Ok(_) => {
+                                    assets.push(result);
+                                }
+                                Err(e) => {
+                                    let _res =
+                                        queries::revert_transaction(&mut conn).await?;
+                                    return Err(e.into());
+                                }
+                            }
                         }
                         Err(e) => {
+                            let _res = queries::revert_transaction(&mut conn).await?;
                             return Err(e.into());
                         }
                     }
                 }
-            };
-
-            assets.push(asset);
+            }
         }
 
-        let _ = queries::commit_transaction(&mut conn).await?;
+        queries::commit_transaction(&mut conn).await?;
 
         tx.send(ServiceRequest::AssetReload(AssetReloadRequest {
             namespace,
@@ -294,7 +354,6 @@ pub(crate) async fn get_nonce(
 ) -> ApiResult<axum::Json<Value>> {
     let mut conn = pool.acquire().await?;
     let nonce = queries::create_nonce(&mut conn).await?;
-
     Ok(Json(json!(nonce)))
 }
 
@@ -320,21 +379,14 @@ pub(crate) async fn verify_signature(
                 let msg = Message::new(payload.message);
                 let pk = sig.recover(&msg)?;
 
-                let now = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs() as usize;
-
-                let claims = Claims {
-                    sub: pk.to_string(),
-                    iss: config.authentication.jwt_issuer.unwrap_or_default(),
-                    iat: now,
-                    exp: now
-                        + config
-                            .authentication
-                            .jwt_expiry
-                            .unwrap_or(defaults::JWT_EXPIRY_SECS),
-                };
+                let claims = Claims::new(
+                    pk.to_string(),
+                    config.authentication.jwt_issuer.unwrap_or_default(),
+                    config
+                        .authentication
+                        .jwt_expiry
+                        .unwrap_or(defaults::JWT_EXPIRY_SECS),
+                );
 
                 if let Err(e) = sig.verify(&pk, &msg) {
                     error!("Failed to verify signature: {e}.");
@@ -366,44 +418,12 @@ pub(crate) async fn verify_signature(
     unreachable!();
 }
 
-pub async fn run_query(
-    query: String,
-    schema: Schema,
-    pool: &IndexerConnectionPool,
-) -> ApiResult<Value> {
-    let builder = GraphqlQueryBuilder::new(&schema, &query)?;
-    let query = builder.build()?;
-
-    let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
-
-    let mut conn = pool.acquire().await?;
-
-    match queries::run_query(&mut conn, queries).await {
-        Ok(ans) => {
-            let ans_json: Value = serde_json::from_value(ans)?;
-
-            // If the response is paginated, remove the array wrapping.
-            if ans_json[0].get("page_info").is_some() {
-                Ok(serde_json::json!(QueryResponse {
-                    data: ans_json[0].clone()
-                }))
-            } else {
-                Ok(serde_json::json!(QueryResponse { data: ans_json }))
-            }
-        }
-        Err(e) => {
-            error!("Error querying database: {e}.");
-            Err(e.into())
-        }
-    }
-}
-
 pub async fn gql_playground(
     Path((namespace, identifier)): Path<(String, String)>,
 ) -> ApiResult<impl IntoResponse> {
     let html = playground_source(
         GraphQLPlaygroundConfig::new(&format!("/api/graph/{namespace}/{identifier}"))
-            .with_setting("scehma.polling.enable", false),
+            .with_setting("schema.polling.enable", false),
     );
 
     let response = Response::builder()
@@ -415,6 +435,6 @@ pub async fn gql_playground(
 }
 
 #[cfg(feature = "metrics")]
-pub async fn metrics(_req: Request<Body>) -> impl IntoResponse {
+pub async fn get_metrics(_req: Request<Body>) -> impl IntoResponse {
     encode_metrics_response()
 }

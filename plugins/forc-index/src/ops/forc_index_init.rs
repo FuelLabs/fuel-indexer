@@ -50,7 +50,9 @@ fn print_welcome_message() {
 `forc index revert`
     Revert a deployed indexer.
 `forc index auth`
-    Authenticate against an indexer service."#;
+    Authenticate against an indexer service.
+`forc index status`
+    Check the status of an indexer."#;
 
     let ascii_tag = r#"
 ███████ ██    ██ ███████ ██          ██ ███    ██ ██████  ███████ ██   ██ ███████ ██████ 
@@ -124,9 +126,9 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
     fs::create_dir_all(Path::new(&project_dir).join("src"))?;
 
     let default_toml = if native {
-        defaults::default_native_index_cargo_toml(&project_name)
+        defaults::default_native_indexer_cargo_toml(&project_name)
     } else {
-        defaults::default_index_cargo_toml(&project_name)
+        defaults::default_indexer_cargo_toml(&project_name)
     };
 
     // Write index Cargo manifest
@@ -148,11 +150,12 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
     // Write index manifest
     fs::write(
         Path::new(&project_dir).join(&manifest_filename),
-        defaults::default_index_manifest(
+        defaults::default_indexer_manifest(
             &namespace,
             &schema_filename,
             &project_name,
             proj_abspath.as_ref(),
+            native,
         ),
     )?;
 
@@ -160,22 +163,33 @@ pub fn create_indexer(command: InitCommand) -> anyhow::Result<()> {
     fs::create_dir_all(Path::new(&project_dir).join("schema"))?;
     fs::write(
         Path::new(&project_dir).join("schema").join(schema_filename),
-        defaults::default_index_schema(),
+        defaults::default_indexer_schema(),
     )
     .unwrap();
 
-    // Write lib file
-    fs::write(
-        Path::new(&project_dir)
-            .join("src")
-            .join(defaults::INDEX_LIB_FILENAME),
-        defaults::default_index_lib(
-            &project_name,
-            &manifest_filename,
-            proj_abspath.as_ref(),
-        ),
-    )
-    .unwrap();
+    // What content are we writing?
+    let (filename, content) = if native {
+        (
+            defaults::INDEXER_BINARY_FILENAME,
+            defaults::default_indexer_binary(
+                &project_name,
+                &manifest_filename,
+                proj_abspath.as_ref(),
+            ),
+        )
+    } else {
+        (
+            defaults::INDEXER_LIB_FILENAME,
+            defaults::default_indexer_lib(
+                &project_name,
+                &manifest_filename,
+                proj_abspath.as_ref(),
+            ),
+        )
+    };
+
+    // Write indexer file
+    fs::write(Path::new(&project_dir).join("src").join(filename), content).unwrap();
 
     // Write cargo config with WASM target
     if !native {

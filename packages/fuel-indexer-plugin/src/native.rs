@@ -1,13 +1,13 @@
 extern crate alloc;
 use alloc::vec::Vec;
+use async_trait;
+use fuel_indexer_schema::FtColumn;
+
 pub use anyhow;
 pub use fuel_indexer::prelude::{
     Arc, Database, IndexerError, IndexerResult, IndexerService, Mutex,
     NativeIndexExecutor,
 };
-
-use async_trait;
-pub use bincode;
 pub use fuel_indexer_api_server::api::GraphQlApi;
 pub use fuel_indexer_database::{queries, IndexerConnectionPool};
 pub use fuel_indexer_lib::{
@@ -16,10 +16,8 @@ pub use fuel_indexer_lib::{
     manifest::Manifest,
     utils::{init_logging, ServiceRequest},
 };
-use fuel_indexer_schema::FtColumn;
-pub use sha2;
-pub use std::collections::HashMap;
-pub use std::collections::HashSet;
+pub use sha2::{Digest, Sha256};
+pub use std::collections::{HashMap, HashSet};
 pub use tokio;
 pub use tokio::sync::mpsc::channel;
 pub use tracing::{debug, error, info, trace, warn};
