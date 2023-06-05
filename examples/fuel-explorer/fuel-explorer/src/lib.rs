@@ -37,6 +37,146 @@ impl ToString for ConsensusLabel {
     }
 }
 
+impl ToString for PanicReason {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Success => "PanicReason::Success".to_string(),
+            Self::Revert => "PanicReason::Revert".to_string(),
+            Self::OutOfGas => "PanicReason::OutOfGas".to_string(),
+            Self::TransactionValidity => "PanicReason::TransactionValidity".to_string(),
+            Self::MemoryOverflow => "PanicReason::MemoryOverflow".to_string(),
+            Self::ArithmeticOverflow => "PanicReason::ArithmeticOverflow".to_string(),
+            Self::ContractNotFound => "Panicreason::ContractNotFound".to_string(),
+            Self::MemoryOwnership => "PanicReason::MemoryOwnership".to_string(),
+            Self::NotEnoughBalance => "PanicReason::NotEnoughBalance".to_string(),
+            Self::ExpectedInternalContext => {
+                "PanicReason::ExpectedInternalContext".to_string()
+            }
+            Self::AssetIdNotFound => "PanicReason::AssetIdNotFound".to_string(),
+            Self::InputNotFound => "PanicReason::InputNotFound".to_string(),
+            Self::OutputNotFound => "PanicReason::OutputNotFound".to_string(),
+            Self::WitnessNotFound => "PanicReason::WitnessNotFound".to_string(),
+            Self::TransactionMaturity => "PanicReason::TransactionMaturity".to_string(),
+            Self::InvalidMetadataIdentifier => {
+                "PanicReason::InvalidMetadataIdentifier".to_string()
+            }
+            Self::MalformedCallStructure => {
+                "PanicReason::MalformedCallStructure".to_string()
+            }
+            Self::ReservedRegisterNotWritable => {
+                "PanicReason::ReservedRegisterNotWritable".to_string()
+            }
+            Self::ErrorFlag => "PanicReason::ErrorFlag".to_string(),
+            Self::InvalidImmediateValue => {
+                "PanicReason::InvalidImmediateValue".to_string()
+            }
+            Self::ExpectedCoinInput => "PanicReason::ExpectedCoinInput".to_string(),
+            Self::MaxMemoryAccess => "PanicReason::MaxMemoryAccess".to_string(),
+            Self::MemoryWriteOverlap => "PanicReason::MemoryWriteOverlap".to_string(),
+            Self::ContractNotInInputs => "PanicReason::ContractNotInInputs".to_string(),
+            Self::InternalBalanceOverflow => {
+                "PanicReason::InternalBalanceOverflow".to_string()
+            }
+            Self::ContractMaxSize => "PanicReason::ContractMaxSize".to_string(),
+            Self::ExpectedUnallocatedStack => {
+                "PanicReason::ExpectedUnallocatedStack".to_string()
+            }
+            Self::MaxStaticContractsReached => {
+                "PanicReason::MaxStaticContractsReached".to_string()
+            }
+            Self::TransferAmountCannotBeZero => {
+                "PanicReason::TransferAmountCannotBeZero".to_string()
+            }
+            Self::ExpectedOutputVariable => {
+                "PanicReason::ExpectedOutputVariable".to_string()
+            }
+            Self::ExpectedParentInternalContext => {
+                "PanicReason::ExpectedParentInternalContext".to_string()
+            }
+            Self::IllegalJump => "PanicReason::IllegalJump".to_string(),
+            Self::ContractIdAlreadyDeployed => {
+                "PanicReason::ContractIdAlreadyDeployed".to_string()
+            }
+            Self::Unknown => "PanicReason::Unknown".to_string(),
+        }
+    }
+}
+
+impl From<fuel::ClientPanicReason> for PanicReason {
+    fn from(reason: fuel::ClientPanicReason) -> Self {
+        match reason {
+            fuel::ClientPanicReason::Success => PanicReason::Success,
+            fuel::ClientPanicReason::Revert => PanicReason::Revert,
+            fuel::ClientPanicReason::OutOfGas => PanicReason::OutOfGas,
+            fuel::ClientPanicReason::TransactionValidity => {
+                PanicReason::TransactionValidity
+            }
+            fuel::ClientPanicReason::MemoryOverflow => PanicReason::MemoryOverflow,
+            fuel::ClientPanicReason::ArithmeticOverflow => {
+                PanicReason::ArithmeticOverflow
+            }
+            fuel::ClientPanicReason::ContractNotFound => PanicReason::ContractNotFound,
+            fuel::ClientPanicReason::MemoryOwnership => PanicReason::MemoryOwnership,
+            fuel::ClientPanicReason::NotEnoughBalance => PanicReason::NotEnoughBalance,
+            fuel::ClientPanicReason::ExpectedInternalContext => {
+                PanicReason::ExpectedInternalContext
+            }
+            fuel::ClientPanicReason::AssetIdNotFound => PanicReason::AssetIdNotFound,
+            fuel::ClientPanicReason::InputNotFound => PanicReason::InputNotFound,
+            fuel::ClientPanicReason::OutputNotFound => PanicReason::OutputNotFound,
+            fuel::ClientPanicReason::WitnessNotFound => PanicReason::WitnessNotFound,
+            fuel::ClientPanicReason::TransactionMaturity => {
+                PanicReason::TransactionMaturity
+            }
+            fuel::ClientPanicReason::InvalidMetadataIdentifier => {
+                PanicReason::InvalidMetadataIdentifier
+            }
+            fuel::ClientPanicReason::MalformedCallStructure => {
+                PanicReason::MalformedCallStructure
+            }
+            fuel::ClientPanicReason::ReservedRegisterNotWritable => {
+                PanicReason::ReservedRegisterNotWritable
+            }
+            fuel::ClientPanicReason::ErrorFlag => PanicReason::ErrorFlag,
+            fuel::ClientPanicReason::InvalidImmediateValue => {
+                PanicReason::InvalidImmediateValue
+            }
+            fuel::ClientPanicReason::ExpectedCoinInput => PanicReason::ExpectedCoinInput,
+            fuel::ClientPanicReason::MaxMemoryAccess => PanicReason::MaxMemoryAccess,
+            fuel::ClientPanicReason::MemoryWriteOverlap => {
+                PanicReason::MemoryWriteOverlap
+            }
+            fuel::ClientPanicReason::ContractNotInInputs => {
+                PanicReason::ContractNotInInputs
+            }
+            fuel::ClientPanicReason::InternalBalanceOverflow => {
+                PanicReason::InternalBalanceOverflow
+            }
+            fuel::ClientPanicReason::ContractMaxSize => PanicReason::ContractMaxSize,
+            fuel::ClientPanicReason::ExpectedUnallocatedStack => {
+                PanicReason::ExpectedUnallocatedStack
+            }
+            fuel::ClientPanicReason::MaxStaticContractsReached => {
+                PanicReason::MaxStaticContractsReached
+            }
+            fuel::ClientPanicReason::TransferAmountCannotBeZero => {
+                PanicReason::TransferAmountCannotBeZero
+            }
+            fuel::ClientPanicReason::ExpectedOutputVariable => {
+                PanicReason::ExpectedOutputVariable
+            }
+            fuel::ClientPanicReason::ExpectedParentInternalContext => {
+                PanicReason::ExpectedParentInternalContext
+            }
+            fuel::ClientPanicReason::IllegalJump => PanicReason::IllegalJump,
+            fuel::ClientPanicReason::ContractIdAlreadyDeployed => {
+                PanicReason::ContractIdAlreadyDeployed
+            }
+            _ => PanicReason::Unknown,
+        }
+    }
+}
+
 impl From<fuel::Genesis> for Genesis {
     fn from(genesis: fuel::Genesis) -> Self {
         let fuel::Genesis {
@@ -648,6 +788,163 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                     unknown_status: None,
                 }
             }
+        }
+    }
+}
+
+impl From<fuel::Receipt> for Receipt {
+    fn from(receipt: fuel::Receipt) -> Self {
+        match receipt {
+            fuel::Receipt::Call {
+                id: contract_id,
+                to,
+                amount,
+                asset_id,
+                gas,
+                param1,
+                param2,
+                pc,
+                is,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: Some(
+                        CallReceipt {
+                            contract_id,
+                            recipient: to,
+                            amount,
+                            asset_id,
+                            gas,
+                            param1,
+                            param2,
+                            pc_register: pc,
+                            is_register: is,
+                        }
+                        .into(),
+                    ),
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::Return {
+                id: contract_id,
+                val,
+                pc,
+                is,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: Some(
+                        ReturnReceipt {
+                            contract_id,
+                            val,
+                            pc_register: pc,
+                            is_register: is,
+                        }
+                        .into(),
+                    ),
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::ReturnData {
+                id: contract_id,
+                ptr,
+                len,
+                digest,
+                data,
+                pc,
+                is,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: Some(
+                        ReturnDataReceipt {
+                            contract_id,
+                            ptr,
+                            len,
+                            digest,
+                            data: data.into(),
+                            pc_register: pc,
+                            is_register: is,
+                        }
+                        .into(),
+                    ),
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::Panic {
+                #[allow(unused)]
+                id,
+                contract_id,
+                reason,
+                pc,
+                is,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: Some(
+                        PanicReceipt {
+                            contract_id,
+                            reason: Some(
+                                InstructionResult {
+                                    reason: PanicReason::from(reason.reason().to_owned())
+                                        .into(),
+                                    instruction: *reason.instruction(),
+                                }
+                                .into(),
+                            ),
+                            pc_register: pc,
+                            is_register: is,
+                        }
+                        .into(),
+                    ),
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            _ => unimplemented!(),
         }
     }
 }

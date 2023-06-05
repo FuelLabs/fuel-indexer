@@ -345,38 +345,9 @@ type Contract {
   salt: Salt!
 }
 
-type Message {
-  id: ID!
-  amount: UInt8!
-  sender: Address!
-  recipient: Address!
-  nonce: Nonce!
-  data: HexString!
-  da_height: UInt8!
-}
-
-type MerkleProof {
-  id: ID!
-  # proof_set: [Bytes32]!
-  proof_index: UInt8!
-}
-
-type MessageProof {
-  id: ID!
-  message_proof: MerkleProof!
-  block_proof: MerkleProof!
-  message_block_header: Header!
-  commit_block_header: Header!
-  sender: Address!
-  recipient: Address!
-  nonce: Nonce!
-  amount: UInt8!
-  data: HexString!
-}
 
 type CallReceipt {
-  id: ID!
-  some_id: ContractId!
+  contract_id: ContractId! @norelation
   recipient: ContractId!
   amount: UInt8!
   asset_id: AssetId!
@@ -387,9 +358,8 @@ type CallReceipt {
   is_register: UInt8!
 }
 
-type ReturnDataReceipt {
-  id: ID!
-  some_id: ContractId!
+type ReturnDataReceipt { 
+  contract_id: ContractId! @norelation
   ptr: UInt8!
   len: UInt8!
   digest: Bytes32!
@@ -432,39 +402,31 @@ enum PanicReason {
   ExpectedParentInternalContext
   IllegalJump
   ContractIdAlreadyDeployed
-  ContractMismatch
-  MessageDataTooLong
-  ArithmeticError
-  UnknownPanicReason
+  Unknown
 }
 
 type InstructionResult {
-  id: ID!
-  reason: PanicReason!
-  #   instruction: RawInstruction!
+  reason: PanicReason! @norelation
   instruction: UInt4!
 }
 
 type PanicReceipt {
-  id: ID!
-  some_id: ContractId!
+  contract_id: ContractId @norelation
   reason: InstructionResult
   pc_register: UInt8!
   is_register: UInt8!
-  contract_id: ContractId
 }
 
+
 type RevertReceipt {
-  id: ID!
-  some_id: ContractId!
+  contract_id: ContractId! @norelation
   ra: UInt8!
   pc_register: UInt8!
   is_register: UInt8!
 }
 
 type LogReceipt {
-  id: ID!
-  some_id: ContractId!
+  contract_id: ContractId! @norelation
   ra: UInt8!
   rb: UInt8!
   rc: UInt8!
@@ -474,8 +436,7 @@ type LogReceipt {
 }
 
 type LogDataReceipt {
-  id: ID!
-  some_id: ContractId!
+  contract_id: ContractId! @norelation
   ra: UInt8!
   rb: UInt8!
   ptr: UInt8!
@@ -486,18 +447,66 @@ type LogDataReceipt {
   is_register: UInt8!
 }
 
+type ReturnReceipt {
+  contract_id: ContractId! @norelation
+  val: UInt8!
+  pc_register: UInt8!
+  is_register: UInt8!
+}
+
+type TransferReceipt {
+  contract_id: ContractId! @norelation
+  recipient: ContractId!
+  amount: UInt8!
+  asset_id: AssetId!
+  pc_register: UInt8!
+  is_register: UInt8!
+}
+
+type TransferOutReceipt {
+  contract_id: ContractId! @norelation
+  recipient: ContractId!
+  amount: UInt8!
+  asset_id: AssetId!
+  pc_register: UInt8!
+  is_register: UInt8!
+}
+
+enum ScriptExecutionResult {
+    Success
+    Revert
+    Panic
+    GenericFailure
+}
+
+type ScriptResultReceipt {
+  result: ScriptExecutionResult! @norelation
+  gas_used: UInt8!
+}
+
+type MessageOutReceipt {
+  sender: Address! @norelation
+  recipient: Address!
+  amount: UInt8!
+  nonce: Nonce!
+  len: UInt8!
+  digest: Bytes32!
+  data: Blob!
+}
+
 # TODO: Finish this?
-# type Receipt {
-#   id: ID!
-#   call: CallReceipt
-#   return: ReturnReceipt
-#   return_data: ReturnDataReceipt
-#   panic: PanicReceipt
-#   revert: RevertReceipt
-#   log: LogReceipt
-#   log_data: LogDataReceipt
-#   transfer: TransferReceipt
-#   transfer_out: TransferOutReceipt
-#   script_result: ScriptResultReceipt
-#   message_out: MessageOutReceipt
-# }
+type Receipt {
+  id: ID!
+  call: CallReceipt
+  returns: ReturnReceipt
+  return_data: ReturnDataReceipt
+  panic: PanicReceipt
+  revert: RevertReceipt
+  log: LogReceipt
+  log_data: LogDataReceipt
+  transfer: TransferReceipt
+  transfer_out: TransferOutReceipt
+  script_result: ScriptResultReceipt
+  message_out: MessageOutReceipt
+}
+
