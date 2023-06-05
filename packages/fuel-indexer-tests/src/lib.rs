@@ -24,6 +24,8 @@ pub enum TestError {
 pub mod assets {
     pub const FUEL_INDEXER_TEST_MANIFEST: &str =
         include_str!("./../components/indices/fuel-indexer-test/fuel_indexer_test.yaml");
+    pub const FUEL_INDEXER_TEST_REDEPLOY_MANIFEST: &str =
+        include_str!("./../components/indices/fuel-indexer-test-redeploy/fuel_indexer_test.yaml");
     pub const SIMPLE_WASM_MANIFEST: &str =
         include_str!("./../components/indices/simple-wasm/simple_wasm.yaml");
     pub const BAD_SIMPLE_WASM_MANIFEST: &str =

@@ -19,7 +19,7 @@ const NONCE: &str = "ea35be0c98764e7ca06d02067982e3b4";
 #[cfg(all(feature = "postgres"))]
 async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
     let test_db = TestPostgresDb::new().await.unwrap();
-    let _srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let _srvc = indexer_service_postgres(Some(&test_db.url), None).await;
     let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
@@ -52,7 +52,7 @@ async fn test_metrics_endpoint_returns_proper_count_of_metrics_postgres() {
 async fn test_database_postgres_metrics_properly_increments_counts_when_queries_are_made()
 {
     let test_db = TestPostgresDb::new().await.unwrap();
-    let _ = indexer_service_postgres(Some(&test_db.url)).await;
+    let _ = indexer_service_postgres(Some(&test_db.url), None).await;
     let (app, _rx) = api_server_app_postgres(Some(&test_db.url)).await;
 
     let server = axum::Server::bind(&GraphQLConfig::default().into())
