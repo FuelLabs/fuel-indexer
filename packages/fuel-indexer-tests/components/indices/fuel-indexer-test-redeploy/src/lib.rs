@@ -6,7 +6,7 @@ use fuel_indexer_utils::prelude::*;
     manifest = "packages/fuel-indexer-tests/components/indices/fuel-indexer-test-redeploy/fuel_indexer_test.yaml"
 )]
 mod fuel_indexer_test {
-    fn fuel_indexer_test_ping(_: SomeEvent) {
+    fn fuel_indexer_test_ping(_: Ping) {
         let entity = DifferentEntity {
             id: 0,
             value: 0,
