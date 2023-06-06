@@ -65,21 +65,19 @@ impl IndexerService {
                     "Indexer({}.{}) already exists",
                     &manifest.namespace, &manifest.identifier
                 );
-            } else {
-                if let Err(e) = queries::remove_indexer(
-                    &mut conn,
-                    &manifest.namespace,
-                    &manifest.identifier,
-                )
-                .await
-                {
-                    error!(
-                        "Failed to remove Indexer({}.{}): {e}",
-                        &manifest.namespace, &manifest.identifier
-                    );
-                    queries::revert_transaction(&mut conn).await?;
-                    return Err(e.into());
-                }
+            } else if let Err(e) = queries::remove_indexer(
+                &mut conn,
+                &manifest.namespace,
+                &manifest.identifier,
+            )
+            .await
+            {
+                error!(
+                    "Failed to remove Indexer({}.{}): {e}",
+                    &manifest.namespace, &manifest.identifier
+                );
+                queries::revert_transaction(&mut conn).await?;
+                return Err(e.into());
             }
         }
 

@@ -214,14 +214,12 @@ pub(crate) async fn register_indexer_assets(
                 return Err(ApiError::Http(HttpError::Conflict(format!(
                     "Indexer({namespace}.{identifier}) already exists"
                 ))));
-            } else {
-                if let Err(e) =
-                    queries::remove_indexer(&mut conn, &namespace, &identifier).await
-                {
-                    error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
-                    queries::revert_transaction(&mut conn).await?;
-                    return Err(e.into());
-                }
+            } else if let Err(e) =
+                queries::remove_indexer(&mut conn, &namespace, &identifier).await
+            {
+                error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
+                queries::revert_transaction(&mut conn).await?;
+                return Err(e.into());
             }
         }
 
