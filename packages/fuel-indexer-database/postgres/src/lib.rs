@@ -757,53 +757,6 @@ pub async fn revert_transaction(
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn remove_graph(
-    conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-    identifier: &str,
-) -> sqlx::Result<()> {
-    execute_query(
-        conn,
-        format!(
-            "DELETE FROM graph_registry_columns WHERE type_id IN (SELECT id FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
-        ),
-    )
-    .await?;
-
-    execute_query(
-        conn,
-        format!(
-            "DELETE FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
-        ),
-    )
-    .await?;
-
-    execute_query(
-        conn,
-        format!(
-            "DELETE FROM graph_registry_root_columns WHERE root_id = (SELECT id FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
-        ),
-    )
-    .await?;
-
-    execute_query(
-        conn,
-        format!(
-            "DELETE FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
-        ),
-    )
-    .await?;
-
-    execute_query(
-        conn,
-        format!("DROP SCHEMA {namespace}_{identifier} CASCADE"),
-    )
-    .await?;
-
-    Ok(())
-}
-
-#[cfg_attr(feature = "metrics", metrics)]
 pub async fn remove_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
@@ -846,6 +799,44 @@ pub async fn remove_indexer(
             (SELECT id FROM index_registry
                 WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
         ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM graph_registry_columns WHERE type_id IN (SELECT id FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM graph_registry_root_columns WHERE root_id = (SELECT id FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!("DROP SCHEMA {namespace}_{identifier} CASCADE"),
     )
     .await?;
 

@@ -81,31 +81,6 @@ impl IndexerService {
                     return Err(e.into());
                 }
             }
-
-            // Remove GraphQL entries, and schema tales, if exist
-            if (queries::graph_root_latest(
-                &mut conn,
-                &manifest.namespace,
-                &manifest.identifier,
-            )
-            .await)
-                .is_ok()
-            {
-                if let Err(e) = queries::remove_graph(
-                    &mut conn,
-                    &manifest.namespace,
-                    &manifest.identifier,
-                )
-                .await
-                {
-                    error!(
-                        "Failed to remove GraphQL tables and Schema({}.{}): {e}",
-                        &manifest.namespace, &manifest.identifier
-                    );
-                    queries::revert_transaction(&mut conn).await?;
-                    return Err(e.into());
-                }
-            }
         }
 
         let index = queries::register_indexer(

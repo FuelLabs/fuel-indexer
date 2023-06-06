@@ -222,14 +222,6 @@ pub(crate) async fn register_indexer_assets(
                     queries::revert_transaction(&mut conn).await?;
                     return Err(e.into());
                 }
-
-                if let Err(e) =
-                    queries::remove_graph(&mut conn, &namespace, &identifier).await
-                {
-                    error!("Failed to remove Indexer({namespace}.{identifier}): {e}");
-                    queries::revert_transaction(&mut conn).await?;
-                    return Err(e.into());
-                }
             }
         }
 
