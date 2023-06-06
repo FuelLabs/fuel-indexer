@@ -580,7 +580,6 @@ impl From<ApiServerArgs> for IndexerConfig {
                 request_count: args.rate_limit_request_count,
                 window_size: args.rate_limit_window_size,
             },
-            // TODO: is this the right thing to do here?
             replace_indexer: false,
         };
 
