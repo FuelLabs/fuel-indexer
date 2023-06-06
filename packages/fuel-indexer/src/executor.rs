@@ -246,7 +246,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     let transaction = fuel_tx::Transaction::from_bytes(
                         trans.raw_payload.0 .0.as_slice(),
                     )
-                    .expect("Should be valid transaction");
+                    .expect("Bad transaction.");
 
                     let id = transaction.id();
 
