@@ -2,18 +2,13 @@
 //
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
 
-use crate::{
-    scalar::{
-        Address, AssetId, BlockHeight, Bytes32, ContractId, HexString, Json, Salt,
-        Signature,
-    },
-    type_id, TypeId, FUEL_TYPES_NAMESPACE,
-};
+pub use crate::{scalar::*, type_id, TypeId, FUEL_TYPES_NAMESPACE};
 pub use fuel_tx::{
     Input as ClientInput, Output as ClientOutput, PanicReason as ClientPanicReason,
-    Receipt, ScriptExecutionResult, Transaction as ClientTransaction, TxId,
-    TxPointer as ClientTxPointer, UtxoId, Witness, Word,
+    Transaction as ClientTransaction, TxPointer as ClientTxPointer,
 };
+pub use fuel_tx::{Receipt, TxId, UtxoId, Witness, Word};
+pub use fuels::tx::ScriptExecutionResult;
 use serde::{Deserialize, Serialize};
 
 pub mod field {

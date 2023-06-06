@@ -192,9 +192,10 @@ type TransactionStatus {
 
 type Transaction {
   id: ID!
+  # `create` is a reserved keyword in PostgreSQL.
   creates: CreateTransaction
-  scripts: ScriptTransaction
-  mints: MintTransaction
+  script: ScriptTransaction
+  mint: MintTransaction
 }
 
 type Header {
@@ -354,8 +355,9 @@ type CallReceipt {
   gas: UInt8!
   param1: UInt8!
   param2: UInt8!
-  pc_register: UInt8!
-  is_register: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
 }
 
 type ReturnDataReceipt { 
@@ -364,8 +366,9 @@ type ReturnDataReceipt {
   len: UInt8!
   digest: Bytes32!
   data: Blob!
-  pc_register: UInt8!
-  is_register: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
 }
 
 enum PanicReason {
@@ -413,16 +416,18 @@ type InstructionResult {
 type PanicReceipt {
   contract_id: ContractId @norelation
   reason: InstructionResult
-  pc_register: UInt8!
-  is_register: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
 }
 
 
 type RevertReceipt {
   contract_id: ContractId! @norelation
   ra: UInt8!
-  pc_register: UInt8!
-  is_register: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
 }
 
 type LogReceipt {
@@ -431,8 +436,9 @@ type LogReceipt {
   rb: UInt8!
   rc: UInt8!
   rd: UInt8!
-  pc_register: UInt8!
-  is_register: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
 }
 
 type LogDataReceipt {
@@ -443,15 +449,17 @@ type LogDataReceipt {
   len: UInt8!
   digest: Bytes32!
   data: Blob!
-  pc_register: UInt8!
-  is_register: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
 }
 
 type ReturnReceipt {
   contract_id: ContractId! @norelation
   val: UInt8!
-  pc_register: UInt8!
-  is_register: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
 }
 
 type TransferReceipt {
@@ -459,17 +467,19 @@ type TransferReceipt {
   recipient: ContractId!
   amount: UInt8!
   asset_id: AssetId!
-  pc_register: UInt8!
-  is_register: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
 }
 
 type TransferOutReceipt {
   contract_id: ContractId! @norelation
-  recipient: ContractId!
+  recipient: Address!
   amount: UInt8!
   asset_id: AssetId!
-  pc_register: UInt8!
-  is_register: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
 }
 
 enum ScriptExecutionResult {
@@ -488,6 +498,7 @@ type MessageOutReceipt {
   sender: Address! @norelation
   recipient: Address!
   amount: UInt8!
+  message_id: MessageId!
   nonce: Nonce!
   len: UInt8!
   digest: Bytes32!
@@ -498,6 +509,7 @@ type MessageOutReceipt {
 type Receipt {
   id: ID!
   call: CallReceipt
+  # `return` is a reserved keyword in PostgreSQL.
   returns: ReturnReceipt
   return_data: ReturnDataReceipt
   panic: PanicReceipt

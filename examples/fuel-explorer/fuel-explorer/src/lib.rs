@@ -792,6 +792,19 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
     }
 }
 
+impl From<fuel::ScriptExecutionResult> for ScriptExecutionResult {
+    fn from(result: fuel::ScriptExecutionResult) -> Self {
+        match result {
+            fuel::ScriptExecutionResult::Success => ScriptExecutionResult::Success,
+            fuel::ScriptExecutionResult::Panic => ScriptExecutionResult::Panic,
+            fuel::ScriptExecutionResult::Revert => ScriptExecutionResult::Revert,
+            fuel::ScriptExecutionResult::GenericFailure(_) => {
+                ScriptExecutionResult::GenericFailure
+            }
+        }
+    }
+}
+
 impl From<fuel::Receipt> for Receipt {
     fn from(receipt: fuel::Receipt) -> Self {
         match receipt {
@@ -804,7 +817,7 @@ impl From<fuel::Receipt> for Receipt {
                 param1,
                 param2,
                 pc,
-                is,
+                is: isr,
             } => {
                 // TODO: Create UID here.
                 let id = 1;
@@ -819,8 +832,8 @@ impl From<fuel::Receipt> for Receipt {
                             gas,
                             param1,
                             param2,
-                            pc_register: pc,
-                            is_register: is,
+                            pc,
+                            isr,
                         }
                         .into(),
                     ),
@@ -840,7 +853,7 @@ impl From<fuel::Receipt> for Receipt {
                 id: contract_id,
                 val,
                 pc,
-                is,
+                is: isr,
             } => {
                 // TODO: Create UID here.
                 let id = 1;
@@ -851,8 +864,8 @@ impl From<fuel::Receipt> for Receipt {
                         ReturnReceipt {
                             contract_id,
                             val,
-                            pc_register: pc,
-                            is_register: is,
+                            pc,
+                            isr,
                         }
                         .into(),
                     ),
@@ -874,7 +887,7 @@ impl From<fuel::Receipt> for Receipt {
                 digest,
                 data,
                 pc,
-                is,
+                is: isr,
             } => {
                 // TODO: Create UID here.
                 let id = 1;
@@ -889,8 +902,8 @@ impl From<fuel::Receipt> for Receipt {
                             len,
                             digest,
                             data: data.into(),
-                            pc_register: pc,
-                            is_register: is,
+                            pc,
+                            isr,
                         }
                         .into(),
                     ),
@@ -910,7 +923,7 @@ impl From<fuel::Receipt> for Receipt {
                 contract_id,
                 reason,
                 pc,
-                is,
+                is: isr,
             } => {
                 // TODO: Create UID here.
                 let id = 1;
@@ -930,8 +943,8 @@ impl From<fuel::Receipt> for Receipt {
                                 }
                                 .into(),
                             ),
-                            pc_register: pc,
-                            is_register: is,
+                            pc,
+                            isr,
                         }
                         .into(),
                     ),
@@ -944,7 +957,248 @@ impl From<fuel::Receipt> for Receipt {
                     message_out: None,
                 }
             }
-            _ => unimplemented!(),
+            fuel::Receipt::Revert {
+                id: contract_id,
+                ra,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: Some(
+                        RevertReceipt {
+                            contract_id,
+                            ra,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::Log {
+                id: contract_id,
+                ra,
+                rb,
+                rc,
+                rd,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: Some(
+                        LogReceipt {
+                            contract_id,
+                            ra,
+                            rb,
+                            rc,
+                            rd,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::LogData {
+                id: contract_id,
+                ra,
+                rb,
+                ptr,
+                len,
+                digest,
+                data,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: Some(
+                        LogDataReceipt {
+                            contract_id,
+                            ra,
+                            rb,
+                            ptr,
+                            len,
+                            digest,
+                            data: data.into(),
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::Transfer {
+                id: contract_id,
+                to: recipient,
+                amount,
+                asset_id,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: Some(
+                        TransferReceipt {
+                            contract_id,
+                            recipient,
+                            amount,
+                            asset_id,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::TransferOut {
+                id: contract_id,
+                to: recipient,
+                amount,
+                asset_id,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: Some(
+                        TransferOutReceipt {
+                            contract_id,
+                            recipient,
+                            amount,
+                            asset_id,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::ScriptResult { result, gas_used } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: Some(
+                        ScriptResultReceipt {
+                            result: ScriptExecutionResult::from(result).into(),
+                            gas_used,
+                        }
+                        .into(),
+                    ),
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::MessageOut {
+                message_id,
+                sender,
+                recipient,
+                amount,
+                nonce,
+                len,
+                digest,
+                data,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: Some(
+                        MessageOutReceipt {
+                            message_id,
+                            sender,
+                            recipient,
+                            amount,
+                            nonce,
+                            len,
+                            digest,
+                            data: data.into(),
+                        }
+                        .into(),
+                    ),
+                }
+            }
         }
     }
 }
