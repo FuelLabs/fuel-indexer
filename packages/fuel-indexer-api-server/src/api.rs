@@ -52,6 +52,8 @@ const BUFFER_SIZE: usize = 1024;
 pub enum HttpError {
     #[error("Bad request.")]
     BadRequest,
+    #[error("Conflict. {0:#?}")]
+    Conflict(String),
     #[error("Unauthorized request.")]
     Unauthorized,
     #[error("Not not found. {0:#?}")]
@@ -122,6 +124,9 @@ impl IntoResponse for ApiError {
                 StatusCode::BAD_REQUEST,
                 format!("Could not process JWT: {e}"),
             ),
+            Self::Http(HttpError::Conflict(e)) => {
+                (StatusCode::CONFLICT, format!("Conflict: {e}"))
+            }
             Self::Http(HttpError::Unauthorized) => {
                 (StatusCode::UNAUTHORIZED, "Unauthorized.".to_string())
             }

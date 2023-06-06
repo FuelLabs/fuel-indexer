@@ -56,16 +56,16 @@ impl IndexerService {
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
 
-        if self.config.replace_indexer {
-            // Remove all indexers, if any exists
-            if (queries::get_indexer_id(
-                &mut conn,
-                &manifest.namespace,
-                &manifest.identifier,
-            )
+        if (queries::get_indexer_id(&mut conn, &manifest.namespace, &manifest.identifier)
             .await)
-                .is_ok()
-            {
+            .is_ok()
+        {
+            if !self.config.replace_indexer {
+                error!(
+                    "Indexer({}.{}) already exists",
+                    &manifest.namespace, &manifest.identifier
+                );
+            } else {
                 if let Err(e) = queries::remove_indexers(
                     &mut conn,
                     &manifest.namespace,
