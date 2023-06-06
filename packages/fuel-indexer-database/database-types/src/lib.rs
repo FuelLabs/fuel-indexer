@@ -174,7 +174,8 @@ impl NewColumn {
             ColumnType::BlockId => "varchar(64)",
             ColumnType::ListScalar => "varchar(10485760)",
             ColumnType::ListComplex => "varchar(10485760)",
-            ColumnType::LookupTableID => "bigserial primary key",
+            ColumnType::LookupTableId => "bigserial primary key",
+            ColumnType::LookupTableRefId => "numeric(20, 0)",
         }
     }
 }
@@ -227,7 +228,8 @@ pub enum ColumnType {
     BlockId = 34,
     ListScalar = 35,
     ListComplex = 36,
-    LookupTableID = 37,
+    LookupTableId = 37,
+    LookupTableRefId = 38,
 }
 
 impl From<ColumnType> for i32 {
@@ -270,7 +272,8 @@ impl From<ColumnType> for i32 {
             ColumnType::BlockId => 34,
             ColumnType::ListScalar => 35,
             ColumnType::ListComplex => 36,
-            ColumnType::LookupTableID => 37,
+            ColumnType::LookupTableId => 37,
+            ColumnType::LookupTableRefId => 38,
         }
     }
 }
@@ -321,7 +324,8 @@ impl From<i32> for ColumnType {
             34 => ColumnType::BlockId,
             35 => ColumnType::ListScalar,
             36 => ColumnType::ListComplex,
-            37 => ColumnType::LookupTableID,
+            37 => ColumnType::LookupTableId,
+            38 => ColumnType::LookupTableRefId,
             _ => panic!("Invalid column type."),
         }
     }
@@ -367,7 +371,8 @@ impl From<&str> for ColumnType {
             "BlockId" => ColumnType::BlockId,
             "ListScalar" => ColumnType::ListScalar,
             "ListComplex" => ColumnType::ListComplex,
-            "LookupTableID" => ColumnType::LookupTableID,
+            "LookupTableId" => ColumnType::LookupTableId,
+            "LookupTableRefId" => ColumnType::LookupTableRefId,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }

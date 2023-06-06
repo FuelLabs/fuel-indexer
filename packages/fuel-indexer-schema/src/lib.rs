@@ -251,6 +251,8 @@ impl FtColumn {
                 }
             }
             FtColumn::ListComplex(value) => match value {
+                // TODO: Only allow for column types that can be used as foreign keys
+                // TODO: Can this just be the ID or FK itself and that can be used to query and insert?
                 Some(_list) => todo!(),
                 None => {
                     format!("'{}'", String::from(NULL_VALUE))

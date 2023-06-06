@@ -11,11 +11,12 @@ use fuel_indexer_types::type_id;
 use std::collections::{HashMap, HashSet};
 
 // (additional necessary tables, column(s))
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 struct LookupTableGenerationSet {
     table_name: String,
     columns: Vec<NewColumn>,
     foreign_keys: Vec<ForeignKey>,
+    indices: Vec<ColumnIndex>,
 }
 
 /// SchemaBuilder is used to encapsulate most of the logic related to parsing
@@ -110,6 +111,7 @@ impl SchemaBuilder {
             types,
             fields,
             schema,
+            lookup_tables,
             ..
         } = self;
 
@@ -140,12 +142,39 @@ impl SchemaBuilder {
         }
 
         for fk in foreign_keys {
-            println!("{}", fk.create_statement());
             queries::execute_query(conn, fk.create_statement()).await?;
         }
 
         for idx in indices {
             queries::execute_query(conn, idx.create_statement()).await?;
+        }
+
+        for gen_set in lookup_tables {
+            let column_fragments = gen_set
+                .columns
+                .iter()
+                .map(|col| col.sql_fragment())
+                .collect::<Vec<String>>()
+                .join(",\n");
+
+            let creation_statement = format!(
+                "CREATE TABLE IF NOT EXISTS\n {} (\n {} \n)",
+                self.db_type.table_name(
+                    &format!("{}_{}", namespace, identifier),
+                    &gen_set.table_name
+                ),
+                column_fragments
+            );
+
+            queries::execute_query(conn, creation_statement).await?;
+
+            for fk in gen_set.foreign_keys {
+                queries::execute_query(conn, fk.create_statement()).await?;
+            }
+
+            for idx in gen_set.indices {
+                queries::execute_query(conn, idx.create_statement()).await?;
+            }
         }
 
         queries::type_id_insert(conn, type_ids).await?;
@@ -369,6 +398,7 @@ impl SchemaBuilder {
                                 object_name,
                                 &self.parsed_schema.field_type_mappings,
                             );
+
                             self.generate_lookup_tables_for_complex_list_type(
                                 object_name,
                                 type_id,
@@ -481,7 +511,7 @@ impl SchemaBuilder {
             type_id,
             column_position: 0,
             column_name: "id".to_string(),
-            column_type: "LookupTableID".to_string(),
+            column_type: "LookupTableId".to_string(),
             // TODO: what to do with this?
             graphql_type: "ID!".to_string(),
             nullable,
@@ -494,7 +524,7 @@ impl SchemaBuilder {
             type_id,
             column_position: 1,
             column_name: format!("{table_name}_id"),
-            column_type: "ID".to_string(),
+            column_type: "LookupTableRefId".to_string(),
             // TODO: what to do with this?
             graphql_type: "ID!".to_string(),
             nullable,
@@ -503,11 +533,20 @@ impl SchemaBuilder {
             inner_list_element_type: None,
         };
 
+        let index_on_referring_id = ColumnIndex {
+            db_type: DbType::Postgres,
+            table_name: lookup_table_name.clone(),
+            namespace: self.namespace(),
+            method: directives::IndexMethod::Btree,
+            unique,
+            column_name: format!("{table_name}_id"),
+        };
+
         let lookup_table_reference_id_column = NewColumn {
             type_id,
             column_position: 2,
             column_name: format!("{}_id", field_type_table_name(field)),
-            column_type: "ID".to_string(),
+            column_type: "LookupTableRefId".to_string(),
             // TODO: what to do with this?
             graphql_type: "ID!".to_string(),
             nullable,
@@ -545,6 +584,7 @@ impl SchemaBuilder {
                 lookup_table_reference_id_column,
             ],
             foreign_keys: vec![fk_to_lookup_1, fk_to_lookup_2],
+            indices: vec![index_on_referring_id],
         };
 
         println!("{gen_set:#?}");
