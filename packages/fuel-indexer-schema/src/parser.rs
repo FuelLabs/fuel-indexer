@@ -38,6 +38,8 @@ pub struct ParsedGraphQLSchema {
 
     /// The parsed schema.
     pub ast: ServiceDocument,
+
+    pub entities_with_list_fields: HashMap<String, HashSet<String>>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -57,6 +59,7 @@ impl Default for ParsedGraphQLSchema {
             field_type_mappings: HashMap::new(),
             scalar_names: HashSet::new(),
             ast,
+            entities_with_list_fields: HashMap::new(),
         }
     }
 }
@@ -92,6 +95,7 @@ impl ParsedGraphQLSchema {
             field_type_mappings: build_schema_fields_and_types_map(&ast)?,
             scalar_names,
             ast,
+            entities_with_list_fields: HashMap::new(),
         })
     }
 
@@ -116,5 +120,13 @@ impl ParsedGraphQLSchema {
     /// Whether the given field type name is an enum type.
     pub fn is_enum_type(&self, name: &str) -> bool {
         self.enum_names.contains(name)
+    }
+
+    pub fn is_list_type(&self, entity_name: &str, field_name: &str) -> bool {
+        if let Some(set) = self.entities_with_list_fields.get(entity_name) {
+            set.contains(field_name)
+        } else {
+            false
+        }
     }
 }

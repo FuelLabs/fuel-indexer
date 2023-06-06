@@ -24,8 +24,8 @@ pub enum IndexerSchemaDbError {
     FieldAndTypeConstructionError(String),
     #[error("This TypeKind is unsupported.")]
     UnsupportedTypeKind,
-    #[error("List types are unsupported.")]
-    ListTypesUnsupported,
+    #[error("Lists of list types are unsupported.")]
+    ListOfListsUnsupported,
     #[error("IndexerSchemaError: {0:?}")]
     IndexerSchemaError(#[from] crate::IndexerSchemaError),
     #[error("Utf8 Error: {0:?}")]

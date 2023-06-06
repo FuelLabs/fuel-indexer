@@ -26,7 +26,7 @@ pub fn inject_native_entities_into_schema(schema: &str) -> String {
 
 /// Remove special chars from GraphQL field type name.
 pub fn normalize_field_type_name(name: &str) -> String {
-    name.replace('!', "")
+    name.replace('!', "").replace('[', "").replace(']', "")
 }
 
 /// Convert GraphQL field type name to SQL table name.

@@ -158,27 +158,59 @@ impl SchemaBuilder {
     /// Return a field's `ColumnType` and whether it is nullable.
     fn process_type(
         &self,
-        field: &FieldDefinition,
-    ) -> IndexerSchemaDbResult<(ColumnType, bool)> {
-        let ty = &field.ty.node;
-
+        ty: &Type,
+    ) -> IndexerSchemaDbResult<(ColumnType, bool, Option<(ColumnType, bool, Option<Type>)>)>
+    {
         match &ty.base {
             BaseType::Named(t) => {
                 if self.parsed_schema.is_enum_type(t.as_str()) {
-                    return Ok((ColumnType::Charfield, false));
+                    return Ok((ColumnType::Charfield, false, None));
                 }
 
                 if self.parsed_schema.is_non_indexable_non_enum(t.as_str()) {
-                    return Ok((ColumnType::NoRelation, true));
+                    return Ok((ColumnType::NoRelation, true, None));
                 }
 
                 if self.parsed_schema.is_possible_foreign_key(t.as_str()) {
-                    return Ok((ColumnType::ForeignKey, true));
+                    return Ok((ColumnType::ForeignKey, ty.nullable, None));
                 }
 
-                Ok((ColumnType::from(t.as_str()), ty.nullable))
+                Ok((ColumnType::from(t.as_str()), ty.nullable, None))
             }
-            BaseType::List(_) => panic!("List types not supported yet."),
+            BaseType::List(t) => {
+                let inner_type = self.process_list_inner_type(&*t.clone()).unwrap();
+                if inner_type.0 == ColumnType::ForeignKey {
+                    Ok((ColumnType::ListComplex, ty.nullable, Some(inner_type)))
+                } else {
+                    Ok((ColumnType::ListScalar, ty.nullable, Some(inner_type)))
+                }
+            }
+        }
+    }
+
+    fn process_list_inner_type(
+        &self,
+        ty: &Type,
+    ) -> IndexerSchemaDbResult<(ColumnType, bool, Option<Type>)> {
+        match &ty.base {
+            BaseType::Named(t) => {
+                if self.parsed_schema.is_enum_type(t.as_str()) {
+                    return Ok((ColumnType::Charfield, false, None));
+                }
+
+                if self.parsed_schema.is_non_indexable_non_enum(t.as_str()) {
+                    return Ok((ColumnType::NoRelation, true, None));
+                }
+
+                if self.parsed_schema.is_possible_foreign_key(t.as_str()) {
+                    return Ok((ColumnType::ForeignKey, ty.nullable, None));
+                }
+
+                Ok((ColumnType::from(t.as_str()), ty.nullable, None))
+            }
+            BaseType::List(_) => {
+                return Err(super::IndexerSchemaDbError::ListOfListsUnsupported)
+            }
         }
     }
 
@@ -200,7 +232,7 @@ impl SchemaBuilder {
                     .insert(object_name.to_string());
             }
 
-            let (typ, nullable) = self.process_type(field)?;
+            let (typ, nullable, inner_list_typ) = self.process_type(&field.ty.node)?;
 
             let directives::Unique(unique) = get_unique_directive(field);
 
@@ -235,7 +267,10 @@ impl SchemaBuilder {
                         graphql_type: field_type_name,
                         nullable,
                         unique,
+                        is_list_with_nullable_elements: None,
+                        inner_list_element_type: None,
                     };
+                    println!("FK col: {column:#?}");
 
                     fragments.push(column.sql_fragment());
                     self.columns.push(column);
@@ -250,6 +285,8 @@ impl SchemaBuilder {
                         graphql_type: field.ty.to_string(),
                         nullable,
                         unique,
+                        is_list_with_nullable_elements: None,
+                        inner_list_element_type: None,
                     };
 
                     if let Some(directives::Index {
@@ -279,7 +316,11 @@ impl SchemaBuilder {
                         graphql_type: field.ty.to_string(),
                         nullable,
                         unique,
+                        is_list_with_nullable_elements: None,
+                        inner_list_element_type: None,
                     };
+
+                    println!("regular col: {column:#?}");
 
                     if let Some(directives::Index {
                         column_name,
@@ -310,6 +351,8 @@ impl SchemaBuilder {
             graphql_type: "__".into(),
             nullable: false,
             unique: false,
+            is_list_with_nullable_elements: None,
+            inner_list_element_type: None,
         };
 
         fragments.push(object_column.sql_fragment());
