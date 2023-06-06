@@ -211,12 +211,6 @@ pub(crate) async fn register_indexer_assets(
             // Check that at least one indexer exists
             if (queries::get_indexer_id(&mut conn, &namespace, &identifier).await).is_ok()
             {
-                tracing::info!(
-                    "--replace-indexer enabled. Removing existing indexer {}.{}",
-                    &namespace,
-                    &identifier
-                );
-
                 if let Err(e) =
                     queries::remove_indexers(&mut conn, &namespace, &identifier, None)
                         .await
