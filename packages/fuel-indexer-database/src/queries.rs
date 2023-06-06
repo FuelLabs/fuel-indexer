@@ -347,19 +347,6 @@ pub async fn remove_graph(
     }
 }
 
-pub async fn remove_indexers(
-    conn: &mut IndexerConnection,
-    namespace: &str,
-    identifier: &str,
-    limit: Option<usize>,
-) -> sqlx::Result<()> {
-    match conn {
-        IndexerConnection::Postgres(ref mut c) => {
-            postgres::remove_indexers(c, namespace, identifier, limit).await
-        }
-    }
-}
-
 pub async fn remove_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,

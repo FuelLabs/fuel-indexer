@@ -66,11 +66,10 @@ impl IndexerService {
                     &manifest.namespace, &manifest.identifier
                 );
             } else {
-                if let Err(e) = queries::remove_indexers(
+                if let Err(e) = queries::remove_indexer(
                     &mut conn,
                     &manifest.namespace,
                     &manifest.identifier,
-                    None,
                 )
                 .await
                 {

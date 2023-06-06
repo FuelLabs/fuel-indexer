@@ -804,20 +804,17 @@ pub async fn remove_graph(
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn remove_indexers(
+pub async fn remove_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-    limit: Option<usize>,
 ) -> sqlx::Result<()> {
-    let limit = limit.map(|l| format!("LIMIT {l}")).unwrap_or_default();
-
     execute_query(
         conn,
         format!(
             "DELETE FROM index_asset_registry_wasm WHERE index_id IN
             (SELECT id FROM index_registry
-                WHERE namespace = '{namespace}' AND identifier = '{identifier}' {limit})"
+                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
         ),
     )
     .await?;
@@ -827,7 +824,7 @@ pub async fn remove_indexers(
         format!(
             "DELETE FROM index_asset_registry_manifest WHERE index_id IN
             (SELECT id FROM index_registry
-                WHERE namespace = '{namespace}' AND identifier = '{identifier}' {limit})"
+                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
         ),
     )
     .await?;
@@ -837,7 +834,7 @@ pub async fn remove_indexers(
         format!(
             "DELETE FROM index_asset_registry_schema WHERE index_id IN
             (SELECT id FROM index_registry
-                WHERE namespace = '{namespace}' AND identifier = '{identifier}' {limit})"
+                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
         ),
     )
     .await?;
@@ -847,21 +844,12 @@ pub async fn remove_indexers(
         format!(
             "DELETE FROM index_registry WHERE id IN
             (SELECT id FROM index_registry
-                WHERE namespace = '{namespace}' AND identifier = '{identifier}' {limit})"
+                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
         ),
     )
     .await?;
 
     Ok(())
-}
-
-#[cfg_attr(feature = "metrics", metrics)]
-pub async fn remove_indexer(
-    conn: &mut PoolConnection<Postgres>,
-    namespace: &str,
-    identifier: &str,
-) -> sqlx::Result<()> {
-    remove_indexers(conn, namespace, identifier, Some(1)).await
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
