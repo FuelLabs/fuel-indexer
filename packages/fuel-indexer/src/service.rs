@@ -13,7 +13,7 @@ use fuel_indexer_lib::{
     utils::{IndexRevertRequest, ServiceRequest},
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
-use fuel_indexer_types::block::BlockData;
+use fuel_indexer_types::fuel::BlockData;
 use futures::{
     stream::{FuturesUnordered, StreamExt},
     Future,

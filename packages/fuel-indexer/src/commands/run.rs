@@ -87,9 +87,6 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         }
         None => {
             service.register_indexers_from_registry().await?;
-            info!(
-                    "✨ ✨ GraphQL Playground at: http://localhost:29987/api/playground/:namespace/:identifier"
-                );
         }
     }
 

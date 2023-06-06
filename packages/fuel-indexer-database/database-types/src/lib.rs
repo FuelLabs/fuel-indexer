@@ -377,7 +377,7 @@ pub enum IndexAssetType {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RegisteredIndex {
+pub struct RegisteredIndexer {
     pub id: i64,
     pub namespace: String,
     pub identifier: String,
@@ -386,7 +386,7 @@ pub struct RegisteredIndex {
     pub created_at: DateTime<Utc>,
 }
 
-impl RegisteredIndex {
+impl RegisteredIndexer {
     pub fn uid(&self) -> String {
         format!("{}.{}", self.namespace, self.identifier)
     }

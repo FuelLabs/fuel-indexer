@@ -4,6 +4,7 @@ pub(crate) mod commands;
 mod database;
 pub mod executor;
 pub mod ffi;
+pub(crate) mod queries;
 mod service;
 
 pub use database::Database;

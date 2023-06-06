@@ -13,7 +13,6 @@ description = "Fuel Indexer Library"
 anyhow = "1.0"
 bincode = { workspace = true }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
-fuel-indexer-types = { workspace = true }
 http = { version = "0.2", default-features = false }
 serde = { workspace = true }
 serde_json = { workspace = true }

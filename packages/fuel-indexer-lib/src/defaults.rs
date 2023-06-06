@@ -28,7 +28,10 @@ pub const POSTGRES_PORT: &str = "5432";
 /// Postgres password.
 pub const POSTGRES_PASSWORD: &str = "postgres";
 
-pub const INDEX_FAILED_CALLS: usize = 10;
+/// Number of failed calls to allow before stopping the indexer.
+pub const INDEXER_FAILED_CALLS: usize = 10;
+
+/// Stop indexers that have seen `MAX_EMPTY_BLOCK_REQUESTS`.
 pub const STOP_IDLE_INDEXERS: bool = false;
 
 /// Max body size for GraphQL API requests.
@@ -38,7 +41,7 @@ pub const MAX_BODY_SIZE: usize = 5242880; // 5MB
 pub const SERVICE_REQUEST_CHANNEL_SIZE: usize = 100;
 
 /// How long to wait if request to the Fuel GQL client returned no data.
-pub const IDLE_SERVICE_WAIT_SECS: u64 = 3;
+pub const IDLE_SERVICE_WAIT_SECS: u64 = 1;
 
 /// How many times to retry connecting to the database.
 pub const MAX_DATABASE_CONNECTION_ATTEMPTS: usize = 5;
@@ -53,7 +56,7 @@ pub const EMBEDDED_DATABASE: bool = false;
 pub const MAX_EMPTY_BLOCK_REQUESTS: usize = 10;
 
 /// Amount of time to wait before fetching new blocks, if an executor error occurs.
-pub const DELAY_FOR_SERVICE_ERROR: u64 = 5;
+pub const DELAY_FOR_SERVICE_ERROR: u64 = 1;
 
 /// Amount of time to wait before fetching new blocks, if the Fuel GQL client returns no data.
 pub const DELAY_FOR_EMPTY_PAGE: u64 = 1;
@@ -122,4 +125,4 @@ pub const RATE_LIMIT_WINDOW_SIZE: u64 = 5;
 pub const LOG_LEVEL: &str = "info";
 
 /// Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out.
-pub const INDEXER_HANDLER_TIMEOUT: u64 = 2;
+pub const INDEXER_HANDLER_TIMEOUT: u64 = 5;

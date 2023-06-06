@@ -184,6 +184,8 @@ Take a quick tour.
     Revert a deployed indexer.
 `forc index auth`
     Authenticate against an indexer service.
+`forc index status`
+    Check the status of an indexer.
 ```
 
 ### 2.4 Deploying our indexer

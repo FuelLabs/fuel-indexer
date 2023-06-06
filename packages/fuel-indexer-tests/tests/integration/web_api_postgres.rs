@@ -103,14 +103,11 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
     let srv = tokio::spawn(server);
 
     let mut conn = test_db.pool.acquire().await.unwrap();
-    let is_index_registered = postgres::indexer_is_registered(
-        &mut conn,
-        "test_namespace",
-        "simple_wasm_executor",
-    )
-    .await
-    .unwrap();
-    assert!(is_index_registered.is_none());
+    let is_indexer_registered =
+        postgres::get_indexer(&mut conn, "test_namespace", "simple_wasm_executor")
+            .await
+            .unwrap();
+    assert!(is_indexer_registered.is_none());
 
     let manifest_file =
         multipart::Part::stream(SIMPLE_WASM_MANIFEST).file_name("simple_wasm.yaml");
@@ -137,15 +134,12 @@ async fn test_asset_upload_endpoint_properly_adds_assets_to_database_postgres() 
 
     assert!(resp.status().is_success());
 
-    let is_index_registered = postgres::indexer_is_registered(
-        &mut conn,
-        "test_namespace",
-        "simple_wasm_executor",
-    )
-    .await
-    .unwrap();
+    let is_indexer_registered =
+        postgres::get_indexer(&mut conn, "test_namespace", "simple_wasm_executor")
+            .await
+            .unwrap();
 
-    assert!(is_index_registered.is_some());
+    assert!(is_indexer_registered.is_some());
 }
 
 #[derive(Serialize, Debug)]

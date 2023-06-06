@@ -10,25 +10,24 @@
 //! Start a local test Fuel node
 //!
 //! ```bash
-//! cargo run --bin fuel-node
+//! cargo run -p fuel-node --bin fuel-node
 //! ```
 //!
 //! With your database backend set up, now start your fuel-indexer binary using the
 //! assets from this example:
 //!
 //! ```bash
-//! cargo run --bin fuel-indexer -- run --manifest examples/hello-world/hello-indexer/hello_indexer.manifest.yaml
+//! cargo run --bin fuel-indexer -- run --manifest examples/hello-world/hello-indexer/hello_indexer.manifest.yaml --run-migrations
 //! ```
 //!
 //! Now trigger an event.
 //!
 //! ```bash
-//! cargo run --bin hello-bin
+//! cargo run -p hello-bin --bin hello-bin
 //! ```
 
 extern crate alloc;
-use fuel_indexer_macros::indexer;
-use fuel_indexer_plugin::prelude::*;
+use fuel_indexer_utils::prelude::*;
 
 #[indexer(manifest = "examples/hello-world/hello-indexer/hello_indexer.manifest.yaml")]
 mod hello_world_indexer {

@@ -1,8 +1,6 @@
+use crate::models::Claims;
 use axum::http::Request;
-use fuel_indexer_lib::config::{
-    auth::{AuthenticationStrategy, Claims},
-    IndexerConfig,
-};
+use fuel_indexer_lib::config::{auth::AuthenticationStrategy, IndexerConfig};
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use std::task::{Context, Poll};
 use tower::{Layer, Service};
@@ -88,8 +86,7 @@ where
                     return self.inner.call(req);
                 }
                 _ => {
-                    error!("Unsupported authentication strategy.");
-                    unimplemented!();
+                    unimplemented!("Unsupported authentication strategy.");
                 }
             }
         }

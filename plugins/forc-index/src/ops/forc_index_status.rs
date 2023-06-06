@@ -1,9 +1,13 @@
 use crate::cli::StatusCommand;
-use fuel_indexer_database_types::RegisteredIndex;
+use fuel_indexer_database_types::RegisteredIndexer;
 use reqwest::header::{HeaderMap, AUTHORIZATION, CONNECTION};
-use tracing::error;
+use serde_json::{to_string_pretty, value::Value, Map};
+use std::collections::BTreeMap;
+use tracing::{error, info};
 
-pub async fn status(StatusCommand { url, auth }: StatusCommand) -> anyhow::Result<()> {
+pub async fn status(
+    StatusCommand { url, auth, verbose }: StatusCommand,
+) -> anyhow::Result<()> {
     let target = format!("{url}/api/status");
 
     let mut headers = HeaderMap::new();
@@ -16,32 +20,47 @@ pub async fn status(StatusCommand { url, auth }: StatusCommand) -> anyhow::Resul
 
     match client.get(&target).headers(headers).send().await {
         Ok(res) => {
-            if res.status() != reqwest::StatusCode::OK {
-                error!(
-                    "\n❌ {target} returned a non-200 response code: {:?}",
-                    res.status()
-                );
+            let status = res.status();
+
+            if status != reqwest::StatusCode::OK {
+                if verbose {
+                    error!(
+                        "\n❌ Status check failed. {target} returned a non-200 response code: {:?}",
+                        status
+                    );
+                }
+
+                let result = res
+                    .json::<Map<String, Value>>()
+                    .await
+                    .expect("Failed to read JSON response.");
+
+                info!("\n{}", to_string_pretty(&result)?);
                 return Ok(());
             }
 
             let result = res
-                .json::<Vec<RegisteredIndex>>()
+                .json::<Vec<RegisteredIndexer>>()
                 .await
                 .expect("Failed to read JSON response.");
+
             print_indexers(result);
         }
         Err(e) => {
-            error!("\n❌ Could not connect to indexer service:\n'{e}'");
+            if verbose {
+                error!("\n❌ Status check failed. Could not connect to indexer service:\n'{e}'");
+            } else {
+                error!("\n❌ Status check failed.");
+            }
         }
     }
 
     Ok(())
 }
 
-fn print_indexers(indexers: Vec<RegisteredIndex>) {
-    let groupped: Vec<Vec<RegisteredIndex>> = {
-        use std::collections::BTreeMap;
-        let mut ixs: BTreeMap<String, Vec<RegisteredIndex>> = BTreeMap::new();
+fn print_indexers(indexers: Vec<RegisteredIndexer>) {
+    let groupped: Vec<Vec<RegisteredIndexer>> = {
+        let mut ixs: BTreeMap<String, Vec<RegisteredIndexer>> = BTreeMap::new();
         for i in indexers.into_iter() {
             ixs.entry(i.namespace.clone()).or_insert(Vec::new()).push(i);
         }

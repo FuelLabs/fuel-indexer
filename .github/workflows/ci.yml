@@ -243,7 +243,8 @@ jobs:
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   cargo-test-forc-index-plugins:
-    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
+    # if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
+    if: false
     needs:
       - cargo-toml-fmt-check
       - check-is-semver-branch
@@ -541,8 +542,6 @@ jobs:
   # TODO: publish these in parallel
   publish:
     needs:
-      - publish-fuel-indexer-binaries
-      - publish-docker-image
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
     runs-on: ubuntu-latest

@@ -1,17 +1,17 @@
 use crate::ffi;
-use crate::{IndexerError, IndexerResult, Manifest};
+use crate::{IndexerResult, Manifest};
 use fuel_indexer_database::{
     queries, types::IdCol, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
-use tracing::{error, info};
+use tracing::{debug, error, info};
 use wasmer::Instance;
 
 /// Database for an executor instance, with schema info.
 #[derive(Debug)]
 pub struct Database {
-    pub pool: IndexerConnectionPool,
+    pool: IndexerConnectionPool,
     stashed: Option<IndexerConnection>,
     pub namespace: String,
     pub identifier: String,
@@ -23,6 +23,10 @@ pub struct Database {
 // TODO: Use mutex
 unsafe impl Sync for Database {}
 unsafe impl Send for Database {}
+
+fn is_id_only_upsert(columns: &[String]) -> bool {
+    columns.len() == 2 && columns[0] == IdCol::to_lowercase_string()
+}
 
 impl Database {
     pub async fn new(conn_uri: &str) -> IndexerResult<Database> {
@@ -40,28 +44,32 @@ impl Database {
     }
 
     pub async fn start_transaction(&mut self) -> IndexerResult<usize> {
-        let mut conn = self.pool.acquire().await?;
-        let result = queries::execute_query(&mut conn, "BEGIN".into()).await?;
-
+        let conn = self.pool.acquire().await?;
         self.stashed = Some(conn);
-
+        debug!("Connection stashed as: {:?}", self.stashed);
+        let conn = self.stashed.as_mut().expect(
+            "No stashed connection for start transaction. Was a transaction started?",
+        );
+        let result = queries::start_transaction(conn).await?;
         Ok(result)
     }
 
     pub async fn commit_transaction(&mut self) -> IndexerResult<usize> {
-        let mut conn = self
+        let conn = self
             .stashed
-            .take()
-            .ok_or(IndexerError::NoTransactionError)?;
-        Ok(queries::execute_query(&mut conn, "COMMIT".into()).await?)
+            .as_mut()
+            .expect("No stashed connection for commit. Was a transaction started?");
+        let res = queries::commit_transaction(conn).await?;
+        Ok(res)
     }
 
     pub async fn revert_transaction(&mut self) -> IndexerResult<usize> {
-        let mut conn = self
+        let conn = self
             .stashed
-            .take()
-            .ok_or(IndexerError::NoTransactionError)?;
-        Ok(queries::execute_query(&mut conn, "ROLLBACK".into()).await?)
+            .as_mut()
+            .expect("No stashed connection for revert. Was a transaction started?");
+        let res = queries::revert_transaction(conn).await?;
+        Ok(res)
     }
 
     fn upsert_query(
@@ -71,18 +79,32 @@ impl Database {
         inserts: Vec<String>,
         updates: Vec<String>,
     ) -> String {
-        format!(
-            "INSERT INTO {}
-                ({})
-             VALUES
-                ({}, $1::bytea)
-             ON CONFLICT(id)
-             DO UPDATE SET {}",
-            table,
-            columns.join(", "),
-            inserts.join(", "),
-            updates.join(", "),
-        )
+        if is_id_only_upsert(columns) {
+            format!(
+                "INSERT INTO {}
+                    ({})
+                 VALUES
+                    ({}, $1::bytea)
+                 ON CONFLICT(id)
+                 DO NOTHING",
+                table,
+                columns.join(", "),
+                inserts.join(", "),
+            )
+        } else {
+            format!(
+                "INSERT INTO {}
+                    ({})
+                 VALUES
+                    ({}, $1::bytea)
+                 ON CONFLICT(id)
+                 DO UPDATE SET {}",
+                table,
+                columns.join(", "),
+                inserts.join(", "),
+                updates.join(", "),
+            )
+        }
     }
 
     fn namespace(&self) -> String {
@@ -118,13 +140,7 @@ Do your WASM modules need to be rebuilt?"#,
         let updates: Vec<_> = self.schema[table]
             .iter()
             .zip(columns.iter())
-            .filter_map(|(colname, value)| {
-                if colname == &IdCol::to_lowercase_string() {
-                    None
-                } else {
-                    Some(format!("{} = {}", colname, value.query_fragment()))
-                }
-            })
+            .map(|(colname, value)| format!("{} = {}", colname, value.query_fragment()))
             .collect();
 
         let columns = self.schema[table].clone();
@@ -134,7 +150,7 @@ Do your WASM modules need to be rebuilt?"#,
         let conn = self
             .stashed
             .as_mut()
-            .expect("No transaction has been opened.");
+            .expect("No stashed connection for put. Was a transaction started?");
 
         queries::put_object(conn, query_text, bytes)
             .await
@@ -147,7 +163,7 @@ Do your WASM modules need to be rebuilt?"#,
         let conn = self
             .stashed
             .as_mut()
-            .expect("No transaction has been opened.");
+            .expect("No stashed connection for get. Was a transaction started?");
 
         match queries::get_object(conn, query).await {
             Ok(v) => Some(v),

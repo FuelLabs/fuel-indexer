@@ -44,15 +44,6 @@ lazy_static! {
     ]);
 
     static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
-        // Native receipt types.
-        "Log",
-        "LogData",
-        "MessageId",
-        "ScriptResult",
-        "TransactionData",
-        "Transfer",
-        "TransferOut",
-
         // Scalars.
         "Address",
         "AssetId",
@@ -89,21 +80,33 @@ lazy_static! {
         "UInt4",
         "UInt8",
 
-        // Temporary types: https://github.com/FuelLabs/fuel-indexer/issues/286
+        // Imports for transaction fields.
+        // https://github.com/FuelLabs/fuel-indexer/issues/286
         "BlockData",
-        "ClientInput",
-        "ClientOutput",
-        "ClientReceipt",
-        "ClientTransaction",
-        "ClientUtxoId",
-        "ConsensusData",
-        "GenesisConensus",
-        "HeaderData",
-        "PoAConsensus",
-        "ClientTransactionStatus",
-        "UnknownConsensus",
-        "TmpInputCoin",
-
+        "BytecodeLength",
+        "BytecodeWitnessIndex",
+        "FieldTxPointer",
+        "GasLimit",
+        "GasPrice",
+        "Inputs",
+        "Log",
+        "LogData",
+        "Maturity",
+        "MessageId",
+        "Outputs",
+        "Receipt",
+        "ReceiptsRoot",
+        "Script",
+        "ScriptData",
+        "ScriptResult",
+        "StorageSlots",
+        "TransactionData",
+        "Transfer",
+        "TransferOut",
+        "TxFieldSalt",
+        "TxFieldScript",
+        "TxId",
+        "Witnesses",
     ]);
 }
 

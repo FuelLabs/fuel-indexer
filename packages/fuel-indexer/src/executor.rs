@@ -1,23 +1,28 @@
-use crate::{database::Database, ffi, IndexerConfig, IndexerError, IndexerResult};
+use crate::{
+    database::Database, ffi, queries::ClientExt, IndexerConfig, IndexerError,
+    IndexerResult,
+};
 use async_std::{
     fs::File,
     io::ReadExt,
     sync::{Arc, Mutex},
 };
 use async_trait::async_trait;
-use chrono::{TimeZone, Utc};
 use fuel_core_client::client::{
     schema::block::{Consensus as ClientConsensus, Genesis as ClientGenesis},
-    types::{TransactionResponse, TransactionStatus as ClientTransactionStatus},
+    types::TransactionStatus as ClientTransactionStatus,
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
-    block::{BlockData, ConsensusData, GenesisConsensus, HeaderData, PoAConsensus},
-    scalar::Bytes32,
-    transaction::{ClientTransactionStatusData, TransactionData, TxId},
+    fuel::{field::*, *},
+    scalar::{Bytes32, HexString},
 };
+use fuel_tx::UniqueIdentifier;
+use fuel_vm::prelude::Deserializable;
+use fuel_vm::state::ProgramState as ClientProgramState;
 use futures::Future;
+use itertools::Itertools;
 use std::{
     marker::{Send, Sync},
     path::Path,
@@ -125,7 +130,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             let PaginatedResult {
                 cursor, results, ..
             } = client
-                .blocks(PaginationRequest {
+                .full_blocks(PaginationRequest {
                     cursor: next_cursor.clone(),
                     results: NODE_GRAPHQL_PAGE_SIZE,
                     direction: PageDirection::Forward,
@@ -155,80 +160,141 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 let mut transactions = Vec::new();
 
                 for trans in block.transactions {
-                    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/288
-                    match client.transaction(&trans.id.to_string()).await {
-                        Ok(result) => {
-                            if let Some(TransactionResponse {
-                                transaction,
-                                status,
-                            }) = result
-                            {
-                                let receipts = client
-                                    .receipts(&trans.id.to_string())
-                                    .await
-                                    .unwrap_or_else(|e| {
-                                        error!("Client communication error fetching receipts: {e:?}");
-                                        Vec::new()
-                                    });
+                    let receipts = trans
+                        .receipts
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(TryInto::try_into)
+                        .try_collect()
+                        .expect("Bad receipts.");
 
-                                // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
-                                let status = match status {
-                                    ClientTransactionStatus::Success {
-                                        block_id,
-                                        time,
-                                        ..
-                                    } => ClientTransactionStatusData::Success {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .unwrap(),
-                                    },
-                                    ClientTransactionStatus::Failure {
-                                        block_id,
-                                        time,
-                                        reason,
-                                        ..
-                                    } => ClientTransactionStatusData::Failure {
-                                        block_id,
-                                        time: Utc
-                                            .timestamp_opt(time.to_unix(), 0)
-                                            .single()
-                                            .unwrap(),
-                                        reason,
-                                    },
-                                    ClientTransactionStatus::Submitted {
-                                        submitted_at,
-                                    } => ClientTransactionStatusData::Submitted {
-                                        submitted_at: Utc
-                                            .timestamp_opt(submitted_at.to_unix(), 0)
-                                            .single()
-                                            .unwrap(),
-                                    },
-                                    ClientTransactionStatus::SqueezedOut { reason } => {
-                                        ClientTransactionStatusData::SqueezedOut {
-                                            reason,
-                                        }
-                                    }
-                                };
-
-                                let tx_data = TransactionData {
-                                    receipts,
-                                    status,
-                                    transaction,
-                                    id: TxId::from(trans.id),
-                                };
-                                transactions.push(tx_data);
+                    let status = trans.status.expect("Bad transaction status.");
+                    // NOTE: https://github.com/FuelLabs/fuel-indexer/issues/286
+                    let status = match status.try_into().unwrap() {
+                        ClientTransactionStatus::Success {
+                            block_id,
+                            time,
+                            program_state,
+                        } => {
+                            let program_state = program_state.map(|p| match p {
+                                ClientProgramState::Return(w) => ProgramState {
+                                    return_type: ReturnType::Return,
+                                    data: HexString::from(w.to_le_bytes().to_vec()),
+                                },
+                                ClientProgramState::ReturnData(d) => ProgramState {
+                                    return_type: ReturnType::ReturnData,
+                                    data: HexString::from(d.to_vec()),
+                                },
+                                ClientProgramState::Revert(w) => ProgramState {
+                                    return_type: ReturnType::Revert,
+                                    data: HexString::from(w.to_le_bytes().to_vec()),
+                                },
+                                // Either `cargo watch` complains that this is unreachable, or `clippy` complains
+                                // that all patterns are not matched. These other program states are only used in
+                                // debug modes.
+                                #[allow(unreachable_patterns)]
+                                _ => unreachable!("Bad program state."),
+                            });
+                            TransactionStatus::Success {
+                                block: block_id.parse().expect("Bad block height."),
+                                time: time.to_unix() as u64,
+                                program_state,
                             }
                         }
-                        Err(e) => {
-                            error!("Error fetching transactions: {e:?}.",)
+                        ClientTransactionStatus::Failure {
+                            block_id,
+                            time,
+                            reason,
+                            program_state,
+                        } => {
+                            let program_state = program_state.map(|p| match p {
+                                ClientProgramState::Return(w) => ProgramState {
+                                    return_type: ReturnType::Return,
+                                    data: HexString::from(w.to_le_bytes().to_vec()),
+                                },
+                                ClientProgramState::ReturnData(d) => ProgramState {
+                                    return_type: ReturnType::ReturnData,
+                                    data: HexString::from(d.to_vec()),
+                                },
+                                ClientProgramState::Revert(w) => ProgramState {
+                                    return_type: ReturnType::Revert,
+                                    data: HexString::from(w.to_le_bytes().to_vec()),
+                                },
+                                // Either `cargo watch` complains that this is unreachable, or `clippy` complains
+                                // that all patterns are not matched. These other program states are only used in
+                                // debug modes.
+                                #[allow(unreachable_patterns)]
+                                _ => unreachable!("Bad program state."),
+                            });
+                            TransactionStatus::Failure {
+                                block: block_id.parse().expect("Bad block ID."),
+                                time: time.to_unix() as u64,
+                                program_state,
+                                reason,
+                            }
+                        }
+                        ClientTransactionStatus::Submitted { submitted_at } => {
+                            TransactionStatus::Submitted {
+                                submitted_at: submitted_at.to_unix() as u64,
+                            }
+                        }
+                        ClientTransactionStatus::SqueezedOut { reason } => {
+                            TransactionStatus::SqueezedOut { reason }
                         }
                     };
+
+                    let transaction = fuel_tx::Transaction::from_bytes(
+                        trans.raw_payload.0 .0.as_slice(),
+                    )
+                    .expect("Bad transaction.");
+
+                    let id = transaction.id();
+
+                    let transaction = match transaction {
+                        ClientTransaction::Create(tx) => Transaction::Create(Create {
+                            gas_price: *tx.gas_price(),
+                            gas_limit: *tx.gas_limit(),
+                            maturity: *tx.maturity() as u32,
+                            bytecode_length: *tx.bytecode_length(),
+                            bytecode_witness_index: *tx.bytecode_witness_index(),
+                            storage_slots: tx
+                                .storage_slots()
+                                .iter()
+                                .map(|x| StorageSlot {
+                                    key: *x.key(),
+                                    value: *x.value(),
+                                })
+                                .collect(),
+                            inputs: tx
+                                .inputs()
+                                .iter()
+                                .map(|i| i.to_owned().into())
+                                .collect(),
+                            outputs: tx
+                                .outputs()
+                                .iter()
+                                .map(|o| o.to_owned().into())
+                                .collect(),
+                            witnesses: tx.witnesses().to_vec(),
+                            salt: *tx.salt(),
+                            metadata: None,
+                        }),
+                        _ => Transaction::default(),
+                    };
+
+                    let tx_data = TransactionData {
+                        receipts,
+                        status,
+                        transaction,
+                        id,
+                    };
+
+                    transactions.push(tx_data);
                 }
 
+                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
                 let consensus = match &block.consensus {
-                    ClientConsensus::Unknown => ConsensusData::UnknownConsensus,
+                    ClientConsensus::Unknown => Consensus::Unknown,
                     ClientConsensus::Genesis(g) => {
                         let ClientGenesis {
                             chain_config_hash,
@@ -237,18 +303,16 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             messages_root,
                         } = g.to_owned();
 
-                        ConsensusData::Genesis(GenesisConsensus {
+                        Consensus::Genesis(Genesis {
                             chain_config_hash: chain_config_hash.to_owned().into(),
                             coins_root: coins_root.to_owned().into(),
                             contracts_root: contracts_root.to_owned().into(),
                             messages_root: messages_root.to_owned().into(),
                         })
                     }
-                    ClientConsensus::PoAConsensus(poa) => {
-                        ConsensusData::PoA(PoAConsensus {
-                            signature: poa.signature.to_owned().into(),
-                        })
-                    }
+                    ClientConsensus::PoAConsensus(poa) => Consensus::PoA(PoA {
+                        signature: poa.signature.to_owned().into(),
+                    }),
                 };
 
                 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
@@ -258,7 +322,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     producer,
                     time: block.header.time.0.to_unix(),
                     consensus,
-                    header: HeaderData {
+                    header: Header {
                         id: Bytes32::from(block.header.id),
                         da_height: block.header.da_height.0,
                         transactions_count: block.header.transactions_count.0,
@@ -284,7 +348,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 error!("Indexer executor failed {e:?}, retrying.");
                 sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
                 retry_count += 1;
-                if retry_count < INDEX_FAILED_CALLS {
+                if retry_count < INDEXER_FAILED_CALLS {
+                    println!("Retrying indexer, attempt: {retry_count}");
                     continue;
                 } else {
                     error!("Indexer failed after retries, giving up. <('.')>");
@@ -547,7 +612,7 @@ impl Executor for WasmIndexExecutor {
             .exports
             .get_native_function::<(u32, u32), ()>(ffi::MODULE_ENTRYPOINT)?;
 
-        self.db.lock().await.start_transaction().await?;
+        let _ = self.db.lock().await.start_transaction().await?;
 
         let ptr = arg.get_ptr();
         let len = arg.get_len();
@@ -560,7 +625,7 @@ impl Executor for WasmIndexExecutor {
 
         if let Err(e) = res {
             error!("WasmIndexExecutor handle_events timed out: {e:?}.");
-            self.db.lock().await.revert_transaction().await?;
+            let _ = self.db.lock().await.revert_transaction().await?;
             return Err(IndexerError::from(e));
         } else {
             let inner = res.unwrap();
@@ -569,7 +634,7 @@ impl Executor for WasmIndexExecutor {
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }
-            self.db.lock().await.commit_transaction().await?;
+            let _ = self.db.lock().await.commit_transaction().await?;
         }
         Ok(())
     }
