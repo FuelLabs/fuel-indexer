@@ -44,14 +44,6 @@ Kill a running indexer
 forc index remove --url https://indexer.fuel.network
 ```
 
-### `forc index revert`
-
-Remove the current indexer and revert to the penultimate version of this indexer.
-
-```bash
-forc index revert --url https://indexer.fuel.network
-```
-
 ### `forc index check`
 
 Check to see which indexer components you have installed.

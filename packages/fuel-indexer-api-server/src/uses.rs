@@ -22,8 +22,8 @@ use fuel_indexer_lib::{
     config::{auth::AuthenticationStrategy, IndexerConfig},
     defaults,
     utils::{
-        AssetReloadRequest, FuelNodeHealthResponse, IndexRevertRequest, IndexStopRequest,
-        ServiceRequest, ServiceStatus,
+        AssetReloadRequest, FuelNodeHealthResponse, IndexStopRequest, ServiceRequest,
+        ServiceStatus,
     },
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
@@ -171,60 +171,6 @@ pub(crate) async fn remove_indexer(
     queries::commit_transaction(&mut conn).await?;
 
     tx.send(ServiceRequest::IndexStop(IndexStopRequest {
-        namespace,
-        identifier,
-    }))
-    .await?;
-
-    Ok(Json(json!({
-        "success": "true"
-    })))
-}
-
-pub(crate) async fn revert_indexer(
-    Path((namespace, identifier)): Path<(String, String)>,
-    Extension(tx): Extension<Sender<ServiceRequest>>,
-    Extension(pool): Extension<IndexerConnectionPool>,
-    Extension(claims): Extension<Claims>,
-    Extension(config): Extension<IndexerConfig>,
-) -> ApiResult<axum::Json<Value>> {
-    if claims.is_unauthenticated() {
-        return Err(ApiError::Http(HttpError::Unauthorized));
-    }
-
-    let mut conn = pool.acquire().await?;
-
-    if config.authentication.enabled {
-        queries::indexer_owned_by(&mut conn, &namespace, &identifier, claims.iss())
-            .await
-            .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
-    }
-
-    queries::start_transaction(&mut conn).await?;
-
-    let indexer_id = queries::get_indexer_id(&mut conn, &namespace, &identifier).await?;
-    let wasm =
-        queries::latest_asset_for_indexer(&mut conn, &indexer_id, IndexAssetType::Wasm)
-            .await?;
-
-    if let Err(e) = queries::remove_asset_by_version(
-        &mut conn,
-        &indexer_id,
-        &wasm.version,
-        IndexAssetType::Wasm,
-    )
-    .await
-    {
-        error!(
-            "Could not remove latest WASM asset for Indexer({namespace}.{identifier}): {e}"
-        );
-        queries::revert_transaction(&mut conn).await?;
-        return Err(ApiError::default());
-    }
-
-    queries::commit_transaction(&mut conn).await?;
-
-    tx.send(ServiceRequest::IndexRevert(IndexRevertRequest {
         namespace,
         identifier,
     }))

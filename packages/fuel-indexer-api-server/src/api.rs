@@ -2,7 +2,7 @@ use crate::{
     middleware::AuthenticationMiddleware,
     uses::{
         get_nonce, gql_playground, health_check, indexer_status, query_graph,
-        register_indexer_assets, remove_indexer, revert_indexer, verify_signature,
+        register_indexer_assets, remove_indexer, verify_signature,
     },
 };
 
@@ -15,7 +15,7 @@ use axum::{
     extract::{Extension, Json},
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::{delete, get, post, put},
+    routing::{delete, get, post},
     Router,
 };
 use fuel_indexer_database::{IndexerConnectionPool, IndexerDatabaseError};
@@ -219,7 +219,6 @@ impl GraphQlApi {
             .layer(Extension(pool.clone()))
             .layer(Extension(config.clone()))
             .route("/:namespace/:identifier", delete(remove_indexer))
-            .route("/:namespace/:identifier", put(revert_indexer))
             .layer(AuthenticationMiddleware::from(&config))
             .layer(Extension(tx))
             .layer(Extension(pool.clone()))
