@@ -73,7 +73,8 @@ pub enum FtColumn {
     UInt8(Option<UInt8>),
     NoRelation(Option<NoRelation>),
     BlockId(Option<BlockId>),
-    List(Option<Vec<FtColumn>>),
+    ListScalar(Option<Vec<FtColumn>>),
+    ListComplex(Option<Vec<FtColumn>>),
 }
 
 impl FtColumn {
@@ -214,7 +215,7 @@ impl FtColumn {
                 Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::List(value) => {
+            FtColumn::ListScalar(value) => {
                 match value {
                     Some(list) => {
                         let discriminant = std::mem::discriminant(&list[0]);
@@ -249,6 +250,12 @@ impl FtColumn {
                     }
                 }
             }
+            FtColumn::ListComplex(value) => match value {
+                Some(_list) => todo!(),
+                None => {
+                    format!("'{}'", String::from(NULL_VALUE))
+                }
+            },
         }
     }
 }
@@ -299,7 +306,7 @@ mod tests {
         let identity = FtColumn::Identity(Some(Identity::Address(
             Address::try_from([0x12; 32]).unwrap(),
         )));
-        let list = FtColumn::List(Some(vec![
+        let list = FtColumn::ListScalar(Some(vec![
             FtColumn::ID(Some(123)),
             FtColumn::ID(Some(456)),
             FtColumn::ID(Some(789)),
@@ -349,7 +356,7 @@ mod tests {
         let charfield_none = FtColumn::Charfield(None);
         let json_none = FtColumn::Json(None);
         let identity_none = FtColumn::Identity(None);
-        let list_none = FtColumn::List(None);
+        let list_none = FtColumn::ListScalar(None);
 
         insta::assert_yaml_snapshot!(addr_none.query_fragment());
         insta::assert_yaml_snapshot!(asset_id_none.query_fragment());
@@ -387,7 +394,7 @@ mod tests {
     fn test_panic_on_heterogeneous_list_elements_fragment() {
         use super::*;
 
-        let list = FtColumn::List(Some(vec![
+        let list = FtColumn::ListScalar(Some(vec![
             FtColumn::ID(Some(123)),
             FtColumn::UInt4(Some(456)),
         ]));

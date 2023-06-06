@@ -280,95 +280,117 @@ pub fn row_extractor(
             }
         }
         ProcessedTypeResult::List {
-            name: mut field_type,
+            name: field_type,
             nullable_elements: is_inner_type_nullable,
             ..
-        } => {
-            let type_name = field_type.to_string();
-            if schema.is_enum_type(&type_name) {
-                field_type = format_ident! {"UInt1"};
-            }
-
-            // Nullable list of nullable elements: [Entity]
-            if is_nullable && is_inner_type_nullable {
-                quote! {
-                    let #field_name = match item {
-                        FtColumn::List(nullable_list) => match nullable_list {
-                            Some(list) => {
-                                let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
-                                    FtColumn::#field_type(t) => t,
-                                    _ => panic!("Invalid column type: {:?}.", item),
-                                }).collect::<Vec<_>>();
-                                Some(unwrapped_list)
-                            }
-                            None => None,
-                        },
-                        _ => panic!("Invalid column type: {:?}.", item),
-                    };
-                }
-            // Nullable list of non-nullable elements: [Entity!]
-            } else if is_nullable && !is_inner_type_nullable {
-                quote! {
-                    let #field_name = match item {
-                        FtColumn::List(nullable_list) => match nullable_list {
-                            Some(list) => {
-                                let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
-                                    FtColumn::#field_type(t) => match t {
-                                        Some(inner_type) => inner_type,
-                                        None => panic!("Non-nullable inner type of list is returning a None value."),
-                                    },
-                                    _ => panic!("Invalid column type: {:?}.", item),
-                                }).collect::<Vec<_>>();
-                                Some(unwrapped_list)
-                            }
-                            None => None,
-                        },
-                        _ => panic!("Invalid column type: {:?}.", item),
-                    };
-                }
-            // Non-nullable list of nullable elements: [Entity]!
-            } else if !is_nullable && is_inner_type_nullable {
-                quote! {
-                    let #field_name = match item {
-                        FtColumn::List(list) => match list {
-                            Some(list) => {
-                                let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
-                                    FtColumn::#field_type(t) => t,
-                                    _ => panic!("Invalid column type: {:?}.", item),
-                                }).collect::<Vec<_>>();
-                                unwrapped_list
-                            }
-                            None => panic!("Non-nullable type is returning a None value."),
-                        }
-                        _ => panic!("Invalid column type: {:?}.", item),
-                    };
-                }
-            // Non-nullable list of non-nullable elements: [Entity!]!
-            } else {
-                quote! {
-                    let #field_name = match item {
-                        FtColumn::List(list) => match list {
-                            Some(list) => {
-                                let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
-                                    FtColumn::#field_type(t) => match t {
-                                        Some(inner_type) => inner_type,
-                                        None => panic!("Non-nullable inner type of list is returning a None value."),
-                                    },
-                                    _ => panic!("Invalid column type: {:?}.", item),
-                                }).collect::<Vec<_>>();
-                                unwrapped_list
-                            }
-                            None => panic!("Non-nullable type is returning a None value."),
-                        }
-                        _ => panic!("Invalid column type: {:?}.", item),
-                    };
-                }
-            }
-        }
+        } => create_row_extractor_for_list_field(
+            schema,
+            field_name,
+            is_nullable,
+            field_type,
+            is_inner_type_nullable,
+        ),
     };
 
     quote! {
         #item_popper
         #column_extractor
+    }
+}
+
+fn create_row_extractor_for_list_field(
+    schema: &ParsedGraphQLSchema,
+    field_name: proc_macro2::Ident,
+    is_nullable: bool,
+    mut field_type: Ident,
+    is_inner_type_nullable: bool,
+) -> proc_macro2::TokenStream {
+    let type_name = field_type.to_string();
+
+    // If the type is not a scalar, then we are storing an entity type
+    let list_type = if schema.has_scalar(&type_name) {
+        format_ident! {"ListScalar"}
+    } else {
+        format_ident! {"ListComplex"}
+    };
+
+    if schema.is_enum_type(&type_name) {
+        field_type = format_ident! {"UInt1"};
+    }
+
+    // Nullable list of nullable elements: [Entity]
+    if is_nullable && is_inner_type_nullable {
+        quote! {
+            let #field_name = match item {
+                FtColumn::#list_type(nullable_list) => match nullable_list {
+                    Some(list) => {
+                        let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
+                            FtColumn::#field_type(t) => t,
+                            _ => panic!("Invalid column type: {:?}.", item),
+                        }).collect::<Vec<_>>();
+                        Some(unwrapped_list)
+                    }
+                    None => None,
+                },
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    // Nullable list of non-nullable elements: [Entity!]
+    } else if is_nullable && !is_inner_type_nullable {
+        quote! {
+            let #field_name = match item {
+                FtColumn::#list_type(nullable_list) => match nullable_list {
+                    Some(list) => {
+                        let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
+                            FtColumn::#field_type(t) => match t {
+                                Some(inner_type) => inner_type,
+                                None => panic!("Non-nullable inner type of list is returning a None value."),
+                            },
+                            _ => panic!("Invalid column type: {:?}.", item),
+                        }).collect::<Vec<_>>();
+                        Some(unwrapped_list)
+                    }
+                    None => None,
+                },
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    // Non-nullable list of nullable elements: [Entity]!
+    } else if !is_nullable && is_inner_type_nullable {
+        quote! {
+            let #field_name = match item {
+                FtColumn::#list_type(list) => match list {
+                    Some(list) => {
+                        let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
+                            FtColumn::#field_type(t) => t,
+                            _ => panic!("Invalid column type: {:?}.", item),
+                        }).collect::<Vec<_>>();
+                        unwrapped_list
+                    }
+                    None => panic!("Non-nullable type is returning a None value."),
+                }
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
+    // Non-nullable list of non-nullable elements: [Entity!]!
+    } else {
+        quote! {
+            let #field_name = match item {
+                FtColumn::#list_type(list) => match list {
+                    Some(list) => {
+                        let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
+                            FtColumn::#field_type(t) => match t {
+                                Some(inner_type) => inner_type,
+                                None => panic!("Non-nullable inner type of list is returning a None value."),
+                            },
+                            _ => panic!("Invalid column type: {:?}.", item),
+                        }).collect::<Vec<_>>();
+                        unwrapped_list
+                    }
+                    None => panic!("Non-nullable type is returning a None value."),
+                }
+                _ => panic!("Invalid column type: {:?}.", item),
+            };
+        }
     }
 }

@@ -357,6 +357,7 @@ fn process_type_def(
             let mut row_extractors = quote! {};
             let mut construction = quote! {};
             let mut flattened = quote! {};
+            let mut list_type = format_ident! {"ListScalar"};
 
             for field in &obj.fields {
                 let field_name = &field.node.name.to_string();
@@ -388,6 +389,7 @@ fn process_type_def(
                         is_list_with_nullable_elements,
                     );
                     field_typ_name = scalar_typ.to_string();
+                    list_type = format_ident! {"ListComplex"};
                 }
 
                 if schema.is_enum_type(&field_typ_name) {
@@ -432,7 +434,7 @@ fn process_type_def(
                             // a None value while also instantiating FtColumns
                             // from a list, if it exists.
                             quote! {
-                                FtColumn::List(
+                                FtColumn::#list_type(
                                 self.#field_name
                                     .clone()
                                     .and_then(
@@ -445,7 +447,7 @@ fn process_type_def(
                         // Nullable list of non-nullable elements: [Entity!]
                         } else if field_type.nullable && !nullable_elements {
                             quote! {
-                                FtColumn::List(
+                                FtColumn::#list_type(
                                 self.#field_name
                                     .clone()
                                     .and_then(
@@ -458,7 +460,7 @@ fn process_type_def(
                         // Non-nullable list of nullable elements: [Entity]!
                         } else if !field_type.nullable && nullable_elements {
                             quote! {
-                                FtColumn::List(
+                                FtColumn::#list_type(
                                 Some(self.#field_name
                                         .iter()
                                         .map(|item| FtColumn::#scalar_typ(item.clone()))
@@ -469,7 +471,7 @@ fn process_type_def(
                         // Non-nullable list of non-nullable elements: [Entity!]!
                         } else {
                             quote! {
-                                FtColumn::List(
+                                FtColumn::#list_type(
                                 Some(
                                     self.#field_name
                                         .iter()

@@ -2,13 +2,21 @@ use crate::{
     db::IndexerSchemaDbResult, parser::ParsedGraphQLSchema, utils::*, QUERY_ROOT,
 };
 use async_graphql_parser::types::{
-    BaseType, FieldDefinition, TypeDefinition, TypeKind, TypeSystemDefinition,
+    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_types::type_id;
 use std::collections::{HashMap, HashSet};
+
+// (additional necessary tables, column(s))
+#[derive(Debug, Default, Clone)]
+struct LookupTableGenerationSet {
+    table_name: String,
+    columns: Vec<NewColumn>,
+    foreign_keys: Vec<ForeignKey>,
+}
 
 /// SchemaBuilder is used to encapsulate most of the logic related to parsing
 /// GraphQL types, generating SQL from those types, and committing that SQL to
@@ -30,6 +38,7 @@ pub struct SchemaBuilder {
     fields: HashMap<String, HashMap<String, String>>,
     parsed_schema: ParsedGraphQLSchema,
     is_native: bool,
+    lookup_tables: Vec<LookupTableGenerationSet>,
 }
 
 impl SchemaBuilder {
@@ -131,6 +140,7 @@ impl SchemaBuilder {
         }
 
         for fk in foreign_keys {
+            println!("{}", fk.create_statement());
             queries::execute_query(conn, fk.create_statement()).await?;
         }
 
@@ -307,6 +317,95 @@ impl SchemaBuilder {
                     fragments.push(column.sql_fragment());
                     self.columns.push(column);
                 }
+                ColumnType::ListScalar => {
+                    if let Some((element_col_type, has_nullable_elements, _)) =
+                        inner_list_typ
+                    {
+                        match element_col_type {
+                            // ColumnType::ID => todo!(),
+                            ColumnType::Enum => todo!(),
+                            ColumnType::NoRelation => todo!(),
+                            ColumnType::ListScalar | ColumnType::ListComplex => {
+                                return Err(
+                                    super::IndexerSchemaDbError::ListOfListsUnsupported,
+                                );
+                            }
+                            _ => {
+                                let column = NewColumn {
+                                    type_id,
+                                    column_position: pos as i32,
+                                    column_name: field.name.to_string(),
+                                    column_type: typ.to_string(),
+                                    graphql_type: field.ty.to_string(),
+                                    nullable,
+                                    unique,
+                                    is_list_with_nullable_elements: Some(
+                                        has_nullable_elements,
+                                    ),
+                                    inner_list_element_type: Some(
+                                        element_col_type.to_string(),
+                                    ),
+                                };
+
+                                println!("regular col: {column:#?}");
+                                fragments.push(column.sql_fragment());
+                                self.columns.push(column);
+                            }
+                        }
+                    }
+                }
+                ColumnType::ListComplex => {
+                    if let Some((element_col_type, has_nullable_elements, _)) =
+                        inner_list_typ
+                    {
+                        if let ColumnType::ForeignKey = element_col_type {
+                            let directives::Join {
+                                reference_field_name,
+                                field_type_name,
+                                reference_field_type_name,
+                                ..
+                            } = get_join_directive_info(
+                                field,
+                                object_name,
+                                &self.parsed_schema.field_type_mappings,
+                            );
+                            self.generate_lookup_tables_for_complex_list_type(
+                                object_name,
+                                type_id,
+                                field,
+                                table_name,
+                                reference_field_name,
+                                reference_field_type_name.clone(),
+                                nullable,
+                                unique,
+                            );
+
+                            let column = NewColumn {
+                                type_id,
+                                column_position: pos as i32,
+                                column_name: field.name.to_string(),
+                                column_type: "ListComplex".to_string(),
+                                graphql_type: field_type_name,
+                                nullable,
+                                unique,
+                                is_list_with_nullable_elements: Some(
+                                    has_nullable_elements,
+                                ),
+                                inner_list_element_type: Some(
+                                    reference_field_type_name.to_owned(),
+                                ),
+                            };
+                            println!("complex list col: {column:#?}");
+
+                            fragments.push(column.sql_fragment());
+                            self.columns.push(column);
+                        } else {
+                            // TODO: Return error here
+                        }
+                    } else {
+                        // TODO: Return error here
+                    }
+                }
                 _ => {
                     let column = NewColumn {
                         type_id,
@@ -359,6 +458,98 @@ impl SchemaBuilder {
         self.columns.push(object_column);
 
         Ok(fragments.join(",\n"))
+    }
+
+    fn generate_lookup_tables_for_complex_list_type(
+        &mut self,
+        object_name: &String,
+        type_id: i64,
+        field: &FieldDefinition,
+        table_name: &str,
+        reference_field_name: String,
+        reference_field_type_name: String,
+        nullable: bool,
+        unique: bool,
+    ) {
+        let lookup_table_name = format!(
+            "{}_{}",
+            object_name.to_lowercase(),
+            field_type_table_name(field),
+        );
+
+        let lookup_table_id_column = NewColumn {
+            type_id,
+            column_position: 0,
+            column_name: "id".to_string(),
+            column_type: "LookupTableID".to_string(),
+            // TODO: what to do with this?
+            graphql_type: "ID!".to_string(),
+            nullable,
+            unique,
+            is_list_with_nullable_elements: None,
+            inner_list_element_type: None,
+        };
+
+        let lookup_table_referring_id_column = NewColumn {
+            type_id,
+            column_position: 1,
+            column_name: format!("{table_name}_id"),
+            column_type: "ID".to_string(),
+            // TODO: what to do with this?
+            graphql_type: "ID!".to_string(),
+            nullable,
+            unique,
+            is_list_with_nullable_elements: None,
+            inner_list_element_type: None,
+        };
+
+        let lookup_table_reference_id_column = NewColumn {
+            type_id,
+            column_position: 2,
+            column_name: format!("{}_id", field_type_table_name(field)),
+            column_type: "ID".to_string(),
+            // TODO: what to do with this?
+            graphql_type: "ID!".to_string(),
+            nullable,
+            unique,
+            is_list_with_nullable_elements: None,
+            inner_list_element_type: None,
+        };
+
+        // for the referring entity
+        let fk_to_lookup_1 = ForeignKey::new(
+            self.db_type.clone(),
+            self.namespace(),
+            lookup_table_name.clone(),
+            format!("{}_id", table_name),
+            table_name.to_string(),
+            reference_field_name.clone(),
+            reference_field_type_name.to_owned(),
+        );
+
+        let fk_to_lookup_2 = ForeignKey::new(
+            self.db_type.clone(),
+            self.namespace(),
+            lookup_table_name.clone(),
+            format!("{}_id", field_type_table_name(field)),
+            field_type_table_name(field),
+            reference_field_name.clone(),
+            reference_field_type_name.to_owned(),
+        );
+
+        let gen_set = LookupTableGenerationSet {
+            table_name: lookup_table_name,
+            columns: vec![
+                lookup_table_id_column,
+                lookup_table_referring_id_column,
+                lookup_table_reference_id_column,
+            ],
+            foreign_keys: vec![fk_to_lookup_1, fk_to_lookup_2],
+        };
+
+        println!("{gen_set:#?}");
+
+        self.lookup_tables.push(gen_set);
     }
 
     /// In SQL, we namespace a table by the schema name and the identifier, so
@@ -414,6 +605,8 @@ impl SchemaBuilder {
                     .map(|f| f.node.clone())
                     .collect::<Vec<FieldDefinition>>()[..];
 
+                println!("field defintions: {field_defs:#?}");
+
                 self.fields.insert(
                     typ.name.to_string(),
                     field_defs
@@ -430,6 +623,8 @@ impl SchemaBuilder {
                     field_defs,
                     &table_name,
                 )?;
+
+                println!("\ncolumns for {}: {columns}\n", &typ.name.to_string());
 
                 if self
                     .parsed_schema
@@ -459,6 +654,18 @@ impl SchemaBuilder {
 
                 let create =
                     format!("CREATE TABLE IF NOT EXISTS\n {sql_table} (\n {columns}\n)",);
+
+                // if object has a field that is a list of foreign keys
+                // create a lookup table
+
+                // table has three columns:
+                // 1. auto-incrementing ID
+                // 2. foreign key to entity with list; should be the same for each element in the list
+                // 3. foreign key to entity that will be stored as part of the list
+
+                // need to create table and then create foreign keys for that table
+                // probably best to create indices on both columns
+                // - should they be combo or singular?
 
                 self.statements.push(create);
                 self.type_ids.push(TypeId {
