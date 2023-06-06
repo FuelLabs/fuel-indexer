@@ -103,13 +103,11 @@ impl Manifest {
 
     /// Return the raw GraphQL schema string for an indexer manifest.
     pub fn graphql_schema(&self) -> ManifestResult<String> {
-        let mut file = File::open(&self.graphql_schema).map_err(|err| {
-            ManifestError::FileError(self.graphql_schema.clone(), err)
-        })?;
+        let mut file = File::open(&self.graphql_schema)
+            .map_err(|err| ManifestError::FileError(self.graphql_schema.clone(), err))?;
         let mut schema = String::new();
-        file.read_to_string(&mut schema).map_err(|err| {
-            ManifestError::FileError(self.graphql_schema.clone(), err)
-        })?;
+        file.read_to_string(&mut schema)
+            .map_err(|err| ManifestError::FileError(self.graphql_schema.clone(), err))?;
         Ok(schema)
     }
 
@@ -135,12 +133,10 @@ impl Manifest {
         match &self.module {
             Module::Wasm(p) => {
                 let mut bytes = Vec::<u8>::new();
-                let mut file = File::open(p).map_err(|err| {
-                    ManifestError::FileError(p.clone(), err)
-                })?;
-                file.read_to_end(&mut bytes).map_err(|err| {
-                    ManifestError::FileError(p.clone(), err)
-                })?;
+                let mut file = File::open(p)
+                    .map_err(|err| ManifestError::FileError(p.clone(), err))?;
+                file.read_to_end(&mut bytes)
+                    .map_err(|err| ManifestError::FileError(p.clone(), err))?;
 
                 Ok(bytes)
             }
