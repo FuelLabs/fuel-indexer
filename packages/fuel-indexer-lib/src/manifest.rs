@@ -18,8 +18,8 @@ pub enum ManifestError {
     YamlError(#[from] serde_yaml::Error),
     #[error("Native module bytes not supported.")]
     NativeModuleError,
-    #[error("File IO error: {0:?}.")]
-    FileError(#[from] std::io::Error),
+    #[error("File IO error: {0} {1:?}.")]
+    FileError(String, #[source] std::io::Error),
 }
 
 /// Specifies which type of module is used to create this indexer.
@@ -91,17 +91,25 @@ pub struct Manifest {
 impl Manifest {
     /// Derive an indexer manifest via the YAML file at the specified path.
     pub fn from_file(path: impl AsRef<Path>) -> ManifestResult<Self> {
-        let mut file = File::open(path)?;
+        let mut file = File::open(&path).map_err(|e| {
+            ManifestError::FileError(path.as_ref().display().to_string(), e)
+        })?;
         let mut content = String::new();
-        file.read_to_string(&mut content)?;
+        file.read_to_string(&mut content).map_err(|e| {
+            ManifestError::FileError(path.as_ref().display().to_string(), e)
+        })?;
         Self::try_from(content.as_str())
     }
 
     /// Return the raw GraphQL schema string for an indexer manifest.
     pub fn graphql_schema(&self) -> ManifestResult<String> {
-        let mut file = File::open(&self.graphql_schema)?;
+        let mut file = File::open(&self.graphql_schema).map_err(|err| {
+            ManifestError::FileError(self.graphql_schema.clone(), err)
+        })?;
         let mut schema = String::new();
-        file.read_to_string(&mut schema)?;
+        file.read_to_string(&mut schema).map_err(|err| {
+            ManifestError::FileError(self.graphql_schema.clone(), err)
+        })?;
         Ok(schema)
     }
 
@@ -127,8 +135,12 @@ impl Manifest {
         match &self.module {
             Module::Wasm(p) => {
                 let mut bytes = Vec::<u8>::new();
-                let mut file = File::open(p)?;
-                file.read_to_end(&mut bytes)?;
+                let mut file = File::open(p).map_err(|err| {
+                    ManifestError::FileError(p.clone(), err)
+                })?;
+                file.read_to_end(&mut bytes).map_err(|err| {
+                    ManifestError::FileError(p.clone(), err)
+                })?;
 
                 Ok(bytes)
             }
@@ -140,9 +152,13 @@ impl Manifest {
 
     /// Write this manifest to a given path.
     pub fn write(&self, path: &PathBuf) -> ManifestResult<()> {
-        let mut file = File::create(path)?;
+        let mut file = File::create(path).map_err(|err| {
+            ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
+        })?;
         let content: Vec<u8> = Self::try_into(self.clone())?;
-        file.write_all(&content)?;
+        file.write_all(&content).map_err(|err| {
+            ManifestError::FileError(path.to_str().unwrap_or_default().to_string(), err)
+        })?;
         Ok(())
     }
 }
