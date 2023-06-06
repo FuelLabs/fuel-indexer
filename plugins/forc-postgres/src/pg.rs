@@ -55,8 +55,9 @@ impl PgEmbedConfig {
             None => {
                 let filename = db_config_file_name(name);
                 let path = database_dir.join(filename);
-                let mut file =
-                    File::open(path).expect("PgEmbedConfig file does not exist.");
+                let mut file = File::open(&path).unwrap_or_else(|_| {
+                    panic!("PgEmbedConfig file {} does not exist.", path.display())
+                });
                 let mut content = String::new();
                 file.read_to_string(&mut content)?;
 

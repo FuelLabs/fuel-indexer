@@ -2939,6 +2939,7 @@ dependencies = [
  "bincode",
  "clap 3.2.25",
  "cynic",
+ "forc-postgres",
  "fuel-core",
  "fuel-core-client",
  "fuel-crypto 0.26.3",
@@ -2951,9 +2952,11 @@ dependencies = [
  "fuel-vm",
  "futures",
  "itertools 0.10.5",
+ "openssl",
  "sqlx",
  "thiserror",
  "tokio 1.28.2",
+ "tokio-util 0.7.8",
  "tracing",
  "wasmer",
  "wasmer-compiler-cranelift",
@@ -5028,6 +5031,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
+name = "openssl-src"
+version = "111.25.3+1.1.1t"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "924757a6a226bf60da5f7dd0311a34d2b52283dd82ddeb103208ddc66362f80c"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "openssl-sys"
 version = "0.9.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5035,6 +5047,7 @@ checksum = "c2ce0f250f34a308dcfdbb351f511359857d4ed2134ba715a4eadd46e1ffd617"
 dependencies = [
  "cc",
  "libc",
+ "openssl-src",
  "pkg-config",
  "vcpkg",
 ]

@@ -40,5 +40,6 @@ pub async fn exec(command: Command) -> Result<()> {
         verbose,
     })
     .await?;
+
     Ok(())
 }

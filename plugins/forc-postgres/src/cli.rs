@@ -15,7 +15,7 @@ pub struct Opt {
 
 #[derive(Subcommand, Debug)]
 pub enum ForcPostgres {
-    Create(Box<CreateDbCommand>),
+    Create(CreateDbCommand),
     Drop(DropDbCommand),
     Start(StartDbCommand),
     Stop(StopDbCommand),

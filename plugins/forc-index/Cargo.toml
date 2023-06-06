@@ -13,14 +13,14 @@ description = "Fuel Indexer forc plugin"
 
 actix-web = { version = "4", default-features = false, features = ["macros"] }
 anyhow = "1"
-clap = { features = ["derive", "env"] , workspace = true }
+clap = { features = ["derive", "env"], workspace = true }
 forc-postgres = { workspace = true }
 forc-tracing = { version = "0.31", default-features = false }
 forc-util = { version = "0.35.0" }
-fuel-indexer-lib = { workspace = true }
 fuel-indexer-database-types = { workspace = true }
-fuel-tx = { features = ["builder"] , workspace = true }
-fuels = { workspace = true }
+fuel-indexer-lib = { workspace = true }
+fuel-tx = { features = ["builder"], workspace = true }
+fuels = { default-features = false, workspace = true }
 hex = "0.4.3"
 hyper-rustls = { version = "0.23", features = ["http2"] }
 indicatif = "0.17"
@@ -30,9 +30,9 @@ reqwest = { version = "0.11", default-features = false, features = ["json", "rus
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = "0.8"
-tokio = { features = ["macros", "rt-multi-thread", "process"] , workspace = true }
-toml = "0.5"
 tempfile = "3.4.0"
+tokio = { features = ["macros", "rt-multi-thread", "process"], workspace = true }
+toml = "0.5"
 tracing = { workspace = true }
 walkdir = "2"
 

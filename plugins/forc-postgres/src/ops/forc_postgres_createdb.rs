@@ -11,7 +11,7 @@ use pg_embed::{pg_fetch::PgFetchSettings, postgres::PgEmbed};
 use std::{fs::File, io::Write, path::PathBuf, time::Duration};
 use tracing::info;
 
-fn save_pgembed_config(config: PgEmbedConfig, path: Option<&PathBuf>) -> Result<()> {
+fn save_pgembed_config(config: &PgEmbedConfig, path: Option<&PathBuf>) -> Result<()> {
     if let Some(path) = path {
         let filename = db_config_file_name(&config.name);
         let path = path.join(filename);
@@ -141,7 +141,7 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
                     == format!("database \"{name}\" already exists")
                 {
                     info!("Database {} already exists", &name);
-                    save_pgembed_config(pg_config, database_dir.as_ref())?;
+                    save_pgembed_config(&pg_config, database_dir.as_ref())?;
                     pb.finish();
 
                     if start {
@@ -160,7 +160,7 @@ pub async fn init(command: CreateDbCommand) -> anyhow::Result<()> {
         pg.migrate(&name).await?;
     }
 
-    save_pgembed_config(pg_config, database_dir.as_ref())?;
+    save_pgembed_config(&pg_config, database_dir.as_ref())?;
 
     pb.finish();
 
