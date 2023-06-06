@@ -430,8 +430,6 @@ pub async fn register_indexer(
     pubkey: Option<&str>,
     created_at: DateTime<Utc>,
 ) -> sqlx::Result<RegisteredIndexer> {
-    println!(">> PUBKEY 1st: {pubkey:?}");
-
     if let Some(index) = get_indexer(conn, namespace, identifier).await? {
         return Ok(index);
     }
@@ -900,7 +898,6 @@ pub async fn indexer_owned_by(
     identifier: &str,
     pubkey: &str,
 ) -> sqlx::Result<()> {
-    println!(">> PUBKEY: {pubkey}");
     let row = sqlx::query(&format!("SELECT COUNT(*)::int FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' AND pubkey = '{pubkey}'"))
         .fetch_one(conn)
         .await?;
