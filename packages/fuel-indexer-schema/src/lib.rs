@@ -2,7 +2,7 @@
 
 extern crate alloc;
 
-use fuel_indexer_types::{prelude::fuel::*, prelude::*};
+use fuel_indexer_types::prelude::fuel::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

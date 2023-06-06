@@ -37,6 +37,146 @@ impl ToString for ConsensusLabel {
     }
 }
 
+impl ToString for PanicReason {
+    fn to_string(&self) -> String {
+        match self {
+            Self::Success => "PanicReason::Success".to_string(),
+            Self::Revert => "PanicReason::Revert".to_string(),
+            Self::OutOfGas => "PanicReason::OutOfGas".to_string(),
+            Self::TransactionValidity => "PanicReason::TransactionValidity".to_string(),
+            Self::MemoryOverflow => "PanicReason::MemoryOverflow".to_string(),
+            Self::ArithmeticOverflow => "PanicReason::ArithmeticOverflow".to_string(),
+            Self::ContractNotFound => "Panicreason::ContractNotFound".to_string(),
+            Self::MemoryOwnership => "PanicReason::MemoryOwnership".to_string(),
+            Self::NotEnoughBalance => "PanicReason::NotEnoughBalance".to_string(),
+            Self::ExpectedInternalContext => {
+                "PanicReason::ExpectedInternalContext".to_string()
+            }
+            Self::AssetIdNotFound => "PanicReason::AssetIdNotFound".to_string(),
+            Self::InputNotFound => "PanicReason::InputNotFound".to_string(),
+            Self::OutputNotFound => "PanicReason::OutputNotFound".to_string(),
+            Self::WitnessNotFound => "PanicReason::WitnessNotFound".to_string(),
+            Self::TransactionMaturity => "PanicReason::TransactionMaturity".to_string(),
+            Self::InvalidMetadataIdentifier => {
+                "PanicReason::InvalidMetadataIdentifier".to_string()
+            }
+            Self::MalformedCallStructure => {
+                "PanicReason::MalformedCallStructure".to_string()
+            }
+            Self::ReservedRegisterNotWritable => {
+                "PanicReason::ReservedRegisterNotWritable".to_string()
+            }
+            Self::ErrorFlag => "PanicReason::ErrorFlag".to_string(),
+            Self::InvalidImmediateValue => {
+                "PanicReason::InvalidImmediateValue".to_string()
+            }
+            Self::ExpectedCoinInput => "PanicReason::ExpectedCoinInput".to_string(),
+            Self::MaxMemoryAccess => "PanicReason::MaxMemoryAccess".to_string(),
+            Self::MemoryWriteOverlap => "PanicReason::MemoryWriteOverlap".to_string(),
+            Self::ContractNotInInputs => "PanicReason::ContractNotInInputs".to_string(),
+            Self::InternalBalanceOverflow => {
+                "PanicReason::InternalBalanceOverflow".to_string()
+            }
+            Self::ContractMaxSize => "PanicReason::ContractMaxSize".to_string(),
+            Self::ExpectedUnallocatedStack => {
+                "PanicReason::ExpectedUnallocatedStack".to_string()
+            }
+            Self::MaxStaticContractsReached => {
+                "PanicReason::MaxStaticContractsReached".to_string()
+            }
+            Self::TransferAmountCannotBeZero => {
+                "PanicReason::TransferAmountCannotBeZero".to_string()
+            }
+            Self::ExpectedOutputVariable => {
+                "PanicReason::ExpectedOutputVariable".to_string()
+            }
+            Self::ExpectedParentInternalContext => {
+                "PanicReason::ExpectedParentInternalContext".to_string()
+            }
+            Self::IllegalJump => "PanicReason::IllegalJump".to_string(),
+            Self::ContractIdAlreadyDeployed => {
+                "PanicReason::ContractIdAlreadyDeployed".to_string()
+            }
+            Self::Unknown => "PanicReason::Unknown".to_string(),
+        }
+    }
+}
+
+impl From<fuel::ClientPanicReason> for PanicReason {
+    fn from(reason: fuel::ClientPanicReason) -> Self {
+        match reason {
+            fuel::ClientPanicReason::Success => PanicReason::Success,
+            fuel::ClientPanicReason::Revert => PanicReason::Revert,
+            fuel::ClientPanicReason::OutOfGas => PanicReason::OutOfGas,
+            fuel::ClientPanicReason::TransactionValidity => {
+                PanicReason::TransactionValidity
+            }
+            fuel::ClientPanicReason::MemoryOverflow => PanicReason::MemoryOverflow,
+            fuel::ClientPanicReason::ArithmeticOverflow => {
+                PanicReason::ArithmeticOverflow
+            }
+            fuel::ClientPanicReason::ContractNotFound => PanicReason::ContractNotFound,
+            fuel::ClientPanicReason::MemoryOwnership => PanicReason::MemoryOwnership,
+            fuel::ClientPanicReason::NotEnoughBalance => PanicReason::NotEnoughBalance,
+            fuel::ClientPanicReason::ExpectedInternalContext => {
+                PanicReason::ExpectedInternalContext
+            }
+            fuel::ClientPanicReason::AssetIdNotFound => PanicReason::AssetIdNotFound,
+            fuel::ClientPanicReason::InputNotFound => PanicReason::InputNotFound,
+            fuel::ClientPanicReason::OutputNotFound => PanicReason::OutputNotFound,
+            fuel::ClientPanicReason::WitnessNotFound => PanicReason::WitnessNotFound,
+            fuel::ClientPanicReason::TransactionMaturity => {
+                PanicReason::TransactionMaturity
+            }
+            fuel::ClientPanicReason::InvalidMetadataIdentifier => {
+                PanicReason::InvalidMetadataIdentifier
+            }
+            fuel::ClientPanicReason::MalformedCallStructure => {
+                PanicReason::MalformedCallStructure
+            }
+            fuel::ClientPanicReason::ReservedRegisterNotWritable => {
+                PanicReason::ReservedRegisterNotWritable
+            }
+            fuel::ClientPanicReason::ErrorFlag => PanicReason::ErrorFlag,
+            fuel::ClientPanicReason::InvalidImmediateValue => {
+                PanicReason::InvalidImmediateValue
+            }
+            fuel::ClientPanicReason::ExpectedCoinInput => PanicReason::ExpectedCoinInput,
+            fuel::ClientPanicReason::MaxMemoryAccess => PanicReason::MaxMemoryAccess,
+            fuel::ClientPanicReason::MemoryWriteOverlap => {
+                PanicReason::MemoryWriteOverlap
+            }
+            fuel::ClientPanicReason::ContractNotInInputs => {
+                PanicReason::ContractNotInInputs
+            }
+            fuel::ClientPanicReason::InternalBalanceOverflow => {
+                PanicReason::InternalBalanceOverflow
+            }
+            fuel::ClientPanicReason::ContractMaxSize => PanicReason::ContractMaxSize,
+            fuel::ClientPanicReason::ExpectedUnallocatedStack => {
+                PanicReason::ExpectedUnallocatedStack
+            }
+            fuel::ClientPanicReason::MaxStaticContractsReached => {
+                PanicReason::MaxStaticContractsReached
+            }
+            fuel::ClientPanicReason::TransferAmountCannotBeZero => {
+                PanicReason::TransferAmountCannotBeZero
+            }
+            fuel::ClientPanicReason::ExpectedOutputVariable => {
+                PanicReason::ExpectedOutputVariable
+            }
+            fuel::ClientPanicReason::ExpectedParentInternalContext => {
+                PanicReason::ExpectedParentInternalContext
+            }
+            fuel::ClientPanicReason::IllegalJump => PanicReason::IllegalJump,
+            fuel::ClientPanicReason::ContractIdAlreadyDeployed => {
+                PanicReason::ContractIdAlreadyDeployed
+            }
+            _ => PanicReason::Unknown,
+        }
+    }
+}
+
 impl From<fuel::Genesis> for Genesis {
     fn from(genesis: fuel::Genesis) -> Self {
         let fuel::Genesis {
@@ -47,6 +187,7 @@ impl From<fuel::Genesis> for Genesis {
             ..
         } = genesis;
 
+        // TODO: Create UID here.
         let id = 1;
         Self {
             id,
@@ -62,6 +203,7 @@ impl From<fuel::Consensus> for Consensus {
     fn from(consensus: fuel::Consensus) -> Self {
         match consensus {
             fuel::Consensus::Genesis(g) => {
+                // TODO: Create UID here.
                 let id = 1;
                 let genesis = Genesis::load(id).unwrap_or_else(|| {
                     let g: Genesis = g.into();
@@ -78,6 +220,7 @@ impl From<fuel::Consensus> for Consensus {
                 }
             }
             fuel::Consensus::PoA(poa) => {
+                // TODO: Create UID here.
                 let id = 1;
                 Consensus {
                     unknown: None,
@@ -93,6 +236,7 @@ impl From<fuel::Consensus> for Consensus {
                 }
             }
             fuel::Consensus::Unknown => {
+                // TODO: Create UID here.
                 let id = 1;
                 Consensus {
                     unknown: Some(Unknown { value: true }.into()),
@@ -120,10 +264,24 @@ impl From<fuel::TxPointer> for TxPointer {
             block_height,
             tx_index,
         } = tx_pointer;
+        // TODO: Create UID here.
+        let id = 1;
         Self {
-            id: 1,
+            id,
             block_height,
-            tx_index: tx_index as u32,
+            tx_index,
+        }
+    }
+}
+
+impl From<fuel::UtxoId> for UtxoId {
+    fn from(utxo_id: fuel::UtxoId) -> Self {
+        // TODO: Create UID here.
+        let id = 1;
+        Self {
+            id,
+            tx_id: *utxo_id.tx_id(),
+            output_index: utxo_id.output_index().into(),
         }
     }
 }
@@ -131,7 +289,6 @@ impl From<fuel::TxPointer> for TxPointer {
 impl From<fuel::InputCoin> for InputCoin {
     fn from(input: fuel::InputCoin) -> Self {
         let fuel::InputCoin {
-            #[allow(unused)]
             utxo_id,
             owner,
             amount,
@@ -143,16 +300,28 @@ impl From<fuel::InputCoin> for InputCoin {
             predicate_data,
         } = input;
 
-        let id = 1; // Create u64 from input parts
+        // TODO: Create UID here.
+        // let id = utxo_id.tx_id();
+        let id = 1;
+        let utxo = UtxoId::load(id).unwrap_or_else(|| {
+            let utxo = UtxoId::from(utxo_id);
+            utxo.save();
+            utxo
+        });
+
+        // TODO: Create UID here.
+        let id = 1;
         let ptr = TxPointer::load(id).unwrap_or_else(|| {
             let ptr = TxPointer::from(tx_pointer);
             ptr.save();
             ptr
         });
 
+        // TODO: Create UID here.
+        let id = 1;
         Self {
-            id: 1,
-            utxo_id: 1,
+            id,
+            utxo_id: utxo.id,
             owner,
             amount,
             asset_id,
@@ -182,23 +351,34 @@ impl From<fuel::InputContract> for InputContract {
             contract_id,
         } = input;
 
-        let id = 1; // Create u64 from `contract_id`
+        // TODO: Create UID here.
+        let id = 1;
         let contract = ContractIdFragment::load(id).unwrap_or_else(|| {
             let contract = ContractIdFragment::from(id);
             contract.save();
             contract
         });
 
-        let id = 1; // Create u64 from input parts
+        // TODO: Create UID here.
+        let id = 1;
         let ptr = TxPointer::load(id).unwrap_or_else(|| {
             let ptr = TxPointer::from(tx_pointer);
             ptr.save();
             ptr
         });
 
+        // TODO: Create UID here.
+        // let id = utxo_id.tx_id();
+        let id = 1;
+        let utxo = UtxoId::load(id).unwrap_or_else(|| {
+            let utxo = UtxoId::from(utxo_id);
+            utxo.save();
+            utxo
+        });
+
         Self {
             id,
-            utxo_id: 1,
+            utxo_id: utxo.id,
             balance_root,
             state_root,
             tx_pointer: ptr.id,
@@ -220,7 +400,8 @@ impl From<fuel::InputMessage> for InputMessage {
             predicate_data,
         } = input;
 
-        let id = 1; // Create u64 from input parts
+        // TODO: Create UID here.
+        let id = 1;
 
         Self {
             id,
@@ -240,13 +421,15 @@ impl From<fuel::Input> for Input {
     fn from(input: fuel::Input) -> Self {
         match input {
             fuel::Input::Coin(input) => {
-                let id = 1; // Create u64 from input parts
+                // TODO: Create UID here.
+                let id = 1;
                 let coin = InputCoin::load(id).unwrap_or_else(|| {
                     let coin = InputCoin::from(input);
                     coin.save();
                     coin
                 });
 
+                // TODO: Create UID here.
                 let id = 1;
                 let input = Input {
                     id,
@@ -258,13 +441,15 @@ impl From<fuel::Input> for Input {
                 input
             }
             fuel::Input::Contract(input) => {
-                let id = 1; // Create u64 from input parts
+                // TODO: Create UID here.
+                let id = 1;
                 let contract = InputContract::load(id).unwrap_or_else(|| {
                     let contract = InputContract::from(input);
                     contract.save();
                     contract
                 });
 
+                // TODO: Create UID here.
                 let id = 1;
                 let input = Input {
                     id,
@@ -276,13 +461,15 @@ impl From<fuel::Input> for Input {
                 input
             }
             fuel::Input::Message(input) => {
-                let id = 1; // Create u64 from input parts
+                // TODO: Create UID here.
+                let id = 1;
                 let message = InputMessage::load(id).unwrap_or_else(|| {
                     let message = InputMessage::from(input);
                     message.save();
                     message
                 });
 
+                // TODO: Create UID here.
                 let id = 1;
                 let input = Input {
                     id,
@@ -305,7 +492,8 @@ impl From<fuel::CoinOutput> for CoinOutput {
             asset_id,
         } = output;
 
-        let id = 1; // Create u64 from output parts
+        // TODO: Create UID here.
+        let id = 1;
         Self {
             id,
             recipient: to,
@@ -323,7 +511,8 @@ impl From<fuel::ContractOutput> for ContractOutput {
             state_root,
         } = output;
 
-        let id = 1; // Create u64 from output parts
+        // TODO: Create UID here.
+        let id = 1;
         Self {
             id,
             input_index: input_index as i64,
@@ -341,7 +530,8 @@ impl From<fuel::ChangeOutput> for ChangeOutput {
             asset_id,
         } = output;
 
-        let id = 1; // Create u64 from output parts
+        // TODO: Create UID here.
+        let id = 1;
         Self {
             id,
             recipient: to,
@@ -359,7 +549,8 @@ impl From<fuel::VariableOutput> for VariableOutput {
             asset_id,
         } = output;
 
-        let id = 1; // Create u64 from output parts
+        // TODO: Create UID here.
+        let id = 1;
         Self {
             id,
             recipient: to,
@@ -374,7 +565,8 @@ impl From<fuel::Output> for Output {
         match output {
             fuel::Output::CoinOutput(output) => {
                 let coin = CoinOutput::from(output);
-                let id = 1; // Create u64 from output parts
+                // TODO: Create UID here.
+                let id = 1;
                 Self {
                     id,
                     coin: Some(coin.id),
@@ -387,7 +579,8 @@ impl From<fuel::Output> for Output {
             }
             fuel::Output::ContractOutput(output) => {
                 let contract = ContractOutput::from(output);
-                let id = 1; // Create u64 from output parts
+                // TODO: Create UID here.
+                let id = 1;
                 Self {
                     id,
                     coin: None,
@@ -400,7 +593,8 @@ impl From<fuel::Output> for Output {
             }
             fuel::Output::ChangeOutput(output) => {
                 let change = ChangeOutput::from(output);
-                let id = 1; // Create u64 from output parts
+                // TODO: Create UID here.
+                let id = 1;
                 Self {
                     id,
                     coin: None,
@@ -413,7 +607,8 @@ impl From<fuel::Output> for Output {
             }
             fuel::Output::VariableOutput(output) => {
                 let var = VariableOutput::from(output);
-                let id = 1; // Create u64 from output parts
+                // TODO: Create UID here.
+                let id = 1;
                 Self {
                     id,
                     coin: None,
@@ -426,7 +621,8 @@ impl From<fuel::Output> for Output {
             }
             fuel::Output::ContractCreated(output) => {
                 let contract = ContractCreated::from(output);
-                let id = 1; // Create u64 from output parts
+                // TODO: Create UID here.
+                let id = 1;
                 Self {
                     id,
                     coin: None,
@@ -439,8 +635,10 @@ impl From<fuel::Output> for Output {
             }
             _ => {
                 Logger::warn("Unrecognized output type.");
+                // TODO: Create UID here.
+                let id = 1;
                 Self {
-                    id: 1,
+                    id,
                     coin: None,
                     contract: None,
                     change: None,
@@ -455,16 +653,18 @@ impl From<fuel::Output> for Output {
 
 impl From<fuel::ContractCreated> for ContractCreated {
     fn from(output: fuel::ContractCreated) -> Self {
+        #[allow(unused)]
         let fuel::ContractCreated {
-            #[allow(unused)]
             contract_id,
             state_root,
         } = output;
 
-        let id = 1; // Create u64 from contract ID
+        // TODO: Create UID here.
+        let id = 1;
         let contract = Contract::load(id).unwrap();
 
-        let id = 1; // Create u64 from output parts
+        // TODO: Create UID here.
+        let id = 1;
         Self {
             id,
             contract: contract.id,
@@ -483,8 +683,10 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 reason,
                 program_state,
             } => {
-                let id = 1; // Create u64 from status parts
-                let block_id = 1; // derive ID from block_hash
+                // TODO: Create UID here.
+                let id = 1;
+                // TODO: Create UID here.
+                let block_id = 1;
                 let block = BlockIdFragment::load(block_id).unwrap();
                 let program_state = program_state.map(|p| p.into());
                 let failure = FailureStatus::load(id).unwrap_or_else(|| {
@@ -510,7 +712,8 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 }
             }
             fuel::TransactionStatus::SqueezedOut { reason } => {
-                let id = 1; // Create u64 from status parts
+                // TODO: Create UID here.
+                let id = 1;
                 let squeezed_out = SqueezedOutStatus::load(id).unwrap_or_else(|| {
                     let squeezed_out = SqueezedOutStatus {
                         id,
@@ -536,8 +739,10 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 time,
                 program_state,
             } => {
-                let id = 1; // Create u64 from status parts
-                let block_id = 1; // derive ID from block_hash
+                // TODO: Create UID here.
+                let id = 1;
+                // TODO: Create UID here.
+                let block_id = 1;
                 let block = BlockIdFragment::load(block_id).unwrap();
                 let program_state = program_state.map(|p| p.into());
                 let success = SuccessStatus::load(id).unwrap_or_else(|| {
@@ -562,7 +767,8 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 }
             }
             fuel::TransactionStatus::Submitted { submitted_at } => {
-                let id = 1; // Create u64 from status parts
+                // TODO: Create UID here.
+                let id = 1;
                 let submitted = SubmittedStatus::load(id).unwrap_or_else(|| {
                     let submitted = SubmittedStatus {
                         id,
@@ -586,13 +792,425 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
     }
 }
 
+impl From<fuel::ScriptExecutionResult> for ScriptExecutionResult {
+    fn from(result: fuel::ScriptExecutionResult) -> Self {
+        match result {
+            fuel::ScriptExecutionResult::Success => ScriptExecutionResult::Success,
+            fuel::ScriptExecutionResult::Panic => ScriptExecutionResult::Panic,
+            fuel::ScriptExecutionResult::Revert => ScriptExecutionResult::Revert,
+            fuel::ScriptExecutionResult::GenericFailure(_) => {
+                ScriptExecutionResult::GenericFailure
+            }
+        }
+    }
+}
+
+impl From<fuel::Receipt> for Receipt {
+    fn from(receipt: fuel::Receipt) -> Self {
+        match receipt {
+            fuel::Receipt::Call {
+                id: contract_id,
+                to,
+                amount,
+                asset_id,
+                gas,
+                param1,
+                param2,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: Some(
+                        CallReceipt {
+                            contract_id,
+                            recipient: to,
+                            amount,
+                            asset_id,
+                            gas,
+                            param1,
+                            param2,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::Return {
+                id: contract_id,
+                val,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: Some(
+                        ReturnReceipt {
+                            contract_id,
+                            val,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::ReturnData {
+                id: contract_id,
+                ptr,
+                len,
+                digest,
+                data,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: Some(
+                        ReturnDataReceipt {
+                            contract_id,
+                            ptr,
+                            len,
+                            digest,
+                            data: data.into(),
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::Panic {
+                #[allow(unused)]
+                id,
+                contract_id,
+                reason,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: Some(
+                        PanicReceipt {
+                            contract_id,
+                            reason: Some(
+                                InstructionResult {
+                                    reason: PanicReason::from(reason.reason().to_owned())
+                                        .into(),
+                                    instruction: *reason.instruction(),
+                                }
+                                .into(),
+                            ),
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::Revert {
+                id: contract_id,
+                ra,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: Some(
+                        RevertReceipt {
+                            contract_id,
+                            ra,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::Log {
+                id: contract_id,
+                ra,
+                rb,
+                rc,
+                rd,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: Some(
+                        LogReceipt {
+                            contract_id,
+                            ra,
+                            rb,
+                            rc,
+                            rd,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::LogData {
+                id: contract_id,
+                ra,
+                rb,
+                ptr,
+                len,
+                digest,
+                data,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: Some(
+                        LogDataReceipt {
+                            contract_id,
+                            ra,
+                            rb,
+                            ptr,
+                            len,
+                            digest,
+                            data: data.into(),
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::Transfer {
+                id: contract_id,
+                to: recipient,
+                amount,
+                asset_id,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: Some(
+                        TransferReceipt {
+                            contract_id,
+                            recipient,
+                            amount,
+                            asset_id,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::TransferOut {
+                id: contract_id,
+                to: recipient,
+                amount,
+                asset_id,
+                pc,
+                is: isr,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: Some(
+                        TransferOutReceipt {
+                            contract_id,
+                            recipient,
+                            amount,
+                            asset_id,
+                            pc,
+                            isr,
+                        }
+                        .into(),
+                    ),
+                    script_result: None,
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::ScriptResult { result, gas_used } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: Some(
+                        ScriptResultReceipt {
+                            result: ScriptExecutionResult::from(result).into(),
+                            gas_used,
+                        }
+                        .into(),
+                    ),
+                    message_out: None,
+                }
+            }
+            fuel::Receipt::MessageOut {
+                message_id,
+                sender,
+                recipient,
+                amount,
+                nonce,
+                len,
+                digest,
+                data,
+            } => {
+                // TODO: Create UID here.
+                let id = 1;
+                Self {
+                    id,
+                    call: None,
+                    returns: None,
+                    return_data: None,
+                    panic: None,
+                    revert: None,
+                    log: None,
+                    log_data: None,
+                    transfer: None,
+                    transfer_out: None,
+                    script_result: None,
+                    message_out: Some(
+                        MessageOutReceipt {
+                            message_id,
+                            sender,
+                            recipient,
+                            amount,
+                            nonce,
+                            len,
+                            digest,
+                            data: data.into(),
+                        }
+                        .into(),
+                    ),
+                }
+            }
+        }
+    }
+}
+
 #[indexer(manifest = "examples/fuel-explorer/fuel-explorer/fuel_explorer.manifest.yaml")]
 pub mod explorer_index {
 
     fn index_block(block_data: BlockData) {
-        let id = 1; // Create u64 from block parts
+        // TODO: Create UID here.
+        let id = 1;
         let header = Header {
-            id, // Create u64 from header parts
+            id,
             block_id: block_data.header.id,
             da_height: block_data.header.da_height,
             transactions_count: block_data.header.transactions_count,
@@ -609,8 +1227,8 @@ pub mod explorer_index {
         let consensus = Consensus::from(block_data.consensus);
         consensus.save();
 
+        // TODO: Create UID here.
         let id = 1;
-        let _foo = "bar";
         let block_frag = BlockIdFragment {
             id,
             hash: Bytes32::default(),
@@ -618,8 +1236,10 @@ pub mod explorer_index {
 
         block_frag.save();
 
+        // TODO: Create UID here.
+        let id = 1;
         let block = Block {
-            id, // Create u64 from block parts
+            id,
             block_id: block_data.header.id,
             header: header.id,
             consensus: consensus.id,
@@ -654,25 +1274,25 @@ pub mod explorer_index {
                         .map(|w| w.to_owned().into())
                         .collect::<Vec<Witness>>();
 
-                    let script_tx_frag = TransactionIdFragment { id: 1 };
-                    script_tx_frag.save();
-
+                    // TODO: Create UID here.
+                    let id = 1;
                     let script_tx = ScriptTransaction {
-                        id: 1, // Create u64 from tx parts
+                        id,
                         gas_limit: *gas_limit,
                         gas_price: *gas_price,
                         maturity: *maturity as u32,
                         script: script.to_owned().into(),
-
-                        // TODO: Pending list types
                         // storage_slots: [],
                         // inputs: [],
                         // inputs: [],
                         // outputs: [],
                         // witnesses: [],
                         receipts_root: *receipts_root,
-                        metadata: Some(Json::default()),
+                        metadata: metadata.to_owned().map(|m| m.into()),
                     };
+
+                    let script_tx_frag = TransactionIdFragment { id };
+                    script_tx_frag.save();
 
                     script_tx.save();
                 }
@@ -699,31 +1319,26 @@ pub mod explorer_index {
                         .map(|w| w.to_owned().into())
                         .collect::<Vec<Witness>>();
 
-                    // Create u64 from tx parts
-                    let create_tx_frag = TransactionIdFragment { id: 1 };
-                    create_tx_frag.save();
-
+                    // TODO: Create UID here.
+                    let id = 1;
                     let create_tx = CreateTransaction {
-                        id: 1, // Create u64 from tx parts
+                        id,
                         gas_limit: *gas_limit,
                         gas_price: *gas_price,
                         maturity: *maturity as u32,
-
-                        // TODO: Where do these come from?
-                        bytecode_length: 0,
-                        bytecode_witness_index: 0,
-
-                        // TODO: Pending list types
+                        bytecode_length: *bytecode_length,
+                        bytecode_witness_index: *bytecode_witness_index,
                         // storage_slots: [],
                         // inputs: [],
                         // inputs: [],
                         // outputs: [],
                         // witnesses: [],
-                        salt: Salt::default(),
-
-                        // TODO: Where do these come from?
-                        metadata: Some(Json::default()),
+                        salt: *salt,
+                        metadata: metadata.to_owned().map(|m| m.into()),
                     };
+
+                    let create_tx_frag = TransactionIdFragment { id };
+                    create_tx_frag.save();
 
                     create_tx.save();
                 }
@@ -733,7 +1348,7 @@ pub mod explorer_index {
                     outputs,
                     metadata,
                 }) => {
-                    // Create u64 from tx parts
+                    // TODO: Create UID here.
                     let mint_tx_frag = TransactionIdFragment { id: 1 };
                     mint_tx_frag.save();
                 }
