@@ -313,7 +313,7 @@ pub async fn new_column_insert(
 pub async fn list_column_by_id(
     conn: &mut PoolConnection<Postgres>,
     col_id: i64,
-) -> sqlx::Result<Vec<Columns>> {
+) -> sqlx::Result<Vec<Column>> {
     Ok(
         sqlx::query("SELECT * FROM graph_registry_columns WHERE type_id = $1")
             .bind(col_id)
@@ -328,8 +328,10 @@ pub async fn list_column_by_id(
                 let column_type: String = row.get(4);
                 let nullable: bool = row.get(5);
                 let graphql_type: String = row.get(6);
+                let is_list_with_nullable_elements: Option<bool> = row.get(7);
+                let inner_list_element_type: Option<String> = row.get(8);
 
-                Columns {
+                Column {
                     id,
                     type_id,
                     column_position,
@@ -337,9 +339,11 @@ pub async fn list_column_by_id(
                     column_type,
                     nullable,
                     graphql_type,
+                    is_list_with_nullable_elements,
+                    inner_list_element_type,
                 }
             })
-            .collect::<Vec<Columns>>(),
+            .collect::<Vec<Column>>(),
     )
 }
 

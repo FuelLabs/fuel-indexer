@@ -89,10 +89,11 @@ pub async fn new_column_insert(
     }
 }
 
+/// Returns a list of columns associated to a type ID.
 pub async fn list_column_by_id(
     conn: &mut IndexerConnection,
     col_id: i64,
-) -> sqlx::Result<Vec<Columns>> {
+) -> sqlx::Result<Vec<Column>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::list_column_by_id(c, col_id).await

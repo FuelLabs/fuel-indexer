@@ -94,10 +94,12 @@ pub struct NewColumn {
     pub nullable: bool,
     pub graphql_type: String,
     pub unique: bool,
+    pub is_list_with_nullable_elements: Option<bool>,
+    pub inner_list_element_type: Option<String>,
 }
 
 #[derive(Debug)]
-pub struct Columns {
+pub struct Column {
     pub id: i64,
     pub type_id: i64,
     pub column_position: i32,
@@ -105,6 +107,8 @@ pub struct Columns {
     pub column_type: String,
     pub nullable: bool,
     pub graphql_type: String,
+    pub is_list_with_nullable_elements: Option<bool>,
+    pub inner_list_element_type: Option<String>,
 }
 
 impl NewColumn {
