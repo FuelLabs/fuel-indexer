@@ -233,12 +233,6 @@ jobs:
           bash scripts/stripper.bash fuel_indexer_test.wasm
           cp fuel_indexer_test.wasm target/wasm32-unknown-unknown/release/
 
-      - name: Build fuel-indexer-test-redeploy WASM
-        run: |
-          cargo build -p fuel-indexer-test-redeploy --release --target wasm32-unknown-unknown
-          bash scripts/stripper.bash fuel_indexer_test_redeploy.wasm
-          cp fuel_indexer_test_redeploy.wasm target/wasm32-unknown-unknown/release/
-
       - name: Build simple-wasm WASM
         run: |
           cargo build -p simple-wasm --release --target wasm32-unknown-unknown
