@@ -39,6 +39,7 @@ pub struct ParsedGraphQLSchema {
     /// The parsed schema.
     pub ast: ServiceDocument,
 
+    /// Entities that contain list fields.
     pub entities_with_list_fields: HashMap<String, HashSet<String>>,
 }
 
@@ -122,6 +123,7 @@ impl ParsedGraphQLSchema {
         self.enum_names.contains(name)
     }
 
+    /// Whether the field of a given entity is a list type.
     pub fn is_list_type(&self, entity_name: &str, field_name: &str) -> bool {
         if let Some(set) = self.entities_with_list_fields.get(entity_name) {
             set.contains(field_name)
