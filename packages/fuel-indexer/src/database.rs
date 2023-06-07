@@ -152,9 +152,9 @@ Do your WASM modules need to be rebuilt?"#,
             .as_mut()
             .expect("No stashed connection for put. Was a transaction started?");
 
-        queries::put_object(conn, query_text, bytes)
-            .await
-            .expect("Failed to put object.");
+        if let Err(e) = queries::put_object(conn, query_text, bytes).await {
+            error!("Failed to put object: {:?}", e);
+        }
     }
 
     pub async fn get_object(&mut self, type_id: i64, object_id: u64) -> Option<Vec<u8>> {
@@ -167,7 +167,10 @@ Do your WASM modules need to be rebuilt?"#,
 
         match queries::get_object(conn, query).await {
             Ok(v) => Some(v),
-            Err(_e) => None,
+            Err(e) => {
+                error!("Failed to put object: {:?}", e);
+                None
+            }
         }
     }
 
