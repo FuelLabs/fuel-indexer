@@ -408,7 +408,12 @@ fn create_input_values_and_objects_for_field(
             Ok((field_filter_input_val, field_input_objects, None))
         }
         // TODO: Do the same as above, but with list type
-        BaseType::List(_) => unimplemented!("List types are not currently supported"),
+        BaseType::List(t) => create_input_values_and_objects_for_field(
+            field_name,
+            t.to_string(),
+            entity_type,
+            sort_enum,
+        ),
     }
 }
 
@@ -423,10 +428,13 @@ fn create_field_with_assoc_args(
 ) -> Field {
     // Because the dynamic schema is set to only resolve introspection
     // queries, we set the resolvers to return a dummy value.
-    let mut field =
-        Field::new(field_name, field_type_ref, move |_ctx: ResolverContext| {
+    let mut field = Field::new(
+        field_name.clone(),
+        field_type_ref.clone(),
+        move |_ctx: ResolverContext| {
             return FieldFuture::new(async move { Ok(Some(FieldValue::value(1))) });
-        });
+        },
+    );
 
     match base_field_type {
         BaseType::Named(field_type) => {
@@ -460,7 +468,17 @@ fn create_field_with_assoc_args(
                     .argument(id_selection_arg);
             }
         }
-        BaseType::List(_) => unimplemented!("List types are not currently supported"),
+        BaseType::List(t) => {
+            return create_field_with_assoc_args(
+                field_name,
+                field_type_ref,
+                &t.base,
+                filter_tracker,
+                filter_object_list,
+                sorter_tracker,
+                sort_object_list,
+            )
+        }
     }
 
     field
