@@ -80,4 +80,6 @@ pub enum IndexerError {
     NativeExecutionRuntimeError,
     #[error("Tokio time error: {0:?}")]
     Elapsed(#[from] tokio::time::error::Elapsed),
+    #[error("{0}.")]
+    OtherError(String),
 }

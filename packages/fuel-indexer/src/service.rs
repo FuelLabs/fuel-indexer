@@ -61,10 +61,10 @@ impl IndexerService {
             .is_ok()
         {
             if !self.config.replace_indexer {
-                error!(
+                return Err(IndexerError::OtherError(format!(
                     "Indexer({}.{}) already exists",
                     &manifest.namespace, &manifest.identifier
-                );
+                )));
             } else if let Err(e) = queries::remove_indexer(
                 &mut conn,
                 &manifest.namespace,
