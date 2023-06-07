@@ -113,7 +113,7 @@ fn process_type(
     match &typ.base {
         BaseType::Named(t) => {
             let name = t.to_string();
-            if !schema.type_names.contains(&name) {
+            if !schema.has_type(&name) {
                 panic!("Type '{name}' is not defined in the schema.",);
             }
 
@@ -322,7 +322,6 @@ fn process_type_def(
 
                 fields_map.insert(field_name.to_string(), field_typ_name.clone());
 
-                schema.parsed_type_names.insert(field_typ_name.clone());
                 let is_copy_type = COPY_TYPES.contains(field_typ_name.as_str());
                 let is_non_indexable_non_enum =
                     schema.is_non_indexable_non_enum(&object_name);
@@ -366,8 +365,6 @@ fn process_type_def(
                 .insert(object_name.clone(), fields_map);
             let strct = format_ident! {"{}", object_name};
 
-            schema.parsed_type_names.insert(strct.to_string());
-
             Some(generate_object_trait_impls(
                 strct,
                 strct_fields,
@@ -380,9 +377,6 @@ fn process_type_def(
         }
         TypeKind::Enum(e) => {
             let name = typ.name.to_string();
-            schema.non_indexable_type_names.insert(name.clone());
-            schema.enum_names.insert(name.clone());
-
             let name = format_ident!("{}", name);
 
             let values = e.values.iter().map(|v| {
