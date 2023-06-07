@@ -1,5 +1,0 @@
-type DifferentEntity {
-    id: ID!
-    value: UInt8!
-    message: Charfield!
-}
