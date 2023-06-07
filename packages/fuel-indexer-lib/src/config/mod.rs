@@ -387,7 +387,7 @@ impl Default for IndexerArgs {
             rate_limit: defaults::RATE_LIMIT_ENABLED,
             rate_limit_request_count: Some(defaults::RATE_LIMIT_REQUEST_COUNT),
             rate_limit_window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
-            replace_indexer: false,
+            replace_indexer: defaults::REPLACE_INDEXER,
         }
     }
 }
@@ -580,7 +580,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                 request_count: args.rate_limit_request_count,
                 window_size: args.rate_limit_window_size,
             },
-            replace_indexer: false,
+            replace_indexer: defaults::REPLACE_INDEXER,
         };
 
         config
