@@ -3,8 +3,8 @@ extern crate alloc;
 use crate::{parser::ParsedGraphQLSchema, IndexerSchemaError, IndexerSchemaResult};
 use alloc::vec::Vec;
 use async_graphql_parser::types::{
-    BaseType, Directive, FieldDefinition, ServiceDocument, Type, TypeDefinition,
-    TypeKind, TypeSystemDefinition,
+    BaseType, Directive, FieldDefinition, ServiceDocument, TypeDefinition, TypeKind,
+    TypeSystemDefinition,
 };
 use fuel_indexer_database_types::{directives, ColumnType, IdCol};
 use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
@@ -244,10 +244,40 @@ pub fn get_foreign_keys(
     is_native: bool,
     schema: &str,
 ) -> IndexerSchemaResult<ForeignKeyMap> {
-    let parsed_schema =
+    let mut parsed_schema =
         ParsedGraphQLSchema::new(namespace, identifier, is_native, Some(schema))?;
 
     let mut fks: ForeignKeyMap = HashMap::new();
+
+    // Hydrate the schema via parsing, so that `parsed_schema` will be useful.
+    for def in parsed_schema.ast.definitions.iter() {
+        if let TypeSystemDefinition::Type(t) = def {
+            match &t.node.kind {
+                TypeKind::Object(o) => {
+                    parsed_schema
+                        .parsed_type_names
+                        .insert(t.node.name.to_string());
+                    for field in &o.fields {
+                        parsed_schema
+                            .parsed_type_names
+                            .insert(field.node.name.to_string());
+                    }
+                }
+                TypeKind::Enum(_e) => {
+                    let name = t.node.name.to_string();
+                    parsed_schema.non_indexable_type_names.insert(name.clone());
+                    parsed_schema.enum_names.insert(name.clone());
+                }
+                TypeKind::Union(_u) => {
+                    let name = t.node.name.to_string();
+                    parsed_schema.union_names.insert(name);
+                }
+                _ => {
+                    return Err(IndexerSchemaError::UnsupportedTypeKind);
+                }
+            }
+        }
+    }
 
     for def in parsed_schema.ast.definitions.iter() {
         if let TypeSystemDefinition::Type(t) = def {
@@ -257,10 +287,8 @@ pub fn get_foreign_keys(
                     continue;
                 }
                 for field in o.fields.iter() {
-                    let col_type = get_column_type(
-                        &field.node.ty.node,
-                        &parsed_schema.scalar_names,
-                    )?;
+                    let (col_type, _nullable) =
+                        get_column_type(&field.node, &parsed_schema)?;
                     #[allow(clippy::single_match)]
                     match col_type {
                         ColumnType::ForeignKey => {
@@ -311,15 +339,27 @@ pub fn get_foreign_keys(
 
 /// Given a GraphQL field, return its associated `ColumnType`.
 pub fn get_column_type(
-    field_type: &Type,
-    primitives: &HashSet<String>,
-) -> IndexerSchemaResult<ColumnType> {
-    match &field_type.base {
+    field: &FieldDefinition,
+    parsed_schema: &ParsedGraphQLSchema,
+) -> IndexerSchemaResult<(ColumnType, bool)> {
+    let ty = &field.ty.node;
+    match &ty.base {
         BaseType::Named(t) => {
-            if !primitives.contains(t.as_str()) {
-                return Ok(ColumnType::ForeignKey);
+            if parsed_schema.is_enum_type(t.as_str()) {
+                return Ok((ColumnType::Charfield, ty.nullable));
             }
-            Ok(ColumnType::from(t.as_str()))
+
+            if parsed_schema.is_non_indexable_non_enum(t.as_str())
+                || parsed_schema.is_union_type(t.as_str())
+            {
+                return Ok((ColumnType::NoRelation, ty.nullable));
+            }
+
+            if parsed_schema.is_possible_foreign_key(t.as_str()) {
+                return Ok((ColumnType::ForeignKey, ty.nullable));
+            }
+
+            Ok((ColumnType::from(t.as_str()), ty.nullable))
         }
         BaseType::List(_) => Err(IndexerSchemaError::ListTypesUnsupported),
     }

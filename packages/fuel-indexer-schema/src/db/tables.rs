@@ -163,28 +163,7 @@ impl SchemaBuilder {
         &self,
         field: &FieldDefinition,
     ) -> IndexerSchemaDbResult<(ColumnType, bool)> {
-        let ty = &field.ty.node;
-
-        match &ty.base {
-            BaseType::Named(t) => {
-                if self.parsed_schema.is_enum_type(t.as_str()) {
-                    return Ok((ColumnType::Charfield, ty.nullable));
-                }
-
-                if self.parsed_schema.is_non_indexable_non_enum(t.as_str())
-                    || self.parsed_schema.is_union_type(t.as_str())
-                {
-                    return Ok((ColumnType::NoRelation, ty.nullable));
-                }
-
-                if self.parsed_schema.is_possible_foreign_key(t.as_str()) {
-                    return Ok((ColumnType::ForeignKey, ty.nullable));
-                }
-
-                Ok((ColumnType::from(t.as_str()), ty.nullable))
-            }
-            BaseType::List(_) => panic!("List types not supported yet."),
-        }
+        Ok(get_column_type(field, &self.parsed_schema)?)
     }
 
     /// Generate column SQL for each field in the given set of fields.
