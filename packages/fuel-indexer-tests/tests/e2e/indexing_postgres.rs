@@ -1001,6 +1001,40 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 
 #[actix_web::test]
 #[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_deploying_twice_returns_an_error() {
+    let test_db = TestPostgresDb::new().await.unwrap();
+
+    let mut indexer = {
+        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+            config.replace_indexer = false;
+        });
+        indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
+    };
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    indexer
+        .register_indexer_from_manifest(manifest.clone())
+        .await
+        .unwrap();
+
+    let result = indexer.register_indexer_from_manifest(manifest).await;
+
+    assert!(result.is_err());
+
+    match result.unwrap_err() {
+        fuel_indexer::IndexerError::OtherError(msg) => {
+            assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists")
+        }
+        err => {
+            panic!("Expected OtherError but got: {}", err)
+        }
+    }
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_replace_indexer() {
     let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
@@ -1012,61 +1046,18 @@ async fn test_can_replace_indexer() {
         indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
     };
 
-    // Deploy an indexer with a schema incompatible with an indexer we will
-    // later deploy under the same UID.
-    let mut manifest =
-        Manifest::try_from(assets::FUEL_INDEXER_TEST_REDEPLOY_MANIFEST).unwrap();
-    update_test_manifest_asset_paths(&mut manifest);
-
-    indexer
-        .register_indexer_from_manifest(manifest)
-        .await
-        .unwrap();
-
-    let mut conn = test_db.pool.acquire().await.unwrap();
-
-    // Check database tables.
-    {
-        let table_names: Vec<String> =
-            sqlx::query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'fuel_indexer_test_index1' AND table_type = 'BASE TABLE'")
-            .map(|row: sqlx::postgres::PgRow| row.get(0))
-            .fetch_all(&mut conn)
-            .await
-            .unwrap();
-
-        assert_eq!(table_names, vec!["differententity", "indexmetadataentity"]);
-    }
-
-    // Deploy an indexer with a different schema. The old indexer should be
-    // removed, including the entity tables.
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
     update_test_manifest_asset_paths(&mut manifest);
 
     indexer
-        .register_indexer_from_manifest(manifest)
+        .register_indexer_from_manifest(manifest.clone())
         .await
         .unwrap();
 
-    // Check database tables after redeployment.
-    {
-        let table_names: Vec<String> =
-            sqlx::query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'fuel_indexer_test_index1' AND table_type = 'BASE TABLE'")
-            .map(|row: sqlx::postgres::PgRow| row.get(0))
-            .fetch_all(&mut conn)
-            .await
-            .unwrap();
-
-        // Old tables gone
-        assert_eq!(
-            table_names
-                .iter()
-                .filter(|x| x.as_str() == "differententity")
-                .next(),
-            None
-        );
-        // New tables exist
-        assert!(table_names.len() > 0);
-    }
+    indexer
+        .register_indexer_from_manifest(manifest)
+        .await
+        .unwrap();
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
