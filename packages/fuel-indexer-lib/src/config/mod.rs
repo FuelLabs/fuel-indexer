@@ -225,10 +225,10 @@ pub struct IndexerArgs {
     )]
     pub indexer_handler_timeout: u64,
 
-    /// Whether to deploy a new version or completely replace an existing indexer.
+    /// Whether to allow replacing an existing indexer. If not specified, an attempt to deploy over an existing indexer results in an error.
     #[clap(
         long,
-        help = "Whether to deploy a new version or completely replace an existing indexer."
+        help = "Whether to allow replacing an existing indexer. If not specified, an attempt to deploy over an existing indexer results in an error."
     )]
     pub replace_indexer: bool,
 }
