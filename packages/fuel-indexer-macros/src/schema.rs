@@ -94,7 +94,6 @@ lazy_static! {
         "Maturity",
         "MessageId",
         "Outputs",
-        "Receipt",
         "ReceiptsRoot",
         "Script",
         "ScriptData",

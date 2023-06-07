@@ -950,11 +950,11 @@ pub async fn indexer_owned_by(
     identifier: &str,
     pubkey: &str,
 ) -> sqlx::Result<()> {
-    let row = sqlx::query(&format!("SELECT COUNT(*) FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' AND pubkey = '{pubkey}'"))
+    let row = sqlx::query(&format!("SELECT COUNT(*)::int FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' AND pubkey = '{pubkey}'"))
         .fetch_one(conn)
         .await?;
 
-    let count: i32 = row.get(0);
+    let count = row.get::<i32, usize>(0);
     if count == 1 {
         return Ok(());
     }

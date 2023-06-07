@@ -157,7 +157,7 @@ pub(crate) async fn remove_indexer(
     queries::start_transaction(&mut conn).await?;
 
     if config.authentication.enabled {
-        queries::indexer_owned_by(&mut conn, &namespace, &identifier, claims.iss())
+        queries::indexer_owned_by(&mut conn, &namespace, &identifier, claims.sub())
             .await
             .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
     }
@@ -195,13 +195,6 @@ pub(crate) async fn register_indexer_assets(
     }
 
     let mut conn = pool.acquire().await?;
-
-    if config.authentication.enabled {
-        queries::indexer_owned_by(&mut conn, &namespace, &identifier, claims.iss())
-            .await
-            .map_err(|_e| ApiError::Http(HttpError::Unauthorized))?;
-    }
-
     let mut assets: Vec<IndexAsset> = Vec::new();
 
     if let Some(mut multipart) = multipart {

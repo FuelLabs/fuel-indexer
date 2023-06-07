@@ -53,11 +53,6 @@ impl Claims {
         &self.sub
     }
 
-    /// The issuer of the claims.
-    pub fn iss(&self) -> &str {
-        &self.iss
-    }
-
     /// Like `Claims::new`, but with `iat` and `exp` values that indicate
     /// the claims have yet to be authenticated.
     pub fn unauthenticated() -> Self {
