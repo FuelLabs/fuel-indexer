@@ -262,7 +262,7 @@ pub fn get_foreign_keys(
                         &field.node.ty.node,
                         &parsed_schema.scalar_names,
                     )?;
-                    #[allow(clippy::single_match)]
+
                     match col_type {
                         ColumnType::ForeignKey => {
                             let directives::Join {
@@ -300,6 +300,58 @@ pub fn get_foreign_keys(
                                 }
                             }
                         }
+                        ColumnType::ListComplex => {
+                            let directives::Join {
+                                reference_field_name,
+                                ..
+                            } = get_join_directive_info(
+                                &field.node,
+                                &t.node.name.to_string(),
+                                &parsed_schema.field_type_mappings,
+                            );
+
+                            let obj_name = t.node.name.node.to_lowercase();
+
+                            let fk = fks.get_mut(&obj_name);
+                            match fk {
+                                Some(fks_for_field) => {
+                                    fks_for_field.insert(
+                                        field.node.name.to_string(),
+                                        (
+                                            format!(
+                                                "{}_{}",
+                                                obj_name.clone(),
+                                                field_type_table_name(&field.node)
+                                            ),
+                                            format!(
+                                                "{}_{}",
+                                                obj_name.clone(),
+                                                reference_field_name.clone()
+                                            ),
+                                        ),
+                                    );
+                                }
+                                None => {
+                                    let fks_for_field = HashMap::from([(
+                                        field.node.name.to_string(),
+                                        (
+                                            // This needs to be the referring ID col of the lookup table
+                                            format!(
+                                                "{}_{}",
+                                                obj_name.clone(),
+                                                field_type_table_name(&field.node)
+                                            ),
+                                            format!(
+                                                "{}_{}",
+                                                obj_name.clone(),
+                                                reference_field_name.clone()
+                                            ),
+                                        ),
+                                    )]);
+                                    fks.insert(obj_name, fks_for_field);
+                                }
+                            }
+                        }
                         _ => {}
                     }
                 }
@@ -322,7 +374,13 @@ pub fn get_column_type(
             }
             Ok(ColumnType::from(t.as_str()))
         }
-        BaseType::List(_) => Err(IndexerSchemaError::ListTypesUnsupported),
+        BaseType::List(t) => {
+            if let ColumnType::ForeignKey = get_column_type(t, primitives)? {
+                Ok(ColumnType::ListComplex)
+            } else {
+                Ok(ColumnType::ListScalar)
+            }
+        }
     }
 }
 

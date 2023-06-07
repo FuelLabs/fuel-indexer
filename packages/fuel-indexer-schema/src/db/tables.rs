@@ -11,6 +11,7 @@ use fuel_indexer_types::type_id;
 use std::collections::{HashMap, HashSet};
 
 type CompleteProcessedType = (ColumnType, bool, Option<(ColumnType, bool, Option<Type>)>);
+
 #[derive(Debug, Default)]
 struct LookupTableGenerationSet {
     table_name: String,
@@ -304,7 +305,6 @@ impl SchemaBuilder {
                         is_list_with_nullable_elements: None,
                         inner_list_element_type: None,
                     };
-                    println!("FK col: {column:#?}");
 
                     fragments.push(column.sql_fragment());
                     self.columns.push(column);
@@ -371,7 +371,6 @@ impl SchemaBuilder {
                                     ),
                                 };
 
-                                println!("regular col: {column:#?}");
                                 fragments.push(column.sql_fragment());
                                 self.columns.push(column);
                             }
@@ -384,7 +383,6 @@ impl SchemaBuilder {
                     {
                         let directives::Join {
                             reference_field_name,
-                            field_type_name,
                             reference_field_type_name,
                             ..
                         } = get_join_directive_info(
@@ -409,7 +407,7 @@ impl SchemaBuilder {
                             column_position: pos as i32,
                             column_name: field.name.to_string(),
                             column_type: "ListComplex".to_string(),
-                            graphql_type: field_type_name,
+                            graphql_type: field.ty.to_string(),
                             nullable,
                             unique,
                             is_list_with_nullable_elements: Some(has_nullable_elements),
@@ -417,7 +415,6 @@ impl SchemaBuilder {
                                 reference_field_type_name.to_owned(),
                             ),
                         };
-                        println!("complex list col: {column:#?}");
 
                         fragments.push(column.sql_fragment());
                         self.columns.push(column);
@@ -437,8 +434,6 @@ impl SchemaBuilder {
                         is_list_with_nullable_elements: None,
                         inner_list_element_type: None,
                     };
-
-                    println!("regular col: {column:#?}");
 
                     if let Some(directives::Index {
                         column_name,
@@ -545,7 +540,6 @@ impl SchemaBuilder {
             inner_list_element_type: None,
         };
 
-        // for the referring entity
         let fk_to_lookup_1 = ForeignKey::new(
             self.db_type.clone(),
             self.namespace(),
@@ -576,8 +570,6 @@ impl SchemaBuilder {
             foreign_keys: vec![fk_to_lookup_1, fk_to_lookup_2],
             indices: vec![index_on_referring_id],
         };
-
-        println!("{gen_set:#?}");
 
         self.lookup_tables.push(gen_set);
     }
@@ -635,8 +627,6 @@ impl SchemaBuilder {
                     .map(|f| f.node.clone())
                     .collect::<Vec<FieldDefinition>>()[..];
 
-                println!("field defintions: {field_defs:#?}");
-
                 self.fields.insert(
                     typ.name.to_string(),
                     field_defs
@@ -653,8 +643,6 @@ impl SchemaBuilder {
                     field_defs,
                     &table_name,
                 )?;
-
-                println!("\ncolumns for {}: {columns}\n", &typ.name.to_string());
 
                 if self
                     .parsed_schema
