@@ -10,7 +10,7 @@ use fuel_indexer_database::{
 use fuel_indexer_types::type_id;
 use std::collections::{HashMap, HashSet};
 
-// (additional necessary tables, column(s))
+type CompleteProcessedType = (ColumnType, bool, Option<(ColumnType, bool, Option<Type>)>);
 #[derive(Debug, Default)]
 struct LookupTableGenerationSet {
     table_name: String,
@@ -195,11 +195,7 @@ impl SchemaBuilder {
     }
 
     /// Return a field's `ColumnType` and whether it is nullable.
-    fn process_type(
-        &self,
-        ty: &Type,
-    ) -> IndexerSchemaDbResult<(ColumnType, bool, Option<(ColumnType, bool, Option<Type>)>)>
-    {
+    fn process_type(&self, ty: &Type) -> IndexerSchemaDbResult<CompleteProcessedType> {
         match &ty.base {
             BaseType::Named(t) => {
                 if self.parsed_schema.is_enum_type(t.as_str()) {
@@ -217,7 +213,8 @@ impl SchemaBuilder {
                 Ok((ColumnType::from(t.as_str()), ty.nullable, None))
             }
             BaseType::List(t) => {
-                let inner_type = self.process_list_inner_type(&*t.clone()).unwrap();
+                // TODO: Get rid of this unwrap
+                let inner_type = self.process_list_inner_type(&t.clone()).unwrap();
                 if inner_type.0 == ColumnType::ForeignKey {
                     Ok((ColumnType::ListComplex, ty.nullable, Some(inner_type)))
                 } else {
@@ -247,9 +244,7 @@ impl SchemaBuilder {
 
                 Ok((ColumnType::from(t.as_str()), ty.nullable, None))
             }
-            BaseType::List(_) => {
-                return Err(super::IndexerSchemaDbError::ListOfListsUnsupported)
-            }
+            BaseType::List(_) => Err(super::IndexerSchemaDbError::ListOfListsUnsupported),
         }
     }
 
@@ -384,54 +379,48 @@ impl SchemaBuilder {
                     }
                 }
                 ColumnType::ListComplex => {
-                    if let Some((element_col_type, has_nullable_elements, _)) =
+                    if let Some((ColumnType::ForeignKey, has_nullable_elements, _)) =
                         inner_list_typ
                     {
-                        if let ColumnType::ForeignKey = element_col_type {
-                            let directives::Join {
-                                reference_field_name,
-                                field_type_name,
-                                reference_field_type_name,
-                                ..
-                            } = get_join_directive_info(
-                                field,
-                                object_name,
-                                &self.parsed_schema.field_type_mappings,
-                            );
+                        let directives::Join {
+                            reference_field_name,
+                            field_type_name,
+                            reference_field_type_name,
+                            ..
+                        } = get_join_directive_info(
+                            field,
+                            object_name,
+                            &self.parsed_schema.field_type_mappings,
+                        );
 
-                            self.generate_lookup_tables_for_complex_list_type(
-                                object_name,
-                                type_id,
-                                field,
-                                table_name,
-                                reference_field_name,
-                                reference_field_type_name.clone(),
-                                nullable,
-                                unique,
-                            );
+                        self.generate_lookup_tables_for_complex_list_type(
+                            object_name,
+                            type_id,
+                            field,
+                            table_name,
+                            reference_field_name,
+                            reference_field_type_name.clone(),
+                            nullable,
+                            unique,
+                        );
 
-                            let column = NewColumn {
-                                type_id,
-                                column_position: pos as i32,
-                                column_name: field.name.to_string(),
-                                column_type: "ListComplex".to_string(),
-                                graphql_type: field_type_name,
-                                nullable,
-                                unique,
-                                is_list_with_nullable_elements: Some(
-                                    has_nullable_elements,
-                                ),
-                                inner_list_element_type: Some(
-                                    reference_field_type_name.to_owned(),
-                                ),
-                            };
-                            println!("complex list col: {column:#?}");
+                        let column = NewColumn {
+                            type_id,
+                            column_position: pos as i32,
+                            column_name: field.name.to_string(),
+                            column_type: "ListComplex".to_string(),
+                            graphql_type: field_type_name,
+                            nullable,
+                            unique,
+                            is_list_with_nullable_elements: Some(has_nullable_elements),
+                            inner_list_element_type: Some(
+                                reference_field_type_name.to_owned(),
+                            ),
+                        };
+                        println!("complex list col: {column:#?}");
 
-                            fragments.push(column.sql_fragment());
-                            self.columns.push(column);
-                        } else {
-                            // TODO: Return error here
-                        }
+                        fragments.push(column.sql_fragment());
+                        self.columns.push(column);
                     } else {
                         // TODO: Return error here
                     }
@@ -490,9 +479,10 @@ impl SchemaBuilder {
         Ok(fragments.join(",\n"))
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn generate_lookup_tables_for_complex_list_type(
         &mut self,
-        object_name: &String,
+        object_name: &str,
         type_id: i64,
         field: &FieldDefinition,
         table_name: &str,
@@ -572,8 +562,8 @@ impl SchemaBuilder {
             lookup_table_name.clone(),
             format!("{}_id", field_type_table_name(field)),
             field_type_table_name(field),
-            reference_field_name.clone(),
-            reference_field_type_name.to_owned(),
+            reference_field_name,
+            reference_field_type_name,
         );
 
         let gen_set = LookupTableGenerationSet {
