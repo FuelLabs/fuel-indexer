@@ -164,6 +164,7 @@ enum SpecialFieldType {
     ForeignKey,
     Enum,
     NoRelation,
+    Union,
 }
 
 /// Process an object's 'special' field and return a group of tokens.
@@ -212,7 +213,7 @@ fn process_special_field(
 
             process_field(schema, &field_name.to_string(), &field_type)
         }
-        SpecialFieldType::NoRelation => {
+        SpecialFieldType::NoRelation | SpecialFieldType::Union => {
             let FieldDefinition {
                 name: field_name, ..
             } = field;
@@ -269,6 +270,18 @@ fn process_type_def(
 
                 if is_no_table {
                     schema.non_indexable_type_names.insert(object_name.clone());
+                }
+
+                if schema.is_union_type(&field_typ_name) {
+                    (typ_tokens, field_name, scalar_typ, extractor) =
+                        process_special_field(
+                            schema,
+                            &object_name,
+                            &field.node,
+                            field_type.nullable,
+                            SpecialFieldType::Union,
+                        );
+                    field_typ_name = scalar_typ.to_string();
                 }
 
                 if schema.is_possible_foreign_key(&field_typ_name) {
@@ -424,11 +437,13 @@ fn process_type_def(
             })
         }
         TypeKind::Union(obj) => {
-            // We process this type effectively the same as we process TypeKind::Object.
+            // We process this type effectively the same as we process `TypeKind::Object`.
             //
             // Except instead of iterating over the object's fields in order to construct the
-            // the struct, we iterate over the unique fields of all the union's members and create
-            // the struct from that.
+            // struct, we iterate over the set of all the union's members' fields, and derive
+            // the struct from those fields.
+            //
+            // Same field processing as `TypeKind::Object`, it's just that the source of the fields is different.
             let name = typ.name.to_string();
             schema.union_names.insert(name.clone());
 

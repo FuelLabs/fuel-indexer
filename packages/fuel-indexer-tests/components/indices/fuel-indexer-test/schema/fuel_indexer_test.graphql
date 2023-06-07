@@ -298,3 +298,9 @@ type UnIndexableUnionC {
 union IndexableUnionEntity = IndexableUnionA | IndexableUnionB | IndexableUnionC
 
 union UnIndexableUnionEntity = UnIndexableUnionA | UnIndexableUnionB | UnIndexableUnionC
+
+type UnIndexableUnionContainerEntity {
+    id: ID!
+    union_entity: UnIndexableUnionEntity
+    union_type: UnionType!
+}
