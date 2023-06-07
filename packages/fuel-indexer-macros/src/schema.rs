@@ -237,6 +237,8 @@ fn process_type_def(
     schema: &mut ParsedGraphQLSchema,
     typ: &TypeDefinition,
 ) -> Option<proc_macro2::TokenStream> {
+    let namespace = &schema.namespace;
+    let identifier = &schema.identifier;
     match &typ.kind {
         TypeKind::Object(obj) => {
             let object_name = typ.name.to_string();
@@ -246,9 +248,6 @@ fn process_type_def(
             if DISALLOWED_OBJECT_NAMES.contains(object_name.as_str()) {
                 panic!("Object name '{object_name}' is reserved.",);
             }
-
-            let namespace = &schema.namespace;
-            let identifier = &schema.identifier;
 
             let type_id =
                 type_id(&format!("{namespace}_{identifier}"), object_name.as_str());
@@ -264,13 +263,6 @@ fn process_type_def(
                     process_field(schema, field_name, field_type);
 
                 let mut field_typ_name = scalar_typ.to_string();
-
-                let directives::NoRelation(is_no_table) =
-                    get_notable_directive_info(&field.node).unwrap();
-
-                if is_no_table {
-                    schema.non_indexable_type_names.insert(object_name.clone());
-                }
 
                 if schema.is_union_type(&field_typ_name) {
                     (typ_tokens, field_name, scalar_typ, extractor) =
@@ -439,12 +431,7 @@ fn process_type_def(
             //
             // Same field processing as `TypeKind::Object`, it's just that the source of the fields is different.
             let name = typ.name.to_string();
-            schema.union_names.insert(name.clone());
-
             let ident = format_ident!("{}", name);
-
-            let namespace = &schema.namespace;
-            let identifier = &schema.identifier;
 
             let type_id = type_id(&format!("{namespace}_{identifier}"), name.as_str());
             let mut strct_fields = quote! {};
