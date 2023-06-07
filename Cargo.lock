@@ -3068,6 +3068,7 @@ name = "fuel-indexer-macros"
 version = "0.16.2"
 dependencies = [
  "async-graphql-parser 5.0.9",
+ "async-graphql-value 5.0.9",
  "fuel-abi-types 0.2.1",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3079,6 +3080,7 @@ dependencies = [
  "fuels-macros",
  "fuels-types",
  "lazy_static",
+ "linked_hash_set",
  "proc-macro-error",
  "proc-macro2",
  "quote",
@@ -3141,11 +3143,13 @@ name = "fuel-indexer-schema"
 version = "0.16.2"
 dependencies = [
  "async-graphql-parser 5.0.9",
+ "async-graphql-value 5.0.9",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
  "fuel-indexer-types",
  "hex",
  "insta",
+ "linked_hash_set",
  "serde",
  "sha2 0.9.9",
  "sqlx",
@@ -4573,6 +4577,15 @@ name = "linked-hash-map"
 version = "0.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
+
+[[package]]
+name = "linked_hash_set"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "47186c6da4d81ca383c7c47c1bfc80f4b95f4720514d860a5407aaf4233f9588"
+dependencies = [
+ "linked-hash-map",
+]
 
 [[package]]
 name = "linux-raw-sys"

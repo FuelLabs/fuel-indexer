@@ -705,4 +705,19 @@ mod fuel_indexer_test {
 
         e.save();
     }
+
+    fn fuel_indexer_trigger_union_type(_b: BlockData) {
+        Logger::info(
+            "fuel_indexer_trigger_union_type handling trigger_union_type event.",
+        );
+        let e = IndexableUnionEntity {
+            id: 1,
+            a: None,
+            b: None,
+            c: None,
+            union_type: Some(UnionType::A.into()),
+        };
+
+        e.save();
+    }
 }

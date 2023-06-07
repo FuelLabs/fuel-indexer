@@ -191,6 +191,10 @@ pub fn build_schema_fields_and_types_map(
                         types_map.insert(field_id, field_type);
                     }
                 }
+                TypeKind::Union(_u) => {
+                    // We've already processed the fields of the union's
+                    // members, so nothing to do here.
+                }
                 _ => {
                     return Err(IndexerSchemaError::UnsupportedTypeKind);
                 }
