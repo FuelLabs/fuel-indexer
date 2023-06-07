@@ -3,6 +3,7 @@ use async_graphql_parser::{
     parse_schema,
     types::{ServiceDocument, TypeKind, TypeSystemDefinition},
 };
+use fuel_indexer_database_types::directives;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
@@ -104,6 +105,13 @@ impl ParsedGraphQLSchema {
                             let mut field_mapping = BTreeMap::new();
                             parsed_type_names.insert(t.node.name.to_string());
                             for field in &o.fields {
+                                let directives::NoRelation(is_no_table) =
+                                    get_notable_directive_info(&field.node).unwrap();
+
+                                if is_no_table {
+                                    non_indexable_type_names.insert(obj_name.clone());
+                                }
+
                                 let field_name = field.node.name.to_string();
 
                                 let field_typ_name =
