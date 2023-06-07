@@ -214,8 +214,7 @@ impl SchemaBuilder {
                 Ok((ColumnType::from(t.as_str()), ty.nullable, None))
             }
             BaseType::List(t) => {
-                // TODO: Get rid of this unwrap
-                let inner_type = self.process_list_inner_type(&t.clone()).unwrap();
+                let inner_type = self.process_list_inner_type(&t.clone())?;
                 if inner_type.0 == ColumnType::ForeignKey {
                     Ok((ColumnType::ListComplex, ty.nullable, Some(inner_type)))
                 } else {
@@ -346,7 +345,8 @@ impl SchemaBuilder {
                         inner_list_typ
                     {
                         match element_col_type {
-                            // ColumnType::ID => todo!(),
+                            // TODO: Do we want to allow these?
+                            ColumnType::ID => todo!(),
                             ColumnType::Enum => todo!(),
                             ColumnType::NoRelation => todo!(),
                             ColumnType::ListScalar | ColumnType::ListComplex => {
@@ -419,7 +419,12 @@ impl SchemaBuilder {
                         fragments.push(column.sql_fragment());
                         self.columns.push(column);
                     } else {
-                        // TODO: Return error here
+                        return Err(
+                            super::IndexerSchemaDbError::SchemaConstructionError(
+                                "Complex lists should have inner type of ForeignKey"
+                                    .to_string(),
+                            ),
+                        );
                     }
                 }
                 _ => {
@@ -518,15 +523,6 @@ impl SchemaBuilder {
             inner_list_element_type: None,
         };
 
-        let index_on_referring_id = ColumnIndex {
-            db_type: DbType::Postgres,
-            table_name: lookup_table_name.clone(),
-            namespace: self.namespace(),
-            method: directives::IndexMethod::Btree,
-            unique,
-            column_name: format!("{table_name}_id"),
-        };
-
         let lookup_table_reference_id_column = NewColumn {
             type_id,
             column_position: 2,
@@ -559,6 +555,15 @@ impl SchemaBuilder {
             reference_field_name,
             reference_field_type_name,
         );
+
+        let index_on_referring_id = ColumnIndex {
+            db_type: DbType::Postgres,
+            table_name: lookup_table_name.clone(),
+            namespace: self.namespace(),
+            method: directives::IndexMethod::Btree,
+            unique,
+            column_name: format!("{table_name}_id"),
+        };
 
         let gen_set = LookupTableGenerationSet {
             table_name: lookup_table_name,
@@ -672,18 +677,6 @@ impl SchemaBuilder {
 
                 let create =
                     format!("CREATE TABLE IF NOT EXISTS\n {sql_table} (\n {columns}\n)",);
-
-                // if object has a field that is a list of foreign keys
-                // create a lookup table
-
-                // table has three columns:
-                // 1. auto-incrementing ID
-                // 2. foreign key to entity with list; should be the same for each element in the list
-                // 3. foreign key to entity that will be stored as part of the list
-
-                // need to create table and then create foreign keys for that table
-                // probably best to create indices on both columns
-                // - should they be combo or singular?
 
                 self.statements.push(create);
                 self.type_ids.push(TypeId {
