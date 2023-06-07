@@ -3,7 +3,7 @@ use crate::{
     IndexerSchemaError, IndexerSchemaResult,
 };
 use async_graphql_parser::{parse_schema, types::ServiceDocument};
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
 /// to parsing schema, creating mappings of types, fields, objects, etc.
@@ -23,6 +23,12 @@ pub struct ParsedGraphQLSchema {
 
     /// All unique names of enums in the schema.
     pub enum_names: HashSet<String>,
+
+    /// All unique names of union types in the schema.
+    pub union_names: HashSet<String>,
+
+    /// All objects and their field names and types, indexed by object name.
+    pub object_field_mappings: HashMap<String, BTreeMap<String, String>>,
 
     /// All unique names of types for which tables should _not_ be created.
     pub non_indexable_type_names: HashSet<String>,
@@ -52,9 +58,11 @@ impl Default for ParsedGraphQLSchema {
             is_native: false,
             type_names: HashSet::new(),
             enum_names: HashSet::new(),
+            union_names: HashSet::new(),
             non_indexable_type_names: HashSet::new(),
             parsed_type_names: HashSet::new(),
             field_type_mappings: HashMap::new(),
+            object_field_mappings: HashMap::new(),
             scalar_names: HashSet::new(),
             ast,
         }
@@ -86,6 +94,8 @@ impl ParsedGraphQLSchema {
             identifier: identifier.to_string(),
             is_native,
             type_names,
+            union_names: HashSet::new(),
+            object_field_mappings: HashMap::new(),
             enum_names: HashSet::new(),
             non_indexable_type_names: HashSet::new(),
             parsed_type_names: HashSet::new(),
@@ -116,5 +126,10 @@ impl ParsedGraphQLSchema {
     /// Whether the given field type name is an enum type.
     pub fn is_enum_type(&self, name: &str) -> bool {
         self.enum_names.contains(name)
+    }
+
+    /// Whether the given field type name is a union type.
+    pub fn is_union_type(&self, name: &str) -> bool {
+        self.union_names.contains(name)
     }
 }
