@@ -160,51 +160,6 @@ pub fn get_join_directive_info(
     }
 }
 
-/// Given a GraphQL document return a `HashMap` where each key in the map
-/// is a the fully qualified field name, and each value in the map is the
-/// Fuel type of the field (e.g., `UInt8`, `Address`, etc).
-///
-/// Each entry in the map represents a field
-pub fn build_schema_fields_and_types_map(
-    ast: &ServiceDocument,
-) -> IndexerSchemaResult<HashMap<String, String>> {
-    let mut types_map = HashMap::new();
-    for def in ast.definitions.iter() {
-        if let TypeSystemDefinition::Type(typ) = def {
-            match &typ.node.kind {
-                TypeKind::Scalar => {}
-                TypeKind::Enum(e) => {
-                    let name = &typ.node.name.to_string();
-                    for val in &e.values {
-                        let val_name = &val.node.value.to_string();
-                        let val_id = format!("{name}.{val_name}");
-                        types_map.insert(val_id, name.to_string());
-                    }
-                }
-                TypeKind::Object(obj) => {
-                    for field in &obj.fields {
-                        let field = &field.node;
-                        let field_type = field.ty.to_string().replace('!', "");
-                        let obj_name = &typ.node.name.to_string();
-                        let field_name = &field.name.to_string();
-                        let field_id = format!("{obj_name}.{field_name}");
-                        types_map.insert(field_id, field_type);
-                    }
-                }
-                TypeKind::Union(_u) => {
-                    // We've already processed the fields of the union's
-                    // members, so nothing to do here.
-                }
-                _ => {
-                    return Err(IndexerSchemaError::UnsupportedTypeKind);
-                }
-            }
-        }
-    }
-
-    Ok(types_map)
-}
-
 /// Given a GraphQL document, return a two `HashSet`s - one for each
 /// unique field type, and one for each unique directive.
 pub fn build_schema_types_set(
@@ -244,40 +199,10 @@ pub fn get_foreign_keys(
     is_native: bool,
     schema: &str,
 ) -> IndexerSchemaResult<ForeignKeyMap> {
-    let mut parsed_schema =
+    let parsed_schema =
         ParsedGraphQLSchema::new(namespace, identifier, is_native, Some(schema))?;
 
     let mut fks: ForeignKeyMap = HashMap::new();
-
-    // Hydrate the schema via parsing, so that `parsed_schema` will be useful.
-    for def in parsed_schema.ast.definitions.iter() {
-        if let TypeSystemDefinition::Type(t) = def {
-            match &t.node.kind {
-                TypeKind::Object(o) => {
-                    parsed_schema
-                        .parsed_type_names
-                        .insert(t.node.name.to_string());
-                    for field in &o.fields {
-                        parsed_schema
-                            .parsed_type_names
-                            .insert(field.node.name.to_string());
-                    }
-                }
-                TypeKind::Enum(_e) => {
-                    let name = t.node.name.to_string();
-                    parsed_schema.non_indexable_type_names.insert(name.clone());
-                    parsed_schema.enum_names.insert(name.clone());
-                }
-                TypeKind::Union(_u) => {
-                    let name = t.node.name.to_string();
-                    parsed_schema.union_names.insert(name);
-                }
-                _ => {
-                    return Err(IndexerSchemaError::UnsupportedTypeKind);
-                }
-            }
-        }
-    }
 
     for def in parsed_schema.ast.definitions.iter() {
         if let TypeSystemDefinition::Type(t) = def {
@@ -384,91 +309,4 @@ pub fn get_notable_directive_info(
     }
 
     Ok(directives::NoRelation(false))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use async_graphql_parser::parse_schema;
-
-    #[test]
-    fn test_build_schema_fields_and_types_map_properly_builds_schema_types_map() {
-        let schema = r#"
-type BlockData {
-    id: Bytes32! @unique
-    height: UInt8!
-    timestamp: Int8!
-    gas_limit: UInt8!
-    extra_data: MessageId!
-}
-
-type Tx {
-    id: Bytes32! @unique
-    block: BlockData!
-    timestamp: Int8!
-    status: Json!
-    value: UInt8!
-    tokens_transferred: Json!
-}
-
-type Account {
-    address: Address!
-}
-
-type Contract {
-    creator: ContractId!
-}
-        "#;
-
-        let ast = parse_schema(schema).unwrap();
-        let types_map = build_schema_fields_and_types_map(&ast).unwrap();
-
-        assert_eq!(
-            *types_map.get("BlockData.id").unwrap(),
-            "Bytes32".to_string()
-        );
-        assert_eq!(*types_map.get("Tx.block").unwrap(), "BlockData".to_string());
-        assert_eq!(
-            *types_map.get("Account.address").unwrap(),
-            "Address".to_string()
-        );
-        assert_eq!(
-            *types_map.get("Contract.creator").unwrap(),
-            "ContractId".to_string()
-        );
-        assert_eq!(
-            *types_map.get("BlockData.extra_data").unwrap(),
-            "MessageId".to_string()
-        );
-        assert_eq!(types_map.get("BlockData.doesNotExist"), None);
-    }
-
-    #[test]
-    fn test_build_schema_objects_set_returns_proper_schema_types_set() {
-        let schema = r#"
-type Borrower {
-    account: Address! @indexed
-}
-
-type Lender {
-    id: ID!
-    borrower: Borrower! @join(on:account)
-}
-
-type Auditor {
-    id: ID!
-    account: Address!
-    hash: Bytes32! @indexed
-    borrower: Borrower! @join(on:account)
-}
-"#;
-
-        let ast = parse_schema(schema).unwrap();
-
-        let (obj_set, _directives_set) = build_schema_types_set(&ast);
-
-        assert!(!obj_set.contains("NotARealThing"));
-        assert!(obj_set.contains("Borrower"));
-        assert!(obj_set.contains("Auditor"));
-    }
 }
