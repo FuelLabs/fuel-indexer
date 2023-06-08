@@ -697,7 +697,7 @@ mod fuel_indexer_test {
             id: 1,
             name: "hello world".to_string(),
             no_table: NoTableEntity {
-                name: Some("norelation".to_string()),
+                name: Some("virtual".to_string()),
                 size: 1,
             }
             .into(),
@@ -711,22 +711,22 @@ mod fuel_indexer_test {
             "fuel_indexer_trigger_union_type handling trigger_union_type event.",
         );
 
-        let unindexable = UnIndexableUnionEntity {
+        let v = VirtualUnionEntity {
             a: Some(2),
             b: None,
             c: Some(6),
             union_type: Some(UnionType::B.into()),
         };
 
-        let unindexable_container = UnIndexableUnionContainerEntity {
+        let vc = VirtualUnionContainerEntity {
             id: 1,
-            union_entity: Some(unindexable.into()),
+            union_entity: Some(v.into()),
             union_type: UnionType::B.into(),
         };
 
-        unindexable_container.save();
+        vc.save();
 
-        let indexable = IndexableUnionEntity {
+        let e = IndexableUnionEntity {
             id: 1,
             a: Some(5),
             b: Some(10),
@@ -734,6 +734,6 @@ mod fuel_indexer_test {
             union_type: Some(UnionType::A.into()),
         };
 
-        indexable.save();
+        e.save();
     }
 }

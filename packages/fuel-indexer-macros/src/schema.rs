@@ -30,13 +30,13 @@ lazy_static! {
         "HexString",
         "Identity",
         "Json",
-        "NoRelation",
+        "Virtual",
         "Option<Blob>",
         "Option<Charfield>",
         "Option<HexString>",
         "Option<Identity>",
         "Option<Json>",
-        "Option<NoRelation>",
+        "Option<Virtual>",
     ]);
 
     static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
@@ -65,7 +65,7 @@ lazy_static! {
         "Json",
         "MessageId",
         "Nonce",
-        "NoRelation",
+        "Virtual",
         "Salt",
         "Signature",
         "Tai64Timestamp",
@@ -163,7 +163,7 @@ fn process_field(
 enum SpecialFieldType {
     ForeignKey,
     Enum,
-    NoRelation,
+    Virtual,
     Union,
 }
 
@@ -187,12 +187,12 @@ fn process_special_field(
                 ..
             } = get_join_directive_info(field, object_name, &schema.field_type_mappings);
 
-            let field_type_name = if !is_nullable {
+            let field_typ_name = if !is_nullable {
                 [reference_field_type_name, "!".to_string()].join("")
             } else {
                 reference_field_type_name
             };
-            let field_type: Type = Type::new(&field_type_name)
+            let field_type: Type = Type::new(&field_typ_name)
                 .expect("Could not construct type for processing");
 
             process_field(schema, &field_name, &field_type)
@@ -202,32 +202,51 @@ fn process_special_field(
                 name: field_name, ..
             } = field;
 
-            let field_type_name = if !is_nullable {
+            let field_typ_name = if !is_nullable {
                 ["Charfield".to_string(), "!".to_string()].join("")
             } else {
                 "Charfield".to_string()
             };
 
-            let field_type: Type = Type::new(&field_type_name)
+            let field_type: Type = Type::new(&field_typ_name)
                 .expect("Could not construct type for processing");
 
             process_field(schema, &field_name.to_string(), &field_type)
         }
-        SpecialFieldType::NoRelation | SpecialFieldType::Union => {
+        SpecialFieldType::Virtual => {
             let FieldDefinition {
                 name: field_name, ..
             } = field;
 
-            let field_type_name = if !is_nullable {
-                ["NoRelation".to_string(), "!".to_string()].join("")
+            let field_typ_name = if !is_nullable {
+                ["Virtual".to_string(), "!".to_string()].join("")
             } else {
-                "NoRelation".to_string()
+                "Virtual".to_string()
             };
 
-            let field_type: Type = Type::new(&field_type_name)
+            let field_type: Type = Type::new(&field_typ_name)
                 .expect("Could not construct type for processing");
 
             process_field(schema, &field_name.to_string(), &field_type)
+        }
+        SpecialFieldType::Union => {
+            let field_typ_name = field.ty.to_string();
+            if schema.is_non_indexable_non_enum(&field_typ_name) {
+                return process_special_field(
+                    schema,
+                    object_name,
+                    field,
+                    is_nullable,
+                    SpecialFieldType::Virtual,
+                );
+            }
+            process_special_field(
+                schema,
+                object_name,
+                field,
+                is_nullable,
+                SpecialFieldType::ForeignKey,
+            )
         }
     }
 }
@@ -307,7 +326,7 @@ fn process_type_def(
                             &object_name,
                             &field.node,
                             field_type.nullable,
-                            SpecialFieldType::NoRelation,
+                            SpecialFieldType::Virtual,
                         );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -439,6 +458,8 @@ fn process_type_def(
             let mut from_row = quote! {};
             let mut to_row = quote! {};
 
+            let mut derived_type_fields = HashSet::new();
+
             obj.members
                 .iter()
                 .flat_map(|m| {
@@ -454,18 +475,25 @@ fn process_type_def(
                 })
                 .collect::<LinkedHashSet<(String, String)>>()
                 .iter()
-                .for_each(|(field_name, field_type_name)| {
-                    let field_type = Type {
-                        base: BaseType::Named(Name::new(field_type_name)),
-                        nullable: field_type_name != IdCol::to_uppercase_str(),
-                    };
+                .for_each(|(field_name, field_typ_name)| {
 
+                    // Field types must be consistent across all members of a union.
+                    if derived_type_fields.contains(field_name) {
+                        panic!("Derived type from Union({}) contains Field({}) which does not have a consistent type across all members.", name, field_name);
+                    }
+
+                    derived_type_fields.insert(field_name);
+
+                    let field_type = Type {
+                        base: BaseType::Named(Name::new(field_typ_name)),
+                        nullable: field_typ_name != IdCol::to_uppercase_str(),
+                    };
                     // Since we've already processed the member's fields, we don't need
                     // to do any type of special field processing here.
                     let (typ_tokens, field_name, scalar_typ, extractor) =
                         process_field(schema, field_name, &field_type);
 
-                    let is_copy_type = COPY_TYPES.contains(field_type_name.as_str());
+                    let is_copy_type = COPY_TYPES.contains(field_typ_name.as_str());
                     let is_non_indexable_non_enum =
                         schema.is_non_indexable_non_enum(&name);
                     let is_copyable = is_copy_type || is_non_indexable_non_enum;
