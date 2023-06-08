@@ -187,6 +187,7 @@ fn process_field(
     schema: &ParsedGraphQLSchema,
     field_name: &String,
     field_type: &Type,
+    original_field_type: Option<String>,
 ) -> ProcessedFieldResult {
     let processed_type_result = process_type(schema, field_type);
     let name_ident = format_ident! {"{}", field_name.to_string()};
@@ -196,6 +197,7 @@ fn process_field(
         name_ident.clone(),
         field_type.nullable,
         processed_type_result.clone(),
+        original_field_type,
     );
 
     match processed_type_result {
@@ -236,6 +238,7 @@ fn process_special_field(
             let directives::Join {
                 field_name,
                 reference_field_type_name,
+                field_type_name: original_field_type_name,
                 ..
             } = get_join_directive_info(field, object_name, &schema.field_type_mappings);
 
@@ -265,7 +268,12 @@ fn process_special_field(
             let field_type: Type = Type::new(&field_type_name)
                 .expect("Could not construct type for processing");
 
-            process_field(schema, &field_name, &field_type)
+            process_field(
+                schema,
+                &field_name,
+                &field_type,
+                Some(original_field_type_name),
+            )
         }
         SpecialFieldType::Enum => {
             let FieldDefinition {
@@ -297,7 +305,7 @@ fn process_special_field(
             let field_type: Type = Type::new(&field_type_name)
                 .expect("Could not construct type for processing");
 
-            process_field(schema, &field_name.to_string(), &field_type)
+            process_field(schema, &field_name.to_string(), &field_type, None)
         }
         SpecialFieldType::NoRelation => {
             let FieldDefinition {
@@ -330,7 +338,7 @@ fn process_special_field(
             let field_type: Type = Type::new(&field_type_name)
                 .expect("Could not construct type for processing");
 
-            process_field(schema, &field_name.to_string(), &field_type)
+            process_field(schema, &field_name.to_string(), &field_type, None)
         }
     }
 }
@@ -357,9 +365,9 @@ fn process_type_def(
             let mut row_extractors = quote! {};
             let mut construction = quote! {};
             let mut flattened = quote! {};
-            let mut list_type = format_ident! {"ListScalar"};
 
             for field in &obj.fields {
+                let mut list_type = format_ident! {"ListScalar"};
                 let field_name = &field.node.name.to_string();
                 let field_type = &field.node.ty.node;
                 let (
@@ -368,7 +376,7 @@ fn process_type_def(
                     mut scalar_typ,
                     mut ext,
                     is_list_with_nullable_elements,
-                ) = process_field(schema, field_name, field_type);
+                ) = process_field(schema, field_name, field_type, None);
 
                 let mut field_typ_name = scalar_typ.to_string();
 

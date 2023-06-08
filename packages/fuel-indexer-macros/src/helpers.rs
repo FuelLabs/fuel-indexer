@@ -245,6 +245,7 @@ pub fn row_extractor(
     field_name: proc_macro2::Ident,
     is_nullable: bool,
     processed_type: ProcessedTypeResult,
+    original_field_type: Option<String>,
 ) -> proc_macro2::TokenStream {
     let item_popper = quote! { let item = vec.pop().expect("Missing item in row."); };
 
@@ -289,6 +290,7 @@ pub fn row_extractor(
             is_nullable,
             field_type,
             is_inner_type_nullable,
+            original_field_type,
         ),
     };
 
@@ -304,14 +306,20 @@ fn create_row_extractor_for_list_field(
     is_nullable: bool,
     mut field_type: Ident,
     is_inner_type_nullable: bool,
+    original_field_type: Option<String>,
 ) -> proc_macro2::TokenStream {
     let type_name = field_type.to_string();
 
     // If the type is not a scalar, then we are storing an entity type
-    let list_type = if schema.has_scalar(&type_name) {
-        format_ident! {"ListScalar"}
-    } else {
-        format_ident! {"ListComplex"}
+    let list_type = match original_field_type {
+        Some(t) => {
+            if !schema.has_scalar(&t) {
+                format_ident! {"ListComplex"}
+            } else {
+                format_ident! {"ListScalar"}
+            }
+        }
+        None => format_ident! {"ListScalar"},
     };
 
     if schema.is_enum_type(&type_name) {
