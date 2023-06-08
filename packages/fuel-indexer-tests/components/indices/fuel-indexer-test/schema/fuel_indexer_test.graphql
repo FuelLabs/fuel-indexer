@@ -245,7 +245,7 @@ type ComplexEnumEntity {
 }
 
 type NoTableEntity {
-    name: Charfield @norelation
+    name: Charfield @virtual
     size: UInt1!
 }
 
@@ -280,27 +280,27 @@ type IndexableUnionC {
     union_type: UnionType!
 }
 
-type UnIndexableUnionA {
-    a: UInt8! @norelation
+type VirtualUnionA {
+    a: UInt8! @virtual
     union_type: UnionType!
 }
 
-type UnIndexableUnionB {
-    b: UInt8! @norelation
+type VirtualUnionB {
+    b: UInt8! @virtual
     union_type: UnionType!
 }
 
-type UnIndexableUnionC {
-    c: UInt8! @norelation
+type VirtualUnionC {
+    c: UInt8! @virtual
     union_type: UnionType!
 }
 
 union IndexableUnionEntity = IndexableUnionA | IndexableUnionB | IndexableUnionC
 
-union UnIndexableUnionEntity = UnIndexableUnionA | UnIndexableUnionB | UnIndexableUnionC
+union VirtualUnionEntity = VirtualUnionA | VirtualUnionB | VirtualUnionC
 
-type UnIndexableUnionContainerEntity {
+type VirtualUnionContainerEntity {
     id: ID!
-    union_entity: UnIndexableUnionEntity
+    union_entity: VirtualUnionEntity
     union_type: UnionType!
 }
