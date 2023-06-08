@@ -88,9 +88,9 @@ impl From<Blob> for Vec<u8> {
     }
 }
 
-/// JSON type used to store types tagged with a `@norelation` directive in
-/// GraphQL schema. Aliased as `NoRelation`.
-pub type NoRelation = Json;
+/// JSON type used to store types tagged with a `@virtual` directive in
+/// GraphQL schema. Aliased as `Virtual`.
+pub type Virtual = Json;
 
 /// JSON type used to store arbitrary object payloads.
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]

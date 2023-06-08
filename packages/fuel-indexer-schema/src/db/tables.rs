@@ -177,10 +177,10 @@ impl SchemaBuilder {
         let mut fragments = Vec::new();
 
         for (pos, field) in fields.iter().enumerate() {
-            let directives::NoRelation(no_table) = get_notable_directive_info(field)?;
+            let directives::Virtual(no_table) = get_notable_directive_info(field)?;
             if no_table {
                 self.parsed_schema
-                    .non_indexable_type_names
+                    .virtual_type_names
                     .insert(object_name.to_string());
             }
 
@@ -225,7 +225,7 @@ impl SchemaBuilder {
                     self.columns.push(column);
                     self.foreign_keys.push(fk);
                 }
-                ColumnType::NoRelation => {
+                ColumnType::Virtual => {
                     let column = NewColumn {
                         type_id,
                         column_position: pos as i32,

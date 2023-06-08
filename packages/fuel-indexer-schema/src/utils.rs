@@ -15,7 +15,7 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
-pub const NORELATION_DIRECTIVE_NAME: &str = "norelation";
+pub const NORELATION_DIRECTIVE_NAME: &str = "virtual";
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 
@@ -274,10 +274,8 @@ pub fn get_column_type(
                 return Ok((ColumnType::Charfield, ty.nullable));
             }
 
-            if parsed_schema.is_non_indexable_non_enum(t.as_str())
-                || parsed_schema.is_union_type(t.as_str())
-            {
-                return Ok((ColumnType::NoRelation, ty.nullable));
+            if parsed_schema.is_non_indexable_non_enum(t.as_str()) {
+                return Ok((ColumnType::Virtual, ty.nullable));
             }
 
             if parsed_schema.is_possible_foreign_key(t.as_str()) {
@@ -293,7 +291,7 @@ pub fn get_column_type(
 /// Get directive determining whether or not field's object should not be used to create SQL tables.
 pub fn get_notable_directive_info(
     field: &FieldDefinition,
-) -> IndexerSchemaResult<directives::NoRelation> {
+) -> IndexerSchemaResult<directives::Virtual> {
     let FieldDefinition { directives, .. } = field.clone();
 
     let mut directives: Vec<Directive> = directives
@@ -304,9 +302,9 @@ pub fn get_notable_directive_info(
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
         if name.to_string().as_str() == NORELATION_DIRECTIVE_NAME {
-            return Ok(directives::NoRelation(true));
+            return Ok(directives::Virtual(true));
         }
     }
 
-    Ok(directives::NoRelation(false))
+    Ok(directives::Virtual(false))
 }

@@ -32,7 +32,7 @@ pub struct ParsedGraphQLSchema {
     pub object_field_mappings: HashMap<String, BTreeMap<String, String>>,
 
     /// All unique names of types for which tables should _not_ be created.
-    pub non_indexable_type_names: HashSet<String>,
+    pub virtual_type_names: HashSet<String>,
 
     /// All unique names of types that have already been parsed.
     pub parsed_type_names: HashSet<String>,
@@ -60,7 +60,7 @@ impl Default for ParsedGraphQLSchema {
             type_names: HashSet::new(),
             enum_names: HashSet::new(),
             union_names: HashSet::new(),
-            non_indexable_type_names: HashSet::new(),
+            virtual_type_names: HashSet::new(),
             parsed_type_names: HashSet::new(),
             field_type_mappings: HashMap::new(),
             object_field_mappings: HashMap::new(),
@@ -88,7 +88,7 @@ impl ParsedGraphQLSchema {
         let mut parsed_type_names = HashSet::new();
         let mut enum_names = HashSet::new();
         let mut union_names = HashSet::new();
-        let mut non_indexable_type_names = HashSet::new();
+        let mut virtual_type_names = HashSet::new();
         let mut field_type_mappings = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
@@ -105,11 +105,11 @@ impl ParsedGraphQLSchema {
                             let mut field_mapping = BTreeMap::new();
                             parsed_type_names.insert(t.node.name.to_string());
                             for field in &o.fields {
-                                let directives::NoRelation(is_no_table) =
+                                let directives::Virtual(is_no_table) =
                                     get_notable_directive_info(&field.node).unwrap();
 
                                 if is_no_table {
-                                    non_indexable_type_names.insert(obj_name.clone());
+                                    virtual_type_names.insert(obj_name.clone());
                                 }
 
                                 let field_name = field.node.name.to_string();
@@ -127,7 +127,7 @@ impl ParsedGraphQLSchema {
                         }
                         TypeKind::Enum(e) => {
                             let name = t.node.name.to_string();
-                            non_indexable_type_names.insert(name.clone());
+                            virtual_type_names.insert(name.clone());
                             enum_names.insert(name.clone());
 
                             for val in &e.values {
@@ -136,9 +136,45 @@ impl ParsedGraphQLSchema {
                                 field_type_mappings.insert(val_id, name.to_string());
                             }
                         }
-                        TypeKind::Union(_u) => {
-                            let name = t.node.name.to_string();
-                            union_names.insert(name);
+                        TypeKind::Union(u) => {
+                            let union_name = t.node.name.to_string();
+                            union_names.insert(union_name.clone());
+
+                            let member_count = u.members.len();
+                            let virtual_member_count = u
+                                .members
+                                .iter()
+                                .map(|m| {
+                                    let member_name = m.node.to_string();
+                                    if virtual_type_names.contains(&member_name) {
+                                        1
+                                    } else {
+                                        0
+                                    }
+                                })
+                                .sum::<usize>();
+
+                            let mut has_virtual_member = false;
+
+                            u.members.iter().for_each(|m| {
+                                let member_name = m.node.to_string();
+                                if let Some(name) = virtual_type_names.get(&member_name) {
+                                    virtual_type_names.insert(name.to_owned());
+                                    has_virtual_member = true;
+                                }
+                            });
+
+                            if has_virtual_member {
+                                virtual_type_names.insert(union_name.clone());
+
+                                // All members of a union must all be regualar or virtual
+                                if virtual_member_count != member_count {
+                                    let e = format!("Union({union_name})'s members are not all virtual");
+                                    return Err(
+                                        IndexerSchemaError::InconsistentVirtualUnion(e),
+                                    );
+                                }
+                            }
                         }
                         _ => {
                             return Err(IndexerSchemaError::UnsupportedTypeKind);
@@ -156,7 +192,7 @@ impl ParsedGraphQLSchema {
             union_names,
             object_field_mappings,
             enum_names,
-            non_indexable_type_names,
+            virtual_type_names,
             parsed_type_names,
             field_type_mappings,
             scalar_names,
@@ -179,7 +215,7 @@ impl ParsedGraphQLSchema {
     /// Whether the given field type name is a type from which tables are created.
     #[allow(unused)]
     pub fn is_non_indexable_non_enum(&self, name: &str) -> bool {
-        self.non_indexable_type_names.contains(name) && !self.is_enum_type(name)
+        self.virtual_type_names.contains(name) && !self.is_enum_type(name)
     }
 
     /// Whether the given field type name is an enum type.
