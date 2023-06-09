@@ -251,24 +251,48 @@ type NodeInfo {
   node_version: Charfield!
 }
 
+enum OutputLabel {
+  Coin
+  Contract
+  Change
+  Variable
+  ContractCreated
+  Unknown
+}
+
+
+type UnknownOutput {
+  id: ID!
+  label: OutputLabel!
+  is_unknown: Boolean!
+}
+
 type ContractCreated {
   id: ID!
   contract: ContractIdFragment!
   state_root: Bytes32!
+  label: OutputLabel!
+  is_contract_created: Boolean!
 }
 
 type VariableOutput {
   id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
   recipient: Address!
   amount: UInt8!
   asset_id: AssetId!
+  is_variable: Boolean!
+  label: OutputLabel!
 }
 
 type ChangeOutput {
   id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
   recipient: Address!
   amount: UInt8!
   asset_id: AssetId!
+  is_change: Boolean!
+  label: OutputLabel!
 }
 
 type ContractOutput {
@@ -276,24 +300,21 @@ type ContractOutput {
   input_index: Int8!
   balance_root: Bytes32!
   state_root: Bytes32!
+  is_contract: Boolean!
+  label: OutputLabel!
 }
 
 type CoinOutput {
   id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
   recipient: Address!
   amount: UInt8!
   asset_id: AssetId!
+  is_coin: Boolean!
+  label: OutputLabel!
 }
 
-type Output {
-  id: ID!
-  coin: CoinOutput
-  contract: ContractOutput
-  change: ChangeOutput
-  variable: VariableOutput
-  contract_created: ContractCreated
-  unknown: Unknown
-}
+union Output = CoinOutput | ContractOutput | ChangeOutput | VariableOutput | ContractCreated | UnknownOutput
 
 type DryRun {
   tx: HexString! @virtual

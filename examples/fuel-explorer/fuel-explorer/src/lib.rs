@@ -312,191 +312,166 @@ impl From<fuel::Input> for Input {
     }
 }
 
-impl From<fuel::CoinOutput> for CoinOutput {
-    fn from(output: fuel::CoinOutput) -> Self {
-        let fuel::CoinOutput {
-            to,
-            amount,
-            asset_id,
-        } = output;
-
-        // TODO: Create UID here.
-        let id = 1;
-        Self {
-            id,
-            recipient: to,
-            amount,
-            asset_id,
-        }
-    }
-}
-
-impl From<fuel::ContractOutput> for ContractOutput {
-    fn from(output: fuel::ContractOutput) -> Self {
-        let fuel::ContractOutput {
-            input_index,
-            balance_root,
-            state_root,
-        } = output;
-
-        // TODO: Create UID here.
-        let id = 1;
-        Self {
-            id,
-            input_index: input_index as i64,
-            balance_root,
-            state_root,
-        }
-    }
-}
-
-impl From<fuel::ChangeOutput> for ChangeOutput {
-    fn from(output: fuel::ChangeOutput) -> Self {
-        let fuel::ChangeOutput {
-            to,
-            amount,
-            asset_id,
-        } = output;
-
-        // TODO: Create UID here.
-        let id = 1;
-        Self {
-            id,
-            recipient: to,
-            amount,
-            asset_id,
-        }
-    }
-}
-
-impl From<fuel::VariableOutput> for VariableOutput {
-    fn from(output: fuel::VariableOutput) -> Self {
-        let fuel::VariableOutput {
-            to,
-            amount,
-            asset_id,
-        } = output;
-
-        // TODO: Create UID here.
-        let id = 1;
-        Self {
-            id,
-            recipient: to,
-            amount,
-            asset_id,
-        }
-    }
-}
-
 impl From<fuel::Output> for Output {
     fn from(output: fuel::Output) -> Self {
         match output {
             fuel::Output::CoinOutput(output) => {
-                let coin = CoinOutput::from(output);
+                let fuel::CoinOutput {
+                    to,
+                    amount,
+                    asset_id,
+                } = output;
                 // TODO: Create UID here.
                 let id = 1;
                 Self {
                     id,
-                    coin: Some(coin.id),
+                    recipient: Some(to),
+                    amount: Some(amount),
+                    asset_id: Some(asset_id),
                     contract: None,
-                    change: None,
-                    variable: None,
-                    contract_created: None,
-                    unknown: None,
+                    input_index: None,
+                    balance_root: None,
+                    state_root: None,
+                    is_variable: None,
+                    is_contract: None,
+                    is_contract_created: None,
+                    is_change: None,
+                    is_coin: Some(true),
+                    is_unknown: None,
+                    label: Some(OutputLabel::Coin.into()),
                 }
             }
             fuel::Output::ContractOutput(output) => {
-                let contract = ContractOutput::from(output);
+                let fuel::ContractOutput {
+                    input_index,
+                    balance_root,
+                    state_root,
+                } = output;
                 // TODO: Create UID here.
                 let id = 1;
                 Self {
                     id,
-                    coin: None,
-                    contract: Some(contract.id),
-                    change: None,
-                    variable: None,
-                    contract_created: None,
-                    unknown: None,
+                    recipient: None,
+                    amount: None,
+                    asset_id: None,
+                    contract: None,
+                    input_index: Some(input_index.into()),
+                    balance_root: Some(balance_root),
+                    state_root: Some(state_root),
+                    is_variable: None,
+                    is_contract: Some(true),
+                    is_contract_created: None,
+                    is_change: None,
+                    is_coin: None,
+                    is_unknown: None,
+                    label: Some(OutputLabel::Contract.into()),
                 }
             }
             fuel::Output::ChangeOutput(output) => {
-                let change = ChangeOutput::from(output);
+                let fuel::ChangeOutput {
+                    to,
+                    amount,
+                    asset_id,
+                } = output;
                 // TODO: Create UID here.
                 let id = 1;
                 Self {
                     id,
-                    coin: None,
+                    recipient: Some(to),
+                    amount: Some(amount),
+                    asset_id: Some(asset_id),
                     contract: None,
-                    change: Some(change.id),
-                    variable: None,
-                    contract_created: None,
-                    unknown: None,
+                    input_index: None,
+                    balance_root: None,
+                    state_root: None,
+                    is_variable: None,
+                    is_contract: None,
+                    is_contract_created: None,
+                    is_change: Some(true),
+                    is_coin: None,
+                    is_unknown: None,
+                    label: Some(OutputLabel::Change.into()),
                 }
             }
             fuel::Output::VariableOutput(output) => {
-                let var = VariableOutput::from(output);
+                let fuel::VariableOutput {
+                    to,
+                    amount,
+                    asset_id,
+                } = output;
+
                 // TODO: Create UID here.
                 let id = 1;
                 Self {
                     id,
-                    coin: None,
+                    recipient: Some(to),
+                    amount: Some(amount),
+                    asset_id: Some(asset_id),
                     contract: None,
-                    change: None,
-                    variable: Some(var.id),
-                    contract_created: None,
-                    unknown: None,
+                    input_index: None,
+                    balance_root: None,
+                    state_root: None,
+                    is_variable: Some(true),
+                    is_contract: None,
+                    is_contract_created: None,
+                    is_change: None,
+                    is_coin: None,
+                    is_unknown: None,
+                    label: Some(OutputLabel::Variable.into()),
                 }
             }
             fuel::Output::ContractCreated(output) => {
-                let contract = ContractCreated::from(output);
+                #[allow(unused)]
+                let fuel::ContractCreated {
+                    contract_id,
+                    state_root,
+                } = output;
+
+                // TODO: Create UID here.
+                let id = 1;
+
+                // TODO: calculate contract ID
+                let contract_id = 1;
+
+                Self {
+                    id,
+                    recipient: None,
+                    amount: None,
+                    asset_id: None,
+                    contract: Some(contract_id),
+                    input_index: None,
+                    balance_root: None,
+                    state_root: Some(state_root),
+                    is_variable: None,
+                    is_contract: None,
+                    is_contract_created: None,
+                    is_change: None,
+                    is_coin: None,
+                    is_unknown: Some(true),
+                    label: Some(OutputLabel::ContractCreated.into()),
+                }
+            }
+            fuel::Output::Unknown => {
                 // TODO: Create UID here.
                 let id = 1;
                 Self {
                     id,
-                    coin: None,
+                    recipient: None,
+                    amount: None,
+                    asset_id: None,
                     contract: None,
-                    change: None,
-                    variable: None,
-                    contract_created: Some(contract.id),
-                    unknown: None,
+                    input_index: None,
+                    balance_root: None,
+                    state_root: None,
+                    is_variable: None,
+                    is_contract: None,
+                    is_contract_created: None,
+                    is_unknown: Some(true),
+                    is_change: None,
+                    is_coin: None,
+                    label: Some(OutputLabel::Unknown.into()),
                 }
             }
-            _ => {
-                Logger::warn("Unrecognized output type.");
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    coin: None,
-                    contract: None,
-                    change: None,
-                    variable: None,
-                    contract_created: None,
-                    unknown: None,
-                }
-            }
-        }
-    }
-}
-
-impl From<fuel::ContractCreated> for ContractCreated {
-    fn from(output: fuel::ContractCreated) -> Self {
-        #[allow(unused)]
-        let fuel::ContractCreated {
-            contract_id,
-            state_root,
-        } = output;
-
-        // TODO: Create UID here.
-        let id = 1;
-        let contract = Contract::load(id).unwrap();
-
-        // TODO: Create UID here.
-        let id = 1;
-        Self {
-            id,
-            contract: contract.id,
-            state_root,
         }
     }
 }
