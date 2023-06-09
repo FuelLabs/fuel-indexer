@@ -705,4 +705,35 @@ mod fuel_indexer_test {
 
         e.save();
     }
+
+    fn fuel_indexer_trigger_union_type(_b: BlockData) {
+        Logger::info(
+            "fuel_indexer_trigger_union_type handling trigger_union_type event.",
+        );
+
+        let unindexable = UnIndexableUnionEntity {
+            a: Some(2),
+            b: None,
+            c: Some(6),
+            union_type: Some(UnionType::B.into()),
+        };
+
+        let unindexable_container = UnIndexableUnionContainerEntity {
+            id: 1,
+            union_entity: Some(unindexable.into()),
+            union_type: UnionType::B.into(),
+        };
+
+        unindexable_container.save();
+
+        let indexable = IndexableUnionEntity {
+            id: 1,
+            a: Some(5),
+            b: Some(10),
+            c: None,
+            union_type: Some(UnionType::A.into()),
+        };
+
+        indexable.save();
+    }
 }

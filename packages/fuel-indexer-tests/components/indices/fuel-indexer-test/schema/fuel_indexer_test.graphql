@@ -255,3 +255,52 @@ type UsesNoTableEntity {
     name: Charfield!
     no_table: NoTableEntity!
 }
+
+enum UnionType {
+    A
+    B
+    C
+}
+
+type IndexableUnionA {
+    id: ID!
+    a: UInt8!
+    union_type: UnionType!
+}
+
+type IndexableUnionB {
+    id: ID!
+    b: UInt8!
+    union_type: UnionType!
+}
+
+type IndexableUnionC {
+    id: ID!
+    c: UInt8!
+    union_type: UnionType!
+}
+
+type UnIndexableUnionA {
+    a: UInt8! @norelation
+    union_type: UnionType!
+}
+
+type UnIndexableUnionB {
+    b: UInt8! @norelation
+    union_type: UnionType!
+}
+
+type UnIndexableUnionC {
+    c: UInt8! @norelation
+    union_type: UnionType!
+}
+
+union IndexableUnionEntity = IndexableUnionA | IndexableUnionB | IndexableUnionC
+
+union UnIndexableUnionEntity = UnIndexableUnionA | UnIndexableUnionB | UnIndexableUnionC
+
+type UnIndexableUnionContainerEntity {
+    id: ID!
+    union_entity: UnIndexableUnionEntity
+    union_type: UnionType!
+}
