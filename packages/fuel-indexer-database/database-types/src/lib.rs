@@ -171,7 +171,7 @@ impl NewColumn {
             ColumnType::NoRelation => "Json",
             ColumnType::BlockId => "varchar(64)",
             ColumnType::ListScalar => "varchar(10485760)",
-            ColumnType::ListComplex => "numeric(20, 0) []",
+            ColumnType::ListComplex => "varchar(10485760)",
         }
     }
 }

@@ -221,7 +221,7 @@ impl FtColumn {
                         let discriminant = std::mem::discriminant(&list[0]);
                         let type_id =
                             i32::from(ColumnType::from(list[0].to_string().as_str()));
-                        let type_bytes = hex::encode(type_id.to_be_bytes());
+                        let type_bytes = hex::encode(type_id.to_le_bytes());
                         let elems = list
                             .iter()
                             .map(|e| {
@@ -313,7 +313,12 @@ mod tests {
         let identity = FtColumn::Identity(Some(Identity::Address(
             Address::try_from([0x12; 32]).unwrap(),
         )));
-        let list = FtColumn::ListScalar(Some(vec![
+        let scalar_list = FtColumn::ListScalar(Some(vec![
+            FtColumn::ID(Some(123)),
+            FtColumn::ID(Some(456)),
+            FtColumn::ID(Some(789)),
+        ]));
+        let complex_list = FtColumn::ListComplex(Some(vec![
             FtColumn::ID(Some(123)),
             FtColumn::ID(Some(456)),
             FtColumn::ID(Some(789)),
@@ -338,7 +343,8 @@ mod tests {
         insta::assert_yaml_snapshot!(charfield.query_fragment());
         insta::assert_yaml_snapshot!(json.query_fragment());
         insta::assert_yaml_snapshot!(identity.query_fragment());
-        insta::assert_yaml_snapshot!(list.query_fragment());
+        insta::assert_yaml_snapshot!(scalar_list.query_fragment());
+        insta::assert_yaml_snapshot!(complex_list.query_fragment());
     }
 
     #[test]
@@ -363,7 +369,8 @@ mod tests {
         let charfield_none = FtColumn::Charfield(None);
         let json_none = FtColumn::Json(None);
         let identity_none = FtColumn::Identity(None);
-        let list_none = FtColumn::ListScalar(None);
+        let scalar_list_none = FtColumn::ListScalar(None);
+        let complex_list_none = FtColumn::ListComplex(None);
 
         insta::assert_yaml_snapshot!(addr_none.query_fragment());
         insta::assert_yaml_snapshot!(asset_id_none.query_fragment());
@@ -383,7 +390,8 @@ mod tests {
         insta::assert_yaml_snapshot!(charfield_none.query_fragment());
         insta::assert_yaml_snapshot!(json_none.query_fragment());
         insta::assert_yaml_snapshot!(identity_none.query_fragment());
-        insta::assert_yaml_snapshot!(list_none.query_fragment());
+        insta::assert_yaml_snapshot!(scalar_list_none.query_fragment());
+        insta::assert_yaml_snapshot!(complex_list_none.query_fragment());
     }
 
     #[test]

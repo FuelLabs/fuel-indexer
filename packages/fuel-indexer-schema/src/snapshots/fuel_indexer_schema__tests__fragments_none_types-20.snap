@@ -1,0 +1,6 @@
+---
+source: packages/fuel-indexer-schema/src/lib.rs
+expression: complex_list_none.query_fragment()
+---
+"'NULL'"
+

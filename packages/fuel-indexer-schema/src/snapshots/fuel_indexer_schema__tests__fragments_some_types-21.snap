@@ -1,0 +1,6 @@
+---
+source: packages/fuel-indexer-schema/src/lib.rs
+expression: complex_list.query_fragment()
+---
+"'{123,456,789}'"
+
