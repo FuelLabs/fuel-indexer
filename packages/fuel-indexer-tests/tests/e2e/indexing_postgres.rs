@@ -28,7 +28,7 @@ async fn setup_test_components(
 ) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
     let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
-    let srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let srvc = indexer_service_postgres(Some(&test_db.url), None).await;
 
     (node_handle, test_db, srvc)
 }
@@ -997,6 +997,85 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 
     assert_eq!(entity.name, Some("norelation".to_string()));
     assert_eq!(entity.size, 1);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_deploying_twice_returns_an_error() {
+    let test_db = TestPostgresDb::new().await.unwrap();
+
+    let mut indexer = {
+        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+            config.replace_indexer = false;
+        });
+        indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
+    };
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    indexer
+        .register_indexer_from_manifest(manifest.clone())
+        .await
+        .unwrap();
+
+    let result = indexer.register_indexer_from_manifest(manifest).await;
+
+    assert!(result.is_err());
+
+    match result.unwrap_err() {
+        fuel_indexer::IndexerError::Unknown(msg) => {
+            assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists")
+        }
+        err => {
+            panic!("Expected Unknown but got: {}", err)
+        }
+    }
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_replace_indexer() {
+    let node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let test_db = TestPostgresDb::new().await.unwrap();
+
+    let mut indexer = {
+        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+            config.replace_indexer = true;
+        });
+        indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
+    };
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    indexer
+        .register_indexer_from_manifest(manifest.clone())
+        .await
+        .unwrap();
+
+    indexer
+        .register_indexer_from_manifest(manifest)
+        .await
+        .unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/enum").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
 }
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -180,8 +180,6 @@ Take a quick tour.
     Deploy your indexer.
 `forc index remove`
     Stop a running indexer.
-`forc index revert`
-    Revert a deployed indexer.
 `forc index auth`
     Authenticate against an indexer service.
 `forc index status`

@@ -224,6 +224,13 @@ pub struct IndexerArgs {
         help = "Maximum length of time (in seconds) that an indexer's event handler can run before timing out."
     )]
     pub indexer_handler_timeout: u64,
+
+    /// Whether to allow replacing an existing indexer. If not specified, an attempt to deploy over an existing indexer results in an error.
+    #[clap(
+        long,
+        help = "Whether to allow replacing an existing indexer. If not specified, an attempt to deploy over an existing indexer results in an error."
+    )]
+    pub replace_indexer: bool,
 }
 
 #[derive(Debug, Parser, Clone)]
@@ -380,6 +387,7 @@ impl Default for IndexerArgs {
             rate_limit: defaults::RATE_LIMIT_ENABLED,
             rate_limit_request_count: Some(defaults::RATE_LIMIT_REQUEST_COUNT),
             rate_limit_window_size: Some(defaults::RATE_LIMIT_WINDOW_SIZE),
+            replace_indexer: defaults::REPLACE_INDEXER,
         }
     }
 }
@@ -410,6 +418,7 @@ pub struct IndexerConfig {
     pub run_migrations: bool,
     pub authentication: AuthenticationConfig,
     pub rate_limit: RateLimitConfig,
+    pub replace_indexer: bool,
 }
 
 impl From<IndexerArgs> for IndexerConfig {
@@ -486,6 +495,7 @@ impl From<IndexerArgs> for IndexerConfig {
                 request_count: args.rate_limit_request_count,
                 window_size: args.rate_limit_window_size,
             },
+            replace_indexer: args.replace_indexer,
         };
 
         config
@@ -570,6 +580,7 @@ impl From<ApiServerArgs> for IndexerConfig {
                 request_count: args.rate_limit_request_count,
                 window_size: args.rate_limit_window_size,
             },
+            replace_indexer: defaults::REPLACE_INDEXER,
         };
 
         config

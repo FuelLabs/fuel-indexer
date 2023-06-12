@@ -4,14 +4,9 @@ use crate::{
 };
 use async_std::sync::{Arc, Mutex};
 use fuel_indexer_database::{
-    queries,
-    types::{IndexAssetBundle, IndexAssetType},
-    IndexerConnection, IndexerConnectionPool,
+    queries, types::IndexAssetType, IndexerConnection, IndexerConnectionPool,
 };
-use fuel_indexer_lib::{
-    defaults,
-    utils::{IndexRevertRequest, ServiceRequest},
-};
+use fuel_indexer_lib::{defaults, utils::ServiceRequest};
 use fuel_indexer_schema::db::manager::SchemaManager;
 use fuel_indexer_types::fuel::BlockData;
 use futures::{
@@ -60,6 +55,36 @@ impl IndexerService {
         mut manifest: Manifest,
     ) -> IndexerResult<()> {
         let mut conn = self.pool.acquire().await?;
+
+        let indexer_exists = (queries::get_indexer_id(
+            &mut conn,
+            &manifest.namespace,
+            &manifest.identifier,
+        )
+        .await)
+            .is_ok();
+        if indexer_exists {
+            if !self.config.replace_indexer {
+                return Err(IndexerError::Unknown(format!(
+                    "Indexer({}.{}) already exists",
+                    &manifest.namespace, &manifest.identifier
+                )));
+            } else if let Err(e) = queries::remove_indexer(
+                &mut conn,
+                &manifest.namespace,
+                &manifest.identifier,
+            )
+            .await
+            {
+                error!(
+                    "Failed to remove Indexer({}.{}): {e}",
+                    &manifest.namespace, &manifest.identifier
+                );
+                queries::revert_transaction(&mut conn).await?;
+                return Err(e.into());
+            }
+        }
+
         let index = queries::register_indexer(
             &mut conn,
             &manifest.namespace,
@@ -81,7 +106,6 @@ impl IndexerService {
             )
             .await?;
 
-        let mut conn = self.pool.acquire().await?;
         let start_block = get_start_block(&mut conn, &manifest).await?;
         manifest.start_block = Some(start_block);
         let (handle, exec_source, killer) =
@@ -116,7 +140,6 @@ impl IndexerService {
                 .await?;
             }
         }
-
         info!("Registered Indexer({})", &manifest.uid());
         self.handles.insert(manifest.uid(), handle);
         self.killers.insert(manifest.uid(), killer);
@@ -286,44 +309,6 @@ async fn create_service_task(
                         killer.store(true, Ordering::SeqCst);
                     } else {
                         warn!("Stop Indexer: No indexer with the name Indexer({uid})");
-                    }
-                }
-                ServiceRequest::IndexRevert(request) => {
-                    let IndexRevertRequest {
-                        identifier,
-                        namespace,
-                    } = request;
-
-                    let mut conn = pool.acquire().await?;
-
-                    let indexer_id =
-                        queries::get_indexer_id(&mut conn, &namespace, &identifier)
-                            .await?;
-
-                    let IndexAssetBundle { wasm, manifest, .. } =
-                        queries::latest_assets_for_indexer(&mut conn, &indexer_id)
-                            .await?;
-
-                    let mut manifest = Manifest::try_from(&manifest.bytes)?;
-                    let start_block = get_start_block(&mut conn, &manifest).await?;
-
-                    manifest.start_block = Some(start_block);
-
-                    let (handle, _module_bytes, killer) = WasmIndexExecutor::create(
-                        &config,
-                        &manifest,
-                        ExecutorSource::Registry(wasm.bytes),
-                    )
-                    .await?;
-
-                    futs.push(handle);
-
-                    if let Some(killer_for_prev_executor) =
-                        killers.insert(manifest.uid(), killer)
-                    {
-                        let uid = manifest.uid();
-                        info!("Indexer({uid}) was reverted. Stopping previous version of Indexer({uid}).");
-                        killer_for_prev_executor.store(true, Ordering::SeqCst);
                     }
                 }
             },
