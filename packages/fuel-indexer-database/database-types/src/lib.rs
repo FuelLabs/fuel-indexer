@@ -107,8 +107,6 @@ pub struct Column {
     pub column_type: String,
     pub nullable: bool,
     pub graphql_type: String,
-    pub is_list_with_nullable_elements: Option<bool>,
-    pub inner_list_element_type: Option<String>,
 }
 
 impl NewColumn {
@@ -173,9 +171,7 @@ impl NewColumn {
             ColumnType::NoRelation => "Json",
             ColumnType::BlockId => "varchar(64)",
             ColumnType::ListScalar => "varchar(10485760)",
-            ColumnType::ListComplex => "varchar(10485760)",
-            ColumnType::LookupTableId => "bigserial primary key",
-            ColumnType::LookupTableRefId => "numeric(20, 0)",
+            ColumnType::ListComplex => "numeric(20, 0) []",
         }
     }
 }
@@ -228,8 +224,6 @@ pub enum ColumnType {
     BlockId = 34,
     ListScalar = 35,
     ListComplex = 36,
-    LookupTableId = 37,
-    LookupTableRefId = 38,
 }
 
 impl From<ColumnType> for i32 {
@@ -272,8 +266,6 @@ impl From<ColumnType> for i32 {
             ColumnType::BlockId => 34,
             ColumnType::ListScalar => 35,
             ColumnType::ListComplex => 36,
-            ColumnType::LookupTableId => 37,
-            ColumnType::LookupTableRefId => 38,
         }
     }
 }
@@ -324,8 +316,6 @@ impl From<i32> for ColumnType {
             34 => ColumnType::BlockId,
             35 => ColumnType::ListScalar,
             36 => ColumnType::ListComplex,
-            37 => ColumnType::LookupTableId,
-            38 => ColumnType::LookupTableRefId,
             _ => panic!("Invalid column type."),
         }
     }
@@ -371,8 +361,6 @@ impl From<&str> for ColumnType {
             "BlockId" => ColumnType::BlockId,
             "ListScalar" => ColumnType::ListScalar,
             "ListComplex" => ColumnType::ListComplex,
-            "LookupTableId" => ColumnType::LookupTableId,
-            "LookupTableRefId" => ColumnType::LookupTableRefId,
             _ => panic!("Invalid column type: '{name}'"),
         }
     }

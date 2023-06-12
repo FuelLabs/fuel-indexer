@@ -250,10 +250,15 @@ impl FtColumn {
                     }
                 }
             }
-            FtColumn::ListComplex(value) => match value {
-                // TODO: Only allow for column types that can be used as foreign keys
-                // TODO: Can this just be the ID or FK itself and that can be used to query and insert?
-                Some(_list) => todo!(),
+            FtColumn::ListComplex(values) => match values {
+                Some(list) => {
+                    let val_str = list
+                        .iter()
+                        .map(|val| val.query_fragment())
+                        .collect::<Vec<String>>()
+                        .join(",");
+                    format!("'{{{}}}'", val_str)
+                }
                 None => {
                     format!("'{}'", String::from(NULL_VALUE))
                 }

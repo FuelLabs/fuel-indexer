@@ -12,14 +12,6 @@ use std::collections::{HashMap, HashSet};
 
 type CompleteProcessedType = (ColumnType, bool, Option<(ColumnType, bool, Option<Type>)>);
 
-#[derive(Debug, Default)]
-struct LookupTableGenerationSet {
-    table_name: String,
-    columns: Vec<NewColumn>,
-    foreign_keys: Vec<ForeignKey>,
-    indices: Vec<ColumnIndex>,
-}
-
 /// SchemaBuilder is used to encapsulate most of the logic related to parsing
 /// GraphQL types, generating SQL from those types, and committing that SQL to
 /// the database.
@@ -40,7 +32,6 @@ pub struct SchemaBuilder {
     fields: HashMap<String, HashMap<String, String>>,
     parsed_schema: ParsedGraphQLSchema,
     is_native: bool,
-    lookup_tables: Vec<LookupTableGenerationSet>,
 }
 
 impl SchemaBuilder {
@@ -112,7 +103,6 @@ impl SchemaBuilder {
             types,
             fields,
             schema,
-            lookup_tables,
             ..
         } = self;
 
@@ -148,34 +138,6 @@ impl SchemaBuilder {
 
         for idx in indices {
             queries::execute_query(conn, idx.create_statement()).await?;
-        }
-
-        for gen_set in lookup_tables {
-            let column_fragments = gen_set
-                .columns
-                .iter()
-                .map(|col| col.sql_fragment())
-                .collect::<Vec<String>>()
-                .join(",\n");
-
-            let creation_statement = format!(
-                "CREATE TABLE IF NOT EXISTS\n {} (\n {} \n)",
-                self.db_type.table_name(
-                    &format!("{}_{}", namespace, identifier),
-                    &gen_set.table_name
-                ),
-                column_fragments
-            );
-
-            queries::execute_query(conn, creation_statement).await?;
-
-            for fk in gen_set.foreign_keys {
-                queries::execute_query(conn, fk.create_statement()).await?;
-            }
-
-            for idx in gen_set.indices {
-                queries::execute_query(conn, idx.create_statement()).await?;
-            }
         }
 
         queries::type_id_insert(conn, type_ids).await?;
@@ -378,30 +340,19 @@ impl SchemaBuilder {
                     }
                 }
                 ColumnType::ListComplex => {
-                    if let Some((ColumnType::ForeignKey, has_nullable_elements, _)) =
+                    let directives::Join {
+                        // reference_field_name,
+                        // field_type_name,
+                        reference_field_type_name,
+                        ..
+                    } = get_join_directive_info(
+                        field,
+                        object_name,
+                        &self.parsed_schema.field_type_mappings,
+                    );
+                    if let Some((_element_col_type, has_nullable_elements, _)) =
                         inner_list_typ
                     {
-                        let directives::Join {
-                            reference_field_name,
-                            reference_field_type_name,
-                            ..
-                        } = get_join_directive_info(
-                            field,
-                            object_name,
-                            &self.parsed_schema.field_type_mappings,
-                        );
-
-                        self.generate_lookup_tables_for_complex_list_type(
-                            object_name,
-                            type_id,
-                            field,
-                            table_name,
-                            reference_field_name,
-                            reference_field_type_name.clone(),
-                            nullable,
-                            unique,
-                        );
-
                         let column = NewColumn {
                             type_id,
                             column_position: pos as i32,
@@ -409,22 +360,14 @@ impl SchemaBuilder {
                             column_type: "ListComplex".to_string(),
                             graphql_type: field.ty.to_string(),
                             nullable,
-                            unique,
+                            unique: false,
                             is_list_with_nullable_elements: Some(has_nullable_elements),
                             inner_list_element_type: Some(
-                                reference_field_type_name.to_owned(),
+                                reference_field_type_name.clone(),
                             ),
                         };
-
                         fragments.push(column.sql_fragment());
                         self.columns.push(column);
-                    } else {
-                        return Err(
-                            super::IndexerSchemaDbError::SchemaConstructionError(
-                                "Complex lists should have inner type of ForeignKey"
-                                    .to_string(),
-                            ),
-                        );
                     }
                 }
                 _ => {
@@ -477,106 +420,6 @@ impl SchemaBuilder {
         self.columns.push(object_column);
 
         Ok(fragments.join(",\n"))
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn generate_lookup_tables_for_complex_list_type(
-        &mut self,
-        object_name: &str,
-        type_id: i64,
-        field: &FieldDefinition,
-        table_name: &str,
-        reference_field_name: String,
-        reference_field_type_name: String,
-        nullable: bool,
-        unique: bool,
-    ) {
-        let lookup_table_name = format!(
-            "{}_{}",
-            object_name.to_lowercase(),
-            field_type_table_name(field),
-        );
-
-        let lookup_table_id_column = NewColumn {
-            type_id,
-            column_position: 0,
-            column_name: "id".to_string(),
-            column_type: "LookupTableId".to_string(),
-            // TODO: what to do with this?
-            graphql_type: "ID!".to_string(),
-            nullable,
-            unique,
-            is_list_with_nullable_elements: None,
-            inner_list_element_type: None,
-        };
-
-        let lookup_table_referring_id_column = NewColumn {
-            type_id,
-            column_position: 1,
-            column_name: format!("{table_name}_id"),
-            column_type: "LookupTableRefId".to_string(),
-            // TODO: what to do with this?
-            graphql_type: "ID!".to_string(),
-            nullable,
-            unique,
-            is_list_with_nullable_elements: None,
-            inner_list_element_type: None,
-        };
-
-        let lookup_table_reference_id_column = NewColumn {
-            type_id,
-            column_position: 2,
-            column_name: format!("{}_id", field_type_table_name(field)),
-            column_type: "LookupTableRefId".to_string(),
-            // TODO: what to do with this?
-            graphql_type: "ID!".to_string(),
-            nullable,
-            unique,
-            is_list_with_nullable_elements: None,
-            inner_list_element_type: None,
-        };
-
-        let fk_to_lookup_1 = ForeignKey::new(
-            self.db_type.clone(),
-            self.namespace(),
-            lookup_table_name.clone(),
-            format!("{}_id", table_name),
-            table_name.to_string(),
-            reference_field_name.clone(),
-            reference_field_type_name.to_owned(),
-        );
-
-        let fk_to_lookup_2 = ForeignKey::new(
-            self.db_type.clone(),
-            self.namespace(),
-            lookup_table_name.clone(),
-            format!("{}_id", field_type_table_name(field)),
-            field_type_table_name(field),
-            reference_field_name,
-            reference_field_type_name,
-        );
-
-        let index_on_referring_id = ColumnIndex {
-            db_type: DbType::Postgres,
-            table_name: lookup_table_name.clone(),
-            namespace: self.namespace(),
-            method: directives::IndexMethod::Btree,
-            unique,
-            column_name: format!("{table_name}_id"),
-        };
-
-        let gen_set = LookupTableGenerationSet {
-            table_name: lookup_table_name,
-            columns: vec![
-                lookup_table_id_column,
-                lookup_table_referring_id_column,
-                lookup_table_reference_id_column,
-            ],
-            foreign_keys: vec![fk_to_lookup_1, fk_to_lookup_2],
-            indices: vec![index_on_referring_id],
-        };
-
-        self.lookup_tables.push(gen_set);
     }
 
     /// In SQL, we namespace a table by the schema name and the identifier, so

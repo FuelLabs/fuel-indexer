@@ -328,8 +328,6 @@ pub async fn list_column_by_id(
                 let column_type: String = row.get(4);
                 let nullable: bool = row.get(5);
                 let graphql_type: String = row.get(6);
-                let is_list_with_nullable_elements: Option<bool> = row.get(7);
-                let inner_list_element_type: Option<String> = row.get(8);
 
                 Column {
                     id,
@@ -339,8 +337,6 @@ pub async fn list_column_by_id(
                     column_type,
                     nullable,
                     graphql_type,
-                    is_list_with_nullable_elements,
-                    inner_list_element_type,
                 }
             })
             .collect::<Vec<Column>>(),
