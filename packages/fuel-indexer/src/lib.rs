@@ -71,8 +71,8 @@ pub enum IndexerError {
     InvalidPortNumber(#[from] core::num::ParseIntError),
     #[error("No transaction is open.")]
     NoTransactionError,
-    #[error("Unknown error")]
-    Unknown,
+    #[error("{0}.")]
+    Unknown(String),
     #[error("Indexer schema error: {0:?}")]
     SchemaError(#[from] IndexerSchemaDbError),
     #[error("Manifest error: {0:?}")]
@@ -83,6 +83,4 @@ pub enum IndexerError {
     NativeExecutionRuntimeError,
     #[error("Tokio time error: {0:?}")]
     Elapsed(#[from] tokio::time::error::Elapsed),
-    #[error("{0}.")]
-    OtherError(String),
 }

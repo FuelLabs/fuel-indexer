@@ -65,7 +65,7 @@ impl IndexerService {
             .is_ok();
         if indexer_exists {
             if !self.config.replace_indexer {
-                return Err(IndexerError::OtherError(format!(
+                return Err(IndexerError::Unknown(format!(
                     "Indexer({}.{}) already exists",
                     &manifest.namespace, &manifest.identifier
                 )));
