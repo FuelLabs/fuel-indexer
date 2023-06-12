@@ -19,12 +19,19 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
+/// Processed field type. `Named` is a field with a singular value while `List` is a
+/// field with potentially nullable elements.
+enum ProcessedFieldType {
+    Named,
+    List(bool),
+}
+
 type ProcessedFieldResult = (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
     proc_macro2::Ident,
     proc_macro2::TokenStream,
-    Option<bool>,
+    ProcessedFieldType,
 );
 
 /// Processed type variants.
@@ -201,15 +208,25 @@ fn process_field(
     );
 
     match processed_type_result {
-        ProcessedTypeResult::Named { tokens, name } => {
-            (tokens, name_ident, name, extractor, None)
-        }
+        ProcessedTypeResult::Named { tokens, name } => (
+            tokens,
+            name_ident,
+            name,
+            extractor,
+            ProcessedFieldType::Named,
+        ),
         ProcessedTypeResult::List {
             tokens,
             name,
             nullable_elements,
             ..
-        } => (tokens, name_ident, name, extractor, Some(nullable_elements)),
+        } => (
+            tokens,
+            name_ident,
+            name,
+            extractor,
+            ProcessedFieldType::List(nullable_elements),
+        ),
     }
 }
 
@@ -231,7 +248,7 @@ fn process_special_field(
     field: &FieldDefinition,
     is_nullable: bool,
     field_type: SpecialFieldType,
-    is_list_type_with_nullable_elements: Option<bool>,
+    processed_field_type: &ProcessedFieldType,
 ) -> ProcessedFieldResult {
     match field_type {
         SpecialFieldType::ForeignKey => {
@@ -242,8 +259,8 @@ fn process_special_field(
                 ..
             } = get_join_directive_info(field, object_name, &schema.field_type_mappings);
 
-            let field_type_name = match is_list_type_with_nullable_elements {
-                Some(has_nullable_elements) => {
+            let field_type_name = match processed_field_type {
+                ProcessedFieldType::List(has_nullable_elements) => {
                     let inner_element_field_type_name = if !has_nullable_elements {
                         [reference_field_type_name, "!".to_string()].join("")
                     } else {
@@ -256,7 +273,7 @@ fn process_special_field(
                         format!("[{inner_element_field_type_name}]")
                     }
                 }
-                None => {
+                ProcessedFieldType::Named => {
                     if !is_nullable {
                         [reference_field_type_name, "!".to_string()].join("")
                     } else {
@@ -279,8 +296,8 @@ fn process_special_field(
             let FieldDefinition {
                 name: field_name, ..
             } = field;
-            let field_type_name = match is_list_type_with_nullable_elements {
-                Some(has_nullable_elements) => {
+            let field_type_name = match processed_field_type {
+                ProcessedFieldType::List(has_nullable_elements) => {
                     let inner_element_field_type_name = if !has_nullable_elements {
                         ["Charfield".to_string(), "!".to_string()].join("")
                     } else {
@@ -293,7 +310,7 @@ fn process_special_field(
                         format!("[{inner_element_field_type_name}]")
                     }
                 }
-                None => {
+                ProcessedFieldType::Named => {
                     if !is_nullable {
                         ["Charfield".to_string(), "!".to_string()].join("")
                     } else {
@@ -312,8 +329,8 @@ fn process_special_field(
                 name: field_name, ..
             } = field;
 
-            let field_type_name = match is_list_type_with_nullable_elements {
-                Some(has_nullable_elements) => {
+            let field_type_name = match processed_field_type {
+                ProcessedFieldType::List(has_nullable_elements) => {
                     let inner_element_field_type_name = if !has_nullable_elements {
                         ["NoRelation".to_string(), "!".to_string()].join("")
                     } else {
@@ -326,7 +343,7 @@ fn process_special_field(
                         format!("[{inner_element_field_type_name}]")
                     }
                 }
-                None => {
+                ProcessedFieldType::Named => {
                     if !is_nullable {
                         ["NoRelation".to_string(), "!".to_string()].join("")
                     } else {
@@ -375,7 +392,7 @@ fn process_type_def(
                     mut field_name,
                     mut scalar_typ,
                     mut ext,
-                    is_list_with_nullable_elements,
+                    processed_field_type,
                 ) = process_field(schema, field_name, field_type, None);
 
                 let mut field_typ_name = scalar_typ.to_string();
@@ -394,7 +411,7 @@ fn process_type_def(
                         &field.node,
                         field_type.nullable,
                         SpecialFieldType::ForeignKey,
-                        is_list_with_nullable_elements,
+                        &processed_field_type,
                     );
                     field_typ_name = scalar_typ.to_string();
                     list_type = format_ident! {"ListComplex"};
@@ -407,7 +424,7 @@ fn process_type_def(
                         &field.node,
                         field_type.nullable,
                         SpecialFieldType::Enum,
-                        is_list_with_nullable_elements,
+                        &processed_field_type,
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -419,7 +436,7 @@ fn process_type_def(
                         &field.node,
                         field_type.nullable,
                         SpecialFieldType::NoRelation,
-                        is_list_with_nullable_elements,
+                        &processed_field_type,
                     );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -434,10 +451,10 @@ fn process_type_def(
                     quote! {}
                 };
 
-                let decoder = match is_list_with_nullable_elements {
-                    Some(nullable_elements) => {
+                let decoder = match processed_field_type {
+                    ProcessedFieldType::List(has_nullable_elements) => {
                         // Nullable list of nullable elements: [Entity]
-                        if field_type.nullable && nullable_elements {
+                        if field_type.nullable && has_nullable_elements {
                             // `.and_then()` is used to ensure that we can store
                             // a None value while also instantiating FtColumns
                             // from a list, if it exists.
@@ -453,7 +470,7 @@ fn process_type_def(
                                 ),
                             }
                         // Nullable list of non-nullable elements: [Entity!]
-                        } else if field_type.nullable && !nullable_elements {
+                        } else if field_type.nullable && !has_nullable_elements {
                             quote! {
                                 FtColumn::#list_type(
                                 self.#field_name
@@ -466,7 +483,7 @@ fn process_type_def(
                                 ),
                             }
                         // Non-nullable list of nullable elements: [Entity]!
-                        } else if !field_type.nullable && nullable_elements {
+                        } else if !field_type.nullable && has_nullable_elements {
                             quote! {
                                 FtColumn::#list_type(
                                 Some(self.#field_name
@@ -490,7 +507,7 @@ fn process_type_def(
                             }
                         }
                     }
-                    None => {
+                    ProcessedFieldType::Named => {
                         if field_type.nullable {
                             quote! { FtColumn::#scalar_typ(self.#field_name #clone), }
                         } else {
