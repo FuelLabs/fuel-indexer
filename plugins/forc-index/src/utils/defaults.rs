@@ -151,7 +151,7 @@ pub mod {indexer_name}_index_mod {{
         block.save();
 
         for transaction in block_data.transactions.iter() {{
-            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
+            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_data.id, hash: transaction.id }};
             tx.save();
         }}
     }}
@@ -189,7 +189,7 @@ pub mod {indexer_name}_index_mod {{
         for transaction in block_data.transactions.iter() {{
             Logger::info("Handling a transaction (>'.')>");
 
-            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
+            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_data.id, hash: transaction.id }};
             tx.save().await;
         }}
     }}
@@ -207,7 +207,7 @@ pub fn default_indexer_schema() -> String {
 
 type Transaction {
     id: ID!
-    block: Block!
+    block: Block! join(on:hash)
     hash: Bytes32! @unique
 }
 
