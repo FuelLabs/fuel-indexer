@@ -200,7 +200,10 @@ pub(crate) async fn register_indexer_assets(
     if let Some(mut multipart) = multipart {
         queries::start_transaction(&mut conn).await?;
 
-        if (queries::get_indexer_id(&mut conn, &namespace, &identifier).await).is_ok() {
+        let indexer_exists = queries::get_indexer_id(&mut conn, &namespace, &identifier)
+            .await
+            .is_ok();
+        if indexer_exists {
             if !config.replace_indexer {
                 error!("Indexer({namespace}.{identifier}) already exists.");
                 queries::revert_transaction(&mut conn).await?;
