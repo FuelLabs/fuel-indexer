@@ -1024,11 +1024,11 @@ async fn test_deploying_twice_returns_an_error() {
     assert!(result.is_err());
 
     match result.unwrap_err() {
-        fuel_indexer::IndexerError::OtherError(msg) => {
+        fuel_indexer::IndexerError::Unknown(msg) => {
             assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists")
         }
         err => {
-            panic!("Expected OtherError but got: {}", err)
+            panic!("Expected Unknown but got: {}", err)
         }
     }
 }
