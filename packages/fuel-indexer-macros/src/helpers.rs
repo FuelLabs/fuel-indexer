@@ -238,7 +238,8 @@ pub fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
     }
 }
 
-pub fn row_extractor(
+/// Generate tokens for retrieving necessary indexer data through FFI.
+pub fn field_extractor(
     schema: &ParsedGraphQLSchema,
     field_name: proc_macro2::Ident,
     mut field_type: proc_macro2::Ident,
@@ -254,7 +255,7 @@ pub fn row_extractor(
             let item = vec.pop().expect("Missing item in row.");
             let #field_name = match item {
                 FtColumn::#field_type(t) => t,
-                _ => panic!("Invalid column type: {:?}.", item),
+                _ => panic!("Invalid nullable column type: {:?}.", item),
             };
         }
     } else {
@@ -267,8 +268,128 @@ pub fn row_extractor(
                         panic!("Non-nullable type is returning a None value.")
                     }
                 },
-                _ => panic!("Invalid column type: {:?}.", item),
+                _ => panic!("Invalid non-nullable column type: {:?}.", item),
             };
         }
+    }
+}
+
+/// Given a set of idents and tokens, construct the `Entity` and `Json` implementations
+/// for the given struct.
+pub fn generate_object_trait_impls(
+    strct: Ident,
+    strct_fields: proc_macro2::TokenStream,
+    type_id: i64,
+    field_extractors: proc_macro2::TokenStream,
+    from_row: proc_macro2::TokenStream,
+    to_row: proc_macro2::TokenStream,
+    is_native: bool,
+) -> proc_macro2::TokenStream {
+    let json_impl = quote! {
+
+        impl From<#strct> for Json {
+            fn from(value: #strct) -> Self {
+                let s = serde_json::to_string(&value).expect("Serde error.");
+                Self(s)
+            }
+        }
+
+        impl From<Json> for #strct {
+            fn from(value: Json) -> Self {
+                let s: #strct = serde_json::from_str(&value.0).expect("Serde error.");
+                s
+            }
+        }
+    };
+
+    let entity_impl = if is_native {
+        quote! {
+            #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+            pub struct #strct {
+                #strct_fields
+            }
+
+            #[async_trait::async_trait]
+            impl Entity for #strct {
+                const TYPE_ID: i64 = #type_id;
+
+                fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                    #field_extractors
+                    Self {
+                        #from_row
+                    }
+                }
+
+                fn to_row(&self) -> Vec<FtColumn> {
+                    vec![
+                        #to_row
+                    ]
+                }
+
+                async fn load(id: u64) -> Option<Self> {
+                    unsafe {
+                        match &db {
+                            Some(d) => {
+                                match d.lock().await.get_object(Self::TYPE_ID, id).await {
+                                    Some(bytes) => {
+                                        let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
+                                        let obj = Self::from_row(columns);
+                                        Some(obj)
+                                    },
+                                    None => None,
+                                }
+                            }
+                            None => None,
+                        }
+                    }
+                }
+
+                async fn save(&self) {
+                    unsafe {
+                        match &db {
+                            Some(d) => {
+                                d.lock().await.put_object(
+                                    Self::TYPE_ID,
+                                    self.to_row(),
+                                    serialize(&self.to_row())
+                                ).await;
+                            }
+                            None => {},
+                        }
+                    }
+                }
+            }
+        }
+    } else {
+        quote! {
+            #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+            pub struct #strct {
+                #strct_fields
+            }
+
+            impl Entity for #strct {
+                const TYPE_ID: i64 = #type_id;
+
+                fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                    #field_extractors
+                    Self {
+                        #from_row
+                    }
+                }
+
+                fn to_row(&self) -> Vec<FtColumn> {
+                    vec![
+                        #to_row
+                    ]
+                }
+            }
+
+        }
+    };
+
+    quote! {
+        #entity_impl
+
+        #json_impl
     }
 }

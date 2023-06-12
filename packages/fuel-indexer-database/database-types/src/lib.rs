@@ -301,7 +301,7 @@ impl From<i32> for ColumnType {
             32 => ColumnType::UInt1,
             33 => ColumnType::NoRelation,
             34 => ColumnType::BlockId,
-            _ => panic!("Invalid column type."),
+            _ => panic!("Invalid ColumnType."),
         }
     }
 }
@@ -344,7 +344,7 @@ impl From<&str> for ColumnType {
             "UInt1" => ColumnType::UInt1,
             "NoRelation" => ColumnType::NoRelation,
             "BlockId" => ColumnType::BlockId,
-            _ => panic!("Invalid column type: '{name}'"),
+            _ => panic!("Invalid ColumnType: '{name}'"),
         }
     }
 }
@@ -544,6 +544,10 @@ impl IdCol {
 
     pub fn to_uppercase_string() -> String {
         "ID".to_string()
+    }
+
+    pub fn to_uppercase_str() -> &'static str {
+        "ID"
     }
 }
 

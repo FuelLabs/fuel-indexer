@@ -1,20 +1,16 @@
-use crate::helpers::{const_item, row_extractor};
+use crate::helpers::*;
 use async_graphql_parser::types::{
     BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
-use fuel_indexer_database_types::directives;
+use async_graphql_value::Name;
+use fuel_indexer_database_types::{directives, IdCol};
 use fuel_indexer_lib::utils::local_repository_root;
-use fuel_indexer_schema::{
-    parser::ParsedGraphQLSchema,
-    utils::{
-        get_join_directive_info, get_notable_directive_info,
-        inject_native_entities_into_schema, schema_version,
-    },
-};
+use fuel_indexer_schema::{parser::ParsedGraphQLSchema, utils::*};
 use fuel_indexer_types::type_id;
 use lazy_static::lazy_static;
+use linked_hash_set::LinkedHashSet;
 use quote::{format_ident, quote};
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -117,7 +113,7 @@ fn process_type(
     match &typ.base {
         BaseType::Named(t) => {
             let name = t.to_string();
-            if !schema.type_names.contains(&name) {
+            if !schema.has_type(&name) {
                 panic!("Type '{name}' is not defined in the schema.",);
             }
 
@@ -153,7 +149,7 @@ fn process_field(
     let (typ_tokens, typ_ident) = process_type(schema, field_type);
     let name_ident = format_ident! {"{}", field_name.to_string()};
 
-    let extractor = row_extractor(
+    let extractor = field_extractor(
         schema,
         name_ident.clone(),
         typ_ident.clone(),
@@ -168,6 +164,7 @@ enum SpecialFieldType {
     ForeignKey,
     Enum,
     NoRelation,
+    Union,
 }
 
 /// Process an object's 'special' field and return a group of tokens.
@@ -216,7 +213,7 @@ fn process_special_field(
 
             process_field(schema, &field_name.to_string(), &field_type)
         }
-        SpecialFieldType::NoRelation => {
+        SpecialFieldType::NoRelation | SpecialFieldType::Union => {
             let FieldDefinition {
                 name: field_name, ..
             } = field;
@@ -240,75 +237,87 @@ fn process_type_def(
     schema: &mut ParsedGraphQLSchema,
     typ: &TypeDefinition,
 ) -> Option<proc_macro2::TokenStream> {
+    let namespace = &schema.namespace;
+    let identifier = &schema.identifier;
     match &typ.kind {
         TypeKind::Object(obj) => {
             let object_name = typ.name.to_string();
+
+            let mut fields_map = BTreeMap::new();
 
             if DISALLOWED_OBJECT_NAMES.contains(object_name.as_str()) {
                 panic!("Object name '{object_name}' is reserved.",);
             }
 
-            let namespace = &schema.namespace;
-            let identifier = &schema.identifier;
-
             let type_id =
                 type_id(&format!("{namespace}_{identifier}"), object_name.as_str());
-            let mut block = quote! {};
-            let mut row_extractors = quote! {};
-            let mut construction = quote! {};
-            let mut flattened = quote! {};
+            let mut strct_fields = quote! {};
+            let mut field_extractors = quote! {};
+            let mut from_row = quote! {};
+            let mut to_row = quote! {};
 
             for field in &obj.fields {
                 let field_name = &field.node.name.to_string();
                 let field_type = &field.node.ty.node;
-                let (mut typ_tokens, mut field_name, mut scalar_typ, mut ext) =
+                let (mut typ_tokens, mut field_name, mut scalar_typ, mut extractor) =
                     process_field(schema, field_name, field_type);
 
                 let mut field_typ_name = scalar_typ.to_string();
 
-                let directives::NoRelation(is_no_table) =
-                    get_notable_directive_info(&field.node).unwrap();
-
-                if is_no_table {
-                    schema.non_indexable_type_names.insert(object_name.clone());
+                if schema.is_union_type(&field_typ_name) {
+                    (typ_tokens, field_name, scalar_typ, extractor) =
+                        process_special_field(
+                            schema,
+                            &object_name,
+                            &field.node,
+                            field_type.nullable,
+                            SpecialFieldType::Union,
+                        );
+                    field_typ_name = scalar_typ.to_string();
                 }
 
                 if schema.is_possible_foreign_key(&field_typ_name) {
-                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
-                        schema,
-                        &object_name,
-                        &field.node,
-                        field_type.nullable,
-                        SpecialFieldType::ForeignKey,
-                    );
+                    (typ_tokens, field_name, scalar_typ, extractor) =
+                        process_special_field(
+                            schema,
+                            &object_name,
+                            &field.node,
+                            field_type.nullable,
+                            SpecialFieldType::ForeignKey,
+                        );
                     field_typ_name = scalar_typ.to_string();
                 }
 
                 if schema.is_enum_type(&field_typ_name) {
-                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
-                        schema,
-                        &object_name,
-                        &field.node,
-                        field_type.nullable,
-                        SpecialFieldType::Enum,
-                    );
+                    (typ_tokens, field_name, scalar_typ, extractor) =
+                        process_special_field(
+                            schema,
+                            &object_name,
+                            &field.node,
+                            field_type.nullable,
+                            SpecialFieldType::Enum,
+                        );
                     field_typ_name = scalar_typ.to_string();
                 }
 
                 if schema.is_non_indexable_non_enum(&field_typ_name) {
-                    (typ_tokens, field_name, scalar_typ, ext) = process_special_field(
-                        schema,
-                        &object_name,
-                        &field.node,
-                        field_type.nullable,
-                        SpecialFieldType::NoRelation,
-                    );
+                    (typ_tokens, field_name, scalar_typ, extractor) =
+                        process_special_field(
+                            schema,
+                            &object_name,
+                            &field.node,
+                            field_type.nullable,
+                            SpecialFieldType::NoRelation,
+                        );
                     field_typ_name = scalar_typ.to_string();
                 }
 
-                schema.parsed_type_names.insert(field_typ_name.clone());
-                let is_copyable = COPY_TYPES.contains(field_typ_name.as_str())
-                    || schema.is_non_indexable_non_enum(&object_name);
+                fields_map.insert(field_name.to_string(), field_typ_name.clone());
+
+                let is_copy_type = COPY_TYPES.contains(field_typ_name.as_str());
+                let is_non_indexable_non_enum =
+                    schema.is_non_indexable_non_enum(&object_name);
+                let is_copyable = is_copy_type || is_non_indexable_non_enum;
 
                 let clone = if is_copyable {
                     quote! {.clone()}
@@ -322,148 +331,44 @@ fn process_type_def(
                     quote! { FtColumn::#scalar_typ(Some(self.#field_name #clone)), }
                 };
 
-                block = quote! {
-                    #block
+                strct_fields = quote! {
+                    #strct_fields
                     #field_name: #typ_tokens,
                 };
 
-                row_extractors = quote! {
-                    #ext
-                    #row_extractors
+                field_extractors = quote! {
+                    #extractor
+                    #field_extractors
                 };
 
-                construction = quote! {
-                    #construction
+                from_row = quote! {
+                    #from_row
                     #field_name,
                 };
 
-                flattened = quote! {
-                    #flattened
+                to_row = quote! {
+                    #to_row
                     #decoder
                 };
             }
+
+            schema
+                .object_field_mappings
+                .insert(object_name.clone(), fields_map);
             let strct = format_ident! {"{}", object_name};
 
-            schema.parsed_type_names.insert(strct.to_string());
-
-            if schema.is_native {
-                Some(quote! {
-                    #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-                    pub struct #strct {
-                        #block
-                    }
-
-                    #[async_trait::async_trait]
-                    impl Entity for #strct {
-                        const TYPE_ID: i64 = #type_id;
-
-                        fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                            #row_extractors
-                            Self {
-                                #construction
-                            }
-                        }
-
-                        fn to_row(&self) -> Vec<FtColumn> {
-                            vec![
-                                #flattened
-                            ]
-                        }
-
-                        async fn load(id: u64) -> Option<Self> {
-                            unsafe {
-                                match &db {
-                                    Some(d) => {
-                                        match d.lock().await.get_object(Self::TYPE_ID, id).await {
-                                            Some(bytes) => {
-                                                let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
-                                                let obj = Self::from_row(columns);
-                                                Some(obj)
-                                            },
-                                            None => None,
-                                        }
-                                    }
-                                    None => None,
-                                }
-                            }
-                        }
-
-                        async fn save(&self) {
-                            unsafe {
-                                match &db {
-                                    Some(d) => {
-                                        d.lock().await.put_object(
-                                            Self::TYPE_ID,
-                                            self.to_row(),
-                                            serialize(&self.to_row())
-                                        ).await;
-                                    }
-                                    None => {},
-                                }
-                            }
-                        }
-                    }
-
-                    impl From<#strct> for Json {
-                        fn from(value: #strct) -> Self {
-                            let s = serde_json::to_string(&value).expect("Serde error.");
-                            Self(s)
-                        }
-                    }
-
-                    impl From<Json> for #strct {
-                        fn from(value: Json) -> Self {
-                            let s: #strct = serde_json::from_str(&value.0).expect("Serde error.");
-                            s
-                        }
-                    }
-                })
-            } else {
-                // TODO: derive Default here https://github.com/FuelLabs/fuels-rs/pull/977
-                Some(quote! {
-                    #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-                    pub struct #strct {
-                        #block
-                    }
-
-                    impl Entity for #strct {
-                        const TYPE_ID: i64 = #type_id;
-
-                        fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                            #row_extractors
-                            Self {
-                                #construction
-                            }
-                        }
-
-                        fn to_row(&self) -> Vec<FtColumn> {
-                            vec![
-                                #flattened
-                            ]
-                        }
-                    }
-
-                    impl From<#strct> for Json {
-                        fn from(value: #strct) -> Self {
-                            let s = serde_json::to_string(&value).expect("Serde error.");
-                            Self(s)
-                        }
-                    }
-
-                    impl From<Json> for #strct {
-                        fn from(value: Json) -> Self {
-                            let s: #strct = serde_json::from_str(&value.0).expect("Serde error.");
-                            s
-                        }
-                    }
-                })
-            }
+            Some(generate_object_trait_impls(
+                strct,
+                strct_fields,
+                type_id,
+                field_extractors,
+                from_row,
+                to_row,
+                schema.is_native,
+            ))
         }
         TypeKind::Enum(e) => {
             let name = typ.name.to_string();
-            schema.non_indexable_type_names.insert(name.clone());
-            schema.enum_names.insert(name.clone());
-
             let name = format_ident!("{}", name);
 
             let values = e.values.iter().map(|v| {
@@ -516,6 +421,97 @@ fn process_type_def(
                     }
                 }
             })
+        }
+        TypeKind::Union(obj) => {
+            // We process this type effectively the same as we process `TypeKind::Object`.
+            //
+            // Except instead of iterating over the object's fields in order to construct the
+            // struct, we iterate over the set of all the union's members' fields, and derive
+            // the struct from those fields.
+            //
+            // Same field processing as `TypeKind::Object`, it's just that the source of the fields is different.
+            let name = typ.name.to_string();
+            let ident = format_ident!("{}", name);
+
+            let type_id = type_id(&format!("{namespace}_{identifier}"), name.as_str());
+            let mut strct_fields = quote! {};
+            let mut field_extractors = quote! {};
+            let mut from_row = quote! {};
+            let mut to_row = quote! {};
+
+            obj.members
+                .iter()
+                .flat_map(|m| {
+                    let name = m.node.to_string();
+                    schema
+                        .object_field_mappings
+                        .get(&name)
+                        .unwrap_or_else(|| {
+                            panic!("Could not find union member '{name}' in the schema.",)
+                        })
+                        .iter()
+                        .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                })
+                .collect::<LinkedHashSet<(String, String)>>()
+                .iter()
+                .for_each(|(field_name, field_type_name)| {
+                    let field_type = Type {
+                        base: BaseType::Named(Name::new(field_type_name)),
+                        nullable: field_type_name != IdCol::to_uppercase_str(),
+                    };
+
+                    // Since we've already processed the member's fields, we don't need
+                    // to do any type of special field processing here.
+                    let (typ_tokens, field_name, scalar_typ, extractor) =
+                        process_field(schema, field_name, &field_type);
+
+                    let is_copy_type = COPY_TYPES.contains(field_type_name.as_str());
+                    let is_non_indexable_non_enum =
+                        schema.is_non_indexable_non_enum(&name);
+                    let is_copyable = is_copy_type || is_non_indexable_non_enum;
+
+                    let clone = if is_copyable {
+                        quote! {.clone()}
+                    } else {
+                        quote! {}
+                    };
+
+                    let decoder = if field_type.nullable {
+                        quote! { FtColumn::#scalar_typ(self.#field_name #clone), }
+                    } else {
+                        quote! { FtColumn::#scalar_typ(Some(self.#field_name #clone)), }
+                    };
+
+                    strct_fields = quote! {
+                        #strct_fields
+                        #field_name: #typ_tokens,
+                    };
+
+                    field_extractors = quote! {
+                        #extractor
+                        #field_extractors
+                    };
+
+                    from_row = quote! {
+                        #from_row
+                        #field_name,
+                    };
+
+                    to_row = quote! {
+                        #to_row
+                        #decoder
+                    };
+                });
+
+            Some(generate_object_trait_impls(
+                ident,
+                strct_fields,
+                type_id,
+                field_extractors,
+                from_row,
+                to_row,
+                schema.is_native,
+            ))
         }
         _ => panic!("Unexpected type: '{:?}'", typ.kind),
     }

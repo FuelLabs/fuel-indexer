@@ -11,10 +11,12 @@ description = "Fuel Indexer Schema"
 
 [dependencies]
 async-graphql-parser = "5.0"
+async-graphql-value = { version = "5.0", optional = true }
 fuel-indexer-database = { workspace = true, optional = true }
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-types = { workspace = true }
 hex = "0.4"
+linked_hash_set = { version = "0.1.4", optional = true }
 serde = { default-features = false, features = ["derive"], workspace = true }
 sha2 = "0.9"
 sqlx = { version = "0.6", optional = true, features = ["postgres", "runtime-tokio-rustls", "bigdecimal"] }
@@ -27,8 +29,10 @@ insta = { version = "1.8", features = ["yaml"] }
 [features]
 default = ["db-models"]
 db-models = [
-    "sqlx",
+    "async-graphql-value",
     "fuel-indexer-database",
+    "linked_hash_set",
     "tracing",
+    "sqlx",
 ]
 

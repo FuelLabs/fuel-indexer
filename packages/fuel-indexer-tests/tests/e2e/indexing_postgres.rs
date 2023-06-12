@@ -1077,3 +1077,60 @@ async fn test_can_replace_indexer() {
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+struct UnionEntity {
+    a: Option<u64>,
+    b: Option<u64>,
+    c: Option<u64>,
+    union_type: String,
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_union_types() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.indexableunionentity LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    // Fields are in a different order for these union types
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 5);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 10);
+    assert_eq!(row.get::<&str, usize>(4), "UnionType::A");
+
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.unindexableunioncontainerentity LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    let entity: UnionEntity =
+        serde_json::from_value(row.get::<serde_json::Value, usize>(1)).unwrap();
+    assert_eq!(row.get::<&str, usize>(2), "UnionType::B");
+
+    assert_eq!(entity.a.unwrap(), 2);
+    assert!(entity.b.is_none());
+    assert_eq!(entity.c.unwrap(), 6);
+}
