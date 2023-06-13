@@ -147,10 +147,14 @@ impl FtColumn {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::UInt4(value) | FtColumn::BlockHeight(value) => match value {
+            FtColumn::UInt4(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
+            FtColumn::BlockHeight(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            }
             FtColumn::UInt8(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),

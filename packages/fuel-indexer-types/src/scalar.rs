@@ -1,7 +1,8 @@
 use bytes::Bytes;
-pub use fuels::tx::{
+pub use fuel_tx::{
     Address, AssetId, Bytes32, Bytes4, Bytes64, Bytes8, ContractId, MessageId, Salt, Word,
 };
+pub use fuel_types::{BlockHeight, Nonce};
 pub use fuels::{
     core::try_from_bytes,
     types::{
@@ -45,17 +46,11 @@ pub type Boolean = bool;
 /// Scalar for 64-byte signature payloads.
 pub type Signature = Bytes64;
 
-/// Scalar for 32-byte payloads aliased as `Nonce`.
-pub type Nonce = Bytes32;
-
 /// Scalar for arbitrarily sized byte payloads aliased as `HexString`.
 pub type HexString = Bytes;
 
 /// Scalar for `Tai64` timestamps aliased as `Tai64Timestamp`.
 pub type Tai64Timestamp = Tai64;
-
-/// Scalar for 4-byte usigned integers aliased as `BlockHeight`.
-pub type BlockHeight = u32;
 
 /// Scalar for 32-byte payloads aliased as `BlockId`.
 pub type BlockId = Bytes32;

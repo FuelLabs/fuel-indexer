@@ -82,10 +82,10 @@ fuel-indexer-postgres = { version = "0.16.2", path = "./packages/fuel-indexer-da
 fuel-indexer-schema = { version = "0.16.2", path = "./packages/fuel-indexer-schema", default-features = false }
 fuel-indexer-types = { version = "0.16.2", path = "./packages/fuel-indexer-types" }
 fuel-indexer-utils = { version = "0.16.2", path = "./packages/fuel-indexer-utils" }
-fuel-tx = { version = "0.26.3" }
-fuel-types = { version = "0.32", features = ["serde"] }
-fuel-vm = { version = "0.26.3" }
-fuels = { version = "0.41", default-features = false }
+fuel-tx = { version = "0.31.2" }
+fuel-types = { version = "0.31.2", features = ["serde"] }
+fuel-vm = { version = "0.31.2" }
+fuels = { git = "https://github.com/FuelLabs/fuels-rs", branch = "feature/fuel-core-0.18", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false }
 thiserror = "1.0"
