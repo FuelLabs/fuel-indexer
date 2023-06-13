@@ -83,7 +83,7 @@ pub fn to_bytes_method_for_external_type(
 ) -> proc_macro2::TokenStream {
     match field_type_name.as_str() {
         "Identity" => quote! { .0 },
-        "Tai64Timestamp" => quote! { .0.to_be_bytes() },
+        "Tai64Timestamp" => quote! { .0.to_le_bytes() },
         _ => panic!(
             "No bytes conversion method available for external type {field_type_name}"
         ),
@@ -380,7 +380,7 @@ pub fn generate_struct_new_method_impl(
     object_name: String,
     struct_fields: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
-    let new_method_impl = if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str()) {
+    if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str()) {
         quote! {
             impl #strct {
                 pub fn new(#parameters) -> Self {
@@ -388,7 +388,7 @@ pub fn generate_struct_new_method_impl(
 
                     let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
 
-                    let id = u64::from_be_bytes(id_bytes);
+                    let id = u64::from_le_bytes(id_bytes);
 
                     Self {
                         id,
@@ -399,9 +399,7 @@ pub fn generate_struct_new_method_impl(
         }
     } else {
         quote! {}
-    };
-
-    new_method_impl
+    }
 }
 
 /// Given a set of idents and tokens, construct the `Entity` and `Json` implementations

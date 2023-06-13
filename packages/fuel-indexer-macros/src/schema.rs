@@ -372,29 +372,28 @@ fn process_type_def(
                     quote! {}
                 };
 
-                let be_bytes = if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                let to_bytes = if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
                     to_bytes_method_for_external_type(field_typ_name.clone())
                 } else if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
-                    quote! { .to_be_bytes() }
+                    quote! { .to_le_bytes() }
                 } else {
                     quote! {}
                 };
 
-                if field_set.contains(&"id".to_string()) {
-                    if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str())
-                        && field_name != "id".to_string()
-                    {
-                        parameters = quote! { #parameters #field_name: #typ_tokens, };
+                if field_set.contains(&"id".to_string())
+                    && !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str())
+                    && field_name != *"id"
+                {
+                    parameters = quote! { #parameters #field_name: #typ_tokens, };
 
-                        if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name.as_str()) {
-                            hasher = quote! { #hasher.chain_update(#field_name #clone #unwrap_or_def #be_bytes)};
-                        }
-
-                        field_construction_for_new_impl = quote! {
-                            #field_construction_for_new_impl
-                            #field_name,
-                        };
+                    if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                        hasher = quote! { #hasher.chain_update(#field_name #clone #unwrap_or_def #to_bytes)};
                     }
+
+                    field_construction_for_new_impl = quote! {
+                        #field_construction_for_new_impl
+                        #field_name,
+                    };
                 }
             }
 
@@ -415,7 +414,7 @@ fn process_type_def(
 
             let new_method_impl = if field_set.contains(&"id".to_string()) {
                 generate_struct_new_method_impl(
-                    strct.clone(),
+                    strct,
                     parameters,
                     hasher,
                     object_name,
