@@ -157,8 +157,8 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
 
     #[cfg(not(unix))]
     {
-        tokio::signal::ctrl_c().await?;
-        tracing::log::info!("Received CTRL+C. Stopping services.");
+        signal::ctrl_c().await?;
+        info!("Received CTRL+C. Stopping services.");
     }
 
     if embedded_database {
