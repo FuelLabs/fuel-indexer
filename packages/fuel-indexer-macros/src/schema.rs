@@ -260,6 +260,13 @@ fn process_type_def(
             let mut hasher = quote! { Sha256::new() };
             let mut construction_for_auto_id = quote! {};
 
+            let fields = obj
+                .fields
+                .iter()
+                .map(|f| f.node.name.node.to_string())
+                .collect::<Vec<String>>();
+            let field_set: HashSet<&String> = HashSet::from_iter(fields.iter());
+
             for field in &obj.fields {
                 let field_name = &field.node.name.to_string();
                 let field_type = &field.node.ty.node;
@@ -355,21 +362,23 @@ fn process_type_def(
                     #decoder
                 };
 
-                if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str())
-                    && field_name != "id".to_string()
-                {
-                    parameters = quote! { #parameters #field_name: #typ_tokens, };
+                if field_set.contains(&"id".to_string()) {
+                    if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str())
+                        && field_name != "id".to_string()
+                    {
+                        parameters = quote! { #parameters #field_name: #typ_tokens, };
 
-                    if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
-                        hasher = quote! { #hasher.chain_update(#field_name #clone.to_be_bytes())};
-                    } else {
-                        hasher = quote! { #hasher.chain_update(#field_name #clone)};
+                        if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
+                            hasher = quote! { #hasher.chain_update(#field_name #clone.to_be_bytes())};
+                        } else {
+                            hasher = quote! { #hasher.chain_update(#field_name #clone)};
+                        }
+
+                        construction_for_auto_id = quote! {
+                            #construction_for_auto_id
+                            #field_name,
+                        };
                     }
-
-                    construction_for_auto_id = quote! {
-                        #construction_for_auto_id
-                        #field_name,
-                    };
                 }
             }
 
@@ -378,16 +387,8 @@ fn process_type_def(
                 .insert(object_name.clone(), fields_map);
             let strct = format_ident! {"{}", object_name};
 
-            let new_method_impl = generate_struct_new_method_impl(
-                strct.clone(),
-                parameters,
-                hasher,
-                object_name,
-                construction_for_auto_id,
-            );
-
             let object_trait_impls = generate_object_trait_impls(
-                strct,
+                strct.clone(),
                 strct_fields,
                 type_id,
                 field_extractors,
@@ -396,10 +397,22 @@ fn process_type_def(
                 schema.is_native,
             );
 
-            Some(quote! {
-                #new_method_impl
+            let new_method_impl = if field_set.contains(&"id".to_string()) {
+                generate_struct_new_method_impl(
+                    strct.clone(),
+                    parameters,
+                    hasher,
+                    object_name,
+                    construction_for_auto_id,
+                )
+            } else {
+                quote! {}
+            };
 
+            Some(quote! {
                 #object_trait_impls
+
+                #new_method_impl
             })
         }
         TypeKind::Enum(e) => {

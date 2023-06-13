@@ -23,6 +23,16 @@ lazy_static! {
         "Bytes8",
         "Blob",
         "Charfield",
+        "Json",
+        "Bytes",
+        "Bytes20",
+        "Salt",
+        "MessageId",
+        "Address",
+        "ContractId",
+        "AssetId",
+        "HexString",
+        "TxId",
     ]);
 }
 /// If TypeDeclaration is tuple type
