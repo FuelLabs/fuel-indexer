@@ -6,6 +6,7 @@ use fuel_indexer_lib::{
     manifest::Manifest,
     utils::{init_logging, ServiceRequest},
 };
+use tokio::signal::unix::{signal, Signal, SignalKind};
 use tokio::sync::mpsc::channel;
 use tracing::info;
 
@@ -132,25 +133,32 @@ pub async fn exec(args: IndexerArgs) -> anyhow::Result<()> {
         }
     });
 
-    use tokio::signal::unix::{signal, Signal, SignalKind};
-
     let mut sighup: Signal = signal(SignalKind::hangup())?;
     let mut sigterm: Signal = signal(SignalKind::terminate())?;
     let mut sigint: Signal = signal(SignalKind::interrupt())?;
 
-    tokio::select! {
-        _ = sighup.recv() => {
-            info!("Received SIGHUP. Stopping services");
+    #[cfg(unix)]
+    {
+        tokio::select! {
+            _ = sighup.recv() => {
+                info!("Received SIGHUP. Stopping services.");
+            }
+            _ = sigterm.recv() => {
+                info!("Received SIGTERM. Stopping services.");
+            }
+            _ = sigint.recv() => {
+                info!("Received SIGINT. Stopping services.");
+            }
+            _ = cancel_token.cancelled() => {
+                info!("Received cancellation. Stopping services.");
+            }
         }
-        _ = sigterm.recv() => {
-            info!("Received SIGTERM. Stopping services");
-        }
-        _ = sigint.recv() => {
-            info!("Received SIGINT. Stopping services");
-        }
-        _ = cancel_token.cancelled() => {
-            info!("Received cancellation. Stopping services");
-        }
+    }
+
+    #[cfg(not(unix))]
+    {
+        tokio::signal::ctrl_c().await?;
+        tracing::log::info!("Received CTRL+C. Stopping services.");
     }
 
     if embedded_database {
