@@ -3076,9 +3076,9 @@ dependencies = [
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "fuels",
- "fuels-code-gen 0.40.0",
- "fuels-macros 0.40.0",
- "fuels-types 0.40.0",
+ "fuels-code-gen",
+ "fuels-macros",
+ "fuels-types",
  "lazy_static",
  "linked_hash_set",
  "proc-macro-error",
@@ -3213,8 +3213,7 @@ version = "0.16.2"
 dependencies = [
  "bincode",
  "bytes 1.4.0",
- "fuel-tx",
- "fuel-types 0.26.3",
+ "fuel-types 0.32.0",
  "fuels",
  "serde",
  "serde_json",
@@ -3251,7 +3250,7 @@ version = "0.0.0"
 dependencies = [
  "clap 3.2.25",
  "fuel-indexer-tests",
- "fuel-types 0.26.3",
+ "fuel-types 0.32.0",
  "fuels",
  "tokio 1.28.2",
 ]
@@ -3301,6 +3300,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-types"
+version = "0.32.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8df2188f149b282f80b7d1501f42c52309e9c6b4171aac3d5632a6410f8a8bea"
+dependencies = [
+ "hex",
+ "serde",
+]
+
+[[package]]
 name = "fuel-vm"
 version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3342,10 +3351,10 @@ dependencies = [
  "fuel-tx",
  "fuels-accounts",
  "fuels-core",
- "fuels-macros 0.41.0",
+ "fuels-macros",
  "fuels-programs",
  "fuels-test-helpers",
- "fuels-types 0.41.0",
+ "fuels-types",
 ]
 
 [[package]]
@@ -3365,7 +3374,7 @@ dependencies = [
  "fuel-types 0.26.3",
  "fuel-vm",
  "fuels-core",
- "fuels-types 0.41.0",
+ "fuels-types",
  "hex",
  "itertools 0.10.5",
  "rand 0.8.5",
@@ -3374,23 +3383,6 @@ dependencies = [
  "tai64",
  "thiserror",
  "tokio 1.28.2",
-]
-
-[[package]]
-name = "fuels-code-gen"
-version = "0.40.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "43bf07b1ebbdebd8e85bf1ac24665923c4b0e51b9a08ed5d9ddf0431de8c4894"
-dependencies = [
- "Inflector",
- "fuel-abi-types 0.2.1",
- "itertools 0.10.5",
- "lazy_static",
- "proc-macro2",
- "quote",
- "regex",
- "serde_json",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -3419,29 +3411,10 @@ dependencies = [
  "fuel-tx",
  "fuel-types 0.26.3",
  "fuel-vm",
- "fuels-types 0.41.0",
+ "fuels-types",
  "hex",
  "itertools 0.10.5",
  "sha2 0.9.9",
-]
-
-[[package]]
-name = "fuels-macros"
-version = "0.40.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b042ffb853f97ddade1c728030fd28807f7eb978339a5d959869d13387c25356"
-dependencies = [
- "Inflector",
- "fuel-abi-types 0.2.1",
- "fuels-code-gen 0.40.0",
- "itertools 0.10.5",
- "lazy_static",
- "proc-macro2",
- "quote",
- "rand 0.8.5",
- "regex",
- "serde_json",
- "syn 1.0.109",
 ]
 
 [[package]]
@@ -3452,7 +3425,7 @@ checksum = "bee12007d881133ca2515bcf37f6b2fc22f71a5a6e5095f5146c847b51681a2d"
 dependencies = [
  "Inflector",
  "fuel-abi-types 0.2.1",
- "fuels-code-gen 0.41.0",
+ "fuels-code-gen",
  "itertools 0.10.5",
  "lazy_static",
  "proc-macro2",
@@ -3477,7 +3450,7 @@ dependencies = [
  "fuel-vm",
  "fuels-accounts",
  "fuels-core",
- "fuels-types 0.41.0",
+ "fuels-types",
  "futures",
  "hex",
  "itertools 0.10.5",
@@ -3507,7 +3480,7 @@ dependencies = [
  "fuel-types 0.26.3",
  "fuel-vm",
  "fuels-accounts",
- "fuels-types 0.41.0",
+ "fuels-types",
  "futures",
  "hex",
  "portpicker",
@@ -3518,32 +3491,6 @@ dependencies = [
  "tempfile",
  "tokio 1.28.2",
  "which",
-]
-
-[[package]]
-name = "fuels-types"
-version = "0.40.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5849dbc89d27ca257dde78ab38b7e9599a716b5e49e2fd7a38369f5994e81975"
-dependencies = [
- "bech32 0.9.1",
- "chrono",
- "fuel-abi-types 0.2.1",
- "fuel-asm",
- "fuel-core-chain-config",
- "fuel-tx",
- "fuel-types 0.26.3",
- "fuels-macros 0.40.0",
- "hex",
- "itertools 0.10.5",
- "lazy_static",
- "proc-macro2",
- "regex",
- "serde",
- "serde_json",
- "strum 0.21.0",
- "strum_macros 0.21.1",
- "thiserror",
 ]
 
 [[package]]
@@ -3560,7 +3507,7 @@ dependencies = [
  "fuel-core-client",
  "fuel-tx",
  "fuel-types 0.26.3",
- "fuels-macros 0.41.0",
+ "fuels-macros",
  "hex",
  "itertools 0.10.5",
  "lazy_static",
@@ -3965,7 +3912,7 @@ dependencies = [
  "fuel-indexer-lib",
  "fuel-indexer-tests",
  "fuel-tx",
- "fuel-types 0.26.3",
+ "fuel-types 0.32.0",
  "fuels",
  "rand 0.8.5",
  "thiserror",
@@ -8257,7 +8204,7 @@ name = "web-api"
 version = "0.0.0"
 dependencies = [
  "fuel-indexer-tests",
- "fuel-types 0.26.3",
+ "fuel-types 0.32.0",
  "tokio 1.28.2",
 ]
 
