@@ -1320,6 +1320,7 @@ Access method: heap
 <li><code>@indexed</code></li>
 <li><code>@unique</code></li>
 <li><code>@join</code></li>
+<li><code>@virtual</code></li>
 </ul>
 <h2 id="indexed"><a class="header" href="#indexed"><code>@indexed</code></a></h2>
 <p>The <code>@indexed</code> directive adds a <a href="https://www.postgresql.org/docs/current/indexes-intro.html">database index</a> to the underlying column for the indicated field of that type. Generally, a database index is a data structure that allows you to quickly locate data without having to search each row in a database table.</p>
@@ -1357,7 +1358,7 @@ type Library {
 <p>The <code>@join</code> directive is used to relate a field in one type to others by referencing fields in another type. You can think of it as a link between two tables in your database. The field in the referenced type is called a <em>foreign key</em> and it is <strong>required</strong> to be unique.</p>
 <pre><code class="language-graphql">type Book {
     id: ID!
-    name: Bytes8! @unique
+    name: Charfield! @unique
 }
 
 type Library {
@@ -1366,6 +1367,21 @@ type Library {
 }
 </code></pre>
 <p>A foreign key constraint will be created on <code>library.book</code> that references <code>book.name</code>, which relates the <code>Book</code>s in a <code>Library</code> to the underlying <code>Book</code> table.</p>
+<h2 id="virtual"><a class="header" href="#virtual"><code>@virtual</code></a></h2>
+<p>The <code>@virtual</code> directive instructs the indexer's SQL schema builder to <em>not</em> build SQL tables from types that include this directive on any field.</p>
+<pre><code class="language-graphql">type Title {
+    name: CharField! @virtual
+}
+
+type Book {
+    id: ID!
+    title: Title!
+}
+</code></pre>
+<p>When SQL tables are generated for the entities above, a table will be created for <code>Book</code>, but no table will be created for <code>Title</code>. Rather, the <code>title</code> field on the <code>Book</code> object will exist on the <code>book</code> table as a <code>JSON</code> field.</p>
+<blockquote>
+<p>Important: When using the <code>@virtual</code> directive with GraphQL <code>union</code> types, each member of the <code>union</code> type must either include <em>only</em> types that are not virtual, or <em>only</em> types that are virtual. We do not support mixing and matching virtual types with non-virtual types in unions.</p>
+</blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="graphql-api-server"><a class="header" href="#graphql-api-server">GraphQL API Server</a></h1>
 <ul>
 <li>The <code>fuel-indexer-api-server</code> crate of the Fuel indexer contains a standalone GraphQL API server that acts as a queryable endpoint on top of the database.</li>
