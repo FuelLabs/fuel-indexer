@@ -57,6 +57,7 @@ spec:
             - "--rate-limit-window-size"
             - "10"
             - "--verbose"
+            - "--replace-indexer"
           env:
           - name: POSTGRES_PASSWORD
             valueFrom:
