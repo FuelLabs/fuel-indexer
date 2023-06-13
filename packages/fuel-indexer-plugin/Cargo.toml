@@ -26,6 +26,7 @@ hex = "0.4"
 serde = { workspace = true }
 serde_json = { workspace = true }
 sha2 = { version = "0.10" }
+tai64 = { version = "4.0.0" }
 tokio = { features = ["macros", "rt-multi-thread", "sync", "process"], optional = true, workspace = true }
 tracing = { optional = true, workspace = true }
 tracing-subscriber = { version = "0.2", features = ["env-filter"], optional = true }

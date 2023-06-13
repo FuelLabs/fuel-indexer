@@ -16,25 +16,92 @@ lazy_static! {
 
     /// Set of types that implement `AsRef<[u8]>`.
     pub static ref ASREF_BYTE_TYPES: HashSet<&'static str> = HashSet::from([
+        "Address",
+        "AssetId",
+        "Blob",
+        "BlockId",
         "Boolean",
+        "Bytes",
+        "Bytes20",
         "Bytes32",
         "Bytes4",
         "Bytes64",
         "Bytes8",
-        "Blob",
         "Charfield",
-        "Json",
-        "Bytes",
-        "Bytes20",
-        "Salt",
-        "MessageId",
-        "Address",
         "ContractId",
-        "AssetId",
         "HexString",
+        "Json",
+        "MessageId",
+        "NoRelation",
+        "Nonce",
+        "Option<Address>",
+        "Option<AssetId>",
+        "Option<Blob>",
+        "Option<BlockId>",
+        "Option<Boolean>",
+        "Option<Bytes20>",
+        "Option<Bytes32>",
+        "Option<Bytes4>",
+        "Option<Bytes64>",
+        "Option<Bytes8>",
+        "Option<Bytes>",
+        "Option<Charfield>",
+        "Option<ContractId>",
+        "Option<HexString>",
+        "Option<Json>",
+        "Option<MessageId>",
+        "Option<NoRelation>",
+        "Option<Nonce>",
+        "Option<Salt>",
+        "Option<Signature>",
+        "Option<TxId>",
+        "Salt",
+        "Signature",
         "TxId",
     ]);
+
+    /// Set of external types that do not implement `AsRef<[u8]>`.
+    pub static ref EXTERNAL_FIELD_TYPES: HashSet<&'static str> = HashSet::from([
+        "Identity",
+        "Option<Identity>",
+        "Option<Tai64Timestamp>",
+        "Tai64Timestamp",
+    ]);
+
+    /// Set of field types that are currently unable to be used as a digest for SHA-256 hashing.
+    pub static ref NONDIGESTIBLE_FIELD_TYPES: HashSet<&'static str> = HashSet::from([
+        "Boolean",
+        "Identity"
+    ]);
 }
+
+/// Provides a TokenStream to be used as a conversion to bytes
+/// for external types; this is done because traits cannot be
+/// implemented on external types due to the orphan rule.
+pub fn to_bytes_method_for_external_type(
+    field_type_name: String,
+) -> proc_macro2::TokenStream {
+    match field_type_name.as_str() {
+        "Identity" => quote! { .0 },
+        "Tai64Timestamp" => quote! { .0.to_be_bytes() },
+        _ => panic!(
+            "No bytes conversion method available for external type {field_type_name}"
+        ),
+    }
+}
+
+/// Provides a TokenStream to be used for unwrapping `Option`s
+/// for external types; this is done because traits cannot be
+/// implemented on external types due to the orphan rule.
+pub fn unwrap_or_default_for_external_type(
+    field_type_name: String,
+) -> proc_macro2::TokenStream {
+    match field_type_name.as_str() {
+        "Tai64Timestamp" => quote! { .unwrap_or(Tai64(0u64)) },
+        _ => panic!("No default value available for external type {field_type_name}"),
+    }
+}
+
 /// If TypeDeclaration is tuple type
 pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
     typ.type_field.as_str().starts_with('(')
@@ -304,6 +371,8 @@ pub fn field_extractor(
     }
 }
 
+/// Construct a `.new()` method for a particular struct; this `.new()` method
+/// will automatically create an ID for the user for use in a database.
 pub fn generate_struct_new_method_impl(
     strct: Ident,
     parameters: proc_macro2::TokenStream,

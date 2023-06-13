@@ -258,7 +258,7 @@ fn process_type_def(
 
             let mut parameters = quote! {};
             let mut hasher = quote! { Sha256::new() };
-            let mut construction_for_auto_id = quote! {};
+            let mut field_construction_for_new_impl = quote! {};
 
             let fields = obj
                 .fields
@@ -362,20 +362,36 @@ fn process_type_def(
                     #decoder
                 };
 
+                let unwrap_or_def = if field_type.nullable {
+                    if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                        unwrap_or_default_for_external_type(field_typ_name.clone())
+                    } else {
+                        quote! { .unwrap_or_default() }
+                    }
+                } else {
+                    quote! {}
+                };
+
+                let be_bytes = if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                    to_bytes_method_for_external_type(field_typ_name.clone())
+                } else if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
+                    quote! { .to_be_bytes() }
+                } else {
+                    quote! {}
+                };
+
                 if field_set.contains(&"id".to_string()) {
                     if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str())
                         && field_name != "id".to_string()
                     {
                         parameters = quote! { #parameters #field_name: #typ_tokens, };
 
-                        if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
-                            hasher = quote! { #hasher.chain_update(#field_name #clone.to_be_bytes())};
-                        } else {
-                            hasher = quote! { #hasher.chain_update(#field_name #clone)};
+                        if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                            hasher = quote! { #hasher.chain_update(#field_name #clone #unwrap_or_def #be_bytes)};
                         }
 
-                        construction_for_auto_id = quote! {
-                            #construction_for_auto_id
+                        field_construction_for_new_impl = quote! {
+                            #field_construction_for_new_impl
                             #field_name,
                         };
                     }
@@ -403,7 +419,7 @@ fn process_type_def(
                     parameters,
                     hasher,
                     object_name,
-                    construction_for_auto_id,
+                    field_construction_for_new_impl,
                 )
             } else {
                 quote! {}
