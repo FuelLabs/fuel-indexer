@@ -419,6 +419,7 @@ fn process_type_def(
                     hasher,
                     object_name,
                     field_construction_for_new_impl,
+                    schema.is_native,
                 )
             } else {
                 quote! {}

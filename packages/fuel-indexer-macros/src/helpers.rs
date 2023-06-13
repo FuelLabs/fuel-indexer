@@ -371,7 +371,7 @@ pub fn field_extractor(
     }
 }
 
-/// Construct a `.new()` method for a particular struct; this `.new()` method
+/// Construct a `::new()` method for a particular struct; `::new()`
 /// will automatically create an ID for the user for use in a database.
 pub fn generate_struct_new_method_impl(
     strct: Ident,
@@ -379,7 +379,34 @@ pub fn generate_struct_new_method_impl(
     hasher: proc_macro2::TokenStream,
     object_name: String,
     struct_fields: proc_macro2::TokenStream,
+    is_native: bool,
 ) -> proc_macro2::TokenStream {
+    let get_or_create_impl = if is_native {
+        quote! {
+            pub async fn get_or_create(#parameters) -> (Self, bool) {
+                let raw_bytes = #hasher.chain_update(#object_name).finalize();
+
+                let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
+
+                let id = u64::from_le_bytes(id_bytes);
+
+                match Self::load(id).await {
+                    Some(instance) => (instance, true),
+                    None => (Self { id, #struct_fields }, false)
+                }
+            }
+        }
+    } else {
+        quote! {
+            pub fn get_or_create(id: u64, s: Self) -> (Self, bool) {
+                match Self::load(id) {
+                    Some(instance) => (instance, true),
+                    None => (s, false)
+                }
+            }
+        }
+    };
+
     if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str()) {
         quote! {
             impl #strct {
@@ -395,6 +422,8 @@ pub fn generate_struct_new_method_impl(
                         #struct_fields
                     }
                 }
+
+                #get_or_create_impl
             }
         }
     } else {
