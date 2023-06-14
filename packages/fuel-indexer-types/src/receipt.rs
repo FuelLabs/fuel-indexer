@@ -1,5 +1,5 @@
 use crate::{
-    scalar::{Address, AssetId, Bytes32, ContractId, MessageId},
+    scalar::{Address, AssetId, Bytes32, ContractId, MessageId, Nonce},
     type_id, TypeId, FUEL_TYPES_NAMESPACE,
 };
 use serde::{Deserialize, Serialize};
@@ -82,7 +82,7 @@ pub struct MessageOut {
     pub sender: Address,
     pub recipient: Address,
     pub amount: u64,
-    pub nonce: Bytes32,
+    pub nonce: Nonce,
     pub len: u64,
     pub digest: Bytes32,
     pub data: Vec<u8>,

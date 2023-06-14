@@ -406,7 +406,7 @@ fn process_fn_items(
                 }
             }
 
-            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Bytes32, amount: Word, data: &[u8]) -> MessageId {
+            fn compute_message_id(&self, sender: &Address, recipient: &Address, nonce: Nonce, amount: Word, data: &[u8]) -> MessageId {
 
                 let raw_message_id = Sha256::new()
                     .chain_update(sender)
