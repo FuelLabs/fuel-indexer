@@ -4,7 +4,7 @@ pub use fuel_tx::{
 };
 pub use fuel_types::{BlockHeight, Nonce};
 pub use fuels::{
-    core::try_from_bytes,
+    core::codec::try_from_bytes,
     types::{
         bech32::{Bech32Address, Bech32ContractId},
         Bits256, Identity, SizedAsciiString,

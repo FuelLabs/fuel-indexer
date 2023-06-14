@@ -227,14 +227,16 @@ impl From<ClientInput> for Input {
                 tx_pointer: tx_pointer.into(),
                 contract_id,
             }),
-            ClientInput::MessageCoinSigned(fuel_tx::input::message::MessageCoinSigned {
-                amount,
-                witness_index,
-                sender,
-                recipient,
-                nonce,
-                ..
-            }) => Input::Message(InputMessage {
+            ClientInput::MessageCoinSigned(
+                fuel_tx::input::message::MessageCoinSigned {
+                    amount,
+                    witness_index,
+                    sender,
+                    recipient,
+                    nonce,
+                    ..
+                },
+            ) => Input::Message(InputMessage {
                 amount,
                 nonce,
                 recipient,
@@ -244,15 +246,17 @@ impl From<ClientInput> for Input {
                 predicate: "".into(),
                 predicate_data: "".into(),
             }),
-            ClientInput::MessageDataSigned(fuel_tx::input::message::MessageDataSigned {
-                amount,
-                witness_index,
-                sender,
-                recipient,
-                nonce,
-                data,
-                ..
-            }) => Input::Message(InputMessage {
+            ClientInput::MessageDataSigned(
+                fuel_tx::input::message::MessageDataSigned {
+                    amount,
+                    witness_index,
+                    sender,
+                    recipient,
+                    nonce,
+                    data,
+                    ..
+                },
+            ) => Input::Message(InputMessage {
                 amount,
                 nonce,
                 recipient,
@@ -262,15 +266,17 @@ impl From<ClientInput> for Input {
                 predicate: "".into(),
                 predicate_data: "".into(),
             }),
-            ClientInput::MessageCoinPredicate(fuel_tx::input::message::MessageCoinPredicate {
-                amount,
-                predicate,
-                predicate_data,
-                sender,
-                recipient,
-                nonce,
-                ..
-            }) => Input::Message(InputMessage {
+            ClientInput::MessageCoinPredicate(
+                fuel_tx::input::message::MessageCoinPredicate {
+                    amount,
+                    predicate,
+                    predicate_data,
+                    sender,
+                    recipient,
+                    nonce,
+                    ..
+                },
+            ) => Input::Message(InputMessage {
                 sender,
                 recipient,
                 amount,
@@ -280,16 +286,18 @@ impl From<ClientInput> for Input {
                 predicate: predicate.into(),
                 predicate_data: predicate_data.into(),
             }),
-            ClientInput::MessageDataPredicate(fuel_tx::input::message::MessageDataPredicate {
-                amount,
-                predicate,
-                predicate_data,
-                sender,
-                recipient,
-                nonce,
-                data,
-                ..
-            }) => Input::Message(InputMessage {
+            ClientInput::MessageDataPredicate(
+                fuel_tx::input::message::MessageDataPredicate {
+                    amount,
+                    predicate,
+                    predicate_data,
+                    sender,
+                    recipient,
+                    nonce,
+                    data,
+                    ..
+                },
+            ) => Input::Message(InputMessage {
                 sender,
                 recipient,
                 amount,

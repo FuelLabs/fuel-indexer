@@ -42,19 +42,13 @@ fn wasm_prelude() -> proc_macro2::TokenStream {
 
         type B256 = [u8; 32];
 
-        // TODO: Eventually prevent these types of implicity imports and have users import
-        // all dependencies explicity (preferably through a single crate).
         use fuel_indexer_utils::plugin::types::*;
         use fuel_indexer_utils::plugin::wasm::*;
         use fuel_indexer_utils::plugin::{serde_json, serialize, deserialize, bincode};
         use fuel_indexer_utils::plugin::serde::{Deserialize, Serialize};
         use fuels::{
-            core::{abi_decoder::ABIDecoder, Configurables},
-            macros::{Parameterize, Tokenizable},
-            types::{
-                traits::{Parameterize, Tokenizable},
-                StringToken,
-            },
+            core::{codec::ABIDecoder, Configurables, traits::{Parameterize, Tokenizable}},
+            types::{StringToken},
         };
     }
 }
