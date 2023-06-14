@@ -434,7 +434,6 @@ impl From<ClientOutput> for Output {
                 contract_id,
                 state_root,
             }),
-            _ => Output::Unknown,
         }
     }
 }
