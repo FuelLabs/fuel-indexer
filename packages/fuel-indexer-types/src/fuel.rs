@@ -305,7 +305,7 @@ impl From<ClientInput> for Input {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TxPointer {
-    pub block_height: u32,
+    pub block_height: BlockHeight,
     pub tx_index: u64,
 }
 

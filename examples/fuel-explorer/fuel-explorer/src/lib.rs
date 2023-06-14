@@ -1161,7 +1161,6 @@ impl From<fuel::Receipt> for Receipt {
                 }
             }
             fuel::Receipt::MessageOut {
-                message_id,
                 sender,
                 recipient,
                 amount,
@@ -1186,7 +1185,6 @@ impl From<fuel::Receipt> for Receipt {
                     script_result: None,
                     message_out: Some(
                         MessageOutReceipt {
-                            message_id,
                             sender,
                             recipient,
                             amount,
@@ -1280,7 +1278,7 @@ pub mod explorer_index {
                         id,
                         gas_limit: *gas_limit,
                         gas_price: *gas_price,
-                        maturity: *maturity as u32,
+                        maturity: maturity.clone(),
                         script: script.to_owned().into(),
                         // storage_slots: [],
                         // inputs: [],
@@ -1325,7 +1323,7 @@ pub mod explorer_index {
                         id,
                         gas_limit: *gas_limit,
                         gas_price: *gas_price,
-                        maturity: *maturity as u32,
+                        maturity: maturity.clone(),
                         bytecode_length: *bytecode_length,
                         bytecode_witness_index: *bytecode_witness_index,
                         // storage_slots: [],

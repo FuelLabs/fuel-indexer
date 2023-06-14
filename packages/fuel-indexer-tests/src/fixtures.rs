@@ -215,9 +215,9 @@ pub async fn setup_test_fuel_node(
         ..Config::local_node()
     };
 
-    let (client, _) = setup_test_client(coins, vec![], Some(config), None, None).await;
+    let (client, _, consensusParameters) = setup_test_client(coins, vec![], Some(config), None).await;
 
-    let provider = Provider::new(client);
+    let provider = Provider::new(client, consensusParameters);
 
     wallet.set_provider(provider.clone());
 

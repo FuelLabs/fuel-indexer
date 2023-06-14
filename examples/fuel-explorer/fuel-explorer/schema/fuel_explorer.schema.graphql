@@ -91,7 +91,7 @@ type InputMessage {
   sender: Address!
   recipient: Address!
   amount: UInt8!
-  nonce: UInt8!
+  nonce: Nonce!
   witness_index: Int8!
   data: HexString!
   predicate: HexString!
@@ -206,7 +206,7 @@ type Header {
   message_receipt_count: UInt8!
   transactions_root: Bytes32!
   message_receipt_root: Bytes32!
-  height: UInt8!
+  height: UInt4!
   prev_root: Bytes32!
   time: Int8!
   application_hash: Bytes32!
@@ -498,7 +498,6 @@ type MessageOutReceipt {
   sender: Address! @norelation
   recipient: Address!
   amount: UInt8!
-  message_id: MessageId!
   nonce: Nonce!
   len: UInt8!
   digest: Bytes32!
