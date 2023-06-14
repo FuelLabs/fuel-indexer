@@ -66,7 +66,6 @@ impl Debug for AuthenticationConfig {
 }
 
 impl Env for AuthenticationConfig {
-    /// Inject environment variables into `AuthenticationConfig`.
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         if is_opt_env_var(JWT_SECRET_KEY) {
             self.strategy = Some(

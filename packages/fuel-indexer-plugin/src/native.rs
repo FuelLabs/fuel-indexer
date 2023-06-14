@@ -11,7 +11,7 @@ pub use fuel_indexer::prelude::{
 pub use fuel_indexer_api_server::api::GraphQlApi;
 pub use fuel_indexer_database::{queries, IndexerConnectionPool};
 pub use fuel_indexer_lib::{
-    config::{IndexerArgs, IndexerConfig, Parser},
+    config::{cli::Parser, IndexerArgs, IndexerConfig},
     defaults::SERVICE_REQUEST_CHANNEL_SIZE,
     manifest::Manifest,
     utils::{init_logging, ServiceRequest},

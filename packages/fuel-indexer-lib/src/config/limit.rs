@@ -30,7 +30,6 @@ impl Default for RateLimitConfig {
 }
 
 impl Env for RateLimitConfig {
-    /// Inject environment variables into `RateLimitConfig`.
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         Ok(())
     }

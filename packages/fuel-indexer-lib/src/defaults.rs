@@ -73,18 +73,6 @@ pub const FUEL_HOME_DIR: &str = ".fuel";
 /// Directory inside `FUEL_HOME_DIR` at which indexer assets and metadata are stored.
 pub const INDEXER_CONFIG_DIR: &str = "indexer";
 
-/// Amount of padding for `forc index check` messages.
-pub const MESSAGE_PADDING: usize = 55;
-
-/// Amount of padding for `forc index check` success emojis.
-pub const SUCCESS_EMOJI_PADDING: usize = 3;
-
-/// Amount of padding for `forc index check` error emojis.
-pub const FAIL_EMOJI_PADDING: usize = 6;
-
-/// Amount of padding for `forc index check` headers.
-pub const HEADER_PADDING: usize = 20;
-
 /// Binary name for `forc index` CLI.
 pub const FORC_INDEX: &str = "forc-index";
 

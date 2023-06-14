@@ -254,7 +254,7 @@ async fn create_service_task(
         let futs = futs.lock().await;
         match rx.try_recv() {
             Ok(service_request) => match service_request {
-                ServiceRequest::AssetReload(request) => {
+                ServiceRequest::Reload(request) => {
                     let mut conn = pool.acquire().await?;
 
                     match queries::get_indexer_id(
@@ -302,7 +302,7 @@ async fn create_service_task(
                         }
                     }
                 }
-                ServiceRequest::IndexStop(request) => {
+                ServiceRequest::Stop(request) => {
                     let uid = format!("{}.{}", request.namespace, request.identifier);
 
                     if let Some(killer) = killers.remove(&uid) {

@@ -1,8 +1,6 @@
 use crate::cli::CheckCommand;
-use fuel_indexer_lib::{
-    config::defaults,
-    utils::{center_align, find_executable_with_msg, rightpad_whitespace},
-};
+use crate::defaults;
+use crate::utils::{center_align, find_executable_with_msg, rightpad_whitespace};
 use serde_json::{to_string_pretty, value::Value, Map};
 use std::process::Command;
 use tracing::{error, info};

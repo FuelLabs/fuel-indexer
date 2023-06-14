@@ -4,7 +4,7 @@ use crate::ops::{
 };
 use crate::{
     cli::{BuildCommand, DeployCommand, InitCommand, StartCommand, WelcomeCommand},
-    utils::defaults,
+    defaults,
 };
 use forc_util::{kebab_to_snake_case, validate_name};
 use owo_colors::OwoColorize;

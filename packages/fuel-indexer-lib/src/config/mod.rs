@@ -1,48 +1,27 @@
 pub mod auth;
+pub mod cli;
+pub mod client;
 pub mod database;
 pub mod graphql;
 pub mod limit;
-pub mod node;
 pub mod utils;
 
 pub use crate::{
     config::{
         auth::{AuthenticationConfig, AuthenticationStrategy},
+        cli::{ApiServerArgs, IndexerArgs},
+        client::FuelClientConfig,
         database::DatabaseConfig,
         graphql::GraphQLConfig,
         limit::RateLimitConfig,
-        node::FuelNodeConfig,
     },
     defaults,
+    utils::*,
 };
-pub use clap::{Args, Parser, ValueEnum};
 use serde::Deserialize;
-use std::{
-    fs::File,
-    io::Error,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+use std::{fs::File, path::Path, str::FromStr};
 use strum::{AsRefStr, EnumString};
 use thiserror::Error;
-
-/// Error type returned by configuration operations.
-#[derive(Error, Debug)]
-pub enum IndexerConfigError {
-    #[error("Error parsing env variables from config")]
-    EnvVarParseError(#[from] std::env::VarError),
-    #[error("Error processing file: {0:?}")]
-    ConfigFileError(#[from] Error),
-    #[error("Error processing YAML file: {0:?}")]
-    SerdeYamlError(#[from] serde_yaml::Error),
-    #[error("Error processing URI: {0:?}")]
-    InvalidUriError(#[from] http::uri::InvalidUri),
-    #[error("URL parser error: {0:?}")]
-    ParseError(#[from] url::ParseError),
-}
-
-/// Result type returned by configuration operations.
-type IndexerConfigResult<T> = core::result::Result<T, IndexerConfigError>;
 
 /// Set of PostgresQL configuration constants.
 #[derive(Debug, EnumString, AsRefStr)]
@@ -66,292 +45,29 @@ pub fn env_or_default(var: EnvVar, default: String) -> String {
     std::env::var(var.as_ref()).unwrap_or(default)
 }
 
-#[derive(Debug, Parser, Clone)]
-#[clap(
-    name = "Indexer Service",
-    about = "Standalone binary for the fuel indexer service.",
-    version
-)]
-pub struct IndexerArgs {
-    /// Log level passed to the Fuel Indexer service.
-    #[clap(long, default_value = defaults::LOG_LEVEL, value_parser(["info", "debug", "error", "warn"]), help = "Log level passed to the Fuel Indexer service.")]
-    pub log_level: String,
+/// Result type returned by configuration operations.
+type IndexerConfigResult<T> = core::result::Result<T, IndexerConfigError>;
 
-    /// Indexer service config file.
-    #[clap(
-        short,
-        long,
-        value_name = "FILE",
-        help = "Indexer service config file."
-    )]
-    pub config: Option<PathBuf>,
-
-    /// Indexer config file.
-    #[clap(short, long, value_name = "FILE", help = "Indexer config file.")]
-    pub manifest: Option<PathBuf>,
-
-    /// Host of the running Fuel node.
-    #[clap(
-        long,
-        help = "Host of the running Fuel node.",
-        default_value = defaults::FUEL_NODE_HOST
-    )]
-    pub fuel_node_host: String,
-
-    /// Listening port of the running Fuel node.
-    #[clap(
-        long,
-        help = "Listening port of the running Fuel node.",
-        default_value = defaults::FUEL_NODE_PORT
-    )]
-    pub fuel_node_port: String,
-
-    /// GraphQL API host.
-    #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
-    pub graphql_api_host: String,
-
-    /// GraphQL API port.
-    #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
-    pub graphql_api_port: String,
-
-    /// Database type.
-    #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
-    pub database: String,
-
-    /// Max body size for GraphQL API requests.
-    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
-    pub max_body_size: usize,
-
-    /// Postgres username.
-    #[clap(long, help = "Postgres username.")]
-    pub postgres_user: Option<String>,
-
-    /// Postgres database.
-    #[clap(long, help = "Postgres database.")]
-    pub postgres_database: Option<String>,
-
-    /// Postgres password.
-    #[clap(long, help = "Postgres password.")]
-    pub postgres_password: Option<String>,
-
-    /// Postgres host.
-    #[clap(long, help = "Postgres host.")]
-    pub postgres_host: Option<String>,
-
-    /// Postgres port.
-    #[clap(long, help = "Postgres port.")]
-    pub postgres_port: Option<String>,
-
-    /// Run database migrations before starting service.
-    #[clap(long, help = "Run database migrations before starting service.")]
-    pub run_migrations: bool,
-
-    /// Use Prometheus metrics reporting.
-    #[clap(long, help = "Use Prometheus metrics reporting.")]
-    pub metrics: bool,
-
-    /// Prevent indexers from running without handling any blocks.
-    #[clap(
-        long,
-        help = "Prevent indexers from running without handling any blocks."
-    )]
-    pub stop_idle_indexers: bool,
-
-    /// Automatically create and start database using provided options or defaults.
-    #[clap(
-        long,
-        help = "Automatically create and start database using provided options or defaults."
-    )]
-    pub embedded_database: bool,
-
-    /// Require users to authenticate for some operations.
-    #[clap(long, help = "Require users to authenticate for some operations.")]
-    pub auth_enabled: bool,
-
-    /// Authentication scheme used.
-    #[clap(long, help = "Authentication scheme used.")]
-    pub auth_strategy: Option<String>,
-
-    /// Secret used for JWT scheme (if JWT scheme is specified).
-    #[clap(
-        long,
-        help = "Secret used for JWT scheme (if JWT scheme is specified)."
-    )]
-    pub jwt_secret: Option<String>,
-
-    /// Issuer of JWT claims (if JWT scheme is specified).
-    #[clap(long, help = "Issuer of JWT claims (if JWT scheme is specified).")]
-    pub jwt_issuer: Option<String>,
-
-    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
-    #[clap(
-        long,
-        help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
-    )]
-    pub jwt_expiry: Option<usize>,
-
-    /// Enable verbose logging.
-    #[clap(short, long, help = "Enable verbose logging.")]
-    pub verbose: bool,
-
-    /// Start a local Fuel node.
-    #[clap(long, help = "Start a local Fuel node.")]
-    pub local_fuel_node: bool,
-
-    /// Allow network configuration via indexer manifests.
-    #[clap(long, help = "Allow network configuration via indexer manifests.")]
-    pub indexer_net_config: bool,
-
-    /// Enable rate limiting.
-    #[clap(long, help = "Enable rate limiting.")]
-    pub rate_limit: bool,
-
-    /// Maximum number of requests to allow over --rate-limit-window..
-    #[clap(
-        long,
-        help = "Maximum number of requests to allow over --rate-limit-window.."
-    )]
-    pub rate_limit_request_count: Option<u64>,
-
-    /// Number of seconds over which to allow --rate-limit-rps.
-    #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
-    pub rate_limit_window_size: Option<u64>,
-
-    /// Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
-    #[clap(
-        long,
-        default_value_t = defaults::INDEXER_HANDLER_TIMEOUT,
-        help = "Maximum length of time (in seconds) that an indexer's event handler can run before timing out."
-    )]
-    pub indexer_handler_timeout: u64,
-
-    /// Whether to allow replacing an existing indexer. If not specified, an attempt to deploy over an existing indexer results in an error.
-    #[clap(
-        long,
-        help = "Whether to allow replacing an existing indexer. If not specified, an attempt to deploy over an existing indexer results in an error."
-    )]
-    pub replace_indexer: bool,
+/// Error type returned by configuration operations.
+#[derive(Error, Debug)]
+pub enum IndexerConfigError {
+    #[error("Error parsing env variables from config")]
+    EnvVarParseError(#[from] std::env::VarError),
+    #[error("Error processing file: {0:?}")]
+    ConfigFileError(#[from] anyhow::Error),
+    #[error("Error processing YAML file: {0:?}")]
+    SerdeYamlError(#[from] serde_yaml::Error),
+    #[error("Error processing URI: {0:?}")]
+    InvalidUriError(#[from] http::uri::InvalidUri),
+    #[error("URL parser error: {0:?}")]
+    ParseError(#[from] url::ParseError),
+    #[error("File IO error: {0:?}")]
+    FileIoError(#[from] std::io::Error),
 }
 
-#[derive(Debug, Parser, Clone)]
-#[clap(
-    name = "Fuel Indexer API Server",
-    about = "Fuel indexer GraphQL API",
-    version
-)]
-pub struct ApiServerArgs {
-    /// Log level passed to the Fuel Indexer service.
-    #[clap(long, default_value = defaults::LOG_LEVEL, value_parser(["info", "debug", "error", "warn"]), help = "Log level passed to the Fuel Indexer service.")]
-    pub log_level: String,
-
-    /// API server config file.
-    #[clap(short, long, help = "API server config file.")]
-    pub config: Option<PathBuf>,
-
-    /// Host of the running Fuel node.
-    #[clap(
-        long,
-        help = "Host of the running Fuel node.",
-        default_value = defaults::FUEL_NODE_HOST
-    )]
-    pub fuel_node_host: String,
-
-    /// Listening port of the running Fuel node.
-    #[clap(
-        long,
-        help = "Listening port of the running Fuel node.",
-        default_value = defaults::FUEL_NODE_PORT
-    )]
-    pub fuel_node_port: String,
-
-    /// GraphQL API host.
-    #[clap(long, help = "GraphQL API host.", default_value = defaults::GRAPHQL_API_HOST)]
-    pub graphql_api_host: String,
-
-    /// GraphQL API port.
-    #[clap(long, help = "GraphQL API port.", default_value = defaults::GRAPHQL_API_PORT)]
-    pub graphql_api_port: String,
-
-    /// Database type.
-    #[clap(long, help = "Database type.", default_value = defaults::DATABASE, value_parser(["postgres"]))]
-    pub database: String,
-
-    /// Max body size for GraphQL API requests.
-    #[clap(long, help = "Max body size for GraphQL API requests.", default_value_t = defaults::MAX_BODY_SIZE )]
-    pub max_body_size: usize,
-
-    /// Run database migrations before starting service.
-    #[clap(long, help = "Run database migrations before starting service.")]
-    pub run_migrations: bool,
-
-    /// Postgres username.
-    #[clap(long, help = "Postgres username.")]
-    pub postgres_user: Option<String>,
-
-    /// Postgres database.
-    #[clap(long, help = "Postgres database.")]
-    pub postgres_database: Option<String>,
-
-    /// Postgres password.
-    #[clap(long, help = "Postgres password.")]
-    pub postgres_password: Option<String>,
-
-    /// Postgres host.
-    #[clap(long, help = "Postgres host.")]
-    pub postgres_host: Option<String>,
-
-    /// Postgres port.
-    #[clap(long, help = "Postgres port.")]
-    pub postgres_port: Option<String>,
-
-    /// Use Prometheus metrics reporting.
-    #[clap(long, help = "Use Prometheus metrics reporting.")]
-    pub metrics: bool,
-
-    /// Require users to authenticate for some operations.
-    #[clap(long, help = "Require users to authenticate for some operations.")]
-    pub auth_enabled: bool,
-
-    /// Authentication scheme used.
-    #[clap(long, help = "Authentication scheme used.", value_parser(["jwt"]))]
-    pub auth_strategy: Option<String>,
-
-    /// Secret used for JWT scheme (if JWT scheme is specified).
-    #[clap(
-        long,
-        help = "Secret used for JWT scheme (if JWT scheme is specified)."
-    )]
-    pub jwt_secret: Option<String>,
-
-    /// Issuer of JWT claims (if JWT scheme is specified).
-    #[clap(long, help = "Issuer of JWT claims (if JWT scheme is specified).")]
-    pub jwt_issuer: Option<String>,
-
-    /// Amount of time (seconds) before expiring token (if JWT scheme is specified).
-    #[clap(
-        long,
-        help = "Amount of time (seconds) before expiring token (if JWT scheme is specified)."
-    )]
-    pub jwt_expiry: Option<usize>,
-
-    /// Enable verbose logging.
-    #[clap(short, long, help = "Enable verbose logging.")]
-    pub verbose: bool,
-
-    /// Enable rate limiting.
-    #[clap(long, help = "Enable rate limiting.")]
-    pub rate_limit: bool,
-
-    /// Maximum number of requests to allow over --rate-limit-window..
-    #[clap(
-        long,
-        help = "Maximum number of requests to allow over --rate-limit-window.."
-    )]
-    pub rate_limit_request_count: Option<u64>,
-
-    /// Number of seconds over which to allow --rate-limit-rps.
-    #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
-    pub rate_limit_window_size: Option<u64>,
+/// Used to inject environment variables into configuration.
+pub trait Env {
+    fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()>;
 }
 
 impl Default for IndexerArgs {
@@ -392,10 +108,6 @@ impl Default for IndexerArgs {
     }
 }
 
-pub trait Env {
-    fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()>;
-}
-
 /// Fuel indexer service configuration.
 #[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
@@ -408,7 +120,7 @@ pub struct IndexerConfig {
     #[serde(default)]
     pub indexer_net_config: bool,
     #[serde(default)]
-    pub fuel_node: FuelNodeConfig,
+    pub fuel_node: FuelClientConfig,
     #[serde(default)]
     pub graphql_api: GraphQLConfig,
     #[serde(default)]
@@ -469,7 +181,7 @@ impl From<IndexerArgs> for IndexerConfig {
             local_fuel_node: args.local_fuel_node,
             indexer_net_config: args.indexer_net_config,
             database,
-            fuel_node: FuelNodeConfig {
+            fuel_node: FuelClientConfig {
                 host: args.fuel_node_host,
                 port: args.fuel_node_port,
             },
@@ -554,7 +266,7 @@ impl From<ApiServerArgs> for IndexerConfig {
             local_fuel_node: defaults::LOCAL_FUEL_NODE,
             indexer_net_config: defaults::INDEXER_NET_CONFIG,
             database,
-            fuel_node: FuelNodeConfig {
+            fuel_node: FuelClientConfig {
                 host: args.fuel_node_host,
                 port: args.fuel_node_port,
             },

@@ -22,8 +22,8 @@ use fuel_indexer_lib::{
     config::{auth::AuthenticationStrategy, IndexerConfig},
     defaults,
     utils::{
-        AssetReloadRequest, FuelNodeHealthResponse, IndexStopRequest, ServiceRequest,
-        ServiceStatus,
+        FuelClientHealthResponse, ReloadRequest, ServiceRequest, ServiceStatus,
+        StopRequest,
     },
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
@@ -86,7 +86,7 @@ pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
                 .await
                 .unwrap_or_default();
 
-            let fuel_node_health: FuelNodeHealthResponse =
+            let fuel_node_health: FuelClientHealthResponse =
                 serde_json::from_slice(&body_bytes).unwrap_or_default();
 
             ServiceStatus::from(fuel_node_health)
@@ -170,7 +170,7 @@ pub(crate) async fn remove_indexer(
 
     queries::commit_transaction(&mut conn).await?;
 
-    tx.send(ServiceRequest::IndexStop(IndexStopRequest {
+    tx.send(ServiceRequest::Stop(StopRequest {
         namespace,
         identifier,
     }))
@@ -292,7 +292,7 @@ pub(crate) async fn register_indexer_assets(
 
         queries::commit_transaction(&mut conn).await?;
 
-        tx.send(ServiceRequest::AssetReload(AssetReloadRequest {
+        tx.send(ServiceRequest::Reload(ReloadRequest {
             namespace,
             identifier,
         }))

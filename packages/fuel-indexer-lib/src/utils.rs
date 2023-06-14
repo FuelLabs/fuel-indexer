@@ -8,11 +8,10 @@ use std::{
     future::Future,
     net::{SocketAddr, ToSocketAddrs},
     path::Path,
-    process::Command,
     str::FromStr,
 };
 use tokio::time::{sleep, Duration};
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 use tracing_subscriber::filter::EnvFilter;
 
 const RUST_LOG: &str = "RUST_LOG";
@@ -20,12 +19,12 @@ const HUMAN_LOGGING: &str = "HUMAN_LOGGING";
 
 const ROOT_DIRECTORY_NAME: &str = "fuel-indexer";
 
-/// Serialize a generic item.
+/// Serialize a generic byte array reference.
 pub fn serialize(obj: &impl Serialize) -> Vec<u8> {
     bincode::serialize(obj).expect("Serialize failed")
 }
 
-/// Deserialize a generic item.
+/// Deserialize a generic byte array reference.
 pub fn deserialize<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> Result<T, String> {
     match bincode::deserialize(bytes) {
         Ok(obj) => Ok(obj),
@@ -67,36 +66,40 @@ pub fn local_repository_root() -> Option<String> {
     Some(root_dir)
 }
 
+/// Request to reload the specified indexer executor using this indexer's current
+/// assets in the database.
+///
+/// Sent from API server to indexer service.
 #[derive(Debug)]
-pub struct AssetReloadRequest {
+pub struct ReloadRequest {
     pub namespace: String,
     pub identifier: String,
 }
 
+/// Request to remove the specified indexer executor from the indexer service.
+///
+/// Sent from API server to indexer service.
 #[derive(Debug)]
-pub struct IndexStopRequest {
+pub struct StopRequest {
     pub namespace: String,
     pub identifier: String,
 }
 
-#[derive(Debug)]
-pub struct IndexRevertRequest {
-    pub namespace: String,
-    pub identifier: String,
-}
-
+/// A general request sent from the API server to the indexer service.
 #[derive(Debug)]
 pub enum ServiceRequest {
-    AssetReload(AssetReloadRequest),
-    IndexStop(IndexStopRequest),
+    Reload(ReloadRequest),
+    Stop(StopRequest),
 }
 
-pub fn sha256_digest<T: AsRef<[u8]>>(blob: &T) -> String {
+/// Returns the lower hex representation of a [`sha2::SHA256`] digest of the provided input.
+pub fn sha256_digest<T: AsRef<[u8]>>(b: &T) -> String {
     let mut hasher = Sha256::new();
-    hasher.update(blob);
+    hasher.update(b);
     format!("{:x}", hasher.finalize())
 }
 
+/// Trim the leading '$' or '${' and trailing '}' from an environment variable.
 pub fn trim_opt_env_key(key: &str) -> &str {
     // Abmiguous key: $FOO, non-ambiguous key: ${FOO}
     let not_ambiguous = key.starts_with("${");
@@ -106,35 +109,38 @@ pub fn trim_opt_env_key(key: &str) -> &str {
     }
 }
 
-pub fn is_opt_env_var(key: &str) -> bool {
-    key.starts_with('$') || (key.starts_with("${") && key.ends_with('}'))
+/// Determine whether a given key is an environment variable.
+pub fn is_opt_env_var(k: &str) -> bool {
+    k.starts_with('$') || (k.starts_with("${") && k.ends_with('}'))
 }
 
+/// Derive the [`std::net::SocketAddr`] from a given host and port, falling back
+/// to a DNS lookup using [`std::net::ToSocketAddrs`] if the host is not a valid IP address.
 pub fn derive_socket_addr(host: &str, port: &str) -> SocketAddr {
     let host = format!("{host}:{port}");
-    SocketAddr::from_str(&host).unwrap_or_else(|e| {
-            warn!(
-                "Failed to parse '{}' as a SocketAddr due to '{}'. Retrying using ToSocketAddrs.",
-                host, e
-            );
-
+    match SocketAddr::from_str(&host) {
+        Ok(v) => v,
+        Err(e) => {
+            debug!("Failed to parse '{host}': {e}. Retrying...");
             let mut addrs: Vec<_> = host
                 .to_socket_addrs()
-                .expect("Unable to resolve domain.")
+                .unwrap_or_else(|e| panic!("Unable to resolve domain: {e}"))
                 .collect();
 
             let addr = addrs.pop().expect("Could not derive SocketAddr from '{}'");
 
-            info!("Parsed SocketAddr '{:?}' from '{}'", addr, host);
+            info!("Parsed SocketAddr '{addr:?}' from '{host}'");
 
             addr
-        })
+        }
+    }
 }
 
-/// Attempt to connect to a database, retrying a number of times if a connection
-/// can't be made. This function takes a closure with a database connection
+/// Attempt to connect to a database, with retries.
+///
+/// This function takes a closure with a database connection
 /// function as an argument; said function should return a future that
-/// resolves to a final value of type Result<T, sqlx::Error>.
+/// resolves to a final value of type `Result<T, sqlx::Error>`.
 pub async fn attempt_database_connection<F, Fut, T, U>(mut fut: F) -> T
 where
     F: FnMut() -> Fut,
@@ -149,30 +155,28 @@ where
             Err(_) => {
                 if remaining_retries > 0 {
                     warn!(
-                            "Could not connect to database backend, retrying in {} seconds...",
-                            delay
-                        );
+                        "Could not connect to database. Retrying in {delay} seconds...",
+                    );
                     remaining_retries -= 1;
                     sleep(Duration::from_secs(delay)).await;
                     delay *= 2;
                 } else {
-                    panic!(
-                        "Retry attempts exceeded; could not connect to database backend!"
-                    )
+                    panic!("Retry attempts exceeded. Could not connect to database!")
                 }
             }
         }
     }
 }
 
+/// Denotes the status of a service for the service health check.
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ServiceStatus {
     OK,
     NotOk,
 }
 
-impl From<FuelNodeHealthResponse> for ServiceStatus {
-    fn from(r: FuelNodeHealthResponse) -> Self {
+impl From<FuelClientHealthResponse> for ServiceStatus {
+    fn from(r: FuelClientHealthResponse) -> Self {
         match r.up {
             true => ServiceStatus::OK,
             _ => ServiceStatus::NotOk,
@@ -180,16 +184,19 @@ impl From<FuelNodeHealthResponse> for ServiceStatus {
     }
 }
 
+/// Response from the Fuel client health check.
 #[derive(Serialize, Deserialize, Default, Debug)]
-pub struct FuelNodeHealthResponse {
+pub struct FuelClientHealthResponse {
     up: bool,
 }
 
+/// Initialize the logging context for the indexer service.
 pub async fn init_logging(config: &IndexerConfig) -> anyhow::Result<()> {
     let level = env::var_os(RUST_LOG)
         .map(|x| x.into_string().unwrap())
         .unwrap_or("info".to_string());
 
+    // We manually suppress some of the more verbose crate logging.
     if !config.verbose {
         std::env::set_var(
             RUST_LOG,
@@ -228,72 +235,4 @@ pub async fn init_logging(config: &IndexerConfig) -> anyhow::Result<()> {
             .init();
     }
     Ok(())
-}
-
-pub fn format_exec_msg(exec_name: &str, path: Option<String>) -> String {
-    if let Some(path) = path {
-        rightpad_whitespace(&path, defaults::MESSAGE_PADDING)
-    } else {
-        rightpad_whitespace(
-            &format!("Can't locate {exec_name}."),
-            defaults::MESSAGE_PADDING,
-        )
-    }
-}
-
-pub fn find_executable_with_msg(exec_name: &str) -> (String, Option<String>, String) {
-    let (emoji, path) = find_executable(exec_name);
-    let p = path.clone();
-    (emoji, path, format_exec_msg(exec_name, p))
-}
-
-pub fn find_executable(exec_name: &str) -> (String, Option<String>) {
-    match Command::new("which").arg(exec_name).output() {
-        Ok(o) => {
-            let path = String::from_utf8_lossy(&o.stdout)
-                .strip_suffix('\n')
-                .map(|x| x.to_string())
-                .unwrap_or_else(String::new);
-
-            if !path.is_empty() {
-                (
-                    center_align("✅", defaults::SUCCESS_EMOJI_PADDING),
-                    Some(path),
-                )
-            } else {
-                (center_align("⛔️", defaults::FAIL_EMOJI_PADDING - 2), None)
-            }
-        }
-        Err(_e) => (center_align("⛔️", defaults::FAIL_EMOJI_PADDING), None),
-    }
-}
-
-pub fn center_align(s: &str, n: usize) -> String {
-    format!("{s: ^n$}")
-}
-
-pub fn rightpad_whitespace(s: &str, n: usize) -> String {
-    format!("{s:0n$}")
-}
-
-// IMPORTANT: rustc is required for this functionality.
-pub fn host_triple() -> String {
-    let output = Command::new("rustc")
-        .arg("-vV")
-        .output()
-        .expect("Failed to get rustc version output.");
-
-    String::from_utf8_lossy(&output.stdout)
-        .split('\n')
-        .filter_map(|x| {
-            if x.to_lowercase().starts_with("host") {
-                Some(x.to_string())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<String>>()
-        .first()
-        .expect("Failed to determine host triple via rustc.")[6..]
-        .to_owned()
 }

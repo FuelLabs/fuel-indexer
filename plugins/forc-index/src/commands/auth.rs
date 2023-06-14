@@ -1,4 +1,4 @@
-use crate::{ops::forc_index_auth, utils::defaults};
+use crate::{defaults, ops::forc_index_auth};
 use anyhow::Result;
 use clap::Parser;
 use fuel_indexer_lib::defaults::ACCOUNT_INDEX;
