@@ -1,8 +1,9 @@
 use clap::Parser;
 use fuel_indexer_tests::{defaults, fixtures::tx_params};
+use fuels::accounts::wallet::WalletUnlocked;
 use fuels::macros::abigen;
 use fuels::{
-    prelude::{Bech32ContractId, Contract, LoadConfiguration, Provider, WalletUnlocked},
+    prelude::{Bech32ContractId, Contract, LoadConfiguration, Provider},
     types::SizedAsciiString,
 };
 use rand::{seq::SliceRandom, Rng};

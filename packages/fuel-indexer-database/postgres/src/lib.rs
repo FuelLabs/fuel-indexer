@@ -638,7 +638,7 @@ pub async fn last_block_height_for_indexer(
     );
 
     let row = sqlx::query(&query).fetch_one(conn).await?;
-    let id: i64 = match row.try_get(0) {
+    let id: i32 = match row.try_get(0) {
         Ok(id) => id,
         Err(_e) => return Ok(1),
     };

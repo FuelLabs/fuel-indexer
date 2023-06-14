@@ -2,14 +2,12 @@ use crate::{
     constant::*, helpers::*, native::handler_block_native, parse::IndexerConfig,
     schema::process_graphql_schema, wasm::handler_block_wasm,
 };
-use fuel_abi_types::program_abi::TypeDeclaration;
+use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
     manifest::ContractIds, manifest::Manifest, utils::local_repository_root,
 };
 use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
-use fuels::{
-    core::function_selector::resolve_fn_selector, types::param_types::ParamType,
-};
+use fuels::{core::codec::resolve_fn_selector, types::param_types::ParamType};
 use fuels_code_gen::{Abigen, AbigenTarget, ProgramType};
 use proc_macro::TokenStream;
 use quote::quote;
