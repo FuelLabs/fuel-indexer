@@ -21,7 +21,7 @@ pub mod types {
 
     // This is needed to allow for auto ID calculations in the event that a timestamp is
     // marked optional; we provide a default value but it needs to be wrapped in a Tai64 type.
-    pub use tai64::Tai64;
+    pub use fuel_indexer_types::Tai64;
 }
 
 pub mod utils {

@@ -380,7 +380,7 @@ fn process_type_def(
                     quote! {}
                 };
 
-                if field_set.contains(&"id".to_string())
+                if field_set.contains(&IdCol::to_lowercase_string())
                     && !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str())
                     && field_name != *"id"
                 {
@@ -412,7 +412,7 @@ fn process_type_def(
                 schema.is_native,
             );
 
-            let new_method_impl = if field_set.contains(&"id".to_string()) {
+            let new_method_impl = if field_set.contains(&IdCol::to_lowercase_string()) {
                 generate_struct_new_method_impl(
                     strct,
                     parameters,

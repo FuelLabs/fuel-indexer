@@ -84,9 +84,7 @@ pub fn to_bytes_method_for_external_type(
     match field_type_name.as_str() {
         "Identity" => quote! { .0 },
         "Tai64Timestamp" => quote! { .0.to_le_bytes() },
-        _ => panic!(
-            "No bytes conversion method available for external type {field_type_name}"
-        ),
+        _ => panic!("From<{field_type_name}> not implemented for AsRef<u8>."),
     }
 }
 
@@ -383,25 +381,19 @@ pub fn generate_struct_new_method_impl(
 ) -> proc_macro2::TokenStream {
     let get_or_create_impl = if is_native {
         quote! {
-            pub async fn get_or_create(#parameters) -> (Self, bool) {
-                let raw_bytes = #hasher.chain_update(#object_name).finalize();
-
-                let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
-
-                let id = u64::from_le_bytes(id_bytes);
-
-                match Self::load(id).await {
-                    Some(instance) => (instance, true),
-                    None => (Self { id, #struct_fields }, false)
+            pub async fn get_or_create(self) -> Self {
+                match Self::load(self.id).await {
+                    Some(instance) => instance,
+                    None => self,
                 }
             }
         }
     } else {
         quote! {
-            pub fn get_or_create(id: u64, s: Self) -> (Self, bool) {
-                match Self::load(id) {
-                    Some(instance) => (instance, true),
-                    None => (s, false)
+            pub fn get_or_create(self) -> Self {
+                match Self::load(self.id) {
+                    Some(instance) => instance,
+                    None => self,
                 }
             }
         }

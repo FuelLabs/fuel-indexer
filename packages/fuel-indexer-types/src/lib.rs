@@ -29,6 +29,8 @@ pub mod prelude {
     pub use crate::{TypeId, FUEL_TYPES_NAMESPACE};
 }
 
+pub use tai64::Tai64;
+
 /// Derive a type ID from a namespace and given abstraction name.
 pub fn type_id(namespace: &str, name: &str) -> i64 {
     // IMPORTANT: https://github.com/launchbadge/sqlx/issues/499
