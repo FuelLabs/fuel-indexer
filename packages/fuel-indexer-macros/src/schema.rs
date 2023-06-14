@@ -382,7 +382,7 @@ fn process_type_def(
 
                 if field_set.contains(&IdCol::to_lowercase_string())
                     && !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str())
-                    && field_name != *"id"
+                    && field_name != IdCol::to_lowercase_string()
                 {
                     parameters = quote! { #parameters #field_name: #typ_tokens, };
 

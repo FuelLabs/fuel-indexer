@@ -95,8 +95,14 @@ pub fn unwrap_or_default_for_external_type(
     field_type_name: String,
 ) -> proc_macro2::TokenStream {
     match field_type_name.as_str() {
-        "Tai64Timestamp" => quote! { .unwrap_or(Tai64(0u64)) },
-        _ => panic!("No default value available for external type {field_type_name}"),
+        "Tai64Timestamp" => {
+            quote! {
+                .unwrap_or(Tai64Timestamp::from({
+                    <[u8;8]>::try_from(0u64.to_be_bytes()).expect("Failed to create byte slice from u64")
+                }))
+            }
+        }
+        _ => panic!("Default is not implemented for {field_type_name}"),
     }
 }
 
