@@ -581,7 +581,7 @@ fn process_fn_items(
                     decoder.dispatch()#awaitness;
                 }
 
-                let metadata = IndexMetadataEntity{ id: block.height, time: block.time };
+                let metadata = IndexMetadataEntity{ id: block.height as u64, time: block.time };
                 metadata.save()#awaitness;
             }
         },
