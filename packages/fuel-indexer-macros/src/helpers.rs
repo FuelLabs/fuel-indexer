@@ -1,9 +1,110 @@
+use std::collections::HashSet;
+
 use crate::constant::*;
 use fuel_abi_types::program_abi::{ProgramABI, TypeDeclaration};
 use fuel_indexer_schema::parser::ParsedGraphQLSchema;
 use fuels_code_gen::utils::Source;
+use lazy_static::lazy_static;
 use quote::{format_ident, quote};
 use syn::Ident;
+
+lazy_static! {
+    /// Set of internal indexer entities.
+    pub static ref INTERNAL_INDEXER_ENTITIES: HashSet<&'static str> = HashSet::from([
+        "IndexMetadataEntity",
+    ]);
+
+    /// Set of types that implement `AsRef<[u8]>`.
+    pub static ref ASREF_BYTE_TYPES: HashSet<&'static str> = HashSet::from([
+        "Address",
+        "AssetId",
+        "Blob",
+        "BlockId",
+        "Boolean",
+        "Bytes",
+        "Bytes20",
+        "Bytes32",
+        "Bytes4",
+        "Bytes64",
+        "Bytes8",
+        "Charfield",
+        "ContractId",
+        "HexString",
+        "Json",
+        "MessageId",
+        "NoRelation",
+        "Nonce",
+        "Option<Address>",
+        "Option<AssetId>",
+        "Option<Blob>",
+        "Option<BlockId>",
+        "Option<Boolean>",
+        "Option<Bytes20>",
+        "Option<Bytes32>",
+        "Option<Bytes4>",
+        "Option<Bytes64>",
+        "Option<Bytes8>",
+        "Option<Bytes>",
+        "Option<Charfield>",
+        "Option<ContractId>",
+        "Option<HexString>",
+        "Option<Json>",
+        "Option<MessageId>",
+        "Option<NoRelation>",
+        "Option<Nonce>",
+        "Option<Salt>",
+        "Option<Signature>",
+        "Option<TxId>",
+        "Salt",
+        "Signature",
+        "TxId",
+    ]);
+
+    /// Set of external types that do not implement `AsRef<[u8]>`.
+    pub static ref EXTERNAL_FIELD_TYPES: HashSet<&'static str> = HashSet::from([
+        "Identity",
+        "Option<Identity>",
+        "Option<Tai64Timestamp>",
+        "Tai64Timestamp",
+    ]);
+
+    /// Set of field types that are currently unable to be used as a digest for SHA-256 hashing.
+    pub static ref NONDIGESTIBLE_FIELD_TYPES: HashSet<&'static str> = HashSet::from([
+        "Boolean",
+        "Identity"
+    ]);
+}
+
+/// Provides a TokenStream to be used as a conversion to bytes
+/// for external types; this is done because traits cannot be
+/// implemented on external types due to the orphan rule.
+pub fn to_bytes_method_for_external_type(
+    field_type_name: String,
+) -> proc_macro2::TokenStream {
+    match field_type_name.as_str() {
+        "Identity" => quote! { .0 },
+        "Tai64Timestamp" => quote! { .0.to_le_bytes() },
+        _ => panic!("From<{field_type_name}> not implemented for AsRef<u8>."),
+    }
+}
+
+/// Provides a TokenStream to be used for unwrapping `Option`s
+/// for external types; this is done because traits cannot be
+/// implemented on external types due to the orphan rule.
+pub fn unwrap_or_default_for_external_type(
+    field_type_name: String,
+) -> proc_macro2::TokenStream {
+    match field_type_name.as_str() {
+        "Tai64Timestamp" => {
+            quote! {
+                .unwrap_or(Tai64Timestamp::from({
+                    <[u8;8]>::try_from(0u64.to_be_bytes()).expect("Failed to create byte slice from u64")
+                }))
+            }
+        }
+        _ => panic!("Default is not implemented for {field_type_name}"),
+    }
+}
 
 /// If TypeDeclaration is tuple type
 pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
@@ -271,6 +372,60 @@ pub fn field_extractor(
                 _ => panic!("Invalid non-nullable column type: {:?}.", item),
             };
         }
+    }
+}
+
+/// Construct a `::new()` method for a particular struct; `::new()`
+/// will automatically create an ID for the user for use in a database.
+pub fn generate_struct_new_method_impl(
+    strct: Ident,
+    parameters: proc_macro2::TokenStream,
+    hasher: proc_macro2::TokenStream,
+    object_name: String,
+    struct_fields: proc_macro2::TokenStream,
+    is_native: bool,
+) -> proc_macro2::TokenStream {
+    let get_or_create_impl = if is_native {
+        quote! {
+            pub async fn get_or_create(self) -> Self {
+                match Self::load(self.id).await {
+                    Some(instance) => instance,
+                    None => self,
+                }
+            }
+        }
+    } else {
+        quote! {
+            pub fn get_or_create(self) -> Self {
+                match Self::load(self.id) {
+                    Some(instance) => instance,
+                    None => self,
+                }
+            }
+        }
+    };
+
+    if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str()) {
+        quote! {
+            impl #strct {
+                pub fn new(#parameters) -> Self {
+                    let raw_bytes = #hasher.chain_update(#object_name).finalize();
+
+                    let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
+
+                    let id = u64::from_le_bytes(id_bytes);
+
+                    Self {
+                        id,
+                        #struct_fields
+                    }
+                }
+
+                #get_or_create_impl
+            }
+        }
+    } else {
+        quote! {}
     }
 }
 

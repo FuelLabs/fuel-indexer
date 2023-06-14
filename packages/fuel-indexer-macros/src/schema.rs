@@ -256,6 +256,17 @@ fn process_type_def(
             let mut from_row = quote! {};
             let mut to_row = quote! {};
 
+            let mut parameters = quote! {};
+            let mut hasher = quote! { Sha256::new() };
+            let mut field_construction_for_new_impl = quote! {};
+
+            let fields = obj
+                .fields
+                .iter()
+                .map(|f| f.node.name.node.to_string())
+                .collect::<Vec<String>>();
+            let field_set: HashSet<&String> = HashSet::from_iter(fields.iter());
+
             for field in &obj.fields {
                 let field_name = &field.node.name.to_string();
                 let field_type = &field.node.ty.node;
@@ -350,6 +361,40 @@ fn process_type_def(
                     #to_row
                     #decoder
                 };
+
+                let unwrap_or_def = if field_type.nullable {
+                    if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                        unwrap_or_default_for_external_type(field_typ_name.clone())
+                    } else {
+                        quote! { .unwrap_or_default() }
+                    }
+                } else {
+                    quote! {}
+                };
+
+                let to_bytes = if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                    to_bytes_method_for_external_type(field_typ_name.clone())
+                } else if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
+                    quote! { .to_le_bytes() }
+                } else {
+                    quote! {}
+                };
+
+                if field_set.contains(&IdCol::to_lowercase_string())
+                    && !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str())
+                    && field_name != IdCol::to_lowercase_string()
+                {
+                    parameters = quote! { #parameters #field_name: #typ_tokens, };
+
+                    if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                        hasher = quote! { #hasher.chain_update(#field_name #clone #unwrap_or_def #to_bytes)};
+                    }
+
+                    field_construction_for_new_impl = quote! {
+                        #field_construction_for_new_impl
+                        #field_name,
+                    };
+                }
             }
 
             schema
@@ -357,15 +402,34 @@ fn process_type_def(
                 .insert(object_name.clone(), fields_map);
             let strct = format_ident! {"{}", object_name};
 
-            Some(generate_object_trait_impls(
-                strct,
+            let object_trait_impls = generate_object_trait_impls(
+                strct.clone(),
                 strct_fields,
                 type_id,
                 field_extractors,
                 from_row,
                 to_row,
                 schema.is_native,
-            ))
+            );
+
+            let new_method_impl = if field_set.contains(&IdCol::to_lowercase_string()) {
+                generate_struct_new_method_impl(
+                    strct,
+                    parameters,
+                    hasher,
+                    object_name,
+                    field_construction_for_new_impl,
+                    schema.is_native,
+                )
+            } else {
+                quote! {}
+            };
+
+            Some(quote! {
+                #object_trait_impls
+
+                #new_method_impl
+            })
         }
         TypeKind::Enum(e) => {
             let name = typ.name.to_string();
