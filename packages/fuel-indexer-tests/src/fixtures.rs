@@ -528,26 +528,6 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
-    async fn fuel_indexer_test_messageout(
-        state: web::Data<Arc<AppState>>,
-    ) -> impl Responder {
-        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
-
-        let _ = state
-            .contract
-            .methods()
-            .trigger_messageout()
-            .append_message_outputs(1)
-            .tx_params(tx_params())
-            .call_params(call_params)
-            .expect("Could not set call parameters for contract method")
-            .call()
-            .await
-            .unwrap();
-
-        HttpResponse::Ok()
-    }
-
     async fn fuel_indexer_test_callreturn(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
@@ -766,7 +746,6 @@ pub mod test_web {
                 "/transferout",
                 web::post().to(fuel_indexer_test_transferout),
             )
-            .route("/messageout", web::post().to(fuel_indexer_test_messageout))
             .route("/callreturn", web::post().to(fuel_indexer_test_callreturn))
             .route("/multiarg", web::post().to(fuel_indexer_test_multiargs))
             .route(
