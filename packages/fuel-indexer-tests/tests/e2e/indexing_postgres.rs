@@ -522,7 +522,7 @@ async fn test_indexer_respects_start_block_postgres() {
     let res = test::call_and_read_body(&app, req).await;
     let block_height = String::from_utf8(res.to_vec())
         .unwrap()
-        .parse::<u64>()
+        .parse::<u32>()
         .unwrap();
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
@@ -574,7 +574,7 @@ async fn test_indexer_respects_start_block_postgres() {
     assert!(final_check.is_some());
 
     let row = final_check.unwrap();
-    let height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+    let height = row.get::<BigDecimal, usize>(1).to_u32().unwrap();
 
     assert_eq!(height, (block_height + 2));
     assert!(row.get::<i64, usize>(2) > 0);
@@ -591,7 +591,7 @@ async fn test_indexer_respects_end_block_postgres() {
     let res = test::call_and_read_body(&app, req).await;
     let block_height = String::from_utf8(res.to_vec())
         .unwrap()
-        .parse::<u64>()
+        .parse::<u32>()
         .unwrap();
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
@@ -615,7 +615,7 @@ async fn test_indexer_respects_end_block_postgres() {
     .unwrap();
 
     let row = first_check.unwrap();
-    let indexed_height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+    let indexed_height = row.get::<BigDecimal, usize>(1).to_u32().unwrap();
 
     assert_eq!(indexed_height, (block_height));
     assert!(row.get::<i64, usize>(2) > 0);
@@ -635,7 +635,7 @@ async fn test_indexer_respects_end_block_postgres() {
     .unwrap();
 
     let row = second_check.unwrap();
-    let indexed_height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+    let indexed_height = row.get::<BigDecimal, usize>(1).to_u32().unwrap();
 
     assert_eq!(indexed_height, (block_height + 1));
     assert!(row.get::<i64, usize>(2) > 0);
@@ -669,7 +669,7 @@ async fn test_index_respects_end_block_and_start_block_postgres() {
     let res = test::call_and_read_body(&app, req).await;
     let block_height = String::from_utf8(res.to_vec())
         .unwrap()
-        .parse::<u64>()
+        .parse::<u32>()
         .unwrap();
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
