@@ -157,7 +157,7 @@ impl TypeId for BlockData {
 impl From<ClientTxPointer> for TxPointer {
     fn from(tx_pointer: ClientTxPointer) -> Self {
         TxPointer {
-            block_height: tx_pointer.block_height().into(),
+            block_height: tx_pointer.block_height(),
             tx_index: tx_pointer.tx_index() as u64,
         }
     }
