@@ -539,7 +539,6 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_messageout()
-            .append_message_outputs(1)
             .tx_params(tx_params())
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")
