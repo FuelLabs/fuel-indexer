@@ -22,7 +22,7 @@ use tokio::{
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "d1ece60c4653e20bcf0a70c449c6e2c90731c6b78d7bd40bab16ffeb595f3150";
+    "a8892fdc1ba52ca37c41e41a00cc7ddb7cf6e6edb46398fc775f8c7a57a430bb";
 
 async fn setup_test_components(
 ) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
