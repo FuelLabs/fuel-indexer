@@ -184,6 +184,8 @@ impl ParsedGraphQLSchema {
 
                             let mut has_virtual_member = false;
 
+                            // These member fields are already cached under their respective object names, but
+                            // we also need to cache them under this derived union name.
                             u.members.iter().for_each(|m| {
                                 let member_name = m.node.to_string();
                                 let member_obj = objects.get(&member_name).unwrap();

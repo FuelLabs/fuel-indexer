@@ -551,8 +551,8 @@ fn process_type_def(
                     let field_type = Type {
                         base: BaseType::Named(Name::new(field_typ_name)),
                         nullable: field_typ_name != IdCol::to_uppercase_str(),
-                    };                    
-                    
+                    };
+
                     derived_type_fields.insert(field_name);
 
                     // Since we've already processed the member's fields, we don't need
