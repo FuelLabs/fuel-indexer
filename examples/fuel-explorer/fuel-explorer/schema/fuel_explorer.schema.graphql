@@ -44,17 +44,20 @@ type Genesis {
   contracts_root: Bytes32!
   messages_root: Bytes32!
   label: ConsensusLabel!
+  is_genesis: Boolean!
 }
 
 type PoA {
   id: ID!
   signature: Signature!
   label: ConsensusLabel!
+  is_poa: Boolean!
 }
 
 type Unknown {
   id: ID!
   label: ConsensusLabel!
+  is_unknown: Boolean!
 }
 
 union Consensus = Genesis | PoA | Unknown

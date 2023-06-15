@@ -546,12 +546,15 @@ fn process_type_def(
                         panic!("Derived type from Union({}) contains Field({}) which does not have a consistent type across all members.", name, field_name);
                     }
 
-                    derived_type_fields.insert(field_name);
-
+                    // We can't derive this FieldType info from the actual field because since
+                    // this is a union, all fields are nullable except field type `ID` (if present).
                     let field_type = Type {
                         base: BaseType::Named(Name::new(field_typ_name)),
                         nullable: field_typ_name != IdCol::to_uppercase_str(),
-                    };
+                    };                    
+                    
+                    derived_type_fields.insert(field_name);
+
                     // Since we've already processed the member's fields, we don't need
                     // to do any type of special field processing here.
                     let (typ_tokens, field_name, scalar_typ, extractor) =
@@ -568,6 +571,7 @@ fn process_type_def(
                         quote! {}
                     };
 
+                    // For union types, all field types except `ID` (if present) are nullable.
                     let decoder = if field_type.nullable {
                         quote! { FtColumn::#scalar_typ(self.#field_name #clone), }
                     } else {

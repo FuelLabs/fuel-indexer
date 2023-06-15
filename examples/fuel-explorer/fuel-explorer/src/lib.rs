@@ -110,6 +110,9 @@ impl From<fuel::Consensus> for Consensus {
                     contracts_root: Some(g.contracts_root),
                     messages_root: Some(g.messages_root),
                     signature: None,
+                    is_genesis: Some(true),
+                    is_poa: None,
+                    is_unknown: None,
                 }
             }
             fuel::Consensus::PoA(poa) => {
@@ -123,6 +126,9 @@ impl From<fuel::Consensus> for Consensus {
                     contracts_root: None,
                     messages_root: None,
                     signature: Some(poa.signature),
+                    is_genesis: None,
+                    is_poa: Some(true),
+                    is_unknown: None,
                 }
             }
             fuel::Consensus::Unknown => {
@@ -136,6 +142,9 @@ impl From<fuel::Consensus> for Consensus {
                     contracts_root: None,
                     messages_root: None,
                     signature: None,
+                    is_genesis: None,
+                    is_poa: None,
+                    is_unknown: Some(true),
                 }
             }
         }
