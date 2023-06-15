@@ -995,7 +995,7 @@ async fn test_can_trigger_and_index_nonindexable_events() {
     let entity: NoTableEntity =
         serde_json::from_value(row.get::<serde_json::Value, usize>(2)).unwrap();
 
-    assert_eq!(entity.name, Some("norelation".to_string()));
+    assert_eq!(entity.name, Some("virtual".to_string()));
     assert_eq!(entity.size, 1);
 }
 
@@ -1119,7 +1119,7 @@ async fn test_can_trigger_and_index_union_types() {
     assert_eq!(row.get::<&str, usize>(4), "UnionType::A");
 
     let row = sqlx::query(
-        "SELECT * FROM fuel_indexer_test_index1.unindexableunioncontainerentity LIMIT 1",
+        "SELECT * FROM fuel_indexer_test_index1.virtualunioncontainerentity LIMIT 1",
     )
     .fetch_one(&mut conn)
     .await
