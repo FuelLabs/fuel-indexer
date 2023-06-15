@@ -40,6 +40,7 @@ tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
 tower = { version = "0.4", features = ["limit", "buffer"] }
 tower-http = { version = "0.3", features = ["fs", "trace", "cors", "limit"] }
 tracing = { workspace = true }
+uluru = "3.0"
 
 [features]
 default = ["metrics"]

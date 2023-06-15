@@ -50,7 +50,6 @@ impl SchemaManager {
         namespace: &str,
         identifier: &str,
     ) -> IndexerSchemaDbResult<Schema> {
-        // TODO: might be nice to cache this data in server?
         Schema::load_from_db(&self.pool, namespace, identifier).await
     }
 }

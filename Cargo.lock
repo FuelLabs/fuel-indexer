@@ -2993,6 +2993,7 @@ dependencies = [
  "tower",
  "tower-http",
  "tracing",
+ "uluru",
 ]
 
 [[package]]
@@ -7662,6 +7663,15 @@ dependencies = [
  "crunchy",
  "hex",
  "static_assertions",
+]
+
+[[package]]
+name = "uluru"
+version = "3.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "794a32261a1f5eb6a4462c81b59cec87b5c27d5deea7dd1ac8fc781c41d226db"
+dependencies = [
+ "arrayvec",
 ]
 
 [[package]]

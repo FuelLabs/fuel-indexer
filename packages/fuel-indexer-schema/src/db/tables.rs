@@ -526,9 +526,6 @@ pub struct Schema {
 
 impl Schema {
     /// Load a `Schema` from the database.
-
-    // TODO: Might be expensive to always load this from the DB each time. Maybe
-    // we can cache and stash this somewhere?
     pub async fn load_from_db(
         pool: &IndexerConnectionPool,
         namespace: &str,

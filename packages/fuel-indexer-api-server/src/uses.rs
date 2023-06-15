@@ -1,5 +1,5 @@
 use crate::{
-    api::{ApiError, ApiResult, HttpError},
+    api::{ApiError, ApiResult, HttpError, SCHEMA_CACHE_SIZE},
     models::{Claims, VerifySignatureRequest},
 };
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
@@ -26,7 +26,7 @@ use fuel_indexer_lib::{
         ServiceStatus,
     },
 };
-use fuel_indexer_schema::db::manager::SchemaManager;
+use fuel_indexer_schema::db::{manager::SchemaManager, tables::Schema};
 use hyper::Client;
 use hyper_rustls::HttpsConnectorBuilder;
 use jsonwebtoken::{encode, EncodingKey, Header};
@@ -34,6 +34,7 @@ use serde_json::{json, Value};
 use std::{convert::From, str::FromStr, time::Instant};
 use tokio::sync::mpsc::Sender;
 use tracing::error;
+use uluru::LRUCache;
 
 #[cfg(feature = "metrics")]
 use fuel_indexer_metrics::encode_metrics_response;
@@ -45,27 +46,34 @@ pub(crate) async fn query_graph(
     Path((namespace, identifier)): Path<(String, String)>,
     Extension(pool): Extension<IndexerConnectionPool>,
     Extension(manager): Extension<Arc<RwLock<SchemaManager>>>,
+    Extension(mut schema_cache): Extension<LRUCache<Schema, SCHEMA_CACHE_SIZE>>,
     req: GraphQLRequest,
 ) -> ApiResult<axum::Json<Value>> {
-    match manager
-        .read()
-        .await
-        .load_schema(&namespace, &identifier)
-        .await
+    let schema = match schema_cache
+        .find(|s| s.namespace == namespace && s.identifier == identifier)
     {
-        Ok(schema) => {
-            let dynamic_schema = build_dynamic_schema(&schema)?;
-            let user_query = req.0.query.clone();
-            let response =
-                execute_query(req.into_inner(), dynamic_schema, user_query, pool, schema)
-                    .await?;
-            let data = serde_json::json!({ "data": response });
-            Ok(axum::Json(data))
+        Some(cached_schema) => Ok(cached_schema.to_owned()),
+        None => {
+            match manager
+                .read()
+                .await
+                .load_schema(&namespace, &identifier)
+                .await
+            {
+                Ok(schema) => Ok(schema),
+                Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
+                    "The graph '{namespace}.{identifier}' was not found."
+                )))),
+            }
         }
-        Err(_e) => Err(ApiError::Http(HttpError::NotFound(format!(
-            "The graph '{namespace}.{identifier}' was not found."
-        )))),
-    }
+    }?;
+
+    let dynamic_schema = build_dynamic_schema(&schema)?;
+    let user_query = req.0.query.clone();
+    let response =
+        execute_query(req.into_inner(), dynamic_schema, user_query, pool, schema).await?;
+    let data = serde_json::json!({ "data": response });
+    Ok(axum::Json(data))
 }
 
 pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {

@@ -21,7 +21,9 @@ use axum::{
 use fuel_indexer_database::{IndexerConnectionPool, IndexerDatabaseError};
 use fuel_indexer_graphql::graphql::GraphqlError;
 use fuel_indexer_lib::{config::IndexerConfig, defaults, utils::ServiceRequest};
-use fuel_indexer_schema::db::{manager::SchemaManager, IndexerSchemaDbError};
+use fuel_indexer_schema::db::{
+    manager::SchemaManager, tables::Schema, IndexerSchemaDbError,
+};
 use hyper::Method;
 use serde_json::json;
 use std::{
@@ -40,12 +42,16 @@ use tower_http::{
     LatencyUnit,
 };
 use tracing::{error, Level};
+use uluru::LRUCache;
 
 /// Result type returned by web API operations.
 pub type ApiResult<T> = core::result::Result<T, ApiError>;
 
 /// Size of the buffer for reqeusts being passed to the `RateLimitLayer`.
 const BUFFER_SIZE: usize = 1024;
+
+/// Size of the schema cache.
+pub(crate) const SCHEMA_CACHE_SIZE: usize = 10;
 
 /// Error type returned by HTTP operations specifically.
 #[derive(Debug, Error)]
@@ -181,6 +187,8 @@ impl GraphQlApi {
     ) -> ApiResult<Router> {
         let sm = SchemaManager::new(pool.clone());
         let schema_manager = Arc::new(RwLock::new(sm));
+        let schema_cache: LRUCache<Schema, SCHEMA_CACHE_SIZE> = LRUCache::default();
+
         let max_body_size = config.graphql_api.max_body_size;
         let start_time = Arc::new(Instant::now());
         let log_level = Level::from_str(config.log_level.as_ref()).unwrap();
@@ -189,6 +197,7 @@ impl GraphQlApi {
             .route("/:namespace/:identifier", post(query_graph))
             .layer(Extension(schema_manager.clone()))
             .layer(Extension(pool.clone()))
+            .layer(Extension(schema_cache))
             .layer(RequestBodyLimitLayer::new(max_body_size));
 
         if config.rate_limit.enabled {
