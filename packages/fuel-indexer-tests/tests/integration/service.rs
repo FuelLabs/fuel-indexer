@@ -3,10 +3,11 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{defaults, fixtures::indexer_service_postgres};
 use fuels::prelude::{LoadConfiguration, TxParameters};
 use fuels::{
+    accounts::wallet::WalletUnlocked,
     macros::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
-        WalletUnlocked, DEFAULT_COIN_AMOUNT,
+        DEFAULT_COIN_AMOUNT,
     },
 };
 use std::path::Path;
