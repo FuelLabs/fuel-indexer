@@ -168,7 +168,11 @@ Do your WASM modules need to be rebuilt?"#,
         match queries::get_object(conn, query).await {
             Ok(v) => Some(v),
             Err(e) => {
-                error!("Failed to get object: {:?}", e);
+                if let sqlx::Error::RowNotFound = e {
+                    debug!("Row not found for object ID: {object_id}");
+                } else {
+                    error!("Failed to get object: {:?}", e);
+                }
                 None
             }
         }

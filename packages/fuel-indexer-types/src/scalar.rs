@@ -97,6 +97,12 @@ impl Default for Json {
     }
 }
 
+impl AsRef<[u8]> for Json {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+}
+
 macro_rules! json_impl {
     ($($ty:ty),*) => {
         $(

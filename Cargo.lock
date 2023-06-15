@@ -3175,7 +3175,7 @@ dependencies = [
  "quote",
  "serde",
  "serde_json",
- "sha2 0.9.9",
+ "sha2 0.10.6",
  "syn 2.0.18",
  "trybuild",
 ]
