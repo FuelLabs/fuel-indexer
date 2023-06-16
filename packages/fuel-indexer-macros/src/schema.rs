@@ -429,25 +429,19 @@ fn process_type_def(
                 from_row,
                 to_row,
                 schema.is_native,
-            );
-
-            let new_method_impl = if field_set.contains(&IdCol::to_lowercase_string()) {
-                generate_struct_new_method_impl(
+                TraitGenerationParameters::ObjectType {
                     strct,
                     parameters,
                     hasher,
                     object_name,
-                    field_construction_for_new_impl,
-                    schema.is_native,
-                )
-            } else {
-                quote! {}
-            };
+                    struct_fields: field_construction_for_new_impl,
+                    is_native: schema.is_native,
+                    field_set,
+                },
+            );
 
             Some(quote! {
                 #object_trait_impls
-
-                #new_method_impl
             })
         }
         TypeKind::Enum(e) => {
@@ -523,6 +517,7 @@ fn process_type_def(
             let mut to_row = quote! {};
 
             let mut derived_type_fields = HashSet::new();
+            let mut union_field_set = HashSet::new();
 
             obj.members
                 .iter()
@@ -552,6 +547,9 @@ fn process_type_def(
                         base: BaseType::Named(Name::new(field_typ_name)),
                         nullable: field_typ_name != IdCol::to_uppercase_str(),
                     };
+
+                    union_field_set.insert(field_name.clone());
+
                     // Since we've already processed the member's fields, we don't need
                     // to do any type of special field processing here.
                     let (typ_tokens, field_name, scalar_typ, extractor) =
@@ -595,15 +593,25 @@ fn process_type_def(
                     };
                 });
 
-            Some(generate_object_trait_impls(
-                ident,
+            let object_trait_impls = generate_object_trait_impls(
+                ident.clone(),
                 strct_fields,
                 type_id,
                 field_extractors,
                 from_row,
                 to_row,
                 schema.is_native,
-            ))
+                TraitGenerationParameters::UnionType {
+                    schema,
+                    union_obj: obj,
+                    union_ident: ident,
+                    union_field_set,
+                },
+            );
+
+            Some(quote! {
+                #object_trait_impls
+            })
         }
         _ => panic!("Unexpected type: '{:?}'", typ.kind),
     }
