@@ -40,6 +40,9 @@ pub struct ParsedGraphQLSchema {
     /// A mapping of fully qualified field names to their field types.
     pub field_type_mappings: HashMap<String, String>,
 
+    // A mapping of fully qualified field names to their respective optionalities.
+    pub field_type_optionality: HashMap<String, bool>,
+
     /// All unique names of scalar types in the schema.
     pub scalar_names: HashSet<String>,
 
@@ -64,6 +67,7 @@ impl Default for ParsedGraphQLSchema {
             parsed_type_names: HashSet::new(),
             field_type_mappings: HashMap::new(),
             object_field_mappings: HashMap::new(),
+            field_type_optionality: HashMap::new(),
             scalar_names: HashSet::new(),
             ast,
         }
@@ -90,6 +94,7 @@ impl ParsedGraphQLSchema {
         let mut union_names = HashSet::new();
         let mut virtual_type_names = HashSet::new();
         let mut field_type_mappings = HashMap::new();
+        let mut field_type_optionality = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
@@ -121,6 +126,10 @@ impl ParsedGraphQLSchema {
 
                                 parsed_type_names.insert(field_name.clone());
                                 field_mapping.insert(field_name, field_typ_name.clone());
+                                field_type_optionality.insert(
+                                    field_id.clone(),
+                                    field.node.ty.node.nullable,
+                                );
                                 field_type_mappings.insert(field_id, field_typ_name);
                             }
                             object_field_mappings.insert(obj_name, field_mapping);
@@ -197,6 +206,7 @@ impl ParsedGraphQLSchema {
             field_type_mappings,
             scalar_names,
             ast,
+            field_type_optionality,
         })
     }
 

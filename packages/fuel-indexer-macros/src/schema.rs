@@ -633,15 +633,15 @@ fn process_type_def(
 
             let object_trait_impls = generate_object_trait_impls(
                 ident.clone(),
-                strct_fields.clone(),
+                strct_fields,
                 type_id,
                 field_extractors,
                 from_row,
                 to_row,
                 schema.is_native,
                 TraitGenerationParameters::UnionType {
-                    schema: &schema,
-                    union_obj: &obj,
+                    schema,
+                    union_obj: obj,
                     union_ident: ident,
                     union_field_set,
                 },

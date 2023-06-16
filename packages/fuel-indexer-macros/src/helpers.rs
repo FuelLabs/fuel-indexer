@@ -400,6 +400,7 @@ pub fn field_extractor(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Given a set of idents and tokens, construct the `Entity` and `Json` implementations
 /// for the given struct.
 pub fn generate_object_trait_impls(
@@ -626,36 +627,59 @@ pub fn generate_from_traits_for_union(
         let member_fields = schema
             .object_field_mappings
             .get(&m.to_string())
-            // TODO: Get rid of this unwrap
-            .unwrap()
+            .unwrap_or_else(|| {
+                panic!(
+                "Could not get field mappings for union member; union: {}, member: {}",
+                union_ident,
+                m
+            )
+            })
             .keys()
-            .into_iter()
             .fold(HashSet::new(), |mut set, f| {
                 set.insert(f.clone());
                 set
             });
 
-        let common_fields = union_field_set
-            .intersection(&member_fields)
-            .into_iter()
-            .fold(quote! {}, |acc, common_field| {
+        let common_fields = union_field_set.intersection(&member_fields).fold(
+            quote! {},
+            |acc, common_field| {
                 let ident = format_ident!("{}", common_field);
-                quote! {
-                    #acc
-                    #ident: Some(member.#ident),
+                if common_field == &IdCol::to_lowercase_string() {
+                    quote! {
+                        #acc
+                        #ident: member.#ident,
+                    }
+                } else if let Some(field_already_option) = schema
+                    .field_type_optionality
+                    .get(&format!("{m}.{common_field}"))
+                {
+                    if *field_already_option {
+                        quote! {
+                            #acc
+                            #ident: member.#ident,
+                        }
+                    } else {
+                        quote! {
+                            #acc
+                            #ident: Some(member.#ident),
+                        }
+                    }
+                } else {
+                    quote! { #acc }
                 }
-            });
+            },
+        );
 
-        let disjoint_fields = union_field_set
-            .difference(&member_fields)
-            .into_iter()
-            .fold(quote! {}, |acc, disjoint_field| {
+        let disjoint_fields = union_field_set.difference(&member_fields).fold(
+            quote! {},
+            |acc, disjoint_field| {
                 let ident = format_ident!("{}", disjoint_field);
                 quote! {
                     #acc
                     #ident: None,
                 }
-            });
+            },
+        );
 
         from_method_impls = quote! {
             #from_method_impls
