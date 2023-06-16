@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::constant::*;
-use fuel_abi_types::program_abi::{ProgramABI, TypeDeclaration};
+use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
 use fuel_indexer_schema::parser::ParsedGraphQLSchema;
 use fuels_code_gen::utils::Source;
 use lazy_static::lazy_static;
