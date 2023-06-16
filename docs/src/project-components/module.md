@@ -20,7 +20,7 @@ fn index_logged_greeting(greeter: Greeting) {
 
 All transactions that have a receipt that contains data with a type of `Greeting` will be handled by the function.
 
-You can learn more about what data can be indexed in the [What Can I Index](../../indexing/what-can-i-index.md) section.
+You can learn more about what data can be indexed in the [Indexing](../indexing/index.md) section.
 
 To save an instance of a schema type in your database, you can call the `save` method on the instance.
 

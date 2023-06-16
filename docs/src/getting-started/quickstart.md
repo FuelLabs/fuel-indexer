@@ -136,7 +136,7 @@ Now that we have our development environment set up, the next step is to create 
 forc index new hello-indexer --namespace my_project && cd hello-indexer
 ```
 
-> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`. For a complete list of options passed to `forc index new`, see [here](./src/reference-guide/plugins/forc-index/new.md)
+> The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`. For a complete list of options passed to `forc index new`, see [here](../forc-index/new.md)
 
 ```text
 forc index new hello-indexer --namespace my_project
@@ -238,8 +238,8 @@ http://127.0.0.1:29987/api/graph/my_project/hello_indexer
 
 ### 3.1 Using the playgrond
 
-As opposed to writing `curL` commands to query data, note that you can also explore your indexed data using the indexer's GraphQL playground. For more info on using the playground - [checkout the playground docs](./src/reference-guide/components/graphql/playground.md).
+As opposed to writing `curL` commands to query data, note that you can also explore your indexed data using the indexer's GraphQL playground. For more info on using the playground - [checkout the playground docs](../graphql/playground.md).
 
 ### Finished! 🥳
 
-Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer. For more detailed info on how the Fuel indexer service works, make sure you [**read the book**](https://fuellabs.github.io/fuel-indexer/master/).
+Congrats, you just created, built, and deployed your first indexer on the world's fastest execution layer.
