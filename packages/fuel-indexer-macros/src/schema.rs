@@ -516,10 +516,6 @@ fn process_type_def(
             let mut from_row = quote! {};
             let mut to_row = quote! {};
 
-            let mut parameters = quote! {};
-            let mut hasher = quote! { Sha256::new() };
-            let mut field_construction_for_new_impl = quote! {};
-
             let mut derived_type_fields = HashSet::new();
             let mut union_field_set = HashSet::new();
 
@@ -595,40 +591,6 @@ fn process_type_def(
                         #to_row
                         #decoder
                     };
-
-                    let unwrap_or_def = if field_type.nullable {
-                        if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
-                            unwrap_or_default_for_external_type(field_typ_name.clone())
-                        } else {
-                            quote! { .unwrap_or_default() }
-                        }
-                    } else {
-                        quote! {}
-                    };
-
-                    let to_bytes = if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
-                        to_bytes_method_for_external_type(field_typ_name.clone())
-                    } else if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
-                        quote! { .to_le_bytes() }
-                    } else {
-                        quote! {}
-                    };
-
-                    if !INTERNAL_INDEXER_ENTITIES.contains(name.as_str())
-                        && field_name != IdCol::to_lowercase_string()
-                    {
-                        parameters = quote! { #parameters #field_name: #typ_tokens, };
-
-                        if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name.as_str()) {
-                            hasher = quote! { #hasher.chain_update(#field_name #clone #unwrap_or_def #to_bytes)};
-                        }
-
-                        field_construction_for_new_impl = quote! {
-                            #field_construction_for_new_impl
-                            #field_name,
-                        };
-                    }
-
                 });
 
             let object_trait_impls = generate_object_trait_impls(

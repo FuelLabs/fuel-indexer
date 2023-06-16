@@ -77,6 +77,7 @@ lazy_static! {
     ]);
 }
 
+/// Parameters for generating traits for different `TypeKind` variants.
 pub enum TraitGenerationParameters<'a> {
     ObjectType {
         strct: Ident,
@@ -614,6 +615,7 @@ pub fn generate_struct_new_method_impl(
     }
 }
 
+/// Generate `From` trait implementations for each member type in a union.
 pub fn generate_from_traits_for_union(
     schema: &ParsedGraphQLSchema,
     union_obj: &UnionType,
@@ -640,6 +642,8 @@ pub fn generate_from_traits_for_union(
                 set
             });
 
+        // Member fields that match with union fields are checked for optionality
+        // and are assigned accordingly.
         let common_fields = union_field_set.intersection(&member_fields).fold(
             quote! {},
             |acc, common_field| {
@@ -670,6 +674,7 @@ pub fn generate_from_traits_for_union(
             },
         );
 
+        // Any member fields that don't have a match with union fields should be assigned to None.
         let disjoint_fields = union_field_set.difference(&member_fields).fold(
             quote! {},
             |acc, disjoint_field| {
