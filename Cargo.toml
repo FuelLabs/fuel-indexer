@@ -83,7 +83,7 @@ fuel-indexer-schema = { version = "0.16.2", path = "./packages/fuel-indexer-sche
 fuel-indexer-types = { version = "0.16.2", path = "./packages/fuel-indexer-types" }
 fuel-indexer-utils = { version = "0.16.2", path = "./packages/fuel-indexer-utils" }
 fuel-tx = { version = "0.31", default-features = false }
-fuel-types = { version = "0.31", features = ["serde"] }
+fuel-types = { version = "0.31", default-features = false, features = ["serde"] }
 fuel-vm = { version = "0.31" }
 fuels = { version = "0.43", default-features = false }
 serde = { version = "1.0", default-features = false, features = ["derive"] }
