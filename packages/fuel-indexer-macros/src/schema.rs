@@ -429,25 +429,19 @@ fn process_type_def(
                 from_row,
                 to_row,
                 schema.is_native,
-            );
-
-            let new_method_impl = if field_set.contains(&IdCol::to_lowercase_string()) {
-                generate_struct_new_method_impl(
+                TraitGenerationParameters::ObjectType {
                     strct,
                     parameters,
                     hasher,
                     object_name,
-                    field_construction_for_new_impl,
-                    schema.is_native,
-                )
-            } else {
-                quote! {}
-            };
+                    struct_fields: field_construction_for_new_impl,
+                    is_native: schema.is_native,
+                    field_set,
+                },
+            );
 
             Some(quote! {
                 #object_trait_impls
-
-                #new_method_impl
             })
         }
         TypeKind::Enum(e) => {
@@ -522,7 +516,12 @@ fn process_type_def(
             let mut from_row = quote! {};
             let mut to_row = quote! {};
 
+            let mut parameters = quote! {};
+            let mut hasher = quote! { Sha256::new() };
+            let mut field_construction_for_new_impl = quote! {};
+
             let mut derived_type_fields = HashSet::new();
+            let mut union_field_set = HashSet::new();
 
             obj.members
                 .iter()
@@ -552,6 +551,9 @@ fn process_type_def(
                         base: BaseType::Named(Name::new(field_typ_name)),
                         nullable: field_typ_name != IdCol::to_uppercase_str(),
                     };
+
+                    union_field_set.insert(field_name.clone());
+
                     // Since we've already processed the member's fields, we don't need
                     // to do any type of special field processing here.
                     let (typ_tokens, field_name, scalar_typ, extractor) =
@@ -593,17 +595,61 @@ fn process_type_def(
                         #to_row
                         #decoder
                     };
+
+                    let unwrap_or_def = if field_type.nullable {
+                        if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                            unwrap_or_default_for_external_type(field_typ_name.clone())
+                        } else {
+                            quote! { .unwrap_or_default() }
+                        }
+                    } else {
+                        quote! {}
+                    };
+
+                    let to_bytes = if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                        to_bytes_method_for_external_type(field_typ_name.clone())
+                    } else if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
+                        quote! { .to_le_bytes() }
+                    } else {
+                        quote! {}
+                    };
+
+                    if !INTERNAL_INDEXER_ENTITIES.contains(name.as_str())
+                        && field_name != IdCol::to_lowercase_string()
+                    {
+                        parameters = quote! { #parameters #field_name: #typ_tokens, };
+
+                        if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                            hasher = quote! { #hasher.chain_update(#field_name #clone #unwrap_or_def #to_bytes)};
+                        }
+
+                        field_construction_for_new_impl = quote! {
+                            #field_construction_for_new_impl
+                            #field_name,
+                        };
+                    }
+
                 });
 
-            Some(generate_object_trait_impls(
-                ident,
-                strct_fields,
+            let object_trait_impls = generate_object_trait_impls(
+                ident.clone(),
+                strct_fields.clone(),
                 type_id,
                 field_extractors,
                 from_row,
                 to_row,
                 schema.is_native,
-            ))
+                TraitGenerationParameters::UnionType {
+                    schema: &schema,
+                    union_obj: &obj,
+                    union_ident: ident,
+                    union_field_set,
+                },
+            );
+
+            Some(quote! {
+                #object_trait_impls
+            })
         }
         _ => panic!("Unexpected type: '{:?}'", typ.kind),
     }

@@ -1,7 +1,9 @@
 use std::collections::HashSet;
 
 use crate::constant::*;
+use async_graphql_parser::types::UnionType;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
+use fuel_indexer_database_types::IdCol;
 use fuel_indexer_schema::parser::ParsedGraphQLSchema;
 use fuels_code_gen::utils::Source;
 use lazy_static::lazy_static;
@@ -75,6 +77,24 @@ lazy_static! {
     ]);
 }
 
+pub enum TraitGenerationParameters<'a> {
+    ObjectType {
+        strct: Ident,
+        parameters: proc_macro2::TokenStream,
+        hasher: proc_macro2::TokenStream,
+        object_name: String,
+        struct_fields: proc_macro2::TokenStream,
+        is_native: bool,
+        field_set: HashSet<&'a String>,
+    },
+    UnionType {
+        schema: &'a ParsedGraphQLSchema,
+        union_obj: &'a UnionType,
+        union_ident: Ident,
+        union_field_set: HashSet<String>,
+    },
+}
+
 /// Provides a TokenStream to be used as a conversion to bytes
 /// for external types; this is done because traits cannot be
 /// implemented on external types due to the orphan rule.
@@ -100,6 +120,11 @@ pub fn unwrap_or_default_for_external_type(
                 .unwrap_or(Tai64Timestamp::from({
                     <[u8;8]>::try_from(0u64.to_be_bytes()).expect("Failed to create byte slice from u64")
                 }))
+            }
+        }
+        "Identity" => {
+            quote! {
+                .unwrap_or(Identity::Address(Address::zeroed()))
             }
         }
         _ => panic!("Default is not implemented for {field_type_name}"),
@@ -375,60 +400,6 @@ pub fn field_extractor(
     }
 }
 
-/// Construct a `::new()` method for a particular struct; `::new()`
-/// will automatically create an ID for the user for use in a database.
-pub fn generate_struct_new_method_impl(
-    strct: Ident,
-    parameters: proc_macro2::TokenStream,
-    hasher: proc_macro2::TokenStream,
-    object_name: String,
-    struct_fields: proc_macro2::TokenStream,
-    is_native: bool,
-) -> proc_macro2::TokenStream {
-    let get_or_create_impl = if is_native {
-        quote! {
-            pub async fn get_or_create(self) -> Self {
-                match Self::load(self.id).await {
-                    Some(instance) => instance,
-                    None => self,
-                }
-            }
-        }
-    } else {
-        quote! {
-            pub fn get_or_create(self) -> Self {
-                match Self::load(self.id) {
-                    Some(instance) => instance,
-                    None => self,
-                }
-            }
-        }
-    };
-
-    if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str()) {
-        quote! {
-            impl #strct {
-                pub fn new(#parameters) -> Self {
-                    let raw_bytes = #hasher.chain_update(#object_name).finalize();
-
-                    let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
-
-                    let id = u64::from_le_bytes(id_bytes);
-
-                    Self {
-                        id,
-                        #struct_fields
-                    }
-                }
-
-                #get_or_create_impl
-            }
-        }
-    } else {
-        quote! {}
-    }
-}
-
 /// Given a set of idents and tokens, construct the `Entity` and `Json` implementations
 /// for the given struct.
 pub fn generate_object_trait_impls(
@@ -439,6 +410,7 @@ pub fn generate_object_trait_impls(
     from_row: proc_macro2::TokenStream,
     to_row: proc_macro2::TokenStream,
     is_native: bool,
+    trait_gen_params: TraitGenerationParameters,
 ) -> proc_macro2::TokenStream {
     let json_impl = quote! {
 
@@ -459,7 +431,7 @@ pub fn generate_object_trait_impls(
 
     let entity_impl = if is_native {
         quote! {
-            #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+            #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
             pub struct #strct {
                 #strct_fields
             }
@@ -542,9 +514,162 @@ pub fn generate_object_trait_impls(
         }
     };
 
+    let instantiation_impls = match trait_gen_params {
+        TraitGenerationParameters::ObjectType {
+            strct,
+            parameters,
+            hasher,
+            object_name,
+            struct_fields,
+            is_native,
+            field_set,
+        } => {
+            if field_set.contains(&IdCol::to_lowercase_string()) {
+                generate_struct_new_method_impl(
+                    strct,
+                    parameters,
+                    hasher,
+                    object_name,
+                    struct_fields,
+                    is_native,
+                )
+            } else {
+                quote! {}
+            }
+        }
+        TraitGenerationParameters::UnionType {
+            schema,
+            union_obj,
+            union_ident,
+            union_field_set,
+        } => generate_from_traits_for_union(
+            schema,
+            union_obj,
+            union_ident,
+            union_field_set,
+        ),
+    };
+
     quote! {
         #entity_impl
 
+        #instantiation_impls
+
         #json_impl
     }
+}
+
+/// Construct a `::new()` method for a particular struct; `::new()`
+/// will automatically create an ID for the user for use in a database.
+pub fn generate_struct_new_method_impl(
+    strct: Ident,
+    parameters: proc_macro2::TokenStream,
+    hasher: proc_macro2::TokenStream,
+    object_name: String,
+    struct_fields: proc_macro2::TokenStream,
+    is_native: bool,
+) -> proc_macro2::TokenStream {
+    let get_or_create_impl = if is_native {
+        quote! {
+            pub async fn get_or_create(self) -> Self {
+                match Self::load(self.id).await {
+                    Some(instance) => instance,
+                    None => self,
+                }
+            }
+        }
+    } else {
+        quote! {
+            pub fn get_or_create(self) -> Self {
+                match Self::load(self.id) {
+                    Some(instance) => instance,
+                    None => self,
+                }
+            }
+        }
+    };
+
+    if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str()) {
+        quote! {
+            impl #strct {
+                pub fn new(#parameters) -> Self {
+                    let raw_bytes = #hasher.chain_update(#object_name).finalize();
+
+                    let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
+
+                    let id = u64::from_le_bytes(id_bytes);
+
+                    Self {
+                        id,
+                        #struct_fields
+                    }
+                }
+
+                #get_or_create_impl
+            }
+        }
+    } else {
+        quote! {}
+    }
+}
+
+pub fn generate_from_traits_for_union(
+    schema: &ParsedGraphQLSchema,
+    union_obj: &UnionType,
+    union_ident: Ident,
+    union_field_set: HashSet<String>,
+) -> proc_macro2::TokenStream {
+    let mut from_method_impls = quote! {};
+    for m in union_obj.members.iter() {
+        let member_ident = format_ident!("{}", m.to_string());
+
+        let member_fields = schema
+            .object_field_mappings
+            .get(&m.to_string())
+            // TODO: Get rid of this unwrap
+            .unwrap()
+            .keys()
+            .into_iter()
+            .fold(HashSet::new(), |mut set, f| {
+                set.insert(f.clone());
+                set
+            });
+
+        let common_fields = union_field_set
+            .intersection(&member_fields)
+            .into_iter()
+            .fold(quote! {}, |acc, common_field| {
+                let ident = format_ident!("{}", common_field);
+                quote! {
+                    #acc
+                    #ident: Some(member.#ident),
+                }
+            });
+
+        let disjoint_fields = union_field_set
+            .difference(&member_fields)
+            .into_iter()
+            .fold(quote! {}, |acc, disjoint_field| {
+                let ident = format_ident!("{}", disjoint_field);
+                quote! {
+                    #acc
+                    #ident: None,
+                }
+            });
+
+        from_method_impls = quote! {
+            #from_method_impls
+
+            impl From<#member_ident> for #union_ident {
+                fn from(member: #member_ident) -> Self {
+                    Self {
+                        #common_fields
+                        #disjoint_fields
+                    }
+                }
+            }
+        };
+    }
+
+    from_method_impls
 }
