@@ -34,6 +34,8 @@ pub enum IndexerSchemaError {
     UnsupportedTypeKind,
     #[error("List types are unsupported.")]
     ListTypesUnsupported,
+    #[error("Inconsistent use of virtual union types. {0:?}")]
+    InconsistentVirtualUnion(String),
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
@@ -69,7 +71,7 @@ pub enum FtColumn {
     UInt16(Option<UInt16>),
     UInt4(Option<UInt4>),
     UInt8(Option<UInt8>),
-    NoRelation(Option<NoRelation>),
+    Virtual(Option<Virtual>),
     BlockId(Option<BlockId>),
 }
 
@@ -178,7 +180,7 @@ impl FtColumn {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::Json(value) | FtColumn::NoRelation(value) => match value {
+            FtColumn::Json(value) | FtColumn::Virtual(value) => match value {
                 Some(val) => {
                     let x = &val.0;
                     format!("'{x}'")

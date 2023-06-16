@@ -22,7 +22,7 @@ scalar Int8
 scalar Json
 scalar MessageId
 scalar Nonce
-scalar NoRelation
+scalar Virtual
 scalar Salt
 scalar Signature
 scalar Tai64Timestamp
@@ -44,4 +44,4 @@ directive @join(on: String) on OBJECT
 
 directive @unique on FIELD_DEFINITION | ENUM_VALUE
 
-directive @norelation on FIELD_DEFINITION
+directive @virtual on FIELD_DEFINITION

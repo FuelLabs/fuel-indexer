@@ -16,7 +16,6 @@ type UtxoId {
   output_index: UInt4!
 }
 
-
 type TxPointer {
   id: ID!
   block_height: BlockHeight!
@@ -32,37 +31,44 @@ type BlockIdFragment {
   hash: Bytes32!
 }
 
-# TODO: Should this be a FK?
+enum ConsensusLabel {
+  Genesis
+  PoA
+  Unknown
+}
+
 type Genesis {
   id: ID!
   chain_config_hash: Bytes32!
   coins_root: Bytes32!
   contracts_root: Bytes32!
   messages_root: Bytes32!
+  label: ConsensusLabel!
 }
 
-# TODO: Should this be a FK?
 type PoA {
-  signature: Signature! @norelation
-}
-
-# TODO: Should this be a FK?
-type Unknown {
-  value: Boolean! @norelation
-}
-
-# TODO: Should this be a FK?
-type Consensus {
   id: ID!
-  genesis: Genesis
-  poa: PoA
-  unknown: Unknown
-  label: Charfield!
+  signature: Signature!
+  label: ConsensusLabel!
 }
+
+type Unknown {
+  id: ID!
+  label: ConsensusLabel!
+}
+
+union Consensus = Genesis | PoA | Unknown
 
 type Witness {
-  data: Blob! @norelation
+  data: Blob! @virtual
 }
+
+enum InputLabel {
+  Coin
+  Contract
+  Message
+}
+
 
 type InputCoin {
   id: ID!
@@ -75,6 +81,8 @@ type InputCoin {
   maturity: UInt8!
   predicate: HexString!
   predicate_data: HexString!
+  label: InputLabel!
+  is_coin: Boolean!
 }
 
 type InputContract {
@@ -84,6 +92,8 @@ type InputContract {
   state_root: Bytes32!
   tx_pointer: TransactionPointer!
   contract: ContractIdFragment!
+  label: InputLabel!
+  is_contract: Boolean!
 }
 
 type InputMessage {
@@ -96,14 +106,14 @@ type InputMessage {
   data: HexString!
   predicate: HexString!
   predicate_data: HexString!
+  label: InputLabel!
+  is_message: Boolean!
 }
 
-type Input {
-  id: ID!
-  coin: InputCoin
-  contract: InputContract
-  message: InputMessage
-}
+union Input =
+    InputCoin
+  | InputContract
+  | InputMessage
 
 type CreateTransaction {
   id: ID!
@@ -118,6 +128,7 @@ type CreateTransaction {
   #   witnesses: [Witness]!
   salt: Salt!
   metadata: Json
+  is_create: Boolean!
 }
 
 type ScriptTransaction {
@@ -131,6 +142,7 @@ type ScriptTransaction {
   #   witnesses: [Witness]!
   receipts_root: Bytes32!
   metadata: Json
+  is_script: Boolean!
 }
 
 type MintTransaction {
@@ -138,16 +150,29 @@ type MintTransaction {
   tx_pointer: TransactionPointer!
   #   outputs: [Output]!
   metadata: Json
+  is_mint: Boolean!
+}
+
+enum TransactionStatusLabel {
+  Submitted
+  SqueezedOut
+  Failure
+  Success
+  Unknown
 }
 
 type SubmittedStatus {
   id: ID!
   time: UInt8!
+  label: TransactionStatusLabel!
+  is_submitted: Boolean!
 }
 
 type SqueezedOutStatus {
   id: ID!
   reason: Charfield!
+  label: TransactionStatusLabel!
+  is_squeezed_out: Boolean!
 }
 
 enum ReturnType {
@@ -157,7 +182,7 @@ enum ReturnType {
 }
 
 type ProgramState {
-  return_type: ReturnType! @norelation
+  return_type: ReturnType! @virtual
   data: HexString!
 }
 
@@ -167,36 +192,32 @@ type FailureStatus {
   time: UInt8!
   reason: Charfield!
   program_state: ProgramState
+  label: TransactionStatusLabel!
+  is_failure: Boolean!
 }
+
 
 type SuccessStatus {
   id: ID!
   time: UInt8!
   block: BlockIdFragment!
   program_state: ProgramState
+  label: TransactionStatusLabel!
+  is_success: Boolean!
 }
 
 type UnknownStatus {
   id: ID!
-  label: Charfield!
+  label: TransactionStatusLabel!
+  is_unknown: Boolean!
 }
 
-type TransactionStatus {
-  id: ID!
-  submitted_status: SubmittedStatus
-  squeezed_out_status: SqueezedOutStatus
-  failure_status: FailureStatus
-  success_status: SuccessStatus
-  unknown_status: UnknownStatus
-}
-
-type Transaction {
-  id: ID!
-  # `create` is a reserved keyword in PostgreSQL.
-  creates: CreateTransaction
-  script: ScriptTransaction
-  mint: MintTransaction
-}
+union TransactionStatus =
+    SubmittedStatus
+  | SqueezedOutStatus
+  | FailureStatus
+  | SuccessStatus
+  | UnknownStatus
 
 type Header {
   id: ID!
@@ -216,7 +237,7 @@ type Block {
   id: ID!
   block_id: BlockId!
   header: Header!
-  consensus: Consensus!
+  # consensus: Consensus!
   #   transactions: [TransactionIdFragment]!
 }
 
@@ -230,24 +251,48 @@ type NodeInfo {
   node_version: Charfield!
 }
 
+enum OutputLabel {
+  Coin
+  Contract
+  Change
+  Variable
+  ContractCreated
+  Unknown
+}
+
+
+type UnknownOutput {
+  id: ID!
+  label: OutputLabel!
+  is_unknown: Boolean!
+}
+
 type ContractCreated {
   id: ID!
   contract: ContractIdFragment!
   state_root: Bytes32!
+  label: OutputLabel!
+  is_contract_created: Boolean!
 }
 
 type VariableOutput {
   id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
   recipient: Address!
   amount: UInt8!
   asset_id: AssetId!
+  is_variable: Boolean!
+  label: OutputLabel!
 }
 
 type ChangeOutput {
   id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
   recipient: Address!
   amount: UInt8!
   asset_id: AssetId!
+  is_change: Boolean!
+  label: OutputLabel!
 }
 
 type ContractOutput {
@@ -255,27 +300,24 @@ type ContractOutput {
   input_index: Int8!
   balance_root: Bytes32!
   state_root: Bytes32!
+  is_contract: Boolean!
+  label: OutputLabel!
 }
 
 type CoinOutput {
   id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
   recipient: Address!
   amount: UInt8!
   asset_id: AssetId!
+  is_coin: Boolean!
+  label: OutputLabel!
 }
 
-type Output {
-  id: ID!
-  coin: CoinOutput
-  contract: ContractOutput
-  change: ChangeOutput
-  variable: VariableOutput
-  contract_created: ContractCreated
-  unknown: Unknown
-}
+union Output = CoinOutput | ContractOutput | ChangeOutput | VariableOutput | ContractCreated | UnknownOutput
 
 type DryRun {
-  tx: HexString! @norelation
+  tx: HexString! @virtual
   utxo_validation: Boolean
 }
 
@@ -346,31 +388,6 @@ type Contract {
   salt: Salt!
 }
 
-
-type CallReceipt {
-  contract_id: ContractId! @norelation
-  recipient: ContractId!
-  amount: UInt8!
-  asset_id: AssetId!
-  gas: UInt8!
-  param1: UInt8!
-  param2: UInt8!
-  pc: UInt8!
-  # `is` is a reserved keyword in PostgreSQL.
-  isr: UInt8!
-}
-
-type ReturnDataReceipt { 
-  contract_id: ContractId! @norelation
-  ptr: UInt8!
-  len: UInt8!
-  digest: Bytes32!
-  data: Blob!
-  pc: UInt8!
-  # `is` is a reserved keyword in PostgreSQL.
-  isr: UInt8!
-}
-
 enum PanicReason {
   Success
   Revert
@@ -409,21 +426,46 @@ enum PanicReason {
 }
 
 type InstructionResult {
-  reason: PanicReason! @norelation
+  reason: PanicReason! @virtual
   instruction: UInt4!
 }
 
+type CallReceipt {
+  contract_id: ContractId! @virtual
+  # `recipient` has a different type of different `Reciept` members, so
+  # we make it something more generic: `Identity`.
+  recipient: Identity!
+  amount: UInt8!
+  asset_id: AssetId!
+  gas: UInt8!
+  param1: UInt8!
+  param2: UInt8!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
+}
+
+type ReturnDataReceipt {
+  contract_id: ContractId! @virtual
+  ptr: UInt8!
+  len: UInt8!
+  digest: Bytes32!
+  data: Blob!
+  pc: UInt8!
+  # `is` is a reserved keyword in PostgreSQL.
+  isr: UInt8!
+}
+
 type PanicReceipt {
-  contract_id: ContractId @norelation
+  contract_id: ContractId @virtual
   reason: InstructionResult
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
 }
 
-
 type RevertReceipt {
-  contract_id: ContractId! @norelation
+  contract_id: ContractId! @virtual
   ra: UInt8!
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
@@ -431,7 +473,7 @@ type RevertReceipt {
 }
 
 type LogReceipt {
-  contract_id: ContractId! @norelation
+  contract_id: ContractId! @virtual
   ra: UInt8!
   rb: UInt8!
   rc: UInt8!
@@ -442,7 +484,7 @@ type LogReceipt {
 }
 
 type LogDataReceipt {
-  contract_id: ContractId! @norelation
+  contract_id: ContractId! @virtual
   ra: UInt8!
   rb: UInt8!
   ptr: UInt8!
@@ -455,7 +497,7 @@ type LogDataReceipt {
 }
 
 type ReturnReceipt {
-  contract_id: ContractId! @norelation
+  contract_id: ContractId! @virtual
   val: UInt8!
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
@@ -463,8 +505,10 @@ type ReturnReceipt {
 }
 
 type TransferReceipt {
-  contract_id: ContractId! @norelation
-  recipient: ContractId!
+  contract_id: ContractId! @virtual
+  # `recipient` has a different type of different `Reciept` members, so
+  # we make it something more generic: `Identity`.
+  recipient: Identity!
   amount: UInt8!
   asset_id: AssetId!
   pc: UInt8!
@@ -473,8 +517,10 @@ type TransferReceipt {
 }
 
 type TransferOutReceipt {
-  contract_id: ContractId! @norelation
-  recipient: Address!
+  contract_id: ContractId! @virtual
+  # `recipient` has a different type of different `Reciept` members, so
+  # we make it something more generic: `Identity`.
+  recipient: Identity!
   amount: UInt8!
   asset_id: AssetId!
   pc: UInt8!
@@ -483,20 +529,22 @@ type TransferOutReceipt {
 }
 
 enum ScriptExecutionResult {
-    Success
-    Revert
-    Panic
-    GenericFailure
+  Success
+  Revert
+  Panic
+  GenericFailure
 }
 
 type ScriptResultReceipt {
-  result: ScriptExecutionResult! @norelation
+  result: ScriptExecutionResult! @virtual
   gas_used: UInt8!
 }
 
 type MessageOutReceipt {
-  sender: Address! @norelation
-  recipient: Address!
+  sender: Address! @virtual
+  # `recipient` has a different type of different `Reciept` members, so
+  # we make it something more generic: `Identity`.
+  recipient: Identity!
   amount: UInt8!
   nonce: Nonce!
   len: UInt8!
@@ -504,20 +552,15 @@ type MessageOutReceipt {
   data: Blob!
 }
 
-# TODO: Finish this?
-type Receipt {
-  id: ID!
-  call: CallReceipt
-  # `return` is a reserved keyword in PostgreSQL.
-  returns: ReturnReceipt
-  return_data: ReturnDataReceipt
-  panic: PanicReceipt
-  revert: RevertReceipt
-  log: LogReceipt
-  log_data: LogDataReceipt
-  transfer: TransferReceipt
-  transfer_out: TransferOutReceipt
-  script_result: ScriptResultReceipt
-  message_out: MessageOutReceipt
-}
-
+union Receipt =
+    CallReceipt
+  | ReturnReceipt
+  | ReturnDataReceipt
+  | PanicReceipt
+  | RevertReceipt
+  | LogReceipt
+  | LogDataReceipt
+  | TransferReceipt
+  | TransferOutReceipt
+  | ScriptResultReceipt
+  | MessageOutReceipt
