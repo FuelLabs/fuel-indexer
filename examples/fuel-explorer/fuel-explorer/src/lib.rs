@@ -99,44 +99,18 @@ impl From<fuel::ClientPanicReason> for PanicReason {
 impl From<fuel::Consensus> for Consensus {
     fn from(consensus: fuel::Consensus) -> Self {
         match consensus {
-            fuel::Consensus::Genesis(g) => {
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    label: Some(ConsensusLabel::Genesis.into()),
-                    chain_config_hash: Some(g.chain_config_hash),
-                    coins_root: Some(g.coins_root),
-                    contracts_root: Some(g.contracts_root),
-                    messages_root: Some(g.messages_root),
-                    signature: None,
-                }
-            }
+            fuel::Consensus::Genesis(g) => Consensus::from(Genesis::new(
+                g.chain_config_hash,
+                g.coins_root,
+                g.contracts_root,
+                g.messages_root,
+                ConsensusLabel::Genesis.into(),
+            )),
             fuel::Consensus::PoA(poa) => {
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    label: Some(ConsensusLabel::PoA.into()),
-                    chain_config_hash: None,
-                    coins_root: None,
-                    contracts_root: None,
-                    messages_root: None,
-                    signature: Some(poa.signature),
-                }
+                Consensus::from(PoA::new(poa.signature, ConsensusLabel::PoA.into()))
             }
             fuel::Consensus::Unknown => {
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    label: Some(ConsensusLabel::Unknown.into()),
-                    chain_config_hash: None,
-                    coins_root: None,
-                    contracts_root: None,
-                    messages_root: None,
-                    signature: None,
-                }
+                Consensus::from(Unknown::new(ConsensusLabel::Unknown.into()))
             }
         }
     }
@@ -984,7 +958,7 @@ pub mod explorer_index {
             id,
             block_id: block_data.header.id,
             header: header.id,
-            // consensus: consensus.id,
+            consensus: consensus.id,
         };
 
         // Save partial block

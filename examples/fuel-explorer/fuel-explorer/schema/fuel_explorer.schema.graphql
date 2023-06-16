@@ -237,7 +237,7 @@ type Block {
   id: ID!
   block_id: BlockId!
   header: Header!
-  # consensus: Consensus!
+  consensus: Consensus!
   #   transactions: [TransactionIdFragment]!
 }
 
