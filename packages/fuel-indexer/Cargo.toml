@@ -30,7 +30,7 @@ fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, features = ["db-models"] }
 fuel-indexer-types = { workspace = true }
 fuel-tx = { workspace = true }
-fuel-vm = { workspace = true }
+fuel-types = { version = "0.34" }
 futures = "0.3"
 itertools = "0.10"
 sqlx = { version = "0.6", features = ["bigdecimal"] }

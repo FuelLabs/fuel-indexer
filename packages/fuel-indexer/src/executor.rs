@@ -13,14 +13,13 @@ use fuel_core_client::client::{
     types::TransactionStatus as ClientTransactionStatus,
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
+use fuel_tx::UniqueIdentifier;
+use fuel_types::bytes::Deserializable;
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
     fuel::{field::*, *},
-    scalar::{Bytes32, HexString},
+    scalar::{Bytes32},
 };
-use fuel_tx::UniqueIdentifier;
-use fuel_vm::prelude::Deserializable;
-use fuel_vm::state::ProgramState as ClientProgramState;
 use futures::Future;
 use itertools::Itertools;
 use std::{
@@ -176,29 +175,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             time,
                             program_state,
                         } => {
-                            let program_state = program_state.map(|p| match p {
-                                ClientProgramState::Return(w) => ProgramState {
-                                    return_type: ReturnType::Return,
-                                    data: HexString::from(w.to_le_bytes().to_vec()),
-                                },
-                                ClientProgramState::ReturnData(d) => ProgramState {
-                                    return_type: ReturnType::ReturnData,
-                                    data: HexString::from(d.to_vec()),
-                                },
-                                ClientProgramState::Revert(w) => ProgramState {
-                                    return_type: ReturnType::Revert,
-                                    data: HexString::from(w.to_le_bytes().to_vec()),
-                                },
-                                // Either `cargo watch` complains that this is unreachable, or `clippy` complains
-                                // that all patterns are not matched. These other program states are only used in
-                                // debug modes.
-                                #[allow(unreachable_patterns)]
-                                _ => unreachable!("Bad program state."),
-                            });
                             TransactionStatus::Success {
                                 block: block_id.parse().expect("Bad block height."),
                                 time: time.to_unix() as u64,
-                                program_state,
+                                program_state: Some(ProgramState::default()),
                             }
                         }
                         ClientTransactionStatus::Failure {
@@ -207,29 +187,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                             reason,
                             program_state,
                         } => {
-                            let program_state = program_state.map(|p| match p {
-                                ClientProgramState::Return(w) => ProgramState {
-                                    return_type: ReturnType::Return,
-                                    data: HexString::from(w.to_le_bytes().to_vec()),
-                                },
-                                ClientProgramState::ReturnData(d) => ProgramState {
-                                    return_type: ReturnType::ReturnData,
-                                    data: HexString::from(d.to_vec()),
-                                },
-                                ClientProgramState::Revert(w) => ProgramState {
-                                    return_type: ReturnType::Revert,
-                                    data: HexString::from(w.to_le_bytes().to_vec()),
-                                },
-                                // Either `cargo watch` complains that this is unreachable, or `clippy` complains
-                                // that all patterns are not matched. These other program states are only used in
-                                // debug modes.
-                                #[allow(unreachable_patterns)]
-                                _ => unreachable!("Bad program state."),
-                            });
                             TransactionStatus::Failure {
                                 block: block_id.parse().expect("Bad block ID."),
                                 time: time.to_unix() as u64,
-                                program_state,
+                                program_state: Some(ProgramState::default()),
                                 reason,
                             }
                         }

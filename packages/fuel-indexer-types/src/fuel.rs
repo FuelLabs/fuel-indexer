@@ -501,14 +501,15 @@ pub enum Consensus {
     Unknown,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub enum ReturnType {
+    #[default]
     Return,
     ReturnData,
     Revert,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct ProgramState {
     pub return_type: ReturnType,
     pub data: HexString,
