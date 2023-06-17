@@ -1,4 +1,4 @@
-# What Can I Index?
+# Indexing
 
 You can index three main types of data from the Fuel network: blocks, transactions, and transaction receipts. You can read more about these data types below:
 
