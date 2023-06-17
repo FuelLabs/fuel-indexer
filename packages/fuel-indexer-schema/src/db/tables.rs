@@ -23,7 +23,7 @@ pub struct SchemaBuilder {
     type_ids: Vec<TypeId>,
     columns: Vec<NewColumn>,
     foreign_keys: Vec<ForeignKey>,
-    indices: Vec<ColumnIndex>,
+    indices: Vec<SqlIndex>,
     namespace: String,
     identifier: String,
     version: String,
@@ -255,7 +255,7 @@ impl SchemaBuilder {
                         method,
                     }) = get_index_directive(field)
                     {
-                        self.indices.push(ColumnIndex {
+                        self.indices.push(SqlIndex {
                             db_type: self.db_type.clone(),
                             table_name: table_name.to_string(),
                             namespace: self.namespace(),
@@ -285,7 +285,7 @@ impl SchemaBuilder {
                         method,
                     }) = get_index_directive(field)
                     {
-                        self.indices.push(ColumnIndex {
+                        self.indices.push(SqlIndex {
                             db_type: self.db_type.clone(),
                             table_name: table_name.to_string(),
                             namespace: self.namespace(),

@@ -1,6 +1,14 @@
 #![deny(unused_crate_dependencies)]
+pub mod directives;
 
 use crate::directives::IndexMethod;
+use async_graphql_parser::{
+    types::{BaseType, FieldDefinition, Type},
+    Pos, Positioned,
+};
+use async_graphql_value::Name;
+use chrono::serde::ts_microseconds;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt,
@@ -9,172 +17,6 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use strum::{AsRefStr, EnumString};
-
-use chrono::serde::ts_microseconds;
-use chrono::{DateTime, Utc};
-
-pub mod directives;
-
-#[derive(Debug)]
-pub struct RootColumns {
-    pub id: i64,
-    pub root_id: i64,
-    pub column_name: String,
-    pub graphql_type: String,
-}
-
-#[derive(Debug)]
-pub struct NewRootColumns {
-    pub root_id: i64,
-    pub column_name: String,
-    pub graphql_type: String,
-}
-
-#[derive(Debug)]
-pub struct GraphRoot {
-    pub id: i64,
-    pub version: String,
-    pub schema_name: String,
-    pub schema_identifier: String,
-    pub schema: String,
-}
-
-#[derive(Debug)]
-pub struct NewGraphRoot {
-    pub version: String,
-    pub schema_name: String,
-    pub schema_identifier: String,
-    pub schema: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct VirtualColumn {
-    pub name: String,
-    pub graphql_type: String,
-}
-
-#[derive(Debug)]
-pub struct TypeId {
-    pub id: i64,
-    pub schema_version: String,
-    pub schema_name: String,
-    pub schema_identifier: String,
-    pub graphql_name: String,
-    pub table_name: String,
-    pub virtual_columns: Vec<VirtualColumn>,
-}
-
-impl TypeId {
-    pub fn is_non_indexable_type(&self) -> bool {
-        !self.virtual_columns.is_empty()
-    }
-}
-
-#[derive(Debug)]
-pub struct IdLatest {
-    pub schema_version: String,
-}
-
-#[derive(Debug)]
-pub struct NumVersions {
-    pub num: Option<i64>,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct NewColumn {
-    pub type_id: i64,
-    pub column_position: i32,
-    pub column_name: String,
-    pub column_type: String,
-    pub nullable: bool,
-    pub graphql_type: String,
-    pub unique: bool,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct Columns {
-    pub id: i64,
-    pub type_id: i64,
-    pub column_position: i32,
-    pub column_name: String,
-    pub column_type: String,
-    pub nullable: bool,
-    pub graphql_type: String,
-}
-
-impl NewColumn {
-    pub fn sql_fragment(&self) -> String {
-        let null_frag = if self.nullable { "" } else { "not null" };
-        let unique_frag = if self.unique { "unique" } else { "" };
-        format!(
-            "{} {} {} {}",
-            self.column_name,
-            self.sql_type(),
-            null_frag,
-            unique_frag
-        )
-        .trim()
-        .to_string()
-    }
-
-    /// Derive the respective PostgreSQL field type for a given `NewColumn`
-    ///
-    /// Here we're essentially matching `ColumnType`s to PostgreSQL field
-    /// types. Note that we're using `numeric` field types for integer-like
-    /// fields due to the ability to specify custom scale and precision. Some
-    /// crates don't play well with unsigned integers (e.g., `sqlx`), so we
-    /// just define these types as `numeric`, then convert them into their base
-    /// types (e.g., u64) using `BigDecimal`.
-    fn sql_type(&self) -> &str {
-        match ColumnType::from(self.column_type.as_str()) {
-            ColumnType::ID => "numeric(20, 0) primary key",
-            ColumnType::Address => "varchar(64)",
-            ColumnType::Bytes4 => "varchar(8)",
-            ColumnType::Bytes8 => "varchar(16)",
-            ColumnType::Bytes32 => "varchar(64)",
-            ColumnType::AssetId => "varchar(64)",
-            ColumnType::ContractId => "varchar(64)",
-            ColumnType::Salt => "varchar(64)",
-            ColumnType::Int4 => "integer",
-            ColumnType::Int8 => "bigint",
-            ColumnType::Int16 => "numeric(39, 0)",
-            ColumnType::UInt4 | ColumnType::BlockHeight => "integer",
-            ColumnType::UInt8 => "numeric(20, 0)",
-            ColumnType::UInt16 => "numeric(39, 0)",
-            ColumnType::Timestamp => "timestamp",
-            ColumnType::Object => "bytea",
-            ColumnType::Blob => "varchar(10485760)",
-            ColumnType::ForeignKey => {
-                panic!("ForeignKey ColumnType is a reference type only.")
-            }
-            ColumnType::Json => "Json",
-            ColumnType::MessageId => "varchar(64)",
-            ColumnType::Charfield => "varchar(255)",
-            ColumnType::Identity => "varchar(66)",
-            ColumnType::Boolean => "boolean",
-            ColumnType::Bytes64 => "varchar(128)",
-            ColumnType::Signature => "varchar(128)",
-            ColumnType::Nonce => "varchar(64)",
-            ColumnType::HexString => "varchar(10485760)",
-            ColumnType::Tai64Timestamp => "varchar(128)",
-            ColumnType::TxId => "varchar(64)",
-            ColumnType::Enum => "varchar(255)",
-            ColumnType::Int1 => "integer",
-            ColumnType::UInt1 => "integer",
-            ColumnType::Virtual => "Json",
-            ColumnType::BlockId => "varchar(64)",
-        }
-    }
-}
-
-#[derive(Debug)]
-pub struct ColumnInfo {
-    pub type_id: i64,
-    pub table_name: String,
-    pub column_position: i32,
-    pub column_name: String,
-    pub column_type: String,
-}
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ColumnType {
@@ -349,8 +191,286 @@ impl From<&str> for ColumnType {
     }
 }
 
+// REFACTOR: remove
+#[derive(Debug)]
+pub struct RootColumns {
+    pub id: i64,
+    pub root_id: i64,
+    pub column_name: String,
+    pub graphql_type: String,
+}
+
+#[derive(Debug)]
+pub enum ColumnPersistence {
+    Virtual,
+    Regular,
+}
+
+pub trait SqlFragment {
+    fn sql_fragment(&self) -> String;
+}
+
+pub trait SqlNamed {
+    fn sql_name(&self) -> String;
+}
+
+#[derive(Debug, Eq, PartialEq, Hash, Clone, EnumString, AsRefStr)]
+pub enum SqlType {
+    Int,
+    BigInt,
+    Numeric,
+    Varchar,
+    Timestamp,
+    Boolean,
+    Json,
+    Bytea,
+    Enum,
+    Uuid,
+    Text,
+    Jsonb,
+    Date,
+    Interval,
+    SmallInt,
+    Real,
+    DoublePrecision,
+    Custom(String),
+}
+
+impl SqlFragment for SqlType {
+    fn sql_fragment(&self) -> String {
+        match self {
+            SqlType::Int => "integer".to_string(),
+            SqlType::BigInt => "bigint".to_string(),
+            SqlType::Numeric => "numeric".to_string(),
+            SqlType::Varchar => "varchar".to_string(),
+            SqlType::Timestamp => "timestamp".to_string(),
+            SqlType::Boolean => "boolean".to_string(),
+            SqlType::Json => "json".to_string(),
+            SqlType::Bytea => "bytea".to_string(),
+            SqlType::Enum => "enum".to_string(),
+            SqlType::Uuid => "uuid".to_string(),
+            SqlType::Text => "text".to_string(),
+            SqlType::Jsonb => "jsonb".to_string(),
+            SqlType::Date => "date".to_string(),
+            SqlType::Interval => "interval".to_string(),
+            SqlType::SmallInt => "smallint".to_string(),
+            SqlType::Real => "real".to_string(),
+            SqlType::DoublePrecision => "double precision".to_string(),
+            SqlType::Custom(s) => s.to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Column {
+    // Use default of `1` if `id` field is unused, in order to not have to
+    // keep track of a `New{ColumnName}
+    pub id: i64,
+    pub root_id: i64,
+    pub name: String,
+    pub graphql_type: String,
+    pub coltype: ColumnType,
+    pub position: i32,
+    pub persistence: ColumnPersistence,
+    pub field: FieldDefinition,
+    pub unique: bool,
+    pub nullable: bool,
+}
+
+impl Default for Column {
+    fn default() -> Self {
+        Self {
+            id: i64::MAX,
+            root_id: i64::MAX,
+            name: "".to_string(),
+            graphql_type: "".to_string(),
+            coltype: ColumnType::ID,
+            position: 1,
+            persistence: ColumnPersistence::Regular,
+            field: FieldDefinition {
+                name: Positioned::new(Name::new(""), Pos::default()),
+                arguments: vec![],
+                ty: Positioned::new(
+                    Type {
+                        base: BaseType::Named(Name::new("")),
+                        nullable: true,
+                    },
+                    Pos::default(),
+                ),
+                directives: vec![],
+                description: None,
+            },
+            unique: false,
+            nullable: false,
+        }
+    }
+}
+
+// REFACTOR: remove
+#[derive(Debug)]
+pub struct NewRootColumns {
+    pub root_id: i64,
+    pub column_name: String,
+    pub graphql_type: String,
+}
+
+#[derive(Debug)]
+pub struct GraphRoot {
+    pub id: i64,
+    pub version: String,
+    pub schema_name: String,
+    pub schema_identifier: String,
+    pub schema: String,
+}
+
+// REFACTOR: remove
+#[derive(Debug)]
+pub struct NewGraphRoot {
+    pub version: String,
+    pub schema_name: String,
+    pub schema_identifier: String,
+    pub schema: String,
+}
+
+// REFACTOR: remove
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct VirtualColumn {
+    pub name: String,
+    pub graphql_type: String,
+}
+
+#[derive(Debug)]
+pub struct FooTypeId {
+    pub id: i64,
+    pub schema_version: String,
+    pub namespace: String,
+    pub identifier: String,
+    pub graphql_name: String,
+    pub table_name: String,
+    pub column_type: ColumnPersistence,
+}
+
+// REFACTOR: remove
+#[derive(Debug)]
+pub struct TypeId {
+    pub id: i64,
+    pub schema_version: String,
+    pub schema_name: String,
+    pub schema_identifier: String,
+    pub graphql_name: String,
+    pub table_name: String,
+    pub virtual_columns: Vec<VirtualColumn>,
+}
+
+// REFACTOR: remove
+impl TypeId {
+    pub fn is_non_indexable_type(&self) -> bool {
+        !self.virtual_columns.is_empty()
+    }
+}
+
+// REFACTOR: remove
+#[derive(Clone, Debug)]
+pub struct NewColumn {
+    pub type_id: i64,
+    pub column_position: i32,
+    pub column_name: String,
+    pub column_type: String,
+    pub nullable: bool,
+    pub graphql_type: String,
+    pub unique: bool,
+}
+
+// REFACTOR: remove
+#[derive(Debug)]
+pub struct Columns {
+    pub id: i64,
+    pub type_id: i64,
+    pub column_position: i32,
+    pub column_name: String,
+    pub column_type: String,
+    pub nullable: bool,
+    pub graphql_type: String,
+}
+
+// REFACTOR: remove
+impl NewColumn {
+    pub fn sql_fragment(&self) -> String {
+        let null_frag = if self.nullable { "" } else { "not null" };
+        let unique_frag = if self.unique { "unique" } else { "" };
+        format!(
+            "{} {} {} {}",
+            self.column_name,
+            self.sql_type(),
+            null_frag,
+            unique_frag
+        )
+        .trim()
+        .to_string()
+    }
+
+    /// Derive the respective PostgreSQL field type for a given `NewColumn`
+    ///
+    /// Here we're essentially matching `ColumnType`s to PostgreSQL field
+    /// types. Note that we're using `numeric` field types for integer-like
+    /// fields due to the ability to specify custom scale and precision. Some
+    /// crates don't play well with unsigned integers (e.g., `sqlx`), so we
+    /// just define these types as `numeric`, then convert them into their base
+    /// types (e.g., u64) using `BigDecimal`.
+    fn sql_type(&self) -> &str {
+        match ColumnType::from(self.column_type.as_str()) {
+            ColumnType::ID => "numeric(20, 0) primary key",
+            ColumnType::Address => "varchar(64)",
+            ColumnType::Bytes4 => "varchar(8)",
+            ColumnType::Bytes8 => "varchar(16)",
+            ColumnType::Bytes32 => "varchar(64)",
+            ColumnType::AssetId => "varchar(64)",
+            ColumnType::ContractId => "varchar(64)",
+            ColumnType::Salt => "varchar(64)",
+            ColumnType::Int4 => "integer",
+            ColumnType::Int8 => "bigint",
+            ColumnType::Int16 => "numeric(39, 0)",
+            ColumnType::UInt4 | ColumnType::BlockHeight => "integer",
+            ColumnType::UInt8 => "numeric(20, 0)",
+            ColumnType::UInt16 => "numeric(39, 0)",
+            ColumnType::Timestamp => "timestamp",
+            ColumnType::Object => "bytea",
+            ColumnType::Blob => "varchar(10485760)",
+            ColumnType::ForeignKey => {
+                panic!("ForeignKey ColumnType is a reference type only.")
+            }
+            ColumnType::Json => "Json",
+            ColumnType::MessageId => "varchar(64)",
+            ColumnType::Charfield => "varchar(255)",
+            ColumnType::Identity => "varchar(66)",
+            ColumnType::Boolean => "boolean",
+            ColumnType::Bytes64 => "varchar(128)",
+            ColumnType::Signature => "varchar(128)",
+            ColumnType::Nonce => "varchar(64)",
+            ColumnType::HexString => "varchar(10485760)",
+            ColumnType::Tai64Timestamp => "varchar(128)",
+            ColumnType::TxId => "varchar(64)",
+            ColumnType::Enum => "varchar(255)",
+            ColumnType::Int1 => "integer",
+            ColumnType::UInt1 => "integer",
+            ColumnType::Virtual => "Json",
+            ColumnType::BlockId => "varchar(64)",
+        }
+    }
+}
+
+// REFACTOR: remove
+#[derive(Debug)]
+pub struct ColumnInfo {
+    pub type_id: i64,
+    pub table_name: String,
+    pub column_position: i32,
+    pub column_name: String,
+    pub column_type: String,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct IndexAsset {
+pub struct IndexerAsset {
     pub id: i64,
     pub index_id: i64,
     pub version: i32,
@@ -361,13 +481,13 @@ pub struct IndexAsset {
 
 #[derive(Debug)]
 pub struct IndexAssetBundle {
-    pub schema: IndexAsset,
-    pub manifest: IndexAsset,
-    pub wasm: IndexAsset,
+    pub schema: IndexerAsset,
+    pub manifest: IndexerAsset,
+    pub wasm: IndexerAsset,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Clone, EnumString, AsRefStr)]
-pub enum IndexAssetType {
+pub enum IndexerAssetType {
     #[strum(serialize = "wasm")]
     Wasm,
     #[strum(serialize = "manifest")]
@@ -406,12 +526,13 @@ impl DbType {
     }
 }
 
+// REFCATOR: remove
 pub trait CreateStatement {
     fn create_statement(&self) -> String;
 }
 
 #[derive(Debug)]
-pub struct ColumnIndex {
+pub struct SqlIndex {
     pub db_type: DbType,
     pub table_name: String,
     pub namespace: String,
@@ -420,13 +541,39 @@ pub struct ColumnIndex {
     pub column_name: String,
 }
 
-impl ColumnIndex {
-    pub fn name(&self) -> String {
+impl SqlNamed for SqlIndex {
+    fn sql_name(&self) -> String {
         format!("{}_{}_idx", &self.table_name, &self.column_name)
     }
 }
 
-impl CreateStatement for ColumnIndex {
+impl SqlFragment for SqlIndex {
+    fn sql_fragment(&self) -> String {
+        let mut frag = "CREATE ".to_string();
+        if self.unique {
+            frag += "UNIQUE ";
+        }
+
+        match self.db_type {
+            DbType::Postgres => {
+                let _ = write!(
+                    frag,
+                    "INDEX {} ON {}.{} USING {} ({});",
+                    "".to_string(),
+                    self.namespace,
+                    self.table_name,
+                    self.method.as_ref(),
+                    self.column_name
+                );
+            }
+        }
+
+        frag
+    }
+}
+
+// REFCATOR: remove
+impl CreateStatement for SqlIndex {
     fn create_statement(&self) -> String {
         let mut frag = "CREATE ".to_string();
         if self.unique {
@@ -438,7 +585,7 @@ impl CreateStatement for ColumnIndex {
                 let _ = write!(
                     frag,
                     "INDEX {} ON {}.{} USING {} ({});",
-                    self.name(),
+                    "".to_string(),
                     self.namespace,
                     self.table_name,
                     self.method.as_ref(),
@@ -475,9 +622,9 @@ pub struct ForeignKey {
     pub namespace: String,
     pub table_name: String,
     pub column_name: String,
-    pub reference_table_name: String,
-    pub reference_column_name: String,
-    pub reference_column_type: String,
+    pub ref_tablename: String,
+    pub ref_colname: String,
+    pub ref_coltype: String,
     pub on_delete: OnDelete,
     pub on_update: OnUpdate,
 }
@@ -488,33 +635,33 @@ impl ForeignKey {
         namespace: String,
         table_name: String,
         column_name: String,
-        reference_table_name: String,
+        ref_tablename: String,
         ref_column_name: String,
-        reference_column_type: String,
+        ref_coltype: String,
     ) -> Self {
         Self {
             db_type,
             namespace,
             table_name,
             column_name,
-            reference_column_name: ref_column_name,
-            reference_table_name,
-            reference_column_type,
+            ref_colname: ref_column_name,
+            ref_tablename,
+            ref_coltype,
             ..Default::default()
         }
     }
+}
 
-    pub fn name(&self) -> String {
+impl SqlNamed for ForeignKey {
+    fn sql_name(&self) -> String {
         format!(
             "fk_{}_{}__{}_{}",
-            self.table_name,
-            self.column_name,
-            self.reference_table_name,
-            self.reference_column_name
+            self.table_name, self.column_name, self.ref_tablename, self.ref_colname
         )
     }
 }
 
+// REFCATOR: remove
 impl CreateStatement for ForeignKey {
     fn create_statement(&self) -> String {
         match self.db_type {
@@ -523,11 +670,12 @@ impl CreateStatement for ForeignKey {
                     "ALTER TABLE {}.{} ADD CONSTRAINT {} FOREIGN KEY ({}) REFERENCES {}.{}({}) ON DELETE {} ON UPDATE {} INITIALLY DEFERRED;",
                     self.namespace,
                     self.table_name,
-                    self.name(),
+                    // Tmp
+                    "".to_string(),
                     self.column_name,
                     self.namespace,
-                    self.reference_table_name,
-                    self.reference_column_name,
+                    self.ref_tablename,
+                    self.ref_colname,
                     self.on_delete.as_ref(),
                     self.on_update.as_ref()
                 )
@@ -536,7 +684,7 @@ impl CreateStatement for ForeignKey {
     }
 }
 
-pub struct IdCol {}
+pub struct IdCol;
 impl IdCol {
     pub fn to_lowercase_string() -> String {
         "id".to_string()

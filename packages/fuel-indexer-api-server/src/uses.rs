@@ -14,7 +14,7 @@ use axum::{
 use fuel_crypto::{Message, Signature};
 use fuel_indexer_database::{
     queries,
-    types::{IndexAsset, IndexAssetType},
+    types::{IndexerAsset, IndexerAssetType},
     IndexerConnectionPool,
 };
 use fuel_indexer_graphql::dynamic::{build_dynamic_schema, execute_query};
@@ -195,7 +195,7 @@ pub(crate) async fn register_indexer_assets(
     }
 
     let mut conn = pool.acquire().await?;
-    let mut assets: Vec<IndexAsset> = Vec::new();
+    let mut assets: Vec<IndexerAsset> = Vec::new();
 
     if let Some(mut multipart) = multipart {
         queries::start_transaction(&mut conn).await?;
@@ -223,10 +223,10 @@ pub(crate) async fn register_indexer_assets(
             let name = field.name().unwrap_or("").to_string();
             let data = field.bytes().await.unwrap_or_default();
             let asset_type =
-                IndexAssetType::from_str(&name).expect("Invalid asset type.");
+                IndexerAssetType::from_str(&name).expect("Invalid asset type.");
 
             match asset_type {
-                IndexAssetType::Wasm | IndexAssetType::Manifest => {
+                IndexerAssetType::Wasm | IndexerAssetType::Manifest => {
                     match queries::register_indexer_asset(
                         &mut conn,
                         &namespace,
@@ -246,13 +246,13 @@ pub(crate) async fn register_indexer_assets(
                         }
                     }
                 }
-                IndexAssetType::Schema => {
+                IndexerAssetType::Schema => {
                     match queries::register_indexer_asset(
                         &mut conn,
                         &namespace,
                         &identifier,
                         data.to_vec(),
-                        IndexAssetType::Schema,
+                        IndexerAssetType::Schema,
                         Some(claims.sub()),
                     )
                     .await
