@@ -3485,15 +3485,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fuel_explorer"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-utils",
- "fuels",
- "serde",
-]
-
-[[package]]
 name = "fuels"
 version = "0.43.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4099,26 +4090,6 @@ dependencies = [
  "clap 3.2.25",
  "fuel-indexer-tests",
  "tokio",
-]
-
-[[package]]
-name = "hello_indexer"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-utils",
- "fuels",
- "serde",
-]
-
-[[package]]
-name = "hello_indexer_native"
-version = "0.0.0"
-dependencies = [
- "async-trait",
- "fuel-indexer",
- "fuel-indexer-utils",
- "fuels",
- "serde",
 ]
 
 [[package]]
@@ -6543,17 +6514,6 @@ name = "similar"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "420acb44afdae038210c99e69aae24109f32f15500aa708e81d46c9f29d55fcf"
-
-[[package]]
-name = "simple-wasm"
-version = "0.0.0"
-dependencies = [
- "fuel-indexer-utils",
- "fuel-tx 0.31.2",
- "fuels",
- "serde",
- "sha2 0.10.6",
-]
 
 [[package]]
 name = "simple_asn1"

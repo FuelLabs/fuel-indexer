@@ -9,7 +9,7 @@ use async_graphql_value::Name;
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
-use fuel_indexer_types::type_id;
+use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
 use linked_hash_set::LinkedHashSet;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -59,7 +59,7 @@ impl SchemaBuilder {
     }
 
     /// Generate table SQL for each object in the given schema.
-    pub fn build(mut self, schema: &str) -> IndexerSchemaDbResult<Self> {
+    pub fn build(mut self, schema: &GraphQLSchema) -> IndexerSchemaDbResult<Self> {
         if DbType::Postgres == self.db_type {
             let create = format!(
                 "CREATE SCHEMA IF NOT EXISTS {}_{}",
@@ -589,7 +589,8 @@ impl Schema {
             }
         }
 
-        let foreign_keys = get_foreign_keys(namespace, identifier, false, &root.schema)?;
+        let schema = GraphQLSchema::new(root.schema.clone());
+        let foreign_keys = get_foreign_keys(namespace, identifier, false, &schema)?;
 
         let mut schema = Schema {
             version: root.version,

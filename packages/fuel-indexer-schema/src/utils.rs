@@ -7,7 +7,7 @@ use async_graphql_parser::types::{
     TypeSystemDefinition,
 };
 use fuel_indexer_database_types::{directives, ColumnType, IdCol};
-use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
+use fuel_indexer_types::graphql::{GraphQLSchema, GraphqlObject, IndexMetadata};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
 
@@ -19,6 +19,7 @@ pub const NORELATION_DIRECTIVE_NAME: &str = "virtual";
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 
+// REFACTOR: remove
 /// Inject the default GraphQL entities used by the indexer into the user's GraphQL schema.
 pub fn inject_native_entities_into_schema(schema: &str) -> String {
     format!("{}{}", schema, IndexMetadata::schema_fragment())
@@ -34,6 +35,7 @@ pub fn field_type_table_name(f: &FieldDefinition) -> String {
     normalize_field_type_name(&f.ty.to_string()).to_lowercase()
 }
 
+// REFACTOR: remove
 pub fn schema_version(schema: &str) -> String {
     format!("{:x}", Sha256::digest(schema.as_bytes()))
 }
@@ -197,7 +199,7 @@ pub fn get_foreign_keys(
     namespace: &str,
     identifier: &str,
     is_native: bool,
-    schema: &str,
+    schema: &GraphQLSchema,
 ) -> IndexerSchemaResult<ForeignKeyMap> {
     let parsed_schema =
         ParsedGraphQLSchema::new(namespace, identifier, is_native, Some(schema))?;

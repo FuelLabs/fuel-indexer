@@ -1,13 +1,12 @@
-use crate::helpers::*;
+use crate::{constants::*, helpers::*};
 use async_graphql_parser::types::{
     BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
 use async_graphql_value::Name;
-use fuel_indexer_database_types::{directives, IdCol};
+use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::local_repository_root;
 use fuel_indexer_schema::{parser::ParsedGraphQLSchema, utils::*};
-use fuel_indexer_types::type_id;
-use lazy_static::lazy_static;
+use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
 use linked_hash_set::LinkedHashSet;
 use quote::{format_ident, quote};
 use std::collections::{BTreeMap, HashSet};
@@ -21,89 +20,6 @@ type ProcessedFieldResult = (
     proc_macro2::Ident,
     proc_macro2::TokenStream,
 );
-
-lazy_static! {
-    /// Set of types that should be copied instead of referenced.
-    static ref COPY_TYPES: HashSet<&'static str> = HashSet::from([
-        "Blob",
-        "Charfield",
-        "HexString",
-        "Identity",
-        "Json",
-        "Virtual",
-        "Option<Blob>",
-        "Option<Charfield>",
-        "Option<HexString>",
-        "Option<Identity>",
-        "Option<Json>",
-        "Option<Virtual>",
-    ]);
-
-    static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
-        // Scalars.
-        "Address",
-        "AssetId",
-        "Blob",
-        "BlockHeight",
-        "BlockId",
-        "Boolean",
-        "Bytes",
-        "Bytes32",
-        "Bytes4",
-        "Bytes64",
-        "Bytes8",
-        "Charfield",
-        "Color",
-        "ContractId",
-        "HexString",
-        "ID",
-        "Identity",
-        "Int1",
-        "Int16",
-        "Int4",
-        "Int8",
-        "Json",
-        "MessageId",
-        "Nonce",
-        "Virtual",
-        "Salt",
-        "Signature",
-        "Tai64Timestamp",
-        "Timestamp",
-        "TxId",
-        "UInt1",
-        "UInt16",
-        "UInt4",
-        "UInt8",
-
-        // Imports for transaction fields.
-        // https://github.com/FuelLabs/fuel-indexer/issues/286
-        "BlockData",
-        "BytecodeLength",
-        "BytecodeWitnessIndex",
-        "FieldTxPointer",
-        "GasLimit",
-        "GasPrice",
-        "Inputs",
-        "Log",
-        "LogData",
-        "Maturity",
-        "MessageId",
-        "Outputs",
-        "ReceiptsRoot",
-        "Script",
-        "ScriptData",
-        "ScriptResult",
-        "StorageSlots",
-        "TransactionData",
-        "Transfer",
-        "TransferOut",
-        "TxFieldSalt",
-        "TxFieldScript",
-        "TxId",
-        "Witnesses",
-    ]);
-}
 
 /// Process a named type into its type tokens, and the Ident for those type tokens.
 fn process_type(
@@ -251,6 +167,14 @@ fn process_special_field(
     }
 }
 
+fn foo_process_type_def(
+    schema: &ParsedGraphQLSchema,
+    typ: &TypeDefinition,
+) -> Option<proc_macro2::TokenStream> {
+    None
+}
+
+// REFACTOR: remove
 /// Process a schema's type definition into the corresponding tokens for use in an indexer module.
 fn process_type_def(
     schema: &mut ParsedGraphQLSchema,
@@ -622,11 +546,11 @@ fn process_type_def(
 
 /// Process a schema definition into the corresponding tokens for use in an indexer module.
 fn process_definition(
-    schema: &mut ParsedGraphQLSchema,
+    schema: &ParsedGraphQLSchema,
     definition: &TypeSystemDefinition,
 ) -> Option<proc_macro2::TokenStream> {
     match definition {
-        TypeSystemDefinition::Type(def) => process_type_def(schema, &def.node),
+        TypeSystemDefinition::Type(def) => foo_process_type_def(schema, &def.node),
         TypeSystemDefinition::Schema(_def) => None,
         def => {
             panic!("Unhandled definition type: {def:?}");
@@ -641,10 +565,14 @@ pub(crate) fn process_graphql_schema(
     schema_path: String,
     is_native: bool,
 ) -> proc_macro2::TokenStream {
-    let path = match local_repository_root() {
-        Some(p) => Path::new(&p).join(schema_path),
-        None => PathBuf::from(&schema_path),
-    };
+    let namespace_tokens = const_item("NAMESPACE", &namespace);
+    let identifer_tokens = const_item("IDENTIFIER", &identifier);
+
+    let path = local_repository_root()
+        .map(|p| Path::new(&p).join(schema_path.clone()))
+        .unwrap_or_else(|| PathBuf::from(&schema_path));
+
+    println!(">> PATH: {:?}", path);
 
     let mut file = match File::open(&path) {
         Ok(f) => f,
@@ -657,13 +585,22 @@ pub(crate) fn process_graphql_schema(
         }
     };
 
-    let mut text = String::new();
-    file.read_to_string(&mut text).expect("IO error");
+    let mut file = File::open(&path)
+        .map_err(|e| {
+            proc_macro_error::abort_call_site!(
+                "Could not open schema file {:?} {:?}",
+                path,
+                e
+            )
+        })
+        .unwrap();
 
-    let text = inject_native_entities_into_schema(&text);
-    let namespace_tokens = const_item("NAMESPACE", &namespace);
-    let identifer_tokens = const_item("IDENTIFIER", &identifier);
-    let version_tokens = const_item("VERSION", &schema_version(&text));
+    let mut schema_content = String::new();
+    file.read_to_string(&mut schema_content).expect("IO error");
+
+    let schema = GraphQLSchema::new(schema_content);
+
+    let version_tokens = const_item("VERSION", &schema.version());
 
     let mut output = quote! {
         #namespace_tokens
@@ -671,12 +608,12 @@ pub(crate) fn process_graphql_schema(
         #version_tokens
     };
 
-    let mut schema =
-        ParsedGraphQLSchema::new(&namespace, &identifier, is_native, Some(&text))
-            .expect("Bad schema.");
+    let schema =
+        ParsedGraphQLSchema::new(&namespace, &identifier, is_native, Some(&schema))
+            .expect("Failed to parse GraphQL schema.");
 
     for definition in schema.ast.clone().definitions.iter() {
-        if let Some(def) = process_definition(&mut schema, definition) {
+        if let Some(def) = process_definition(&schema, definition) {
             output = quote! {
                 #output
                 #def

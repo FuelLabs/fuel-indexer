@@ -4,6 +4,7 @@ use crate::{
     utils::{inject_native_entities_into_schema, schema_version},
 };
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
+use fuel_indexer_types::graphql::GraphQLSchema;
 use tracing::info;
 
 pub struct SchemaManager {
@@ -23,18 +24,15 @@ impl SchemaManager {
         conn: &mut IndexerConnection,
         is_native: bool,
     ) -> IndexerSchemaDbResult<()> {
-        // Schema is built in serveral different places so we add default entities here
-        let schema = inject_native_entities_into_schema(schema);
+        let schema = GraphQLSchema::new(schema.to_string());
+        let version = schema.version();
 
-        // TODO: Not doing much with version, but might be useful if we do graph schema upgrades
-        let version = schema_version(&schema);
-
-        if !queries::schema_exists(conn, namespace, identifier, &version).await? {
+        if !queries::schema_exists(conn, namespace, identifier, version).await? {
             info!("Creating schema for Indexer({namespace}.{identifier}) with Version({version}).");
             let _db_schema = SchemaBuilder::new(
                 namespace,
                 identifier,
-                &version,
+                version,
                 self.pool.database_type(),
                 is_native,
             )?

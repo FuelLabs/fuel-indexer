@@ -7,6 +7,7 @@ use async_graphql_parser::{
     },
 };
 use fuel_indexer_database_types::directives;
+use fuel_indexer_types::graphql::GraphQLSchema;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
@@ -99,7 +100,7 @@ impl ParsedGraphQLSchema {
         namespace: &str,
         identifier: &str,
         is_native: bool,
-        schema: Option<&str>,
+        schema: Option<&GraphQLSchema>,
     ) -> IndexerSchemaResult<Self> {
         let mut ast =
             parse_schema(BASE_SCHEMA).map_err(IndexerSchemaError::ParseError)?;
@@ -121,7 +122,8 @@ impl ParsedGraphQLSchema {
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
-            ast = parse_schema(schema).map_err(IndexerSchemaError::ParseError)?;
+            ast =
+                parse_schema(schema.schema()).map_err(IndexerSchemaError::ParseError)?;
             let (other_type_names, _) = build_schema_types_set(&ast);
             type_names.extend(other_type_names);
 

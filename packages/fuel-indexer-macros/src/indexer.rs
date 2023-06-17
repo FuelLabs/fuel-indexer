@@ -1,5 +1,5 @@
 use crate::{
-    constant::*, helpers::*, native::handler_block_native, parse::IndexerConfig,
+    constants::*, helpers::*, native::handler_block_native, parse::IndexerConfig,
     schema::process_graphql_schema, wasm::handler_block_wasm,
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
@@ -579,8 +579,8 @@ fn process_fn_items(
                     decoder.dispatch()#awaitness;
                 }
 
-                let metadata = IndexMetadataEntity{ id: block.height as u64, time: block.time };
-                metadata.save()#awaitness;
+                // let metadata = IndexMetadataEntity{ id: block.height as u64, time: block.time };
+                // metadata.save()#awaitness;
             }
         },
         quote! {
