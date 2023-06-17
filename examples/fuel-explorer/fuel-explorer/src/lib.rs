@@ -104,13 +104,14 @@ impl From<fuel::Consensus> for Consensus {
                 g.coins_root,
                 g.contracts_root,
                 g.messages_root,
+                true,
                 ConsensusLabel::Genesis.into(),
             )),
             fuel::Consensus::PoA(poa) => {
-                Consensus::from(PoA::new(poa.signature, ConsensusLabel::PoA.into()))
+                Consensus::from(PoA::new(poa.signature, true, ConsensusLabel::PoA.into()))
             }
             fuel::Consensus::Unknown => {
-                Consensus::from(Unknown::new(ConsensusLabel::Unknown.into()))
+                Consensus::from(Unknown::new(true, ConsensusLabel::Unknown.into()))
             }
         }
     }

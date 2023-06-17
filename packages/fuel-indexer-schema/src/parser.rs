@@ -1,7 +1,10 @@
 use crate::{utils::*, IndexerSchemaError, IndexerSchemaResult};
 use async_graphql_parser::{
     parse_schema,
-    types::{ServiceDocument, TypeKind, TypeSystemDefinition},
+    types::{
+        EnumType, FieldDefinition, ObjectType, ServiceDocument, TypeKind,
+        TypeSystemDefinition, UnionType,
+    },
 };
 use fuel_indexer_database_types::directives;
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -22,11 +25,20 @@ pub struct ParsedGraphQLSchema {
     /// All unique names of types in the schema (whether objects, enums, or scalars).
     pub type_names: HashSet<String>,
 
+    /// Mapping of object names to objects.
+    pub objects: HashMap<String, ObjectType>,
+
     /// All unique names of enums in the schema.
     pub enum_names: HashSet<String>,
 
+    /// Mapping of enum names to enum objects.
+    pub enums: HashMap<String, EnumType>,
+
     /// All unique names of union types in the schema.
     pub union_names: HashSet<String>,
+
+    /// Mapping of union names to union objects.
+    pub unions: HashMap<String, UnionType>,
 
     /// All objects and their field names and types, indexed by object name.
     pub object_field_mappings: HashMap<String, BTreeMap<String, String>>,
@@ -40,14 +52,17 @@ pub struct ParsedGraphQLSchema {
     /// A mapping of fully qualified field names to their field types.
     pub field_type_mappings: HashMap<String, String>,
 
-    // A mapping of fully qualified field names to their respective optionalities.
-    pub field_type_optionality: HashMap<String, bool>,
-
     /// All unique names of scalar types in the schema.
     pub scalar_names: HashSet<String>,
 
+    // A mapping of fully qualified field names to their respective optionalities.
+    pub field_type_optionality: HashMap<String, bool>,
+
     /// The parsed schema.
     pub ast: ServiceDocument,
+
+    /// Mapping of fully qualified field names to their `FieldDefinition`
+    pub field_defs: HashMap<String, FieldDefinition>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -63,12 +78,16 @@ impl Default for ParsedGraphQLSchema {
             type_names: HashSet::new(),
             enum_names: HashSet::new(),
             union_names: HashSet::new(),
+            objects: HashMap::new(),
+            enums: HashMap::new(),
+            unions: HashMap::new(),
             virtual_type_names: HashSet::new(),
             parsed_type_names: HashSet::new(),
             field_type_mappings: HashMap::new(),
             object_field_mappings: HashMap::new(),
-            field_type_optionality: HashMap::new(),
             scalar_names: HashSet::new(),
+            field_defs: HashMap::new(),
+            field_type_optionality: HashMap::new(),
             ast,
         }
     }
@@ -94,6 +113,10 @@ impl ParsedGraphQLSchema {
         let mut union_names = HashSet::new();
         let mut virtual_type_names = HashSet::new();
         let mut field_type_mappings = HashMap::new();
+        let mut objects = HashMap::new();
+        let mut enums = HashMap::new();
+        let mut unions = HashMap::new();
+        let mut field_defs = HashMap::new();
         let mut field_type_optionality = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
@@ -107,6 +130,7 @@ impl ParsedGraphQLSchema {
                     match &t.node.kind {
                         TypeKind::Object(o) => {
                             let obj_name = t.node.name.to_string();
+                            objects.insert(obj_name.clone(), o.clone());
                             let mut field_mapping = BTreeMap::new();
                             parsed_type_names.insert(t.node.name.to_string());
                             for field in &o.fields {
@@ -130,12 +154,15 @@ impl ParsedGraphQLSchema {
                                     field_id.clone(),
                                     field.node.ty.node.nullable,
                                 );
-                                field_type_mappings.insert(field_id, field_typ_name);
+                                field_type_mappings
+                                    .insert(field_id.clone(), field_typ_name);
+                                field_defs.insert(field_id, field.node.clone());
                             }
                             object_field_mappings.insert(obj_name, field_mapping);
                         }
                         TypeKind::Enum(e) => {
                             let name = t.node.name.to_string();
+                            enums.insert(name.clone(), e.clone());
                             virtual_type_names.insert(name.clone());
                             enum_names.insert(name.clone());
 
@@ -147,6 +174,7 @@ impl ParsedGraphQLSchema {
                         }
                         TypeKind::Union(u) => {
                             let union_name = t.node.name.to_string();
+                            unions.insert(union_name.clone(), u.clone());
                             union_names.insert(union_name.clone());
 
                             let member_count = u.members.len();
@@ -164,6 +192,18 @@ impl ParsedGraphQLSchema {
                                 .sum::<usize>();
 
                             let mut has_virtual_member = false;
+
+                            // These member fields are already cached under their respective object names, but
+                            // we also need to cache them under this derived union name.
+                            u.members.iter().for_each(|m| {
+                                let member_name = m.node.to_string();
+                                let member_obj = objects.get(&member_name).unwrap();
+                                member_obj.fields.iter().for_each(|f| {
+                                    let field_id =
+                                        format!("{}.{}", union_name, f.node.name);
+                                    field_defs.insert(field_id, f.node.clone());
+                                });
+                            });
 
                             u.members.iter().for_each(|m| {
                                 let member_name = m.node.to_string();
@@ -199,14 +239,18 @@ impl ParsedGraphQLSchema {
             is_native,
             type_names,
             union_names,
+            objects,
+            enums,
+            unions,
+            field_defs,
             object_field_mappings,
             enum_names,
             virtual_type_names,
             parsed_type_names,
             field_type_mappings,
             scalar_names,
-            ast,
             field_type_optionality,
+            ast,
         })
     }
 

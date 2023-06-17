@@ -43,17 +43,20 @@ type Genesis {
   coins_root: Bytes32!
   contracts_root: Bytes32!
   messages_root: Bytes32!
+  is_genesis: Boolean!
   label: ConsensusLabel!
 }
 
 type PoA {
   id: ID!
   signature: Signature!
+  is_poa: Boolean!
   label: ConsensusLabel!
 }
 
 type Unknown {
   id: ID!
+  is_unknown: Boolean!
   label: ConsensusLabel!
 }
 
