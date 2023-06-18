@@ -1,4 +1,6 @@
-use crate::{constants::*, helpers::*};
+use crate::{
+    constants::*, decoder::Decoder, helpers::*, validator::GraphQLSchemaValidator,
+};
 use async_graphql_parser::types::{
     BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
@@ -21,30 +23,7 @@ type ProcessedFieldResult = (
     proc_macro2::TokenStream,
 );
 
-/// Process a named type into its type tokens, and the Ident for those type tokens.
-fn process_type(
-    schema: &ParsedGraphQLSchema,
-    typ: &Type,
-) -> (proc_macro2::TokenStream, proc_macro2::Ident) {
-    match &typ.base {
-        BaseType::Named(t) => {
-            let name = t.to_string();
-            if !schema.has_type(&name) {
-                panic!("Type '{name}' is not defined in the schema.",);
-            }
-
-            let name = format_ident! {"{}", name};
-
-            if typ.nullable {
-                (quote! { Option<#name> }, name)
-            } else {
-                (quote! { #name }, name)
-            }
-        }
-        BaseType::List(_t) => panic!("Got a list type, we don't handle this yet..."),
-    }
-}
-
+// REFACTOR: remove
 /// Process an object's field and return a group of tokens.
 ///
 /// This group of tokens include:
@@ -73,15 +52,6 @@ fn process_field(
     );
 
     (typ_tokens, name_ident, typ_ident, extractor)
-}
-
-/// Type of special fields in GraphQL schema.
-enum FieldKind {
-    ForeignKey,
-    Enum,
-    Virtual,
-    Union,
-    Regular,
 }
 
 // TODO: combine process_field and process_special_field
@@ -175,17 +145,30 @@ fn process_special_field(
                 ),
             }
         }
-        FieldKind::Regular => {
+        FieldKind::Regular | FieldKind::Unknown => {
             process_field(schema, &field.name.to_string(), field.ty.node.clone())
         }
     }
 }
 
 fn foo_process_type_def(
-    schema: &ParsedGraphQLSchema,
+    parser: &ParsedGraphQLSchema,
     typ: &TypeDefinition,
 ) -> Option<proc_macro2::TokenStream> {
-    None
+    let namespace = &parser.namespace;
+    let identifier = &parser.identifier;
+    let typekind_name = typ.name.to_string();
+    let decoder = match &typ.kind {
+        TypeKind::Object(o) => Decoder::from_object(typekind_name, o.to_owned(), parser),
+        TypeKind::Enum(e) => Decoder::from_enum(typekind_name, e.to_owned(), parser),
+        TypeKind::Union(u) => Decoder::from_union(typekind_name, u.to_owned(), parser),
+        _ => proc_macro_error::abort_call_site!(
+            "Unrecognized TypeKind in GraphQL schema: {:?}",
+            typ.kind
+        ),
+    };
+
+    Some(decoder.into())
 }
 
 // REFACTOR: remove
@@ -287,11 +270,7 @@ fn process_type_def(
                     schema.is_non_indexable_non_enum(&object_name);
                 let is_copyable = is_copy_type || is_non_indexable_non_enum;
 
-                let clone = if is_copyable {
-                    quote! {.clone()}
-                } else {
-                    quote! {}
-                };
+                let clone = clone_tokens(field_typ_name.as_str());
 
                 let decoder = if field_type.nullable {
                     quote! { FtColumn::#scalar_typ(self.#field_name #clone), }
@@ -554,7 +533,10 @@ fn process_type_def(
                 #object_trait_impls
             })
         }
-        _ => panic!("Unexpected type: '{:?}'", typ.kind),
+        _ => proc_macro_error::abort_call_site!(
+            "Unrecognized TypeKind in GraphQL schema: {:?}",
+            typ.kind
+        ),
     }
 }
 
@@ -585,8 +567,6 @@ pub(crate) fn process_graphql_schema(
     let path = local_repository_root()
         .map(|p| Path::new(&p).join(schema_path.clone()))
         .unwrap_or_else(|| PathBuf::from(&schema_path));
-
-    println!(">> PATH: {:?}", path);
 
     let mut file = match File::open(&path) {
         Ok(f) => f,

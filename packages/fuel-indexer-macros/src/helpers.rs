@@ -1,11 +1,16 @@
 use std::collections::HashSet;
 
 use crate::constants::*;
-use async_graphql_parser::types::UnionType;
+use async_graphql_parser::types::{
+    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
+    UnionType,
+};
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
-use fuel_indexer_database_types::IdCol;
-use fuel_indexer_schema::parser::ParsedGraphQLSchema;
+use fuel_indexer_database_types::*;
+use fuel_indexer_schema::{parser::ParsedGraphQLSchema, utils::*};
+use fuel_indexer_types::type_id;
 use fuels_code_gen::utils::Source;
+use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
@@ -633,4 +638,167 @@ pub fn generate_from_traits_for_union(
     }
 
     from_method_impls
+}
+
+/// Derive a type ID for a `TypeKind` under a given indexer namespace and identifier.
+pub fn typekind_type_id(namespace: &str, identifier: &str, typekind_name: &str) -> i64 {
+    type_id(&format!("{namespace}_{identifier}"), typekind_name)
+}
+
+/// Type of special fields in GraphQL schema.
+pub enum FieldKind {
+    ForeignKey,
+    Enum,
+    Virtual,
+    Union,
+    Regular,
+    Unknown,
+}
+
+/// Process an object's field and return a group of tokens.
+///
+/// This group of tokens include:
+///     - The field's type tokens.
+///     - The field's name as an Ident.
+///     - The field's type as an Ident.
+///     - The field's row extractor tokens.
+pub fn foo_process_field(
+    schema: &ParsedGraphQLSchema,
+    field_def: &FieldDefinition,
+    typedef_name: &String,
+    fieldkind: FieldKind,
+) -> (
+    proc_macro2::TokenStream,
+    proc_macro2::Ident,
+    proc_macro2::Ident,
+    proc_macro2::TokenStream,
+) {
+    let field_name = field_def.name.to_string();
+
+    match fieldkind {
+        FieldKind::ForeignKey => {
+            let directives::Join {
+                field_name,
+                reference_field_type_name,
+                ..
+            } = get_join_directive_info(
+                field_def,
+                typedef_name,
+                &schema.field_type_mappings,
+            );
+
+            let field_typ_name = if !field_def.ty.node.nullable {
+                [reference_field_type_name, "!".to_string()].join("")
+            } else {
+                reference_field_type_name
+            };
+            foo_process_field(schema, field_def, typedef_name, FieldKind::Regular)
+        }
+        FieldKind::Enum => {
+            let ty =
+                Type::new("Charfield").expect("Could not construct type for processing.");
+            foo_process_field(schema, field_def, typedef_name, FieldKind::Regular)
+        }
+        FieldKind::Virtual => {
+            let ty =
+                Type::new("Virtual").expect("Could not construct type for processing.");
+            foo_process_field(schema, field_def, typedef_name, FieldKind::Regular)
+        }
+        FieldKind::Union => {
+            let field_typ_name = field_def.ty.to_string();
+            match schema.is_non_indexable_non_enum(&field_typ_name) {
+                true => {
+                    foo_process_field(schema, field_def, typedef_name, FieldKind::Regular)
+                }
+                false => foo_process_field(
+                    schema,
+                    field_def,
+                    typedef_name,
+                    FieldKind::ForeignKey,
+                ),
+            }
+        }
+        FieldKind::Regular | FieldKind::Unknown => {
+            let (typ_tokens, typ_ident) = process_type(schema, &field_def.ty.node);
+            let name_ident = format_ident! {"{}", field_name.to_string()};
+
+            let extractor = field_extractor(
+                schema,
+                name_ident.clone(),
+                typ_ident.clone(),
+                field_def.ty.node.nullable,
+            );
+
+            (typ_tokens, name_ident, typ_ident, extractor)
+        }
+    }
+}
+
+/// Process a named type into its type tokens, and the Ident for those type tokens.
+pub fn process_type(
+    schema: &ParsedGraphQLSchema,
+    typ: &Type,
+) -> (proc_macro2::TokenStream, proc_macro2::Ident) {
+    match &typ.base {
+        BaseType::Named(t) => {
+            let name = t.to_string();
+            if !schema.has_type(&name) {
+                panic!("Type '{name}' is not defined in the schema.",);
+            }
+
+            let name = format_ident! {"{}", name};
+
+            if typ.nullable {
+                (quote! { Option<#name> }, name)
+            } else {
+                (quote! { #name }, name)
+            }
+        }
+        BaseType::List(_t) => panic!("Got a list type, we don't handle this yet..."),
+    }
+}
+
+/// Return `FieldKind` for a given `FieldDefinition` within the context of a
+/// particularly parsed GraphQL schema.
+pub fn field_kind(field_typ_name: &str, parser: &ParsedGraphQLSchema) -> FieldKind {
+    if parser.is_union_type(&field_typ_name) {
+        return FieldKind::Union;
+    }
+
+    if parser.is_possible_foreign_key(&field_typ_name) {
+        return FieldKind::ForeignKey;
+    }
+
+    if parser.is_enum_type(&field_typ_name) {
+        return FieldKind::Enum;
+    }
+
+    if parser.is_non_indexable_non_enum(&field_typ_name) {
+        return FieldKind::Virtual;
+    }
+
+    FieldKind::Regular
+}
+
+/// Get tokens for a cloneable field.
+pub fn clone_tokens(field_typ_name: &str) -> TokenStream {
+    if COPY_TYPES.contains(field_typ_name) {
+        quote! {.clone()}
+    } else {
+        quote! {}
+    }
+}
+
+/// Get tokens for a field decoder.
+pub fn field_type_decoder(
+    nullable: bool,
+    scalar_typ_name: &str,
+    field_name: &Ident,
+    clone: TokenStream,
+) -> TokenStream {
+    if nullable {
+        quote! { FtColumn::#scalar_typ_name(self.#field_name #clone), }
+    } else {
+        quote! { FtColumn::#scalar_typ_name(Some(self.#field_name #clone)), }
+    }
 }

@@ -203,11 +203,7 @@ impl ParsedGraphQLSchema {
                                 member_obj.fields.iter().for_each(|f| {
                                     let field_id =
                                         format!("{}.{}", union_name, f.node.name);
-                                    field_defs.insert(field_id.clone(), f.node.clone());
-                                    field_type_mappings.insert(
-                                        field_id,
-                                        normalize_field_type_name(&f.node.ty.to_string()),
-                                    );
+                                    field_defs.insert(field_id, f.node.clone());
                                 });
                             });
 
