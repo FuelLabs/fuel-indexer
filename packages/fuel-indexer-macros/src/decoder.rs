@@ -4,6 +4,7 @@ use async_graphql_parser::types::{
     EnumType, FieldDefinition, ObjectType, ServiceDocument, TypeKind,
     TypeSystemDefinition, UnionType,
 };
+use fuel_indexer_database_types::IdCol;
 use fuel_indexer_schema::parser::ParsedGraphQLSchema;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -64,13 +65,14 @@ impl Decoder {
         parser: &ParsedGraphQLSchema,
     ) -> Self {
         let ident = format_ident!("{}", obj_name);
+        let type_id = typekind_type_id(&parser.namespace, &parser.identifier, &obj_name);
 
         let mut struct_fields = quote! {};
         let mut field_extractors = quote! {};
         let mut from_row = quote! {};
         let mut to_row = quote! {};
         let mut parameters = quote! {};
-        let mut hasher = quote! {};
+        let mut hasher = quote! { Sha256::new() };
         let mut impl_new_fields = quote! {};
 
         let mut fields_map = BTreeMap::new();
@@ -85,20 +87,25 @@ impl Decoder {
 
         for field in &o.fields {
             // Process once to get the general field info
-            let (typ_tokens, field_name, scalar_typ_name, extractor) =
-                foo_process_field(parser, &field.node, &obj_name, FieldKind::Unknown);
-            let fieldkind = field_kind(&scalar_typ_name.to_string(), parser);
+            let (typ_tokens, field_name, field_typ_name, extractor) = foo_process_field(
+                parser,
+                field.node.clone(),
+                &obj_name,
+                FieldKind::Unknown,
+            );
+
+            let fieldkind = field_kind(&field_typ_name.to_string(), parser);
 
             // Process a second time to convert any complex/special field types into regular scalars
-            let (typ_tokens, field_name, scalar_typ_name, extractor) =
-                foo_process_field(parser, &field.node, &obj_name, fieldkind);
+            let (typ_tokens, field_name, field_type_scalar_name, extractor) =
+                foo_process_field(parser, field.node.clone(), &obj_name, fieldkind);
 
-            fields_map.insert(field_name.to_string(), scalar_typ_name.to_string());
+            fields_map.insert(field_name.to_string(), field_type_scalar_name.to_string());
 
-            let clone = clone_tokens(&scalar_typ_name.to_string());
-            let field_decoder = field_type_decoder(
+            let clone = clone_tokens(&field_type_scalar_name.to_string());
+            let field_decoder = field_decoder_tokens(
                 field.node.ty.node.nullable,
-                &scalar_typ_name.to_string(),
+                &field_type_scalar_name.to_string(),
                 &field_name,
                 clone.clone(),
             );
@@ -124,15 +131,15 @@ impl Decoder {
             };
 
             let unwrap_or_default = unwrap_or_default_tokens(
-                &scalar_typ_name.to_string(),
+                &field_type_scalar_name.to_string(),
                 field.node.ty.node.nullable,
             );
-            let to_bytes = to_bytes_tokens(&scalar_typ_name.to_string());
+            let to_bytes = to_bytes_tokens(&field_type_scalar_name.to_string());
 
             if can_derive_id(&obj_fields, &field_name.to_string(), &obj_name) {
                 parameters = parameters_tokens(parameters, &field_name, typ_tokens);
                 hasher = hasher_tokens(
-                    &scalar_typ_name.to_string(),
+                    &field_type_scalar_name.to_string(),
                     hasher,
                     &field_name,
                     clone,
@@ -158,6 +165,7 @@ impl Decoder {
             impl_new_fields: impl_new_fields.clone(),
             source: ExecutionSource::Wasm,
             impl_new_params: ImplNewParameters::ObjectType {
+                // standardize all these names
                 strct: ident,
                 parameters,
                 hasher,
@@ -166,7 +174,7 @@ impl Decoder {
                 is_native: parser.is_native,
                 field_set: obj_fields,
             },
-            type_id: 0,
+            type_id,
         }
     }
 
@@ -176,7 +184,7 @@ impl Decoder {
         e: EnumType,
         parser: &ParsedGraphQLSchema,
     ) -> Self {
-        Self::default()
+        unimplemented!()
     }
 
     /// Create a decoder from a GraphQL union.
@@ -185,7 +193,7 @@ impl Decoder {
         u: UnionType,
         parser: &ParsedGraphQLSchema,
     ) -> Self {
-        Self::default()
+        unimplemented!()
     }
 }
 
@@ -205,7 +213,7 @@ impl From<Decoder> for TokenStream {
             type_id,
         } = decoder;
 
-        let json_impl = quote! {
+        let impl_json = quote! {
 
             impl From<#ident> for Json {
                 fn from(value: #ident) -> Self {
@@ -222,7 +230,7 @@ impl From<Decoder> for TokenStream {
             }
         };
 
-        let entity_impl = match source {
+        let impl_entity = match source {
             ExecutionSource::Native => quote! {
                 #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
                 pub struct #ident {
@@ -301,11 +309,54 @@ impl From<Decoder> for TokenStream {
                             #to_row
                         ]
                     }
+
                 }
 
             },
         };
 
-        quote! {}
+        let impl_new = match impl_new_params {
+            ImplNewParameters::ObjectType {
+                strct,
+                parameters,
+                hasher,
+                object_name,
+                struct_fields,
+                is_native,
+                field_set,
+            } => {
+                if field_set.contains(&IdCol::to_lowercase_string()) {
+                    generate_struct_new_method_impl(
+                        strct,
+                        parameters,
+                        hasher,
+                        object_name,
+                        struct_fields,
+                        is_native,
+                    )
+                } else {
+                    quote! {}
+                }
+            }
+            ImplNewParameters::UnionType {
+                schema,
+                union_obj,
+                union_ident,
+                union_field_set,
+            } => generate_from_traits_for_union(
+                &schema,
+                &union_obj,
+                union_ident,
+                union_field_set,
+            ),
+        };
+
+        quote! {
+            #impl_entity
+
+            #impl_new
+
+            #impl_json
+        }
     }
 }

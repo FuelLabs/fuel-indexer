@@ -19,7 +19,8 @@ impl GraphqlObject for IndexMetadata {
 
 type IndexMetadataEntity {
     id: ID!
-    time: Int8!
+    time: UInt8!
+    block_height: UInt4!
 }
 "#
     }

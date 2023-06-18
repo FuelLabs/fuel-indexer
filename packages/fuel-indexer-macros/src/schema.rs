@@ -160,8 +160,8 @@ fn foo_process_type_def(
     let typekind_name = typ.name.to_string();
     let decoder = match &typ.kind {
         TypeKind::Object(o) => Decoder::from_object(typekind_name, o.to_owned(), parser),
-        TypeKind::Enum(e) => Decoder::from_enum(typekind_name, e.to_owned(), parser),
-        TypeKind::Union(u) => Decoder::from_union(typekind_name, u.to_owned(), parser),
+        // TypeKind::Enum(e) => Decoder::from_enum(typekind_name, e.to_owned(), parser),
+        // TypeKind::Union(u) => Decoder::from_union(typekind_name, u.to_owned(), parser),
         _ => proc_macro_error::abort_call_site!(
             "Unrecognized TypeKind in GraphQL schema: {:?}",
             typ.kind

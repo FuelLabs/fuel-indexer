@@ -646,6 +646,7 @@ pub fn typekind_type_id(namespace: &str, identifier: &str, typekind_name: &str) 
 }
 
 /// Type of special fields in GraphQL schema.
+#[derive(Debug, Clone)]
 pub enum FieldKind {
     ForeignKey,
     Enum,
@@ -664,7 +665,7 @@ pub enum FieldKind {
 ///     - The field's row extractor tokens.
 pub fn foo_process_field(
     schema: &ParsedGraphQLSchema,
-    field_def: &FieldDefinition,
+    mut field_def: FieldDefinition,
     typedef_name: &String,
     fieldkind: FieldKind,
 ) -> (
@@ -682,7 +683,7 @@ pub fn foo_process_field(
                 reference_field_type_name,
                 ..
             } = get_join_directive_info(
-                field_def,
+                &field_def,
                 typedef_name,
                 &schema.field_type_mappings,
             );
@@ -692,6 +693,8 @@ pub fn foo_process_field(
             } else {
                 reference_field_type_name
             };
+            field_def.ty.node = Type::new(&field_typ_name)
+                .expect("Could not construct type for processing.");
             foo_process_field(schema, field_def, typedef_name, FieldKind::Regular)
         }
         FieldKind::Enum => {
@@ -743,7 +746,7 @@ pub fn process_type(
         BaseType::Named(t) => {
             let name = t.to_string();
             if !schema.has_type(&name) {
-                panic!("Type '{name}' is not defined in the schema.",);
+                panic!("Type '{name}' is not defined in the schema.");
             }
 
             let name = format_ident! {"{}", name};
@@ -815,14 +818,14 @@ pub fn to_bytes_tokens(field_typ_name: &str) -> TokenStream {
 
 /// Get tokens for hasher.
 pub fn hasher_tokens(
-    field_typ_name: &str,
+    field_type_scalar_name: &str,
     hasher: TokenStream,
     field_name: &Ident,
     clone: TokenStream,
     unwrap_or_default: TokenStream,
     to_bytes: TokenStream,
 ) -> TokenStream {
-    if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name) {
+    if !NONDIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
         quote! { #hasher.chain_update(#field_name #clone #unwrap_or_default #to_bytes)}
     } else {
         quote! {}
@@ -839,16 +842,17 @@ pub fn parameters_tokens(
 }
 
 /// Get tokens for a field decoder.
-pub fn field_type_decoder(
+pub fn field_decoder_tokens(
     nullable: bool,
-    scalar_typ_name: &str,
+    field_type_scalar_name: &str,
     field_name: &Ident,
     clone: TokenStream,
 ) -> TokenStream {
+    let field_type_scalar_name = format_ident! {"{}", field_type_scalar_name};
     if nullable {
-        quote! { FtColumn::#scalar_typ_name(self.#field_name #clone), }
+        quote! { FtColumn::#field_type_scalar_name(self.#field_name #clone), }
     } else {
-        quote! { FtColumn::#scalar_typ_name(Some(self.#field_name #clone)), }
+        quote! { FtColumn::#field_type_scalar_name(Some(self.#field_name #clone)), }
     }
 }
 
