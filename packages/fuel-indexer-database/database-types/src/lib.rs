@@ -649,6 +649,10 @@ impl IdCol {
         "id".to_string()
     }
 
+    pub fn to_lowercase_str() -> &'static str {
+        "id"
+    }
+
     pub fn to_uppercase_string() -> String {
         "ID".to_string()
     }

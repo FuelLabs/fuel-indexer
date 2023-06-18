@@ -21,7 +21,7 @@ pub enum IndexerSchemaDbError {
     #[error("Unable to parse join directive: {0:?}")]
     JoinDirectiveError(String),
     #[error("Unable to build schema field and type map: {0:?}")]
-    Error(String),
+    FieldAndTypeConstructionError(String),
     #[error("This TypeKind is unsupported.")]
     UnsupportedTypeKind,
     #[error("List types are unsupported.")]

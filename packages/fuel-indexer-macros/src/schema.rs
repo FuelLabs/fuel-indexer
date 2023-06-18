@@ -205,7 +205,8 @@ fn process_type_def(
                 .iter()
                 .map(|f| f.node.name.node.to_string())
                 .collect::<Vec<String>>();
-            let field_set: HashSet<&String> = HashSet::from_iter(fields.iter());
+            let field_set: HashSet<String> =
+                HashSet::from_iter(fields.iter().map(|f| f.to_owned()));
 
             for field in &obj.fields {
                 let field_name = &field.node.name.to_string();
@@ -300,7 +301,7 @@ fn process_type_def(
 
                 let unwrap_or_def = if field_type.nullable {
                     if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
-                        unwrap_or_default_for_external_type(field_typ_name.clone())
+                        unwrap_or_default_for_external_type(&field_typ_name)
                     } else {
                         quote! { .unwrap_or_default() }
                     }
@@ -309,7 +310,7 @@ fn process_type_def(
                 };
 
                 let to_bytes = if EXTERNAL_FIELD_TYPES.contains(field_typ_name.as_str()) {
-                    to_bytes_method_for_external_type(field_typ_name.clone())
+                    to_bytes_method_for_external_type(&field_typ_name)
                 } else if !ASREF_BYTE_TYPES.contains(field_typ_name.as_str()) {
                     quote! { .to_le_bytes() }
                 } else {
@@ -346,7 +347,7 @@ fn process_type_def(
                 from_row,
                 to_row,
                 schema.is_native,
-                TraitGenerationParameters::ObjectType {
+                ImplNewParameters::ObjectType {
                     strct,
                     parameters,
                     hasher,
@@ -521,9 +522,9 @@ fn process_type_def(
                 from_row,
                 to_row,
                 schema.is_native,
-                TraitGenerationParameters::UnionType {
-                    schema,
-                    union_obj: obj,
+                ImplNewParameters::UnionType {
+                    schema: schema.clone(),
+                    union_obj: obj.clone(),
                     union_ident: ident,
                     union_field_set,
                 },

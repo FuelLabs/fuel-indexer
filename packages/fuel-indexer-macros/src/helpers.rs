@@ -15,7 +15,7 @@ use quote::{format_ident, quote};
 use syn::Ident;
 
 /// Parameters for generating traits for different `TypeKind` variants.
-pub enum TraitGenerationParameters<'a> {
+pub enum ImplNewParameters {
     ObjectType {
         strct: Ident,
         parameters: proc_macro2::TokenStream,
@@ -23,11 +23,11 @@ pub enum TraitGenerationParameters<'a> {
         object_name: String,
         struct_fields: proc_macro2::TokenStream,
         is_native: bool,
-        field_set: HashSet<&'a String>,
+        field_set: HashSet<String>,
     },
     UnionType {
-        schema: &'a ParsedGraphQLSchema,
-        union_obj: &'a UnionType,
+        schema: ParsedGraphQLSchema,
+        union_obj: UnionType,
         union_ident: Ident,
         union_field_set: HashSet<String>,
     },
@@ -37,9 +37,9 @@ pub enum TraitGenerationParameters<'a> {
 /// for external types; this is done because traits cannot be
 /// implemented on external types due to the orphan rule.
 pub fn to_bytes_method_for_external_type(
-    field_type_name: String,
+    field_type_name: &str,
 ) -> proc_macro2::TokenStream {
-    match field_type_name.as_str() {
+    match field_type_name {
         "Identity" => quote! { .0 },
         "Tai64Timestamp" => quote! { .0.to_le_bytes() },
         _ => panic!("From<{field_type_name}> not implemented for AsRef<u8>."),
@@ -50,9 +50,9 @@ pub fn to_bytes_method_for_external_type(
 /// for external types; this is done because traits cannot be
 /// implemented on external types due to the orphan rule.
 pub fn unwrap_or_default_for_external_type(
-    field_type_name: String,
+    field_type_name: &str,
 ) -> proc_macro2::TokenStream {
-    match field_type_name.as_str() {
+    match field_type_name {
         "Tai64Timestamp" => {
             quote! {
                 .unwrap_or(Tai64Timestamp::from({
@@ -349,7 +349,7 @@ pub fn generate_object_trait_impls(
     from_row: proc_macro2::TokenStream,
     to_row: proc_macro2::TokenStream,
     is_native: bool,
-    trait_gen_params: TraitGenerationParameters,
+    impl_new_params: ImplNewParameters,
 ) -> proc_macro2::TokenStream {
     let json_impl = quote! {
 
@@ -453,8 +453,8 @@ pub fn generate_object_trait_impls(
         }
     };
 
-    let instantiation_impls = match trait_gen_params {
-        TraitGenerationParameters::ObjectType {
+    let instantiation_impls = match impl_new_params {
+        ImplNewParameters::ObjectType {
             strct,
             parameters,
             hasher,
@@ -476,14 +476,14 @@ pub fn generate_object_trait_impls(
                 quote! {}
             }
         }
-        TraitGenerationParameters::UnionType {
+        ImplNewParameters::UnionType {
             schema,
             union_obj,
             union_ident,
             union_field_set,
         } => generate_from_traits_for_union(
-            schema,
-            union_obj,
+            &schema,
+            &union_obj,
             union_ident,
             union_field_set,
         ),
@@ -780,13 +780,62 @@ pub fn field_kind(field_typ_name: &str, parser: &ParsedGraphQLSchema) -> FieldKi
     FieldKind::Regular
 }
 
-/// Get tokens for a cloneable field.
+/// Get tokens for a field's `.clone()`.
 pub fn clone_tokens(field_typ_name: &str) -> TokenStream {
     if COPY_TYPES.contains(field_typ_name) {
         quote! {.clone()}
     } else {
         quote! {}
     }
+}
+
+/// Get tokens for a field's `.unwrap_or_default()`.
+pub fn unwrap_or_default_tokens(field_typ_name: &str, nullabel: bool) -> TokenStream {
+    if nullabel {
+        if EXTERNAL_FIELD_TYPES.contains(field_typ_name) {
+            unwrap_or_default_for_external_type(field_typ_name)
+        } else {
+            quote! { .unwrap_or_default() }
+        }
+    } else {
+        quote! {}
+    }
+}
+
+/// Get tokens for a field's `.to_bytes()`.
+pub fn to_bytes_tokens(field_typ_name: &str) -> TokenStream {
+    if EXTERNAL_FIELD_TYPES.contains(field_typ_name) {
+        to_bytes_method_for_external_type(field_typ_name)
+    } else if !ASREF_BYTE_TYPES.contains(field_typ_name) {
+        quote! { .to_le_bytes() }
+    } else {
+        quote! {}
+    }
+}
+
+/// Get tokens for hasher.
+pub fn hasher_tokens(
+    field_typ_name: &str,
+    hasher: TokenStream,
+    field_name: &Ident,
+    clone: TokenStream,
+    unwrap_or_default: TokenStream,
+    to_bytes: TokenStream,
+) -> TokenStream {
+    if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name) {
+        quote! { #hasher.chain_update(#field_name #clone #unwrap_or_default #to_bytes)}
+    } else {
+        quote! {}
+    }
+}
+
+/// Get tokens for parameters.
+pub fn parameters_tokens(
+    parameters: TokenStream,
+    field_name: &Ident,
+    typ_tokens: TokenStream,
+) -> TokenStream {
+    quote! { #parameters #field_name: #typ_tokens, }
 }
 
 /// Get tokens for a field decoder.
@@ -801,4 +850,15 @@ pub fn field_type_decoder(
     } else {
         quote! { FtColumn::#scalar_typ_name(Some(self.#field_name #clone)), }
     }
+}
+
+/// Whether a given field is elligible for auto ID.
+pub fn can_derive_id(
+    field_set: &HashSet<String>,
+    field_name: &str,
+    typekind_name: &str,
+) -> bool {
+    field_set.contains(IdCol::to_lowercase_str())
+        && !INTERNAL_INDEXER_ENTITIES.contains(typekind_name)
+        && field_name != IdCol::to_lowercase_str()
 }
