@@ -55,14 +55,14 @@ fn process_type(
 fn process_field(
     schema: &ParsedGraphQLSchema,
     field_name: &String,
-    field_type: &Type,
+    field_type: Type,
 ) -> (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
     proc_macro2::Ident,
     proc_macro2::TokenStream,
 ) {
-    let (typ_tokens, typ_ident) = process_type(schema, field_type);
+    let (typ_tokens, typ_ident) = process_type(schema, &field_type);
     let name_ident = format_ident! {"{}", field_name.to_string()};
 
     let extractor = field_extractor(
@@ -76,12 +76,23 @@ fn process_field(
 }
 
 /// Type of special fields in GraphQL schema.
-enum SpecialFieldType {
+enum FieldKind {
     ForeignKey,
     Enum,
     Virtual,
     Union,
+    Regular,
 }
+
+// TODO: combine process_field and process_special_field
+//
+// processing FKs and virtuals should be recursive:
+//
+// process_field(virtual) -> process_field(json)
+// process_field(fk) -> process_field(join_id)
+// process_field(regular) -> .. | process_field(virtual) | process_field(union) | process_field(enum)
+// process_field(union) -> (all union field members are already processed)
+// process_field(enum) -> process_field(string)
 
 /// Process an object's 'special' field and return a group of tokens.
 ///
@@ -93,10 +104,14 @@ fn process_special_field(
     object_name: &String,
     field: &FieldDefinition,
     is_nullable: bool,
-    field_type: SpecialFieldType,
+    kind: FieldKind,
 ) -> ProcessedFieldResult {
-    match field_type {
-        SpecialFieldType::ForeignKey => {
+    let FieldDefinition {
+        name: field_name, ..
+    } = field.clone();
+
+    match kind {
+        FieldKind::ForeignKey => {
             let directives::Join {
                 field_name,
                 reference_field_type_name,
@@ -108,61 +123,60 @@ fn process_special_field(
             } else {
                 reference_field_type_name
             };
-            let field_type: Type = Type::new(&field_typ_name)
-                .expect("Could not construct type for processing");
+            // let field_type: Type = Type::new(&field_typ_name)
+            //     .expect("Could not construct type for processing");
 
-            process_field(schema, &field_name, &field_type)
+            process_field(schema, &field_name, field.ty.node.clone())
         }
-        SpecialFieldType::Enum => {
-            let FieldDefinition {
-                name: field_name, ..
-            } = field;
+        FieldKind::Enum => {
+            // let field_typ_name = if !is_nullable {
+            //     ["Charfield".to_string(), "!".to_string()].join("")
+            // } else {
+            //     "Charfield".to_string()
+            // };
 
-            let field_typ_name = if !is_nullable {
-                ["Charfield".to_string(), "!".to_string()].join("")
-            } else {
-                "Charfield".to_string()
-            };
+            // let field_type: Type = Type::new(&field_typ_name)
+            //     .expect("Could not construct type for processing");
 
-            let field_type: Type = Type::new(&field_typ_name)
-                .expect("Could not construct type for processing");
-
-            process_field(schema, &field_name.to_string(), &field_type)
+            let ty =
+                Type::new("Charfield").expect("Could not construct type for processing.");
+            process_field(schema, &field_name.to_string(), ty)
         }
-        SpecialFieldType::Virtual => {
-            let FieldDefinition {
-                name: field_name, ..
-            } = field;
+        FieldKind::Virtual => {
+            // let field_typ_name = if !is_nullable {
+            //     ["Virtual".to_string(), "!".to_string()].join("")
+            // } else {
+            //     "Virtual".to_string()
+            // };
 
-            let field_typ_name = if !is_nullable {
-                ["Virtual".to_string(), "!".to_string()].join("")
-            } else {
-                "Virtual".to_string()
-            };
+            // let field_type: Type = Type::new(&field_typ_name)
+            //     .expect("Could not construct type for processing");
 
-            let field_type: Type = Type::new(&field_typ_name)
-                .expect("Could not construct type for processing");
-
-            process_field(schema, &field_name.to_string(), &field_type)
+            let ty =
+                Type::new("Virtual").expect("Could not construct type for processing.");
+            process_field(schema, &field_name.to_string(), ty)
         }
-        SpecialFieldType::Union => {
+        FieldKind::Union => {
             let field_typ_name = field.ty.to_string();
-            if schema.is_non_indexable_non_enum(&field_typ_name) {
-                return process_special_field(
+            match schema.is_non_indexable_non_enum(&field_typ_name) {
+                true => process_special_field(
                     schema,
                     object_name,
                     field,
                     is_nullable,
-                    SpecialFieldType::Virtual,
-                );
+                    FieldKind::Virtual,
+                ),
+                false => process_special_field(
+                    schema,
+                    object_name,
+                    field,
+                    is_nullable,
+                    FieldKind::ForeignKey,
+                ),
             }
-            process_special_field(
-                schema,
-                object_name,
-                field,
-                is_nullable,
-                SpecialFieldType::ForeignKey,
-            )
+        }
+        FieldKind::Regular => {
+            process_field(schema, &field.name.to_string(), field.ty.node.clone())
         }
     }
 }
@@ -214,7 +228,7 @@ fn process_type_def(
                 let field_name = &field.node.name.to_string();
                 let field_type = &field.node.ty.node;
                 let (mut typ_tokens, mut field_name, mut scalar_typ, mut extractor) =
-                    process_field(schema, field_name, field_type);
+                    process_field(schema, field_name, field_type.clone());
 
                 let mut field_typ_name = scalar_typ.to_string();
 
@@ -225,7 +239,7 @@ fn process_type_def(
                             &object_name,
                             &field.node,
                             field_type.nullable,
-                            SpecialFieldType::Union,
+                            FieldKind::Union,
                         );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -237,7 +251,7 @@ fn process_type_def(
                             &object_name,
                             &field.node,
                             field_type.nullable,
-                            SpecialFieldType::ForeignKey,
+                            FieldKind::ForeignKey,
                         );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -249,7 +263,7 @@ fn process_type_def(
                             &object_name,
                             &field.node,
                             field_type.nullable,
-                            SpecialFieldType::Enum,
+                            FieldKind::Enum,
                         );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -261,7 +275,7 @@ fn process_type_def(
                             &object_name,
                             &field.node,
                             field_type.nullable,
-                            SpecialFieldType::Virtual,
+                            FieldKind::Virtual,
                         );
                     field_typ_name = scalar_typ.to_string();
                 }
@@ -479,7 +493,7 @@ fn process_type_def(
                     // Since we've already processed the member's fields, we don't need
                     // to do any type of special field processing here.
                     let (typ_tokens, field_name, scalar_typ, extractor) =
-                        process_field(schema, field_name, &field_type);
+                        process_field(schema, field_name, field_type.clone());
 
                     let is_copy_type = COPY_TYPES.contains(field_typ_name.as_str());
                     let is_non_indexable_non_enum =

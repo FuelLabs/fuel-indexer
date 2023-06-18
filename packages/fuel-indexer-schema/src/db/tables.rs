@@ -234,7 +234,7 @@ impl SchemaBuilder {
                         unique,
                     };
 
-                    fragments.push(column.sql_fragment());
+                    fragments.push(column.create());
                     self.columns.push(column);
                     self.foreign_keys.push(fk);
                     parsed_names.insert(field_id);
@@ -265,7 +265,7 @@ impl SchemaBuilder {
                         });
                     }
 
-                    fragments.push(column.sql_fragment());
+                    fragments.push(column.create());
                     self.columns.push(column);
                     parsed_names.insert(field_id);
                 }
@@ -295,7 +295,7 @@ impl SchemaBuilder {
                         });
                     }
 
-                    fragments.push(column.sql_fragment());
+                    fragments.push(column.create());
                     self.columns.push(column);
                     parsed_names.insert(field_id);
                 }
@@ -312,7 +312,7 @@ impl SchemaBuilder {
             unique: false,
         };
 
-        fragments.push(object_column.sql_fragment());
+        fragments.push(object_column.create());
         self.columns.push(object_column);
 
         Ok(fragments.join(",\n"))

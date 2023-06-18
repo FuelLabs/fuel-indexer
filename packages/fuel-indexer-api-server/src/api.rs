@@ -47,7 +47,7 @@ pub type ApiResult<T> = core::result::Result<T, ApiError>;
 /// Size of the buffer for reqeusts being passed to the `RateLimitLayer`.
 const BUFFER_SIZE: usize = 1024;
 
-/// Error type returned by HTTP operations specifically.
+/// Error type returned by HTTP operations.
 #[derive(Debug, Error)]
 pub enum HttpError {
     #[error("Bad request.")]

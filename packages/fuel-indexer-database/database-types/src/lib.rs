@@ -18,6 +18,7 @@ use std::{
 };
 use strum::{AsRefStr, EnumString};
 
+/// SQL database types used by indexers.
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum ColumnType {
     ID = 0,
@@ -200,67 +201,25 @@ pub struct RootColumns {
     pub graphql_type: String,
 }
 
+/// Whether a given column is virtual or regular. Virtual columns are not
+/// persisted to the database.
 #[derive(Debug)]
 pub enum ColumnPersistence {
     Virtual,
     Regular,
 }
 
+/// SQL statements that can be executed against a database.
 pub trait SqlFragment {
-    fn sql_fragment(&self) -> String;
+    fn create(&self) -> String;
 }
 
+/// A named SQL statement.
 pub trait SqlNamed {
     fn sql_name(&self) -> String;
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Clone, EnumString, AsRefStr)]
-pub enum SqlType {
-    Int,
-    BigInt,
-    Numeric,
-    Varchar,
-    Timestamp,
-    Boolean,
-    Json,
-    Bytea,
-    Enum,
-    Uuid,
-    Text,
-    Jsonb,
-    Date,
-    Interval,
-    SmallInt,
-    Real,
-    DoublePrecision,
-    Custom(String),
-}
-
-impl SqlFragment for SqlType {
-    fn sql_fragment(&self) -> String {
-        match self {
-            SqlType::Int => "integer".to_string(),
-            SqlType::BigInt => "bigint".to_string(),
-            SqlType::Numeric => "numeric".to_string(),
-            SqlType::Varchar => "varchar".to_string(),
-            SqlType::Timestamp => "timestamp".to_string(),
-            SqlType::Boolean => "boolean".to_string(),
-            SqlType::Json => "json".to_string(),
-            SqlType::Bytea => "bytea".to_string(),
-            SqlType::Enum => "enum".to_string(),
-            SqlType::Uuid => "uuid".to_string(),
-            SqlType::Text => "text".to_string(),
-            SqlType::Jsonb => "jsonb".to_string(),
-            SqlType::Date => "date".to_string(),
-            SqlType::Interval => "interval".to_string(),
-            SqlType::SmallInt => "smallint".to_string(),
-            SqlType::Real => "real".to_string(),
-            SqlType::DoublePrecision => "double precision".to_string(),
-            SqlType::Custom(s) => s.to_string(),
-        }
-    }
-}
-
+/// Column on SQL database for a given `Table` the database.
 #[derive(Debug)]
 pub struct Column {
     // Use default of `1` if `id` field is unused, in order to not have to
@@ -395,7 +354,7 @@ pub struct Columns {
 
 // REFACTOR: remove
 impl NewColumn {
-    pub fn sql_fragment(&self) -> String {
+    pub fn create(&self) -> String {
         let null_frag = if self.nullable { "" } else { "not null" };
         let unique_frag = if self.unique { "unique" } else { "" };
         format!(
@@ -548,7 +507,7 @@ impl SqlNamed for SqlIndex {
 }
 
 impl SqlFragment for SqlIndex {
-    fn sql_fragment(&self) -> String {
+    fn create(&self) -> String {
         let mut frag = "CREATE ".to_string();
         if self.unique {
             frag += "UNIQUE ";
