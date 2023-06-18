@@ -40,7 +40,7 @@ impl Default for Decoder {
             from_row: quote! {},
             to_row: quote! {},
             parameters: quote! {},
-            hasher: quote! {},
+            hasher: quote! { Sha256::new() },
             impl_new_fields: quote! {},
             source: ExecutionSource::Wasm,
             impl_new_params: ImplNewParameters::ObjectType {
@@ -138,14 +138,16 @@ impl Decoder {
 
             if can_derive_id(&obj_fields, &field_name.to_string(), &obj_name) {
                 parameters = parameters_tokens(parameters, &field_name, typ_tokens);
-                hasher = hasher_tokens(
+                if let Some(tokens) = hasher_tokens(
                     &field_type_scalar_name.to_string(),
-                    hasher,
+                    hasher.clone(),
                     &field_name,
                     clone,
                     unwrap_or_default,
                     to_bytes,
-                );
+                ) {
+                    hasher = tokens;
+                }
 
                 impl_new_fields = quote! {
                     #impl_new_fields

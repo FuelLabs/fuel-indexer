@@ -323,7 +323,7 @@ fn process_type_def(
                 {
                     parameters = quote! { #parameters #field_name: #typ_tokens, };
 
-                    if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name.as_str()) {
+                    if !NON_DIGESTIBLE_FIELD_TYPES.contains(field_typ_name.as_str()) {
                         hasher = quote! { #hasher.chain_update(#field_name #clone #unwrap_or_def #to_bytes)};
                     }
 

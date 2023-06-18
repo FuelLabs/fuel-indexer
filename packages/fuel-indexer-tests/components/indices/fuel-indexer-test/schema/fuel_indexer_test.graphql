@@ -4,234 +4,234 @@ type PingEntity {
     message: Charfield!
 }
 
-# type PungEntity {
-#     id: ID!
-#     value: UInt8!
-#     is_pung: Boolean!
-#     pung_from: Identity!
-# }
+type PungEntity {
+    id: ID!
+    value: UInt8!
+    is_pung: Boolean!
+    pung_from: Identity!
+}
 
-# type U16Entity {
-#     id: ID!
-#     value1: UInt16!
-#     value2: Int16!
-# }
+type U16Entity {
+    id: ID!
+    value1: UInt16!
+    value2: Int16!
+}
 
-# type PongEntity {
-#     id: ID!
-#     value: UInt8!
-# }
+type PongEntity {
+    id: ID!
+    value: UInt8!
+}
 
-# type BlockEntity {
-#     id: ID!
-#     height: UInt4!
-#     timestamp: Int8!
-# }
+type BlockEntity {
+    id: ID!
+    height: UInt4!
+    timestamp: Int8!
+}
 
-# type TxEntity {
-#     id: ID!
-#     block: BlockEntity!
-#     input_data: Json!
-#     timestamp: Int8!
-# }
+type TxEntity {
+    id: ID!
+    block: BlockEntity!
+    input_data: Json!
+    timestamp: Int8!
+}
 
-# type TransferEntity {
-#     id: ID!
-#     contract_id: ContractId!
-#     # 'to' is a reserved SQL word, so using 'recipient'
-#     recipient: ContractId!
-#     amount: UInt8!
-#     asset_id: AssetId!
-# }
+type TransferEntity {
+    id: ID!
+    contract_id: ContractId!
+    # 'to' is a reserved SQL word, so using 'recipient'
+    recipient: ContractId!
+    amount: UInt8!
+    asset_id: AssetId!
+}
 
-# type TransferOutEntity  {
-#     id: ID!
-#     contract_id: ContractId!
-#     recipient: Address!
-#     amount: UInt8!
-#     asset_id: AssetId!
-# }
+type TransferOutEntity  {
+    id: ID!
+    contract_id: ContractId!
+    recipient: Address!
+    amount: UInt8!
+    asset_id: AssetId!
+}
 
-# type LogEntity  {
-#     id: ID!
-#     contract_id: ContractId!
-#     ra: UInt8!
-#     rb: UInt8!
-# }
+type LogEntity  {
+    id: ID!
+    contract_id: ContractId!
+    ra: UInt8!
+    rb: UInt8!
+}
 
-# type ScriptResultEntity  {
-#     id: ID!
-#     result: UInt8!
-#     gas_used: UInt8!
-#     blob: Blob!
-# }
+type ScriptResultEntity  {
+    id: ID!
+    result: UInt8!
+    gas_used: UInt8!
+    blob: Blob!
+}
 
-# type MessageOutEntity  {
-#     id: ID!
-#     message_id: MessageId!
-#     sender: Address!
-#     recipient: Address!
-#     amount: UInt8!
-#     nonce: Nonce!
-#     len: UInt8!
-#     digest: Bytes32!
-# }
+type MessageOutEntity  {
+    id: ID!
+    message_id: MessageId!
+    sender: Address!
+    recipient: Address!
+    amount: UInt8!
+    nonce: Nonce!
+    len: UInt8!
+    digest: Bytes32!
+}
 
-# type OptionEntity {
-#     id: ID!
-#     int_required: UInt8!
-#     int_optional_some: UInt8
-#     addr_optional_none: Address
-# }
+type OptionEntity {
+    id: ID!
+    int_required: UInt8!
+    int_optional_some: UInt8
+    addr_optional_none: Address
+}
 
-# type TupleEntity {
-#     id: ID!
-#     complex_a: Charfield!
-#     complex_b: UInt8!
-#     simple_a: Charfield!
-# }
+type TupleEntity {
+    id: ID!
+    complex_a: Charfield!
+    complex_b: UInt8!
+    simple_a: Charfield!
+}
 
-# type MessageEntity {
-#     id: ID!
-#     message: Charfield!
-# }
+type MessageEntity {
+    id: ID!
+    message: Charfield!
+}
 
-# type CallEntity {
-#     id: ID!
-#     contract_id: ContractId!
-#     callee: ContractId!
-#     asset_id: AssetId!
-#     gas: UInt8!
-#     fn_name: Charfield!
-#     amount: UInt8!
-# }
+type CallEntity {
+    id: ID!
+    contract_id: ContractId!
+    callee: ContractId!
+    asset_id: AssetId!
+    gas: UInt8!
+    fn_name: Charfield!
+    amount: UInt8!
+}
 
-# type PanicEntity {
-#     id: ID!
-#     contract_id: ContractId!
-#     reason: UInt4!
-# }
+type PanicEntity {
+    id: ID!
+    contract_id: ContractId!
+    reason: UInt4!
+}
 
-# type RevertEntity {
-#     id: ID!
-#     contract_id: ContractId!
-#     error_val: UInt8!
-# }
+type RevertEntity {
+    id: ID!
+    contract_id: ContractId!
+    error_val: UInt8!
+}
 
-# type Genre {
-#     id: ID!
-#     name: Charfield!
-# }
+type Genre {
+    id: ID!
+    name: Charfield!
+}
 
-# type Person {
-#     id: ID!
-#     name: Charfield!
-# }
+type Person {
+    id: ID!
+    name: Charfield!
+}
 
-# type Planet {
-#     id: ID!
-#     name: Charfield!
-# }
+type Planet {
+    id: ID!
+    name: Charfield!
+}
 
-# type Continent {
-#     id: ID!
-#     name: Charfield!
-#     planet: Planet!
-# }
+type Continent {
+    id: ID!
+    name: Charfield!
+    planet: Planet!
+}
 
-# type Country {
-#     id: ID!
-#     name: Charfield!
-#     continent: Continent!
-# }
+type Country {
+    id: ID!
+    name: Charfield!
+    continent: Continent!
+}
 
-# type Region {
-#     id: ID!
-#     name: Charfield!
-#     country: Country!
-# }
+type Region {
+    id: ID!
+    name: Charfield!
+    country: Country!
+}
 
-# type City {
-#     id: ID!
-#     name: Charfield!
-#     region: Region!
-# }
+type City {
+    id: ID!
+    name: Charfield!
+    region: Region!
+}
 
-# type Author {
-#     id: ID!
-#     name: Charfield!
-#     genre: Genre!
-# }
+type Author {
+    id: ID!
+    name: Charfield!
+    genre: Genre!
+}
 
-# type Library {
-#     id: ID!
-#     name: Charfield!
-#     city: City!
-# }
+type Library {
+    id: ID!
+    name: Charfield!
+    city: City!
+}
 
-# type Book {
-#     id: ID!
-#     name: Charfield!
-#     author: Author!
-#     library: Library!
-#     genre: Genre!
-# }
+type Book {
+    id: ID!
+    name: Charfield!
+    author: Author!
+    library: Library!
+    genre: Genre!
+}
 
-# type Sponsor {
-#     id: ID!
-#     name: Charfield! @unique
-#     amount: UInt8!
-#     representative: Person!
-# }
+type Sponsor {
+    id: ID!
+    name: Charfield! @unique
+    amount: UInt8!
+    representative: Person!
+}
 
-# # TODO: Fix nullable foreign keys; there seems to be issues during codegen
-# type BookClub {
-#     id: ID!
-#     book: Book!
-#     member: Person!
-#     corporate_sponsor: Sponsor! @join(on:name)
-# }
+# TODO: Fix nullable foreign keys; there seems to be issues during codegen
+type BookClub {
+    id: ID!
+    book: Book!
+    member: Person!
+    corporate_sponsor: Sponsor! @join(on:name)
+}
 
-# type Municipality {
-#     id: ID!
-#     name: Charfield! @unique
-# }
+type Municipality {
+    id: ID!
+    name: Charfield! @unique
+}
 
-# type SportsTeam {
-#     id: ID!
-#     name: Charfield!
-#     municipality: Municipality! @join(on:name)
-# }
+type SportsTeam {
+    id: ID!
+    name: Charfield!
+    municipality: Municipality! @join(on:name)
+}
 
-# type InnerFilterEntity {
-#     id: ID!
-#     inner_foo: Charfield!
-#     inner_bar: UInt8!
-#     inner_baz: UInt8!
-# }
+type InnerFilterEntity {
+    id: ID!
+    inner_foo: Charfield!
+    inner_bar: UInt8!
+    inner_baz: UInt8!
+}
 
-# type FilterEntity {
-#     id: ID!
-#     foola: Charfield!
-#     maybe_null_bar: UInt8
-#     bazoo: UInt8!
-#     inner_entity: InnerFilterEntity!
-# }
+type FilterEntity {
+    id: ID!
+    foola: Charfield!
+    maybe_null_bar: UInt8
+    bazoo: UInt8!
+    inner_entity: InnerFilterEntity!
+}
 
-# type EnumError {
-#     id: ID!
-#     contract_id: ContractId!
-#     error_val: UInt8!
-# }
+type EnumError {
+    id: ID!
+    contract_id: ContractId!
+    error_val: UInt8!
+}
 
-# type ExplorerEntity {
-#     id: ID!
-#     nonce: Nonce!
-#     time: Tai64Timestamp
-#     hex: HexString
-#     sig: Signature!
-#     bytes: Bytes64!
-# }
+type ExplorerEntity {
+    id: ID!
+    nonce: Nonce!
+    time: Tai64Timestamp
+    hex: HexString
+    sig: Signature!
+    bytes: Bytes64!
+}
 
 # enum EnumEntity {
 #     One

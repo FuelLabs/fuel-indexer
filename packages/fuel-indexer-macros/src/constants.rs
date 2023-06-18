@@ -63,7 +63,7 @@ lazy_static! {
     ]);
 
     /// Set of field types that are currently unable to be used as a digest for SHA-256 hashing.
-    pub static ref NONDIGESTIBLE_FIELD_TYPES: HashSet<&'static str> = HashSet::from([
+    pub static ref NON_DIGESTIBLE_FIELD_TYPES: HashSet<&'static str> = HashSet::from([
         "Boolean",
         "Identity"
     ]);

@@ -501,10 +501,10 @@ pub fn generate_object_trait_impls(
 /// Construct a `::new()` method for a particular struct; `::new()`
 /// will automatically create an ID for the user for use in a database.
 pub fn generate_struct_new_method_impl(
-    strct: Ident,
+    ident: Ident,
     parameters: proc_macro2::TokenStream,
     hasher: proc_macro2::TokenStream,
-    object_name: String,
+    typekind_name: String,
     struct_fields: proc_macro2::TokenStream,
     is_native: bool,
 ) -> proc_macro2::TokenStream {
@@ -528,11 +528,12 @@ pub fn generate_struct_new_method_impl(
         }
     };
 
-    if !INTERNAL_INDEXER_ENTITIES.contains(object_name.as_str()) {
+    if !INTERNAL_INDEXER_ENTITIES.contains(typekind_name.as_str()) {
         quote! {
-            impl #strct {
+            impl #ident {
                 pub fn new(#parameters) -> Self {
-                    let raw_bytes = #hasher.chain_update(#object_name).finalize();
+                    let raw_bytes = #hasher.chain_update(#typekind_name).finalize();
+                    // let raw_bytes: [u8; 16] = [0u8; 16];
 
                     let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
 
@@ -824,12 +825,13 @@ pub fn hasher_tokens(
     clone: TokenStream,
     unwrap_or_default: TokenStream,
     to_bytes: TokenStream,
-) -> TokenStream {
-    if !NONDIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
-        quote! { #hasher.chain_update(#field_name #clone #unwrap_or_default #to_bytes)}
-    } else {
-        quote! {}
+) -> Option<TokenStream> {
+    if !NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
+        return Some(
+            quote! { #hasher.chain_update(#field_name #clone #unwrap_or_default #to_bytes) },
+        );
     }
+    None
 }
 
 /// Get tokens for parameters.
