@@ -504,7 +504,7 @@ pub fn generate_struct_new_method_impl(
     ident: Ident,
     parameters: proc_macro2::TokenStream,
     hasher: proc_macro2::TokenStream,
-    typekind_name: String,
+    typedef_name: String,
     struct_fields: proc_macro2::TokenStream,
     is_native: bool,
 ) -> proc_macro2::TokenStream {
@@ -528,11 +528,11 @@ pub fn generate_struct_new_method_impl(
         }
     };
 
-    if !INTERNAL_INDEXER_ENTITIES.contains(typekind_name.as_str()) {
+    if !INTERNAL_INDEXER_ENTITIES.contains(typedef_name.as_str()) {
         quote! {
             impl #ident {
                 pub fn new(#parameters) -> Self {
-                    let raw_bytes = #hasher.chain_update(#typekind_name).finalize();
+                    let raw_bytes = #hasher.chain_update(#typedef_name).finalize();
                     // let raw_bytes: [u8; 16] = [0u8; 16];
 
                     let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
@@ -642,8 +642,8 @@ pub fn generate_from_traits_for_union(
 }
 
 /// Derive a type ID for a `TypeKind` under a given indexer namespace and identifier.
-pub fn typekind_type_id(namespace: &str, identifier: &str, typekind_name: &str) -> i64 {
-    type_id(&format!("{namespace}_{identifier}"), typekind_name)
+pub fn typedef_type_id(namespace: &str, identifier: &str, typedef_name: &str) -> i64 {
+    type_id(&format!("{namespace}_{identifier}"), typedef_name)
 }
 
 /// Type of special fields in GraphQL schema.
@@ -654,7 +654,6 @@ pub enum FieldKind {
     Virtual,
     Union,
     Regular,
-    Unknown,
 }
 
 /// Process an object's field and return a group of tokens.
@@ -664,11 +663,10 @@ pub enum FieldKind {
 ///     - The field's name as an Ident.
 ///     - The field's type as an Ident.
 ///     - The field's row extractor tokens.
-pub fn foo_process_field(
+pub fn process_typedef_field(
     schema: &ParsedGraphQLSchema,
     mut field_def: FieldDefinition,
     typedef_name: &String,
-    fieldkind: FieldKind,
 ) -> (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
@@ -676,6 +674,8 @@ pub fn foo_process_field(
     proc_macro2::TokenStream,
 ) {
     let field_name = field_def.name.to_string();
+    let (typ_tokens, field_type_ident) = process_type(schema, &field_def.ty.node);
+    let fieldkind = field_kind(&field_type_ident.to_string(), schema);
 
     match fieldkind {
         FieldKind::ForeignKey => {
@@ -689,6 +689,7 @@ pub fn foo_process_field(
                 &schema.field_type_mappings,
             );
 
+            // REFACTOR: Move this to helpers
             let field_typ_name = if !field_def.ty.node.nullable {
                 [reference_field_type_name, "!".to_string()].join("")
             } else {
@@ -696,44 +697,39 @@ pub fn foo_process_field(
             };
             field_def.ty.node = Type::new(&field_typ_name)
                 .expect("Could not construct type for processing.");
-            foo_process_field(schema, field_def, typedef_name, FieldKind::Regular)
+            process_typedef_field(schema, field_def, typedef_name)
         }
         FieldKind::Enum => {
             let ty =
                 Type::new("Charfield").expect("Could not construct type for processing.");
-            foo_process_field(schema, field_def, typedef_name, FieldKind::Regular)
+            process_typedef_field(schema, field_def, typedef_name)
         }
         FieldKind::Virtual => {
-            let ty =
+            field_def.ty.node =
                 Type::new("Virtual").expect("Could not construct type for processing.");
-            foo_process_field(schema, field_def, typedef_name, FieldKind::Regular)
+            process_typedef_field(schema, field_def, typedef_name)
         }
         FieldKind::Union => {
             let field_typ_name = field_def.ty.to_string();
             match schema.is_non_indexable_non_enum(&field_typ_name) {
                 true => {
-                    foo_process_field(schema, field_def, typedef_name, FieldKind::Regular)
+                    field_def.ty.node = Type::new("Virtual")
+                        .expect("Could not construct type for processing.");
+                    process_typedef_field(schema, field_def, typedef_name)
                 }
-                false => foo_process_field(
-                    schema,
-                    field_def,
-                    typedef_name,
-                    FieldKind::ForeignKey,
-                ),
+                false => process_typedef_field(schema, field_def, typedef_name),
             }
         }
-        FieldKind::Regular | FieldKind::Unknown => {
-            let (typ_tokens, typ_ident) = process_type(schema, &field_def.ty.node);
+        _ => {
             let name_ident = format_ident! {"{}", field_name.to_string()};
-
             let extractor = field_extractor(
                 schema,
                 name_ident.clone(),
-                typ_ident.clone(),
+                field_type_ident.clone(),
                 field_def.ty.node.nullable,
             );
 
-            (typ_tokens, name_ident, typ_ident, extractor)
+            (typ_tokens, name_ident, field_type_ident, extractor)
         }
     }
 }
@@ -862,9 +858,9 @@ pub fn field_decoder_tokens(
 pub fn can_derive_id(
     field_set: &HashSet<String>,
     field_name: &str,
-    typekind_name: &str,
+    typedef_name: &str,
 ) -> bool {
     field_set.contains(IdCol::to_lowercase_str())
-        && !INTERNAL_INDEXER_ENTITIES.contains(typekind_name)
+        && !INTERNAL_INDEXER_ENTITIES.contains(typedef_name)
         && field_name != IdCol::to_lowercase_str()
 }

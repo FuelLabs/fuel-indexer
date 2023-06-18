@@ -65,7 +65,7 @@ impl Decoder {
         parser: &ParsedGraphQLSchema,
     ) -> Self {
         let ident = format_ident!("{}", obj_name);
-        let type_id = typekind_type_id(&parser.namespace, &parser.identifier, &obj_name);
+        let type_id = typedef_type_id(&parser.namespace, &parser.identifier, &obj_name);
 
         let mut struct_fields = quote! {};
         let mut field_extractors = quote! {};
@@ -83,22 +83,11 @@ impl Decoder {
             .iter()
             .map(|(k, v)| k.to_owned())
             .collect::<HashSet<String>>();
-        GraphQLSchemaValidator::check_disallowed_typekind_name(&obj_name);
+        GraphQLSchemaValidator::check_disallowed_typedef_name(&obj_name);
 
         for field in &o.fields {
-            // Process once to get the general field info
-            let (typ_tokens, field_name, field_typ_name, extractor) = foo_process_field(
-                parser,
-                field.node.clone(),
-                &obj_name,
-                FieldKind::Unknown,
-            );
-
-            let fieldkind = field_kind(&field_typ_name.to_string(), parser);
-
-            // Process a second time to convert any complex/special field types into regular scalars
             let (typ_tokens, field_name, field_type_scalar_name, extractor) =
-                foo_process_field(parser, field.node.clone(), &obj_name, fieldkind);
+                process_typedef_field(parser, field.node.clone(), &obj_name);
 
             fields_map.insert(field_name.to_string(), field_type_scalar_name.to_string());
 
