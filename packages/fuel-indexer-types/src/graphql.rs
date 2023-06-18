@@ -8,7 +8,7 @@ pub trait GraphqlObject {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IndexMetadata {
-    pub id: Bytes32,
+    pub id: u64,
     pub block_height: u32,
     pub time: u64,
 }
