@@ -5,6 +5,7 @@ use async_graphql_parser::types::{
     BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
     UnionType,
 };
+use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
 use fuel_indexer_database_types::*;
 use fuel_indexer_schema::{parser::ParsedGraphQLSchema, utils::*};
@@ -689,32 +690,40 @@ pub fn process_typedef_field(
                 &schema.field_type_mappings,
             );
 
-            // REFACTOR: Move this to helpers
-            let field_typ_name = if !field_def.ty.node.nullable {
-                [reference_field_type_name, "!".to_string()].join("")
-            } else {
-                reference_field_type_name
+            let field_typ_name = nullable_type(&field_def, &reference_field_type_name);
+
+            // We're manually updated the field type here because we need to substitute the field name
+            // into a scalar type name.
+            field_def.ty.node = Type {
+                base: BaseType::Named(Name::new(normalize_field_type_name(
+                    &field_typ_name,
+                ))),
+                nullable: field_def.ty.node.nullable,
             };
-            field_def.ty.node = Type::new(&field_typ_name)
-                .expect("Could not construct type for processing.");
+
             process_typedef_field(schema, field_def, typedef_name)
         }
         FieldKind::Enum => {
-            let ty =
-                Type::new("Charfield").expect("Could not construct type for processing.");
+            let field_typ_name = nullable_type(&field_def, "Charfield");
+            field_def.ty.node = Type {
+                base: BaseType::Named(Name::new(normalize_field_type_name(
+                    &field_typ_name,
+                ))),
+                nullable: field_def.ty.node.nullable,
+            };
             process_typedef_field(schema, field_def, typedef_name)
         }
         FieldKind::Virtual => {
-            field_def.ty.node =
-                Type::new("Virtual").expect("Could not construct type for processing.");
+            let field_typ_name = nullable_type(&field_def, "Virtual");
+            field_def.ty.node = Type::new(&field_typ_name).expect("Bad type.");
             process_typedef_field(schema, field_def, typedef_name)
         }
         FieldKind::Union => {
             let field_typ_name = field_def.ty.to_string();
             match schema.is_non_indexable_non_enum(&field_typ_name) {
                 true => {
-                    field_def.ty.node = Type::new("Virtual")
-                        .expect("Could not construct type for processing.");
+                    // All union derived type fields are optional.
+                    field_def.ty.node = Type::new("Virtual").expect("Bad type.");
                     process_typedef_field(schema, field_def, typedef_name)
                 }
                 false => process_typedef_field(schema, field_def, typedef_name),
@@ -863,4 +872,13 @@ pub fn can_derive_id(
     field_set.contains(IdCol::to_lowercase_str())
         && !INTERNAL_INDEXER_ENTITIES.contains(typedef_name)
         && field_name != IdCol::to_lowercase_str()
+}
+
+/// Return the GraphQL type with nullable suffix.
+pub fn nullable_type(f: &FieldDefinition, field_name: &str) -> String {
+    if f.ty.node.nullable {
+        format!("{field_name}!")
+    } else {
+        field_name.to_string()
+    }
 }

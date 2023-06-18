@@ -1,6 +1,4 @@
-use crate::{
-    constants::*, decoder::Decoder, helpers::*, validator::GraphQLSchemaValidator,
-};
+use crate::{constants::*, decoder::*, helpers::*, validator::GraphQLSchemaValidator};
 use async_graphql_parser::types::{
     BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
@@ -152,23 +150,23 @@ fn process_special_field(
 }
 
 fn foo_process_type_def(
-    parser: &ParsedGraphQLSchema,
+    parsed: &ParsedGraphQLSchema,
     typ: &TypeDefinition,
 ) -> Option<proc_macro2::TokenStream> {
-    let namespace = &parser.namespace;
-    let identifier = &parser.identifier;
+    let namespace = &parsed.namespace;
+    let identifier = &parsed.identifier;
     let typedef_name = typ.name.to_string();
-    let decoder = match &typ.kind {
-        TypeKind::Object(o) => Decoder::from_object(typedef_name, o.to_owned(), parser),
-        // TypeKind::Enum(e) => Decoder::from_enum(typedef_name, e.to_owned(), parser),
-        // TypeKind::Union(u) => Decoder::from_union(typedef_name, u.to_owned(), parser),
+    let tokens = match &typ.kind {
+        TypeKind::Object(o) => ObjectDecoder::from_typedef(typ, parsed).into(),
+        TypeKind::Enum(e) => EnumDecoder::from_typedef(typ, parsed).into(),
+        //     // TypeKind::Union(u) => Decoder::from_union(typedef_name, u.to_owned(), parsed),
         _ => proc_macro_error::abort_call_site!(
             "Unrecognized TypeKind in GraphQL schema: {:?}",
             typ.kind
         ),
     };
 
-    Some(decoder.into())
+    Some(tokens)
 }
 
 // REFACTOR: remove
