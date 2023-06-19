@@ -38,40 +38,40 @@ pub mod prelude {
     pub use super::{
         bincode, deserialize, serde, serde_json, serialize, types::*, utils::*,
     };
-    pub use crate::{log_debug, log_error, log_info, log_trace, log_warn};
+    pub use crate::{debug, error, info, trace, warn};
 }
 
 #[macro_export]
-macro_rules! log_error {
-    ($($arg:tt),*) => {{
-        Logger::error(&format!($($arg),*))
+macro_rules! error {
+    ($($arg:tt)*) => {{
+        Logger::error(&format!($($arg)*))
     }};
 }
 
 #[macro_export]
-macro_rules! log_warn {
-    ($($arg:tt),*) => {{
-        Logger::warn(&format!($($arg),*))
+macro_rules! warn {
+    ($($arg:tt)*) => {{
+        Logger::warn(&format!($($arg)*))
     }};
 }
 
 #[macro_export]
-macro_rules! log_info {
-    ($($arg:tt),*) => {{
-        Logger::info(&format!($($arg),*))
+macro_rules! info {
+    ($($arg:tt)*) => {{
+        Logger::info(&format!($($arg)*))
     }};
 }
 
 #[macro_export]
-macro_rules! log_debug {
-    ($($arg:tt),*) => {{
-        Logger::debug(&format!($($arg),*))
+macro_rules! debug {
+    ($($arg:tt)*) => {{
+        Logger::debug(&format!($($arg)*))
     }};
 }
 
 #[macro_export]
-macro_rules! log_trace {
-    ($($arg:tt),*) => {{
-        Logger::trace(&format!($($arg),*))
+macro_rules! trace {
+    ($($arg:tt)*) => {{
+        Logger::trace(&format!($($arg)*))
     }};
 }

@@ -20,7 +20,6 @@ pub use sha2::{Digest, Sha256};
 pub use std::collections::{HashMap, HashSet};
 pub use tokio;
 pub use tokio::sync::mpsc::channel;
-pub use tracing::{debug, error, info, trace, warn};
 pub use tracing_subscriber;
 pub use tracing_subscriber::filter::EnvFilter;
 
@@ -28,23 +27,23 @@ pub struct Logger;
 
 impl Logger {
     pub fn error(log: &str) {
-        error!(log);
+        tracing::error!(log);
     }
 
     pub fn warn(log: &str) {
-        warn!(log);
+        tracing::warn!(log);
     }
 
     pub fn info(log: &str) {
-        info!(log);
+        tracing::info!(log);
     }
 
     pub fn debug(log: &str) {
-        debug!(log);
+        tracing::debug!(log);
     }
 
     pub fn trace(log: &str) {
-        trace!(log);
+        tracing::trace!(log);
     }
 }
 
