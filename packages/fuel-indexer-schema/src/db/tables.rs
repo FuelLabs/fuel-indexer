@@ -73,19 +73,22 @@ impl FooSchema {
             _ => {}
         }
 
-        let table_stmnts = self
+        let tables = self
             .parsed
             .indexable_objects()
             .iter()
             .map(|o| Table::from(o.to_owned()))
-            .map(|t| t.create())
-            .collect::<Vec<String>>();
+            .collect::<Vec<Table>>();
+
+        let table_stmnts = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
+
+        self.tables = tables;
 
         Ok(self)
     }
 
     /// Commit all SQL metadata to the database.
-    pub async fn commit_metadata(
+    pub async fn commit_sql_metadata(
         self,
         conn: &mut IndexerConnection,
     ) -> IndexerSchemaDbResult<FooSchema> {
@@ -131,11 +134,15 @@ impl FooSchema {
                 FooColumn::from_field_def(f, &namespace, &identifier, &version, type_id)
             })
             .collect::<Vec<FooColumn>>();
-        let type_ids = Vec::new();
+        let type_ids = parsed
+            .fields_for_columns()
+            .iter()
+            .map(|f| FooTypeId::from_field_def(f, &namespace, &identifier, &version))
+            .collect::<Vec<FooTypeId>>();
 
         queries::new_root_columns(conn, cols).await?;
 
-        queries::type_id_insert(conn, type_ids).await?;
+        queries::foo_type_id_insert(conn, type_ids).await?;
         queries::foo_new_column_insert(conn, columns).await?;
 
         let mut schema = FooSchema {
@@ -146,6 +153,55 @@ impl FooSchema {
             schema: schema.to_owned(),
             namespace: namespace.to_owned(),
             identifier: identifier.to_owned(),
+        };
+
+        schema.register_queryroot_fields();
+
+        Ok(schema)
+    }
+
+    /// Load a `Schema` from the database.
+    pub async fn load_from_db(
+        pool: &IndexerConnectionPool,
+        namespace: &str,
+        identifier: &str,
+        exec_source: ExecutionSource,
+    ) -> IndexerSchemaDbResult<Self> {
+        // TODO: Might be expensive to always load this from the DB each time. Maybe
+        // we can cache and stash this somewhere?
+
+        let mut conn = pool.acquire().await?;
+        let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
+        let type_ids = queries::type_id_list_by_name(
+            &mut conn,
+            &root.schema_name,
+            &root.version,
+            identifier,
+        )
+        .await?;
+
+        let schema = GraphQLSchema::new(root.schema.clone());
+        let parsed = ParsedGraphQLSchema::new(
+            namespace,
+            identifier,
+            exec_source.clone(),
+            Some(&schema),
+        )?;
+
+        let tables = parsed
+            .indexable_objects()
+            .iter()
+            .map(|o| Table::from(o.to_owned()))
+            .collect::<Vec<Table>>();
+
+        let mut schema = FooSchema {
+            namespace: root.schema_name,
+            identifier: root.schema_identifier,
+            schema,
+            tables,
+            parsed,
+            db_type: DbType::Postgres,
+            exec_source,
         };
 
         schema.register_queryroot_fields();

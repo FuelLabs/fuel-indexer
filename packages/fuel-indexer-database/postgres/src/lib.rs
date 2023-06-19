@@ -238,6 +238,7 @@ pub async fn type_id_latest(
     Ok(schema_version)
 }
 
+// REFACTOR: remove
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn type_id_insert(
     conn: &mut PoolConnection<Postgres>,
@@ -255,6 +256,27 @@ pub async fn type_id_insert(
             .push_bind(tid.graphql_name)
             .push_bind(tid.table_name)
             .push_bind(virtual_cols);
+    });
+
+    let query = builder.build();
+    let result = query.execute(conn).await?;
+    Ok(result.rows_affected() as usize)
+}
+
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn foo_type_id_insert(
+    conn: &mut PoolConnection<Postgres>,
+    type_ids: Vec<FooTypeId>,
+) -> sqlx::Result<usize> {
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name)");
+
+    builder.push_values(type_ids.into_iter(), |mut b, tid| {
+        b.push_bind(tid.id)
+            .push_bind(tid.version)
+            .push_bind(tid.namespace)
+            .push_bind(tid.identifier)
+            .push_bind(tid.graphql_name)
+            .push_bind(tid.table_name);
     });
 
     let query = builder.build();

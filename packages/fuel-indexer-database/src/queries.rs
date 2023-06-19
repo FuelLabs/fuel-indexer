@@ -51,6 +51,7 @@ pub async fn type_id_latest(
     }
 }
 
+// REFACTOR - remove
 pub async fn type_id_insert(
     conn: &mut IndexerConnection,
     type_ids: Vec<TypeId>,
@@ -58,6 +59,17 @@ pub async fn type_id_insert(
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::type_id_insert(c, type_ids).await
+        }
+    }
+}
+
+pub async fn foo_type_id_insert(
+    conn: &mut IndexerConnection,
+    type_ids: Vec<FooTypeId>,
+) -> sqlx::Result<usize> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::foo_type_id_insert(c, type_ids).await
         }
     }
 }
@@ -75,6 +87,7 @@ pub async fn schema_exists(
     }
 }
 
+// REFACTOR - remove
 pub async fn new_column_insert(
     conn: &mut IndexerConnection,
     cols: Vec<NewColumn>,

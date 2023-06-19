@@ -340,7 +340,7 @@ pub struct TypeId {
 #[derive(Debug)]
 pub struct FooTypeId {
     pub id: i64,
-    pub schema_version: String,
+    pub version: String,
     pub namespace: String,
     pub identifier: String,
     pub graphql_name: String,
@@ -350,7 +350,7 @@ pub struct FooTypeId {
 
 impl FooTypeId {
     pub fn from_field_def(
-        f: FieldDefinition,
+        f: &FieldDefinition,
         namespace: &str,
         identifier: &str,
         version: &str,
@@ -366,7 +366,7 @@ impl FooTypeId {
         Self {
             // Use a dummy value
             id: 1,
-            schema_version: version.to_string(),
+            version: version.to_string(),
             namespace: namespace.to_string(),
             identifier: identifier.to_string(),
             graphql_name: f.name.to_string(),
