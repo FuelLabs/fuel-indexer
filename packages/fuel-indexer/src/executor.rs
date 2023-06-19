@@ -248,13 +248,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     )
                     .expect("Bad transaction.");
 
-                    let id = transaction.id();
+                    let id = transaction.id(&fuel_tx::ConsensusParameters::DEFAULT);
 
                     let transaction = match transaction {
                         ClientTransaction::Create(tx) => Transaction::Create(Create {
                             gas_price: *tx.gas_price(),
                             gas_limit: *tx.gas_limit(),
-                            maturity: *tx.maturity() as u32,
+                            maturity: *tx.maturity(),
                             bytecode_length: *tx.bytecode_length(),
                             bytecode_witness_index: *tx.bytecode_witness_index(),
                             storage_slots: tx
@@ -326,10 +326,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         id: Bytes32::from(block.header.id),
                         da_height: block.header.da_height.0,
                         transactions_count: block.header.transactions_count.0,
-                        output_messages_count: block.header.output_messages_count.0,
+                        output_messages_count: block.header.message_receipt_count.0,
                         transactions_root: Bytes32::from(block.header.transactions_root),
                         output_messages_root: Bytes32::from(
-                            block.header.output_messages_root,
+                            block.header.message_receipt_root,
                         ),
                         height: block.header.height.0,
                         prev_root: Bytes32::from(block.header.prev_root),

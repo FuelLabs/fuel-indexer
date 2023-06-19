@@ -34,8 +34,10 @@ pub enum IndexerSchemaError {
     FieldAndTypeConstructionError(String),
     #[error("This TypeKind is unsupported.")]
     UnsupportedTypeKind,
-    #[error("List types are unsupported.")]
-    ListTypesUnsupported,
+    #[error("List of lists are unsupported.")]
+    ListofListsUnsupported,
+    #[error("Inconsistent use of virtual union types. {0:?}")]
+    InconsistentVirtualUnion(String),
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
@@ -71,7 +73,7 @@ pub enum FtColumn {
     UInt16(Option<UInt16>),
     UInt4(Option<UInt4>),
     UInt8(Option<UInt8>),
-    NoRelation(Option<NoRelation>),
+    Virtual(Option<Virtual>),
     BlockId(Option<BlockId>),
     ListScalar(Option<Vec<FtColumn>>),
     ListComplex(Option<Vec<FtColumn>>),
@@ -151,7 +153,11 @@ impl FtColumn {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::UInt4(value) | FtColumn::BlockHeight(value) => match value {
+            FtColumn::UInt4(value) => match value {
+                Some(val) => format!("{val}"),
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::BlockHeight(value) => match value {
                 Some(val) => format!("{val}"),
                 None => String::from(NULL_VALUE),
             },
@@ -178,7 +184,7 @@ impl FtColumn {
                 Some(val) => format!("'{val:x}'"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::Json(value) | FtColumn::NoRelation(value) => match value {
+            FtColumn::Json(value) | FtColumn::Virtual(value) => match value {
                 Some(val) => {
                     let x = &val.0;
                     format!("'{x}'")

@@ -8,5 +8,5 @@ publish = false
 async-trait = { version = "0.1" }
 fuel-indexer = { workspace = true }
 fuel-indexer-utils = { workspace = true, features = ["native-execution"] }
-fuels = { workspace = true }
+fuels = { workspace = true, features = ["std"] }
 serde = { workspace = true }

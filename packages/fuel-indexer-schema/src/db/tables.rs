@@ -4,11 +4,14 @@ use crate::{
 use async_graphql_parser::types::{
     BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
 };
+use async_graphql_parser::{Pos, Positioned};
+use async_graphql_value::Name;
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_types::type_id;
-use std::collections::{HashMap, HashSet};
+use linked_hash_set::LinkedHashSet;
+use std::collections::{BTreeMap, HashMap, HashSet};
 
 type CompleteProcessedType = (ColumnType, bool, Option<(ColumnType, bool, Option<Type>)>);
 
@@ -166,7 +169,7 @@ impl SchemaBuilder {
                 }
 
                 if self.parsed_schema.is_non_indexable_non_enum(t.as_str()) {
-                    return Ok((ColumnType::NoRelation, true, None));
+                    return Ok((ColumnType::Virtual, true, None));
                 }
 
                 if self.parsed_schema.is_possible_foreign_key(t.as_str()) {
@@ -197,7 +200,7 @@ impl SchemaBuilder {
                 }
 
                 if self.parsed_schema.is_non_indexable_non_enum(t.as_str()) {
-                    return Ok((ColumnType::NoRelation, true, None));
+                    return Ok((ColumnType::Virtual, true, None));
                 }
 
                 if self.parsed_schema.is_possible_foreign_key(t.as_str()) {
@@ -221,10 +224,10 @@ impl SchemaBuilder {
         let mut fragments = Vec::new();
 
         for (pos, field) in fields.iter().enumerate() {
-            let directives::NoRelation(no_table) = get_notable_directive_info(field)?;
+            let directives::Virtual(no_table) = get_notable_directive_info(field)?;
             if no_table {
                 self.parsed_schema
-                    .non_indexable_type_names
+                    .virtual_type_names
                     .insert(object_name.to_string());
             }
 
@@ -271,7 +274,7 @@ impl SchemaBuilder {
                     self.columns.push(column);
                     self.foreign_keys.push(fk);
                 }
-                ColumnType::NoRelation => {
+                ColumnType::Virtual => {
                     let column = NewColumn {
                         type_id,
                         column_position: pos as i32,
@@ -310,7 +313,7 @@ impl SchemaBuilder {
                             // TODO: Do we want to allow these?
                             ColumnType::ID => todo!(),
                             ColumnType::Enum => todo!(),
-                            ColumnType::NoRelation => todo!(),
+                            ColumnType::Virtual => todo!(),
                             ColumnType::ListScalar | ColumnType::ListComplex => {
                                 return Err(
                                     super::IndexerSchemaDbError::ListOfListsUnsupported,
@@ -465,6 +468,8 @@ impl SchemaBuilder {
             TypeKind::Object(o) => {
                 self.types.insert(typ.name.to_string());
 
+                let mut fields_map = BTreeMap::new();
+
                 self.parsed_schema
                     .parsed_type_names
                     .insert(typ.name.to_string());
@@ -472,8 +477,15 @@ impl SchemaBuilder {
                 let field_defs: &[FieldDefinition] = &o
                     .fields
                     .iter()
-                    .map(|f| f.node.clone())
+                    .map(|f| {
+                        fields_map.insert(f.node.name.to_string(), f.node.ty.to_string());
+                        f.node.clone()
+                    })
                     .collect::<Vec<FieldDefinition>>()[..];
+
+                self.parsed_schema
+                    .object_field_mappings
+                    .insert(typ.name.to_string(), fields_map);
 
                 self.fields.insert(
                     typ.name.to_string(),
@@ -532,8 +544,89 @@ impl SchemaBuilder {
                     virtual_columns: Vec::new(),
                 });
             }
+            TypeKind::Union(u) => {
+                // We process this type effectively the same as we process `TypeKind::Object`.
+                //
+                // Except instead of using the `FieldDefinition` provided by the parser, we manually
+                // construct the `FieldDefinition` based on the fields of the union members.
+                self.parsed_schema.union_names.insert(typ.name.to_string());
+
+                self.types.insert(typ.name.to_string());
+
+                self.parsed_schema
+                    .parsed_type_names
+                    .insert(typ.name.to_string());
+
+                let field_defs = u
+                    .members
+                    .iter()
+                    .flat_map(|m| {
+                        let name = m.node.to_string();
+                        self.parsed_schema
+                            .object_field_mappings
+                            .get(&name)
+                            .unwrap_or_else(|| {
+                                panic!(
+                                    "Could not find union member '{name}' in the schema."
+                                );
+                            })
+                            .iter()
+                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                    })
+                    .collect::<LinkedHashSet<(String, String)>>()
+                    .into_iter()
+                    .map(|(k, v)| FieldDefinition {
+                        description: None,
+                        name: Positioned::new(Name::new(k), Pos::default()),
+                        arguments: Vec::new(),
+                        ty: Positioned::new(
+                            Type {
+                                base: BaseType::Named(Name::new(
+                                    normalize_field_type_name(&v),
+                                )),
+                                nullable: v != *IdCol::to_uppercase_str(),
+                            },
+                            Pos::default(),
+                        ),
+                        directives: Vec::new(),
+                    })
+                    .collect::<Vec<FieldDefinition>>();
+
+                self.fields.insert(
+                    typ.name.to_string(),
+                    field_defs
+                        .iter()
+                        .map(|f| (f.name.to_string(), f.ty.to_string()))
+                        .collect(),
+                );
+
+                let table_name = typ.name.to_string().to_lowercase();
+                let ty_id = type_id(&self.namespace(), &typ.name.to_string());
+                let columns = self.generate_columns(
+                    &typ.name.to_string(),
+                    ty_id,
+                    &field_defs,
+                    &table_name,
+                )?;
+
+                let sql_table = self.db_type.table_name(&self.namespace(), &table_name);
+
+                let create =
+                    format!("CREATE TABLE IF NOT EXISTS\n {sql_table} (\n {columns}\n)",);
+
+                self.statements.push(create);
+                self.type_ids.push(TypeId {
+                    id: ty_id,
+                    schema_version: self.version.to_string(),
+                    schema_name: self.namespace.to_string(),
+                    schema_identifier: self.identifier.to_string(),
+                    graphql_name: typ.name.to_string(),
+                    table_name,
+                    virtual_columns: Vec::new(),
+                });
+            }
             // TODO: Don't panic, return Err
-            other_type => panic!("Got a non-object type: '{other_type:?}'"),
+            other_type => panic!("Parsed an unsupported type: '{other_type:?}'"),
         }
 
         Ok(())

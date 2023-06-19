@@ -8,6 +8,9 @@
 //! cargo run -p hello-world-node --bin hello-world-node
 //! ```
 //!
+//! With your database backend set up, now start your fuel-indexer binary using the
+//! assets from this example:
+//!
 //! ```bash
 //! cargo run -p hello_indexer_native --bin hello_indexer_native -- --manifest examples/hello-world-native/hello-indexer-native/hello_indexer_native.manifest.yaml
 //! ```
@@ -26,58 +29,40 @@ use fuel_indexer_utils::prelude::*;
 mod hello_world_native {
 
     async fn index_logged_greeting(event: Greeting, block: BlockData) {
-        // Since all events require a u64 ID field, let's derive an ID using the
-        // name of the person in the Greeting
-        let greeter_name = trim_sized_ascii_string(&event.person.name);
-        let greeting = trim_sized_ascii_string(&event.greeting);
-        let greeter_id = first8_bytes_to_u64(&greeter_name);
+        // We're using the `::new()` method to create a Greeter, which automatically
+        // generates an ID for the entity. Then, we use `::get_or_create()` to
+        // load the corresponding record from the database, if present.
+        let greeter = Greeter::new(
+            trim_sized_ascii_string(&event.person.name),
+            block.height,
+            block.height,
+            vec![1u8, 2, 3, 4, 5, 6, 7, 8].into(),
+        )
+        .get_or_create()
+        .await;
 
-        // Here we 'get or create' a Salutation based on the ID of the event
-        // emitted in the LogData receipt of our smart contract
-        let salutation = match Salutation::load(event.id).await {
-            Some(mut g) => {
-                // If we found an event, let's use block height as a proxy for time
-                g.last_seen = block.height;
-                g
-            }
-            None => {
-                // If we did not already have this Saluation stored in the database. Here we
-                // show how you can use the Charfield type to store strings with length <= 255
-                let message = format!("{} 👋, my name is {}", &greeting, &greeter_name);
+        // Here we show how you can use the Charfield type to store strings with
+        // length <= 255. The fuel-indexer-utils package contains a number of helpful
+        // functions for byte conversion, string manipulation, etc.
+        let message = format!(
+            "{} 👋, my name is {}",
+            trim_sized_ascii_string(&event.greeting),
+            trim_sized_ascii_string(&event.person.name)
+        );
+        let message_hash = first32_bytes_to_bytes32(&message);
 
-                Salutation {
-                    id: event.id,
-                    message_hash: first32_bytes_to_bytes32(&message),
-                    message,
-                    greeter: greeter_id,
-                    first_seen: block.height,
-                    last_seen: block.height,
-                }
-            }
-        };
+        let salutation = Salutation::new(
+            message_hash,
+            message,
+            greeter.id,
+            block.height,
+            block.height,
+        )
+        .get_or_create()
+        .await;
 
-        // Here we do the same with Greeter that we did for Saluation -- if we have an event
-        // already saved in the database, load it and update it. If we do not have this Greeter
-        // in the database then create one
-        let greeter = match Greeter::load(greeter_id).await {
-            Some(mut g) => {
-                g.last_seen = block.height;
-                g
-            }
-            None => Greeter {
-                id: greeter_id,
-                first_seen: block.height,
-                name: greeter_name,
-                last_seen: block.height,
-
-                // Here we show an example of an arbtrarily sized Blob type. These Blob types
-                // support data up to 10485760 bytes in length
-                visits: vec![1u8, 2, 3, 4, 5, 6, 7, 8].into(),
-            },
-        };
-
-        // Both entity saves will occur in the same transaction
-        salutation.save().await;
+        // Finally, we save the entities to the database.
         greeter.save().await;
+        salutation.save().await;
     }
 }

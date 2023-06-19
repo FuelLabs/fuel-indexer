@@ -126,3 +126,6 @@ pub const LOG_LEVEL: &str = "info";
 
 /// Maximum amount of time (seconds) that an indexer's `handle_events` function can take before being timed out.
 pub const INDEXER_HANDLER_TIMEOUT: u64 = 5;
+
+/// Whether to allow replacing an indexer.
+pub const REPLACE_INDEXER: bool = false;

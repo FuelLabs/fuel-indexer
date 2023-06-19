@@ -1,9 +1,10 @@
 use bytes::Bytes;
-pub use fuel_types::{
+pub use fuel_tx::{
     Address, AssetId, Bytes32, Bytes4, Bytes64, Bytes8, ContractId, MessageId, Salt, Word,
 };
+pub use fuel_types::{BlockHeight, Nonce};
 pub use fuels::{
-    core::try_from_bytes,
+    core::codec::try_from_bytes,
     types::{
         bech32::{Bech32Address, Bech32ContractId},
         Bits256, Identity, SizedAsciiString,
@@ -45,17 +46,11 @@ pub type Boolean = bool;
 /// Scalar for 64-byte signature payloads.
 pub type Signature = Bytes64;
 
-/// Scalar for 32-byte payloads aliased as `Nonce`.
-pub type Nonce = Bytes32;
-
 /// Scalar for arbitrarily sized byte payloads aliased as `HexString`.
 pub type HexString = Bytes;
 
 /// Scalar for `Tai64` timestamps aliased as `Tai64Timestamp`.
 pub type Tai64Timestamp = Tai64;
-
-/// Scalar for 4-byte usigned integers aliased as `BlockHeight`.
-pub type BlockHeight = u32;
 
 /// Scalar for 32-byte payloads aliased as `BlockId`.
 pub type BlockId = Bytes32;
@@ -88,9 +83,9 @@ impl From<Blob> for Vec<u8> {
     }
 }
 
-/// JSON type used to store types tagged with a `@norelation` directive in
-/// GraphQL schema. Aliased as `NoRelation`.
-pub type NoRelation = Json;
+/// JSON type used to store types tagged with a `@virtual` directive in
+/// GraphQL schema. Aliased as `Virtual`.
+pub type Virtual = Json;
 
 /// JSON type used to store arbitrary object payloads.
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash)]
@@ -99,6 +94,12 @@ pub struct Json(pub String);
 impl Default for Json {
     fn default() -> Self {
         Json("{}".to_string())
+    }
+}
+
+impl AsRef<[u8]> for Json {
+    fn as_ref(&self) -> &[u8] {
+        self.0.as_bytes()
     }
 }
 

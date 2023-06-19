@@ -26,8 +26,8 @@ name = "{indexer_name}"
 path = "src/main.rs"
 
 [dependencies]
-fuel-indexer-utils = {{ version = "0.16.0", features = ["native-execution"] }}
-fuels = {{ version = "0.40", default-features = false, features = ["std"] }}
+fuel-indexer-utils = {{ version = "0.16", features = ["native-execution"] }}
+fuels = {{ version = "0.43", default-features = false, features = ["std"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
     )
@@ -45,8 +45,8 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-utils = {{ version = "0.16.0" }}
-fuels = {{ version = "0.40", default-features = false }}
+fuel-indexer-utils = {{ version = "0.16" }}
+fuels = {{ version = "0.43", default-features = false }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
     )
@@ -144,16 +144,14 @@ use fuel_indexer_utils::prelude::*;
 pub mod {indexer_name}_index_mod {{
 
     fn {indexer_name}_handler(block_data: BlockData) {{
-        Logger::info("Processing a block. (>'.')>");
+        Logger::info(&format!("Processing Block#{{}}. (>'.')>", block_data.height));
 
         let block_id = first8_bytes_to_u64(block_data.id);
         let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
         block.save();
 
         for transaction in block_data.transactions.iter() {{
-            Logger::info("Handling a transaction (>'.')>");
-
-            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
+            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_data.id, hash: transaction.id }};
             tx.save();
         }}
     }}
@@ -182,16 +180,14 @@ use fuel_indexer_utils::prelude::*;
 pub mod {indexer_name}_index_mod {{
 
     async fn {indexer_name}_handler(block_data: BlockData) {{
-        Logger::info("Processing a block. (>'.')>");
+        Logger::info(&format!("Processing Block#{{}}. (>'.')>", block_data.height));
 
         let block_id = first8_bytes_to_u64(block_data.id);
         let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
         block.save().await;
 
         for transaction in block_data.transactions.iter() {{
-            Logger::info("Handling a transaction (>'.')>");
-
-            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_id, hash: transaction.id }};
+            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_data.id, hash: transaction.id }};
             tx.save().await;
         }}
     }}
@@ -209,7 +205,7 @@ pub fn default_indexer_schema() -> String {
 
 type Transaction {
     id: ID!
-    block: Block!
+    block: Block! @join(on:hash)
     hash: Bytes32! @unique
 }
 

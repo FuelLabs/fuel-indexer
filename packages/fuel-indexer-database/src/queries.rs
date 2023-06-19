@@ -268,7 +268,7 @@ pub async fn last_block_height_for_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<u64> {
+) -> sqlx::Result<u32> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::last_block_height_for_indexer(c, namespace, identifier).await

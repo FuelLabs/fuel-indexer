@@ -12,7 +12,7 @@ description = "Fuel Indexer Types"
 [dependencies]
 bincode = "1.3"
 bytes = { version = "1.4", features = ["serde"] }
-fuel-tx = { workspace = true }
+fuel-tx = { workspace = true, features = ["serde"] }
 fuel-types = { workspace = true }
 fuels = { workspace = true }
 serde = { workspace = true }

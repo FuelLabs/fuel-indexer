@@ -9,5 +9,5 @@ crate-type = ['cdylib']
 
 [dependencies]
 fuel-indexer-utils = { workspace = true }
-fuels = { default-features = false, workspace = true }
+fuels = { workspace = true }
 serde = { workspace = true }

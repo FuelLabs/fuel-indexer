@@ -3,8 +3,8 @@ extern crate alloc;
 use crate::{parser::ParsedGraphQLSchema, IndexerSchemaError, IndexerSchemaResult};
 use alloc::vec::Vec;
 use async_graphql_parser::types::{
-    BaseType, Directive, FieldDefinition, ServiceDocument, Type, TypeDefinition,
-    TypeKind, TypeSystemDefinition,
+    BaseType, Directive, FieldDefinition, ServiceDocument, TypeDefinition, TypeKind,
+    TypeSystemDefinition,
 };
 use fuel_indexer_database_types::{directives, ColumnType, IdCol};
 use fuel_indexer_types::graphql::{GraphqlObject, IndexMetadata};
@@ -15,7 +15,7 @@ pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
-pub const NORELATION_DIRECTIVE_NAME: &str = "norelation";
+pub const NORELATION_DIRECTIVE_NAME: &str = "virtual";
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
 
@@ -163,47 +163,6 @@ pub fn get_join_directive_info(
     }
 }
 
-/// Given a GraphQL document return a `HashMap` where each key in the map
-/// is a the fully qualified field name, and each value in the map is the
-/// Fuel type of the field (e.g., `UInt8`, `Address`, etc).
-///
-/// Each entry in the map represents a field
-pub fn build_schema_fields_and_types_map(
-    ast: &ServiceDocument,
-) -> IndexerSchemaResult<HashMap<String, String>> {
-    let mut types_map = HashMap::new();
-    for def in ast.definitions.iter() {
-        if let TypeSystemDefinition::Type(typ) = def {
-            match &typ.node.kind {
-                TypeKind::Scalar => {}
-                TypeKind::Enum(e) => {
-                    let name = &typ.node.name.to_string();
-                    for val in &e.values {
-                        let val_name = &val.node.value.to_string();
-                        let val_id = format!("{name}.{val_name}");
-                        types_map.insert(val_id, name.to_string());
-                    }
-                }
-                TypeKind::Object(obj) => {
-                    for field in &obj.fields {
-                        let field = &field.node;
-                        let field_type = field.ty.to_string().replace('!', "");
-                        let obj_name = &typ.node.name.to_string();
-                        let field_name = &field.name.to_string();
-                        let field_id = format!("{obj_name}.{field_name}");
-                        types_map.insert(field_id, field_type);
-                    }
-                }
-                _ => {
-                    return Err(IndexerSchemaError::UnsupportedTypeKind);
-                }
-            }
-        }
-    }
-
-    Ok(types_map)
-}
-
 /// Given a GraphQL document, return a two `HashSet`s - one for each
 /// unique field type, and one for each unique directive.
 pub fn build_schema_types_set(
@@ -258,10 +217,7 @@ pub fn get_foreign_keys(
                     continue;
                 }
                 for field in o.fields.iter() {
-                    let col_type = get_column_type(
-                        &field.node.ty.node,
-                        &parsed_schema.scalar_names,
-                    )?;
+                    let (col_type, _) = get_column_type(&field.node, &parsed_schema)?;
 
                     match col_type {
                         ColumnType::ForeignKey => {
@@ -364,21 +320,35 @@ pub fn get_foreign_keys(
 
 /// Given a GraphQL field, return its associated `ColumnType`.
 pub fn get_column_type(
-    field_type: &Type,
-    primitives: &HashSet<String>,
-) -> IndexerSchemaResult<ColumnType> {
-    match &field_type.base {
+    field: &FieldDefinition,
+    parsed_schema: &ParsedGraphQLSchema,
+) -> IndexerSchemaResult<(ColumnType, bool)> {
+    let ty = &field.ty.node;
+    match &ty.base {
         BaseType::Named(t) => {
-            if !primitives.contains(t.as_str()) {
-                return Ok(ColumnType::ForeignKey);
+            if parsed_schema.is_enum_type(t.as_str()) {
+                return Ok((ColumnType::Charfield, ty.nullable));
             }
-            Ok(ColumnType::from(t.as_str()))
+
+            if parsed_schema.is_non_indexable_non_enum(t.as_str()) {
+                return Ok((ColumnType::Virtual, ty.nullable));
+            }
+
+            if parsed_schema.is_possible_foreign_key(t.as_str()) {
+                return Ok((ColumnType::ForeignKey, ty.nullable));
+            }
+
+            Ok((ColumnType::from(t.as_str()), ty.nullable))
         }
-        BaseType::List(t) => {
-            if let ColumnType::ForeignKey = get_column_type(t, primitives)? {
-                Ok(ColumnType::ListComplex)
+        BaseType::List(inner_ty) => {
+            if let BaseType::Named(t) = &inner_ty.base {
+                if parsed_schema.is_possible_foreign_key(t.as_str()) {
+                    Ok((ColumnType::ListComplex, ty.nullable))
+                } else {
+                    Ok((ColumnType::ListScalar, ty.nullable))
+                }
             } else {
-                Ok(ColumnType::ListScalar)
+                Err(IndexerSchemaError::ListofListsUnsupported)
             }
         }
     }
@@ -387,7 +357,7 @@ pub fn get_column_type(
 /// Get directive determining whether or not field's object should not be used to create SQL tables.
 pub fn get_notable_directive_info(
     field: &FieldDefinition,
-) -> IndexerSchemaResult<directives::NoRelation> {
+) -> IndexerSchemaResult<directives::Virtual> {
     let FieldDefinition { directives, .. } = field.clone();
 
     let mut directives: Vec<Directive> = directives
@@ -398,96 +368,9 @@ pub fn get_notable_directive_info(
     if directives.len() == 1 {
         let Directive { name, .. } = directives.pop().unwrap();
         if name.to_string().as_str() == NORELATION_DIRECTIVE_NAME {
-            return Ok(directives::NoRelation(true));
+            return Ok(directives::Virtual(true));
         }
     }
 
-    Ok(directives::NoRelation(false))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use async_graphql_parser::parse_schema;
-
-    #[test]
-    fn test_build_schema_fields_and_types_map_properly_builds_schema_types_map() {
-        let schema = r#"
-type BlockData {
-    id: Bytes32! @unique
-    height: UInt8!
-    timestamp: Int8!
-    gas_limit: UInt8!
-    extra_data: MessageId!
-}
-
-type Tx {
-    id: Bytes32! @unique
-    block: BlockData!
-    timestamp: Int8!
-    status: Json!
-    value: UInt8!
-    tokens_transferred: Json!
-}
-
-type Account {
-    address: Address!
-}
-
-type Contract {
-    creator: ContractId!
-}
-        "#;
-
-        let ast = parse_schema(schema).unwrap();
-        let types_map = build_schema_fields_and_types_map(&ast).unwrap();
-
-        assert_eq!(
-            *types_map.get("BlockData.id").unwrap(),
-            "Bytes32".to_string()
-        );
-        assert_eq!(*types_map.get("Tx.block").unwrap(), "BlockData".to_string());
-        assert_eq!(
-            *types_map.get("Account.address").unwrap(),
-            "Address".to_string()
-        );
-        assert_eq!(
-            *types_map.get("Contract.creator").unwrap(),
-            "ContractId".to_string()
-        );
-        assert_eq!(
-            *types_map.get("BlockData.extra_data").unwrap(),
-            "MessageId".to_string()
-        );
-        assert_eq!(types_map.get("BlockData.doesNotExist"), None);
-    }
-
-    #[test]
-    fn test_build_schema_objects_set_returns_proper_schema_types_set() {
-        let schema = r#"
-type Borrower {
-    account: Address! @indexed
-}
-
-type Lender {
-    id: ID!
-    borrower: Borrower! @join(on:account)
-}
-
-type Auditor {
-    id: ID!
-    account: Address!
-    hash: Bytes32! @indexed
-    borrower: Borrower! @join(on:account)
-}
-"#;
-
-        let ast = parse_schema(schema).unwrap();
-
-        let (obj_set, _directives_set) = build_schema_types_set(&ast);
-
-        assert!(!obj_set.contains("NotARealThing"));
-        assert!(obj_set.contains("Borrower"));
-        assert!(obj_set.contains("Auditor"));
-    }
+    Ok(directives::Virtual(false))
 }

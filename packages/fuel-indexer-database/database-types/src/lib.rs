@@ -168,7 +168,7 @@ impl NewColumn {
             ColumnType::Enum => "varchar(255)",
             ColumnType::Int1 => "integer",
             ColumnType::UInt1 => "integer",
-            ColumnType::NoRelation => "Json",
+            ColumnType::Virtual => "Json",
             ColumnType::BlockId => "varchar(64)",
             ColumnType::ListScalar => "varchar(10485760)",
             ColumnType::ListComplex => "varchar(10485760)",
@@ -220,7 +220,7 @@ pub enum ColumnType {
     Enum = 30,
     Int1 = 31,
     UInt1 = 32,
-    NoRelation = 33,
+    Virtual = 33,
     BlockId = 34,
     ListScalar = 35,
     ListComplex = 36,
@@ -262,7 +262,7 @@ impl From<ColumnType> for i32 {
             ColumnType::Enum => 30,
             ColumnType::Int1 => 31,
             ColumnType::UInt1 => 32,
-            ColumnType::NoRelation => 33,
+            ColumnType::Virtual => 33,
             ColumnType::BlockId => 34,
             ColumnType::ListScalar => 35,
             ColumnType::ListComplex => 36,
@@ -312,11 +312,11 @@ impl From<i32> for ColumnType {
             30 => ColumnType::Enum,
             31 => ColumnType::Int1,
             32 => ColumnType::UInt1,
-            33 => ColumnType::NoRelation,
+            33 => ColumnType::Virtual,
             34 => ColumnType::BlockId,
             35 => ColumnType::ListScalar,
             36 => ColumnType::ListComplex,
-            _ => panic!("Invalid column type."),
+            _ => panic!("Invalid ColumnType."),
         }
     }
 }
@@ -357,11 +357,11 @@ impl From<&str> for ColumnType {
             "Enum" => ColumnType::Enum,
             "Int1" => ColumnType::Int1,
             "UInt1" => ColumnType::UInt1,
-            "NoRelation" => ColumnType::NoRelation,
+            "Virtual" => ColumnType::Virtual,
             "BlockId" => ColumnType::BlockId,
             "ListScalar" => ColumnType::ListScalar,
             "ListComplex" => ColumnType::ListComplex,
-            _ => panic!("Invalid column type: '{name}'"),
+            _ => panic!("Invalid ColumnType: '{name}'"),
         }
     }
 }
@@ -561,6 +561,10 @@ impl IdCol {
 
     pub fn to_uppercase_string() -> String {
         "ID".to_string()
+    }
+
+    pub fn to_uppercase_str() -> &'static str {
+        "ID"
     }
 }
 

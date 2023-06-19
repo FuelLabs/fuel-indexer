@@ -632,18 +632,18 @@ pub async fn last_block_height_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-) -> sqlx::Result<u64> {
+) -> sqlx::Result<u32> {
     let query = format!(
         "SELECT MAX(id) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1"
     );
 
     let row = sqlx::query(&query).fetch_one(conn).await?;
-    let id: i64 = match row.try_get(0) {
+    let id: i32 = match row.try_get(0) {
         Ok(id) => id,
         Err(_e) => return Ok(1),
     };
 
-    Ok(id as u64)
+    Ok(id as u32)
 }
 
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251
@@ -762,29 +762,81 @@ pub async fn remove_indexer(
     namespace: &str,
     identifier: &str,
 ) -> sqlx::Result<()> {
-    let index_id = get_indexer_id(conn, namespace, identifier).await?;
-
     execute_query(
         conn,
-        format!("DELETE FROM index_asset_registry_wasm WHERE index_id = {index_id}"),
+        format!(
+            "DELETE FROM index_asset_registry_wasm WHERE index_id IN
+            (SELECT id FROM index_registry
+                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
+        ),
     )
     .await?;
 
     execute_query(
         conn,
-        format!("DELETE FROM index_asset_registry_manifest WHERE index_id = {index_id}"),
+        format!(
+            "DELETE FROM index_asset_registry_manifest WHERE index_id IN
+            (SELECT id FROM index_registry
+                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
+        ),
     )
     .await?;
 
     execute_query(
         conn,
-        format!("DELETE FROM index_asset_registry_schema WHERE index_id = {index_id}"),
+        format!(
+            "DELETE FROM index_asset_registry_schema WHERE index_id IN
+            (SELECT id FROM index_registry
+                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
+        ),
     )
     .await?;
 
     execute_query(
         conn,
-        format!("DELETE FROM index_registry WHERE id = {index_id}"),
+        format!(
+            "DELETE FROM index_registry WHERE id IN
+            (SELECT id FROM index_registry
+                WHERE namespace = '{namespace}' AND identifier = '{identifier}')"
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM graph_registry_columns WHERE type_id IN (SELECT id FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM graph_registry_type_ids WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM graph_registry_root_columns WHERE root_id = (SELECT id FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}');"
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!(
+            "DELETE FROM graph_registry_graph_root WHERE schema_name = '{namespace}' AND schema_identifier = '{identifier}';"
+        ),
+    )
+    .await?;
+
+    execute_query(
+        conn,
+        format!("DROP SCHEMA {namespace}_{identifier} CASCADE"),
     )
     .await?;
 
@@ -898,11 +950,11 @@ pub async fn indexer_owned_by(
     identifier: &str,
     pubkey: &str,
 ) -> sqlx::Result<()> {
-    let row = sqlx::query(&format!("SELECT COUNT(*) FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' AND pubkey = '{pubkey}'"))
+    let row = sqlx::query(&format!("SELECT COUNT(*)::int FROM index_registry WHERE namespace = '{namespace}' AND identifier = '{identifier}' AND pubkey = '{pubkey}'"))
         .fetch_one(conn)
         .await?;
 
-    let count: i32 = row.get(0);
+    let count = row.get::<i32, usize>(0);
     if count == 1 {
         return Ok(());
     }
