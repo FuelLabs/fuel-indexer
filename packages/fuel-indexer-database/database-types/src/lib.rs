@@ -576,6 +576,13 @@ pub enum OnUpdate {
 }
 
 #[derive(Debug, Clone, Default)]
+pub enum Constraint {
+    #[default]
+    Index,
+    ForeignKey,
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct ForeignKey {
     pub db_type: DbType,
     pub namespace: String,
@@ -676,5 +683,17 @@ impl Nonce {
             .as_secs() as i64;
 
         now >= self.expiry
+    }
+}
+
+pub struct Table {
+    name: String,
+    columns: Vec<Column>,
+    constraints: Vec<Constraint>,
+}
+
+impl SqlFragment for Table {
+    fn create(&self) -> String {
+        unimplemented!()
     }
 }

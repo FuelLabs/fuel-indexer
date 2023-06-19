@@ -7,17 +7,13 @@ use async_graphql_parser::types::{
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
 use fuel_indexer_database_types::IdCol;
+use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_schema::parser::ParsedGraphQLSchema;
 use linked_hash_set::LinkedHashSet;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use std::collections::{BTreeMap, HashSet};
 use syn::Ident;
-
-pub enum ExecutionSource {
-    Native,
-    Wasm,
-}
 
 pub trait Decoder {
     /// Create a decoder from a GraphQL `TypeDefinition`.
@@ -55,7 +51,7 @@ pub struct ObjectDecoder {
     impl_new_params: ImplNewParameters,
 
     /// The source of the GraphQL schema.
-    source: ExecutionSource,
+    exec_source: ExecutionSource,
 
     /// The unique ID of this GraphQL type.
     type_id: i64,
@@ -72,14 +68,14 @@ impl Default for ObjectDecoder {
             parameters: quote! {},
             hasher: quote! { Sha256::new() },
             impl_new_fields: quote! {},
-            source: ExecutionSource::Wasm,
+            exec_source: ExecutionSource::Wasm,
             impl_new_params: ImplNewParameters::ObjectType {
                 strct: format_ident!("Decoder"),
                 parameters: quote! {},
                 hasher: quote! {},
                 object_name: "".to_string(),
                 struct_fields: quote! {},
-                is_native: false,
+                exec_source: ExecutionSource::Wasm,
                 field_set: HashSet::new(),
             },
             type_id: 0,
@@ -188,7 +184,7 @@ impl Decoder for ObjectDecoder {
                     parameters: parameters.clone(),
                     hasher: hasher.clone(),
                     impl_new_fields: impl_new_fields.clone(),
-                    source: ExecutionSource::Wasm,
+                    exec_source: parsed.exec_source.clone(),
                     impl_new_params: ImplNewParameters::ObjectType {
                         // standardize all these names
                         strct: ident,
@@ -196,7 +192,7 @@ impl Decoder for ObjectDecoder {
                         hasher,
                         object_name: obj_name,
                         struct_fields: impl_new_fields,
-                        is_native: parsed.is_native,
+                        exec_source: parsed.exec_source.clone(),
                         field_set: obj_fields,
                     },
                     type_id,
@@ -392,7 +388,7 @@ impl From<ObjectDecoder> for TokenStream {
             hasher,
             impl_new_fields,
             impl_new_params,
-            source,
+            exec_source,
             type_id,
             ..
         } = decoder;
@@ -414,7 +410,7 @@ impl From<ObjectDecoder> for TokenStream {
             }
         };
 
-        let impl_entity = match source {
+        let impl_entity = match exec_source {
             ExecutionSource::Native => quote! {
                 #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
                 pub struct #ident {
@@ -506,7 +502,7 @@ impl From<ObjectDecoder> for TokenStream {
                 hasher,
                 object_name,
                 struct_fields,
-                is_native,
+                exec_source,
                 field_set,
             } => {
                 if field_set.contains(&IdCol::to_lowercase_string()) {
@@ -516,7 +512,7 @@ impl From<ObjectDecoder> for TokenStream {
                         hasher,
                         object_name,
                         struct_fields,
-                        is_native,
+                        exec_source,
                     )
                 } else {
                     quote! {}

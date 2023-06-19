@@ -4,6 +4,7 @@ use crate::{
     utils::{inject_native_entities_into_schema, schema_version},
 };
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
+use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::graphql::GraphQLSchema;
 use tracing::info;
 
@@ -22,7 +23,7 @@ impl SchemaManager {
         identifier: &str,
         schema: &str,
         conn: &mut IndexerConnection,
-        is_native: bool,
+        exec_source: ExecutionSource,
     ) -> IndexerSchemaDbResult<()> {
         let schema = GraphQLSchema::new(schema.to_string());
         let version = schema.version();
@@ -34,7 +35,7 @@ impl SchemaManager {
                 identifier,
                 version,
                 self.pool.database_type(),
-                is_native,
+                exec_source,
             )?
             .build(&schema)?
             .commit_metadata(conn)

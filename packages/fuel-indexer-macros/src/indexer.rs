@@ -6,6 +6,7 @@ use crate::{
 use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
     manifest::ContractIds, manifest::Manifest, utils::local_repository_root,
+    ExecutionSource,
 };
 use fuel_indexer_types::{type_id, FUEL_TYPES_NAMESPACE};
 use fuels::{core::codec::resolve_fn_selector, types::param_types::ParamType};
@@ -21,7 +22,6 @@ fn process_fn_items(
     abi_path: Option<String>,
     indexer_module: ItemMod,
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
-    let is_native = manifest.is_native();
     if indexer_module.content.is_none()
         || indexer_module
             .content
@@ -299,16 +299,7 @@ fn process_fn_items(
         }
     };
 
-    let asyncness = if is_native {
-        quote! {async}
-    } else {
-        quote! {}
-    };
-    let awaitness = if is_native {
-        quote! {.await}
-    } else {
-        quote! {}
-    };
+    let (asyncness, awaitness) = manifest.execution_source().async_awaitness();
 
     for item in contents {
         match item {
@@ -628,15 +619,20 @@ pub fn prefix_abi_and_schema_paths(
 pub fn get_abi_tokens(
     namespace: &str,
     abi: &str,
-    is_native: bool,
+    exec_source: ExecutionSource,
 ) -> proc_macro2::TokenStream {
+    let no_std = match exec_source {
+        ExecutionSource::Native => false,
+        ExecutionSource::Wasm => true,
+    };
+
     match Abigen::generate(
         vec![AbigenTarget {
             name: namespace.to_string(),
             abi: abi.to_owned(),
             program_type: ProgramType::Contract,
         }],
-        !is_native,
+        no_std,
     ) {
         Ok(tokens) => tokens,
         Err(e) => {
@@ -668,12 +664,13 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
     } = manifest.clone();
 
     let indexer_module = parse_macro_input!(item as ItemMod);
-    let is_native = manifest.is_native();
 
     let (abi, schema_string) = prefix_abi_and_schema_paths(abi.as_ref(), graphql_schema);
 
     let abi_tokens = match abi {
-        Some(ref abi_path) => get_abi_tokens(&namespace, abi_path, is_native),
+        Some(ref abi_path) => {
+            get_abi_tokens(&namespace, abi_path, manifest.execution_source())
+        }
         None => proc_macro2::TokenStream::new(),
     };
 
@@ -682,84 +679,89 @@ pub fn process_indexer_module(attrs: TokenStream, item: TokenStream) -> TokenStr
         namespace,
         identifier,
         schema_string,
-        manifest.is_native(),
+        manifest.execution_source(),
     );
 
-    let output = if is_native {
-        let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
-        let handler_block = handler_block_native(handler_block);
+    let output = match manifest.execution_source() {
+        ExecutionSource::Native => {
+            let (handler_block, fn_items) =
+                process_fn_items(&manifest, abi, indexer_module);
+            let handler_block = handler_block_native(handler_block);
 
-        quote! {
+            quote! {
 
-            #abi_tokens
+                #abi_tokens
 
-            #graphql_tokens
+                #graphql_tokens
 
-            #handler_block
+                #handler_block
 
-            #fn_items
+                #fn_items
 
-            #[tokio::main]
-            async fn main() -> anyhow::Result<()> {
+                #[tokio::main]
+                async fn main() -> anyhow::Result<()> {
 
-                let args = IndexerArgs::parse();
+                    let args = IndexerArgs::parse();
 
-                let IndexerArgs { manifest, .. } = args.clone();
+                    let IndexerArgs { manifest, .. } = args.clone();
 
 
-                let config = args
-                .config
-                .as_ref()
-                .map(IndexerConfig::from_file)
-                .unwrap_or(Ok(IndexerConfig::from(args)))?;
+                    let config = args
+                    .config
+                    .as_ref()
+                    .map(IndexerConfig::from_file)
+                    .unwrap_or(Ok(IndexerConfig::from(args)))?;
 
-                init_logging(&config).await?;
+                    init_logging(&config).await?;
 
-                info!("Configuration: {:?}", config);
+                    info!("Configuration: {:?}", config);
 
-                let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
+                    let (tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
-                let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
+                    let pool = IndexerConnectionPool::connect(&config.database.to_string()).await?;
 
-                if config.run_migrations {
-                    let mut c = pool.acquire().await?;
-                    queries::run_migration(&mut c).await?;
+                    if config.run_migrations {
+                        let mut c = pool.acquire().await?;
+                        queries::run_migration(&mut c).await?;
+                    }
+
+                    let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
+
+                    if manifest.is_none() {
+                        panic!("Manifest required to use native execution.");
+                    }
+
+                    let p = manifest.unwrap();
+                    if config.verbose {
+                        info!("Using manifest file located at '{}'", p.display());
+                    }
+                    let manifest = Manifest::from_file(&p)?;
+                    service.register_native_indexer(manifest, handle_events).await?;
+
+                    let service_handle = tokio::spawn(service.run());
+                    let gql_handle = tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
+
+                    let _ = tokio::join!(service_handle, gql_handle);
+
+                    Ok(())
                 }
-
-                let mut service = IndexerService::new(config.clone(), pool.clone(), rx).await?;
-
-                if manifest.is_none() {
-                    panic!("Manifest required to use native execution.");
-                }
-
-                let p = manifest.unwrap();
-                if config.verbose {
-                    info!("Using manifest file located at '{}'", p.display());
-                }
-                let manifest = Manifest::from_file(&p)?;
-                service.register_native_indexer(manifest, handle_events).await?;
-
-                let service_handle = tokio::spawn(service.run());
-                let gql_handle = tokio::spawn(GraphQlApi::build_and_run(config.clone(), pool, tx));
-
-                let _ = tokio::join!(service_handle, gql_handle);
-
-                Ok(())
             }
         }
-    } else {
-        let (handler_block, fn_items) = process_fn_items(&manifest, abi, indexer_module);
-        let handler_block = handler_block_wasm(handler_block);
+        ExecutionSource::Wasm => {
+            let (handler_block, fn_items) =
+                process_fn_items(&manifest, abi, indexer_module);
+            let handler_block = handler_block_wasm(handler_block);
 
-        quote! {
+            quote! {
 
-            #abi_tokens
+                #abi_tokens
 
-            #graphql_tokens
+                #graphql_tokens
 
-            #handler_block
+                #handler_block
 
-            #fn_items
+                #fn_items
+            }
         }
     };
 

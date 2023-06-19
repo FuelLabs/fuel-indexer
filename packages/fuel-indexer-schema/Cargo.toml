@@ -14,6 +14,7 @@ async-graphql-parser = "5.0"
 async-graphql-value = { workspace = true, optional = true }
 fuel-indexer-database = { workspace = true, optional = true }
 fuel-indexer-database-types = { workspace = true }
+fuel-indexer-lib = { workspace = true }
 fuel-indexer-types = { workspace = true }
 hex = "0.4"
 linked_hash_set = { version = "0.1.4", optional = true }

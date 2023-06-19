@@ -34,6 +34,7 @@ fn inject_native_entities_into_schema(schema: &str) -> String {
     format!("{}{}", schema, IndexMetadata::schema_fragment())
 }
 
+#[derive(Default, Debug, Clone)]
 pub struct GraphQLSchema {
     schema: String,
     version: String,

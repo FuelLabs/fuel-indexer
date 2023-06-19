@@ -4,7 +4,7 @@ use async_graphql_parser::types::{
 };
 use async_graphql_value::Name;
 use fuel_indexer_database_types::*;
-use fuel_indexer_lib::utils::local_repository_root;
+use fuel_indexer_lib::{utils::local_repository_root, ExecutionSource};
 use fuel_indexer_schema::{parser::ParsedGraphQLSchema, utils::*};
 use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
 use linked_hash_set::LinkedHashSet;
@@ -54,7 +54,7 @@ pub(crate) fn process_graphql_schema(
     namespace: String,
     identifier: String,
     schema_path: String,
-    is_native: bool,
+    exec_source: ExecutionSource,
 ) -> proc_macro2::TokenStream {
     let namespace_tokens = const_item("NAMESPACE", &namespace);
     let identifer_tokens = const_item("IDENTIFIER", &identifier);
@@ -98,7 +98,7 @@ pub(crate) fn process_graphql_schema(
     };
 
     let schema =
-        ParsedGraphQLSchema::new(&namespace, &identifier, is_native, Some(&schema))
+        ParsedGraphQLSchema::new(&namespace, &identifier, exec_source, Some(&schema))
             .expect("Failed to parse GraphQL schema.");
 
     for definition in schema.ast.clone().definitions.iter() {

@@ -102,7 +102,7 @@ impl IndexerService {
                 &manifest.identifier,
                 &schema,
                 &mut conn,
-                manifest.is_native(),
+                manifest.execution_source(),
             )
             .await?;
 
@@ -195,7 +195,7 @@ impl IndexerService {
                 &manifest.identifier,
                 &schema,
                 &mut conn,
-                true,
+                manifest.execution_source(),
             )
             .await?;
 

@@ -25,6 +25,7 @@ use fuel_indexer_lib::{
         AssetReloadRequest, FuelNodeHealthResponse, IndexStopRequest, ServiceRequest,
         ServiceStatus,
     },
+    ExecutionSource,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
 use hyper::Client;
@@ -267,7 +268,7 @@ pub(crate) async fn register_indexer_assets(
                                     &String::from_utf8_lossy(&data),
                                     &mut conn,
                                     // Can't deploy native indexers
-                                    false,
+                                    ExecutionSource::Wasm,
                                 )
                                 .await
                             {

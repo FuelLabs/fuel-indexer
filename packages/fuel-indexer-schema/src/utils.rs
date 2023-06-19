@@ -7,6 +7,7 @@ use async_graphql_parser::types::{
     TypeSystemDefinition,
 };
 use fuel_indexer_database_types::{directives, ColumnType, IdCol};
+use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::graphql::{GraphQLSchema, GraphqlObject, IndexMetadata};
 use sha2::{Digest, Sha256};
 use std::collections::{HashMap, HashSet};
@@ -198,11 +199,11 @@ pub fn build_schema_types_set(
 pub fn get_foreign_keys(
     namespace: &str,
     identifier: &str,
-    is_native: bool,
+    exec_source: ExecutionSource,
     schema: &GraphQLSchema,
 ) -> IndexerSchemaResult<ForeignKeyMap> {
     let parsed_schema =
-        ParsedGraphQLSchema::new(namespace, identifier, is_native, Some(schema))?;
+        ParsedGraphQLSchema::new(namespace, identifier, exec_source, Some(schema))?;
 
     let mut fks: ForeignKeyMap = HashMap::new();
 

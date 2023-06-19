@@ -3,6 +3,7 @@ use crate::{IndexerResult, Manifest};
 use fuel_indexer_database::{
     queries, types::IdCol, IndexerConnection, IndexerConnectionPool,
 };
+use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
 use tracing::{debug, error, info};
@@ -183,8 +184,8 @@ Do your WASM modules need to be rebuilt?"#,
         manifest: &Manifest,
         instance: Option<&Instance>,
     ) -> IndexerResult<()> {
-        match manifest.is_native() {
-            true => {
+        match manifest.execution_source() {
+            ExecutionSource::Native => {
                 self.namespace = manifest.namespace.clone();
                 self.identifier = manifest.identifier.clone();
 
@@ -216,7 +217,7 @@ Do your WASM modules need to be rebuilt?"#,
                     columns.push(column.column_name);
                 }
             }
-            false => {
+            ExecutionSource::Wasm => {
                 let instance = instance.unwrap();
 
                 self.namespace = ffi::get_namespace(instance)?;

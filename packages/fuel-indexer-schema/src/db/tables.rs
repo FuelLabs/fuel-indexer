@@ -9,9 +9,45 @@ use async_graphql_value::Name;
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
+use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
 use linked_hash_set::LinkedHashSet;
 use std::collections::{BTreeMap, HashMap, HashSet};
+
+#[derive(Default)]
+pub struct FooSchema {
+    db_type: DbType,
+    parsed: ParsedGraphQLSchema,
+    schema: GraphQLSchema,
+    tables: Vec<Table>,
+    namespace: String,
+    identifier: String,
+    exec_source: ExecutionSource,
+}
+
+impl FooSchema {
+    /// Create a new `FooSchema`.
+    pub fn new(
+        namespace: &str,
+        identifier: &str,
+        schema: &GraphQLSchema,
+        db_type: DbType,
+        exec_source: ExecutionSource,
+    ) -> IndexerSchemaDbResult<FooSchema> {
+        let parsed =
+            ParsedGraphQLSchema::new(namespace, identifier, exec_source.clone(), None)?;
+
+        Ok(FooSchema {
+            db_type,
+            namespace: namespace.to_string(),
+            identifier: identifier.to_string(),
+            schema: schema.to_owned(),
+            parsed,
+            exec_source,
+            ..Default::default()
+        })
+    }
+}
 
 /// SchemaBuilder is used to encapsulate most of the logic related to parsing
 /// GraphQL types, generating SQL from those types, and committing that SQL to
@@ -32,7 +68,7 @@ pub struct SchemaBuilder {
     /// Schema field mapping is namespaced by type name
     fields: HashMap<String, HashMap<String, String>>,
     parsed_schema: ParsedGraphQLSchema,
-    is_native: bool,
+    exec_source: ExecutionSource,
 }
 
 impl SchemaBuilder {
@@ -42,10 +78,10 @@ impl SchemaBuilder {
         identifier: &str,
         version: &str,
         db_type: DbType,
-        is_native: bool,
+        exec_source: ExecutionSource,
     ) -> IndexerSchemaDbResult<SchemaBuilder> {
         let parsed_schema =
-            ParsedGraphQLSchema::new(namespace, identifier, is_native, None)?;
+            ParsedGraphQLSchema::new(namespace, identifier, ExecutionSource::Wasm, None)?;
 
         Ok(SchemaBuilder {
             db_type,
@@ -53,7 +89,7 @@ impl SchemaBuilder {
             identifier: identifier.to_string(),
             version: version.to_string(),
             parsed_schema,
-            is_native,
+            exec_source,
             ..Default::default()
         })
     }
@@ -71,7 +107,7 @@ impl SchemaBuilder {
         let parsed_schema = ParsedGraphQLSchema::new(
             &self.namespace,
             &self.identifier,
-            self.is_native,
+            ExecutionSource::Wasm,
             Some(schema),
         )?;
 
@@ -590,7 +626,8 @@ impl Schema {
         }
 
         let schema = GraphQLSchema::new(root.schema.clone());
-        let foreign_keys = get_foreign_keys(namespace, identifier, false, &schema)?;
+        let foreign_keys =
+            get_foreign_keys(namespace, identifier, ExecutionSource::Wasm, &schema)?;
 
         let mut schema = Schema {
             version: root.version,

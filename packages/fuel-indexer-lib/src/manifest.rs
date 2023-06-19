@@ -1,3 +1,4 @@
+use crate::ExecutionSource;
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -116,11 +117,11 @@ impl Manifest {
         format!("{}.{}", &self.namespace, &self.identifier)
     }
 
-    /// Determine whether this manifest supports native execution.
-    pub fn is_native(&self) -> bool {
+    /// Determine what type of execution source this indexer is using.
+    pub fn execution_source(&self) -> ExecutionSource {
         match &self.module {
-            Module::Native => true,
-            Module::Wasm(_o) => false,
+            Module::Native => ExecutionSource::Native,
+            Module::Wasm(_o) => ExecutionSource::Wasm,
         }
     }
 

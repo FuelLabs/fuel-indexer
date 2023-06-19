@@ -14,11 +14,13 @@ anyhow = "1.0"
 bincode = { workspace = true }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
 http = { version = "0.2", default-features = false }
+proc-macro2 = "1.0"
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = "0.8"
 sha2 = "0.9"
 strum = { version = "0.24", default-features = false, features = ["derive"] }
+quote = "1.0"
 thiserror = { workspace = true }
 tokio = { features = ["time", "rt"], workspace = true }
 tracing = { workspace = true }

@@ -7,6 +7,7 @@ use async_graphql_parser::{
     },
 };
 use fuel_indexer_database_types::directives;
+use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::graphql::GraphQLSchema;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -20,8 +21,8 @@ pub struct ParsedGraphQLSchema {
     /// Identifier of the indexer.
     pub identifier: String,
 
-    /// Whether we're building schema for native execution.
-    pub is_native: bool,
+    /// Indexer method of execution.
+    pub exec_source: ExecutionSource,
 
     /// All unique names of types in the schema (whether objects, enums, or scalars).
     pub type_names: HashSet<String>,
@@ -64,6 +65,9 @@ pub struct ParsedGraphQLSchema {
 
     /// Mapping of fully qualified field names to their `FieldDefinition`
     pub field_defs: HashMap<String, FieldDefinition>,
+
+    /// GraphQL schema content.
+    pub schema: GraphQLSchema,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -75,7 +79,7 @@ impl Default for ParsedGraphQLSchema {
         Self {
             namespace: "".to_string(),
             identifier: "".to_string(),
-            is_native: false,
+            exec_source: ExecutionSource::Wasm,
             type_names: HashSet::new(),
             enum_names: HashSet::new(),
             union_names: HashSet::new(),
@@ -90,6 +94,7 @@ impl Default for ParsedGraphQLSchema {
             field_defs: HashMap::new(),
             field_type_optionality: HashMap::new(),
             ast,
+            schema: GraphQLSchema::default(),
         }
     }
 }
@@ -99,7 +104,7 @@ impl ParsedGraphQLSchema {
     pub fn new(
         namespace: &str,
         identifier: &str,
-        is_native: bool,
+        exec_source: ExecutionSource,
         schema: Option<&GraphQLSchema>,
     ) -> IndexerSchemaResult<Self> {
         let mut ast =
@@ -238,7 +243,7 @@ impl ParsedGraphQLSchema {
         Ok(Self {
             namespace: namespace.to_string(),
             identifier: identifier.to_string(),
-            is_native,
+            exec_source,
             type_names,
             union_names,
             objects,
@@ -252,6 +257,7 @@ impl ParsedGraphQLSchema {
             field_type_mappings,
             scalar_names,
             field_type_optionality,
+            schema: schema.map(|s| s.clone()).unwrap_or_default(),
             ast,
         })
     }

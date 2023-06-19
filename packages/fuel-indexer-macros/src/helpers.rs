@@ -8,6 +8,7 @@ use async_graphql_parser::types::{
 use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
 use fuel_indexer_database_types::*;
+use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_schema::{parser::ParsedGraphQLSchema, utils::*};
 use fuel_indexer_types::type_id;
 use fuels_code_gen::utils::Source;
@@ -23,7 +24,7 @@ pub enum ImplNewParameters {
         hasher: proc_macro2::TokenStream,
         object_name: String,
         struct_fields: proc_macro2::TokenStream,
-        is_native: bool,
+        exec_source: ExecutionSource,
         field_set: HashSet<String>,
     },
     UnionType {
@@ -349,7 +350,7 @@ pub fn generate_object_trait_impls(
     field_extractors: proc_macro2::TokenStream,
     from_row: proc_macro2::TokenStream,
     to_row: proc_macro2::TokenStream,
-    is_native: bool,
+    exec_source: ExecutionSource,
     impl_new_params: ImplNewParameters,
 ) -> proc_macro2::TokenStream {
     let json_impl = quote! {
@@ -369,88 +370,91 @@ pub fn generate_object_trait_impls(
         }
     };
 
-    let entity_impl = if is_native {
-        quote! {
-            #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
-            pub struct #strct {
-                #strct_fields
-            }
-
-            #[async_trait::async_trait]
-            impl Entity for #strct {
-                const TYPE_ID: i64 = #type_id;
-
-                fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                    #field_extractors
-                    Self {
-                        #from_row
-                    }
+    let entity_impl = match exec_source {
+        ExecutionSource::Native => {
+            quote! {
+                #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+                pub struct #strct {
+                    #strct_fields
                 }
 
-                fn to_row(&self) -> Vec<FtColumn> {
-                    vec![
-                        #to_row
-                    ]
-                }
+                #[async_trait::async_trait]
+                impl Entity for #strct {
+                    const TYPE_ID: i64 = #type_id;
 
-                async fn load(id: u64) -> Option<Self> {
-                    unsafe {
-                        match &db {
-                            Some(d) => {
-                                match d.lock().await.get_object(Self::TYPE_ID, id).await {
-                                    Some(bytes) => {
-                                        let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
-                                        let obj = Self::from_row(columns);
-                                        Some(obj)
-                                    },
-                                    None => None,
-                                }
-                            }
-                            None => None,
+                    fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                        #field_extractors
+                        Self {
+                            #from_row
                         }
                     }
-                }
 
-                async fn save(&self) {
-                    unsafe {
-                        match &db {
-                            Some(d) => {
-                                d.lock().await.put_object(
-                                    Self::TYPE_ID,
-                                    self.to_row(),
-                                    serialize(&self.to_row())
-                                ).await;
+                    fn to_row(&self) -> Vec<FtColumn> {
+                        vec![
+                            #to_row
+                        ]
+                    }
+
+                    async fn load(id: u64) -> Option<Self> {
+                        unsafe {
+                            match &db {
+                                Some(d) => {
+                                    match d.lock().await.get_object(Self::TYPE_ID, id).await {
+                                        Some(bytes) => {
+                                            let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
+                                            let obj = Self::from_row(columns);
+                                            Some(obj)
+                                        },
+                                        None => None,
+                                    }
+                                }
+                                None => None,
                             }
-                            None => {},
+                        }
+                    }
+
+                    async fn save(&self) {
+                        unsafe {
+                            match &db {
+                                Some(d) => {
+                                    d.lock().await.put_object(
+                                        Self::TYPE_ID,
+                                        self.to_row(),
+                                        serialize(&self.to_row())
+                                    ).await;
+                                }
+                                None => {},
+                            }
                         }
                     }
                 }
             }
         }
-    } else {
-        quote! {
-            #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-            pub struct #strct {
-                #strct_fields
-            }
+        ExecutionSource::Wasm => {
+            quote! {
+                #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+                pub struct #strct {
+                    #strct_fields
+                }
 
-            impl Entity for #strct {
-                const TYPE_ID: i64 = #type_id;
+                impl Entity for #strct {
+                    const TYPE_ID: i64 = #type_id;
 
-                fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                    #field_extractors
-                    Self {
-                        #from_row
+                    fn from_row(mut vec: Vec<FtColumn>) -> Self {
+                        #field_extractors
+                        Self {
+                            #from_row
+                        }
+                    }
+
+                    fn to_row(&self) -> Vec<FtColumn> {
+                        vec![
+                            #to_row
+                        ]
                     }
                 }
 
-                fn to_row(&self) -> Vec<FtColumn> {
-                    vec![
-                        #to_row
-                    ]
-                }
             }
-
         }
     };
 
@@ -461,7 +465,7 @@ pub fn generate_object_trait_impls(
             hasher,
             object_name,
             struct_fields,
-            is_native,
+            exec_source,
             field_set,
         } => {
             if field_set.contains(&IdCol::to_lowercase_string()) {
@@ -471,7 +475,7 @@ pub fn generate_object_trait_impls(
                     hasher,
                     object_name,
                     struct_fields,
-                    is_native,
+                    exec_source,
                 )
             } else {
                 quote! {}
@@ -507,23 +511,26 @@ pub fn generate_struct_new_method_impl(
     hasher: proc_macro2::TokenStream,
     typedef_name: String,
     struct_fields: proc_macro2::TokenStream,
-    is_native: bool,
+    exec_source: ExecutionSource,
 ) -> proc_macro2::TokenStream {
-    let get_or_create_impl = if is_native {
-        quote! {
-            pub async fn get_or_create(self) -> Self {
-                match Self::load(self.id).await {
-                    Some(instance) => instance,
-                    None => self,
+    let get_or_create_impl = match exec_source {
+        ExecutionSource::Native => {
+            quote! {
+                pub async fn get_or_create(self) -> Self {
+                    match Self::load(self.id).await {
+                        Some(instance) => instance,
+                        None => self,
+                    }
                 }
             }
         }
-    } else {
-        quote! {
-            pub fn get_or_create(self) -> Self {
-                match Self::load(self.id) {
-                    Some(instance) => instance,
-                    None => self,
+        ExecutionSource::Wasm => {
+            quote! {
+                pub fn get_or_create(self) -> Self {
+                    match Self::load(self.id) {
+                        Some(instance) => instance,
+                        None => self,
+                    }
                 }
             }
         }
