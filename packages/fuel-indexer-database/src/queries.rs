@@ -86,6 +86,17 @@ pub async fn new_column_insert(
     }
 }
 
+pub async fn foo_new_column_insert(
+    conn: &mut IndexerConnection,
+    cols: Vec<FooColumn>,
+) -> sqlx::Result<usize> {
+    match conn {
+        IndexerConnection::Postgres(ref mut c) => {
+            postgres::foo_new_column_insert(c, cols).await
+        }
+    }
+}
+
 pub async fn list_column_by_id(
     conn: &mut IndexerConnection,
     col_id: i64,

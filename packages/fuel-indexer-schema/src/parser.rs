@@ -294,4 +294,22 @@ impl ParsedGraphQLSchema {
     pub fn has_type(&self, name: &str) -> bool {
         self.type_names.contains(name)
     }
+
+    /// All objects from which SQL tables can be created.
+    pub fn indexable_objects(&self) -> Vec<ObjectType> {
+        self.objects
+            .iter()
+            .filter(|(name, _)| !self.virtual_type_names.contains(*name))
+            .map(|(_, obj)| obj.clone())
+            .collect()
+    }
+
+    /// All fields from which SQL columns can be created.
+    pub fn fields_for_columns(&self) -> Vec<FieldDefinition> {
+        self.field_defs
+            .iter()
+            .filter(|(_, field)| !self.is_enum_type(&field.ty.to_string()))
+            .map(|(_, field)| field.clone())
+            .collect()
+    }
 }

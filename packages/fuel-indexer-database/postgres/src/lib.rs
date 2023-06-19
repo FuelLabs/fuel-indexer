@@ -286,6 +286,7 @@ pub async fn schema_exists(
     Ok(count > 0)
 }
 
+// REFACTOR: remove
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_column_insert(
     conn: &mut PoolConnection<Postgres>,
@@ -298,6 +299,29 @@ pub async fn new_column_insert(
             .push_bind(new_col.column_position)
             .push_bind(new_col.column_name)
             .push_bind(new_col.column_type)
+            .push_bind(new_col.nullable)
+            .push_bind(new_col.graphql_type);
+    });
+
+    let query = builder.build();
+
+    let result = query.execute(conn).await?;
+
+    Ok(result.rows_affected() as usize)
+}
+
+#[cfg_attr(feature = "metrics", metrics)]
+pub async fn foo_new_column_insert(
+    conn: &mut PoolConnection<Postgres>,
+    cols: Vec<FooColumn>,
+) -> sqlx::Result<usize> {
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type)");
+
+    builder.push_values(cols.into_iter(), |mut b, new_col| {
+        b.push_bind(new_col.type_id)
+            .push_bind(new_col.position)
+            .push_bind(new_col.name)
+            .push_bind(new_col.coltype.to_string())
             .push_bind(new_col.nullable)
             .push_bind(new_col.graphql_type);
     });

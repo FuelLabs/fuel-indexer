@@ -33,7 +33,7 @@ impl FooSchema {
         schema: &GraphQLSchema,
         db_type: DbType,
         exec_source: ExecutionSource,
-    ) -> IndexerSchemaDbResult<FooSchema> {
+    ) -> IndexerSchemaDbResult<Self> {
         let parsed =
             ParsedGraphQLSchema::new(namespace, identifier, exec_source.clone(), None)?;
 
@@ -46,6 +46,132 @@ impl FooSchema {
             exec_source,
             ..Default::default()
         })
+    }
+
+    /// Generate table SQL for each indexable object in the given GraphQL schema.
+    fn build(mut self, schema: &GraphQLSchema) -> IndexerSchemaDbResult<Self> {
+        let parsed_schema = ParsedGraphQLSchema::new(
+            &self.namespace,
+            &self.identifier,
+            ExecutionSource::Wasm,
+            Some(schema),
+        )?;
+
+        let mut statements = Vec::new();
+
+        self.schema = schema.to_owned();
+        self.parsed = parsed_schema.to_owned();
+
+        match self.db_type {
+            DbType::Postgres => {
+                let create = format!(
+                    "CREATE SCHEMA IF NOT EXISTS {}_{}",
+                    self.namespace, self.identifier
+                );
+                statements.push(create);
+            }
+            _ => {}
+        }
+
+        let table_stmnts = self
+            .parsed
+            .indexable_objects()
+            .iter()
+            .map(|o| Table::from(o.to_owned()))
+            .map(|t| t.create())
+            .collect::<Vec<String>>();
+
+        Ok(self)
+    }
+
+    /// Commit all SQL metadata to the database.
+    pub async fn commit_metadata(
+        self,
+        conn: &mut IndexerConnection,
+    ) -> IndexerSchemaDbResult<FooSchema> {
+        let FooSchema {
+            namespace,
+            identifier,
+            schema,
+            db_type,
+            exec_source,
+            tables,
+            parsed,
+        } = self;
+
+        let version = schema.version();
+
+        let new_root = NewGraphRoot {
+            version: schema.version().to_owned(),
+            schema_name: namespace.to_owned(),
+            schema_identifier: identifier.to_owned(),
+            schema: schema.to_string(),
+        };
+
+        queries::new_graph_root(conn, new_root).await?;
+
+        let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
+
+        let field_defs = parsed.fields_for_columns();
+
+        let cols: Vec<_> = field_defs
+            .iter()
+            .map(|f| NewRootColumns {
+                root_id: latest.id,
+                column_name: f.name.to_string(),
+                graphql_type: f.name.node.to_string(),
+            })
+            .collect();
+
+        let columns = parsed
+            .fields_for_columns()
+            .iter()
+            .map(|f| {
+                let type_id = type_id(&namespace, &f.name.node.to_string());
+                FooColumn::from_field_def(f, &namespace, &identifier, &version, type_id)
+            })
+            .collect::<Vec<FooColumn>>();
+        let type_ids = Vec::new();
+
+        queries::new_root_columns(conn, cols).await?;
+
+        queries::type_id_insert(conn, type_ids).await?;
+        queries::foo_new_column_insert(conn, columns).await?;
+
+        let mut schema = FooSchema {
+            db_type: db_type.clone(),
+            exec_source: exec_source.clone(),
+            parsed: parsed.clone(),
+            tables,
+            schema: schema.to_owned(),
+            namespace: namespace.to_owned(),
+            identifier: identifier.to_owned(),
+        };
+
+        schema.register_queryroot_fields();
+
+        Ok(schema)
+    }
+
+    // **** HACK ****
+
+    // Below we manually add a `QueryRoot` type, with its corresponding field types
+    // data being each `Object` defined in the schema.
+
+    // We need this because at the moment our GraphQL query parsing is tightly-coupled
+    // to our old way of resolving GraphQL types (which was using a `QueryType` object
+    // defined in a `TypeSystemDefinition::Schema`)
+
+    /// Register the `QueryRoot` type and its corresponding field types.
+    pub fn register_queryroot_fields(&mut self) {
+        self.parsed.object_field_mappings.insert(
+            QUERY_ROOT.to_string(),
+            self.parsed
+                .objects
+                .keys()
+                .map(|k| (k.to_lowercase(), k.clone()))
+                .collect::<BTreeMap<String, String>>(),
+        );
     }
 }
 

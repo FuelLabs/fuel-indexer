@@ -3,7 +3,7 @@ pub mod directives;
 
 use crate::directives::IndexMethod;
 use async_graphql_parser::{
-    types::{BaseType, FieldDefinition, Type},
+    types::{BaseType, FieldDefinition, ObjectType, Type},
     Pos, Positioned,
 };
 use async_graphql_value::Name;
@@ -221,46 +221,73 @@ pub trait SqlNamed {
 
 /// Column on SQL database for a given `Table` the database.
 #[derive(Debug)]
-pub struct Column {
+pub struct FooColumn {
     // Use default of `1` if `id` field is unused, in order to not have to
     // keep track of a `New{ColumnName}
     pub id: i64,
     pub root_id: i64,
+    pub type_id: i64,
     pub name: String,
     pub graphql_type: String,
     pub coltype: ColumnType,
     pub position: i32,
     pub persistence: ColumnPersistence,
-    pub field: FieldDefinition,
     pub unique: bool,
     pub nullable: bool,
 }
 
-impl Default for Column {
+impl Default for FooColumn {
     fn default() -> Self {
         Self {
             id: i64::MAX,
             root_id: i64::MAX,
             name: "".to_string(),
+            type_id: 1,
             graphql_type: "".to_string(),
             coltype: ColumnType::ID,
             position: 1,
             persistence: ColumnPersistence::Regular,
-            field: FieldDefinition {
-                name: Positioned::new(Name::new(""), Pos::default()),
-                arguments: vec![],
-                ty: Positioned::new(
-                    Type {
-                        base: BaseType::Named(Name::new("")),
-                        nullable: true,
-                    },
-                    Pos::default(),
-                ),
-                directives: vec![],
-                description: None,
-            },
             unique: false,
             nullable: false,
+        }
+    }
+}
+
+impl FooColumn {
+    pub fn from_field_def(
+        f: &FieldDefinition,
+        namespace: &str,
+        identifier: &str,
+        version: &str,
+        type_id: i64,
+    ) -> Self {
+        let persistence = f
+            .directives
+            .iter()
+            .find(|d| d.node.name.to_string() == "virtual")
+            .map(|_| ColumnPersistence::Virtual)
+            .unwrap_or(ColumnPersistence::Regular);
+
+        let unique = f
+            .directives
+            .iter()
+            .find(|d| d.node.name.to_string() == "unique")
+            .is_some();
+
+        let table_name = f.name.to_string();
+        Self {
+            // Use a dummy value
+            id: 1,
+            root_id: 1,
+            type_id,
+            name: table_name.clone(),
+            graphql_type: table_name.clone(),
+            coltype: ColumnType::from(f.ty.to_string().as_str()),
+            // why do we use this?
+            position: 1,
+            persistence,
+            unique,
+            nullable: f.ty.node.nullable,
         }
     }
 }
@@ -298,17 +325,6 @@ pub struct VirtualColumn {
     pub graphql_type: String,
 }
 
-#[derive(Debug)]
-pub struct FooTypeId {
-    pub id: i64,
-    pub schema_version: String,
-    pub namespace: String,
-    pub identifier: String,
-    pub graphql_name: String,
-    pub table_name: String,
-    pub column_type: ColumnPersistence,
-}
-
 // REFACTOR: remove
 #[derive(Debug)]
 pub struct TypeId {
@@ -319,6 +335,45 @@ pub struct TypeId {
     pub graphql_name: String,
     pub table_name: String,
     pub virtual_columns: Vec<VirtualColumn>,
+}
+
+#[derive(Debug)]
+pub struct FooTypeId {
+    pub id: i64,
+    pub schema_version: String,
+    pub namespace: String,
+    pub identifier: String,
+    pub graphql_name: String,
+    pub table_name: String,
+    pub persistence: ColumnPersistence,
+}
+
+impl FooTypeId {
+    pub fn from_field_def(
+        f: FieldDefinition,
+        namespace: &str,
+        identifier: &str,
+        version: &str,
+    ) -> Self {
+        let persistence = f
+            .directives
+            .iter()
+            .find(|d| d.node.name.to_string() == "virtual")
+            .map(|_| ColumnPersistence::Virtual)
+            .unwrap_or(ColumnPersistence::Regular);
+
+        let table_name = f.name.to_string();
+        Self {
+            // Use a dummy value
+            id: 1,
+            schema_version: version.to_string(),
+            namespace: namespace.to_string(),
+            identifier: identifier.to_string(),
+            graphql_name: f.name.to_string(),
+            table_name,
+            persistence,
+        }
+    }
 }
 
 // REFACTOR: remove
@@ -650,6 +705,7 @@ impl CreateStatement for ForeignKey {
     }
 }
 
+/// Represents an ID field in a SQL column or GraphQL schema.s
 pub struct IdCol;
 impl IdCol {
     pub fn to_lowercase_string() -> String {
@@ -669,6 +725,7 @@ impl IdCol {
     }
 }
 
+/// Nonce used for indexer authentication.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Nonce {
     pub uid: String,
@@ -686,10 +743,28 @@ impl Nonce {
     }
 }
 
+/// SQL database table for a given `GraphRoot` in the database.
 pub struct Table {
+    /// The name of the table.
     name: String,
-    columns: Vec<Column>,
+
+    /// The namespace of the indexer.
+    namespace: String,
+
+    /// The identifier of the indexer.
+    identifier: String,
+
+    /// SQL columns associated with this table.
+    columns: Vec<FooColumn>,
+
+    /// SQL conswtraints associated with this table.
     constraints: Vec<Constraint>,
+}
+
+impl From<ObjectType> for Table {
+    fn from(obj: ObjectType) -> Self {
+        unimplemented!()
+    }
 }
 
 impl SqlFragment for Table {
