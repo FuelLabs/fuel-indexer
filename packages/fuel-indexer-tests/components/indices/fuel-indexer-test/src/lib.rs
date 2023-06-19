@@ -30,7 +30,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_ping(ping: Ping) {
-        Logger::info("fuel_indexer_test_ping handling a Ping event.");
+        log_info!("fuel_indexer_test_ping handling a Ping event: {:?}", ping);
 
         let entity = PingEntity {
             id: ping.id,
@@ -42,7 +42,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_u16(_ping: Ping) {
-        Logger::info("fuel_indexer_test_ping handling a U16 event.");
+        log_info!("fuel_indexer_test_ping handling a U16 event.");
         let u16entity = U16Entity {
             id: 9999,
             value1: 340282366920938463463374607431768211454, // 2**128-2
@@ -53,7 +53,10 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_transfer(transfer: Transfer) {
-        Logger::info("fuel_indexer_test_transfer handling Transfer event.");
+        log_info!(
+            "fuel_indexer_test_transfer handling Transfer event: {:?}",
+            transfer
+        );
 
         let Transfer {
             contract_id,
@@ -75,7 +78,10 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_transferout(transferout: TransferOut) {
-        Logger::info("fuel_indexer_test_transferout handling TransferOut event.");
+        log_info!(
+            "fuel_indexer_test_transferout handling TransferOut event: {:?}",
+            transferout
+        );
 
         let TransferOut {
             contract_id,
@@ -97,7 +103,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_log(log: Log) {
-        Logger::info("fuel_indexer_test_log handling Log event.");
+        log_info!("fuel_indexer_test_log handling Log event.");
 
         let Log {
             contract_id,
@@ -117,7 +123,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_logdata(logdata_entity: Pung) {
-        Logger::info("fuel_indexer_test_logdata handling LogData event.");
+        log_info!("fuel_indexer_test_logdata handling LogData event.");
 
         let entity = PungEntity {
             id: logdata_entity.id,
@@ -130,7 +136,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_scriptresult(scriptresult: ScriptResult) {
-        Logger::info("fuel_indexer_test_scriptresult handling ScriptResult event.");
+        log_info!("fuel_indexer_test_scriptresult handling ScriptResult event.");
 
         let ScriptResult { result, gas_used } = scriptresult;
 
@@ -145,7 +151,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_messageout_data(example_message: ExampleMessageStruct) {
-        Logger::info("fuel_indexer_test_messageout_data handling MessageOut data event");
+        log_info!("fuel_indexer_test_messageout_data handling MessageOut data event");
 
         let entity = MessageEntity {
             id: example_message.id,
@@ -156,7 +162,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_messageout(messageout: MessageOut) {
-        Logger::info("fuel_indexer_test_messageout handling MessageOut event");
+        log_info!("fuel_indexer_test_messageout handling MessageOut event");
 
         let MessageOut {
             sender,
@@ -184,7 +190,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_callreturn(pungentity: Pung) {
-        Logger::info("fuel_indexer_test_callreturn handling Pung event.");
+        log_info!("fuel_indexer_test_callreturn handling Pung event.");
 
         let entity = PungEntity {
             id: pungentity.id,
@@ -202,8 +208,8 @@ mod fuel_indexer_test {
         ping: Ping,
         block_data: BlockData,
     ) {
-        Logger::info(
-            "fuel_indexer_test_multiargs handling Pung, Pong, Ping, and BlockData events.",
+        log_info!(
+            "fuel_indexer_test_multiargs handling Pung, Pong, Ping, and BlockData events."
         );
 
         let block = BlockEntity {
@@ -240,7 +246,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_optional_schema_fields(optional: Ping) {
-        Logger::info("fuel_indexer_test_optional_schema_fields handling Ping event and setting optional fields.");
+        log_info!("fuel_indexer_test_optional_schema_fields handling Ping event and setting optional fields.");
 
         let entity = OptionEntity {
             id: optional.id,
@@ -256,7 +262,7 @@ mod fuel_indexer_test {
         event: ComplexTupleStruct,
         logdata_entity: SimpleTupleStruct,
     ) {
-        Logger::info("fuel_indexer_test_tuple handling ComplexTupleStruct and SimpleTupleStruct events.");
+        log_info!("fuel_indexer_test_tuple handling ComplexTupleStruct and SimpleTupleStruct events.");
         let data: (u32, (u64, bool, (SizedAsciiString<5>, TupleStructItem))) = event.data;
         let entity = TupleEntity {
             id: data.1 .0,
@@ -268,7 +274,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_pure_function(call: Call) {
-        Logger::info("fuel_indexer_test_tuple handling Call event.");
+        log_info!("fuel_indexer_test_tuple handling Call event.");
 
         let Call {
             contract_id,
@@ -293,7 +299,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_deeply_nested_schema_fields(_deeply_nested: SimpleQueryStruct) {
-        Logger::info("fuel_indexer_test_deeply_nested_schema_fields handling DeeplyNestedQueryTestStruct event.");
+        log_info!("fuel_indexer_test_deeply_nested_schema_fields handling DeeplyNestedQueryTestStruct event.");
 
         let genre1 = Genre {
             id: 1,
@@ -535,7 +541,7 @@ mod fuel_indexer_test {
     fn fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields(
         explicit: ExplicitQueryStruct,
     ) {
-        Logger::info("fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields handling ExplicitQueryTestStruct event.");
+        log_info!("fuel_indexer_test_nested_query_explicit_foreign_keys_schema_fields handling ExplicitQueryTestStruct event.");
 
         let municipality = Municipality {
             id: explicit.id,
@@ -554,7 +560,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_test_panic(panic: Panic) {
-        Logger::info("fuel_indexer_test_panic handling Panic event.");
+        log_info!("fuel_indexer_test_panic handling Panic event.");
 
         let Panic {
             contract_id,
@@ -571,7 +577,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_trigger_revert(revert: Revert) {
-        Logger::info("fuel_indexer_trigger_revert handling trigger_revert event.");
+        log_info!("fuel_indexer_trigger_revert handling trigger_revert event.");
 
         let Revert {
             contract_id,
@@ -643,9 +649,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_trigger_enum_error(enum_error: Revert) {
-        Logger::info(
-            "fuel_indexer_trigger_enum_error handling trigger_enum_error event.",
-        );
+        log_info!("fuel_indexer_trigger_enum_error handling trigger_enum_error event.");
 
         let Revert {
             contract_id,
@@ -662,7 +666,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_block_explorer_types(_b: BlockData) {
-        Logger::info("fuel_indexer_block_explorer_types handling explorer_types event.");
+        log_info!("fuel_indexer_block_explorer_types handling explorer_types event.");
         let e = ExplorerEntity {
             id: 8675309,
             nonce: Nonce::default(),
@@ -682,7 +686,7 @@ mod fuel_indexer_test {
         second: NestedEnum,
         third: AnotherSimpleEnum,
     ) {
-        Logger::info("fuel_indexer_trigger_enum handling trigger_enum event..");
+        log_info!("fuel_indexer_trigger_enum handling trigger_enum event..");
 
         let e = ComplexEnumEntity {
             id: 1,
@@ -692,7 +696,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_trigger_non_indexable_type(_b: BlockData) {
-        Logger::info("fuel_indexer_trigger_non_indexable_type handling trigger_non_indexable_type event.");
+        log_info!("fuel_indexer_trigger_non_indexable_type handling trigger_non_indexable_type event.");
         let e = UsesNoTableEntity {
             id: 1,
             name: "hello world".to_string(),
@@ -707,9 +711,7 @@ mod fuel_indexer_test {
     }
 
     fn fuel_indexer_trigger_union_type(_b: BlockData) {
-        Logger::info(
-            "fuel_indexer_trigger_union_type handling trigger_union_type event.",
-        );
+        log_info!("fuel_indexer_trigger_union_type handling trigger_union_type event.");
 
         let v = VirtualUnionEntity {
             a: Some(2),
