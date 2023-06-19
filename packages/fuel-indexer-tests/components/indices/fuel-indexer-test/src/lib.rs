@@ -697,10 +697,41 @@ mod fuel_indexer_test {
             id: 1,
             name: "hello world".to_string(),
             no_table: NoTableEntity {
-                name: Some("norelation".to_string()),
+                name: Some("virtual".to_string()),
                 size: 1,
             }
             .into(),
+        };
+
+        e.save();
+    }
+
+    fn fuel_indexer_trigger_union_type(_b: BlockData) {
+        Logger::info(
+            "fuel_indexer_trigger_union_type handling trigger_union_type event.",
+        );
+
+        let v = VirtualUnionEntity {
+            a: Some(2),
+            b: None,
+            c: Some(6),
+            union_type: Some(UnionType::B.into()),
+        };
+
+        let vc = VirtualUnionContainerEntity {
+            id: 1,
+            union_entity: Some(v.into()),
+            union_type: UnionType::B.into(),
+        };
+
+        vc.save();
+
+        let e = IndexableUnionEntity {
+            id: 1,
+            a: Some(5),
+            b: Some(10),
+            c: None,
+            union_type: Some(UnionType::A.into()),
         };
 
         e.save();

@@ -11,12 +11,12 @@ use fuel_indexer_lib::{
     utils::{derive_socket_addr, ServiceRequest},
 };
 use fuel_indexer_postgres;
+use fuels::accounts::wallet::WalletUnlocked;
 use fuels::{
     macros::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
-        Contract, LoadConfiguration, Provider, TxParameters, WalletUnlocked,
-        DEFAULT_COIN_AMOUNT,
+        Contract, LoadConfiguration, Provider, TxParameters, DEFAULT_COIN_AMOUNT,
     },
 };
 use rand::distributions::Alphanumeric;
@@ -215,9 +215,10 @@ pub async fn setup_test_fuel_node(
         ..Config::local_node()
     };
 
-    let (client, _) = setup_test_client(coins, vec![], Some(config), None, None).await;
+    let (client, _, consensus_parameters) =
+        setup_test_client(coins, vec![], Some(config), None).await;
 
-    let provider = Provider::new(client);
+    let provider = Provider::new(client, consensus_parameters);
 
     wallet.set_provider(provider.clone());
 
@@ -294,6 +295,7 @@ pub async fn api_server_app_postgres(
         run_migrations: false,
         authentication: AuthenticationConfig::default(),
         rate_limit: RateLimitConfig::default(),
+        replace_indexer: config_defaults::REPLACE_INDEXER,
     };
 
     let pool = IndexerConnectionPool::connect(&config.database.to_string())
@@ -334,6 +336,7 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
             jwt_expiry: Some(config_defaults::JWT_EXPIRY_SECS)
         },
         rate_limit: RateLimitConfig::default(),
+        replace_indexer: config_defaults::REPLACE_INDEXER,
     };
 
     let (tx, _rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
@@ -345,13 +348,16 @@ pub async fn authenticated_api_server_app_postgres(database_url: Option<&str>) -
     GraphQlApi::build(config, pool, tx).await.unwrap()
 }
 
-pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerService {
+pub async fn indexer_service_postgres(
+    database_url: Option<&str>,
+    modify_config: Option<Box<dyn Fn(&mut IndexerConfig)>>,
+) -> IndexerService {
     let database: DatabaseConfig = database_url
         .map_or(DatabaseConfig::default(), |url| {
             DatabaseConfig::from_str(url).unwrap()
         });
 
-    let config = IndexerConfig {
+    let mut config = IndexerConfig {
         indexer_handler_timeout: config_defaults::INDEXER_HANDLER_TIMEOUT,
         log_level: "info".to_string(),
         verbose: true,
@@ -365,7 +371,10 @@ pub async fn indexer_service_postgres(database_url: Option<&str>) -> IndexerServ
         run_migrations: false,
         authentication: AuthenticationConfig::default(),
         rate_limit: RateLimitConfig::default(),
+        replace_indexer: config_defaults::REPLACE_INDEXER,
     };
+
+    modify_config.map(|f| f(&mut config));
 
     let (_tx, rx) = channel::<ServiceRequest>(SERVICE_REQUEST_CHANNEL_SIZE);
 
@@ -413,7 +422,8 @@ pub mod test_web {
     };
     use async_std::sync::Arc;
     use fuel_indexer_types::scalar::{AssetId, Bech32ContractId};
-    use fuels::prelude::{CallParameters, Provider, WalletUnlocked};
+    use fuels::accounts::wallet::WalletUnlocked;
+    use fuels::prelude::{CallParameters, Provider};
     use std::path::Path;
 
     use super::{tx_params, FuelIndexerTest};
@@ -529,7 +539,6 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_messageout()
-            .append_message_outputs(1)
             .tx_params(tx_params())
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")

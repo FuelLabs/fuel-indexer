@@ -3,10 +3,11 @@ use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{defaults, fixtures::indexer_service_postgres};
 use fuels::prelude::{LoadConfiguration, TxParameters};
 use fuels::{
+    accounts::wallet::WalletUnlocked,
     macros::abigen,
     prelude::{
         setup_single_asset_coins, setup_test_client, AssetId, Contract, Provider,
-        WalletUnlocked, DEFAULT_COIN_AMOUNT,
+        DEFAULT_COIN_AMOUNT,
     },
 };
 use std::path::Path;
@@ -47,9 +48,10 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
         DEFAULT_COIN_AMOUNT,
     );
 
-    let (client, _) = setup_test_client(coins, vec![], None, None, None).await;
+    let (client, _, consensus_parameters) =
+        setup_test_client(coins, vec![], None, None).await;
 
-    let provider = Provider::new(client);
+    let provider = Provider::new(client, consensus_parameters);
 
     wallet.set_provider(provider.clone());
 
@@ -63,7 +65,7 @@ async fn test_can_trigger_event_from_contract_and_index_emited_event_in_postgres
     let _ = contract.methods().gimme_someevent(78).call().await;
     let _ = contract.methods().gimme_anotherevent(899).call().await;
 
-    let mut srvc = indexer_service_postgres(None).await;
+    let mut srvc = indexer_service_postgres(None, None).await;
 
     let manifest: Manifest =
         serde_yaml::from_str(SIMPLE_WASM_MANIFEST).expect("Bad yaml file.");

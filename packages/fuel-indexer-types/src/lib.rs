@@ -6,7 +6,7 @@ pub mod receipt;
 pub mod scalar;
 
 pub use fuels::{
-    core::try_from_bytes,
+    core::codec::try_from_bytes,
     types::{
         bech32::{Bech32Address, Bech32ContractId},
         Bits256, Identity, SizedAsciiString,

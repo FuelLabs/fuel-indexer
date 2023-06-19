@@ -14,25 +14,27 @@ proc-macro = true
 
 [dependencies]
 async-graphql-parser = "5.0"
-fuel-abi-types = "0.2.1"
+async-graphql-value = "5.0"
+fuel-abi-types = "0.3"
 fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-schema = { workspace = true, default-features = false }
 fuel-indexer-types = { workspace = true }
 fuels = { workspace = true }
-fuels-code-gen = { version = "0.40.0", default-features = false }
+fuels-code-gen = { version = "0.43", default-features = false }
 lazy_static = "1.4"
+linked_hash_set = "0.1"
 proc-macro-error = "1.0"
 proc-macro2 = "1.0"
 quote = "1.0"
 serde_json = { workspace = true }
-sha2 = "0.9.5"
+sha2 = "0.10"
 syn = { version = "2.0", features = ["full"] }
 
 [dev-dependencies]
 fuel-indexer-plugin = { workspace = true }
-fuels-macros = { version = "0.40.0", default-features = false }
-fuels-types = { version = "0.40.0", default-features = false }
+fuels-macros = { version = "0.43", default-features = false }
+fuels-types = { version = "0.42", default-features = false }
 serde = { workspace = true }
 trybuild = "1.0"
 

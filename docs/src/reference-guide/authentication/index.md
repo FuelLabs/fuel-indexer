@@ -4,7 +4,7 @@ The Fuel indexer's authentication functionality offers users a range of options 
 
 To authenticate using JWT, users ask an indexer operator for a nonce, sign that nonce with their wallet, then send both the nonce and signature to the indexer operator for verification. Once the signature is verified on the backend, a valid JWT is produced and returned to the user, thus authenticating the user.
 
-It is important to note that authentication is disabled by default. However, if authentication is enabled, users will need to authenticate before performing operations that involve modifying the state of the service, such as uploading, or reverting indexers.
+It is important to note that authentication is disabled by default. However, if authentication is enabled, users will need to authenticate before performing operations that involve modifying the state of the service, such as uploading indexers.
 
 The new authentication functionality offers a flexible and secure way for users to authenticate and perform operations that affect the service's state.
 

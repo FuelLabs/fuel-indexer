@@ -22,13 +22,13 @@ use tokio::{
 
 const REVERT_VM_CODE: u64 = 0x0004;
 const EXPECTED_CONTRACT_ID: &str =
-    "d1ece60c4653e20bcf0a70c449c6e2c90731c6b78d7bd40bab16ffeb595f3150";
+    "a8892fdc1ba52ca37c41e41a00cc7ddb7cf6e6edb46398fc775f8c7a57a430bb";
 
 async fn setup_test_components(
 ) -> (JoinHandle<Result<(), ()>>, TestPostgresDb, IndexerService) {
     let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
-    let srvc = indexer_service_postgres(Some(&test_db.url)).await;
+    let srvc = indexer_service_postgres(Some(&test_db.url), None).await;
 
     (node_handle, test_db, srvc)
 }
@@ -60,7 +60,7 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
     .await
     .unwrap();
 
-    let height = block_row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+    let height = block_row.get::<i32, usize>(1).to_u64().unwrap();
     let timestamp: i64 = block_row.get(2);
     assert!(height >= 1);
     assert!(timestamp > 0);
@@ -175,10 +175,7 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let id = row.get::<BigDecimal, usize>(0).to_u64().unwrap();
     let timestamp = row.get::<i64, usize>(2);
 
-    assert_eq!(
-        row.get::<BigDecimal, usize>(1).to_u64().unwrap(),
-        block_height + 1
-    );
+    assert_eq!(row.get::<i32, usize>(1).to_u64().unwrap(), block_height + 1);
     assert!(timestamp > 0);
 
     let row = sqlx::query(&format!(
@@ -522,7 +519,7 @@ async fn test_indexer_respects_start_block_postgres() {
     let res = test::call_and_read_body(&app, req).await;
     let block_height = String::from_utf8(res.to_vec())
         .unwrap()
-        .parse::<u64>()
+        .parse::<u32>()
         .unwrap();
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
@@ -574,7 +571,7 @@ async fn test_indexer_respects_start_block_postgres() {
     assert!(final_check.is_some());
 
     let row = final_check.unwrap();
-    let height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+    let height = row.get::<i32, usize>(1).to_u32().unwrap();
 
     assert_eq!(height, (block_height + 2));
     assert!(row.get::<i64, usize>(2) > 0);
@@ -591,7 +588,7 @@ async fn test_indexer_respects_end_block_postgres() {
     let res = test::call_and_read_body(&app, req).await;
     let block_height = String::from_utf8(res.to_vec())
         .unwrap()
-        .parse::<u64>()
+        .parse::<u32>()
         .unwrap();
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
@@ -615,7 +612,7 @@ async fn test_indexer_respects_end_block_postgres() {
     .unwrap();
 
     let row = first_check.unwrap();
-    let indexed_height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+    let indexed_height = row.get::<i32, usize>(1).to_u32().unwrap();
 
     assert_eq!(indexed_height, (block_height));
     assert!(row.get::<i64, usize>(2) > 0);
@@ -635,7 +632,7 @@ async fn test_indexer_respects_end_block_postgres() {
     .unwrap();
 
     let row = second_check.unwrap();
-    let indexed_height = row.get::<BigDecimal, usize>(1).to_u64().unwrap();
+    let indexed_height = row.get::<i32, usize>(1).to_u32().unwrap();
 
     assert_eq!(indexed_height, (block_height + 1));
     assert!(row.get::<i64, usize>(2) > 0);
@@ -669,7 +666,7 @@ async fn test_index_respects_end_block_and_start_block_postgres() {
     let res = test::call_and_read_body(&app, req).await;
     let block_height = String::from_utf8(res.to_vec())
         .unwrap()
-        .parse::<u64>()
+        .parse::<u32>()
         .unwrap();
 
     let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
@@ -995,6 +992,142 @@ async fn test_can_trigger_and_index_nonindexable_events() {
     let entity: NoTableEntity =
         serde_json::from_value(row.get::<serde_json::Value, usize>(2)).unwrap();
 
-    assert_eq!(entity.name, Some("norelation".to_string()));
+    assert_eq!(entity.name, Some("virtual".to_string()));
     assert_eq!(entity.size, 1);
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_deploying_twice_returns_an_error() {
+    let test_db = TestPostgresDb::new().await.unwrap();
+
+    let mut indexer = {
+        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+            config.replace_indexer = false;
+        });
+        indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
+    };
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    indexer
+        .register_indexer_from_manifest(manifest.clone())
+        .await
+        .unwrap();
+
+    let result = indexer.register_indexer_from_manifest(manifest).await;
+
+    assert!(result.is_err());
+
+    match result.unwrap_err() {
+        fuel_indexer::IndexerError::Unknown(msg) => {
+            assert_eq!(&msg, "Indexer(fuel_indexer_test.index1) already exists")
+        }
+        err => {
+            panic!("Expected Unknown but got: {}", err)
+        }
+    }
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_replace_indexer() {
+    let node_handle = tokio::spawn(setup_example_test_fuel_node());
+    let test_db = TestPostgresDb::new().await.unwrap();
+
+    let mut indexer = {
+        let modify_config = Box::new(|config: &mut fuel_indexer::IndexerConfig| {
+            config.replace_indexer = true;
+        });
+        indexer_service_postgres(Some(&test_db.url), Some(modify_config)).await
+    };
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    indexer
+        .register_indexer_from_manifest(manifest.clone())
+        .await
+        .unwrap();
+
+    indexer
+        .register_indexer_from_manifest(manifest)
+        .await
+        .unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/enum").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.complexenumentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<&str, usize>(1), "EnumEntity::One");
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct UnionEntity {
+    a: Option<u64>,
+    b: Option<u64>,
+    c: Option<u64>,
+    union_type: String,
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_union_types() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.indexableunionentity LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    // Fields are in a different order for these union types
+    assert_eq!(row.get::<BigDecimal, usize>(3).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 5);
+    assert_eq!(row.get::<BigDecimal, usize>(1).to_u64().unwrap(), 10);
+    assert_eq!(row.get::<&str, usize>(4), "UnionType::A");
+
+    let row = sqlx::query(
+        "SELECT * FROM fuel_indexer_test_index1.virtualunioncontainerentity LIMIT 1",
+    )
+    .fetch_one(&mut conn)
+    .await
+    .unwrap();
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    let entity: UnionEntity =
+        serde_json::from_value(row.get::<serde_json::Value, usize>(1)).unwrap();
+    assert_eq!(row.get::<&str, usize>(2), "UnionType::B");
+
+    assert_eq!(entity.a.unwrap(), 2);
+    assert!(entity.b.is_none());
+    assert_eq!(entity.c.unwrap(), 6);
 }
