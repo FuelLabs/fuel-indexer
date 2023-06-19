@@ -113,7 +113,7 @@ impl Decoder for ObjectDecoder {
                     .iter()
                     .map(|(k, v)| k.to_owned())
                     .collect::<HashSet<String>>();
-                GraphQLSchemaValidator::check_disallowed_typedef_name(&obj_name);
+                GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
                 for field in &o.fields {
                     let (typ_tokens, field_name, field_type_scalar_name, extractor) =
@@ -202,97 +202,6 @@ impl Decoder for ObjectDecoder {
                     type_id,
                 }
             }
-            _ => panic!("Expected TypeKind::Object"),
-        }
-    }
-}
-
-/// A wrapper object used to process GraphQL `TypeKind::Enum` type definitions
-/// into a format from which Rust tokens can be generated.
-pub struct EnumDecoder {
-    /// The name of the GraphQL enum (as a `syn::Ident`).
-    ident: Ident,
-
-    /// Tokens used to create fields in the `From<String> for #ident` function.
-    to_enum: Vec<proc_macro2::TokenStream>,
-
-    /// Tokens used to create fields in the `From<#ident> for String` function.
-    from_enum: Vec<proc_macro2::TokenStream>,
-
-    /// Tokens used to create fields in the enum definition.
-    values: Vec<TokenStream>,
-
-    /// The unique ID of this GraphQL type.
-    type_id: i64,
-}
-
-impl Decoder for EnumDecoder {
-    /// Create a decoder from a GraphQL `TypeKind::Enum`.
-    fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
-        match &typ.kind {
-            TypeKind::Enum(e) => {
-                let enum_name = typ.name.to_string();
-                let ident = format_ident!("{}", enum_name);
-                let type_id =
-                    typedef_type_id(&parsed.namespace, &parsed.identifier, &enum_name);
-
-                let values = e
-                    .values
-                    .iter()
-                    .map(|v| {
-                        let ident = format_ident! {"{}", v.node.value.to_string()};
-                        quote! { #ident }
-                    })
-                    .collect::<Vec<TokenStream>>();
-
-                let to_enum = e
-                    .values
-                    .iter()
-                    .map(|v| {
-                        let value_ident = format_ident! {"{}", v.node.value.to_string()};
-                        let as_str = format!("{}::{}", ident, value_ident);
-                        quote! { #as_str => #ident::#value_ident, }
-                    })
-                    .collect::<Vec<proc_macro2::TokenStream>>();
-
-                let from_enum = e
-                    .values
-                    .iter()
-                    .map(|v| {
-                        let value_ident = format_ident! {"{}", v.node.value.to_string()};
-                        let as_str = format!("{}::{}", ident, value_ident);
-                        quote! { #ident::#value_ident => #as_str.to_string(), }
-                    })
-                    .collect::<Vec<proc_macro2::TokenStream>>();
-
-                Self {
-                    ident,
-                    to_enum,
-                    from_enum,
-                    values,
-                    type_id,
-                }
-            }
-            _ => panic!("Expected TypeKind::Enum"),
-        }
-    }
-}
-
-/// A wrapper object used to process GraphQL `TypeKind::Union` type definitions
-/// into a format from which Rust tokens can be generated.
-pub struct UnionDecoder {
-    ident: Ident,
-    type_id: i64,
-    struct_fields: TokenStream,
-    field_extractors: TokenStream,
-    from_row: TokenStream,
-    to_row: TokenStream,
-}
-
-impl Decoder for UnionDecoder {
-    /// Create a decoder from a GraphQL `TypeKind::Union`.
-    fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
-        match &typ.kind {
             TypeKind::Union(u) => {
                 let union_name = typ.name.to_string();
                 let ident = format_ident!("{}", union_name);
@@ -392,9 +301,81 @@ impl Decoder for UnionDecoder {
                     field_extractors,
                     from_row,
                     to_row,
+                    ..Self::default()
                 }
             }
-            _ => panic!("Expected TypeKind::Union"),
+            _ => panic!("Expected TypeKind::Object or TypeKind::Union."),
+        }
+    }
+}
+
+/// A wrapper object used to process GraphQL `TypeKind::Enum` type definitions
+/// into a format from which Rust tokens can be generated.
+pub struct EnumDecoder {
+    /// The name of the GraphQL enum (as a `syn::Ident`).
+    ident: Ident,
+
+    /// Tokens used to create fields in the `From<String> for #ident` function.
+    to_enum: Vec<proc_macro2::TokenStream>,
+
+    /// Tokens used to create fields in the `From<#ident> for String` function.
+    from_enum: Vec<proc_macro2::TokenStream>,
+
+    /// Tokens used to create fields in the enum definition.
+    values: Vec<TokenStream>,
+
+    /// The unique ID of this GraphQL type.
+    type_id: i64,
+}
+
+impl Decoder for EnumDecoder {
+    /// Create a decoder from a GraphQL `TypeKind::Enum`.
+    fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
+        match &typ.kind {
+            TypeKind::Enum(e) => {
+                let enum_name = typ.name.to_string();
+                let ident = format_ident!("{}", enum_name);
+                let type_id =
+                    typedef_type_id(&parsed.namespace, &parsed.identifier, &enum_name);
+
+                let values = e
+                    .values
+                    .iter()
+                    .map(|v| {
+                        let ident = format_ident! {"{}", v.node.value.to_string()};
+                        quote! { #ident }
+                    })
+                    .collect::<Vec<TokenStream>>();
+
+                let to_enum = e
+                    .values
+                    .iter()
+                    .map(|v| {
+                        let value_ident = format_ident! {"{}", v.node.value.to_string()};
+                        let as_str = format!("{}::{}", ident, value_ident);
+                        quote! { #as_str => #ident::#value_ident, }
+                    })
+                    .collect::<Vec<proc_macro2::TokenStream>>();
+
+                let from_enum = e
+                    .values
+                    .iter()
+                    .map(|v| {
+                        let value_ident = format_ident! {"{}", v.node.value.to_string()};
+                        let as_str = format!("{}::{}", ident, value_ident);
+                        quote! { #ident::#value_ident => #as_str.to_string(), }
+                    })
+                    .collect::<Vec<proc_macro2::TokenStream>>();
+
+                Self {
+                    ident,
+                    to_enum,
+                    from_enum,
+                    values,
+                    type_id,
+                }
+            }
+            _ => panic!("Expected TypeKind::Enum"),
         }
     }
 }

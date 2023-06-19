@@ -1,6 +1,7 @@
 use crate::{
     constants::*, helpers::*, native::handler_block_native, parse::IndexerConfig,
-    schema::process_graphql_schema, wasm::handler_block_wasm,
+    schema::process_graphql_schema, validator::GraphQLSchemaValidator,
+    wasm::handler_block_wasm,
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
@@ -124,6 +125,8 @@ fn process_fn_items(
             if is_fuel_primitive(&ty) {
                 proc_macro_error::abort_call_site!("'{}' is a reserved Fuel type.", ty)
             }
+
+            GraphQLSchemaValidator::check_disallowed_abi_typedef_name(&ty.to_string());
 
             type_ids.insert(ty.to_string(), typ.type_id);
             decoded_abi_types.insert(typ.type_id);

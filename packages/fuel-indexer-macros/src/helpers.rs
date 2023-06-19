@@ -715,7 +715,12 @@ pub fn process_typedef_field(
         }
         FieldKind::Virtual => {
             let field_typ_name = nullable_type(&field_def, "Virtual");
-            field_def.ty.node = Type::new(&field_typ_name).expect("Bad type.");
+            field_def.ty.node = Type {
+                base: BaseType::Named(Name::new(normalize_field_type_name(
+                    &field_typ_name,
+                ))),
+                nullable: field_def.ty.node.nullable,
+            };
             process_typedef_field(schema, field_def, typedef_name)
         }
         FieldKind::Union => {

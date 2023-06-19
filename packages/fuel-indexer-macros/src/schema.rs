@@ -25,7 +25,7 @@ fn process_type_def(
     let tokens = match &typ.kind {
         TypeKind::Object(o) => ObjectDecoder::from_typedef(typ, parsed).into(),
         TypeKind::Enum(e) => EnumDecoder::from_typedef(typ, parsed).into(),
-        //     // TypeKind::Union(u) => Decoder::from_union(typedef_name, u.to_owned(), parsed),
+        TypeKind::Union(u) => ObjectDecoder::from_typedef(typ, parsed).into(),
         _ => proc_macro_error::abort_call_site!(
             "Unrecognized TypeKind in GraphQL schema: {:?}",
             typ.kind

@@ -68,6 +68,7 @@ lazy_static! {
         "Identity"
     ]);
 
+    /// Fuel-specific receipt-related type names.
     pub static ref FUEL_PRIMITIVES: HashSet<&'static str> = HashSet::from([
         "BlockData",
         "Call",
@@ -81,15 +82,23 @@ lazy_static! {
         "Transfer",
         "TransferOut",
     ]);
+
+    /// ABI types not allowed in the contract ABI.
     pub static ref DISALLOWED_ABI_JSON_TYPES: HashSet<&'static str> = HashSet::from([]);
+
+    /// Sway ABI types we don't support and won't in the near future.
     pub static ref IGNORED_ABI_JSON_TYPES: HashSet<&'static str> =
         HashSet::from(["()", "struct Vec"]);
+
+    /// Generic Sway ABI types.
     pub static ref GENERIC_TYPES: HashSet<&'static str> = HashSet::from([
         "generic T",
         "raw untyped ptr",
         "struct RawVec",
         "struct Vec"
     ]);
+
+    /// Fuel VM receipt-related types.
     pub static ref FUEL_RECEIPT_TYPES: HashSet<&'static str> = HashSet::from([
         "Call",
         "Log",
@@ -102,6 +111,8 @@ lazy_static! {
         "Transfer",
         "TransferOut",
     ]);
+
+    /// Set of Rust primitive types.
     pub static ref RUST_PRIMITIVES: HashSet<&'static str> =
         HashSet::from(["u8", "u16", "u32", "u64", "bool", "String"]);
 
@@ -121,6 +132,7 @@ lazy_static! {
         "Option<Virtual>",
     ]);
 
+    /// Type names that are not allowed in GraphQL schema.
     pub static ref DISALLOWED_OBJECT_NAMES: HashSet<&'static str> = HashSet::from([
         // Scalars.
         "Address",
