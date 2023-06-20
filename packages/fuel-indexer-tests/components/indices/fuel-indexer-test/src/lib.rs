@@ -6,7 +6,6 @@ use fuel_indexer_utils::prelude::*;
     manifest = "packages/fuel-indexer-tests/components/indices/fuel-indexer-test/fuel_indexer_test.yaml"
 )]
 mod fuel_indexer_test {
-
     fn fuel_indexer_test_blocks(block_data: BlockData) {
         let block = BlockEntity {
             id: first8_bytes_to_u64(block_data.id),
@@ -735,5 +734,29 @@ mod fuel_indexer_test {
         };
 
         e.save();
+    }
+
+    fn fuel_indexer_trigger_list_types(block_data: BlockData) {
+        let block1 = BlockEntity {
+            id: 1,
+            height: block_data.height,
+            timestamp: block_data.time,
+        };
+        let block2 = BlockEntity {
+            id: 2,
+            height: block_data.height + 1,
+            timestamp: block_data.time + 1,
+        };
+
+        block1.save();
+        block2.save();
+
+        let list_entity = ListEntity {
+            id: 1,
+            complex: vec![block1.id, block2.id],
+            scalar: vec![Some(123), None, Some(789)],
+        };
+
+        list_entity.save();
     }
 }

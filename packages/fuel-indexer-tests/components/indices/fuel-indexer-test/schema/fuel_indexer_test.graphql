@@ -304,3 +304,9 @@ type VirtualUnionContainerEntity {
     union_entity: VirtualUnionEntity
     union_type: UnionType!
 }
+
+type ListEntity {
+    id: ID!
+    complex: [BlockEntity!]!
+    scalar: [UInt8]!
+}

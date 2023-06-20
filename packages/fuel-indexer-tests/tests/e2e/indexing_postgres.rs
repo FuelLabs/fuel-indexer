@@ -1131,3 +1131,60 @@ async fn test_can_trigger_and_index_union_types() {
     assert!(entity.b.is_none());
     assert_eq!(entity.c.unwrap(), 6);
 }
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_entities_with_lists() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row = sqlx::query("SELECT * FROM fuel_indexer_test_index1.listentity LIMIT 1")
+        .fetch_one(&mut conn)
+        .await
+        .unwrap();
+
+    let complex_list_bytes = &row.get::<&str, usize>(1).as_bytes()[4..];
+    let scalar_list_bytes = &row.get::<&str, usize>(2).as_bytes()[4..];
+
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(
+        complex_list_bytes,
+        &format!(
+            "{}{}",
+            hex::encode(0i32.to_le_bytes()),
+            hex::encode(
+                [1u64.to_le_bytes().to_vec(), 2u64.to_le_bytes().to_vec()]
+                    .to_vec()
+                    .concat()
+            )
+        )
+        .as_bytes()[4..]
+    );
+
+    assert_eq!(
+        scalar_list_bytes,
+        &format!(
+            "{}{}",
+            hex::encode(11i32.to_le_bytes()),
+            hex::encode(
+                [123u64.to_le_bytes().to_vec(), 789u64.to_le_bytes().to_vec()]
+                    .to_vec()
+                    .concat()
+            )
+        )
+        .as_bytes()[4..]
+    );
+}

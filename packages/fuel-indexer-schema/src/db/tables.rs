@@ -344,8 +344,6 @@ impl SchemaBuilder {
                 }
                 ColumnType::ListComplex => {
                     let directives::Join {
-                        // reference_field_name,
-                        // field_type_name,
                         reference_field_type_name,
                         ..
                     } = get_join_directive_info(
