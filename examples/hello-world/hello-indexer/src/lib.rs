@@ -37,7 +37,7 @@ mod hello_world_indexer {
         // generates an ID for the entity. Then, we use `::get_or_create()` to
         // load the corresponding record from the database, if present.
         let greeter = Greeter::new(
-            trim_sized_ascii_string(&event.person.name),
+            event.person.name.to_right_trimmed_str().into(),
             block.height,
             block.height,
             vec![1u8, 2, 3, 4, 5, 6, 7, 8].into(),
@@ -49,8 +49,8 @@ mod hello_world_indexer {
         // functions for byte conversion, string manipulation, etc.
         let message = format!(
             "{} 👋, my name is {}",
-            trim_sized_ascii_string(&event.greeting),
-            trim_sized_ascii_string(&event.person.name)
+            event.greeting.to_right_trimmed_str(),
+            event.person.name.to_right_trimmed_str(),
         );
         let message_hash = first32_bytes_to_bytes32(&message);
 
