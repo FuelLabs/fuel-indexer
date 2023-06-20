@@ -203,7 +203,6 @@ impl SchemaBuilder {
 
             match typ {
                 ColumnType::ForeignKey => {
-
                     let directives::Join {
                         reference_field_name,
                         field_type_name,
