@@ -38,4 +38,40 @@ pub mod prelude {
     pub use super::{
         bincode, deserialize, serde, serde_json, serialize, types::*, utils::*,
     };
+    pub use crate::{debug, error, info, trace, warn};
+}
+
+#[macro_export]
+macro_rules! error {
+    ($($arg:tt)*) => {{
+        Logger::error(&format!($($arg)*))
+    }};
+}
+
+#[macro_export]
+macro_rules! warn {
+    ($($arg:tt)*) => {{
+        Logger::warn(&format!($($arg)*))
+    }};
+}
+
+#[macro_export]
+macro_rules! info {
+    ($($arg:tt)*) => {{
+        Logger::info(&format!($($arg)*))
+    }};
+}
+
+#[macro_export]
+macro_rules! debug {
+    ($($arg:tt)*) => {{
+        Logger::debug(&format!($($arg)*))
+    }};
+}
+
+#[macro_export]
+macro_rules! trace {
+    ($($arg:tt)*) => {{
+        Logger::trace(&format!($($arg)*))
+    }};
 }

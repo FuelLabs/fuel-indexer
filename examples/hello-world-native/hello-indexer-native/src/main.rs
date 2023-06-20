@@ -29,6 +29,7 @@ use fuel_indexer_utils::prelude::*;
 mod hello_world_native {
 
     async fn index_logged_greeting(event: Greeting, block: BlockData) {
+        info!("Handling {:?}", event);
         // We're using the `::new()` method to create a Greeter, which automatically
         // generates an ID for the entity. Then, we use `::get_or_create()` to
         // load the corresponding record from the database, if present.

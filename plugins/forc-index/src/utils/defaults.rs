@@ -144,7 +144,7 @@ use fuel_indexer_utils::prelude::*;
 pub mod {indexer_name}_index_mod {{
 
     fn {indexer_name}_handler(block_data: BlockData) {{
-        Logger::info(&format!("Processing Block#{{}}. (>'.')>", block_data.height));
+        info!("Processing Block#{{}}. (>'.')>", block_data.height);
 
         let block_id = first8_bytes_to_u64(block_data.id);
         let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
@@ -180,7 +180,7 @@ use fuel_indexer_utils::prelude::*;
 pub mod {indexer_name}_index_mod {{
 
     async fn {indexer_name}_handler(block_data: BlockData) {{
-        Logger::info(&format!("Processing Block#{{}}. (>'.')>", block_data.height));
+        info!("Processing Block#{{}}. (>'.')>", block_data.height);
 
         let block_id = first8_bytes_to_u64(block_data.id);
         let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
