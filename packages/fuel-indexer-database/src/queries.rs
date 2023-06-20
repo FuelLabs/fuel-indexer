@@ -19,7 +19,7 @@ pub async fn graph_root_latest(
 
 pub async fn new_graph_root(
     conn: &mut IndexerConnection,
-    root: NewGraphRoot,
+    root: GraphRoot,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::new_graph_root(c, root).await,
@@ -90,7 +90,7 @@ pub async fn schema_exists(
 // REFACTOR - remove
 pub async fn new_column_insert(
     conn: &mut IndexerConnection,
-    cols: Vec<NewColumn>,
+    cols: Vec<Columns>,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -186,7 +186,7 @@ pub async fn root_columns_list_by_id(
 
 pub async fn new_root_columns(
     conn: &mut IndexerConnection,
-    cols: Vec<NewRootColumns>,
+    cols: Vec<RootColumns>,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {

@@ -59,7 +59,6 @@ impl IndexerSchema {
         )?;
 
         let mut statements = Vec::new();
-
         self.schema = schema.to_owned();
         self.parsed = parsed_schema;
 
@@ -104,27 +103,29 @@ impl IndexerSchema {
 
         let version = schema.version();
 
-        let new_root = NewGraphRoot {
+        let root = GraphRoot {
             version: schema.version().to_owned(),
             schema_name: namespace.to_owned(),
             schema_identifier: identifier.to_owned(),
             schema: schema.to_string(),
+            ..GraphRoot::default()
         };
 
-        queries::new_graph_root(conn, new_root).await?;
+        queries::new_graph_root(conn, root).await?;
 
         let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
 
         let field_defs = parsed.fields_for_columns();
 
-        let cols: Vec<_> = field_defs
+        let cols = field_defs
             .iter()
-            .map(|f| NewRootColumns {
+            .map(|f| RootColumns {
                 root_id: latest.id,
                 column_name: f.name.to_string(),
                 graphql_type: f.name.node.to_string(),
+                ..RootColumns::default()
             })
-            .collect();
+            .collect::<Vec<RootColumns>>();
 
         let columns = parsed
             .fields_for_columns()

@@ -15,8 +15,9 @@ use std::{
 use strum::{AsRefStr, EnumString};
 
 /// SQL database types used by indexers.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
 pub enum ColumnType {
+    #[default]
     ID = 0,
     Address = 1,
     AssetId = 2,
@@ -189,7 +190,7 @@ impl From<&str> for ColumnType {
 }
 
 // REFACTOR: remove
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RootColumns {
     pub id: i64,
     pub root_id: i64,
@@ -199,9 +200,10 @@ pub struct RootColumns {
 
 /// Whether a given column is virtual or regular. Virtual columns are not
 /// persisted to the database.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub enum ColumnPersistence {
     Virtual,
+    #[default]
     Regular,
 }
 
@@ -216,10 +218,8 @@ pub trait SqlNamed {
 }
 
 /// Column on SQL database for a given `Table` the database.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct FooColumn {
-    // Use default of `1` if `id` field is unused, in order to not have to
-    // keep track of a `New{ColumnName}
     pub id: i64,
     pub root_id: i64,
     pub type_id: i64,
@@ -230,23 +230,6 @@ pub struct FooColumn {
     pub persistence: ColumnPersistence,
     pub unique: bool,
     pub nullable: bool,
-}
-
-impl Default for FooColumn {
-    fn default() -> Self {
-        Self {
-            id: i64::MAX,
-            root_id: i64::MAX,
-            name: "".to_string(),
-            type_id: 1,
-            graphql_type: "".to_string(),
-            coltype: ColumnType::ID,
-            position: 1,
-            persistence: ColumnPersistence::Regular,
-            unique: false,
-            nullable: false,
-        }
-    }
 }
 
 impl FooColumn {
@@ -288,26 +271,9 @@ impl FooColumn {
     }
 }
 
-// REFACTOR: remove
-#[derive(Debug)]
-pub struct NewRootColumns {
-    pub root_id: i64,
-    pub column_name: String,
-    pub graphql_type: String,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct GraphRoot {
     pub id: i64,
-    pub version: String,
-    pub schema_name: String,
-    pub schema_identifier: String,
-    pub schema: String,
-}
-
-// REFACTOR: remove
-#[derive(Debug)]
-pub struct NewGraphRoot {
     pub version: String,
     pub schema_name: String,
     pub schema_identifier: String,
@@ -380,8 +346,9 @@ impl TypeId {
 }
 
 // REFACTOR: remove
-#[derive(Clone, Debug)]
-pub struct NewColumn {
+#[derive(Debug)]
+pub struct Columns {
+    pub id: i64,
     pub type_id: i64,
     pub column_position: i32,
     pub column_name: String,
@@ -392,19 +359,7 @@ pub struct NewColumn {
 }
 
 // REFACTOR: remove
-#[derive(Debug)]
-pub struct Columns {
-    pub id: i64,
-    pub type_id: i64,
-    pub column_position: i32,
-    pub column_name: String,
-    pub column_type: String,
-    pub nullable: bool,
-    pub graphql_type: String,
-}
-
-// REFACTOR: remove
-impl NewColumn {
+impl Columns {
     pub fn create(&self) -> String {
         let null_frag = if self.nullable { "" } else { "not null" };
         let unique_frag = if self.unique { "unique" } else { "" };
@@ -419,7 +374,7 @@ impl NewColumn {
         .to_string()
     }
 
-    /// Derive the respective PostgreSQL field type for a given `NewColumn`
+    /// Derive the respective PostgreSQL field type for a given `Columns`
     ///
     /// Here we're essentially matching `ColumnType`s to PostgreSQL field
     /// types. Note that we're using `numeric` field types for integer-like

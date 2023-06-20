@@ -105,7 +105,7 @@ pub async fn root_columns_list_by_id(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_root_columns(
     conn: &mut PoolConnection<Postgres>,
-    cols: Vec<NewRootColumns>,
+    cols: Vec<RootColumns>,
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new(
         "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)",
@@ -125,7 +125,7 @@ pub async fn new_root_columns(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_graph_root(
     conn: &mut PoolConnection<Postgres>,
-    root: NewGraphRoot,
+    root: GraphRoot,
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new(
         "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, schema)",
@@ -312,9 +312,9 @@ pub async fn schema_exists(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_column_insert(
     conn: &mut PoolConnection<Postgres>,
-    cols: Vec<NewColumn>,
+    cols: Vec<Columns>,
 ) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type)");
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type, is_unique)");
 
     builder.push_values(cols.into_iter(), |mut b, new_col| {
         b.push_bind(new_col.type_id)
@@ -322,7 +322,8 @@ pub async fn new_column_insert(
             .push_bind(new_col.column_name)
             .push_bind(new_col.column_type)
             .push_bind(new_col.nullable)
-            .push_bind(new_col.graphql_type);
+            .push_bind(new_col.graphql_type)
+            .push_bind(new_col.unique);
     });
 
     let query = builder.build();
@@ -374,6 +375,7 @@ pub async fn list_column_by_id(
                 let column_type: String = row.get(4);
                 let nullable: bool = row.get(5);
                 let graphql_type: String = row.get(6);
+                let unique: bool = row.get(7);
 
                 Columns {
                     id,
@@ -383,6 +385,7 @@ pub async fn list_column_by_id(
                     column_type,
                     nullable,
                     graphql_type,
+                    unique,
                 }
             })
             .collect::<Vec<Columns>>(),
