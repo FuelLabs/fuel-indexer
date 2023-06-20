@@ -2,6 +2,7 @@ use fuel_indexer_lib::defaults;
 use std::path::PathBuf;
 
 pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
+
 pub const INDEXER_LIB_FILENAME: &str = "lib.rs";
 pub const INDEXER_BINARY_FILENAME: &str = "main.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
