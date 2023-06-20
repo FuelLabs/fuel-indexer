@@ -602,7 +602,12 @@ fn process_type_def(
                     parameters = quote! { #parameters #field_name: #typ_tokens, };
 
                     if !NONDIGESTIBLE_FIELD_TYPES.contains(field_typ_name.as_str()) {
-                        hasher = quote! { #hasher.chain_update(#field_name #clone #unwrap_or_def #to_bytes)};
+                        // Currently, there is no way for us to hash the individual elements
+                        // of a list for use in calculating an ID value as we can't refer to the
+                        // elements themselves without having advance knowledge of the list length.
+                        if let ProcessedFieldType::Named = processed_field_type {
+                            hasher = quote! { #hasher.chain_update(#field_name #clone #unwrap_or_def #to_bytes)};
+                        }
                     }
 
                     field_construction_for_new_impl = quote! {

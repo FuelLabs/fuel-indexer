@@ -17,6 +17,7 @@ pub mod utils;
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 const NULL_VALUE: &str = "NULL";
+const MAX_BYTE_LENGTH: usize = 10485760;
 
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
 
@@ -38,6 +39,8 @@ pub enum IndexerSchemaError {
     ListofListsUnsupported,
     #[error("Inconsistent use of virtual union types. {0:?}")]
     InconsistentVirtualUnion(String),
+    #[error("Column validation error: {0:?}")]
+    ValidationError(String),
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
@@ -238,37 +241,258 @@ impl FtColumn {
                                         std::mem::discriminant(e)
                                     )
                                 } else {
-                                    // TODO: Should each element be encoded to bytes on its own?
-                                    // How will we successfully store Some() and None for the same type
-                                    // in one list?
-                                    e.query_fragment()
+                                    e.to_bytes()
                                 }
                             })
-                            .collect::<Vec<String>>();
-                        format!(
-                            "'{}{}'",
-                            type_bytes,
-                            hex::encode(elems.join(", ").as_bytes())
-                        )
+                            .collect::<Vec<Vec<u8>>>();
+                        format!("'{}{}'", type_bytes, hex::encode(elems.concat()))
                     }
                     None => {
-                        format!("'{}'", String::from(NULL_VALUE))
+                        // Ignore any null values
+                        String::from("")
                     }
                 }
             }
             FtColumn::ListComplex(values) => match values {
+                // TODO: Implement lookup table instead of persisting foreign keys to a list
                 Some(list) => {
-                    let val_str = list
+                    let type_id =
+                        i32::from(ColumnType::from(list[0].to_string().as_str()));
+                    let type_bytes = hex::encode(type_id.to_le_bytes());
+                    let elems = list
                         .iter()
-                        .map(|val| val.query_fragment())
-                        .collect::<Vec<String>>()
-                        .join(",");
-                    format!("'{{{}}}'", val_str)
+                        .map(|val| match val.validate() {
+                            Ok(validated) => validated.to_bytes(),
+                            // TODO: Maybe make query_fragment return a Result?
+                            Err(e) => panic!("Validation error: {e}"),
+                        })
+                        .collect::<Vec<Vec<u8>>>();
+                    format!("'{}{}'", type_bytes, hex::encode(elems.concat()))
                 }
-                None => {
-                    format!("'{}'", String::from(NULL_VALUE))
-                }
+                None => String::from(NULL_VALUE),
             },
+        }
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        match self {
+            FtColumn::Address(val) => match val {
+                Some(addr) => addr.to_vec(),
+                None => vec![],
+            },
+            FtColumn::AssetId(val) => match val {
+                Some(asset_id) => asset_id.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Blob(val) => match val {
+                Some(blob) => blob.0.clone(),
+                None => vec![],
+            },
+            FtColumn::BlockHeight(val) => match val {
+                Some(block_height) => block_height.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Boolean(val) => match val {
+                Some(b) => vec![*b as u8],
+                None => vec![],
+            },
+            FtColumn::Bytes32(val) | FtColumn::BlockId(val) | FtColumn::TxId(val) => {
+                match val {
+                    Some(b32) => b32.to_vec(),
+                    None => vec![],
+                }
+            }
+            FtColumn::Bytes4(val) => match val {
+                Some(b4) => b4.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Bytes64(val) | FtColumn::Signature(val) => match val {
+                Some(b64) => b64.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Bytes8(val) => match val {
+                Some(b8) => b8.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Charfield(val) | FtColumn::Enum(val) => match val {
+                Some(s) => {
+                    let bytes = s.as_bytes();
+                    let bytes_length = bytes.len();
+
+                    if bytes_length > (MAX_BYTE_LENGTH - (usize::BITS / 8) as usize) {
+                        panic!("String value {s} exceeds max byte length of {MAX_BYTE_LENGTH}");
+                    } else {
+                        [bytes_length.to_le_bytes().to_vec(), bytes.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                }
+                None => vec![],
+            },
+            FtColumn::ContractId(val) => match val {
+                Some(contract_id) => contract_id.to_vec(),
+                None => vec![],
+            },
+            FtColumn::HexString(val) => match val {
+                Some(hex_str) => {
+                    if hex_str.len() > (MAX_BYTE_LENGTH - (usize::BITS / 8) as usize) {
+                        panic!("HexString value {hex_str:?} exceeds max byte length of {MAX_BYTE_LENGTH}");
+                    } else {
+                        [hex_str.len().to_le_bytes().to_vec(), hex_str.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                }
+                None => vec![],
+            },
+            FtColumn::ID(val) => match val {
+                Some(id) => id.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Identity(val) => match val {
+                Some(ident) => match ident {
+                    Identity::Address(addr) => {
+                        [0u8.to_le_bytes().to_vec(), addr.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                    Identity::ContractId(contract_id) => {
+                        [1u8.to_le_bytes().to_vec(), contract_id.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                },
+                None => vec![],
+            },
+            FtColumn::Int1(val) => match val {
+                Some(i) => i.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Int16(val) => match val {
+                Some(i) => i.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Int4(val) => match val {
+                Some(i) => i.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Int8(val) => match val {
+                Some(i) => i.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Json(val) | FtColumn::Virtual(val) => match val {
+                Some(s) => {
+                    let bytes = s.0.as_bytes();
+                    let bytes_length = bytes.len();
+
+                    if bytes_length > (MAX_BYTE_LENGTH - (usize::BITS / 8) as usize) {
+                        panic!("String value {} exceeds max byte length of {MAX_BYTE_LENGTH}", s.0);
+                    } else {
+                        [bytes_length.to_le_bytes().to_vec(), bytes.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                }
+                None => vec![],
+            },
+            FtColumn::MessageId(val) => match val {
+                Some(msg_id) => msg_id.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Nonce(val) => match val {
+                Some(nonce) => nonce.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Salt(val) => match val {
+                Some(salt) => salt.as_slice().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Tai64Timestamp(val) => match val {
+                Some(tai_timestamp) => tai_timestamp.to_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Timestamp(val) => match val {
+                Some(timestamp) => timestamp.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::UInt1(val) => match val {
+                Some(u) => u.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::UInt16(val) => match val {
+                Some(u) => u.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::UInt4(val) => match val {
+                Some(u) => u.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::UInt8(val) => match val {
+                Some(u) => u.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::ListScalar(_) => unimplemented!("List of lists unsupported"),
+            FtColumn::ListComplex(_) => unimplemented!("List of lists unsupported"),
+        }
+    }
+
+    pub fn validate(&self) -> IndexerSchemaResult<&Self> {
+        self.ensure_constant_length_for_list_elems()
+    }
+
+    fn ensure_constant_length_for_list_elems(&self) -> IndexerSchemaResult<&Self> {
+        match self {
+            FtColumn::Address(_) => Ok(self),
+            FtColumn::AssetId(_) => Ok(self),
+            FtColumn::Blob(_) => Err(IndexerSchemaError::ValidationError(
+                "Length of value is not constant".to_string(),
+            )),
+            FtColumn::BlockHeight(_) => Ok(self),
+            FtColumn::Boolean(_) => Ok(self),
+            FtColumn::Bytes32(_) => Ok(self),
+            FtColumn::Bytes4(_) => Ok(self),
+            FtColumn::Bytes64(_) => Ok(self),
+            FtColumn::Bytes8(_) => Ok(self),
+            FtColumn::Charfield(_) => Err(IndexerSchemaError::ValidationError(
+                "Length of value is not constant".to_string(),
+            )),
+            FtColumn::ContractId(_) => Ok(self),
+            FtColumn::Enum(_) => Err(IndexerSchemaError::ValidationError(
+                "Length of value is not constant".to_string(),
+            )),
+            FtColumn::HexString(_) => Err(IndexerSchemaError::ValidationError(
+                "Length of value is not constant".to_string(),
+            )),
+            FtColumn::ID(_) => Ok(self),
+            FtColumn::Identity(_) => Ok(self),
+            FtColumn::Int1(_) => Ok(self),
+            FtColumn::Int16(_) => Ok(self),
+            FtColumn::Int4(_) => Ok(self),
+            FtColumn::Int8(_) => Ok(self),
+            FtColumn::Json(_) => Err(IndexerSchemaError::ValidationError(
+                "Length of value is not constant".to_string(),
+            )),
+            FtColumn::MessageId(_) => Ok(self),
+            FtColumn::Nonce(_) => Ok(self),
+            FtColumn::Salt(_) => Ok(self),
+            FtColumn::Signature(_) => Ok(self),
+            FtColumn::Tai64Timestamp(_) => Ok(self),
+            FtColumn::Timestamp(_) => Ok(self),
+            FtColumn::TxId(_) => Ok(self),
+            FtColumn::UInt1(_) => Ok(self),
+            FtColumn::UInt16(_) => Ok(self),
+            FtColumn::UInt4(_) => Ok(self),
+            FtColumn::UInt8(_) => Ok(self),
+            FtColumn::Virtual(_) => Err(IndexerSchemaError::ValidationError(
+                "Length of value is not constant".to_string(),
+            )),
+            FtColumn::BlockId(_) => Ok(self),
+            FtColumn::ListScalar(_) => Err(IndexerSchemaError::ValidationError(
+                "List of lists not supported".to_string(),
+            )),
+            FtColumn::ListComplex(_) => Err(IndexerSchemaError::ValidationError(
+                "List of lists not supported".to_string(),
+            )),
         }
     }
 }
