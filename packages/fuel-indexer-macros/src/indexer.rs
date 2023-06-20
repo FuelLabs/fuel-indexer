@@ -277,7 +277,7 @@ fn process_fn_items(
                     let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
                     let bech32_id = Bech32ContractId::from(id);
                     if bech32_id != manifest_contract_id {
-                        Logger::debug("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
+                        debug!("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                         continue;
                     }
                 }
@@ -289,7 +289,7 @@ fn process_fn_items(
                 let bech32_id = Bech32ContractId::from(id);
 
                 if !contract_ids.contains(&bech32_id) {
-                    Logger::debug("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
+                    debug!("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                     continue;
                 }
             }
@@ -388,7 +388,7 @@ fn process_fn_items(
                 match sel {
                     #(#abi_selectors)*
                     _ => {
-                        Logger::debug("Unknown selector; check ABI to make sure function outputs match to types");
+                        debug!("Unknown selector; check ABI to make sure function outputs match to types");
                         usize::MAX
                     }
                 }
@@ -398,7 +398,7 @@ fn process_fn_items(
                 match sel {
                     #(#abi_selectors_to_fn_names)*
                     _ => {
-                        Logger::debug("Unknown selector; check ABI to make sure function outputs match to types");
+                        debug!("Unknown selector; check ABI to make sure function outputs match to types");
                         "".to_string()
                     }
                 }
@@ -423,7 +423,7 @@ fn process_fn_items(
                 match ty_id {
                     #(#decoders),*
                     _ => {
-                        Logger::debug("Unknown type ID; check ABI to make sure types are correct.");
+                        debug!("Unknown type ID; check ABI to make sure types are correct.");
                     },
                 }
             }
@@ -440,14 +440,14 @@ fn process_fn_items(
             pub fn decode_logdata(&mut self, rb: usize, data: Vec<u8>) {
                 match rb {
                     #(#log_type_decoders),*
-                    _ => Logger::debug("Unknown logged type ID; check ABI to make sure that logged types are correct.")
+                    _ => debug!("Unknown logged type ID; check ABI to make sure that logged types are correct.")
                 }
             }
 
             pub fn decode_messagedata(&mut self, type_id: u64, data: Vec<u8>) {
                 match type_id {
                     #(#message_types_decoders),*
-                    _ => Logger::debug("Unknown message type ID; check ABI to make sure that message types are correct.")
+                    _ => debug!("Unknown message type ID; check ABI to make sure that message types are correct.")
                 }
             }
 
@@ -571,7 +571,7 @@ fn process_fn_items(
                                 decoder.decode_type(ty_id, data);
                             }
                             _ => {
-                                Logger::info("This type is not handled yet. (>'.')>");
+                                info!("This type is not handled yet. (>'.')>");
                             }
                         }
                     }
