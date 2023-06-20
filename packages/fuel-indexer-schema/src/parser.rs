@@ -130,9 +130,7 @@ impl ParsedGraphQLSchema {
         let mut unions = HashMap::new();
         let mut field_defs = HashMap::new();
         let mut field_type_optionality = HashMap::new();
-
-        // REFACTOR: These need to be used
-        let foreign_key_mappings = HashMap::new();
+        let mut foreign_key_mappings = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
@@ -150,6 +148,7 @@ impl ParsedGraphQLSchema {
                             let mut field_mapping = BTreeMap::new();
                             parsed_type_names.insert(t.node.name.to_string());
                             for field in &o.fields {
+                                let field_name = field.node.name.to_string();
                                 let directives::Virtual(is_virtual) =
                                     get_notable_directive_info(&field.node).unwrap();
 
@@ -157,7 +156,23 @@ impl ParsedGraphQLSchema {
                                     virtual_type_names.insert(obj_name.clone());
                                 }
 
-                                let field_name = field.node.name.to_string();
+                                // Manually derive the foreign keys here.
+                                if parsed_type_names.contains(&field_name)
+                                    && !scalar_names.contains(&field_name)
+                                    && !enum_names.contains(&field_name)
+                                {
+                                    let field_typ_name = normalize_field_type_name(
+                                        &field.node.ty.to_string(),
+                                    );
+                                    let field_id = format!("{obj_name}.{field_name}");
+                                    let mut foreign_key_mapping = HashMap::new();
+                                    foreign_key_mapping.insert(
+                                        field_name.clone(),
+                                        (obj_name.clone(), field_typ_name.clone()),
+                                    );
+                                    foreign_key_mappings
+                                        .insert(field_id, foreign_key_mapping);
+                                }
 
                                 let field_typ_name =
                                     normalize_field_type_name(&field.node.ty.to_string());
@@ -355,12 +370,12 @@ impl ParsedGraphQLSchema {
     pub fn is_possible_foreign_key(&self, name: &str) -> bool {
         self.parsed_type_names.contains(name)
             && !self.has_scalar(name)
-            && !self.is_non_indexable_non_enum(name)
+            && !self.is_enum_type(name)
     }
 
-    /// Whether the given field type name is a type from which tables are created.
-    pub fn is_non_indexable_non_enum(&self, name: &str) -> bool {
-        self.virtual_type_names.contains(name) && !self.is_enum_type(name)
+    /// Whether the given field type name is a type from which tables are not created.
+    pub fn is_virtual_type(&self, name: &str) -> bool {
+        self.virtual_type_names.contains(name)
     }
 
     /// Whether the given field type name is an enum type.

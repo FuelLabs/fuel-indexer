@@ -277,7 +277,7 @@ pub fn get_column_type(
                 return Ok((ColumnType::Charfield, ty.nullable));
             }
 
-            if parsed_schema.is_non_indexable_non_enum(t.as_str()) {
+            if parsed_schema.is_virtual_type(t.as_str()) {
                 return Ok((ColumnType::Virtual, ty.nullable));
             }
 

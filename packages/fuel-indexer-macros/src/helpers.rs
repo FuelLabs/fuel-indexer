@@ -568,7 +568,7 @@ pub fn process_typedef_field(
         }
         FieldKind::Union => {
             let field_typ_name = field_def.ty.to_string();
-            match schema.is_non_indexable_non_enum(&field_typ_name) {
+            match schema.is_virtual_type(&field_typ_name) {
                 true => {
                     // All union derived type fields are optional.
                     field_def.ty.node = Type::new("Virtual").expect("Bad type.");
@@ -630,7 +630,7 @@ pub fn field_kind(field_typ_name: &str, parser: &ParsedGraphQLSchema) -> FieldKi
         return FieldKind::Enum;
     }
 
-    if parser.is_non_indexable_non_enum(field_typ_name) {
+    if parser.is_virtual_type(field_typ_name) {
         return FieldKind::Virtual;
     }
 
