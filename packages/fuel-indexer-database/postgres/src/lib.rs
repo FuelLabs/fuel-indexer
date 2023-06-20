@@ -659,15 +659,15 @@ pub async fn latest_asset_for_indexer(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn latest_assets_for_indexer(
     conn: &mut PoolConnection<Postgres>,
-    index_id: &i64,
-) -> sqlx::Result<IndexAssetBundle> {
-    let wasm = latest_asset_for_indexer(conn, index_id, IndexerAssetType::Wasm).await?;
+    indexer_id: &i64,
+) -> sqlx::Result<IndexerAssetBundle> {
+    let wasm = latest_asset_for_indexer(conn, indexer_id, IndexerAssetType::Wasm).await?;
     let schema =
-        latest_asset_for_indexer(conn, index_id, IndexerAssetType::Schema).await?;
+        latest_asset_for_indexer(conn, indexer_id, IndexerAssetType::Schema).await?;
     let manifest =
-        latest_asset_for_indexer(conn, index_id, IndexerAssetType::Manifest).await?;
+        latest_asset_for_indexer(conn, indexer_id, IndexerAssetType::Manifest).await?;
 
-    Ok(IndexAssetBundle {
+    Ok(IndexerAssetBundle {
         wasm,
         schema,
         manifest,

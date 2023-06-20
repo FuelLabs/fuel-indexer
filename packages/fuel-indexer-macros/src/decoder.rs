@@ -91,7 +91,7 @@ impl Decoder for ObjectDecoder {
                 let obj_name = typ.name.to_string();
                 let ident = format_ident!("{}", obj_name);
                 let type_id =
-                    typedef_type_id(&parsed.namespace, &parsed.identifier, &obj_name);
+                    typedef_type_id(parsed.namespace(), parsed.identifier(), &obj_name);
 
                 let mut struct_fields = quote! {};
                 let mut field_extractors = quote! {};
@@ -184,7 +184,7 @@ impl Decoder for ObjectDecoder {
                     parameters: parameters.clone(),
                     hasher: hasher.clone(),
                     impl_new_fields: impl_new_fields.clone(),
-                    exec_source: parsed.exec_source.clone(),
+                    exec_source: parsed.exec_source().clone(),
                     impl_new_params: ImplNewParameters::ObjectType {
                         // standardize all these names
                         strct: ident,
@@ -192,7 +192,7 @@ impl Decoder for ObjectDecoder {
                         hasher,
                         object_name: obj_name,
                         struct_fields: impl_new_fields,
-                        exec_source: parsed.exec_source.clone(),
+                        exec_source: parsed.exec_source().clone(),
                         field_set: obj_fields,
                     },
                     type_id,
@@ -202,7 +202,7 @@ impl Decoder for ObjectDecoder {
                 let union_name = typ.name.to_string();
                 let ident = format_ident!("{}", union_name);
                 let type_id =
-                    typedef_type_id(&parsed.namespace, &parsed.identifier, &union_name);
+                    typedef_type_id(parsed.namespace(), parsed.identifier(), &union_name);
 
                 let mut struct_fields = quote! {};
                 let mut field_extractors = quote! {};
@@ -332,7 +332,7 @@ impl Decoder for EnumDecoder {
                 let enum_name = typ.name.to_string();
                 let ident = format_ident!("{}", enum_name);
                 let type_id =
-                    typedef_type_id(&parsed.namespace, &parsed.identifier, &enum_name);
+                    typedef_type_id(parsed.namespace(), parsed.identifier(), &enum_name);
 
                 let values = e
                     .values

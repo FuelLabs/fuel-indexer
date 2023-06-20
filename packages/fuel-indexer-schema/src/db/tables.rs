@@ -9,6 +9,7 @@ use async_graphql_value::Name;
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
+use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
 use linked_hash_set::LinkedHashSet;
@@ -142,6 +143,7 @@ impl IndexerSchema {
                 FooColumn::from_field_def(f, &namespace, &identifier, &version, type_id)
             })
             .collect::<Vec<FooColumn>>();
+
         let type_ids = parsed
             .fields_for_columns()
             .iter()
@@ -173,7 +175,6 @@ impl IndexerSchema {
         pool: &IndexerConnectionPool,
         namespace: &str,
         identifier: &str,
-        exec_source: &ExecutionSource,
     ) -> IndexerSchemaDbResult<Self> {
         // TODO: Might be expensive to always load this from the DB each time. Maybe
         // we can cache and stash this somewhere?
@@ -188,11 +189,17 @@ impl IndexerSchema {
         )
         .await?;
 
+        let indexer_id =
+            queries::get_indexer_id(&mut conn, namespace, identifier).await?;
+        let IndexerAssetBundle { manifest, .. } =
+            queries::latest_assets_for_indexer(&mut conn, &indexer_id).await?;
+        let manifest = Manifest::try_from(&manifest.bytes).expect("Bad manifest.");
+
         let schema = GraphQLSchema::new(root.schema.clone());
         let parsed = ParsedGraphQLSchema::new(
             namespace,
             identifier,
-            exec_source.clone(),
+            manifest.execution_source(),
             Some(&schema),
         )?;
 
@@ -209,7 +216,7 @@ impl IndexerSchema {
             tables,
             parsed,
             db_type: DbType::Postgres,
-            exec_source: exec_source.clone(),
+            exec_source: manifest.execution_source(),
         };
 
         schema.register_queryroot_fields();
@@ -231,7 +238,7 @@ impl IndexerSchema {
         self.parsed.object_field_mappings.insert(
             QUERY_ROOT.to_string(),
             self.parsed
-                .objects
+                .objects()
                 .keys()
                 .map(|k| (k.to_lowercase(), k.clone()))
                 .collect::<BTreeMap<String, String>>(),

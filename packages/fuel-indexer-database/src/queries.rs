@@ -276,7 +276,7 @@ pub async fn latest_asset_for_indexer(
 pub async fn latest_assets_for_indexer(
     conn: &mut IndexerConnection,
     index_id: &i64,
-) -> sqlx::Result<IndexAssetBundle> {
+) -> sqlx::Result<IndexerAssetBundle> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::latest_assets_for_indexer(c, index_id).await

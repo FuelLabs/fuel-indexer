@@ -207,7 +207,7 @@ pub fn get_foreign_keys(
 
     let mut fks: ForeignKeyMap = HashMap::new();
 
-    for def in parsed_schema.ast.definitions.iter() {
+    for def in parsed_schema.ast().definitions.iter() {
         if let TypeSystemDefinition::Type(t) = def {
             if let TypeKind::Object(o) = &t.node.kind {
                 // TODO: Add more ignorable types as needed - and use lazy_static!
@@ -226,7 +226,7 @@ pub fn get_foreign_keys(
                             } = get_join_directive_info(
                                 &field.node,
                                 &t.node.name.to_string(),
-                                &parsed_schema.field_type_mappings,
+                                &parsed_schema.field_type_mappings(),
                             );
 
                             let fk = fks.get_mut(&t.node.name.to_string().to_lowercase());

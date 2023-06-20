@@ -19,8 +19,8 @@ fn process_type_def(
     parsed: &ParsedGraphQLSchema,
     typ: &TypeDefinition,
 ) -> Option<proc_macro2::TokenStream> {
-    let namespace = &parsed.namespace;
-    let identifier = &parsed.identifier;
+    let namespace = &parsed.namespace();
+    let identifier = &parsed.identifier();
     let typedef_name = typ.name.to_string();
     let tokens = match &typ.kind {
         TypeKind::Object(o) => ObjectDecoder::from_typedef(typ, parsed).into(),
@@ -101,7 +101,7 @@ pub(crate) fn process_graphql_schema(
         ParsedGraphQLSchema::new(&namespace, &identifier, exec_source, Some(&schema))
             .expect("Failed to parse GraphQL schema.");
 
-    for definition in schema.ast.clone().definitions.iter() {
+    for definition in schema.ast().clone().definitions.iter() {
         if let Some(def) = process_definition(&schema, definition) {
             output = quote! {
                 #output

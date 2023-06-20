@@ -494,7 +494,7 @@ pub struct IndexerAsset {
 }
 
 #[derive(Debug)]
-pub struct IndexAssetBundle {
+pub struct IndexerAssetBundle {
     pub schema: IndexerAsset,
     pub manifest: IndexerAsset,
     pub wasm: IndexerAsset,

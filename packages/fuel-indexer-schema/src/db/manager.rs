@@ -47,9 +47,8 @@ impl SchemaManager {
         &self,
         namespace: &str,
         identifier: &str,
-        exec_source: &ExecutionSource,
     ) -> IndexerSchemaDbResult<IndexerSchema> {
         // TODO: might be nice to cache this data in server?
-        IndexerSchema::load_from_db(&self.pool, namespace, identifier, exec_source).await
+        IndexerSchema::load_from_db(&self.pool, namespace, identifier).await
     }
 }

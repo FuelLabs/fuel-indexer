@@ -361,7 +361,7 @@ impl Operation {
                             // and set the field as the innermost entity by pushing to the stack.
                             if let Some(field_to_foreign_key) = schema
                                 .parsed()
-                                .object_field_mappings
+                                .foreign_key_mappings()
                                 .get(&entity_name.to_lowercase())
                             {
                                 if let Some((foreign_key_table, foreign_key_col)) =
@@ -555,8 +555,8 @@ impl<'a> GraphqlQueryBuilder<'a> {
                 selections.resolve_fragments(self.schema, QUERY_ROOT, fragments)?;
 
                 Ok(Operation::new(
-                    self.schema.parsed().namespace.clone(),
-                    self.schema.parsed().identifier.clone(),
+                    self.schema.parsed().namespace().to_string(),
+                    self.schema.parsed().identifier().to_string(),
                     selections,
                 ))
             }

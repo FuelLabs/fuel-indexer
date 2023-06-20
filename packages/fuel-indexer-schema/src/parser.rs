@@ -16,61 +16,63 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 #[derive(Debug, Clone)]
 pub struct ParsedGraphQLSchema {
     /// Namespace of the indexer.
-    pub namespace: String,
+    namespace: String,
 
     /// Identifier of the indexer.
-    pub identifier: String,
+    identifier: String,
 
     /// Indexer method of execution.
-    pub exec_source: ExecutionSource,
+    exec_source: ExecutionSource,
 
     /// All unique names of types in the schema (whether objects, enums, or scalars).
-    pub type_names: HashSet<String>,
+    type_names: HashSet<String>,
 
     /// Mapping of object names to objects.
-    pub objects: HashMap<String, ObjectType>,
+    objects: HashMap<String, ObjectType>,
 
     /// All unique names of enums in the schema.
-    pub enum_names: HashSet<String>,
+    enum_names: HashSet<String>,
 
     /// Mapping of enum names to enum objects.
-    pub enums: HashMap<String, EnumType>,
+    enums: HashMap<String, EnumType>,
 
     /// All unique names of union types in the schema.
-    pub union_names: HashSet<String>,
+    union_names: HashSet<String>,
 
     /// Mapping of union names to union objects.
-    pub unions: HashMap<String, UnionType>,
+    unions: HashMap<String, UnionType>,
 
+    // FIXME: Can't be private due to the `register_queryroot_fields` hack?
     /// All objects and their field names and types, indexed by object name.
     pub object_field_mappings: HashMap<String, BTreeMap<String, String>>,
 
     /// All unique names of types for which tables should _not_ be created.
-    pub virtual_type_names: HashSet<String>,
+    virtual_type_names: HashSet<String>,
 
     /// All unique names of types that have already been parsed.
-    pub parsed_type_names: HashSet<String>,
+    parsed_type_names: HashSet<String>,
 
     /// A mapping of fully qualified field names to their field types.
-    pub field_type_mappings: HashMap<String, String>,
+    field_type_mappings: HashMap<String, String>,
 
     /// All unique names of scalar types in the schema.
-    pub scalar_names: HashSet<String>,
+    scalar_names: HashSet<String>,
 
     // A mapping of fully qualified field names to their respective optionalities.
-    pub field_type_optionality: HashMap<String, bool>,
+    field_type_optionality: HashMap<String, bool>,
 
     /// The parsed schema.
-    pub ast: ServiceDocument,
+    ast: ServiceDocument,
 
     /// Mapping of fully qualified field names to their `FieldDefinition`
-    pub field_defs: HashMap<String, FieldDefinition>,
+    field_defs: HashMap<String, FieldDefinition>,
 
     /// GraphQL schema content.
-    pub schema: GraphQLSchema,
+    schema: GraphQLSchema,
 
+    // FIXME: How tf to calculate this using `get_column_type` and such?
     /// All unique names of foreign key types in the schema.
-    pub foreign_key_names: HashSet<String>,
+    foreign_key_mappings: HashMap<String, HashMap<String, (String, String)>>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -96,7 +98,7 @@ impl Default for ParsedGraphQLSchema {
             scalar_names: HashSet::new(),
             field_defs: HashMap::new(),
             field_type_optionality: HashMap::new(),
-            foreign_key_names: HashSet::new(),
+            foreign_key_mappings: HashMap::new(),
             ast,
             schema: GraphQLSchema::default(),
         }
@@ -128,7 +130,7 @@ impl ParsedGraphQLSchema {
         let mut unions = HashMap::new();
         let mut field_defs = HashMap::new();
         let mut field_type_optionality = HashMap::new();
-        let mut foreign_key_names = HashSet::new();
+        let mut foreign_key_mappings = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
@@ -151,15 +153,6 @@ impl ParsedGraphQLSchema {
 
                                 if is_virtual {
                                     virtual_type_names.insert(obj_name.clone());
-                                }
-
-                                // Same check as self.is_possible_foreign_key
-                                if parsed_type_names.contains(&obj_name)
-                                    && !scalar_names.contains(&obj_name)
-                                    && !virtual_type_names.contains(&obj_name)
-                                    && !enum_names.contains(&obj_name)
-                                {
-                                    foreign_key_names.insert(obj_name.clone());
                                 }
 
                                 let field_name = field.node.name.to_string();
@@ -264,7 +257,7 @@ impl ParsedGraphQLSchema {
             enums,
             unions,
             field_defs,
-            foreign_key_names,
+            foreign_key_mappings,
             object_field_mappings,
             enum_names,
             virtual_type_names,
@@ -275,6 +268,80 @@ impl ParsedGraphQLSchema {
             schema: schema.map(|s| s.clone()).unwrap_or_default(),
             ast,
         })
+    }
+
+    pub fn namespace(&self) -> &str {
+        &self.namespace
+    }
+
+    pub fn identifier(&self) -> &str {
+        &self.identifier
+    }
+
+    pub fn exec_source(&self) -> &ExecutionSource {
+        &self.exec_source
+    }
+
+    pub fn type_names(&self) -> &HashSet<String> {
+        &self.type_names
+    }
+
+    pub fn enum_names(&self) -> &HashSet<String> {
+        &self.enum_names
+    }
+
+    pub fn union_names(&self) -> &HashSet<String> {
+        &self.union_names
+    }
+
+    pub fn objects(&self) -> &HashMap<String, ObjectType> {
+        &self.objects
+    }
+
+    pub fn enums(&self) -> &HashMap<String, EnumType> {
+        &self.enums
+    }
+
+    pub fn unions(&self) -> &HashMap<String, UnionType> {
+        &self.unions
+    }
+
+    pub fn virtual_type_names(&self) -> &HashSet<String> {
+        &self.virtual_type_names
+    }
+
+    pub fn parsed_type_names(&self) -> &HashSet<String> {
+        &self.parsed_type_names
+    }
+
+    pub fn field_type_mappings(&self) -> &HashMap<String, String> {
+        &self.field_type_mappings
+    }
+
+    pub fn scalar_names(&self) -> &HashSet<String> {
+        &self.scalar_names
+    }
+
+    pub fn field_type_optionality(&self) -> &HashMap<String, bool> {
+        &self.field_type_optionality
+    }
+
+    pub fn ast(&self) -> &ServiceDocument {
+        &self.ast
+    }
+
+    pub fn schema(&self) -> &GraphQLSchema {
+        &self.schema
+    }
+
+    pub fn foreign_key_mappings(
+        &self,
+    ) -> &HashMap<String, HashMap<String, (String, String)>> {
+        &self.foreign_key_mappings
+    }
+
+    pub fn object_field_mappings(&self) -> &HashMap<String, BTreeMap<String, String>> {
+        &self.object_field_mappings
     }
 
     /// Whether the schema has a scalar type with the given name.
@@ -290,7 +357,6 @@ impl ParsedGraphQLSchema {
     }
 
     /// Whether the given field type name is a type from which tables are created.
-    #[allow(unused)]
     pub fn is_non_indexable_non_enum(&self, name: &str) -> bool {
         self.virtual_type_names.contains(name) && !self.is_enum_type(name)
     }
@@ -323,6 +389,7 @@ impl ParsedGraphQLSchema {
             .collect()
     }
 
+    /// Return the GraphQL type for a given field name.
     pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
         match self.object_field_mappings.get(cond) {
             Some(fieldset) => fieldset.get(name),
@@ -338,6 +405,6 @@ impl ParsedGraphQLSchema {
 
     /// Ensure the given type is included in this `Schema`'s types
     pub fn has_type(&self, name: &str) -> bool {
-        self.field_defs.contains_key(name)
+        self.type_names.contains(name)
     }
 }

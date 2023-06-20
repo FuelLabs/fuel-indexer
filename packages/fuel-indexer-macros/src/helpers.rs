@@ -600,7 +600,7 @@ pub fn generate_from_traits_for_union(
                         #ident: member.#ident,
                     }
                 } else if let Some(field_already_option) = schema
-                    .field_type_optionality
+                    .field_type_optionality()
                     .get(&format!("{m}.{common_field}"))
                 {
                     if *field_already_option {
@@ -694,7 +694,7 @@ pub fn process_typedef_field(
             } = get_join_directive_info(
                 &field_def,
                 typedef_name,
-                &schema.field_type_mappings,
+                &schema.field_type_mappings(),
             );
 
             let field_typ_name = nullable_type(&field_def, &reference_field_type_name);
