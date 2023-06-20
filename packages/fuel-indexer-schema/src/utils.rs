@@ -226,7 +226,7 @@ pub fn get_foreign_keys(
                             } = get_join_directive_info(
                                 &field.node,
                                 &t.node.name.to_string(),
-                                &parsed_schema.field_type_mappings(),
+                                parsed_schema.field_type_mappings(),
                             );
 
                             let fk = fks.get_mut(&t.node.name.to_string().to_lowercase());

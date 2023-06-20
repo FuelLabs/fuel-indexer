@@ -1,8 +1,7 @@
+use crate::helpers::*;
 use crate::validator::GraphQLSchemaValidator;
-use crate::{constants::*, helpers::*};
 use async_graphql_parser::types::{
-    BaseType, EnumType, FieldDefinition, ObjectType, ServiceDocument, Type,
-    TypeDefinition, TypeKind, TypeSystemDefinition, UnionType,
+    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind,
 };
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
@@ -38,15 +37,6 @@ pub struct ObjectDecoder {
     /// Tokens used to create fields in the `Entity::to_row` function.
     to_row: TokenStream,
 
-    /// Tokens used to create fields in the `Entity::new` function.
-    parameters: TokenStream,
-
-    /// Tokens used to derive a unique ID for this object (if specified).
-    hasher: TokenStream,
-
-    /// Tokens used to create fields in the `Entity::new` function.
-    impl_new_fields: TokenStream,
-
     /// Tokens for the parameters of the `Entity::new` function.
     impl_new_params: ImplNewParameters,
 
@@ -60,17 +50,14 @@ pub struct ObjectDecoder {
 impl Default for ObjectDecoder {
     fn default() -> Self {
         Self {
-            ident: format_ident!("Decoder"),
+            ident: format_ident!("ObjectDecoder"),
             struct_fields: quote! {},
             field_extractors: quote! {},
             from_row: quote! {},
             to_row: quote! {},
-            parameters: quote! {},
-            hasher: quote! { Sha256::new() },
-            impl_new_fields: quote! {},
             exec_source: ExecutionSource::Wasm,
             impl_new_params: ImplNewParameters::ObjectType {
-                strct: format_ident!("Decoder"),
+                strct: format_ident!("ObjectDecoder"),
                 parameters: quote! {},
                 hasher: quote! {},
                 object_name: "".to_string(),
@@ -78,7 +65,7 @@ impl Default for ObjectDecoder {
                 exec_source: ExecutionSource::Wasm,
                 field_set: HashSet::new(),
             },
-            type_id: 0,
+            type_id: std::i64::MAX,
         }
     }
 }
@@ -107,7 +94,7 @@ impl Decoder for ObjectDecoder {
                     .get(&obj_name)
                     .expect("")
                     .iter()
-                    .map(|(k, v)| k.to_owned())
+                    .map(|(k, _v)| k.to_owned())
                     .collect::<HashSet<String>>();
                 GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
@@ -181,9 +168,6 @@ impl Decoder for ObjectDecoder {
                     field_extractors,
                     from_row,
                     to_row,
-                    parameters: parameters.clone(),
-                    hasher: hasher.clone(),
-                    impl_new_fields: impl_new_fields.clone(),
                     exec_source: parsed.exec_source().clone(),
                     impl_new_params: ImplNewParameters::ObjectType {
                         // standardize all these names
@@ -208,9 +192,6 @@ impl Decoder for ObjectDecoder {
                 let mut field_extractors = quote! {};
                 let mut from_row = quote! {};
                 let mut to_row = quote! {};
-                let mut parameters = quote! {};
-                let mut hasher = quote! { Sha256::new() };
-                let mut impl_new_fields = quote! {};
 
                 let mut derived_type_fields = HashSet::new();
                 let mut union_field_set = HashSet::new();
@@ -266,7 +247,7 @@ impl Decoder for ObjectDecoder {
                         field.ty.node.nullable,
                         &field_type_scalar_name.to_string(),
                         &field_name,
-                        clone.clone(),
+                        clone,
                     );
 
                     struct_fields = quote! {
@@ -321,6 +302,7 @@ pub struct EnumDecoder {
     values: Vec<TokenStream>,
 
     /// The unique ID of this GraphQL type.
+    #[allow(unused)]
     type_id: i64,
 }
 
@@ -384,9 +366,6 @@ impl From<ObjectDecoder> for TokenStream {
             field_extractors,
             from_row,
             to_row,
-            parameters,
-            hasher,
-            impl_new_fields,
             impl_new_params,
             exec_source,
             type_id,
@@ -548,7 +527,7 @@ impl From<EnumDecoder> for TokenStream {
             to_enum,
             from_enum,
             values,
-            type_id,
+            ..
         } = decoder;
 
         quote! {

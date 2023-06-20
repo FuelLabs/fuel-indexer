@@ -646,7 +646,6 @@ impl<'a> GraphqlQueryBuilder<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
 
     use super::*;
 
@@ -729,7 +728,7 @@ mod tests {
             },
         };
 
-        let fields = HashMap::from([
+        let _fields = HashMap::from([
             (
                 "Tx".to_string(),
                 HashMap::from([
@@ -751,7 +750,7 @@ mod tests {
             ),
         ]);
 
-        let foreign_keys = HashMap::from([(
+        let _foreign_keys = HashMap::from([(
             "tx".to_string(),
             HashMap::from([(
                 "block".to_string(),
@@ -759,15 +758,8 @@ mod tests {
             )]),
         )]);
 
-        let mut schema = Schema {
-            version: "test_version".to_string(),
-            namespace: "fuel_indexer_test".to_string(),
-            identifier: "test_index".to_string(),
-            types: HashSet::from(["Tx".to_string(), "BlockData".to_string()]),
-            fields,
-            foreign_keys,
-            non_indexable_types: HashSet::new(),
-        };
+        // REFACTOR: make this like the test above
+        let mut schema = IndexerSchema::default();
 
         schema.register_queryroot_fields();
 

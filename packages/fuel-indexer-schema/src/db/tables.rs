@@ -1,19 +1,11 @@
-use crate::{
-    db::IndexerSchemaDbResult, parser::ParsedGraphQLSchema, utils::*, QUERY_ROOT,
-};
-use async_graphql_parser::types::{
-    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
-};
-use async_graphql_parser::{Pos, Positioned};
-use async_graphql_value::Name;
+use crate::{db::IndexerSchemaDbResult, parser::ParsedGraphQLSchema, QUERY_ROOT};
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
-use linked_hash_set::LinkedHashSet;
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::BTreeMap;
 
 /// IndexerSchema is used to encapsulate most of the logic related to parsing
 /// GraphQL types, generating SQL from those types, and committing that SQL to
@@ -69,7 +61,7 @@ impl IndexerSchema {
         let mut statements = Vec::new();
 
         self.schema = schema.to_owned();
-        self.parsed = parsed_schema.to_owned();
+        self.parsed = parsed_schema;
 
         match self.db_type {
             DbType::Postgres => {
@@ -79,7 +71,6 @@ impl IndexerSchema {
                 );
                 statements.push(create);
             }
-            _ => {}
         }
 
         let tables = self
@@ -89,7 +80,7 @@ impl IndexerSchema {
             .map(|o| Table::from(o.to_owned()))
             .collect::<Vec<Table>>();
 
-        let table_stmnts = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
+        let _table_stmnts = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
 
         self.tables = tables;
 
@@ -139,15 +130,15 @@ impl IndexerSchema {
             .fields_for_columns()
             .iter()
             .map(|f| {
-                let type_id = type_id(&namespace, &f.name.node.to_string());
-                FooColumn::from_field_def(f, &namespace, &identifier, &version, type_id)
+                let type_id = type_id(&namespace, &f.name.node);
+                FooColumn::from_field_def(f, &namespace, &identifier, version, type_id)
             })
             .collect::<Vec<FooColumn>>();
 
         let type_ids = parsed
             .fields_for_columns()
             .iter()
-            .map(|f| FooTypeId::from_field_def(f, &namespace, &identifier, &version))
+            .map(|f| FooTypeId::from_field_def(f, &namespace, &identifier, version))
             .collect::<Vec<FooTypeId>>();
 
         queries::new_root_columns(conn, cols).await?;
@@ -181,7 +172,7 @@ impl IndexerSchema {
 
         let mut conn = pool.acquire().await?;
         let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
-        let type_ids = queries::type_id_list_by_name(
+        let _type_ids = queries::type_id_list_by_name(
             &mut conn,
             &root.schema_name,
             &root.version,

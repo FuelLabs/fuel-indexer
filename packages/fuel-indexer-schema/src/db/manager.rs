@@ -1,7 +1,4 @@
-use crate::{
-    db::{tables::IndexerSchema, IndexerSchemaDbResult},
-    utils::{inject_native_entities_into_schema, schema_version},
-};
+use crate::db::{tables::IndexerSchema, IndexerSchemaDbResult};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::graphql::GraphQLSchema;

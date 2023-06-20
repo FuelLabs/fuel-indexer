@@ -1,15 +1,9 @@
-use crate::{constants::*, decoder::*, helpers::*, validator::GraphQLSchemaValidator};
-use async_graphql_parser::types::{
-    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
-};
-use async_graphql_value::Name;
-use fuel_indexer_database_types::*;
+use crate::{decoder::*, helpers::*};
+use async_graphql_parser::types::{TypeDefinition, TypeKind, TypeSystemDefinition};
 use fuel_indexer_lib::{utils::local_repository_root, ExecutionSource};
-use fuel_indexer_schema::{parser::ParsedGraphQLSchema, utils::*};
-use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
-use linked_hash_set::LinkedHashSet;
-use quote::{format_ident, quote};
-use std::collections::{BTreeMap, HashSet};
+use fuel_indexer_schema::parser::ParsedGraphQLSchema;
+use fuel_indexer_types::graphql::GraphQLSchema;
+use quote::quote;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -19,13 +13,10 @@ fn process_type_def(
     parsed: &ParsedGraphQLSchema,
     typ: &TypeDefinition,
 ) -> Option<proc_macro2::TokenStream> {
-    let namespace = &parsed.namespace();
-    let identifier = &parsed.identifier();
-    let typedef_name = typ.name.to_string();
     let tokens = match &typ.kind {
-        TypeKind::Object(o) => ObjectDecoder::from_typedef(typ, parsed).into(),
-        TypeKind::Enum(e) => EnumDecoder::from_typedef(typ, parsed).into(),
-        TypeKind::Union(u) => ObjectDecoder::from_typedef(typ, parsed).into(),
+        TypeKind::Object(_o) => ObjectDecoder::from_typedef(typ, parsed).into(),
+        TypeKind::Enum(_e) => EnumDecoder::from_typedef(typ, parsed).into(),
+        TypeKind::Union(_u) => ObjectDecoder::from_typedef(typ, parsed).into(),
         _ => proc_macro_error::abort_call_site!(
             "Unrecognized TypeKind in GraphQL schema: {:?}",
             typ.kind
@@ -63,17 +54,6 @@ pub(crate) fn process_graphql_schema(
         .map(|p| Path::new(&p).join(schema_path.clone()))
         .unwrap_or_else(|| PathBuf::from(&schema_path));
 
-    let mut file = match File::open(&path) {
-        Ok(f) => f,
-        Err(e) => {
-            proc_macro_error::abort_call_site!(
-                "Could not open schema file {:?} {:?}",
-                path,
-                e
-            )
-        }
-    };
-
     let mut file = File::open(&path)
         .map_err(|e| {
             proc_macro_error::abort_call_site!(
@@ -89,7 +69,7 @@ pub(crate) fn process_graphql_schema(
 
     let schema = GraphQLSchema::new(schema_content);
 
-    let version_tokens = const_item("VERSION", &schema.version());
+    let version_tokens = const_item("VERSION", schema.version());
 
     let mut output = quote! {
         #namespace_tokens

@@ -1,10 +1,7 @@
 use std::collections::HashSet;
 
 use crate::constants::*;
-use async_graphql_parser::types::{
-    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind, TypeSystemDefinition,
-    UnionType,
-};
+use async_graphql_parser::types::{BaseType, FieldDefinition, Type, UnionType};
 use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
 use fuel_indexer_database_types::*;
@@ -27,6 +24,9 @@ pub enum ImplNewParameters {
         exec_source: ExecutionSource,
         field_set: HashSet<String>,
     },
+    // This is actually used, but it's implemented in a `TokenStream` which prevents
+    // `clippy` from being able to find it, so ignore this lint.
+    #[allow(unused)]
     UnionType {
         schema: ParsedGraphQLSchema,
         union_obj: UnionType,
@@ -340,169 +340,6 @@ pub fn field_extractor(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-/// Given a set of idents and tokens, construct the `Entity` and `Json` implementations
-/// for the given struct.
-pub fn generate_object_trait_impls(
-    strct: Ident,
-    strct_fields: proc_macro2::TokenStream,
-    type_id: i64,
-    field_extractors: proc_macro2::TokenStream,
-    from_row: proc_macro2::TokenStream,
-    to_row: proc_macro2::TokenStream,
-    exec_source: ExecutionSource,
-    impl_new_params: ImplNewParameters,
-) -> proc_macro2::TokenStream {
-    let json_impl = quote! {
-
-        impl From<#strct> for Json {
-            fn from(value: #strct) -> Self {
-                let s = serde_json::to_string(&value).expect("Serde error.");
-                Self(s)
-            }
-        }
-
-        impl From<Json> for #strct {
-            fn from(value: Json) -> Self {
-                let s: #strct = serde_json::from_str(&value.0).expect("Serde error.");
-                s
-            }
-        }
-    };
-
-    let entity_impl = match exec_source {
-        ExecutionSource::Native => {
-            quote! {
-                #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
-                pub struct #strct {
-                    #strct_fields
-                }
-
-                #[async_trait::async_trait]
-                impl Entity for #strct {
-                    const TYPE_ID: i64 = #type_id;
-
-                    fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                        #field_extractors
-                        Self {
-                            #from_row
-                        }
-                    }
-
-                    fn to_row(&self) -> Vec<FtColumn> {
-                        vec![
-                            #to_row
-                        ]
-                    }
-
-                    async fn load(id: u64) -> Option<Self> {
-                        unsafe {
-                            match &db {
-                                Some(d) => {
-                                    match d.lock().await.get_object(Self::TYPE_ID, id).await {
-                                        Some(bytes) => {
-                                            let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
-                                            let obj = Self::from_row(columns);
-                                            Some(obj)
-                                        },
-                                        None => None,
-                                    }
-                                }
-                                None => None,
-                            }
-                        }
-                    }
-
-                    async fn save(&self) {
-                        unsafe {
-                            match &db {
-                                Some(d) => {
-                                    d.lock().await.put_object(
-                                        Self::TYPE_ID,
-                                        self.to_row(),
-                                        serialize(&self.to_row())
-                                    ).await;
-                                }
-                                None => {},
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        ExecutionSource::Wasm => {
-            quote! {
-                #[derive(Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-                pub struct #strct {
-                    #strct_fields
-                }
-
-                impl Entity for #strct {
-                    const TYPE_ID: i64 = #type_id;
-
-                    fn from_row(mut vec: Vec<FtColumn>) -> Self {
-                        #field_extractors
-                        Self {
-                            #from_row
-                        }
-                    }
-
-                    fn to_row(&self) -> Vec<FtColumn> {
-                        vec![
-                            #to_row
-                        ]
-                    }
-                }
-
-            }
-        }
-    };
-
-    let instantiation_impls = match impl_new_params {
-        ImplNewParameters::ObjectType {
-            strct,
-            parameters,
-            hasher,
-            object_name,
-            struct_fields,
-            exec_source,
-            field_set,
-        } => {
-            if field_set.contains(&IdCol::to_lowercase_string()) {
-                generate_struct_new_method_impl(
-                    strct,
-                    parameters,
-                    hasher,
-                    object_name,
-                    struct_fields,
-                    exec_source,
-                )
-            } else {
-                quote! {}
-            }
-        }
-        ImplNewParameters::UnionType {
-            schema,
-            union_obj,
-            union_ident,
-            union_field_set,
-        } => generate_from_traits_for_union(
-            &schema,
-            &union_obj,
-            union_ident,
-            union_field_set,
-        ),
-    };
-
-    quote! {
-        #entity_impl
-
-        #instantiation_impls
-
-        #json_impl
-    }
-}
-
 /// Construct a `::new()` method for a particular struct; `::new()`
 /// will automatically create an ID for the user for use in a database.
 pub fn generate_struct_new_method_impl(
@@ -688,13 +525,12 @@ pub fn process_typedef_field(
     match fieldkind {
         FieldKind::ForeignKey => {
             let directives::Join {
-                field_name,
                 reference_field_type_name,
                 ..
             } = get_join_directive_info(
                 &field_def,
                 typedef_name,
-                &schema.field_type_mappings(),
+                schema.field_type_mappings(),
             );
 
             let field_typ_name = nullable_type(&field_def, &reference_field_type_name);
@@ -742,7 +578,7 @@ pub fn process_typedef_field(
             }
         }
         _ => {
-            let name_ident = format_ident! {"{}", field_name.to_string()};
+            let name_ident = format_ident! {"{field_name}"};
             let extractor = field_extractor(
                 schema,
                 name_ident.clone(),
@@ -782,19 +618,19 @@ pub fn process_type(
 /// Return `FieldKind` for a given `FieldDefinition` within the context of a
 /// particularly parsed GraphQL schema.
 pub fn field_kind(field_typ_name: &str, parser: &ParsedGraphQLSchema) -> FieldKind {
-    if parser.is_union_type(&field_typ_name) {
+    if parser.is_union_type(field_typ_name) {
         return FieldKind::Union;
     }
 
-    if parser.is_possible_foreign_key(&field_typ_name) {
+    if parser.is_possible_foreign_key(field_typ_name) {
         return FieldKind::ForeignKey;
     }
 
-    if parser.is_enum_type(&field_typ_name) {
+    if parser.is_enum_type(field_typ_name) {
         return FieldKind::Enum;
     }
 
-    if parser.is_non_indexable_non_enum(&field_typ_name) {
+    if parser.is_non_indexable_non_enum(field_typ_name) {
         return FieldKind::Virtual;
     }
 

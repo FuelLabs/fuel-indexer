@@ -2,11 +2,7 @@
 pub mod directives;
 
 use crate::directives::IndexMethod;
-use async_graphql_parser::{
-    types::{BaseType, FieldDefinition, ObjectType, Type},
-    Pos, Positioned,
-};
-use async_graphql_value::Name;
+use async_graphql_parser::types::{FieldDefinition, ObjectType};
 use chrono::serde::ts_microseconds;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -254,6 +250,7 @@ impl Default for FooColumn {
 }
 
 impl FooColumn {
+    #[allow(unused)]
     pub fn from_field_def(
         f: &FieldDefinition,
         namespace: &str,
@@ -271,8 +268,7 @@ impl FooColumn {
         let unique = f
             .directives
             .iter()
-            .find(|d| d.node.name.to_string() == "unique")
-            .is_some();
+            .any(|d| d.node.name.to_string() == "unique");
 
         let table_name = f.name.to_string();
         Self {
@@ -281,7 +277,7 @@ impl FooColumn {
             root_id: 1,
             type_id,
             name: table_name.clone(),
-            graphql_type: table_name.clone(),
+            graphql_type: table_name,
             coltype: ColumnType::from(f.ty.to_string().as_str()),
             // why do we use this?
             position: 1,
@@ -744,6 +740,7 @@ impl Nonce {
 }
 
 /// SQL database table for a given `GraphRoot` in the database.
+#[allow(unused)]
 pub struct Table {
     /// The name of the table.
     name: String,
@@ -762,7 +759,7 @@ pub struct Table {
 }
 
 impl From<ObjectType> for Table {
-    fn from(obj: ObjectType) -> Self {
+    fn from(_obj: ObjectType) -> Self {
         unimplemented!()
     }
 }

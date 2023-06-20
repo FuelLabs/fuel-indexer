@@ -130,7 +130,9 @@ impl ParsedGraphQLSchema {
         let mut unions = HashMap::new();
         let mut field_defs = HashMap::new();
         let mut field_type_optionality = HashMap::new();
-        let mut foreign_key_mappings = HashMap::new();
+
+        // REFACTOR: These need to be used
+        let foreign_key_mappings = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
@@ -265,7 +267,7 @@ impl ParsedGraphQLSchema {
             field_type_mappings,
             scalar_names,
             field_type_optionality,
-            schema: schema.map(|s| s.clone()).unwrap_or_default(),
+            schema: schema.cloned().unwrap(),
             ast,
         })
     }
