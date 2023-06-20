@@ -1,6 +1,6 @@
 ---
 source: packages/fuel-indexer-schema/src/lib.rs
-expression: list.query_fragment()
+expression: scalar_list.query_fragment()
 ---
-"'000000003132332c203435362c20373839'"
+"'000000007b00000000000000c8010000000000001503000000000000'"
 

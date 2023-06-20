@@ -224,14 +224,13 @@ impl FtColumn {
                 Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::ListScalar(value) => {
-                match value {
-                    Some(list) => {
-                        let discriminant = std::mem::discriminant(&list[0]);
-                        let type_id =
-                            i32::from(ColumnType::from(list[0].to_string().as_str()));
-                        let type_bytes = hex::encode(type_id.to_le_bytes());
-                        let elems = list
+            FtColumn::ListScalar(value) => match value {
+                Some(list) => {
+                    let discriminant = std::mem::discriminant(&list[0]);
+                    let type_id =
+                        i32::from(ColumnType::from(list[0].to_string().as_str()));
+                    let type_bytes = hex::encode(type_id.to_le_bytes());
+                    let elems = list
                             .iter()
                             .map(|e| {
                                 if std::mem::discriminant(e) != discriminant {
@@ -245,14 +244,10 @@ impl FtColumn {
                                 }
                             })
                             .collect::<Vec<Vec<u8>>>();
-                        format!("'{}{}'", type_bytes, hex::encode(elems.concat()))
-                    }
-                    None => {
-                        // Ignore any null values
-                        String::from("")
-                    }
+                    format!("'{}{}'", type_bytes, hex::encode(elems.concat()))
                 }
-            }
+                None => String::from(NULL_VALUE),
+            },
             FtColumn::ListComplex(values) => match values {
                 // TODO: Implement lookup table instead of persisting foreign keys to a list
                 Some(list) => {

@@ -736,24 +736,27 @@ mod fuel_indexer_test {
         e.save();
     }
 
-    fn fuel_indexer_trigger_list_types(block_data: BlockData) {
-        let block1 = BlockEntity {
+    fn fuel_indexer_trigger_list_types(_b: BlockData) {
+        let inner_entity1 = InnerFilterEntity {
             id: 1,
-            height: block_data.height,
-            timestamp: block_data.time,
-        };
-        let block2 = BlockEntity {
-            id: 2,
-            height: block_data.height + 1,
-            timestamp: block_data.time + 1,
+            inner_foo: "spam".to_string(),
+            inner_bar: 100,
+            inner_baz: 200,
         };
 
-        block1.save();
-        block2.save();
+        let inner_entity2 = InnerFilterEntity {
+            id: 2,
+            inner_foo: "ham".to_string(),
+            inner_bar: 300,
+            inner_baz: 400,
+        };
+
+        inner_entity1.save();
+        inner_entity2.save();
 
         let list_entity = ListEntity {
             id: 1,
-            complex: vec![block1.id, block2.id],
+            complex: vec![inner_entity1.id, inner_entity2.id],
             scalar: vec![Some(123), None, Some(789)],
         };
 

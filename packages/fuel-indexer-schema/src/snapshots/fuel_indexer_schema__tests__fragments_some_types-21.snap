@@ -2,5 +2,5 @@
 source: packages/fuel-indexer-schema/src/lib.rs
 expression: complex_list.query_fragment()
 ---
-"'{123,456,789}'"
+"'000000007b00000000000000c8010000000000001503000000000000'"
 

@@ -1144,7 +1144,7 @@ async fn test_can_trigger_and_index_entities_with_lists() {
 
     let contract = connect_to_deployed_contract().await.unwrap();
     let app = test::init_service(app(contract)).await;
-    let req = test::TestRequest::post().uri("/block").to_request();
+    let req = test::TestRequest::post().uri("/ping").to_request();
     let _ = app.call(req).await;
 
     sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
