@@ -7,7 +7,7 @@ pub fn u64_id(d: &[u8; 8]) -> u64 {
 }
 
 /// Returns the first eight bytes of data as a `u64`.
-pub fn first8_bytes_to_u64(data: impl AsRef<[u8]>) -> u64 {
+pub fn id8(data: impl AsRef<[u8]>) -> u64 {
     let data = sha256_digest(&data);
     let mut buff = [0u8; 8];
     buff.copy_from_slice(&data.as_bytes()[..8]);
@@ -25,7 +25,7 @@ pub fn first32_bytes_to_bytes32(data: impl AsRef<[u8]>) -> Bytes32 {
 /// Returns a `u64` from a byte vector to be used as an ID for an entity record.
 pub fn u64_id_from_inputs(id: &[u8; 32], inputs: Vec<u8>) -> u64 {
     let inputs = [id.to_vec(), inputs].concat();
-    first8_bytes_to_u64(inputs)
+    id8(inputs)
 }
 
 /// Returns a `Bytes32` from a byte vector.

@@ -206,15 +206,13 @@ impl From<fuel::Input> for Input {
 
                 let utxo_id = UtxoId::from(utxo_id);
                 let tx_pointer = TxPointer::from(tx_pointer);
-                // TODO: derive contract ID u64 from contract_id
-                let contract_id = 1;
 
                 let input = InputContract::new(
                     utxo_id.id,
                     balance_root,
                     state_root,
                     tx_pointer.id,
-                    contract_id,
+                    id8(contract_id),
                     InputLabel::Contract.into(),
                     true,
                 );
@@ -317,18 +315,14 @@ impl From<fuel::Output> for Output {
 
                 Self::from(output)
             }
-            #[allow(unused)]
             fuel::Output::ContractCreated(output) => {
                 let fuel::ContractCreated {
                     contract_id,
                     state_root,
                 } = output;
 
-                // TODO: calculate contract ID
-                let contract_id = 1;
-
                 let output = ContractCreated::new(
-                    contract_id,
+                    id8(contract_id),
                     state_root,
                     OutputLabel::ContractCreated.into(),
                     true,

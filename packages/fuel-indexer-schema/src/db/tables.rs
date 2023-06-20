@@ -176,7 +176,20 @@ impl SchemaBuilder {
     ) -> IndexerSchemaDbResult<String> {
         let mut fragments = Vec::new();
 
+        let mut parsed_names = HashSet::new();
+
         for (pos, field) in fields.iter().enumerate() {
+            let field_id = format!("{}_{}", object_name, field.name);
+
+            // Temporary hack to avoid duplicate columns. Derived union types
+            // can potentially have a field defined multiple times if multiple
+            // members of the union define the same field.
+            //
+            // We handle this in the schema module for a LinkedHashSet of fields
+            if parsed_names.contains(&field_id) {
+                continue;
+            }
+
             let directives::Virtual(no_table) = get_notable_directive_info(field)?;
             if no_table {
                 self.parsed_schema
@@ -190,6 +203,7 @@ impl SchemaBuilder {
 
             match typ {
                 ColumnType::ForeignKey => {
+
                     let directives::Join {
                         reference_field_name,
                         field_type_name,
@@ -224,6 +238,7 @@ impl SchemaBuilder {
                     fragments.push(column.sql_fragment());
                     self.columns.push(column);
                     self.foreign_keys.push(fk);
+                    parsed_names.insert(field_id);
                 }
                 ColumnType::Virtual => {
                     let column = NewColumn {
@@ -253,6 +268,7 @@ impl SchemaBuilder {
 
                     fragments.push(column.sql_fragment());
                     self.columns.push(column);
+                    parsed_names.insert(field_id);
                 }
                 _ => {
                     let column = NewColumn {
@@ -282,6 +298,7 @@ impl SchemaBuilder {
 
                     fragments.push(column.sql_fragment());
                     self.columns.push(column);
+                    parsed_names.insert(field_id);
                 }
             }
         }

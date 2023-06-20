@@ -80,7 +80,7 @@ pub struct NumVersions {
     pub num: Option<i64>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct NewColumn {
     pub type_id: i64,
     pub column_position: i32,
@@ -91,7 +91,7 @@ pub struct NewColumn {
     pub unique: bool,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Columns {
     pub id: i64,
     pub type_id: i64,
