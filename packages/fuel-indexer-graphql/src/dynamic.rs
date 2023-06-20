@@ -11,7 +11,7 @@ use async_graphql::{
 use async_graphql_parser::types::{BaseType, Type};
 use async_graphql_value::Name;
 use fuel_indexer_database::{queries, IndexerConnectionPool};
-use fuel_indexer_schema::db::tables::Schema;
+use fuel_indexer_schema::db::tables::IndexerSchema;
 use lazy_static::lazy_static;
 use serde_json::Value;
 
@@ -138,7 +138,7 @@ pub async fn execute_query(
     dynamic_schema: DynamicSchema,
     user_query: String,
     pool: IndexerConnectionPool,
-    schema: Schema,
+    schema: IndexerSchema,
 ) -> GraphqlResult<Value> {
     // Because the schema types from async-graphql expect each field to be resolved
     // separately, it became untenable to use the .execute() method of the dynamic
@@ -172,12 +172,13 @@ pub async fn execute_query(
 
 /// Build a dynamic schema. This allows for introspection, which allows for extensive
 /// auto-documentation and code suggestions.
-pub fn build_dynamic_schema(schema: &Schema) -> GraphqlResult<DynamicSchema> {
+pub fn build_dynamic_schema(schema: &IndexerSchema) -> GraphqlResult<DynamicSchema> {
     // Register scalars into dynamic schema so that users are aware of their existence.
     let mut schema_builder: DynamicSchemaBuilder = SCALAR_TYPES.iter().fold(
         DynamicSchema::build("QueryRoot", None, None).introspection_only(),
         |sb, scalar| {
             // These types come pre-included in SchemaBuilder.
+            // FIXME: Use IdCol here
             if *scalar == "Boolean" || *scalar == "ID" {
                 sb
             } else {
@@ -203,7 +204,7 @@ pub fn build_dynamic_schema(schema: &Schema) -> GraphqlResult<DynamicSchema> {
 
     let sort_enum = Enum::new("SortOrder").item("asc").item("desc");
 
-    for (entity_type, field_map) in &schema.fields {
+    for (entity_type, field_map) in &schema.parsed().object_field_mappings {
         if IGNORED_ENTITY_TYPES.contains(&entity_type.as_str()) {
             continue;
         }
@@ -288,12 +289,13 @@ pub fn build_dynamic_schema(schema: &Schema) -> GraphqlResult<DynamicSchema> {
                             // will report errors related to enum subfields not being
                             // supplied. For now, setting them to a String type does not
                             // cause errors, but we should decide what the final process is.
-                            if schema.non_indexable_types.contains(field_type) {
+                            if schema.parsed().virtual_type_names.contains(field_type) {
                                 TypeRef::named(TypeRef::STRING)
                             } else {
                                 TypeRef::named(type_name.to_string())
                             }
-                        } else if schema.non_indexable_types.contains(field_type) {
+                        } else if schema.parsed().virtual_type_names.contains(field_type)
+                        {
                             TypeRef::named_nn(TypeRef::STRING)
                         } else {
                             TypeRef::named_nn(type_name.to_string())

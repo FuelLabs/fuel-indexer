@@ -1,6 +1,5 @@
 use crate::{
-    db::tables::{Schema, SchemaBuilder},
-    db::IndexerSchemaDbResult,
+    db::{tables::IndexerSchema, IndexerSchemaDbResult},
     utils::{inject_native_entities_into_schema, schema_version},
 };
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
@@ -30,15 +29,15 @@ impl SchemaManager {
 
         if !queries::schema_exists(conn, namespace, identifier, version).await? {
             info!("Creating schema for Indexer({namespace}.{identifier}) with Version({version}).");
-            let _db_schema = SchemaBuilder::new(
+            let _db_schema = IndexerSchema::new(
                 namespace,
                 identifier,
-                version,
+                &schema,
                 self.pool.database_type(),
                 exec_source,
             )?
             .build(&schema)?
-            .commit_metadata(conn)
+            .commit_sql_metadata(conn)
             .await?;
         }
         Ok(())
@@ -48,8 +47,9 @@ impl SchemaManager {
         &self,
         namespace: &str,
         identifier: &str,
-    ) -> IndexerSchemaDbResult<Schema> {
+        exec_source: &ExecutionSource,
+    ) -> IndexerSchemaDbResult<IndexerSchema> {
         // TODO: might be nice to cache this data in server?
-        Schema::load_from_db(&self.pool, namespace, identifier).await
+        IndexerSchema::load_from_db(&self.pool, namespace, identifier, exec_source).await
     }
 }

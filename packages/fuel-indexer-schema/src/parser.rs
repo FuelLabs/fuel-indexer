@@ -68,6 +68,9 @@ pub struct ParsedGraphQLSchema {
 
     /// GraphQL schema content.
     pub schema: GraphQLSchema,
+
+    /// All unique names of foreign key types in the schema.
+    pub foreign_key_names: HashSet<String>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -93,6 +96,7 @@ impl Default for ParsedGraphQLSchema {
             scalar_names: HashSet::new(),
             field_defs: HashMap::new(),
             field_type_optionality: HashMap::new(),
+            foreign_key_names: HashSet::new(),
             ast,
             schema: GraphQLSchema::default(),
         }
@@ -124,6 +128,7 @@ impl ParsedGraphQLSchema {
         let mut unions = HashMap::new();
         let mut field_defs = HashMap::new();
         let mut field_type_optionality = HashMap::new();
+        let mut foreign_key_names = HashSet::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
@@ -141,11 +146,20 @@ impl ParsedGraphQLSchema {
                             let mut field_mapping = BTreeMap::new();
                             parsed_type_names.insert(t.node.name.to_string());
                             for field in &o.fields {
-                                let directives::Virtual(is_no_table) =
+                                let directives::Virtual(is_virtual) =
                                     get_notable_directive_info(&field.node).unwrap();
 
-                                if is_no_table {
+                                if is_virtual {
                                     virtual_type_names.insert(obj_name.clone());
+                                }
+
+                                // Same check as self.is_possible_foreign_key
+                                if parsed_type_names.contains(&obj_name)
+                                    && !scalar_names.contains(&obj_name)
+                                    && !virtual_type_names.contains(&obj_name)
+                                    && !enum_names.contains(&obj_name)
+                                {
+                                    foreign_key_names.insert(obj_name.clone());
                                 }
 
                                 let field_name = field.node.name.to_string();
@@ -250,6 +264,7 @@ impl ParsedGraphQLSchema {
             enums,
             unions,
             field_defs,
+            foreign_key_names,
             object_field_mappings,
             enum_names,
             virtual_type_names,
@@ -290,11 +305,6 @@ impl ParsedGraphQLSchema {
         self.union_names.contains(name)
     }
 
-    /// Whether the parse schema contains the given type name.
-    pub fn has_type(&self, name: &str) -> bool {
-        self.type_names.contains(name)
-    }
-
     /// All objects from which SQL tables can be created.
     pub fn indexable_objects(&self) -> Vec<ObjectType> {
         self.objects
@@ -311,5 +321,23 @@ impl ParsedGraphQLSchema {
             .filter(|(_, field)| !self.is_enum_type(&field.ty.to_string()))
             .map(|(_, field)| field.clone())
             .collect()
+    }
+
+    pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
+        match self.object_field_mappings.get(cond) {
+            Some(fieldset) => fieldset.get(name),
+            _ => {
+                let tablename = normalize_field_type_name(cond);
+                match self.object_field_mappings.get(&tablename) {
+                    Some(fieldset) => fieldset.get(name),
+                    _ => None,
+                }
+            }
+        }
+    }
+
+    /// Ensure the given type is included in this `Schema`'s types
+    pub fn has_type(&self, name: &str) -> bool {
+        self.field_defs.contains_key(name)
     }
 }
