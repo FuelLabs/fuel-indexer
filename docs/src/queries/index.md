@@ -1,6 +1,6 @@
 # Queries
 
-Once data has been persisted into your storage backend, you can retrieve it by querying the [GraphQL API server](./api-server.md). By default, the API server can be reached at `http://localhost:29987/api/graph/:namespace/:identifier`, where `:namespace` and `:identifier` are the values for the respective fields in your indexer's manifest. If you've changed the `GRAPHQL_API_HOST` or `GRAPHQL_API_PORT` values of your configuration, then you'll need to adjust the URL accordingly.
+Once data has been persisted into your storage backend, you can retrieve it by querying the [GraphQL API server](../graphql/api-server.md). By default, the API server can be reached at `http://localhost:29987/api/graph/:namespace/:identifier`, where `:namespace` and `:identifier` are the values for the respective fields in your indexer's manifest. If you've changed the `GRAPHQL_API_HOST` or `GRAPHQL_API_PORT` values of your configuration, then you'll need to adjust the URL accordingly.
 
 ## Basic Query
 
@@ -17,7 +17,7 @@ query {
 }
 ```
 
-The `entity` field corresponds to the name of an entity defined in your [schema](./schema.md) and the sub-fields are the fields defined on that entity type; entities and fields are stored in the database using the names defined in the schema, so make sure that your query uses those same names as well.
+The `entity` field corresponds to the name of an entity defined in your [schema](../project-components/schema.md) and the sub-fields are the fields defined on that entity type; entities and fields are stored in the database using the names defined in the schema, so make sure that your query uses those same names as well.
 
 ```txt
 query {

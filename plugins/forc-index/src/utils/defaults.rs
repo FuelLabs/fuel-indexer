@@ -199,7 +199,7 @@ pub mod {indexer_name}_index_mod {{
 pub fn default_indexer_schema() -> String {
     r#"type Block {
     id: ID!
-    height: UInt8!
+    height: UInt4!
     hash: Bytes32! @unique
 }
 

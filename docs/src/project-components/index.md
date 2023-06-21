@@ -12,7 +12,7 @@ We'll describe these three different implementations below.
 
 ### As tooling for compiling indexers
 
-The Fuel indexer provides functionality to make it easy to build and compile abitrary indexers by using [`forc index`](../plugins/forc-index/index.md). For info on how to use indexer tooling to compile arbitrary indexers, check out our [Quickstart](./../quickstart/index.md); additionally, you can read through our [examples](../examples/index.md) for a more in-depth exploration of how to compile indexers.
+The Fuel indexer provides functionality to make it easy to build and compile abitrary indexers by using [`forc index`](../plugins/forc-index/index.md). For info on how to use indexer tooling to compile arbitrary indexers, check out our [Quickstart](../getting-started/quickstart.md) and [Hello World](../getting-started/hello-world.md) examples for a more in-depth exploration of how to compile indexers.
 
 ### As a standalone service
 
@@ -45,6 +45,6 @@ Finally, you can run the Fuel indexer as part of a project that uses other compo
 
 Every Fuel indexer project requires three components:
 
-- a [Manifest](../components/assets/manifest.md) describing indexer metadata
-- a [Schema](../components/assets/schema.md) containing models for the data you want to index
-- a [Module](../components/assets/module.md) which houses the logic for creating and saving the aforementioned data models
+- a [Manifest](./manifest.md) describing indexer metadata
+- a [Schema](./schema.md) containing models for the data you want to index
+- a [Module](./module.md) which houses the logic for creating and saving the aforementioned data models
