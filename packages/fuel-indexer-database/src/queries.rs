@@ -31,7 +31,7 @@ pub async fn type_id_list_by_name(
     name: &str,
     version: &str,
     identifier: &str,
-) -> sqlx::Result<Vec<FooTypeId>> {
+) -> sqlx::Result<Vec<TypeId>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::type_id_list_by_name(c, name, version, identifier).await
@@ -53,7 +53,7 @@ pub async fn type_id_latest(
 
 pub async fn type_id_insert(
     conn: &mut IndexerConnection,
-    type_ids: Vec<FooTypeId>,
+    type_ids: Vec<TypeId>,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -77,7 +77,7 @@ pub async fn schema_exists(
 
 pub async fn new_column_insert(
     conn: &mut IndexerConnection,
-    cols: Vec<FooColumn>,
+    cols: Vec<Column>,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -89,7 +89,7 @@ pub async fn new_column_insert(
 pub async fn list_column_by_id(
     conn: &mut IndexerConnection,
     col_id: i64,
-) -> sqlx::Result<Vec<FooColumn>> {
+) -> sqlx::Result<Vec<Column>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::list_column_by_id(c, col_id).await

@@ -106,7 +106,7 @@ impl IndexerSchema {
             .fields_for_typeids()
             .iter()
             .map(|(f, typ_name)| {
-                FooTypeId::from_field_def(
+                TypeId::from_field_def(
                     typ_name,
                     f,
                     &self.namespace,
@@ -115,7 +115,7 @@ impl IndexerSchema {
                 )
             })
             .unique_by(|t| t.id)
-            .collect::<Vec<FooTypeId>>();
+            .collect::<Vec<TypeId>>();
 
         queries::type_id_insert(conn, type_ids.clone()).await?;
 

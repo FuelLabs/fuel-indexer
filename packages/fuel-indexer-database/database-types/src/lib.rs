@@ -239,11 +239,11 @@ pub trait SqlNamed {
 
 /// Column on SQL database for a given `Table` the database.
 #[derive(Debug, Default)]
-pub struct FooColumn {
+pub struct Column {
     /// Database ID of the column.
     pub id: i64,
 
-    /// Database ID of the `TypeId` associated with this `FooColumn`.
+    /// Database ID of the `TypeId` associated with this `Column`.
     pub type_id: i64,
 
     /// Name of the column.
@@ -270,7 +270,7 @@ pub struct FooColumn {
     pub nullable: bool,
 }
 
-impl FooColumn {
+impl Column {
     pub fn from_field_def(
         f: &FieldDefinition,
         namespace: &str,
@@ -375,7 +375,7 @@ impl FooColumn {
     }
 }
 
-impl SqlFragment for FooColumn {
+impl SqlFragment for Column {
     fn create(&self) -> String {
         let null_frag = if self.nullable { "" } else { "not null" };
         let unique_frag = if self.unique { "unique" } else { "" };
@@ -412,7 +412,7 @@ pub struct GraphRoot {
 
 /// Type ID used to identify `TypeDefintion`s in the GraphQL schema.
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct FooTypeId {
+pub struct TypeId {
     /// Database ID of the type.
     pub id: i64,
 
@@ -432,7 +432,7 @@ pub struct FooTypeId {
     pub table_name: String,
 }
 
-impl FooTypeId {
+impl TypeId {
     pub fn from_field_def(
         typ: &str,
         f: &FieldDefinition,
@@ -553,6 +553,7 @@ impl DbType {
         }
     }
 }
+
 
 /// SQL database index for a given column.
 #[derive(Debug)]
@@ -757,7 +758,7 @@ pub struct Table {
     identifier: String,
 
     /// SQL columns associated with this table.
-    columns: Vec<FooColumn>,
+    columns: Vec<Column>,
 
     /// SQL conswtraints associated with this table.
     constraints: Vec<Constraint>,
@@ -797,7 +798,7 @@ impl Table {
                     .iter()
                     .enumerate()
                     .map(|(i, f)| {
-                        FooColumn::from_field_def(
+                        Column::from_field_def(
                             &f.node,
                             parsed.namespace(),
                             parsed.identifier(),
@@ -807,7 +808,7 @@ impl Table {
                             i as i32,
                         )
                     })
-                    .collect::<Vec<FooColumn>>();
+                    .collect::<Vec<Column>>();
                 let constraints = o
                     .fields
                     .iter()

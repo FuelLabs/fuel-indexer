@@ -181,7 +181,7 @@ pub async fn type_id_list_by_name(
     namespace: &str,
     version: &str,
     identifier: &str,
-) -> sqlx::Result<Vec<FooTypeId>> {
+) -> sqlx::Result<Vec<TypeId>> {
     Ok(sqlx::query(
         "SELECT * FROM graph_registry_type_ids
         WHERE schema_name = $1
@@ -202,7 +202,7 @@ pub async fn type_id_list_by_name(
         let table_name: String = row.get(4);
         let identifier: String = row.get(5);
 
-        FooTypeId {
+        TypeId {
             id,
             version,
             namespace,
@@ -211,7 +211,7 @@ pub async fn type_id_list_by_name(
             identifier,
         }
     })
-    .collect::<Vec<FooTypeId>>())
+    .collect::<Vec<TypeId>>())
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
@@ -239,7 +239,7 @@ pub async fn type_id_latest(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn type_id_insert(
     conn: &mut PoolConnection<Postgres>,
-    type_ids: Vec<FooTypeId>,
+    type_ids: Vec<TypeId>,
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name)");
 
@@ -284,7 +284,7 @@ pub async fn schema_exists(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_column_insert(
     conn: &mut PoolConnection<Postgres>,
-    cols: Vec<FooColumn>,
+    cols: Vec<Column>,
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type, is_unique)");
 
@@ -309,7 +309,7 @@ pub async fn new_column_insert(
 pub async fn list_column_by_id(
     conn: &mut PoolConnection<Postgres>,
     col_id: i64,
-) -> sqlx::Result<Vec<FooColumn>> {
+) -> sqlx::Result<Vec<Column>> {
     Ok(
         sqlx::query("SELECT * FROM graph_registry_columns WHERE type_id = $1")
             .bind(col_id)
@@ -327,7 +327,7 @@ pub async fn list_column_by_id(
                 let unique: bool = row.get(7);
                 let persistence: String = row.get(8);
 
-                FooColumn {
+                Column {
                     id,
                     type_id,
                     position,
@@ -340,7 +340,7 @@ pub async fn list_column_by_id(
                         .expect("Bad persistence."),
                 }
             })
-            .collect::<Vec<FooColumn>>(),
+            .collect::<Vec<Column>>(),
     )
 }
 

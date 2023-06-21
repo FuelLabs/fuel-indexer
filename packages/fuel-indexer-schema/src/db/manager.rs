@@ -4,6 +4,8 @@ use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::graphql::GraphQLSchema;
 use tracing::info;
 
+/// `SchemaManager` is used by the indexer service to persist schema to the
+/// database and extract schema from the database.
 pub struct SchemaManager {
     pool: IndexerConnectionPool,
 }
