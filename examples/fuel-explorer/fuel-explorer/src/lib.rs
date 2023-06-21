@@ -685,7 +685,7 @@ pub mod explorer_index {
         consensus.save();
 
         // TODO: Create UID here.
-        let id = 1;
+        let id = 22;
         let block_frag = BlockIdFragment {
             id,
             hash: Bytes32::default(),

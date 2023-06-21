@@ -91,7 +91,9 @@ impl Decoder for ObjectDecoder {
                 let obj_fields = parsed
                     .object_field_mappings
                     .get(&obj_name)
-                    .expect("")
+                    .expect(&format!(
+                        "TypeDefinition '{obj_name}' not found in parsed schema."
+                    ))
                     .iter()
                     .map(|(k, _v)| k.to_owned())
                     .collect::<HashSet<String>>();
@@ -191,14 +193,16 @@ impl Decoder for ObjectDecoder {
                 let mut field_extractors = quote! {};
                 let mut from_row = quote! {};
                 let mut to_row = quote! {};
-                let mut derived_type_fields = HashSet::new();
-                let mut union_field_set = HashSet::new();
+                let mut parameters = quote! {};
+                let mut hasher = quote! { Sha256::new() };
+                let mut impl_new_fields = quote! {};
 
-                u.members
-                .iter()
-                .flat_map(|m| {
-                    let name = m.node.to_string();
-                    parsed
+                let member_fields =
+                    u.members
+                        .iter()
+                        .flat_map(|m| {
+                            let name = m.node.to_string();
+                            parsed
                         .object_field_mappings
                         .get(&name)
                         .unwrap_or_else(|| {
@@ -206,11 +210,18 @@ impl Decoder for ObjectDecoder {
                         })
                         .iter()
                         .map(|(k, v)| (k.to_owned(), v.to_owned()))
-                })
-                .collect::<LinkedHashSet<(String, String)>>()
-                .iter()
-                .for_each(|(field_name, field_typ_name)| {
+                        })
+                        .collect::<LinkedHashSet<(String, String)>>();
 
+                let mut derived_type_fields = HashSet::new();
+                let mut union_field_set = HashSet::new();
+
+                let obj_fields = member_fields
+                    .iter()
+                    .map(|(k, _v)| k.to_owned())
+                    .collect::<HashSet<String>>();
+
+                for (field_name, field_typ_name) in member_fields.iter() {
                     // Field types must be consistent across all members of a union.
                     if derived_type_fields.contains(field_name) {
                         panic!("Derived type from Union({}) contains Field({}) which does not have a consistent type across all members.", union_name, field_name);
@@ -232,7 +243,6 @@ impl Decoder for ObjectDecoder {
                         directives: Vec::new(),
                     };
 
-
                     union_field_set.insert(field_name.clone());
 
                     // Since we've already processed the member's fields, we don't need
@@ -247,7 +257,7 @@ impl Decoder for ObjectDecoder {
                         field.ty.node.nullable,
                         field_typ_scalar_name,
                         &field_name,
-                        clone,
+                        clone.clone(),
                     );
 
                     struct_fields = quote! {
@@ -269,16 +279,48 @@ impl Decoder for ObjectDecoder {
                         #to_row
                         #field_decoder
                     };
-                });
+
+                    let unwrap_or_default = unwrap_or_default_tokens(
+                        field_typ_scalar_name,
+                        field.ty.node.nullable,
+                    );
+                    let to_bytes = to_bytes_tokens(field_typ_scalar_name);
+
+                    if can_derive_id(&obj_fields, &field_name.to_string(), &union_name) {
+                        parameters =
+                            parameters_tokens(parameters, &field_name, typ_tokens);
+                        if let Some(tokens) = hasher_tokens(
+                            field_typ_scalar_name,
+                            hasher.clone(),
+                            &field_name,
+                            clone,
+                            unwrap_or_default,
+                            to_bytes,
+                        ) {
+                            hasher = tokens;
+                        }
+
+                        impl_new_fields = quote! {
+                            #impl_new_fields
+                            #field_name,
+                        };
+                    }
+                }
 
                 Self {
-                    ident,
+                    ident: ident.clone(),
                     type_id,
                     struct_fields,
                     field_extractors,
                     from_row,
                     to_row,
-                    ..Self::default()
+                    exec_source: parsed.exec_source().clone(),
+                    impl_new_params: ImplNewParameters::UnionType {
+                        schema: parsed.clone(),
+                        union_obj: u.clone(),
+                        union_ident: ident,
+                        union_field_set: obj_fields,
+                    },
                 }
             }
             _ => panic!("Expected TypeKind::Object or TypeKind::Union."),

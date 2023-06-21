@@ -268,6 +268,7 @@ impl ParsedGraphQLSchema {
                         }
                         TypeKind::Union(u) => {
                             let union_name = t.node.name.to_string();
+                            parsed_type_names.insert(union_name.clone());
                             type_defs.insert(union_name.clone(), t.node.clone());
                             unions.insert(union_name.clone(), u.clone());
                             union_names.insert(union_name.clone());
@@ -297,9 +298,25 @@ impl ParsedGraphQLSchema {
                                     let field_id =
                                         format!("{}.{}", union_name, f.node.name);
                                     field_defs.insert(
-                                        field_id,
+                                        field_id.clone(),
                                         (f.node.clone(), member_name.clone()),
                                     );
+
+                                    field_type_mappings.insert(
+                                        field_id.clone(),
+                                        f.node.ty.to_string().replace('!', ""),
+                                    );
+
+                                    object_field_mappings
+                                        .entry(union_name.clone())
+                                        .or_insert_with(BTreeMap::new)
+                                        .insert(
+                                            f.node.name.to_string(),
+                                            f.node.ty.to_string().replace('!', ""),
+                                        );
+
+                                    field_type_optionality
+                                        .insert(field_id, f.node.ty.node.nullable);
                                 });
                             });
 

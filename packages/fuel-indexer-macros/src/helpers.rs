@@ -507,7 +507,7 @@ pub enum FieldKind {
 ///     - The field's type as an Ident.
 ///     - The field's row extractor tokens.
 pub fn process_typedef_field(
-    schema: &ParsedGraphQLSchema,
+    parsed: &ParsedGraphQLSchema,
     mut field_def: FieldDefinition,
 ) -> (
     proc_macro2::TokenStream,
@@ -516,13 +516,13 @@ pub fn process_typedef_field(
     proc_macro2::TokenStream,
 ) {
     let field_name = field_def.name.to_string();
-    let (typ_tokens, field_type_ident) = process_type(schema, &field_def.ty.node);
-    let fieldkind = field_kind(&field_type_ident.to_string(), schema);
+    let (typ_tokens, field_type_ident) = process_type(parsed, &field_def.ty.node);
+    let fieldkind = field_kind(&field_type_ident.to_string().replace('!', ""), parsed);
 
     match fieldkind {
         FieldKind::ForeignKey => {
             // Determine implicit vs explicit FK
-            let ref_column_name = field_def
+            let (ref_coltype, ref_colname, ref_tablename) = field_def
                 .directives
                 .iter()
                 .find(|d| d.node.name.to_string() == "join")
@@ -531,16 +531,25 @@ pub fn process_typedef_field(
                     let ref_field_name =
                         d.clone().node.arguments.pop().unwrap().1.to_string();
                     let fk_field_id = format!("{typdef_name}.{ref_field_name}");
-                    let fk_field_type = schema
+                    let fk_field_type = parsed
                         .field_type_mappings()
                         .get(&fk_field_id)
                         .unwrap()
                         .to_string();
-                    fk_field_type
-                })
-                .unwrap_or(IdCol::to_uppercase_string());
 
-            let field_typ_name = nullable_type(&field_def, &ref_column_name);
+                    (
+                        fk_field_type.replace('!', ""),
+                        ref_field_name,
+                        typdef_name.to_lowercase(),
+                    )
+                })
+                .unwrap_or((
+                    IdCol::to_uppercase_string(),
+                    IdCol::to_lowercase_string(),
+                    field_def.ty.to_string().replace('!', "").to_lowercase(),
+                ));
+
+            let field_typ_name = nullable_type(&field_def, &ref_coltype);
 
             // We're manually updated the field type here because we need to substitute the field name
             // into a scalar type name.
@@ -549,7 +558,7 @@ pub fn process_typedef_field(
                 nullable: field_def.ty.node.nullable,
             };
 
-            process_typedef_field(schema, field_def)
+            process_typedef_field(parsed, field_def)
         }
         FieldKind::Enum => {
             let field_typ_name = nullable_type(&field_def, "Charfield");
@@ -557,7 +566,7 @@ pub fn process_typedef_field(
                 base: BaseType::Named(Name::new(field_typ_name.replace('!', ""))),
                 nullable: field_def.ty.node.nullable,
             };
-            process_typedef_field(schema, field_def)
+            process_typedef_field(parsed, field_def)
         }
         FieldKind::Virtual => {
             let field_typ_name = nullable_type(&field_def, "Virtual");
@@ -565,23 +574,68 @@ pub fn process_typedef_field(
                 base: BaseType::Named(Name::new(field_typ_name.replace('!', ""))),
                 nullable: field_def.ty.node.nullable,
             };
-            process_typedef_field(schema, field_def)
+            process_typedef_field(parsed, field_def)
         }
         FieldKind::Union => {
-            let field_typ_name = field_def.ty.to_string();
-            match schema.is_virtual_type(&field_typ_name) {
+            let field_typ_name = field_def.ty.to_string().replace('!', "");
+            match parsed.is_virtual_type(&field_typ_name) {
                 true => {
                     // All union derived type fields are optional.
                     field_def.ty.node = Type::new("Virtual").expect("Bad type.");
-                    process_typedef_field(schema, field_def)
+                    process_typedef_field(parsed, field_def)
                 }
-                false => process_typedef_field(schema, field_def),
+                false => match parsed.is_possible_foreign_key(&field_typ_name) {
+                    true => {
+                        // Determine implicit vs explicit FK
+                        let (ref_coltype, ref_colname, ref_tablename) = field_def
+                            .directives
+                            .iter()
+                            .find(|d| d.node.name.to_string() == "join")
+                            .map(|d| {
+                                let typdef_name =
+                                    field_def.ty.to_string().replace('!', "");
+                                let ref_field_name =
+                                    d.clone().node.arguments.pop().unwrap().1.to_string();
+                                let fk_field_id =
+                                    format!("{typdef_name}.{ref_field_name}");
+                                let fk_field_type = parsed
+                                    .field_type_mappings()
+                                    .get(&fk_field_id)
+                                    .unwrap()
+                                    .to_string();
+
+                                (
+                                    fk_field_type.replace('!', ""),
+                                    ref_field_name,
+                                    typdef_name.to_lowercase(),
+                                )
+                            })
+                            .unwrap_or((
+                                IdCol::to_uppercase_string(),
+                                IdCol::to_lowercase_string(),
+                                field_def.ty.to_string().replace('!', "").to_lowercase(),
+                            ));
+
+                        let field_typ_name = nullable_type(&field_def, &ref_coltype);
+                        // We're manually updated the field type here because we need to substitute the field name
+                        // into a scalar type name.
+                        field_def.ty.node = Type {
+                            base: BaseType::Named(Name::new(
+                                field_typ_name.replace('!', ""),
+                            )),
+                            nullable: field_def.ty.node.nullable,
+                        };
+
+                        process_typedef_field(parsed, field_def)
+                    }
+                    false => process_typedef_field(parsed, field_def),
+                },
             }
         }
         _ => {
             let name_ident = format_ident! {"{field_name}"};
             let extractor = field_extractor(
-                schema,
+                parsed,
                 name_ident.clone(),
                 field_type_ident.clone(),
                 field_def.ty.node.nullable,
@@ -619,7 +673,9 @@ pub fn process_type(
 /// Return `FieldKind` for a given `FieldDefinition` within the context of a
 /// particularly parsed GraphQL schema.
 pub fn field_kind(field_typ_name: &str, parser: &ParsedGraphQLSchema) -> FieldKind {
-    if parser.is_union_type(field_typ_name) {
+    if parser.is_union_type(field_typ_name)
+        && !parser.is_possible_foreign_key(field_typ_name)
+    {
         return FieldKind::Union;
     }
 

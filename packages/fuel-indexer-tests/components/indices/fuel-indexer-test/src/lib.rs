@@ -6,12 +6,6 @@ use fuel_indexer_utils::prelude::*;
     manifest = "packages/fuel-indexer-tests/components/indices/fuel-indexer-test/fuel_indexer_test.yaml"
 )]
 mod fuel_indexer_test {
-    fn fuel_indexer_test_blocks(block_data: BlockData) {
-        let block = BlockEntity {
-            id: first8_bytes_to_u64(block_data.id),
-            height: block_data.height,
-            timestamp: block_data.time,
-        };
 
     fn fuel_indexer_test_blocks(block_data: BlockData) {
         let block = BlockEntity {
@@ -703,10 +697,10 @@ mod fuel_indexer_test {
 
     fn fuel_indexer_trigger_non_indexable_type(_b: BlockData) {
         info!("fuel_indexer_trigger_non_indexable_type handling trigger_non_indexable_type event.");
-        let e = UsesNoTableEntity {
+        let e = UsesVirtualEntity {
             id: 1,
             name: "hello world".to_string(),
-            no_table: NoTableEntity {
+            no_table: VirtualEntity {
                 name: Some("virtual".to_string()),
                 size: 1,
             }

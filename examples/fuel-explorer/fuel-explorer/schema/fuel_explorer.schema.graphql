@@ -37,7 +37,6 @@ enum ConsensusLabel {
   Unknown
 }
 
-
 type Genesis {
   id: ID!
   chain_config_hash: Bytes32!
