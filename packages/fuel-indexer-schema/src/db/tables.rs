@@ -4,7 +4,7 @@ use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::graphql::{GraphQLSchema, ParsedGraphQLSchema};
-use fuel_indexer_lib::manifest::Manifest;
+use fuel_indexer_lib::{manifest::Manifest, ExecutionSource};
 use itertools::Itertools;
 use std::collections::BTreeMap;
 
@@ -58,23 +58,19 @@ impl IndexerSchema {
     /// Generate table SQL for each indexable object in the given GraphQL schema.
     ///
     /// Ideally all of these queries should return the objects that they persist to the
-    /// DB (e.g., `INSERT .. RETURNING *`) but since this is not a hot path this functionality
-    /// isn't a pressing requirement.
-    pub async fn build_and_commit(
+    /// DB (e.g., `INSERT .. RETURNING *`).
+    ///
+    /// TODO: We should also be caching as much of this `IndexerSchema` as possible
+    pub async fn commit(
         mut self,
         schema: &GraphQLSchema,
+        exec_source: ExecutionSource,
         conn: &mut IndexerConnection,
     ) -> IndexerSchemaDbResult<Self> {
-        let indexer_id =
-            queries::get_indexer_id(conn, &self.namespace, &self.identifier).await?;
-        let IndexerAssetBundle { manifest, .. } =
-            queries::latest_assets_for_indexer(conn, &indexer_id).await?;
-        let manifest = Manifest::try_from(&manifest.bytes).expect("Bad manifest.");
-
         let parsed_schema = ParsedGraphQLSchema::new(
             &self.namespace,
             &self.identifier,
-            manifest.execution_source(),
+            exec_source,
             Some(schema),
         )?;
 
@@ -182,14 +178,11 @@ impl IndexerSchema {
     }
 
     /// Load a `Schema` from the database.
-    pub async fn load_from_db(
+    pub async fn load(
         pool: &IndexerConnectionPool,
         namespace: &str,
         identifier: &str,
     ) -> IndexerSchemaDbResult<Self> {
-        // TODO: Might be expensive to always load this from the DB each time. Maybe
-        // we can cache and stash this somewhere?
-
         let mut conn = pool.acquire().await?;
         let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
         let type_ids = queries::type_id_list_by_name(

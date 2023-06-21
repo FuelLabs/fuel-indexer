@@ -1,24 +1,27 @@
 use crate::db::{tables::IndexerSchema, IndexerSchemaDbResult};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
-use fuel_indexer_lib::graphql::GraphQLSchema;
+use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};
 use tracing::info;
 
-/// `SchemaManager` is used by the indexer service to persist schema to the
-/// database and extract schema from the database.
+/// `SchemaManager` is a wrapper for `IndexerSchema` that also provides
+/// stateful database connectivity.
 pub struct SchemaManager {
     pool: IndexerConnectionPool,
 }
 
 impl SchemaManager {
+    /// Create a new `SchemaManager`.
     pub fn new(pool: IndexerConnectionPool) -> SchemaManager {
         SchemaManager { pool }
     }
 
+    /// Create a new schema for the given indexer.
     pub async fn new_schema(
         &self,
         namespace: &str,
         identifier: &str,
         schema: &str,
+        exec_source: ExecutionSource,
         conn: &mut IndexerConnection,
     ) -> IndexerSchemaDbResult<()> {
         let schema = GraphQLSchema::new(schema.to_string());
@@ -26,24 +29,25 @@ impl SchemaManager {
 
         if !queries::schema_exists(conn, namespace, identifier, version).await? {
             info!("Creating schema for Indexer({namespace}.{identifier}) with Version({version}).");
-            let _db_schema = IndexerSchema::new(
+            let _ = IndexerSchema::new(
                 namespace,
                 identifier,
                 &schema,
                 self.pool.database_type(),
             )?
-            .build_and_commit(&schema, conn)
+            .commit(&schema, exec_source, conn)
             .await?;
         }
         Ok(())
     }
 
+    /// Load an existing schema for the given indexer.
     pub async fn load_schema(
         &self,
         namespace: &str,
         identifier: &str,
     ) -> IndexerSchemaDbResult<IndexerSchema> {
         // TODO: might be nice to cache this data in server?
-        IndexerSchema::load_from_db(&self.pool, namespace, identifier).await
+        IndexerSchema::load(&self.pool, namespace, identifier).await
     }
 }

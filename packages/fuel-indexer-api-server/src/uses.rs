@@ -25,6 +25,7 @@ use fuel_indexer_lib::{
         AssetReloadRequest, FuelNodeHealthResponse, IndexStopRequest, ServiceRequest,
         ServiceStatus,
     },
+    ExecutionSource,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
 use hyper::Client;
@@ -265,6 +266,8 @@ pub(crate) async fn register_indexer_assets(
                                     &namespace,
                                     &identifier,
                                     &String::from_utf8_lossy(&data),
+                                    // Only WASM can be sent over the web.
+                                    ExecutionSource::Wasm,
                                     &mut conn,
                                 )
                                 .await

@@ -2,9 +2,9 @@
 # Use the new resolver to prevent dev-deps and build-deps from enabling debugging or test features in production.
 resolver = "2"
 members = [
-   # "examples/fuel-explorer/fuel-explorer",
-   # "examples/hello-world-native/hello-indexer-native",
-   # "examples/hello-world/hello-indexer",
+   "examples/fuel-explorer/fuel-explorer",
+   "examples/hello-world-native/hello-indexer-native",
+   "examples/hello-world/hello-indexer",
    "examples/hello-world/hello-world-data",
    "examples/hello-world/hello-world-node",
    "packages/fuel-indexer",
@@ -22,7 +22,7 @@ members = [
    "packages/fuel-indexer-tests",
    "packages/fuel-indexer-tests/components/fuel-node",
    "packages/fuel-indexer-tests/components/indices/fuel-indexer-test",
-   # "packages/fuel-indexer-tests/components/indices/simple-wasm/simple-wasm",
+   "packages/fuel-indexer-tests/components/indices/simple-wasm/simple-wasm",
    "packages/fuel-indexer-tests/components/web-api",
    "packages/fuel-indexer-types",
    "packages/fuel-indexer",
