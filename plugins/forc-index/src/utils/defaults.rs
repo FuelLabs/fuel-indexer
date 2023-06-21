@@ -26,7 +26,7 @@ name = "{indexer_name}"
 path = "src/main.rs"
 
 [dependencies]
-fuel-indexer-utils = {{ version = "0.17.1", features = ["native-execution"] }}
+fuel-indexer-utils = {{ version = "0.17", features = ["native-execution"] }}
 fuels = {{ version = "0.43", default-features = false, features = ["std"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
@@ -45,7 +45,7 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fuel-indexer-utils = {{ version = "0.17.1" }}
+fuel-indexer-utils = {{ version = "0.17" }}
 fuels = {{ version = "0.43", default-features = false }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
 "#
