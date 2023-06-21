@@ -10,7 +10,6 @@ pub const QUERY_ROOT: &str = "QueryRoot";
 
 #[cfg(feature = "db-models")]
 pub mod db;
-pub mod utils;
 
 const NULL_VALUE: &str = "NULL";
 

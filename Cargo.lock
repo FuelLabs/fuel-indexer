@@ -3238,7 +3238,6 @@ version = "0.17.1"
 dependencies = [
  "async-graphql-parser 5.0.9",
  "fuel-indexer-database",
- "fuel-indexer-database-types",
  "fuel-indexer-lib",
  "fuel-indexer-types",
  "hex",

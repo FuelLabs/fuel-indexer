@@ -4,7 +4,7 @@ use strum::{AsRefStr, EnumString};
 pub enum IndexMethod {
     #[default]
     #[strum(serialize = "btree")]
-    Btree,
+    BTree,
     #[strum(serialize = "hash")]
     Hash,
 }

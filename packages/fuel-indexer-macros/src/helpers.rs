@@ -6,7 +6,6 @@ use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::{graphql::*, ExecutionSource};
-use fuel_indexer_schema::utils::get_join_directive_info;
 use fuel_indexer_types::type_id;
 use fuels_code_gen::utils::Source;
 use proc_macro2::TokenStream;
@@ -524,23 +523,31 @@ pub fn process_typedef_field(
 
     match fieldkind {
         FieldKind::ForeignKey => {
-            let directives::Join {
-                reference_field_type_name,
-                ..
-            } = get_join_directive_info(
-                &field_def,
-                typedef_name,
-                schema.field_type_mappings(),
-            );
+            // Determine implicit vs explicit FK
+            let ref_column_name = field_def
+                .directives
+                .iter()
+                .find(|d| d.node.name.to_string() == "join")
+                .map(|d| {
+                    let typdef_name = field_def.ty.to_string().replace("!", "");
+                    let ref_field_name =
+                        d.clone().node.arguments.pop().unwrap().1.to_string();
+                    let fk_field_id = format!("{typdef_name}.{ref_field_name}");
+                    let fk_field_type = schema
+                        .field_type_mappings()
+                        .get(&fk_field_id)
+                        .unwrap()
+                        .to_string();
+                    fk_field_type
+                })
+                .unwrap_or(IdCol::to_uppercase_string());
 
-            let field_typ_name = nullable_type(&field_def, &reference_field_type_name);
+            let field_typ_name = nullable_type(&field_def, &ref_column_name);
 
             // We're manually updated the field type here because we need to substitute the field name
             // into a scalar type name.
             field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(normalize_field_type_name(
-                    &field_typ_name,
-                ))),
+                base: BaseType::Named(Name::new(field_typ_name.replace("!", ""))),
                 nullable: field_def.ty.node.nullable,
             };
 
@@ -549,9 +556,7 @@ pub fn process_typedef_field(
         FieldKind::Enum => {
             let field_typ_name = nullable_type(&field_def, "Charfield");
             field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(normalize_field_type_name(
-                    &field_typ_name,
-                ))),
+                base: BaseType::Named(Name::new(field_typ_name.replace("!", ""))),
                 nullable: field_def.ty.node.nullable,
             };
             process_typedef_field(schema, field_def, typedef_name)
@@ -559,9 +564,7 @@ pub fn process_typedef_field(
         FieldKind::Virtual => {
             let field_typ_name = nullable_type(&field_def, "Virtual");
             field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(normalize_field_type_name(
-                    &field_typ_name,
-                ))),
+                base: BaseType::Named(Name::new(field_typ_name.replace("!", ""))),
                 nullable: field_def.ty.node.nullable,
             };
             process_typedef_field(schema, field_def, typedef_name)

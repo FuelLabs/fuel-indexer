@@ -1,7 +1,4 @@
-use crate::{
-    graphql::{normalize_field_type_name, BASE_SCHEMA},
-    ExecutionSource,
-};
+use crate::{graphql::BASE_SCHEMA, ExecutionSource};
 use async_graphql_parser::{
     parse_schema,
     types::{
@@ -221,9 +218,8 @@ impl ParsedGraphQLSchema {
                                     && !scalar_names.contains(&field_name)
                                     && !enum_names.contains(&field_name)
                                 {
-                                    let field_typ_name = normalize_field_type_name(
-                                        &field.node.ty.to_string(),
-                                    );
+                                    let field_typ_name =
+                                        field.node.ty.to_string().replace("!", "");
                                     let field_id = format!("{obj_name}.{field_name}");
                                     let mut foreign_key_mapping = HashMap::new();
                                     foreign_key_mapping.insert(
@@ -235,7 +231,7 @@ impl ParsedGraphQLSchema {
                                 }
 
                                 let field_typ_name =
-                                    normalize_field_type_name(&field.node.ty.to_string());
+                                    field.node.ty.to_string().replace("!", "");
 
                                 let field_id = format!("{obj_name}.{field_name}");
 
@@ -476,7 +472,7 @@ impl ParsedGraphQLSchema {
         match self.object_field_mappings.get(cond) {
             Some(fieldset) => fieldset.get(name),
             _ => {
-                let tablename = normalize_field_type_name(cond);
+                let tablename = cond.replace("!", "");
                 match self.object_field_mappings.get(&tablename) {
                     Some(fieldset) => fieldset.get(name),
                     _ => None,

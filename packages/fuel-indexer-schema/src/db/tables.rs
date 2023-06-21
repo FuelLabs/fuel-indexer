@@ -43,15 +43,12 @@ impl IndexerSchema {
         db_type: DbType,
         exec_source: ExecutionSource,
     ) -> IndexerSchemaDbResult<Self> {
-        let parsed =
-            ParsedGraphQLSchema::new(namespace, identifier, exec_source.clone(), None)?;
-
         Ok(IndexerSchema {
             db_type,
             namespace: namespace.to_string(),
             identifier: identifier.to_string(),
             schema: schema.to_owned(),
-            parsed,
+            parsed: ParsedGraphQLSchema::default(),
             exec_source,
             tables: Vec::new(),
         })
@@ -89,19 +86,44 @@ impl IndexerSchema {
             }
         }
 
+        let type_ids = self
+            .parsed
+            .fields_for_columns()
+            .iter()
+            .map(|f| {
+                FooTypeId::from_field_def(
+                    f,
+                    &self.namespace,
+                    &self.identifier,
+                    self.parsed.schema().version(),
+                )
+            })
+            .collect::<Vec<FooTypeId>>();
+
         let tables = self
             .parsed
             .indexable_objects()
             .iter()
-            .map(|o| Table::from_typdef(o.to_owned(), &self.parsed))
+            .map(|o| {
+                let type_id = type_ids
+                    .iter()
+                    .find(|t| t.graphql_name == o.name.to_string())
+                    .expect("No associated TypeId for object.")
+                    .id;
+                Table::from_typdef(o.to_owned(), &self.parsed, type_id)
+            })
             .collect::<Vec<Table>>();
 
-        let table_statements = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
-        let constraint_statements = tables
+        let table_stmnts = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
+        statements.extend(table_stmnts);
+
+        let constraint_stmnts = tables
             .iter()
             .flat_map(|t| t.constraints())
             .map(|c| c.create())
             .collect::<Vec<String>>();
+
+        statements.extend(constraint_stmnts);
 
         for stmnt in statements.iter() {
             queries::execute_query(conn, stmnt.to_owned()).await?;
@@ -207,7 +229,7 @@ impl IndexerSchema {
 
         let mut conn = pool.acquire().await?;
         let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
-        let _type_ids = queries::type_id_list_by_name(
+        let type_ids = queries::type_id_list_by_name(
             &mut conn,
             &root.schema_name,
             &root.version,
@@ -232,7 +254,14 @@ impl IndexerSchema {
         let tables = parsed
             .indexable_objects()
             .iter()
-            .map(|o| Table::from_typdef(o.to_owned(), &parsed))
+            .map(|o| {
+                let type_id = type_ids
+                    .iter()
+                    .find(|t| t.graphql_name == o.name.to_string())
+                    .expect("No associated TypeId for object.")
+                    .id;
+                Table::from_typdef(o.to_owned(), &parsed, type_id)
+            })
             .collect::<Vec<Table>>();
 
         let mut schema = IndexerSchema {

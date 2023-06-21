@@ -2,7 +2,7 @@
 pub mod directives;
 
 use crate::directives::IndexMethod;
-use async_graphql_parser::types::{FieldDefinition, TypeDefinition};
+use async_graphql_parser::types::{FieldDefinition, TypeDefinition, TypeKind};
 use chrono::serde::ts_microseconds;
 use chrono::{DateTime, Utc};
 use fuel_indexer_lib::graphql::ParsedGraphQLSchema;
@@ -375,25 +375,6 @@ pub struct GraphRoot {
     pub schema: String,
 }
 
-// // REFACTOR: remove
-// #[derive(Debug, Serialize, Deserialize, Clone)]
-// pub struct VirtualColumn {
-//     pub name: String,
-//     pub graphql_type: String,
-// }
-
-// // REFACTOR: remove
-// #[derive(Debug)]
-// pub struct TypeId {
-//     pub id: i64,
-//     pub schema_version: String,
-//     pub schema_name: String,
-//     pub schema_identifier: String,
-//     pub graphql_name: String,
-//     pub table_name: String,
-//     pub virtual_columns: Vec<VirtualColumn>,
-// }
-
 /// Type ID used to identify `TypeDefintion`s in the GraphQL schema.
 #[derive(Debug)]
 pub struct FooTypeId {
@@ -451,92 +432,6 @@ impl FooTypeId {
         }
     }
 }
-
-// // REFACTOR: remove
-// impl TypeId {
-//     pub fn is_non_indexable_type(&self) -> bool {
-//         !self.virtual_columns.is_empty()
-//     }
-// }
-
-// // REFACTOR: remove
-// #[derive(Debug)]
-// pub struct Columns {
-//     pub id: i64,
-//     pub type_id: i64,
-//     pub column_position: i32,
-//     pub column_name: String,
-//     pub column_type: String,
-//     pub nullable: bool,
-//     pub graphql_type: String,
-//     pub unique: bool,
-// }
-
-// // REFACTOR: remove
-// impl Columns {
-//     pub fn create(&self) -> String {
-//         let null_frag = if self.nullable { "" } else { "not null" };
-//         let unique_frag = if self.unique { "unique" } else { "" };
-//         format!(
-//             "{} {} {} {}",
-//             self.column_name,
-//             self.sql_type(),
-//             null_frag,
-//             unique_frag
-//         )
-//         .trim()
-//         .to_string()
-//     }
-
-//     /// Derive the respective PostgreSQL field type for a given `Columns`
-//     ///
-//     /// Here we're essentially matching `ColumnType`s to PostgreSQL field
-//     /// types. Note that we're using `numeric` field types for integer-like
-//     /// fields due to the ability to specify custom scale and precision. Some
-//     /// crates don't play well with unsigned integers (e.g., `sqlx`), so we
-//     /// just define these types as `numeric`, then convert them into their base
-//     /// types (e.g., u64) using `BigDecimal`.
-//     fn sql_type(&self) -> &str {
-//         match ColumnType::from(self.column_type.as_str()) {
-//             ColumnType::ID => "numeric(20, 0) primary key",
-//             ColumnType::Address => "varchar(64)",
-//             ColumnType::Bytes4 => "varchar(8)",
-//             ColumnType::Bytes8 => "varchar(16)",
-//             ColumnType::Bytes32 => "varchar(64)",
-//             ColumnType::AssetId => "varchar(64)",
-//             ColumnType::ContractId => "varchar(64)",
-//             ColumnType::Salt => "varchar(64)",
-//             ColumnType::Int4 => "integer",
-//             ColumnType::Int8 => "bigint",
-//             ColumnType::Int16 => "numeric(39, 0)",
-//             ColumnType::UInt4 | ColumnType::BlockHeight => "integer",
-//             ColumnType::UInt8 => "numeric(20, 0)",
-//             ColumnType::UInt16 => "numeric(39, 0)",
-//             ColumnType::Timestamp => "timestamp",
-//             ColumnType::Object => "bytea",
-//             ColumnType::Blob => "varchar(10485760)",
-//             ColumnType::ForeignKey => {
-//                 panic!("ForeignKey ColumnType is a reference type only.")
-//             }
-//             ColumnType::Json => "Json",
-//             ColumnType::MessageId => "varchar(64)",
-//             ColumnType::Charfield => "varchar(255)",
-//             ColumnType::Identity => "varchar(66)",
-//             ColumnType::Boolean => "boolean",
-//             ColumnType::Bytes64 => "varchar(128)",
-//             ColumnType::Signature => "varchar(128)",
-//             ColumnType::Nonce => "varchar(64)",
-//             ColumnType::HexString => "varchar(10485760)",
-//             ColumnType::Tai64Timestamp => "varchar(128)",
-//             ColumnType::TxId => "varchar(64)",
-//             ColumnType::Enum => "varchar(255)",
-//             ColumnType::Int1 => "integer",
-//             ColumnType::UInt1 => "integer",
-//             ColumnType::Virtual => "Json",
-//             ColumnType::BlockId => "varchar(64)",
-//         }
-//     }
-// }
 
 /// I don't actually know wtf this is for
 #[derive(Debug)]
@@ -878,8 +773,123 @@ impl Table {
         &self.constraints
     }
 
-    pub fn from_typdef(_typ: TypeDefinition, _parsed: &ParsedGraphQLSchema) -> Self {
-        unimplemented!()
+    pub fn from_typdef(
+        typ: TypeDefinition,
+        parsed: &ParsedGraphQLSchema,
+        type_id: i64,
+    ) -> Self {
+        match &typ.kind {
+            TypeKind::Object(o) => {
+                let mut persistence = ColumnPersistence::Regular;
+
+                o.fields.iter().for_each(|f| {
+                    let has_virtual = f
+                        .node
+                        .directives
+                        .iter()
+                        .any(|d| d.node.name.to_string() == "virtual");
+
+                    if has_virtual {
+                        persistence = ColumnPersistence::Virtual;
+                    }
+                });
+
+                let columns = o
+                    .fields
+                    .iter()
+                    .enumerate()
+                    .map(|(i, f)| {
+                        FooColumn::from_field_def(
+                            &f.node,
+                            parsed.namespace(),
+                            parsed.identifier(),
+                            parsed.schema().version(),
+                            type_id,
+                            i as i32,
+                        )
+                    })
+                    .collect::<Vec<FooColumn>>();
+                let constraints = o
+                    .fields
+                    .iter()
+                    .filter_map(|f| {
+                        let has_unique = f
+                            .node
+                            .directives
+                            .iter()
+                            .any(|d| d.node.name.to_string() == "unique");
+
+                        if has_unique {
+                            return Some(Constraint::Index(SqlIndex {
+                                db_type: DbType::Postgres,
+                                table_name: typ.name.to_string(),
+                                namespace: parsed.namespace().to_string(),
+                                method: IndexMethod::BTree,
+                                unique: true,
+                                column_name: f.node.name.to_string(),
+                            }));
+                        }
+
+                        if parsed.is_possible_foreign_key(&f.node.name.to_string()) {
+                            let ref_table_name = f.node.ty.to_string().to_lowercase();
+                            // Determine implicit vs explicit FK
+                            let ref_column_name = f
+                                .node
+                                .directives
+                                .iter()
+                                .find(|d| d.node.name.to_string() == "join")
+                                .map(|d| {
+                                    let typdef_name =
+                                        f.node.ty.to_string().replace("!", "");
+                                    let ref_field_name = d
+                                        .clone()
+                                        .node
+                                        .arguments
+                                        .pop()
+                                        .unwrap()
+                                        .1
+                                        .to_string();
+                                    let fk_field_id =
+                                        format!("{typdef_name}.{ref_field_name}");
+                                    let fk_field_type = parsed
+                                        .field_type_mappings()
+                                        .get(&fk_field_id)
+                                        .unwrap()
+                                        .to_string();
+                                    fk_field_type
+                                })
+                                .unwrap_or(IdCol::to_lowercase_string());
+                            let ref_coltype = ColumnType::ID.to_string();
+                            let fk = ForeignKey::new(
+                                DbType::Postgres,
+                                parsed.namespace().to_string(),
+                                typ.name.to_string(),
+                                f.node.name.to_string(),
+                                ref_table_name,
+                                ref_column_name,
+                                ref_coltype,
+                            );
+                            return Some(Constraint::Fk(fk));
+                        }
+
+                        None
+                    })
+                    .collect::<Vec<Constraint>>();
+
+                Self {
+                    name: typ.name.to_string(),
+                    namespace: parsed.namespace().to_string(),
+                    identifier: parsed.identifier().to_string(),
+                    columns,
+                    constraints,
+                    persistence,
+                }
+            }
+            TypeKind::Union(u) => {
+                unimplemented!()
+            }
+            _ => unimplemented!(),
+        }
     }
 }
 
