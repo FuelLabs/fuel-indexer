@@ -31,7 +31,7 @@ The Fuel indexer is a standalone service that can be used to index various compo
 <!-- Using an <img> so we can size it -->
 <p align="center"><img src="https://i.imgur.com/8K14p9h.png" alt="diagram" width="500"/></align></p>
 
-<font size="4">Want to get started right away? Check out our [Quickstart](./QUICKSTART.md)!</font>
+<font size="4">Want to get started right away? Check out our [Quickstart](https://fuellabs.github.io/fuel-indexer/master/getting-started/quickstart.html)!</font>
 
 - [For Users](#for-users)
   - [Dependencies](#dependencies)
