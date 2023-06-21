@@ -31,7 +31,7 @@ pub async fn type_id_list_by_name(
     name: &str,
     version: &str,
     identifier: &str,
-) -> sqlx::Result<Vec<TypeId>> {
+) -> sqlx::Result<Vec<FooTypeId>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::type_id_list_by_name(c, name, version, identifier).await
@@ -51,25 +51,13 @@ pub async fn type_id_latest(
     }
 }
 
-// REFACTOR - remove
 pub async fn type_id_insert(
-    conn: &mut IndexerConnection,
-    type_ids: Vec<TypeId>,
-) -> sqlx::Result<usize> {
-    match conn {
-        IndexerConnection::Postgres(ref mut c) => {
-            postgres::type_id_insert(c, type_ids).await
-        }
-    }
-}
-
-pub async fn foo_type_id_insert(
     conn: &mut IndexerConnection,
     type_ids: Vec<FooTypeId>,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
-            postgres::foo_type_id_insert(c, type_ids).await
+            postgres::type_id_insert(c, type_ids).await
         }
     }
 }
@@ -87,10 +75,9 @@ pub async fn schema_exists(
     }
 }
 
-// REFACTOR - remove
 pub async fn new_column_insert(
     conn: &mut IndexerConnection,
-    cols: Vec<Columns>,
+    cols: Vec<FooColumn>,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -99,21 +86,10 @@ pub async fn new_column_insert(
     }
 }
 
-pub async fn foo_new_column_insert(
-    conn: &mut IndexerConnection,
-    cols: Vec<FooColumn>,
-) -> sqlx::Result<usize> {
-    match conn {
-        IndexerConnection::Postgres(ref mut c) => {
-            postgres::foo_new_column_insert(c, cols).await
-        }
-    }
-}
-
 pub async fn list_column_by_id(
     conn: &mut IndexerConnection,
     col_id: i64,
-) -> sqlx::Result<Vec<Columns>> {
+) -> sqlx::Result<Vec<FooColumn>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::list_column_by_id(c, col_id).await

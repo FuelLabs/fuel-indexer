@@ -16,7 +16,7 @@ use std::{
 use strum::{AsRefStr, EnumString};
 
 /// SQL database types used by indexers.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Default, AsRefStr)]
 pub enum ColumnType {
     #[default]
     ID = 0,
@@ -190,12 +190,19 @@ impl From<&str> for ColumnType {
     }
 }
 
-// REFACTOR: remove
+/// Represents a root column in the graph.
 #[derive(Debug, Default)]
 pub struct RootColumns {
+    /// Database ID of the column.
     pub id: i64,
+
+    /// Database ID of the `GraphRoot` associated with this `RootColumns`.
     pub root_id: i64,
+
+    /// Column name.
     pub column_name: String,
+
+    /// GraphQL type of the column.
     pub graphql_type: String,
 }
 
@@ -203,8 +210,12 @@ pub struct RootColumns {
 /// persisted to the database.
 #[derive(Debug, Default, EnumString, AsRefStr)]
 pub enum ColumnPersistence {
+    /// Virtual columns are not persisted to the database. They are represented
+    /// by some arbitrarily sized type (e.g., JSON).
     Virtual,
     #[default]
+
+    /// Regular columns are persisted to the database.
     Regular,
 }
 
@@ -221,15 +232,33 @@ pub trait SqlNamed {
 /// Column on SQL database for a given `Table` the database.
 #[derive(Debug, Default)]
 pub struct FooColumn {
+    /// Database ID of the column.
     pub id: i64,
-    pub root_id: i64,
+
+    /// Database ID of the `TypeId` associated with this `FooColumn`.
     pub type_id: i64,
+
+    /// Name of the column.
     pub name: String,
+
+    /// GraphQL type of the column.
     pub graphql_type: String,
+
+    /// SQL type of the column.
     pub coltype: ColumnType,
+
+    /// Position of the column.
+    ///
+    /// Used when calling `fuel_indexer::database::Database::put_object`.
     pub position: i32,
+
+    /// How this column is persisted to the database.
     pub persistence: ColumnPersistence,
+
+    /// Whether this column is unique.
     pub unique: bool,
+
+    /// Whether this column is nullable.
     pub nullable: bool,
 }
 
@@ -242,7 +271,6 @@ impl FooColumn {
         version: &str,
         type_id: i64,
         position: i32,
-        root_id: i64,
     ) -> Self {
         let unique = f
             .directives
@@ -251,7 +279,6 @@ impl FooColumn {
 
         let table_name = f.name.to_string();
         Self {
-            root_id,
             type_id,
             name: table_name.clone(),
             graphql_type: table_name,
@@ -261,116 +288,6 @@ impl FooColumn {
             nullable: f.ty.node.nullable,
             ..Self::default()
         }
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct GraphRoot {
-    pub id: i64,
-    pub version: String,
-    pub schema_name: String,
-    pub schema_identifier: String,
-    pub schema: String,
-}
-
-// REFACTOR: remove
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct VirtualColumn {
-    pub name: String,
-    pub graphql_type: String,
-}
-
-// REFACTOR: remove
-#[derive(Debug)]
-pub struct TypeId {
-    pub id: i64,
-    pub schema_version: String,
-    pub schema_name: String,
-    pub schema_identifier: String,
-    pub graphql_name: String,
-    pub table_name: String,
-    pub virtual_columns: Vec<VirtualColumn>,
-}
-
-#[derive(Debug)]
-pub struct FooTypeId {
-    pub id: i64,
-    pub version: String,
-    pub namespace: String,
-    pub identifier: String,
-    pub graphql_name: String,
-    pub table_name: String,
-    pub persistence: ColumnPersistence,
-}
-
-// impl FooTypeId {
-//     pub fn from_typedef(typ: TypeDefinition, parsed: &ParsedGraphQLSchema) {
-//         unimplemented!()
-//     }
-// }
-
-impl FooTypeId {
-    pub fn from_field_def(
-        f: &FieldDefinition,
-        namespace: &str,
-        identifier: &str,
-        version: &str,
-    ) -> Self {
-        let persistence = f
-            .directives
-            .iter()
-            .find(|d| d.node.name.to_string() == "virtual")
-            .map(|_| ColumnPersistence::Virtual)
-            .unwrap_or(ColumnPersistence::Regular);
-
-        let table_name = f.name.to_string();
-        Self {
-            // Use a dummy value
-            id: 1,
-            version: version.to_string(),
-            namespace: namespace.to_string(),
-            identifier: identifier.to_string(),
-            graphql_name: f.name.to_string(),
-            table_name,
-            persistence,
-        }
-    }
-}
-
-// REFACTOR: remove
-impl TypeId {
-    pub fn is_non_indexable_type(&self) -> bool {
-        !self.virtual_columns.is_empty()
-    }
-}
-
-// REFACTOR: remove
-#[derive(Debug)]
-pub struct Columns {
-    pub id: i64,
-    pub type_id: i64,
-    pub column_position: i32,
-    pub column_name: String,
-    pub column_type: String,
-    pub nullable: bool,
-    pub graphql_type: String,
-    pub unique: bool,
-}
-
-// REFACTOR: remove
-impl Columns {
-    pub fn create(&self) -> String {
-        let null_frag = if self.nullable { "" } else { "not null" };
-        let unique_frag = if self.unique { "unique" } else { "" };
-        format!(
-            "{} {} {} {}",
-            self.column_name,
-            self.sql_type(),
-            null_frag,
-            unique_frag
-        )
-        .trim()
-        .to_string()
     }
 
     /// Derive the respective PostgreSQL field type for a given `Columns`
@@ -382,7 +299,7 @@ impl Columns {
     /// just define these types as `numeric`, then convert them into their base
     /// types (e.g., u64) using `BigDecimal`.
     fn sql_type(&self) -> &str {
-        match ColumnType::from(self.column_type.as_str()) {
+        match self.coltype {
             ColumnType::ID => "numeric(20, 0) primary key",
             ColumnType::Address => "varchar(64)",
             ColumnType::Bytes4 => "varchar(8)",
@@ -423,7 +340,205 @@ impl Columns {
     }
 }
 
-// REFACTOR: remove
+impl SqlFragment for FooColumn {
+    fn create(&self) -> String {
+        let null_frag = if self.nullable { "" } else { "not null" };
+        let unique_frag = if self.unique { "unique" } else { "" };
+        format!(
+            "{} {} {} {}",
+            self.name,
+            self.sql_type(),
+            null_frag,
+            unique_frag
+        )
+        .trim()
+        .to_string()
+    }
+}
+
+/// Represents the root of a graph in the database.
+#[derive(Debug, Default)]
+pub struct GraphRoot {
+    /// Database ID of the root.
+    pub id: i64,
+
+    /// GraphQL schema version associated with this root.
+    pub version: String,
+
+    /// Indexer namespace associated with this root.
+    pub schema_name: String,
+
+    /// Indexer identifier associated with this root.
+    pub schema_identifier: String,
+
+    /// Raw GraphQL schema content.
+    pub schema: String,
+}
+
+// // REFACTOR: remove
+// #[derive(Debug, Serialize, Deserialize, Clone)]
+// pub struct VirtualColumn {
+//     pub name: String,
+//     pub graphql_type: String,
+// }
+
+// // REFACTOR: remove
+// #[derive(Debug)]
+// pub struct TypeId {
+//     pub id: i64,
+//     pub schema_version: String,
+//     pub schema_name: String,
+//     pub schema_identifier: String,
+//     pub graphql_name: String,
+//     pub table_name: String,
+//     pub virtual_columns: Vec<VirtualColumn>,
+// }
+
+/// Type ID used to identify `TypeDefintion`s in the GraphQL schema.
+#[derive(Debug)]
+pub struct FooTypeId {
+    /// Database ID of the type.
+    pub id: i64,
+
+    /// Schema version associated with this type.
+    pub version: String,
+
+    /// Indexer namespace associated with this type.
+    pub namespace: String,
+
+    /// Indexer identifier associated with this type.
+    pub identifier: String,
+
+    /// GraphQL name of the type.
+    pub graphql_name: String,
+
+    /// Database table name of the type.
+    pub table_name: String,
+
+    /// How this type is persisted to the database.
+    pub persistence: ColumnPersistence,
+}
+
+impl FooTypeId {
+    pub fn from_typedef(typ: TypeDefinition, parsed: &ParsedGraphQLSchema) {
+        unimplemented!()
+    }
+}
+
+impl FooTypeId {
+    pub fn from_field_def(
+        f: &FieldDefinition,
+        namespace: &str,
+        identifier: &str,
+        version: &str,
+    ) -> Self {
+        let persistence = f
+            .directives
+            .iter()
+            .find(|d| d.node.name.to_string() == "virtual")
+            .map(|_| ColumnPersistence::Virtual)
+            .unwrap_or(ColumnPersistence::Regular);
+
+        let table_name = f.name.to_string();
+        Self {
+            id: i64::MAX,
+            version: version.to_string(),
+            namespace: namespace.to_string(),
+            identifier: identifier.to_string(),
+            graphql_name: f.name.to_string(),
+            table_name,
+            persistence,
+        }
+    }
+}
+
+// // REFACTOR: remove
+// impl TypeId {
+//     pub fn is_non_indexable_type(&self) -> bool {
+//         !self.virtual_columns.is_empty()
+//     }
+// }
+
+// // REFACTOR: remove
+// #[derive(Debug)]
+// pub struct Columns {
+//     pub id: i64,
+//     pub type_id: i64,
+//     pub column_position: i32,
+//     pub column_name: String,
+//     pub column_type: String,
+//     pub nullable: bool,
+//     pub graphql_type: String,
+//     pub unique: bool,
+// }
+
+// // REFACTOR: remove
+// impl Columns {
+//     pub fn create(&self) -> String {
+//         let null_frag = if self.nullable { "" } else { "not null" };
+//         let unique_frag = if self.unique { "unique" } else { "" };
+//         format!(
+//             "{} {} {} {}",
+//             self.column_name,
+//             self.sql_type(),
+//             null_frag,
+//             unique_frag
+//         )
+//         .trim()
+//         .to_string()
+//     }
+
+//     /// Derive the respective PostgreSQL field type for a given `Columns`
+//     ///
+//     /// Here we're essentially matching `ColumnType`s to PostgreSQL field
+//     /// types. Note that we're using `numeric` field types for integer-like
+//     /// fields due to the ability to specify custom scale and precision. Some
+//     /// crates don't play well with unsigned integers (e.g., `sqlx`), so we
+//     /// just define these types as `numeric`, then convert them into their base
+//     /// types (e.g., u64) using `BigDecimal`.
+//     fn sql_type(&self) -> &str {
+//         match ColumnType::from(self.column_type.as_str()) {
+//             ColumnType::ID => "numeric(20, 0) primary key",
+//             ColumnType::Address => "varchar(64)",
+//             ColumnType::Bytes4 => "varchar(8)",
+//             ColumnType::Bytes8 => "varchar(16)",
+//             ColumnType::Bytes32 => "varchar(64)",
+//             ColumnType::AssetId => "varchar(64)",
+//             ColumnType::ContractId => "varchar(64)",
+//             ColumnType::Salt => "varchar(64)",
+//             ColumnType::Int4 => "integer",
+//             ColumnType::Int8 => "bigint",
+//             ColumnType::Int16 => "numeric(39, 0)",
+//             ColumnType::UInt4 | ColumnType::BlockHeight => "integer",
+//             ColumnType::UInt8 => "numeric(20, 0)",
+//             ColumnType::UInt16 => "numeric(39, 0)",
+//             ColumnType::Timestamp => "timestamp",
+//             ColumnType::Object => "bytea",
+//             ColumnType::Blob => "varchar(10485760)",
+//             ColumnType::ForeignKey => {
+//                 panic!("ForeignKey ColumnType is a reference type only.")
+//             }
+//             ColumnType::Json => "Json",
+//             ColumnType::MessageId => "varchar(64)",
+//             ColumnType::Charfield => "varchar(255)",
+//             ColumnType::Identity => "varchar(66)",
+//             ColumnType::Boolean => "boolean",
+//             ColumnType::Bytes64 => "varchar(128)",
+//             ColumnType::Signature => "varchar(128)",
+//             ColumnType::Nonce => "varchar(64)",
+//             ColumnType::HexString => "varchar(10485760)",
+//             ColumnType::Tai64Timestamp => "varchar(128)",
+//             ColumnType::TxId => "varchar(64)",
+//             ColumnType::Enum => "varchar(255)",
+//             ColumnType::Int1 => "integer",
+//             ColumnType::UInt1 => "integer",
+//             ColumnType::Virtual => "Json",
+//             ColumnType::BlockId => "varchar(64)",
+//         }
+//     }
+// }
+
+/// I don't actually know wtf this is for
 #[derive(Debug)]
 pub struct ColumnInfo {
     pub type_id: i64,
@@ -433,23 +548,40 @@ pub struct ColumnInfo {
     pub column_type: String,
 }
 
+/// Represents an asset that is used to create and identify indexers.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IndexerAsset {
+    /// Database ID of the asset.
     pub id: i64,
+
+    /// Database ID of the indexer.
     pub index_id: i64,
+
+    /// Version associated with this indexer asset.
     pub version: i32,
+
+    /// Digest of the asset's bytes.
     pub digest: String,
+
+    /// Bytes of the asset.
     #[serde(skip_serializing)]
     pub bytes: Vec<u8>,
 }
 
+/// Represents a bundle of assets that are used to create and identify indexers.
 #[derive(Debug)]
 pub struct IndexerAssetBundle {
+    /// Indexer schema asset.
     pub schema: IndexerAsset,
+
+    /// Indexer manifest asset.
     pub manifest: IndexerAsset,
+
+    /// Indexer WASM asset.
     pub wasm: IndexerAsset,
 }
 
+/// All assets that can be used on indexers.
 #[derive(Debug, Eq, PartialEq, Hash, Clone, EnumString, AsRefStr)]
 pub enum IndexerAssetType {
     #[strum(serialize = "wasm")]
@@ -460,12 +592,24 @@ pub enum IndexerAssetType {
     Schema,
 }
 
+/// An indexer that has been persisted to the database.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RegisteredIndexer {
+    /// Database ID of the indexer.
     pub id: i64,
+
+    /// Namespace of the indexer.
     pub namespace: String,
+
+    /// Identifier of the indexer.
     pub identifier: String,
+
+    /// Public key associated with this indexer.
+    ///
+    /// Only used if authentication is enabled.
     pub pubkey: Option<String>,
+
+    /// Time at which indexer was created.
     #[serde(with = "ts_microseconds")]
     pub created_at: DateTime<Utc>,
 }
@@ -476,6 +620,7 @@ impl RegisteredIndexer {
     }
 }
 
+/// SQL database types used by indexers.
 #[derive(Eq, PartialEq, Debug, Clone, Default)]
 pub enum DbType {
     #[default]
@@ -483,6 +628,7 @@ pub enum DbType {
 }
 
 impl DbType {
+    /// Return the fully qualified table name for a given database type, namespace, and table name.
     pub fn table_name(&self, namespace: &str, table_name: &str) -> String {
         match self {
             DbType::Postgres => format!("{namespace}.{table_name}"),
@@ -490,18 +636,25 @@ impl DbType {
     }
 }
 
-// REFCATOR: remove
-pub trait CreateStatement {
-    fn create_statement(&self) -> String;
-}
-
+/// SQL database index for a given column.
 #[derive(Debug)]
 pub struct SqlIndex {
+    /// The type of database.
     pub db_type: DbType,
+
+    /// Name of table index is applied to.
     pub table_name: String,
+
+    /// Namespace of the indexer.
     pub namespace: String,
+
+    /// SQL index method.
     pub method: IndexMethod,
+
+    /// Whether this index is unique.
     pub unique: bool,
+
+    /// Name of column index is applied to.
     pub column_name: String,
 }
 
@@ -536,32 +689,7 @@ impl SqlFragment for SqlIndex {
     }
 }
 
-// REFCATOR: remove
-impl CreateStatement for SqlIndex {
-    fn create_statement(&self) -> String {
-        let mut frag = "CREATE ".to_string();
-        if self.unique {
-            frag += "UNIQUE ";
-        }
-
-        match self.db_type {
-            DbType::Postgres => {
-                let _ = write!(
-                    frag,
-                    "INDEX {} ON {}.{} USING {} ({});",
-                    "".to_string(),
-                    self.namespace,
-                    self.table_name,
-                    self.method.as_ref(),
-                    self.column_name
-                );
-            }
-        }
-
-        frag
-    }
-}
-
+/// On delete action for a FK constraint.
 #[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
 pub enum OnDelete {
     #[default]
@@ -573,6 +701,7 @@ pub enum OnDelete {
     SetNull,
 }
 
+/// On update action for a FK constraint.
 #[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
 pub enum OnUpdate {
     #[default]
@@ -580,27 +709,55 @@ pub enum OnUpdate {
     NoAction,
 }
 
-#[derive(Debug, Clone, Default)]
+/// SQL database constraint for a given column.
+#[derive(Debug)]
 pub enum Constraint {
-    #[default]
-    Index,
-    ForeignKey,
+    Index(SqlIndex),
+    Fk(ForeignKey),
 }
 
+impl SqlFragment for Constraint {
+    fn create(&self) -> String {
+        match self {
+            Constraint::Index(idx) => idx.create(),
+            Constraint::Fk(fk) => fk.create(),
+        }
+    }
+}
+
+/// SQL database foreign key for a given column.
 #[derive(Debug, Clone, Default)]
 pub struct ForeignKey {
+    /// The type of database.
     pub db_type: DbType,
+
+    /// The namespace of the indexer.
     pub namespace: String,
+
+    /// Name of table table FK is applied to.
     pub table_name: String,
+
+    /// Name of column FK is applied to.
     pub column_name: String,
+
+    /// Name of table FK references.
     pub ref_tablename: String,
+
+    /// Name of column FK references.
     pub ref_colname: String,
+
+    /// Type of column FK references.
     pub ref_coltype: String,
+
+    /// Action to take on delete.
     pub on_delete: OnDelete,
+
+    /// Action to take on update.
     pub on_update: OnUpdate,
 }
 
 impl ForeignKey {
+    /// Create a new `ForeignKey`.
     pub fn new(
         db_type: DbType,
         namespace: String,
@@ -632,9 +789,8 @@ impl SqlNamed for ForeignKey {
     }
 }
 
-// REFCATOR: remove
-impl CreateStatement for ForeignKey {
-    fn create_statement(&self) -> String {
+impl SqlFragment for ForeignKey {
+    fn create(&self) -> String {
         match self.db_type {
             DbType::Postgres => {
                 format!(
@@ -678,7 +834,10 @@ impl IdCol {
 /// Nonce used for indexer authentication.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Nonce {
+    /// Unique string used as a nonce payload.
     pub uid: String,
+
+    /// Expiry time of the nonce.
     pub expiry: i64,
 }
 
@@ -694,7 +853,6 @@ impl Nonce {
 }
 
 /// SQL database table for a given `GraphRoot` in the database.
-#[allow(unused)]
 pub struct Table {
     /// The name of the table.
     name: String,
@@ -716,6 +874,10 @@ pub struct Table {
 }
 
 impl Table {
+    pub fn constraints(&self) -> &Vec<Constraint> {
+        &self.constraints
+    }
+
     pub fn from_typdef(_typ: TypeDefinition, _parsed: &ParsedGraphQLSchema) -> Self {
         unimplemented!()
     }

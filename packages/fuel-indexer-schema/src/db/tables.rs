@@ -11,14 +11,26 @@ use std::collections::BTreeMap;
 /// IndexerSchema is used to encapsulate most of the logic related to parsing
 /// GraphQL types, generating SQL from those types, and committing that SQL to
 /// the database.
-#[derive(Default)]
 pub struct IndexerSchema {
+    /// The database type.
     db_type: DbType,
+
+    /// The parsed GraphQL schema.
     parsed: ParsedGraphQLSchema,
+
+    /// The GraphQL schema.
     schema: GraphQLSchema,
+
+    /// The tables generated from the GraphQL schema.
     tables: Vec<Table>,
+
+    /// The namespace of the indexer.
     namespace: String,
+
+    /// The identifier of the indexer.
     identifier: String,
+
+    /// The execution source of the indexer.
     exec_source: ExecutionSource,
 }
 
@@ -41,7 +53,7 @@ impl IndexerSchema {
             schema: schema.to_owned(),
             parsed,
             exec_source,
-            ..Default::default()
+            tables: Vec::new(),
         })
     }
 
@@ -51,7 +63,11 @@ impl IndexerSchema {
     }
 
     /// Generate table SQL for each indexable object in the given GraphQL schema.
-    pub fn build(mut self, schema: &GraphQLSchema) -> IndexerSchemaDbResult<Self> {
+    pub async fn build(
+        mut self,
+        schema: &GraphQLSchema,
+        conn: &mut IndexerConnection,
+    ) -> IndexerSchemaDbResult<Self> {
         let parsed_schema = ParsedGraphQLSchema::new(
             &self.namespace,
             &self.identifier,
@@ -80,7 +96,16 @@ impl IndexerSchema {
             .map(|o| Table::from_typdef(o.to_owned(), &self.parsed))
             .collect::<Vec<Table>>();
 
-        let _table_stmnts = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
+        let table_statements = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
+        let constraint_statements = tables
+            .iter()
+            .flat_map(|t| t.constraints())
+            .map(|c| c.create())
+            .collect::<Vec<String>>();
+
+        for stmnt in statements.iter() {
+            queries::execute_query(conn, stmnt.to_owned()).await?;
+        }
 
         self.tables = tables;
 
@@ -112,7 +137,7 @@ impl IndexerSchema {
             ..GraphRoot::default()
         };
 
-        let root = queries::new_graph_root(conn, root).await?; // should return *
+        let _root = queries::new_graph_root(conn, root).await?; // should return *
 
         let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
 
@@ -141,7 +166,6 @@ impl IndexerSchema {
                     version,
                     type_id,
                     i as i32,
-                    root.id,
                 )
             })
             .collect::<Vec<FooColumn>>();
@@ -154,8 +178,8 @@ impl IndexerSchema {
 
         queries::new_root_columns(conn, cols).await?;
 
-        queries::foo_type_id_insert(conn, type_ids).await?;
-        queries::foo_new_column_insert(conn, columns).await?;
+        queries::type_id_insert(conn, type_ids).await?;
+        queries::new_column_insert(conn, columns).await?;
 
         let mut schema = IndexerSchema {
             db_type: db_type.clone(),
@@ -215,6 +239,7 @@ impl IndexerSchema {
             namespace: root.schema_name,
             identifier: root.schema_identifier,
             schema,
+
             tables,
             parsed,
             db_type: DbType::Postgres,

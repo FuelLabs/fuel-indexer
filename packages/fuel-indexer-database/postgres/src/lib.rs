@@ -3,6 +3,7 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
+use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
 
@@ -180,7 +181,7 @@ pub async fn type_id_list_by_name(
     namespace: &str,
     version: &str,
     identifier: &str,
-) -> sqlx::Result<Vec<TypeId>> {
+) -> sqlx::Result<Vec<FooTypeId>> {
     Ok(sqlx::query(
         "SELECT * FROM graph_registry_type_ids
         WHERE schema_name = $1
@@ -195,26 +196,25 @@ pub async fn type_id_list_by_name(
     .into_iter()
     .map(|row| {
         let id: i64 = row.get(0);
-        let schema_version: String = row.get(1);
-        let schema_name: String = row.get(2);
+        let version: String = row.get(1);
+        let namespace: String = row.get(2);
         let graphql_name: String = row.get(3);
         let table_name: String = row.get(4);
-        let _schema_identifier: String = row.get(5);
-        let cols: Vec<u8> = row.get(6);
-        let virtual_columns: Vec<VirtualColumn> =
-            bincode::deserialize(&cols).expect("Bad virtual cols.");
+        let identifier: String = row.get(5);
+        let persistence: String = row.get(6);
 
-        TypeId {
+        FooTypeId {
             id,
-            schema_version,
-            schema_name,
+            version,
+            namespace,
             table_name,
             graphql_name,
-            schema_identifier: identifier.to_string(),
-            virtual_columns,
+            identifier,
+            persistence: ColumnPersistence::from_str(persistence.as_str())
+                .expect("Bad persistence."),
         }
     })
-    .collect::<Vec<TypeId>>())
+    .collect::<Vec<FooTypeId>>())
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
@@ -242,30 +242,6 @@ pub async fn type_id_latest(
 // REFACTOR: remove
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn type_id_insert(
-    conn: &mut PoolConnection<Postgres>,
-    type_ids: Vec<TypeId>,
-) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name, virtual_columns)");
-
-    builder.push_values(type_ids.into_iter(), |mut b, tid| {
-        let virtual_cols =
-            bincode::serialize(&tid.virtual_columns).expect("Bad virtual cols.");
-        b.push_bind(tid.id)
-            .push_bind(tid.schema_version)
-            .push_bind(tid.schema_name)
-            .push_bind(tid.schema_identifier)
-            .push_bind(tid.graphql_name)
-            .push_bind(tid.table_name)
-            .push_bind(virtual_cols);
-    });
-
-    let query = builder.build();
-    let result = query.execute(conn).await?;
-    Ok(result.rows_affected() as usize)
-}
-
-#[cfg_attr(feature = "metrics", metrics)]
-pub async fn foo_type_id_insert(
     conn: &mut PoolConnection<Postgres>,
     type_ids: Vec<FooTypeId>,
 ) -> sqlx::Result<usize> {
@@ -313,15 +289,15 @@ pub async fn schema_exists(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_column_insert(
     conn: &mut PoolConnection<Postgres>,
-    cols: Vec<Columns>,
+    cols: Vec<FooColumn>,
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type, is_unique)");
 
     builder.push_values(cols.into_iter(), |mut b, new_col| {
         b.push_bind(new_col.type_id)
-            .push_bind(new_col.column_position)
-            .push_bind(new_col.column_name)
-            .push_bind(new_col.column_type)
+            .push_bind(new_col.position)
+            .push_bind(new_col.name)
+            .push_bind(new_col.coltype.to_string())
             .push_bind(new_col.nullable)
             .push_bind(new_col.graphql_type)
             .push_bind(new_col.unique);
@@ -335,33 +311,10 @@ pub async fn new_column_insert(
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
-pub async fn foo_new_column_insert(
-    conn: &mut PoolConnection<Postgres>,
-    cols: Vec<FooColumn>,
-) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type)");
-
-    builder.push_values(cols.into_iter(), |mut b, new_col| {
-        b.push_bind(new_col.type_id)
-            .push_bind(new_col.position)
-            .push_bind(new_col.name)
-            .push_bind(new_col.coltype.to_string())
-            .push_bind(new_col.nullable)
-            .push_bind(new_col.graphql_type);
-    });
-
-    let query = builder.build();
-
-    let result = query.execute(conn).await?;
-
-    Ok(result.rows_affected() as usize)
-}
-
-#[cfg_attr(feature = "metrics", metrics)]
 pub async fn list_column_by_id(
     conn: &mut PoolConnection<Postgres>,
     col_id: i64,
-) -> sqlx::Result<Vec<Columns>> {
+) -> sqlx::Result<Vec<FooColumn>> {
     Ok(
         sqlx::query("SELECT * FROM graph_registry_columns WHERE type_id = $1")
             .bind(col_id)
@@ -371,25 +324,28 @@ pub async fn list_column_by_id(
             .map(|row| {
                 let id: i64 = row.get(0);
                 let type_id: i64 = row.get(1);
-                let column_position: i32 = row.get(2);
-                let column_name: String = row.get(3);
-                let column_type: String = row.get(4);
+                let position: i32 = row.get(2);
+                let name: String = row.get(3);
+                let coltype: String = row.get(4);
                 let nullable: bool = row.get(5);
                 let graphql_type: String = row.get(6);
                 let unique: bool = row.get(7);
+                let persistence: String = row.get(8);
 
-                Columns {
+                FooColumn {
                     id,
                     type_id,
-                    column_position,
-                    column_name,
-                    column_type,
+                    position,
+                    name,
+                    coltype: ColumnType::from(coltype.as_str()),
                     nullable,
                     graphql_type,
                     unique,
+                    persistence: ColumnPersistence::from_str(persistence.as_str())
+                        .expect("Bad persistence."),
                 }
             })
-            .collect::<Vec<Columns>>(),
+            .collect::<Vec<FooColumn>>(),
     )
 }
 

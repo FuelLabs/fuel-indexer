@@ -3222,7 +3222,6 @@ dependencies = [
 name = "fuel-indexer-postgres"
 version = "0.17.1"
 dependencies = [
- "bincode",
  "chrono",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
