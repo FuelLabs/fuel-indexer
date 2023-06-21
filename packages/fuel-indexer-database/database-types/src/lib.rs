@@ -1,11 +1,9 @@
 #![deny(unused_crate_dependencies)]
-pub mod directives;
-
-use crate::directives::IndexMethod;
 use async_graphql_parser::types::{FieldDefinition, TypeDefinition, TypeKind};
 use chrono::serde::ts_microseconds;
 use chrono::{DateTime, Utc};
 use fuel_indexer_lib::graphql::ParsedGraphQLSchema;
+use fuel_indexer_lib::type_id;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt,
@@ -14,6 +12,16 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 use strum::{AsRefStr, EnumString};
+
+// SQL index method.
+#[derive(Debug, EnumString, AsRefStr, Default)]
+pub enum IndexMethod {
+    #[default]
+    #[strum(serialize = "btree")]
+    BTree,
+    #[strum(serialize = "hash")]
+    Hash,
+}
 
 /// SQL database types used by indexers.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Default, AsRefStr)]
@@ -208,7 +216,7 @@ pub struct RootColumns {
 
 /// Whether a given column is virtual or regular. Virtual columns are not
 /// persisted to the database.
-#[derive(Debug, Default, EnumString, AsRefStr)]
+#[derive(Debug, Default, EnumString, AsRefStr, Clone, Hash, Eq, PartialEq)]
 pub enum ColumnPersistence {
     /// Virtual columns are not persisted to the database. They are represented
     /// by some arbitrarily sized type (e.g., JSON).
@@ -263,26 +271,53 @@ pub struct FooColumn {
 }
 
 impl FooColumn {
-    #[allow(unused)]
     pub fn from_field_def(
         f: &FieldDefinition,
         namespace: &str,
         identifier: &str,
+        parsed: &ParsedGraphQLSchema,
         version: &str,
         type_id: i64,
         position: i32,
     ) -> Self {
+        let mut field_type = f.ty.to_string().replace("!", "");
+        if parsed.is_possible_foreign_key(&field_type) {
+            // Determine implicit vs explicit FK
+            field_type = f
+                .directives
+                .iter()
+                .find(|d| d.node.name.to_string() == "join")
+                .map(|d| {
+                    let ref_field_name =
+                        d.clone().node.arguments.pop().unwrap().1.to_string();
+                    let fk_field_id = format!("{field_type}.{ref_field_name}");
+                    let fk_field_type = parsed
+                        .field_type_mappings()
+                        .get(&fk_field_id)
+                        .unwrap()
+                        .to_string();
+                    fk_field_type
+                })
+                // Can't have two primary keys on a table
+                .unwrap_or("UInt8".to_string());
+        } else if parsed.is_virtual_type(&field_type) {
+            field_type = "Virtual".to_string();
+        } else if parsed.is_enum_type(&field_type) {
+            field_type = "Charfield".to_string();
+        }
+
         let unique = f
             .directives
             .iter()
             .any(|d| d.node.name.to_string() == "unique");
 
         let table_name = f.name.to_string();
+
         Self {
             type_id,
             name: table_name.clone(),
             graphql_type: table_name,
-            coltype: ColumnType::from(f.ty.to_string().as_str()),
+            coltype: ColumnType::from(field_type.as_str()),
             position,
             unique,
             nullable: f.ty.node.nullable,
@@ -376,7 +411,7 @@ pub struct GraphRoot {
 }
 
 /// Type ID used to identify `TypeDefintion`s in the GraphQL schema.
-#[derive(Debug)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FooTypeId {
     /// Database ID of the type.
     pub id: i64,
@@ -395,40 +430,28 @@ pub struct FooTypeId {
 
     /// Database table name of the type.
     pub table_name: String,
-
-    /// How this type is persisted to the database.
-    pub persistence: ColumnPersistence,
-}
-
-impl FooTypeId {
-    pub fn from_typedef(typ: TypeDefinition, parsed: &ParsedGraphQLSchema) {
-        unimplemented!()
-    }
 }
 
 impl FooTypeId {
     pub fn from_field_def(
+        typ: &str,
         f: &FieldDefinition,
         namespace: &str,
         identifier: &str,
         version: &str,
     ) -> Self {
-        let persistence = f
-            .directives
-            .iter()
-            .find(|d| d.node.name.to_string() == "virtual")
-            .map(|_| ColumnPersistence::Virtual)
-            .unwrap_or(ColumnPersistence::Regular);
+        // TODO: Use camel-casing for table names
+        let table_name = typ.to_string().to_lowercase();
+        // let full_namespace = format!("{namespace}_{identifier}");
+        let type_id = type_id(namespace, &f.name.to_string());
 
-        let table_name = f.name.to_string();
         Self {
-            id: i64::MAX,
+            id: type_id,
             version: version.to_string(),
             namespace: namespace.to_string(),
             identifier: identifier.to_string(),
             graphql_name: f.name.to_string(),
             table_name,
-            persistence,
         }
     }
 }
@@ -626,7 +649,7 @@ pub struct ForeignKey {
     /// The type of database.
     pub db_type: DbType,
 
-    /// The namespace of the indexer.
+    /// The namespace and the identifier of the indexer joined by an underscore.
     pub namespace: String,
 
     /// Name of table table FK is applied to.
@@ -651,30 +674,6 @@ pub struct ForeignKey {
     pub on_update: OnUpdate,
 }
 
-impl ForeignKey {
-    /// Create a new `ForeignKey`.
-    pub fn new(
-        db_type: DbType,
-        namespace: String,
-        table_name: String,
-        column_name: String,
-        ref_tablename: String,
-        ref_column_name: String,
-        ref_coltype: String,
-    ) -> Self {
-        Self {
-            db_type,
-            namespace,
-            table_name,
-            column_name,
-            ref_colname: ref_column_name,
-            ref_tablename,
-            ref_coltype,
-            ..Default::default()
-        }
-    }
-}
-
 impl SqlNamed for ForeignKey {
     fn sql_name(&self) -> String {
         format!(
@@ -692,8 +691,7 @@ impl SqlFragment for ForeignKey {
                     "ALTER TABLE {}.{} ADD CONSTRAINT {} FOREIGN KEY ({}) REFERENCES {}.{}({}) ON DELETE {} ON UPDATE {} INITIALLY DEFERRED;",
                     self.namespace,
                     self.table_name,
-                    // Tmp
-                    "".to_string(),
+                    self.sql_name(),
                     self.column_name,
                     self.namespace,
                     self.ref_tablename,
@@ -776,13 +774,13 @@ impl Table {
     pub fn from_typdef(
         typ: TypeDefinition,
         parsed: &ParsedGraphQLSchema,
-        type_id: i64,
+        type_ids: Vec<i64>,
     ) -> Self {
         match &typ.kind {
             TypeKind::Object(o) => {
                 let mut persistence = ColumnPersistence::Regular;
 
-                o.fields.iter().for_each(|f| {
+                o.fields.iter().enumerate().for_each(|(i, f)| {
                     let has_virtual = f
                         .node
                         .directives
@@ -803,8 +801,9 @@ impl Table {
                             &f.node,
                             parsed.namespace(),
                             parsed.identifier(),
+                            parsed,
                             parsed.schema().version(),
-                            type_id,
+                            type_ids[i],
                             i as i32,
                         )
                     })
@@ -822,18 +821,20 @@ impl Table {
                         if has_unique {
                             return Some(Constraint::Index(SqlIndex {
                                 db_type: DbType::Postgres,
-                                table_name: typ.name.to_string(),
-                                namespace: parsed.namespace().to_string(),
+                                table_name: typ.name.to_string().to_lowercase(),
+                                namespace: parsed.fully_qualified_namespace(),
                                 method: IndexMethod::BTree,
                                 unique: true,
                                 column_name: f.node.name.to_string(),
                             }));
                         }
 
-                        if parsed.is_possible_foreign_key(&f.node.name.to_string()) {
-                            let ref_table_name = f.node.ty.to_string().to_lowercase();
+                        if parsed.is_possible_foreign_key(
+                            &f.node.ty.node.to_string().replace("!", ""),
+                        ) {
+                            let ref_table_name = f.node.name.to_string().to_lowercase();
                             // Determine implicit vs explicit FK
-                            let ref_column_name = f
+                            let (ref_coltype, ref_colname, ref_tablename) = f
                                 .node
                                 .directives
                                 .iter()
@@ -856,20 +857,30 @@ impl Table {
                                         .get(&fk_field_id)
                                         .unwrap()
                                         .to_string();
-                                    fk_field_type
+
+                                    (
+                                        fk_field_type.replace("!", ""),
+                                        ref_field_name,
+                                        typdef_name.to_string().to_lowercase(),
+                                    )
                                 })
-                                .unwrap_or(IdCol::to_lowercase_string());
-                            let ref_coltype = ColumnType::ID.to_string();
-                            let fk = ForeignKey::new(
-                                DbType::Postgres,
-                                parsed.namespace().to_string(),
-                                typ.name.to_string(),
-                                f.node.name.to_string(),
-                                ref_table_name,
-                                ref_column_name,
+                                .unwrap_or((
+                                    IdCol::to_uppercase_string(),
+                                    IdCol::to_lowercase_string(),
+                                    f.node.ty.to_string().replace("!", "").to_lowercase(),
+                                ));
+
+                            return Some(Constraint::Fk(ForeignKey {
+                                db_type: DbType::Postgres,
+                                namespace: parsed.fully_qualified_namespace(),
+                                table_name: typ.name.to_string().to_lowercase(),
+                                column_name: f.node.name.to_string(),
+                                ref_tablename,
+                                ref_colname,
                                 ref_coltype,
-                            );
-                            return Some(Constraint::Fk(fk));
+                                on_delete: OnDelete::NoAction,
+                                on_update: OnUpdate::NoAction,
+                            }));
                         }
 
                         None
@@ -877,7 +888,8 @@ impl Table {
                     .collect::<Vec<Constraint>>();
 
                 Self {
-                    name: typ.name.to_string(),
+                    // TODO: Use camel-casing for table names
+                    name: typ.name.to_string().to_lowercase(),
                     namespace: parsed.namespace().to_string(),
                     identifier: parsed.identifier().to_string(),
                     columns,
@@ -895,6 +907,25 @@ impl Table {
 
 impl SqlFragment for Table {
     fn create(&self) -> String {
-        unimplemented!()
+        let mut s = format!(
+            "CREATE TABLE {}_{}.{} (\n",
+            self.namespace, self.identifier, self.name
+        );
+        let cols = self
+            .columns
+            .iter()
+            .map(|c| c.create())
+            .collect::<Vec<String>>()
+            .join(",\n");
+        s.push_str(&cols);
+        // Remove last ',\n' from last column to avoid syntax error
+        let mut chars = s.chars();
+        // chars.next_back();
+        // chars.next_back();
+
+        let mut chars = chars.as_str().to_string();
+        chars.push_str("\n);");
+
+        chars
     }
 }

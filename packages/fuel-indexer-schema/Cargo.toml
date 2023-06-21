@@ -15,6 +15,7 @@ fuel-indexer-database = { workspace = true, optional = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-types = { workspace = true }
 hex = "0.4"
+itertools = "0.10"
 serde = { default-features = false, features = ["derive"], workspace = true }
 sqlx = { version = "0.6", optional = true, features = ["postgres", "runtime-tokio-rustls", "bigdecimal"] }
 thiserror = { workspace = true }

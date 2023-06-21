@@ -114,8 +114,8 @@ pub struct ParsedGraphQLSchema {
     /// The parsed schema.
     ast: ServiceDocument,
 
-    /// Mapping of fully qualified field names to their `FieldDefinition`
-    field_defs: HashMap<String, FieldDefinition>,
+    /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
+    field_defs: HashMap<String, (FieldDefinition, String)>,
 
     /// GraphQL schema content.
     schema: GraphQLSchema,
@@ -243,7 +243,10 @@ impl ParsedGraphQLSchema {
                                 );
                                 field_type_mappings
                                     .insert(field_id.clone(), field_typ_name);
-                                field_defs.insert(field_id, field.node.clone());
+                                field_defs.insert(
+                                    field_id,
+                                    (field.node.clone(), obj_name.clone()),
+                                );
                             }
                             object_field_mappings.insert(obj_name, field_mapping);
                         }
@@ -290,7 +293,10 @@ impl ParsedGraphQLSchema {
                                 member_obj.fields.iter().for_each(|f| {
                                     let field_id =
                                         format!("{}.{}", union_name, f.node.name);
-                                    field_defs.insert(field_id, f.node.clone());
+                                    field_defs.insert(
+                                        field_id,
+                                        (f.node.clone(), member_name.clone()),
+                                    );
                                 });
                             });
 
@@ -432,6 +438,7 @@ impl ParsedGraphQLSchema {
         self.parsed_type_names.contains(name)
             && !self.has_scalar(name)
             && !self.is_enum_type(name)
+            && !self.is_virtual_type(name)
     }
 
     /// Whether the given field type name is a type from which tables are not created.
@@ -453,17 +460,31 @@ impl ParsedGraphQLSchema {
     pub fn indexable_objects(&self) -> Vec<TypeDefinition> {
         self.type_defs()
             .iter()
-            .filter(|(name, _)| true)
-            .map(|(_, obj)| obj.clone())
-            .collect()
+            .filter_map(|(name, typ)| match &typ.kind {
+                TypeKind::Object(o) => {
+                    if !self.is_virtual_type(name) {
+                        Some(typ.clone())
+                    } else {
+                        None
+                    }
+                }
+                TypeKind::Union(u) => {
+                    if !self.is_virtual_type(name) {
+                        Some(typ.clone())
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            })
+            .collect::<Vec<TypeDefinition>>()
     }
 
     /// All fields from which SQL columns can be created.
-    pub fn fields_for_columns(&self) -> Vec<FieldDefinition> {
+    pub fn fields_for_typeids(&self) -> Vec<(FieldDefinition, String)> {
         self.field_defs
             .iter()
-            .filter(|(_, field)| !self.is_enum_type(&field.ty.to_string()))
-            .map(|(_, field)| field.clone())
+            .map(|(_, (field, typ))| (field.clone(), typ.clone()))
             .collect()
     }
 
@@ -484,5 +505,10 @@ impl ParsedGraphQLSchema {
     /// Ensure the given type is included in this `Schema`'s types
     pub fn has_type(&self, name: &str) -> bool {
         self.type_names.contains(name)
+    }
+
+    /// Fully qualified GraphQL namespace for indexer.
+    pub fn fully_qualified_namespace(&self) -> String {
+        format!("{}_{}", self.namespace, self.identifier)
     }
 }

@@ -1,4 +1,5 @@
 use crate::{db::IndexerSchemaDbResult, QUERY_ROOT};
+use async_graphql_parser::types::TypeKind;
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
@@ -6,6 +7,7 @@ use fuel_indexer_lib::graphql::ParsedGraphQLSchema;
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
+use itertools::Itertools;
 use std::collections::BTreeMap;
 
 /// IndexerSchema is used to encapsulate most of the logic related to parsing
@@ -60,7 +62,7 @@ impl IndexerSchema {
     }
 
     /// Generate table SQL for each indexable object in the given GraphQL schema.
-    pub async fn build(
+    pub async fn build_and_commit(
         mut self,
         schema: &GraphQLSchema,
         conn: &mut IndexerConnection,
@@ -76,10 +78,23 @@ impl IndexerSchema {
         self.schema = schema.to_owned();
         self.parsed = parsed_schema;
 
+        let root = GraphRoot {
+            version: schema.version().to_owned(),
+            schema_name: self.namespace.to_owned(),
+            schema_identifier: self.identifier.to_owned(),
+            schema: self.schema.to_string(),
+            ..GraphRoot::default()
+        };
+
+        queries::new_graph_root(conn, root).await?;
+
+        let root =
+            queries::graph_root_latest(conn, &self.namespace, &self.identifier).await?;
+
         match self.db_type {
             DbType::Postgres => {
                 let create = format!(
-                    "CREATE SCHEMA IF NOT EXISTS {}_{}",
+                    "CREATE SCHEMA IF NOT EXISTS {}_{};",
                     self.namespace, self.identifier
                 );
                 statements.push(create);
@@ -88,29 +103,59 @@ impl IndexerSchema {
 
         let type_ids = self
             .parsed
-            .fields_for_columns()
+            .fields_for_typeids()
             .iter()
-            .map(|f| {
+            .map(|(f, typ_name)| {
                 FooTypeId::from_field_def(
+                    typ_name,
                     f,
                     &self.namespace,
                     &self.identifier,
                     self.parsed.schema().version(),
                 )
             })
+            .unique_by(|t| t.id)
             .collect::<Vec<FooTypeId>>();
+
+        queries::type_id_insert(conn, type_ids.clone()).await?;
+
+        let type_ids = queries::type_id_list_by_name(
+            conn,
+            &root.schema_name,
+            &root.version,
+            &root.schema_identifier,
+        )
+        .await?;
 
         let tables = self
             .parsed
             .indexable_objects()
             .iter()
-            .map(|o| {
-                let type_id = type_ids
-                    .iter()
-                    .find(|t| t.graphql_name == o.name.to_string())
-                    .expect("No associated TypeId for object.")
-                    .id;
-                Table::from_typdef(o.to_owned(), &self.parsed, type_id)
+            .filter_map(|typ| match &typ.kind {
+                TypeKind::Object(o) => {
+                    let col_type_ids = o
+                        .fields
+                        .iter()
+                        .filter_map(|f| {
+                            Some(
+                                type_ids
+                                    .iter()
+                                    .find(|t| t.graphql_name == f.node.name.to_string())
+                                    .expect(&format!(
+                                        "No associated TypeId for field '{}'.",
+                                        f.node.name.to_string()
+                                    ))
+                                    .id,
+                            )
+                        })
+                        .collect::<Vec<i64>>();
+                    Some(Table::from_typdef(
+                        typ.to_owned(),
+                        &self.parsed,
+                        col_type_ids,
+                    ))
+                }
+                _ => None,
             })
             .collect::<Vec<Table>>();
 
@@ -132,90 +177,6 @@ impl IndexerSchema {
         self.tables = tables;
 
         Ok(self)
-    }
-
-    /// Commit all SQL metadata to the database.
-    pub async fn commit_sql_metadata(
-        self,
-        conn: &mut IndexerConnection,
-    ) -> IndexerSchemaDbResult<IndexerSchema> {
-        let IndexerSchema {
-            namespace,
-            identifier,
-            schema,
-            db_type,
-            exec_source,
-            tables,
-            parsed,
-        } = self;
-
-        let version = schema.version();
-
-        let root = GraphRoot {
-            version: schema.version().to_owned(),
-            schema_name: namespace.to_owned(),
-            schema_identifier: identifier.to_owned(),
-            schema: schema.to_string(),
-            ..GraphRoot::default()
-        };
-
-        let _root = queries::new_graph_root(conn, root).await?; // should return *
-
-        let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
-
-        let field_defs = parsed.fields_for_columns();
-
-        let cols = field_defs
-            .iter()
-            .map(|f| RootColumns {
-                root_id: latest.id,
-                column_name: f.name.to_string(),
-                graphql_type: f.name.node.to_string(),
-                ..RootColumns::default()
-            })
-            .collect::<Vec<RootColumns>>();
-
-        let columns = parsed
-            .fields_for_columns()
-            .iter()
-            .enumerate()
-            .map(|(i, f)| {
-                let type_id = type_id(&namespace, &f.name.node);
-                FooColumn::from_field_def(
-                    f,
-                    &namespace,
-                    &identifier,
-                    version,
-                    type_id,
-                    i as i32,
-                )
-            })
-            .collect::<Vec<FooColumn>>();
-
-        let type_ids = parsed
-            .fields_for_columns()
-            .iter()
-            .map(|f| FooTypeId::from_field_def(f, &namespace, &identifier, version))
-            .collect::<Vec<FooTypeId>>();
-
-        queries::new_root_columns(conn, cols).await?;
-
-        queries::type_id_insert(conn, type_ids).await?;
-        queries::new_column_insert(conn, columns).await?;
-
-        let mut schema = IndexerSchema {
-            db_type: db_type.clone(),
-            exec_source: exec_source.clone(),
-            parsed: parsed.clone(),
-            tables,
-            schema: schema.to_owned(),
-            namespace: namespace.to_owned(),
-            identifier: identifier.to_owned(),
-        };
-
-        schema.register_queryroot_fields();
-
-        Ok(schema)
     }
 
     /// Load a `Schema` from the database.
@@ -254,13 +215,22 @@ impl IndexerSchema {
         let tables = parsed
             .indexable_objects()
             .iter()
-            .map(|o| {
-                let type_id = type_ids
-                    .iter()
-                    .find(|t| t.graphql_name == o.name.to_string())
-                    .expect("No associated TypeId for object.")
-                    .id;
-                Table::from_typdef(o.to_owned(), &parsed, type_id)
+            .filter_map(|typ| match &typ.kind {
+                TypeKind::Object(o) => {
+                    let col_type_ids = o
+                        .fields
+                        .iter()
+                        .map(|f| {
+                            type_ids
+                                .iter()
+                                .find(|t| t.graphql_name == f.node.name.to_string())
+                                .expect("No associated TypeId for object.")
+                                .id
+                        })
+                        .collect::<Vec<i64>>();
+                    Some(Table::from_typdef(typ.to_owned(), &parsed, col_type_ids))
+                }
+                _ => None,
             })
             .collect::<Vec<Table>>();
 

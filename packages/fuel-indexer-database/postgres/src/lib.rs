@@ -201,7 +201,6 @@ pub async fn type_id_list_by_name(
         let graphql_name: String = row.get(3);
         let table_name: String = row.get(4);
         let identifier: String = row.get(5);
-        let persistence: String = row.get(6);
 
         FooTypeId {
             id,
@@ -210,8 +209,6 @@ pub async fn type_id_list_by_name(
             table_name,
             graphql_name,
             identifier,
-            persistence: ColumnPersistence::from_str(persistence.as_str())
-                .expect("Bad persistence."),
         }
     })
     .collect::<Vec<FooTypeId>>())
@@ -239,7 +236,6 @@ pub async fn type_id_latest(
     Ok(schema_version)
 }
 
-// REFACTOR: remove
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn type_id_insert(
     conn: &mut PoolConnection<Postgres>,
@@ -285,7 +281,6 @@ pub async fn schema_exists(
     Ok(count > 0)
 }
 
-// REFACTOR: remove
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_column_insert(
     conn: &mut PoolConnection<Postgres>,

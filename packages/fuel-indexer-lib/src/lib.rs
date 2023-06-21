@@ -10,6 +10,8 @@ pub mod graphql;
 pub mod manifest;
 pub mod utils;
 
+pub use fuel_indexer_types::type_id;
+
 use proc_macro2::TokenStream;
 use quote::quote;
 

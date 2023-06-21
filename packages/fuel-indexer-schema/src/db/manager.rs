@@ -33,9 +33,7 @@ impl SchemaManager {
                 self.pool.database_type(),
                 exec_source,
             )?
-            .build(&schema, conn)
-            .await?
-            .commit_sql_metadata(conn)
+            .build_and_commit(&schema, conn)
             .await?;
         }
         Ok(())

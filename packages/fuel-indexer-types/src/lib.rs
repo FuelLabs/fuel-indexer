@@ -33,8 +33,9 @@ pub mod prelude {
 pub fn type_id(namespace: &str, name: &str) -> i64 {
     // IMPORTANT: https://github.com/launchbadge/sqlx/issues/499
     let mut bytes = [0u8; 8];
-    bytes.copy_from_slice(&Sha256::digest(format!("{namespace}:{name}").as_bytes())[..8]);
-    i64::from_le_bytes(bytes)
+    let digest = Sha256::digest(format!("{name}:{namespace}").as_bytes());
+    bytes[..8].copy_from_slice(&digest[..8]);
+    i64::from_be_bytes(bytes)
 }
 
 #[cfg(test)]
