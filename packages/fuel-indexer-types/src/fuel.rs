@@ -45,7 +45,7 @@ impl Default for Transaction {
 pub struct Create {
     pub gas_price: Word,
     pub gas_limit: Word,
-    pub maturity: BlockHeight,
+    pub maturity: u64,
     pub bytecode_length: Word,
     pub bytecode_witness_index: u8,
     pub storage_slots: Vec<StorageSlot>,
@@ -79,7 +79,7 @@ impl From<CommonMetadata> for Json {
 pub struct Script {
     pub gas_price: Word,
     pub gas_limit: Word,
-    pub maturity: BlockHeight,
+    pub maturity: u64,
     pub script: Vec<u8>,
     pub script_data: Vec<u8>,
     pub inputs: Vec<Input>,
@@ -132,7 +132,7 @@ pub struct Header {
     pub output_messages_count: u64,
     pub transactions_root: Bytes32,
     pub output_messages_root: Bytes32,
-    pub height: u32,
+    pub height: u64,
     pub prev_root: Bytes32,
     pub time: i64,
     pub application_hash: Bytes32,
@@ -140,7 +140,7 @@ pub struct Header {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockData {
-    pub height: u32,
+    pub height: u64,
     pub id: Bytes32,
     pub header: Header,
     pub producer: Option<Bytes32>,
@@ -158,7 +158,7 @@ impl TypeId for BlockData {
 impl From<ClientTxPointer> for TxPointer {
     fn from(tx_pointer: ClientTxPointer) -> Self {
         TxPointer {
-            block_height: tx_pointer.block_height(),
+            block_height: tx_pointer.block_height().into(),
             tx_index: tx_pointer.tx_index() as u64,
         }
     }
@@ -174,7 +174,7 @@ pub enum Input {
 impl From<ClientInput> for Input {
     fn from(input: ClientInput) -> Self {
         match input {
-            ClientInput::CoinSigned(fuel_tx::input::coin::CoinSigned {
+            ClientInput::CoinSigned {
                 utxo_id,
                 owner,
                 amount,
@@ -183,18 +183,18 @@ impl From<ClientInput> for Input {
                 witness_index,
                 maturity,
                 ..
-            }) => Input::Coin(InputCoin {
+            } => Input::Coin(InputCoin {
                 utxo_id,
                 owner,
                 amount,
                 asset_id,
                 tx_pointer: tx_pointer.into(),
                 witness_index,
-                maturity: (*maturity).into(),
+                maturity,
                 predicate: "".into(),
                 predicate_data: "".into(),
             }),
-            ClientInput::CoinPredicate(fuel_tx::input::coin::CoinPredicate {
+            ClientInput::CoinPredicate {
                 utxo_id,
                 owner,
                 amount,
@@ -204,62 +204,58 @@ impl From<ClientInput> for Input {
                 predicate,
                 predicate_data,
                 ..
-            }) => Input::Coin(InputCoin {
+            } => Input::Coin(InputCoin {
                 utxo_id,
                 owner,
                 amount,
                 asset_id,
                 tx_pointer: tx_pointer.into(),
                 witness_index: 0,
-                maturity: (*maturity).into(),
+                maturity,
                 predicate: predicate.into(),
                 predicate_data: predicate_data.into(),
             }),
-            ClientInput::Contract(fuel_tx::input::contract::Contract {
+            ClientInput::Contract {
                 utxo_id,
                 balance_root,
                 state_root,
                 tx_pointer,
                 contract_id,
-            }) => Input::Contract(InputContract {
+            } => Input::Contract(InputContract {
                 utxo_id,
                 balance_root,
                 state_root,
                 tx_pointer: tx_pointer.into(),
                 contract_id,
             }),
-            ClientInput::MessageCoinSigned(
-                fuel_tx::input::message::MessageCoinSigned {
-                    amount,
-                    witness_index,
-                    sender,
-                    recipient,
-                    nonce,
-                    ..
-                },
-            ) => Input::Message(InputMessage {
+            // ClientInput::MessageSigned {
+            //     amount,
+            //     witness_index,
+            //     sender,
+            //     recipient,
+            //     nonce,
+            //     ..
+            // } => Input::Message(InputMessage {
+            //     amount,
+            //     nonce: nonce.into(),
+            //     recipient,
+            //     sender,
+            //     witness_index,
+            //     data: bytes::Bytes::default(),
+            //     predicate: "".into(),
+            //     predicate_data: "".into(),
+            // }),
+            ClientInput::MessageSigned {
                 amount,
-                nonce,
-                recipient,
-                sender,
                 witness_index,
-                data: bytes::Bytes::default(),
-                predicate: "".into(),
-                predicate_data: "".into(),
-            }),
-            ClientInput::MessageDataSigned(
-                fuel_tx::input::message::MessageDataSigned {
-                    amount,
-                    witness_index,
-                    sender,
-                    recipient,
-                    nonce,
-                    data,
-                    ..
-                },
-            ) => Input::Message(InputMessage {
-                amount,
+                sender,
+                recipient,
                 nonce,
+                data,
+                ..
+            } => Input::Message(InputMessage {
+                amount,
+                nonce: nonce.into(),
                 recipient,
                 sender,
                 witness_index,
@@ -267,42 +263,38 @@ impl From<ClientInput> for Input {
                 predicate: "".into(),
                 predicate_data: "".into(),
             }),
-            ClientInput::MessageCoinPredicate(
-                fuel_tx::input::message::MessageCoinPredicate {
-                    amount,
-                    predicate,
-                    predicate_data,
-                    sender,
-                    recipient,
-                    nonce,
-                    ..
-                },
-            ) => Input::Message(InputMessage {
+            // ClientInput::MessagePredicate {
+            //     amount,
+            //     predicate,
+            //     predicate_data,
+            //     sender,
+            //     recipient,
+            //     nonce,
+            //     ..
+            // } => Input::Message(InputMessage {
+            //     sender,
+            //     recipient,
+            //     amount,
+            //     nonce: nonce.into(),
+            //     witness_index: 0,
+            //     data: bytes::Bytes::default(),
+            //     predicate: predicate.into(),
+            //     predicate_data: predicate_data.into(),
+            // }),
+            ClientInput::MessagePredicate {
+                amount,
+                predicate,
+                predicate_data,
+                sender,
+                recipient,
+                nonce,
+                data,
+                ..
+            } => Input::Message(InputMessage {
                 sender,
                 recipient,
                 amount,
-                nonce,
-                witness_index: 0,
-                data: bytes::Bytes::default(),
-                predicate: predicate.into(),
-                predicate_data: predicate_data.into(),
-            }),
-            ClientInput::MessageDataPredicate(
-                fuel_tx::input::message::MessageDataPredicate {
-                    amount,
-                    predicate,
-                    predicate_data,
-                    sender,
-                    recipient,
-                    nonce,
-                    data,
-                    ..
-                },
-            ) => Input::Message(InputMessage {
-                sender,
-                recipient,
-                amount,
-                nonce,
+                nonce: nonce.into(),
                 witness_index: 0,
                 data: data.into(),
                 predicate: predicate.into(),
@@ -393,6 +385,7 @@ pub enum Output {
     ChangeOutput(ChangeOutput),
     VariableOutput(VariableOutput),
     ContractCreated(ContractCreated),
+    Message(MessageOutput),
     #[default]
     Unknown,
 }
@@ -443,6 +436,9 @@ impl From<ClientOutput> for Output {
                 contract_id,
                 state_root,
             }),
+            ClientOutput::Message { recipient, amount } => {
+                Output::Message(MessageOutput { amount, recipient })
+            }
         }
     }
 }
@@ -473,6 +469,12 @@ pub struct VariableOutput {
     pub to: Address,
     pub amount: u64,
     pub asset_id: AssetId,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MessageOutput {
+    pub amount: u64,
+    pub recipient: Address,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

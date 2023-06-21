@@ -155,7 +155,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     }
                 }
 
-                let producer = block.block_producer().map(|pk| pk.hash());
+                let producer = block.block_producer().map(|pk| {
+                    fuel_tx::Bytes32::from(<[u8; 32]>::try_from(pk.hash()).unwrap())
+                });
 
                 let mut transactions = Vec::new();
 
@@ -248,7 +250,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     )
                     .expect("Bad transaction.");
 
-                    let id = transaction.id(&fuel_tx::ConsensusParameters::DEFAULT);
+                    let id = transaction.id();
 
                     let transaction = match transaction {
                         ClientTransaction::Create(tx) => Transaction::Create(Create {
@@ -304,37 +306,64 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         } = g.to_owned();
 
                         Consensus::Genesis(Genesis {
-                            chain_config_hash: chain_config_hash.to_owned().into(),
-                            coins_root: coins_root.to_owned().into(),
-                            contracts_root: contracts_root.to_owned().into(),
-                            messages_root: messages_root.to_owned().into(),
+                            chain_config_hash: <[u8; 32]>::try_from(
+                                chain_config_hash.to_owned().0 .0,
+                            )
+                            .unwrap()
+                            .into(),
+                            coins_root: <[u8; 32]>::try_from(coins_root.0 .0.to_owned())
+                                .unwrap()
+                                .into(),
+                            contracts_root: <[u8; 32]>::try_from(
+                                contracts_root.0 .0.to_owned(),
+                            )
+                            .unwrap()
+                            .into(),
+                            messages_root: <[u8; 32]>::try_from(
+                                messages_root.0 .0.to_owned(),
+                            )
+                            .unwrap()
+                            .into(),
                         })
                     }
                     ClientConsensus::PoAConsensus(poa) => Consensus::PoA(PoA {
-                        signature: poa.signature.to_owned().into(),
+                        signature: <[u8; 64]>::try_from(poa.signature.0 .0.to_owned())
+                            .unwrap()
+                            .into(),
                     }),
                 };
 
                 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
                 let block = BlockData {
-                    height: block.header.height.0,
-                    id: Bytes32::from(block.id),
+                    height: block.header.height.clone().into(),
+                    id: Bytes32::from(<[u8; 32]>::try_from(block.id.0 .0).unwrap()),
                     producer,
                     time: block.header.time.0.to_unix(),
                     consensus,
                     header: Header {
-                        id: Bytes32::from(block.header.id),
+                        id: Bytes32::from(
+                            <[u8; 32]>::try_from(block.header.id.0 .0).unwrap(),
+                        ),
                         da_height: block.header.da_height.0,
                         transactions_count: block.header.transactions_count.0,
-                        output_messages_count: block.header.message_receipt_count.0,
-                        transactions_root: Bytes32::from(block.header.transactions_root),
+                        output_messages_count: block.header.output_messages_count.0,
+                        transactions_root: Bytes32::from(
+                            <[u8; 32]>::try_from(block.header.transactions_root.0 .0)
+                                .unwrap(),
+                        ),
                         output_messages_root: Bytes32::from(
-                            block.header.message_receipt_root,
+                            <[u8; 32]>::try_from(block.header.output_messages_root.0 .0)
+                                .unwrap(),
                         ),
                         height: block.header.height.0,
-                        prev_root: Bytes32::from(block.header.prev_root),
+                        prev_root: Bytes32::from(
+                            <[u8; 32]>::try_from(block.header.prev_root.0 .0).unwrap(),
+                        ),
                         time: block.header.time.0.to_unix(),
-                        application_hash: Bytes32::from(block.header.application_hash),
+                        application_hash: Bytes32::from(
+                            <[u8; 32]>::try_from(block.header.application_hash.0 .0)
+                                .unwrap(),
+                        ),
                     },
                     transactions,
                 };
