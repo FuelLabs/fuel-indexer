@@ -10,10 +10,9 @@ pub mod graphql;
 pub mod manifest;
 pub mod utils;
 
-pub use fuel_indexer_types::type_id;
-
 use proc_macro2::TokenStream;
 use quote::quote;
+use sha2::{Digest, Sha256};
 
 /// The source of execution for the indexer.
 #[derive(Default, Clone, Debug)]
@@ -33,4 +32,13 @@ impl ExecutionSource {
             Self::Wasm => (quote! {}, quote! {}),
         }
     }
+}
+
+/// Derive a type ID from a namespace and given abstraction name.
+pub fn type_id(namespace: &str, name: &str) -> i64 {
+    // IMPORTANT: https://github.com/launchbadge/sqlx/issues/499
+    let mut bytes = [0u8; 8];
+    let digest = Sha256::digest(format!("{name}:{namespace}").as_bytes());
+    bytes[..8].copy_from_slice(&digest[..8]);
+    i64::from_be_bytes(bytes)
 }

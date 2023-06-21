@@ -14,6 +14,7 @@ bincode = "1.3"
 bytes = { version = "1.4", features = ["serde"] }
 fuel-tx = { workspace = true, features = ["serde"] }
 fuel-types = { workspace = true }
+fuel-indexer-lib = { workspace = true }
 fuels = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

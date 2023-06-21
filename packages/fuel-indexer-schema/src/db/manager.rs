@@ -1,7 +1,6 @@
 use crate::db::{tables::IndexerSchema, IndexerSchemaDbResult};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
-use fuel_indexer_lib::ExecutionSource;
-use fuel_indexer_types::graphql::GraphQLSchema;
+use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};
 use tracing::info;
 
 /// `SchemaManager` is used by the indexer service to persist schema to the

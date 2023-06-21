@@ -1,4 +1,7 @@
-use crate::{graphql::BASE_SCHEMA, ExecutionSource};
+use crate::{
+    graphql::{GraphQLSchema, BASE_SCHEMA},
+    ExecutionSource,
+};
 use async_graphql_parser::{
     parse_schema,
     types::{
@@ -6,7 +9,7 @@ use async_graphql_parser::{
         TypeSystemDefinition, UnionType,
     },
 };
-use fuel_indexer_types::graphql::GraphQLSchema;
+
 use std::collections::{BTreeMap, HashMap, HashSet};
 use thiserror::Error;
 

@@ -3132,7 +3132,6 @@ dependencies = [
  "async-graphql-parser 5.0.9",
  "bincode",
  "clap 3.2.25",
- "fuel-indexer-types",
  "http",
  "proc-macro2",
  "quote",
@@ -3305,6 +3304,7 @@ version = "0.17.1"
 dependencies = [
  "bincode",
  "bytes",
+ "fuel-indexer-lib",
  "fuel-tx 0.31.2",
  "fuel-types 0.31.2",
  "fuels",

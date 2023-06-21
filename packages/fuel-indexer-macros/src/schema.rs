@@ -1,9 +1,9 @@
 use crate::{decoder::*, helpers::*};
 use async_graphql_parser::types::{TypeDefinition, TypeKind, TypeSystemDefinition};
+use fuel_indexer_lib::graphql::GraphQLSchema;
 use fuel_indexer_lib::{
     graphql::ParsedGraphQLSchema, utils::local_repository_root, ExecutionSource,
 };
-use fuel_indexer_types::graphql::GraphQLSchema;
 use quote::quote;
 use std::fs::File;
 use std::io::Read;

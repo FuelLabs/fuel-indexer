@@ -554,7 +554,6 @@ impl DbType {
     }
 }
 
-
 /// SQL database index for a given column.
 #[derive(Debug)]
 pub struct SqlIndex {

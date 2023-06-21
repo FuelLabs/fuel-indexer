@@ -3,10 +3,9 @@ use async_graphql_parser::types::TypeKind;
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
-use fuel_indexer_lib::graphql::ParsedGraphQLSchema;
+use fuel_indexer_lib::graphql::{GraphQLSchema, ParsedGraphQLSchema};
 use fuel_indexer_lib::manifest::Manifest;
-use fuel_indexer_lib::ExecutionSource;
-use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
+use fuel_indexer_lib::{type_id, ExecutionSource};
 use itertools::Itertools;
 use std::collections::BTreeMap;
 
