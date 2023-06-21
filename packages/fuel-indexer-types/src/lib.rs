@@ -11,7 +11,6 @@ pub use fuels::{
         Bits256, Identity, SizedAsciiString,
     },
 };
-use sha2::{Digest, Sha256};
 
 pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
 

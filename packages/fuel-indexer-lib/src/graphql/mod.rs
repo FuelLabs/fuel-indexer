@@ -1,8 +1,6 @@
 pub mod parser;
 
 pub use parser::{ParsedError, ParsedGraphQLSchema};
-
-use async_graphql_parser::types::{Directive, FieldDefinition};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 

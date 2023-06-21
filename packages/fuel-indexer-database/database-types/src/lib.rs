@@ -257,7 +257,8 @@ pub struct Column {
 
     /// Position of the column.
     ///
-    /// Used when calling `fuel_indexer::database::Database::put_object`.
+    /// Used when determing the order of columns when saving objects to DB
+    /// and retrieving objects from DB.
     pub position: i32,
 
     /// How this column is persisted to the database.
@@ -273,14 +274,11 @@ pub struct Column {
 impl Column {
     pub fn from_field_def(
         f: &FieldDefinition,
-        namespace: &str,
-        identifier: &str,
         parsed: &ParsedGraphQLSchema,
-        version: &str,
         type_id: i64,
         position: i32,
     ) -> Self {
-        let mut field_type = f.ty.to_string().replace("!", "");
+        let mut field_type = f.ty.to_string().replace('!', "");
         if parsed.is_possible_foreign_key(&field_type) {
             // Determine implicit vs explicit FK
             field_type = f
@@ -763,6 +761,7 @@ pub struct Table {
     constraints: Vec<Constraint>,
 
     /// How this table is persisted to the database.
+    #[allow(unused)]
     persistence: ColumnPersistence,
 }
 
@@ -780,7 +779,7 @@ impl Table {
             TypeKind::Object(o) => {
                 let mut persistence = ColumnPersistence::Regular;
 
-                o.fields.iter().enumerate().for_each(|(i, f)| {
+                o.fields.iter().for_each(|f| {
                     let has_virtual = f
                         .node
                         .directives
@@ -797,15 +796,7 @@ impl Table {
                     .iter()
                     .enumerate()
                     .map(|(i, f)| {
-                        Column::from_field_def(
-                            &f.node,
-                            parsed.namespace(),
-                            parsed.identifier(),
-                            parsed,
-                            parsed.schema().version(),
-                            type_ids[i],
-                            i as i32,
-                        )
+                        Column::from_field_def(&f.node, parsed, type_ids[i], i as i32)
                     })
                     .collect::<Vec<Column>>();
                 let constraints = o
@@ -830,9 +821,8 @@ impl Table {
                         }
 
                         if parsed.is_possible_foreign_key(
-                            &f.node.ty.node.to_string().replace("!", ""),
+                            &f.node.ty.node.to_string().replace('!', ""),
                         ) {
-                            let ref_table_name = f.node.name.to_string().to_lowercase();
                             // Determine implicit vs explicit FK
                             let (ref_coltype, ref_colname, ref_tablename) = f
                                 .node
@@ -841,7 +831,7 @@ impl Table {
                                 .find(|d| d.node.name.to_string() == "join")
                                 .map(|d| {
                                     let typdef_name =
-                                        f.node.ty.to_string().replace("!", "");
+                                        f.node.ty.to_string().replace('!', "");
                                     let ref_field_name = d
                                         .clone()
                                         .node
@@ -859,15 +849,15 @@ impl Table {
                                         .to_string();
 
                                     (
-                                        fk_field_type.replace("!", ""),
+                                        fk_field_type.replace('!', ""),
                                         ref_field_name,
-                                        typdef_name.to_string().to_lowercase(),
+                                        typdef_name.to_lowercase(),
                                     )
                                 })
                                 .unwrap_or((
                                     IdCol::to_uppercase_string(),
                                     IdCol::to_lowercase_string(),
-                                    f.node.ty.to_string().replace("!", "").to_lowercase(),
+                                    f.node.ty.to_string().replace('!', "").to_lowercase(),
                                 ));
 
                             return Some(Constraint::Fk(ForeignKey {
@@ -897,7 +887,7 @@ impl Table {
                     persistence,
                 }
             }
-            TypeKind::Union(u) => {
+            TypeKind::Union(_u) => {
                 unimplemented!()
             }
             _ => unimplemented!(),
@@ -919,9 +909,7 @@ impl SqlFragment for Table {
             .join(",\n");
         s.push_str(&cols);
         // Remove last ',\n' from last column to avoid syntax error
-        let mut chars = s.chars();
-        // chars.next_back();
-        // chars.next_back();
+        let chars = s.chars();
 
         let mut chars = chars.as_str().to_string();
         chars.push_str("\n);");

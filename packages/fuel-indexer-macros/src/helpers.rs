@@ -509,7 +509,6 @@ pub enum FieldKind {
 pub fn process_typedef_field(
     schema: &ParsedGraphQLSchema,
     mut field_def: FieldDefinition,
-    typedef_name: &String,
 ) -> (
     proc_macro2::TokenStream,
     proc_macro2::Ident,
@@ -528,7 +527,7 @@ pub fn process_typedef_field(
                 .iter()
                 .find(|d| d.node.name.to_string() == "join")
                 .map(|d| {
-                    let typdef_name = field_def.ty.to_string().replace("!", "");
+                    let typdef_name = field_def.ty.to_string().replace('!', "");
                     let ref_field_name =
                         d.clone().node.arguments.pop().unwrap().1.to_string();
                     let fk_field_id = format!("{typdef_name}.{ref_field_name}");
@@ -546,27 +545,27 @@ pub fn process_typedef_field(
             // We're manually updated the field type here because we need to substitute the field name
             // into a scalar type name.
             field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(field_typ_name.replace("!", ""))),
+                base: BaseType::Named(Name::new(field_typ_name.replace('!', ""))),
                 nullable: field_def.ty.node.nullable,
             };
 
-            process_typedef_field(schema, field_def, typedef_name)
+            process_typedef_field(schema, field_def)
         }
         FieldKind::Enum => {
             let field_typ_name = nullable_type(&field_def, "Charfield");
             field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(field_typ_name.replace("!", ""))),
+                base: BaseType::Named(Name::new(field_typ_name.replace('!', ""))),
                 nullable: field_def.ty.node.nullable,
             };
-            process_typedef_field(schema, field_def, typedef_name)
+            process_typedef_field(schema, field_def)
         }
         FieldKind::Virtual => {
             let field_typ_name = nullable_type(&field_def, "Virtual");
             field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(field_typ_name.replace("!", ""))),
+                base: BaseType::Named(Name::new(field_typ_name.replace('!', ""))),
                 nullable: field_def.ty.node.nullable,
             };
-            process_typedef_field(schema, field_def, typedef_name)
+            process_typedef_field(schema, field_def)
         }
         FieldKind::Union => {
             let field_typ_name = field_def.ty.to_string();
@@ -574,9 +573,9 @@ pub fn process_typedef_field(
                 true => {
                     // All union derived type fields are optional.
                     field_def.ty.node = Type::new("Virtual").expect("Bad type.");
-                    process_typedef_field(schema, field_def, typedef_name)
+                    process_typedef_field(schema, field_def)
                 }
-                false => process_typedef_field(schema, field_def, typedef_name),
+                false => process_typedef_field(schema, field_def),
             }
         }
         _ => {

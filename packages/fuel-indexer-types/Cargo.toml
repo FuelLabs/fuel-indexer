@@ -18,5 +18,4 @@ fuel-indexer-lib = { workspace = true }
 fuels = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-sha2 = "0.9"
 tai64 = { version = "4.0", default-features = false, features = ["serde"] }

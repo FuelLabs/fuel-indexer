@@ -5,13 +5,13 @@ use fuel_indexer_database::{
 };
 use fuel_indexer_lib::graphql::{GraphQLSchema, ParsedGraphQLSchema};
 use fuel_indexer_lib::manifest::Manifest;
-use fuel_indexer_lib::{type_id, ExecutionSource};
 use itertools::Itertools;
 use std::collections::BTreeMap;
 
 /// IndexerSchema is used to encapsulate most of the logic related to parsing
 /// GraphQL types, generating SQL from those types, and committing that SQL to
 /// the database.
+#[derive(Default)]
 pub struct IndexerSchema {
     /// The database type.
     db_type: DbType,
@@ -30,9 +30,6 @@ pub struct IndexerSchema {
 
     /// The identifier of the indexer.
     identifier: String,
-
-    /// The execution source of the indexer.
-    exec_source: ExecutionSource,
 }
 
 impl IndexerSchema {
@@ -42,7 +39,6 @@ impl IndexerSchema {
         identifier: &str,
         schema: &GraphQLSchema,
         db_type: DbType,
-        exec_source: ExecutionSource,
     ) -> IndexerSchemaDbResult<Self> {
         Ok(IndexerSchema {
             db_type,
@@ -50,7 +46,6 @@ impl IndexerSchema {
             identifier: identifier.to_string(),
             schema: schema.to_owned(),
             parsed: ParsedGraphQLSchema::default(),
-            exec_source,
             tables: Vec::new(),
         })
     }
@@ -61,15 +56,25 @@ impl IndexerSchema {
     }
 
     /// Generate table SQL for each indexable object in the given GraphQL schema.
+    ///
+    /// Ideally all of these queries should return the objects that they persist to the
+    /// DB (e.g., `INSERT .. RETURNING *`) but since this is not a hot path this functionality
+    /// isn't a pressing requirement.
     pub async fn build_and_commit(
         mut self,
         schema: &GraphQLSchema,
         conn: &mut IndexerConnection,
     ) -> IndexerSchemaDbResult<Self> {
+        let indexer_id =
+            queries::get_indexer_id(conn, &self.namespace, &self.identifier).await?;
+        let IndexerAssetBundle { manifest, .. } =
+            queries::latest_assets_for_indexer(conn, &indexer_id).await?;
+        let manifest = Manifest::try_from(&manifest.bytes).expect("Bad manifest.");
+
         let parsed_schema = ParsedGraphQLSchema::new(
             &self.namespace,
             &self.identifier,
-            ExecutionSource::Wasm,
+            manifest.execution_source(),
             Some(schema),
         )?;
 
@@ -135,17 +140,15 @@ impl IndexerSchema {
                     let col_type_ids = o
                         .fields
                         .iter()
-                        .filter_map(|f| {
-                            Some(
-                                type_ids
-                                    .iter()
-                                    .find(|t| t.graphql_name == f.node.name.to_string())
-                                    .expect(&format!(
-                                        "No associated TypeId for field '{}'.",
-                                        f.node.name.to_string()
-                                    ))
-                                    .id,
-                            )
+                        .map(|f| {
+                            type_ids
+                                .iter()
+                                .find(|t| t.graphql_name == f.node.name.to_string())
+                                .expect(&format!(
+                                    "No associated TypeId for field '{}'.",
+                                    f.node.name.to_string()
+                                ))
+                                .id
                         })
                         .collect::<Vec<i64>>();
                     Some(Table::from_typdef(
@@ -241,7 +244,6 @@ impl IndexerSchema {
             tables,
             parsed,
             db_type: DbType::Postgres,
-            exec_source: manifest.execution_source(),
         };
 
         schema.register_queryroot_fields();

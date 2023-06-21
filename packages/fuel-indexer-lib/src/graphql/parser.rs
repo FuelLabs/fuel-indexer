@@ -222,7 +222,7 @@ impl ParsedGraphQLSchema {
                                     && !enum_names.contains(&field_name)
                                 {
                                     let field_typ_name =
-                                        field.node.ty.to_string().replace("!", "");
+                                        field.node.ty.to_string().replace('!', "");
                                     let field_id = format!("{obj_name}.{field_name}");
                                     let mut foreign_key_mapping = HashMap::new();
                                     foreign_key_mapping.insert(
@@ -234,7 +234,7 @@ impl ParsedGraphQLSchema {
                                 }
 
                                 let field_typ_name =
-                                    field.node.ty.to_string().replace("!", "");
+                                    field.node.ty.to_string().replace('!', "");
 
                                 let field_id = format!("{obj_name}.{field_name}");
 
@@ -464,14 +464,14 @@ impl ParsedGraphQLSchema {
         self.type_defs()
             .iter()
             .filter_map(|(name, typ)| match &typ.kind {
-                TypeKind::Object(o) => {
+                TypeKind::Object(_o) => {
                     if !self.is_virtual_type(name) {
                         Some(typ.clone())
                     } else {
                         None
                     }
                 }
-                TypeKind::Union(u) => {
+                TypeKind::Union(_u) => {
                     if !self.is_virtual_type(name) {
                         Some(typ.clone())
                     } else {
@@ -496,7 +496,7 @@ impl ParsedGraphQLSchema {
         match self.object_field_mappings.get(cond) {
             Some(fieldset) => fieldset.get(name),
             _ => {
-                let tablename = cond.replace("!", "");
+                let tablename = cond.replace('!', "");
                 match self.object_field_mappings.get(&tablename) {
                     Some(fieldset) => fieldset.get(name),
                     _ => None,

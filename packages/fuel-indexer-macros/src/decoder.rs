@@ -99,7 +99,7 @@ impl Decoder for ObjectDecoder {
 
                 for field in &o.fields {
                     let (typ_tokens, field_name, field_typ_scalar_name, extractor) =
-                        process_typedef_field(parsed, field.node.clone(), &obj_name);
+                        process_typedef_field(parsed, field.node.clone());
 
                     let field_typ_scalar_name = &field_typ_scalar_name.to_string();
 
@@ -238,7 +238,7 @@ impl Decoder for ObjectDecoder {
                     // Since we've already processed the member's fields, we don't need
                     // to do any type of special field processing here.
                     let (typ_tokens, field_name, field_typ_scalar_name, extractor) =
-                        process_typedef_field(parsed, field.clone(), &union_name);
+                        process_typedef_field(parsed, field.clone());
 
                     let field_typ_scalar_name = &field_typ_scalar_name.to_string();
 

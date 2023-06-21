@@ -1,4 +1,4 @@
-#![deny(unused_crate_dependencies)]
+// TODO: Deny `clippy::unused_crate_dependencies` when including feature-flagged dependency `itertools`
 
 extern crate alloc;
 
