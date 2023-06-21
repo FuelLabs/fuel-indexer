@@ -3102,6 +3102,7 @@ version = "0.17.1"
 dependencies = [
  "async-graphql-parser 5.0.9",
  "chrono",
+ "fuel-indexer-lib",
  "serde",
  "strum",
 ]
@@ -3128,8 +3129,10 @@ name = "fuel-indexer-lib"
 version = "0.17.1"
 dependencies = [
  "anyhow",
+ "async-graphql-parser 5.0.9",
  "bincode",
  "clap 3.2.25",
+ "fuel-indexer-types",
  "http",
  "proc-macro2",
  "quote",
@@ -3242,7 +3245,6 @@ dependencies = [
  "hex",
  "insta",
  "serde",
- "sha2 0.9.9",
  "sqlx",
  "thiserror",
  "tracing",

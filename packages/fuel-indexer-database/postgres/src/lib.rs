@@ -106,9 +106,9 @@ pub async fn root_columns_list_by_id(
 pub async fn new_root_columns(
     conn: &mut PoolConnection<Postgres>,
     cols: Vec<RootColumns>,
-) -> sqlx::Result<usize> {
+) -> sqlx::Result<RootColumns> {
     let mut builder = sqlx::QueryBuilder::new(
-        "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)",
+        "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)", // return *
     );
 
     builder.push_values(cols.into_iter(), |mut b, new_col| {
@@ -118,17 +118,18 @@ pub async fn new_root_columns(
     });
 
     let query = builder.build();
-    let result = query.execute(conn).await?;
-    Ok(result.rows_affected() as usize)
+    let _result = query.execute(conn).await?;
+
+    Ok(RootColumns::default())
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_graph_root(
     conn: &mut PoolConnection<Postgres>,
     root: GraphRoot,
-) -> sqlx::Result<usize> {
+) -> sqlx::Result<GraphRoot> {
     let mut builder = sqlx::QueryBuilder::new(
-        "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, schema)",
+        "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, schema)", // return *
     );
 
     builder.push_values(std::iter::once(root), |mut b, root| {
@@ -139,8 +140,8 @@ pub async fn new_graph_root(
     });
 
     let query = builder.build();
-    let result = query.execute(conn).await?;
-    Ok(result.rows_affected() as usize)
+    let _result = query.execute(conn).await?;
+    Ok(GraphRoot::default())
 }
 
 #[cfg_attr(feature = "metrics", metrics)]

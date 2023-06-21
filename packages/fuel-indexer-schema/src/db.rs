@@ -14,8 +14,6 @@ pub enum IndexerSchemaDbError {
     DatabaseError(#[from] IndexerDatabaseError),
     #[error("Generic error")]
     Generic,
-    #[error("GraphQL parser error: {0:?}")]
-    ParseError(#[from] async_graphql_parser::Error),
     #[error("Could not build schema: {0:?}")]
     SchemaConstructionError(String),
     #[error("Unable to parse join directive: {0:?}")]
@@ -30,4 +28,6 @@ pub enum IndexerSchemaDbError {
     IndexerSchemaError(#[from] crate::IndexerSchemaError),
     #[error("Utf8 Error: {0:?}")]
     Utf8Error(#[from] std::str::Utf8Error),
+    #[error("Unable to parse GraphQL schema: {0:?}")]
+    ParsedError(#[from] fuel_indexer_lib::graphql::ParsedError),
 }

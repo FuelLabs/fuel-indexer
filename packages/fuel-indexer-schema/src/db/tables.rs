@@ -1,7 +1,8 @@
-use crate::{db::IndexerSchemaDbResult, parser::ParsedGraphQLSchema, QUERY_ROOT};
+use crate::{db::IndexerSchemaDbResult, QUERY_ROOT};
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
+use fuel_indexer_lib::graphql::ParsedGraphQLSchema;
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::{graphql::GraphQLSchema, type_id};
@@ -76,7 +77,7 @@ impl IndexerSchema {
             .parsed
             .indexable_objects()
             .iter()
-            .map(|o| Table::from(o.to_owned()))
+            .map(|o| Table::from_typdef(o.to_owned(), &self.parsed))
             .collect::<Vec<Table>>();
 
         let _table_stmnts = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
@@ -111,7 +112,7 @@ impl IndexerSchema {
             ..GraphRoot::default()
         };
 
-        queries::new_graph_root(conn, root).await?;
+        let root = queries::new_graph_root(conn, root).await?; // should return *
 
         let latest = queries::graph_root_latest(conn, &namespace, &identifier).await?;
 
@@ -130,9 +131,18 @@ impl IndexerSchema {
         let columns = parsed
             .fields_for_columns()
             .iter()
-            .map(|f| {
+            .enumerate()
+            .map(|(i, f)| {
                 let type_id = type_id(&namespace, &f.name.node);
-                FooColumn::from_field_def(f, &namespace, &identifier, version, type_id)
+                FooColumn::from_field_def(
+                    f,
+                    &namespace,
+                    &identifier,
+                    version,
+                    type_id,
+                    i as i32,
+                    root.id,
+                )
             })
             .collect::<Vec<FooColumn>>();
 
@@ -198,7 +208,7 @@ impl IndexerSchema {
         let tables = parsed
             .indexable_objects()
             .iter()
-            .map(|o| Table::from(o.to_owned()))
+            .map(|o| Table::from_typdef(o.to_owned(), &parsed))
             .collect::<Vec<Table>>();
 
         let mut schema = IndexerSchema {

@@ -10,10 +10,8 @@ pub const QUERY_ROOT: &str = "QueryRoot";
 
 #[cfg(feature = "db-models")]
 pub mod db;
-pub mod parser;
 pub mod utils;
 
-pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 const NULL_VALUE: &str = "NULL";
 
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
@@ -36,6 +34,8 @@ pub enum IndexerSchemaError {
     ListTypesUnsupported,
     #[error("Inconsistent use of virtual union types. {0:?}")]
     InconsistentVirtualUnion(String),
+    #[error("Unable to parse GraphQL schema: {0:?}")]
+    ParsedError(#[from] fuel_indexer_lib::graphql::ParsedError),
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]

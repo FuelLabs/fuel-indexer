@@ -2,9 +2,10 @@
 pub mod directives;
 
 use crate::directives::IndexMethod;
-use async_graphql_parser::types::{FieldDefinition, ObjectType};
+use async_graphql_parser::types::{FieldDefinition, TypeDefinition};
 use chrono::serde::ts_microseconds;
 use chrono::{DateTime, Utc};
+use fuel_indexer_lib::graphql::ParsedGraphQLSchema;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt,
@@ -200,7 +201,7 @@ pub struct RootColumns {
 
 /// Whether a given column is virtual or regular. Virtual columns are not
 /// persisted to the database.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, EnumString, AsRefStr)]
 pub enum ColumnPersistence {
     Virtual,
     #[default]
@@ -240,14 +241,9 @@ impl FooColumn {
         identifier: &str,
         version: &str,
         type_id: i64,
+        position: i32,
+        root_id: i64,
     ) -> Self {
-        let persistence = f
-            .directives
-            .iter()
-            .find(|d| d.node.name.to_string() == "virtual")
-            .map(|_| ColumnPersistence::Virtual)
-            .unwrap_or(ColumnPersistence::Regular);
-
         let unique = f
             .directives
             .iter()
@@ -255,18 +251,15 @@ impl FooColumn {
 
         let table_name = f.name.to_string();
         Self {
-            // Use a dummy value
-            id: 1,
-            root_id: 1,
+            root_id,
             type_id,
             name: table_name.clone(),
             graphql_type: table_name,
             coltype: ColumnType::from(f.ty.to_string().as_str()),
-            // why do we use this?
-            position: 1,
-            persistence,
+            position,
             unique,
             nullable: f.ty.node.nullable,
+            ..Self::default()
         }
     }
 }
@@ -309,6 +302,12 @@ pub struct FooTypeId {
     pub table_name: String,
     pub persistence: ColumnPersistence,
 }
+
+// impl FooTypeId {
+//     pub fn from_typedef(typ: TypeDefinition, parsed: &ParsedGraphQLSchema) {
+//         unimplemented!()
+//     }
+// }
 
 impl FooTypeId {
     pub fn from_field_def(
@@ -711,10 +710,13 @@ pub struct Table {
 
     /// SQL conswtraints associated with this table.
     constraints: Vec<Constraint>,
+
+    /// How this table is persisted to the database.
+    persistence: ColumnPersistence,
 }
 
-impl From<ObjectType> for Table {
-    fn from(_obj: ObjectType) -> Self {
+impl Table {
+    pub fn from_typdef(_typ: TypeDefinition, _parsed: &ParsedGraphQLSchema) -> Self {
         unimplemented!()
     }
 }

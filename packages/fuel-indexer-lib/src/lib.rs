@@ -6,6 +6,7 @@
 
 pub mod config;
 pub mod defaults;
+pub mod graphql;
 pub mod manifest;
 pub mod utils;
 

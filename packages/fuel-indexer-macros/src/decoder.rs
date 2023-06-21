@@ -6,8 +6,7 @@ use async_graphql_parser::types::{
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
 use fuel_indexer_database_types::IdCol;
-use fuel_indexer_lib::ExecutionSource;
-use fuel_indexer_schema::parser::ParsedGraphQLSchema;
+use fuel_indexer_lib::{graphql::ParsedGraphQLSchema, ExecutionSource};
 use linked_hash_set::LinkedHashSet;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -99,18 +98,18 @@ impl Decoder for ObjectDecoder {
                 GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
                 for field in &o.fields {
-                    let (typ_tokens, field_name, field_type_scalar_name, extractor) =
+                    let (typ_tokens, field_name, field_typ_scalar_name, extractor) =
                         process_typedef_field(parsed, field.node.clone(), &obj_name);
 
-                    fields_map.insert(
-                        field_name.to_string(),
-                        field_type_scalar_name.to_string(),
-                    );
+                    let field_typ_scalar_name = &field_typ_scalar_name.to_string();
 
-                    let clone = clone_tokens(&field_type_scalar_name.to_string());
+                    fields_map
+                        .insert(field_name.to_string(), field_typ_scalar_name.clone());
+
+                    let clone = clone_tokens(field_typ_scalar_name);
                     let field_decoder = field_decoder_tokens(
                         field.node.ty.node.nullable,
-                        &field_type_scalar_name.to_string(),
+                        field_typ_scalar_name,
                         &field_name,
                         clone.clone(),
                     );
@@ -136,16 +135,16 @@ impl Decoder for ObjectDecoder {
                     };
 
                     let unwrap_or_default = unwrap_or_default_tokens(
-                        &field_type_scalar_name.to_string(),
+                        field_typ_scalar_name,
                         field.node.ty.node.nullable,
                     );
-                    let to_bytes = to_bytes_tokens(&field_type_scalar_name.to_string());
+                    let to_bytes = to_bytes_tokens(field_typ_scalar_name);
 
                     if can_derive_id(&obj_fields, &field_name.to_string(), &obj_name) {
                         parameters =
                             parameters_tokens(parameters, &field_name, typ_tokens);
                         if let Some(tokens) = hasher_tokens(
-                            &field_type_scalar_name.to_string(),
+                            field_typ_scalar_name,
                             hasher.clone(),
                             &field_name,
                             clone,
@@ -192,7 +191,6 @@ impl Decoder for ObjectDecoder {
                 let mut field_extractors = quote! {};
                 let mut from_row = quote! {};
                 let mut to_row = quote! {};
-
                 let mut derived_type_fields = HashSet::new();
                 let mut union_field_set = HashSet::new();
 
@@ -239,13 +237,15 @@ impl Decoder for ObjectDecoder {
 
                     // Since we've already processed the member's fields, we don't need
                     // to do any type of special field processing here.
-                    let (typ_tokens, field_name, field_type_scalar_name, extractor) =
+                    let (typ_tokens, field_name, field_typ_scalar_name, extractor) =
                         process_typedef_field(parsed, field.clone(), &union_name);
 
-                    let clone = clone_tokens(&field_type_scalar_name.to_string());
+                    let field_typ_scalar_name = &field_typ_scalar_name.to_string();
+
+                    let clone = clone_tokens(field_typ_scalar_name);
                     let field_decoder = field_decoder_tokens(
                         field.ty.node.nullable,
-                        &field_type_scalar_name.to_string(),
+                        field_typ_scalar_name,
                         &field_name,
                         clone,
                     );

@@ -1,45 +1,26 @@
 extern crate alloc;
 
-use crate::{parser::ParsedGraphQLSchema, IndexerSchemaError, IndexerSchemaResult};
+use crate::{IndexerSchemaError, IndexerSchemaResult};
+
 use alloc::vec::Vec;
 use async_graphql_parser::types::{
     BaseType, Directive, FieldDefinition, ServiceDocument, TypeDefinition, TypeKind,
     TypeSystemDefinition,
 };
 use fuel_indexer_database_types::{directives, ColumnType, IdCol};
+use fuel_indexer_lib::graphql::{
+    field_type_table_name, normalize_field_type_name, ParsedGraphQLSchema,
+};
 use fuel_indexer_lib::ExecutionSource;
-use fuel_indexer_types::graphql::{GraphQLSchema, GraphqlObject, IndexMetadata};
-use sha2::{Digest, Sha256};
+use fuel_indexer_types::graphql::GraphQLSchema;
 use std::collections::{HashMap, HashSet};
 
-pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 pub const JOIN_DIRECTIVE_NAME: &str = "join";
 pub const UNIQUE_DIRECTIVE_NAME: &str = "unique";
 pub const INDEX_DIRECTIVE_NAME: &str = "indexed";
 pub const NORELATION_DIRECTIVE_NAME: &str = "virtual";
 
 type ForeignKeyMap = HashMap<String, HashMap<String, (String, String)>>;
-
-// REFACTOR: remove
-/// Inject the default GraphQL entities used by the indexer into the user's GraphQL schema.
-pub fn inject_native_entities_into_schema(schema: &str) -> String {
-    format!("{}{}", schema, IndexMetadata::schema_fragment())
-}
-
-/// Remove special chars from GraphQL field type name.
-pub fn normalize_field_type_name(name: &str) -> String {
-    name.replace('!', "")
-}
-
-/// Convert GraphQL field type name to SQL table name.
-pub fn field_type_table_name(f: &FieldDefinition) -> String {
-    normalize_field_type_name(&f.ty.to_string()).to_lowercase()
-}
-
-// REFACTOR: remove
-pub fn schema_version(schema: &str) -> String {
-    format!("{:x}", Sha256::digest(schema.as_bytes()))
-}
 
 pub fn type_name(typ: &TypeDefinition) -> String {
     typ.name.clone().to_string()

@@ -1,15 +1,68 @@
-use crate::{utils::*, IndexerSchemaError, IndexerSchemaResult};
+use crate::{
+    graphql::{normalize_field_type_name, BASE_SCHEMA},
+    ExecutionSource,
+};
 use async_graphql_parser::{
     parse_schema,
     types::{
-        EnumType, FieldDefinition, ObjectType, ServiceDocument, TypeKind,
+        EnumType, FieldDefinition, ObjectType, ServiceDocument, TypeDefinition, TypeKind,
         TypeSystemDefinition, UnionType,
     },
 };
-use fuel_indexer_database_types::directives;
-use fuel_indexer_lib::ExecutionSource;
 use fuel_indexer_types::graphql::GraphQLSchema;
 use std::collections::{BTreeMap, HashMap, HashSet};
+use thiserror::Error;
+
+/// Result type returned by parsing GraphQL schema.
+pub type ParsedResult<T> = Result<T, ParsedError>;
+
+/// Error type returned by parsing GraphQL schema.
+#[derive(Error, Debug)]
+pub enum ParsedError {
+    #[error("Generic error")]
+    Generic,
+    #[error("GraphQL parser error: {0:?}")]
+    ParseError(#[from] async_graphql_parser::Error),
+    #[error("This TypeKind is unsupported.")]
+    UnsupportedTypeKind,
+    #[error("List types are unsupported.")]
+    ListTypesUnsupported,
+    #[error("Inconsistent use of virtual union types. {0:?}")]
+    InconsistentVirtualUnion(String),
+}
+
+/// Given a GraphQL document, return a two `HashSet`s - one for each
+/// unique field type, and one for each unique directive.
+pub fn build_schema_types_set(
+    ast: &ServiceDocument,
+) -> (HashSet<String>, HashSet<String>) {
+    let types: HashSet<String> = ast
+        .definitions
+        .iter()
+        .filter_map(|def| {
+            if let TypeSystemDefinition::Type(typ) = def {
+                Some(&typ.node)
+            } else {
+                None
+            }
+        })
+        .map(|t| t.name.to_string())
+        .collect();
+
+    let directives = ast
+        .definitions
+        .iter()
+        .filter_map(|def| {
+            if let TypeSystemDefinition::Directive(dir) = def {
+                Some(dir.node.name.to_string())
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    (types, directives)
+}
 
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
 /// to parsing schema, creating mappings of types, fields, objects, etc.
@@ -70,15 +123,17 @@ pub struct ParsedGraphQLSchema {
     /// GraphQL schema content.
     schema: GraphQLSchema,
 
-    // FIXME: How tf to calculate this using `get_column_type` and such?
     /// All unique names of foreign key types in the schema.
     foreign_key_mappings: HashMap<String, HashMap<String, (String, String)>>,
+
+    // All type definitions in the schema.
+    type_defs: HashMap<String, TypeDefinition>,
 }
 
 impl Default for ParsedGraphQLSchema {
     fn default() -> Self {
         let ast = parse_schema(BASE_SCHEMA)
-            .map_err(IndexerSchemaError::ParseError)
+            .map_err(ParsedError::ParseError)
             .expect("Bad schema");
 
         Self {
@@ -99,6 +154,7 @@ impl Default for ParsedGraphQLSchema {
             field_defs: HashMap::new(),
             field_type_optionality: HashMap::new(),
             foreign_key_mappings: HashMap::new(),
+            type_defs: HashMap::new(),
             ast,
             schema: GraphQLSchema::default(),
         }
@@ -112,9 +168,8 @@ impl ParsedGraphQLSchema {
         identifier: &str,
         exec_source: ExecutionSource,
         schema: Option<&GraphQLSchema>,
-    ) -> IndexerSchemaResult<Self> {
-        let mut ast =
-            parse_schema(BASE_SCHEMA).map_err(IndexerSchemaError::ParseError)?;
+    ) -> ParsedResult<Self> {
+        let mut ast = parse_schema(BASE_SCHEMA).map_err(ParsedError::ParseError)?;
         let mut type_names = HashSet::new();
         let (scalar_names, _) = build_schema_types_set(&ast);
         type_names.extend(scalar_names.clone());
@@ -131,11 +186,11 @@ impl ParsedGraphQLSchema {
         let mut field_defs = HashMap::new();
         let mut field_type_optionality = HashMap::new();
         let mut foreign_key_mappings = HashMap::new();
+        let mut type_defs = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
-            ast =
-                parse_schema(schema.schema()).map_err(IndexerSchemaError::ParseError)?;
+            ast = parse_schema(schema.schema()).map_err(ParsedError::ParseError)?;
             let (other_type_names, _) = build_schema_types_set(&ast);
             type_names.extend(other_type_names);
 
@@ -144,13 +199,18 @@ impl ParsedGraphQLSchema {
                     match &t.node.kind {
                         TypeKind::Object(o) => {
                             let obj_name = t.node.name.to_string();
+                            type_defs.insert(obj_name.clone(), t.node.clone());
                             objects.insert(obj_name.clone(), o.clone());
                             let mut field_mapping = BTreeMap::new();
                             parsed_type_names.insert(t.node.name.to_string());
                             for field in &o.fields {
                                 let field_name = field.node.name.to_string();
-                                let directives::Virtual(is_virtual) =
-                                    get_notable_directive_info(&field.node).unwrap();
+
+                                let is_virtual = field
+                                    .node
+                                    .directives
+                                    .iter()
+                                    .any(|d| d.node.name.to_string() == "virtual");
 
                                 if is_virtual {
                                     virtual_type_names.insert(obj_name.clone());
@@ -193,6 +253,7 @@ impl ParsedGraphQLSchema {
                         }
                         TypeKind::Enum(e) => {
                             let name = t.node.name.to_string();
+                            type_defs.insert(name.clone(), t.node.clone());
                             enums.insert(name.clone(), e.clone());
                             virtual_type_names.insert(name.clone());
                             enum_names.insert(name.clone());
@@ -205,6 +266,7 @@ impl ParsedGraphQLSchema {
                         }
                         TypeKind::Union(u) => {
                             let union_name = t.node.name.to_string();
+                            type_defs.insert(union_name.clone(), t.node.clone());
                             unions.insert(union_name.clone(), u.clone());
                             union_names.insert(union_name.clone());
 
@@ -250,14 +312,12 @@ impl ParsedGraphQLSchema {
                                 // All members of a union must all be regualar or virtual
                                 if virtual_member_count != member_count {
                                     let e = format!("Union({union_name})'s members are not all virtual");
-                                    return Err(
-                                        IndexerSchemaError::InconsistentVirtualUnion(e),
-                                    );
+                                    return Err(ParsedError::InconsistentVirtualUnion(e));
                                 }
                             }
                         }
                         _ => {
-                            return Err(IndexerSchemaError::UnsupportedTypeKind);
+                            return Err(ParsedError::UnsupportedTypeKind);
                         }
                     }
                 }
@@ -284,6 +344,7 @@ impl ParsedGraphQLSchema {
             field_type_optionality,
             schema: schema.cloned().unwrap(),
             ast,
+            type_defs,
         })
     }
 
@@ -351,6 +412,10 @@ impl ParsedGraphQLSchema {
         &self.schema
     }
 
+    pub fn type_defs(&self) -> &HashMap<String, TypeDefinition> {
+        &self.type_defs
+    }
+
     pub fn foreign_key_mappings(
         &self,
     ) -> &HashMap<String, HashMap<String, (String, String)>> {
@@ -389,10 +454,10 @@ impl ParsedGraphQLSchema {
     }
 
     /// All objects from which SQL tables can be created.
-    pub fn indexable_objects(&self) -> Vec<ObjectType> {
-        self.objects
+    pub fn indexable_objects(&self) -> Vec<TypeDefinition> {
+        self.type_defs()
             .iter()
-            .filter(|(name, _)| !self.virtual_type_names.contains(*name))
+            .filter(|(name, _)| true)
             .map(|(_, obj)| obj.clone())
             .collect()
     }
