@@ -1,5 +1,8 @@
 use crate::{
-    graphql::{GraphQLSchema, BASE_SCHEMA},
+    graphql::{
+        field_id, fully_qualified_namespace, GraphQLSchema, GraphQLSchemaValidator,
+        BASE_SCHEMA,
+    },
     ExecutionSource,
 };
 use async_graphql_parser::{
@@ -66,6 +69,10 @@ pub fn build_schema_types_set(
 
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
 /// to parsing schema, creating mappings of types, fields, objects, etc.
+///
+/// Ideally `ParsedGraphQLSchema` prevents from having to manually parse `async_graphql_parser`
+/// `TypeDefinition`s in order to get metadata on the types (e.g., Is a foreign key? is a virtual type?
+/// and so on).
 #[derive(Debug, Clone)]
 pub struct ParsedGraphQLSchema {
     /// Namespace of the indexer.
@@ -201,12 +208,15 @@ impl ParsedGraphQLSchema {
                     match &t.node.kind {
                         TypeKind::Object(o) => {
                             let obj_name = t.node.name.to_string();
+
                             type_defs.insert(obj_name.clone(), t.node.clone());
                             objects.insert(obj_name.clone(), o.clone());
-                            let mut field_mapping = BTreeMap::new();
                             parsed_type_names.insert(t.node.name.to_string());
+
+                            let mut field_mapping = BTreeMap::new();
                             for field in &o.fields {
                                 let field_name = field.node.name.to_string();
+                                let fid = field_id(&obj_name, &field_name);
 
                                 let is_virtual = field
                                     .node
@@ -225,33 +235,25 @@ impl ParsedGraphQLSchema {
                                 {
                                     let field_typ_name =
                                         field.node.ty.to_string().replace('!', "");
-                                    let field_id = format!("{obj_name}.{field_name}");
-                                    let mut foreign_key_mapping = HashMap::new();
-                                    foreign_key_mapping.insert(
-                                        field_name.clone(),
-                                        (obj_name.clone(), field_typ_name.clone()),
+                                    foreign_key_mappings.insert(
+                                        fid.clone(),
+                                        HashMap::from([(
+                                            field_name.clone(),
+                                            (obj_name.clone(), field_typ_name.clone()),
+                                        )]),
                                     );
-                                    foreign_key_mappings
-                                        .insert(field_id, foreign_key_mapping);
                                 }
 
                                 let field_typ_name =
                                     field.node.ty.to_string().replace('!', "");
 
-                                let field_id = format!("{obj_name}.{field_name}");
-
                                 parsed_type_names.insert(field_name.clone());
                                 field_mapping.insert(field_name, field_typ_name.clone());
-                                field_type_optionality.insert(
-                                    field_id.clone(),
-                                    field.node.ty.node.nullable,
-                                );
-                                field_type_mappings
-                                    .insert(field_id.clone(), field_typ_name);
-                                field_defs.insert(
-                                    field_id,
-                                    (field.node.clone(), obj_name.clone()),
-                                );
+                                field_type_optionality
+                                    .insert(fid.clone(), field.node.ty.node.nullable);
+                                field_type_mappings.insert(fid.clone(), field_typ_name);
+                                field_defs
+                                    .insert(fid, (field.node.clone(), obj_name.clone()));
                             }
                             object_field_mappings.insert(obj_name, field_mapping);
                         }
@@ -270,26 +272,23 @@ impl ParsedGraphQLSchema {
                         }
                         TypeKind::Union(u) => {
                             let union_name = t.node.name.to_string();
+
                             parsed_type_names.insert(union_name.clone());
                             type_defs.insert(union_name.clone(), t.node.clone());
                             unions.insert(union_name.clone(), u.clone());
                             union_names.insert(union_name.clone());
 
-                            let member_count = u.members.len();
-                            let virtual_member_count = u
-                                .members
-                                .iter()
-                                .map(|m| {
-                                    let member_name = m.node.to_string();
-                                    if virtual_type_names.contains(&member_name) {
-                                        1
-                                    } else {
-                                        0
-                                    }
-                                })
-                                .sum::<usize>();
+                            GraphQLSchemaValidator::check_derived_union_is_well_formed(
+                                &t.node,
+                                &mut virtual_type_names,
+                            );
 
-                            let mut has_virtual_member = false;
+                            u.members.iter().for_each(|m| {
+                                let member_name = m.node.to_string();
+                                if let Some(name) = virtual_type_names.get(&member_name) {
+                                    virtual_type_names.insert(name.to_owned());
+                                }
+                            });
 
                             // These member fields are already cached under their respective object names, but
                             // we also need to cache them under this derived union name.
@@ -297,15 +296,15 @@ impl ParsedGraphQLSchema {
                                 let member_name = m.node.to_string();
                                 let member_obj = objects.get(&member_name).unwrap();
                                 member_obj.fields.iter().for_each(|f| {
-                                    let field_id =
-                                        format!("{}.{}", union_name, f.node.name);
+                                    let fid =
+                                        field_id(&union_name, &f.node.name.to_string());
                                     field_defs.insert(
-                                        field_id.clone(),
+                                        fid.clone(),
                                         (f.node.clone(), member_name.clone()),
                                     );
 
                                     field_type_mappings.insert(
-                                        field_id.clone(),
+                                        fid.clone(),
                                         f.node.ty.to_string().replace('!', ""),
                                     );
 
@@ -318,28 +317,11 @@ impl ParsedGraphQLSchema {
                                         );
 
                                     field_type_optionality
-                                        .insert(field_id, f.node.ty.node.nullable);
+                                        .insert(fid, f.node.ty.node.nullable);
                                 });
                             });
-
-                            u.members.iter().for_each(|m| {
-                                let member_name = m.node.to_string();
-                                if let Some(name) = virtual_type_names.get(&member_name) {
-                                    virtual_type_names.insert(name.to_owned());
-                                    has_virtual_member = true;
-                                }
-                            });
-
-                            if has_virtual_member {
-                                virtual_type_names.insert(union_name.clone());
-
-                                // All members of a union must all be regualar or virtual
-                                if virtual_member_count != member_count {
-                                    let e = format!("Union({union_name})'s members are not all virtual");
-                                    return Err(ParsedError::InconsistentVirtualUnion(e));
-                                }
-                            }
                         }
+
                         _ => {
                             return Err(ParsedError::UnsupportedTypeKind);
                         }
@@ -420,10 +402,6 @@ impl ParsedGraphQLSchema {
         &self.field_type_mappings
     }
 
-    pub fn scalar_names(&self) -> &HashSet<String> {
-        &self.scalar_names
-    }
-
     pub fn field_type_optionality(&self) -> &HashMap<String, bool> {
         &self.field_type_optionality
     }
@@ -482,38 +460,6 @@ impl ParsedGraphQLSchema {
         self.union_names.contains(name)
     }
 
-    /// All objects from which SQL tables can be created.
-    pub fn indexable_typedefs(&self) -> Vec<TypeDefinition> {
-        self.type_defs()
-            .iter()
-            .filter_map(|(name, typ)| match &typ.kind {
-                TypeKind::Object(_o) => {
-                    if !self.is_virtual_type(name) {
-                        Some(typ.clone())
-                    } else {
-                        None
-                    }
-                }
-                TypeKind::Union(_u) => {
-                    if !self.is_virtual_type(name) {
-                        Some(typ.clone())
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            })
-            .collect::<Vec<TypeDefinition>>()
-    }
-
-    /// All fields from which SQL columns can be created.
-    pub fn fields_for_typeids(&self) -> Vec<(FieldDefinition, String)> {
-        self.field_defs
-            .iter()
-            .map(|(_, (field, typ))| (field.clone(), typ.clone()))
-            .collect()
-    }
-
     /// Return the GraphQL type for a given field name.
     pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
         match self.object_field_mappings.get(cond) {
@@ -535,6 +481,6 @@ impl ParsedGraphQLSchema {
 
     /// Fully qualified GraphQL namespace for indexer.
     pub fn fully_qualified_namespace(&self) -> String {
-        format!("{}_{}", self.namespace, self.identifier)
+        fully_qualified_namespace(&self.namespace, &self.identifier)
     }
 }

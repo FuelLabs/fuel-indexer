@@ -178,7 +178,6 @@ pub fn build_dynamic_schema(schema: &IndexerSchema) -> GraphqlResult<DynamicSche
         DynamicSchema::build("QueryRoot", None, None).introspection_only(),
         |sb, scalar| {
             // These types come pre-included in SchemaBuilder.
-            // FIXME: Use IdCol here
             if *scalar == "Boolean" || *scalar == "ID" {
                 sb
             } else {
@@ -284,21 +283,20 @@ pub fn build_dynamic_schema(schema: &IndexerSchema) -> GraphqlResult<DynamicSche
                 let field_type = match base_field_type {
                     BaseType::Named(type_name) => {
                         if nullable {
-                            // TODO: If we do not check for non-indexable types,
+                            // TODO: If we do not check for virtual types,
                             // enums become recursively self-referential and the playground
                             // will report errors related to enum subfields not being
-                            // supplied. For now, setting them to a String type does not
+                            // supplied.
+                            //
+                            //
+                            // For now, setting them to a String type does not
                             // cause errors, but we should decide what the final process is.
-                            if schema.parsed().virtual_type_names().contains(field_type) {
+                            if schema.parsed().is_virtual_type(field_type) {
                                 TypeRef::named(TypeRef::STRING)
                             } else {
                                 TypeRef::named(type_name.to_string())
                             }
-                        } else if schema
-                            .parsed()
-                            .virtual_type_names()
-                            .contains(field_type)
-                        {
+                        } else if schema.parsed().is_virtual_type(field_type) {
                             TypeRef::named_nn(TypeRef::STRING)
                         } else {
                             TypeRef::named_nn(type_name.to_string())

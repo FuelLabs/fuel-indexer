@@ -1,12 +1,12 @@
 use crate::helpers::*;
-use crate::validator::GraphQLSchemaValidator;
 use async_graphql_parser::types::{
     BaseType, FieldDefinition, Type, TypeDefinition, TypeKind,
 };
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
 use fuel_indexer_lib::{
-    graphql::types::IdCol, graphql::ParsedGraphQLSchema, type_id, ExecutionSource,
+    graphql::{types::IdCol, GraphQLSchemaValidator, ParsedGraphQLSchema},
+    type_id, ExecutionSource,
 };
 use linked_hash_set::LinkedHashSet;
 use proc_macro2::TokenStream;

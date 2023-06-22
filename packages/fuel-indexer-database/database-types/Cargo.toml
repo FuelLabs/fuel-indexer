@@ -11,7 +11,7 @@ description = "Fuel Indexer Database Types"
 
 [dependencies]
 async-graphql-parser = { workspace = true }
-async-graphql-value = { version = "5.0" }
+async-graphql-value = { workspace = true }
 chrono = { version = "0.4.24", features = ["serde"] }
 fuel-indexer-lib = { workspace = true }
 linked_hash_set = "0.1"

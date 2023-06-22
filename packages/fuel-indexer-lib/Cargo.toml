@@ -11,10 +11,11 @@ description = "Fuel Indexer Library"
 
 [dependencies]
 anyhow = "1.0"
-async-graphql-parser = "5.0"
+async-graphql-parser = { workspace = true }
 bincode = { workspace = true }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
 http = { version = "0.2", default-features = false }
+lazy_static = "1.4"
 proc-macro2 = "1.0"
 serde = { workspace = true }
 serde_json = { workspace = true }

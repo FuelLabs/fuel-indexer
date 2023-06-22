@@ -1,8 +1,12 @@
+pub mod constants;
 pub mod parser;
 pub mod types;
+pub mod validator;
+
+pub use parser::{ParsedError, ParsedGraphQLSchema};
+pub use validator::GraphQLSchemaValidator;
 
 use async_graphql_parser::types::FieldDefinition;
-pub use parser::{ParsedError, ParsedGraphQLSchema};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use types::IdCol;
@@ -28,6 +32,7 @@ pub struct IndexMetadata {
 }
 
 impl IndexMetadata {
+    /// Return the GraphQL schema fragment for the `IndexMetadata` type.
     pub fn schema_fragment() -> &'static str {
         r#"
 
@@ -64,6 +69,7 @@ impl From<String> for GraphQLSchema {
 }
 
 impl GraphQLSchema {
+    /// Create a new `GraphQLSchema` from raw GraphQL content.
     pub fn new(content: String) -> Self {
         let schema = inject_native_entities_into_schema(&content);
         let version = schema_version(&schema);
@@ -98,10 +104,10 @@ pub fn extract_foreign_key_info(
         .map(|d| {
             let typdef_name = f.ty.to_string().replace('!', "");
             let ref_field_name = d.clone().node.arguments.pop().unwrap().1.to_string();
-            let fk_field_id = format!("{typdef_name}.{ref_field_name}");
+            let fk_fid = field_id(&typdef_name, &ref_field_name);
             let fk_field_type = parsed
                 .field_type_mappings()
-                .get(&fk_field_id)
+                .get(&fk_fid)
                 .unwrap()
                 .to_string();
 
@@ -118,4 +124,14 @@ pub fn extract_foreign_key_info(
         ));
 
     (ref_coltype, ref_colname, ref_tablename)
+}
+
+/// Return a fully qualified name for a given `FieldDefinition` on a given `TypeDefinition`.
+pub fn field_id(typdef_name: &str, field_name: &str) -> String {
+    format!("{typdef_name}.{field_name}")
+}
+
+/// Return a fully qualified indexer namespace.
+pub fn fully_qualified_namespace(namespace: &str, identifier: &str) -> String {
+    format!("{}_{}", namespace, identifier)
 }

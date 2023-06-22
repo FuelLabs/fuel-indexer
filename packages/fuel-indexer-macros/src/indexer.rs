@@ -1,12 +1,11 @@
 use crate::{
     constants::*, helpers::*, native::handler_block_native, parse::IndexerConfig,
-    schema::process_graphql_schema, validator::GraphQLSchemaValidator,
-    wasm::handler_block_wasm,
+    schema::process_graphql_schema, wasm::handler_block_wasm,
 };
 use fuel_abi_types::abi::program::TypeDeclaration;
 use fuel_indexer_lib::{
-    manifest::ContractIds, manifest::Manifest, type_id, utils::local_repository_root,
-    ExecutionSource,
+    graphql::GraphQLSchemaValidator, manifest::ContractIds, manifest::Manifest, type_id,
+    utils::local_repository_root, ExecutionSource,
 };
 use fuel_indexer_types::FUEL_TYPES_NAMESPACE;
 use fuels::{core::codec::resolve_fn_selector, types::param_types::ParamType};

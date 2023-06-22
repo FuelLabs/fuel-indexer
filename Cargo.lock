@@ -3135,6 +3135,7 @@ dependencies = [
  "bincode",
  "clap 3.2.25",
  "http",
+ "lazy_static",
  "proc-macro2",
  "quote",
  "serde",

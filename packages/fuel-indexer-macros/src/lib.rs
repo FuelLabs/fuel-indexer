@@ -8,7 +8,6 @@ pub(crate) mod indexer;
 pub(crate) mod native;
 pub(crate) mod parse;
 pub(crate) mod schema;
-pub(crate) mod validator;
 pub(crate) mod wasm;
 
 use indexer::process_indexer_module;

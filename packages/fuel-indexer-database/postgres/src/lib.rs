@@ -109,7 +109,7 @@ pub async fn new_root_columns(
     cols: Vec<RootColumns>,
 ) -> sqlx::Result<RootColumns> {
     let mut builder = sqlx::QueryBuilder::new(
-        "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)", // return *
+        "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)",
     );
 
     builder.push_values(cols.into_iter(), |mut b, new_col| {
@@ -130,7 +130,7 @@ pub async fn new_graph_root(
     root: GraphRoot,
 ) -> sqlx::Result<GraphRoot> {
     let mut builder = sqlx::QueryBuilder::new(
-        "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, schema)", // return *
+        "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, schema)",
     );
 
     builder.push_values(std::iter::once(root), |mut b, root| {
@@ -337,7 +337,7 @@ pub async fn list_column_by_id(
                     nullable,
                     graphql_type,
                     unique,
-                    persistence: TypedefPersistence::from_str(persistence.as_str())
+                    persistence: Persistence::from_str(persistence.as_str())
                         .expect("Bad persistence."),
                 }
             })

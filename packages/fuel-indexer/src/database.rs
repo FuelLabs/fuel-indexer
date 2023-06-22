@@ -1,7 +1,10 @@
 use crate::ffi;
 use crate::{IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
-use fuel_indexer_lib::{graphql::types::IdCol, ExecutionSource};
+use fuel_indexer_lib::{
+    graphql::{fully_qualified_namespace, types::IdCol},
+    ExecutionSource,
+};
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
 use tracing::{debug, error, info};
@@ -111,11 +114,6 @@ impl Database {
         }
     }
 
-    /// Get the fully qualified namespace for this indexer.
-    fn fully_qualified_namespace(&self) -> String {
-        format!("{}_{}", self.namespace, self.identifier)
-    }
-
     /// Return a query to get an object from the database.
     fn get_query(&self, table: &str, object_id: u64) -> String {
         format!("SELECT object from {table} where id = {object_id}")
@@ -216,7 +214,7 @@ Do your WASM modules need to be rebuilt?
                 for column in results {
                     let table = &format!(
                         "{}.{}",
-                        self.fully_qualified_namespace(),
+                        fully_qualified_namespace(&self.namespace, &self.identifier),
                         &column.table_name
                     );
 
@@ -256,7 +254,7 @@ Do your WASM modules need to be rebuilt?
                 for column in columns {
                     let table = &format!(
                         "{}.{}",
-                        self.fully_qualified_namespace(),
+                        fully_qualified_namespace(&self.namespace, &self.identifier),
                         &column.table_name
                     );
 

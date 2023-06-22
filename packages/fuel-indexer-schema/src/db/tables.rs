@@ -8,7 +8,7 @@ use fuel_indexer_lib::{manifest::Manifest, ExecutionSource};
 use itertools::Itertools;
 use std::collections::BTreeMap;
 
-/// IndexerSchema is used to encapsulate most of the logic related to parsing
+/// `IndexerSchema` is used to encapsulate most of the logic related to parsing
 /// GraphQL types, generating SQL from those types, and committing that SQL to
 /// the database.
 #[derive(Default)]
@@ -113,12 +113,8 @@ impl IndexerSchema {
             .type_defs()
             .iter()
             .filter_map(|(_, typ)| match &typ.kind {
-                TypeKind::Object(_o) => {
-                    Some(Table::from_typdef(typ.to_owned(), &self.parsed))
-                }
-                TypeKind::Union(_u) => {
-                    Some(Table::from_typdef(typ.to_owned(), &self.parsed))
-                }
+                TypeKind::Object(_o) => Some(Table::from_typdef(typ, &self.parsed)),
+                TypeKind::Union(_u) => Some(Table::from_typdef(typ, &self.parsed)),
                 _ => None,
             })
             .collect::<Vec<Table>>();
@@ -184,11 +180,11 @@ impl IndexerSchema {
         )?;
 
         let tables = parsed
-            .indexable_typedefs()
+            .type_defs()
             .iter()
-            .filter_map(|typ| match &typ.kind {
-                TypeKind::Object(_o) => Some(Table::from_typdef(typ.to_owned(), &parsed)),
-                TypeKind::Union(_u) => Some(Table::from_typdef(typ.to_owned(), &parsed)),
+            .filter_map(|(_, typ)| match &typ.kind {
+                TypeKind::Object(_o) => Some(Table::from_typdef(typ, &parsed)),
+                TypeKind::Union(_u) => Some(Table::from_typdef(typ, &parsed)),
                 _ => None,
             })
             .collect::<Vec<Table>>();

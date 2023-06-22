@@ -1,19 +1,25 @@
 #![deny(unused_crate_dependencies)]
-use async_graphql_parser::types::{
-    FieldDefinition, ObjectType, TypeDefinition, TypeKind,
+use async_graphql_parser::{
+    types::{FieldDefinition, ObjectType, TypeDefinition, TypeKind},
+    Pos, Positioned,
 };
-use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
-use chrono::serde::ts_microseconds;
-use chrono::{DateTime, Utc};
-use fuel_indexer_lib::graphql::{extract_foreign_key_info, ParsedGraphQLSchema};
-use fuel_indexer_lib::{graphql::types::ObjectCol, type_id};
+use chrono::{
+    serde::ts_microseconds,
+    {DateTime, Utc},
+};
+use fuel_indexer_lib::{
+    graphql::{
+        extract_foreign_key_info, field_id, types::ObjectCol, ParsedGraphQLSchema,
+    },
+    type_id,
+};
 use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
-use std::string::ToString;
 use std::{
     fmt,
     fmt::Write,
+    string::ToString,
     time::{SystemTime, UNIX_EPOCH},
 };
 use strum::{AsRefStr, EnumString};
@@ -224,11 +230,11 @@ pub struct RootColumns {
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, AsRefStr, strum::Display, EnumString,
 )]
-pub enum TypedefPersistence {
+pub enum Persistence {
     /// Virtual columns are not persisted to the database. They are represented
     /// by some arbitrarily sized type (e.g., JSON).
-    Virtual,
     #[default]
+    Virtual,
 
     /// Regular columns are persisted to the database.
     Regular,
@@ -269,7 +275,7 @@ pub struct Column {
     pub position: i32,
 
     /// How this column is persisted to the database.
-    pub persistence: TypedefPersistence,
+    pub persistence: Persistence,
 
     /// Whether this column is unique.
     pub unique: bool,
@@ -285,7 +291,7 @@ impl Column {
         parsed: &ParsedGraphQLSchema,
         type_id: i64,
         position: i32,
-        persistence: TypedefPersistence,
+        persistence: Persistence,
     ) -> Self {
         let mut field_type = f.ty.to_string().replace('!', "");
         if parsed.is_possible_foreign_key(&field_type) {
@@ -297,15 +303,17 @@ impl Column {
                 .map(|d| {
                     let ref_field_name =
                         d.clone().node.arguments.pop().unwrap().1.to_string();
-                    let fk_field_id = format!("{field_type}.{ref_field_name}");
-                    let fk_field_type = parsed
+                    let fk_fid = field_id(&field_type, &ref_field_name);
+                    let fk_field_typ = parsed
                         .field_type_mappings()
-                        .get(&fk_field_id)
+                        .get(&fk_fid)
                         .unwrap()
                         .to_string();
-                    fk_field_type
+                    fk_field_typ
                 })
-                // Can't have two primary keys on a table
+                // Special case of parsing FKs here where we change the derived
+                // field type. We can't use the `ID` type as normal because we 
+                // can't have multiple primary keys on the same table.
                 .unwrap_or("UInt8".to_string());
         } else if parsed.is_virtual_type(&field_type) {
             field_type = "Virtual".to_string();
@@ -318,11 +326,13 @@ impl Column {
             .iter()
             .any(|d| d.node.name.to_string() == "unique");
 
+        let coltype = field_type.as_str();
+
         Self {
             type_id,
             name: f.name.to_string(),
-            graphql_type: field_type.clone(),
-            coltype: ColumnType::from(field_type.as_str()),
+            graphql_type: coltype.to_owned(),
+            coltype: ColumnType::from(coltype),
             position,
             unique,
             nullable: f.ty.node.nullable,
@@ -441,50 +451,33 @@ pub struct TypeId {
 impl TypeId {
     /// Create a new `TypeId` from a given `TypeDefinition`.
     pub fn from_typdef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
+        let type_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
         match &typ.kind {
-            TypeKind::Object(_o) => {
-                let type_id =
-                    type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
-
-                Self {
-                    id: type_id,
-                    version: parsed.schema().version().to_string(),
-                    namespace: parsed.namespace().to_string(),
-                    identifier: parsed.identifier().to_string(),
-                    graphql_name: typ.name.to_string(),
-                    table_name: typ.name.to_string().to_lowercase(),
-                }
-            }
-            TypeKind::Union(_u) => {
-                let type_id =
-                    type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
-
-                Self {
-                    id: type_id,
-                    version: parsed.schema().version().to_string(),
-                    namespace: parsed.namespace().to_string(),
-                    identifier: parsed.identifier().to_string(),
-                    graphql_name: typ.name.to_string(),
-                    table_name: typ.name.to_string().to_lowercase(),
-                }
-            }
-            TypeKind::Enum(_e) => {
-                let type_id =
-                    type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
-
-                Self {
-                    id: type_id,
-                    version: parsed.schema().version().to_string(),
-                    namespace: parsed.namespace().to_string(),
-                    identifier: parsed.identifier().to_string(),
-                    graphql_name: typ.name.to_string(),
-                    table_name: typ.name.to_string().to_lowercase(),
-                }
-            }
-            _ => unimplemented!(
-                "{}",
-                format!("Type '{}' does not support TypeId derivation.", typ.name)
-            ),
+            TypeKind::Object(_o) => Self {
+                id: type_id,
+                version: parsed.schema().version().to_string(),
+                namespace: parsed.namespace().to_string(),
+                identifier: parsed.identifier().to_string(),
+                graphql_name: typ.name.to_string(),
+                table_name: typ.name.to_string().to_lowercase(),
+            },
+            TypeKind::Union(_u) => Self {
+                id: type_id,
+                version: parsed.schema().version().to_string(),
+                namespace: parsed.namespace().to_string(),
+                identifier: parsed.identifier().to_string(),
+                graphql_name: typ.name.to_string(),
+                table_name: typ.name.to_string().to_lowercase(),
+            },
+            TypeKind::Enum(_e) => Self {
+                id: type_id,
+                version: parsed.schema().version().to_string(),
+                namespace: parsed.namespace().to_string(),
+                identifier: parsed.identifier().to_string(),
+                graphql_name: typ.name.to_string(),
+                table_name: typ.name.to_string().to_lowercase(),
+            },
+            _ => panic!("Type '{}' does not support TypeId derivation.", typ.name),
         }
     }
 }
@@ -566,6 +559,7 @@ pub struct RegisteredIndexer {
 }
 
 impl RegisteredIndexer {
+    /// Return the unique identifier (UID) of the indexer.
     pub fn uid(&self) -> String {
         format!("{}.{}", self.namespace, self.identifier)
     }
@@ -776,7 +770,7 @@ pub struct Table {
     constraints: Vec<Constraint>,
 
     /// How this typedef is persisted to the database.
-    persistence: TypedefPersistence,
+    persistence: Persistence,
 }
 
 impl Default for Table {
@@ -787,7 +781,7 @@ impl Default for Table {
             identifier: "default".to_string(),
             columns: vec![],
             constraints: vec![],
-            persistence: TypedefPersistence::Virtual,
+            persistence: Persistence::Virtual,
         }
     }
 }
@@ -801,14 +795,15 @@ impl Table {
         &self.columns
     }
 
-    pub fn from_typdef(typ: TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
+    /// Create a new `Table` from a given `TypeDefinition`.
+    pub fn from_typdef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         let ty_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
         match &typ.kind {
             TypeKind::Object(o) => {
                 let persistence = if parsed.is_virtual_type(&typ.name.to_string()) {
-                    TypedefPersistence::Virtual
+                    Persistence::Virtual
                 } else {
-                    TypedefPersistence::Regular
+                    Persistence::Regular
                 };
 
                 let mut columns = o
@@ -825,6 +820,7 @@ impl Table {
                         )
                     })
                     .collect::<Vec<Column>>();
+
                 let constraints = o
                     .fields
                     .iter()
@@ -848,7 +844,6 @@ impl Table {
 
                         let field_typ = f.node.ty.node.to_string().replace('!', "");
                         if parsed.is_possible_foreign_key(&field_typ) {
-                            // Determine implicit vs explicit FK
                             let (ref_coltype, ref_colname, ref_tablename) =
                                 extract_foreign_key_info(&f.node, parsed);
 
@@ -860,8 +855,7 @@ impl Table {
                                 ref_tablename,
                                 ref_colname,
                                 ref_coltype,
-                                on_delete: OnDelete::NoAction,
-                                on_update: OnUpdate::NoAction,
+                                ..ForeignKey::default()
                             }));
                         }
 
@@ -869,7 +863,8 @@ impl Table {
                     })
                     .collect::<Vec<Constraint>>();
 
-                // Add special case for `object` column.
+                // `Object` columns contain the `FtColumn` bytes for each
+                // column in the object. This column shouldn't really be public
                 columns.push(Column {
                     type_id: ty_id,
                     name: ObjectCol::to_lowercase_string(),
@@ -898,36 +893,39 @@ impl Table {
                 // `TypeDefinition(TypeKind::Object)` from that.
                 let union_name = typ.name.to_string();
 
-                let fields =
-                    u.members
-                        .iter()
-                        .flat_map(|m| {
-                            let name = m.node.to_string();
-                            parsed
-                        .object_field_mappings
-                        .get(&name)
-                        .unwrap_or_else(|| {
-                            panic!("Could not find union member '{name}' in the schema.",)
-                        })
-                        .iter()
-                        .map(|(k, v)| (k.to_owned(), v.to_owned()))
-                        })
-                        .collect::<LinkedHashSet<(String, String)>>()
-                        .iter()
-                        .map(|(k, _)| {
-                            let field_id = format!("{union_name}.{k}");
-                            let f = &parsed
-                                .field_defs()
-                                .get(&field_id)
-                                .expect("FielDefinition not found in parsed schema.");
-                            let mut f = f.0.clone();
-                            f.ty.node.nullable = true;
-                            Positioned {
-                                pos: Pos::default(),
-                                node: f,
-                            }
-                        })
-                        .collect::<Vec<Positioned<FieldDefinition>>>();
+                let fields = u
+                    .members
+                    .iter()
+                    .flat_map(|m| {
+                        let name = m.node.to_string();
+
+                        parsed
+                            .object_field_mappings
+                            .get(&name)
+                            .unwrap_or_else(|| {
+                                panic!(
+                                    "Could not find union member '{name}' in the schema.",
+                                )
+                            })
+                            .iter()
+                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                    })
+                    .collect::<LinkedHashSet<(String, String)>>()
+                    .iter()
+                    .map(|(k, _)| {
+                        let fid = field_id(&union_name, k);
+                        let f = &parsed
+                            .field_defs()
+                            .get(&fid)
+                            .expect("FielDefinition not found in parsed schema.");
+                        let mut f = f.0.clone();
+                        f.ty.node.nullable = true;
+                        Positioned {
+                            pos: Pos::default(),
+                            node: f,
+                        }
+                    })
+                    .collect::<Vec<Positioned<FieldDefinition>>>();
 
                 let typdef = TypeDefinition {
                     description: None,
@@ -943,7 +941,7 @@ impl Table {
                     directives: vec![],
                 };
 
-                Self::from_typdef(typdef, parsed)
+                Self::from_typdef(&typdef, parsed)
             }
             _ => Self::default(),
         }
@@ -953,7 +951,7 @@ impl Table {
 impl SqlFragment for Table {
     fn create(&self) -> String {
         match self.persistence {
-            TypedefPersistence::Regular => {
+            Persistence::Regular => {
                 let mut s = format!(
                     "CREATE TABLE {}_{}.{} (\n",
                     self.namespace, self.identifier, self.name
