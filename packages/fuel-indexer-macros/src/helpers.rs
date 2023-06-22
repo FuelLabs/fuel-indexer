@@ -522,7 +522,7 @@ pub fn process_typedef_field(
     match fieldkind {
         FieldKind::ForeignKey => {
             // Determine implicit vs explicit FK
-            let (ref_coltype, ref_colname, ref_tablename) = field_def
+            let (ref_coltype, _ref_colname, _ref_tablename) = field_def
                 .directives
                 .iter()
                 .find(|d| d.node.name.to_string() == "join")
@@ -587,7 +587,7 @@ pub fn process_typedef_field(
                 false => match parsed.is_possible_foreign_key(&field_typ_name) {
                     true => {
                         // Determine implicit vs explicit FK
-                        let (ref_coltype, ref_colname, ref_tablename) = field_def
+                        let (ref_coltype, _ref_colname, _ref_tablename) = field_def
                             .directives
                             .iter()
                             .find(|d| d.node.name.to_string() == "join")

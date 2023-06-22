@@ -664,39 +664,25 @@ impl From<fuel::Receipt> for Receipt {
 pub mod explorer_index {
 
     fn index_block(block_data: BlockData) {
-        // TODO: Create UID here.
-        let id = 1;
-        let header = Header {
-            id,
-            block_id: block_data.header.id,
-            da_height: block_data.header.da_height,
-            transactions_count: block_data.header.transactions_count,
-            message_receipt_count: block_data.header.output_messages_count,
-            transactions_root: block_data.header.transactions_root,
-            message_receipt_root: block_data.header.output_messages_root,
-            height: block_data.header.height,
-            prev_root: block_data.header.prev_root,
-            time: block_data.header.time,
-            application_hash: block_data.header.application_hash,
-        };
+        let header = Header::new(
+            block_data.header.id,
+            block_data.header.da_height,
+            block_data.header.transactions_count,
+            block_data.header.output_messages_count,
+            block_data.header.transactions_root,
+            block_data.header.output_messages_root,
+            block_data.header.height,
+            block_data.header.prev_root,
+            block_data.header.time,
+            block_data.header.application_hash,
+        );
         header.save();
 
         let consensus = Consensus::from(block_data.consensus);
         consensus.save();
 
-        // TODO: Create UID here.
-        let id = 22;
-        let block_frag = BlockIdFragment {
-            id,
-            hash: Bytes32::default(),
-        };
-
-        block_frag.save();
-
-        // TODO: Create UID here.
-        let id = 1;
         let block = Block {
-            id,
+            id: first8_bytes_to_u64(block_data.header.id),
             block_id: block_data.header.id,
             header: header.id,
             consensus: consensus.id,
@@ -704,6 +690,13 @@ pub mod explorer_index {
 
         // Save partial block
         block.save();
+
+        let block_frag = BlockIdFragment {
+            id: first8_bytes_to_u64(block_data.header.id),
+            hash: Bytes32::default(),
+        };
+
+        block_frag.save();
 
         for transaction in block_data.transactions.iter() {
             let _tx_status = &transaction.status;

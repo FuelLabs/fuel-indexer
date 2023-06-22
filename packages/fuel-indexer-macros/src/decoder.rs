@@ -91,9 +91,9 @@ impl Decoder for ObjectDecoder {
                 let obj_fields = parsed
                     .object_field_mappings
                     .get(&obj_name)
-                    .expect(&format!(
-                        "TypeDefinition '{obj_name}' not found in parsed schema."
-                    ))
+                    .unwrap_or_else(|| {
+                        panic!("TypeDefinition '{obj_name}' not found in parsed schema.")
+                    })
                     .iter()
                     .map(|(k, _v)| k.to_owned())
                     .collect::<HashSet<String>>();
