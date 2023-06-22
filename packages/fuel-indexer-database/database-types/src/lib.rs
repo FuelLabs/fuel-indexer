@@ -224,7 +224,7 @@ pub struct RootColumns {
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, AsRefStr, strum::Display, EnumString,
 )]
-pub enum ColumnPersistence {
+pub enum TypedefPersistence {
     /// Virtual columns are not persisted to the database. They are represented
     /// by some arbitrarily sized type (e.g., JSON).
     Virtual,
@@ -269,7 +269,7 @@ pub struct Column {
     pub position: i32,
 
     /// How this column is persisted to the database.
-    pub persistence: ColumnPersistence,
+    pub persistence: TypedefPersistence,
 
     /// Whether this column is unique.
     pub unique: bool,
@@ -279,15 +279,17 @@ pub struct Column {
 }
 
 impl Column {
+    /// Create a new `Column` from a given `FieldDefinition`.
     pub fn from_field_def(
         f: &FieldDefinition,
         parsed: &ParsedGraphQLSchema,
         type_id: i64,
         position: i32,
+        persistence: TypedefPersistence,
     ) -> Self {
         let mut field_type = f.ty.to_string().replace('!', "");
         if parsed.is_possible_foreign_key(&field_type) {
-            // Determine implicit vs explicit FK
+            // Determine implicit vs explicit FK type
             field_type = f
                 .directives
                 .iter()
@@ -324,6 +326,7 @@ impl Column {
             position,
             unique,
             nullable: f.ty.node.nullable,
+            persistence,
             ..Self::default()
         }
     }
@@ -436,6 +439,7 @@ pub struct TypeId {
 }
 
 impl TypeId {
+    /// Create a new `TypeId` from a given `TypeDefinition`.
     pub fn from_typdef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         match &typ.kind {
             TypeKind::Object(_o) => {
@@ -771,9 +775,21 @@ pub struct Table {
     /// SQL conswtraints associated with this table.
     constraints: Vec<Constraint>,
 
-    /// How this table is persisted to the database.
-    #[allow(unused)]
-    persistence: ColumnPersistence,
+    /// How this typedef is persisted to the database.
+    persistence: TypedefPersistence,
+}
+
+impl Default for Table {
+    fn default() -> Self {
+        Self {
+            name: "default".to_string(),
+            namespace: "default".to_string(),
+            identifier: "default".to_string(),
+            columns: vec![],
+            constraints: vec![],
+            persistence: TypedefPersistence::Virtual,
+        }
+    }
 }
 
 impl Table {
@@ -789,26 +805,24 @@ impl Table {
         let ty_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
         match &typ.kind {
             TypeKind::Object(o) => {
-                let mut persistence = ColumnPersistence::Regular;
-
-                o.fields.iter().for_each(|f| {
-                    let has_virtual = f
-                        .node
-                        .directives
-                        .iter()
-                        .any(|d| d.node.name.to_string() == "virtual");
-
-                    if has_virtual {
-                        persistence = ColumnPersistence::Virtual;
-                    }
-                });
+                let persistence = if parsed.is_virtual_type(&typ.name.to_string()) {
+                    TypedefPersistence::Virtual
+                } else {
+                    TypedefPersistence::Regular
+                };
 
                 let mut columns = o
                     .fields
                     .iter()
                     .enumerate()
                     .map(|(i, f)| {
-                        Column::from_field_def(&f.node, parsed, ty_id, i as i32)
+                        Column::from_field_def(
+                            &f.node,
+                            parsed,
+                            ty_id,
+                            i as i32,
+                            persistence,
+                        )
                     })
                     .collect::<Vec<Column>>();
                 let constraints = o
@@ -832,11 +846,11 @@ impl Table {
                             }));
                         }
 
-                        if parsed.is_possible_foreign_key(
-                            &f.node.ty.node.to_string().replace('!', ""),
-                        ) {
+                        let field_typ = f.node.ty.node.to_string().replace('!', "");
+                        if parsed.is_possible_foreign_key(&field_typ) {
                             // Determine implicit vs explicit FK
-                            let (ref_coltype, ref_colname, ref_tablename) = extract_foreign_key_info(&f.node, parsed);
+                            let (ref_coltype, ref_colname, ref_tablename) =
+                                extract_foreign_key_info(&f.node, parsed);
 
                             return Some(Constraint::Fk(ForeignKey {
                                 db_type: DbType::Postgres,
@@ -864,11 +878,12 @@ impl Table {
                     position: columns.len() as i32,
                     unique: false,
                     nullable: false,
+                    persistence,
                     ..Column::default()
                 });
 
                 Self {
-                    // TODO: Use snake-casing for table names
+                    // TODO: https://github.com/FuelLabs/fuel-indexer/issues/960
                     name: typ.name.to_string().to_lowercase(),
                     namespace: parsed.namespace().to_string(),
                     identifier: parsed.identifier().to_string(),
@@ -901,14 +916,18 @@ impl Table {
                         .iter()
                         .map(|(k, _)| {
                             let field_id = format!("{union_name}.{k}");
-                            let f = &parsed.field_defs().get(&field_id).expect("FielDefinition not found in parsed schema.");
+                            let f = &parsed
+                                .field_defs()
+                                .get(&field_id)
+                                .expect("FielDefinition not found in parsed schema.");
                             let mut f = f.0.clone();
                             f.ty.node.nullable = true;
                             Positioned {
                                 pos: Pos::default(),
                                 node: f,
                             }
-                        }).collect::<Vec<Positioned<FieldDefinition>>>();
+                        })
+                        .collect::<Vec<Positioned<FieldDefinition>>>();
 
                 let typdef = TypeDefinition {
                     description: None,
@@ -926,30 +945,35 @@ impl Table {
 
                 Self::from_typdef(typdef, parsed)
             }
-            _ => unreachable!("A virtual or unindexable type should not have been passed to Table::from_typdef"),
+            _ => Self::default(),
         }
     }
 }
 
 impl SqlFragment for Table {
     fn create(&self) -> String {
-        let mut s = format!(
-            "CREATE TABLE {}_{}.{} (\n",
-            self.namespace, self.identifier, self.name
-        );
-        let cols = self
-            .columns
-            .iter()
-            .map(|c| c.create())
-            .collect::<Vec<String>>()
-            .join(",\n");
-        s.push_str(&cols);
-        // Remove last ',\n' from last column to avoid syntax error
-        let chars = s.chars();
+        match self.persistence {
+            TypedefPersistence::Regular => {
+                let mut s = format!(
+                    "CREATE TABLE {}_{}.{} (\n",
+                    self.namespace, self.identifier, self.name
+                );
+                let cols = self
+                    .columns
+                    .iter()
+                    .map(|c| c.create())
+                    .collect::<Vec<String>>()
+                    .join(",\n");
+                s.push_str(&cols);
+                // Remove last ',\n' from last column to avoid syntax error
+                let chars = s.chars();
 
-        let mut chars = chars.as_str().to_string();
-        chars.push_str("\n);");
+                let mut chars = chars.as_str().to_string();
+                chars.push_str("\n);");
 
-        chars
+                chars
+            }
+            _ => "".to_string(),
+        }
     }
 }

@@ -483,7 +483,7 @@ impl ParsedGraphQLSchema {
     }
 
     /// All objects from which SQL tables can be created.
-    pub fn indexable_objects(&self) -> Vec<TypeDefinition> {
+    pub fn indexable_typedefs(&self) -> Vec<TypeDefinition> {
         self.type_defs()
             .iter()
             .filter_map(|(name, typ)| match &typ.kind {

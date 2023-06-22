@@ -337,7 +337,7 @@ pub async fn list_column_by_id(
                     nullable,
                     graphql_type,
                     unique,
-                    persistence: ColumnPersistence::from_str(persistence.as_str())
+                    persistence: TypedefPersistence::from_str(persistence.as_str())
                         .expect("Bad persistence."),
                 }
             })

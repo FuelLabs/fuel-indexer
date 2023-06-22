@@ -6,7 +6,7 @@ use fuel_indexer_graphql::{
 };
 use fuel_indexer_lib::graphql::GraphQLSchema;
 use fuel_indexer_schema::db::tables::IndexerSchema;
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
 fn generate_schema() -> IndexerSchema {
     let schema = r#"

@@ -100,9 +100,9 @@ impl IndexerSchema {
 
         let type_ids = self
             .parsed
-            .indexable_objects()
+            .type_defs()
             .iter()
-            .map(|t| TypeId::from_typdef(t, self.parsed()))
+            .map(|(_, t)| TypeId::from_typdef(t, self.parsed()))
             .unique_by(|t| t.id)
             .collect::<Vec<TypeId>>();
 
@@ -110,9 +110,9 @@ impl IndexerSchema {
 
         let tables = self
             .parsed
-            .indexable_objects()
+            .type_defs()
             .iter()
-            .filter_map(|typ| match &typ.kind {
+            .filter_map(|(_, typ)| match &typ.kind {
                 TypeKind::Object(_o) => {
                     Some(Table::from_typdef(typ.to_owned(), &self.parsed))
                 }
@@ -131,7 +131,16 @@ impl IndexerSchema {
 
         queries::new_column_insert(conn, columns).await?;
 
-        let table_stmnts = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
+        let table_stmnts = tables
+            .iter()
+            .filter_map(|t| {
+                let stmnt = t.create();
+                if stmnt.is_empty() {
+                    return None;
+                }
+                Some(stmnt)
+            })
+            .collect::<Vec<String>>();
         statements.extend(table_stmnts);
 
         let constraint_stmnts = tables
@@ -175,7 +184,7 @@ impl IndexerSchema {
         )?;
 
         let tables = parsed
-            .indexable_objects()
+            .indexable_typedefs()
             .iter()
             .filter_map(|typ| match &typ.kind {
                 TypeKind::Object(_o) => Some(Table::from_typdef(typ.to_owned(), &parsed)),
