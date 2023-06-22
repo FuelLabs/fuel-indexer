@@ -1,10 +1,8 @@
 use fuel_indexer::{ffi, Database, FtColumn, IndexEnv, IndexerResult};
 use fuel_indexer_database::{queries, IndexerConnectionPool};
+use fuel_indexer_lib::graphql::GraphQLSchema;
 use fuel_indexer_lib::manifest::Manifest;
-use fuel_indexer_schema::{
-    db::manager::SchemaManager,
-    utils::{inject_native_entities_into_schema, schema_version},
-};
+use fuel_indexer_schema::db::manager::SchemaManager;
 use fuels::prelude::Address;
 use wasmer::{imports, Instance, Module, Store, WasmerEnv};
 use wasmer_compiler_cranelift::Cranelift;
@@ -75,24 +73,21 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
     let manager = SchemaManager::new(pool.clone());
 
     let manifest = Manifest::try_from(SIMPLE_WASM_MANIFEST).unwrap();
-
-    // SchemaManager.new_schema calls inject_native_entities_into_schema so since we're using
-    // `version` later in this test we need to manually call `inject_native_entities_into_schema` here
-    let schema = inject_native_entities_into_schema(SIMPLE_WASM_GRAPHQL_SCHEMA);
+    let schema = GraphQLSchema::new(SIMPLE_WASM_GRAPHQL_SCHEMA.to_owned());
 
     let result = manager
         .new_schema(
             "test_namespace",
             "simple_wasm_executor",
             SIMPLE_WASM_GRAPHQL_SCHEMA,
+            manifest.execution_source(),
             &mut conn,
-            manifest.is_native(),
         )
         .await;
 
     assert!(result.is_ok());
 
-    let version = schema_version(&schema);
+    let version = schema.version().to_owned();
     let results = queries::columns_get_schema(
         &mut conn,
         "test_namespace",

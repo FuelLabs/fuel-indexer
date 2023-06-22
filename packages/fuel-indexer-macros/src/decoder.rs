@@ -5,8 +5,9 @@ use async_graphql_parser::types::{
 };
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
-use fuel_indexer_database_types::IdCol;
-use fuel_indexer_lib::{graphql::ParsedGraphQLSchema, ExecutionSource};
+use fuel_indexer_lib::{
+    graphql::types::IdCol, graphql::ParsedGraphQLSchema, type_id, ExecutionSource,
+};
 use linked_hash_set::LinkedHashSet;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -76,8 +77,7 @@ impl Decoder for ObjectDecoder {
             TypeKind::Object(o) => {
                 let obj_name = typ.name.to_string();
                 let ident = format_ident!("{}", obj_name);
-                let type_id =
-                    typedef_type_id(parsed.namespace(), parsed.identifier(), &obj_name);
+                let type_id = type_id(&parsed.fully_qualified_namespace(), &obj_name);
 
                 let mut struct_fields = quote! {};
                 let mut field_extractors = quote! {};
@@ -186,8 +186,7 @@ impl Decoder for ObjectDecoder {
             TypeKind::Union(u) => {
                 let union_name = typ.name.to_string();
                 let ident = format_ident!("{}", union_name);
-                let type_id =
-                    typedef_type_id(parsed.namespace(), parsed.identifier(), &union_name);
+                let type_id = type_id(&parsed.fully_qualified_namespace(), &union_name);
 
                 let mut struct_fields = quote! {};
                 let mut field_extractors = quote! {};
@@ -355,8 +354,7 @@ impl Decoder for EnumDecoder {
             TypeKind::Enum(e) => {
                 let enum_name = typ.name.to_string();
                 let ident = format_ident!("{}", enum_name);
-                let type_id =
-                    typedef_type_id(parsed.namespace(), parsed.identifier(), &enum_name);
+                let type_id = type_id(&parsed.fully_qualified_namespace(), &enum_name);
 
                 let values = e
                     .values

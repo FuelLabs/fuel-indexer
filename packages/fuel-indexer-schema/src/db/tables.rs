@@ -88,9 +88,6 @@ impl IndexerSchema {
 
         queries::new_graph_root(conn, root).await?;
 
-        let root =
-            queries::graph_root_latest(conn, &self.namespace, &self.identifier).await?;
-
         match self.db_type {
             DbType::Postgres => {
                 let create = format!(
@@ -103,59 +100,36 @@ impl IndexerSchema {
 
         let type_ids = self
             .parsed
-            .fields_for_typeids()
+            .indexable_objects()
             .iter()
-            .map(|(f, typ_name)| {
-                TypeId::from_field_def(
-                    typ_name,
-                    f,
-                    &self.namespace,
-                    &self.identifier,
-                    self.parsed.schema().version(),
-                )
-            })
+            .map(|t| TypeId::from_typdef(t, self.parsed()))
             .unique_by(|t| t.id)
             .collect::<Vec<TypeId>>();
 
-        queries::type_id_insert(conn, type_ids.clone()).await?;
-
-        let type_ids = queries::type_id_list_by_name(
-            conn,
-            &root.schema_name,
-            &root.version,
-            &root.schema_identifier,
-        )
-        .await?;
+        queries::type_id_insert(conn, type_ids).await?;
 
         let tables = self
             .parsed
             .indexable_objects()
             .iter()
             .filter_map(|typ| match &typ.kind {
-                TypeKind::Object(o) => {
-                    let col_type_ids = o
-                        .fields
-                        .iter()
-                        .map(|f| {
-                            type_ids
-                                .iter()
-                                .find(|t| t.graphql_name == f.node.name.to_string())
-                                .expect(&format!(
-                                    "No associated TypeId for field '{}'.",
-                                    f.node.name.to_string()
-                                ))
-                                .id
-                        })
-                        .collect::<Vec<i64>>();
-                    Some(Table::from_typdef(
-                        typ.to_owned(),
-                        &self.parsed,
-                        col_type_ids,
-                    ))
+                TypeKind::Object(_o) => {
+                    Some(Table::from_typdef(typ.to_owned(), &self.parsed))
+                }
+                TypeKind::Union(_u) => {
+                    Some(Table::from_typdef(typ.to_owned(), &self.parsed))
                 }
                 _ => None,
             })
             .collect::<Vec<Table>>();
+
+        let columns = tables
+            .iter()
+            .flat_map(|t| t.columns())
+            .map(|c| c.to_owned())
+            .collect::<Vec<Column>>();
+
+        queries::new_column_insert(conn, columns).await?;
 
         let table_stmnts = tables.iter().map(|t| t.create()).collect::<Vec<String>>();
         statements.extend(table_stmnts);
@@ -177,7 +151,7 @@ impl IndexerSchema {
         Ok(self)
     }
 
-    /// Load a `Schema` from the database.
+    /// Load a `IndexerSchema` from the database.
     pub async fn load(
         pool: &IndexerConnectionPool,
         namespace: &str,
@@ -185,13 +159,6 @@ impl IndexerSchema {
     ) -> IndexerSchemaDbResult<Self> {
         let mut conn = pool.acquire().await?;
         let root = queries::graph_root_latest(&mut conn, namespace, identifier).await?;
-        let type_ids = queries::type_id_list_by_name(
-            &mut conn,
-            &root.schema_name,
-            &root.version,
-            identifier,
-        )
-        .await?;
 
         let indexer_id =
             queries::get_indexer_id(&mut conn, namespace, identifier).await?;
@@ -211,20 +178,8 @@ impl IndexerSchema {
             .indexable_objects()
             .iter()
             .filter_map(|typ| match &typ.kind {
-                TypeKind::Object(o) => {
-                    let col_type_ids = o
-                        .fields
-                        .iter()
-                        .map(|f| {
-                            type_ids
-                                .iter()
-                                .find(|t| t.graphql_name == f.node.name.to_string())
-                                .expect("No associated TypeId for object.")
-                                .id
-                        })
-                        .collect::<Vec<i64>>();
-                    Some(Table::from_typdef(typ.to_owned(), &parsed, col_type_ids))
-                }
+                TypeKind::Object(_o) => Some(Table::from_typdef(typ.to_owned(), &parsed)),
+                TypeKind::Union(_u) => Some(Table::from_typdef(typ.to_owned(), &parsed)),
                 _ => None,
             })
             .collect::<Vec<Table>>();
@@ -233,7 +188,6 @@ impl IndexerSchema {
             namespace: root.schema_name,
             identifier: root.schema_identifier,
             schema,
-
             tables,
             parsed,
             db_type: DbType::Postgres,
@@ -244,17 +198,16 @@ impl IndexerSchema {
         Ok(schema)
     }
 
-    // **** HACK ****
-
-    // Below we manually add a `QueryRoot` type, with its corresponding field types
-    // data being each `Object` defined in the schema.
-
-    // We need this because at the moment our GraphQL query parsing is tightly-coupled
-    // to our old way of resolving GraphQL types (which was using a `QueryType` object
-    // defined in a `TypeSystemDefinition::Schema`)
-
     /// Register the `QueryRoot` type and its corresponding field types.
     pub fn register_queryroot_fields(&mut self) {
+        // **** HACK ****
+
+        // Below we manually add a `QueryRoot` type, with its corresponding field types
+        // data being each `Object` defined in the schema.
+
+        // We need this because at the moment our GraphQL query parsing is tightly-coupled
+        // to our old way of resolving GraphQL types (which was using a `QueryType` object
+        // defined in a `TypeSystemDefinition::Schema`)
         self.parsed.object_field_mappings.insert(
             QUERY_ROOT.to_string(),
             self.parsed

@@ -1,8 +1,11 @@
 pub mod parser;
+pub mod types;
 
+use async_graphql_parser::types::FieldDefinition;
 pub use parser::{ParsedError, ParsedGraphQLSchema};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use types::IdCol;
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 
@@ -80,4 +83,39 @@ impl ToString for GraphQLSchema {
     fn to_string(&self) -> String {
         self.schema.clone()
     }
+}
+
+/// Given a `FieldDefinition` that is a possible foreign key (according to `ParsedGraphQLSchema`),
+/// return the column type, column name, and table name of the foreign key.
+pub fn extract_foreign_key_info(
+    f: &FieldDefinition,
+    parsed: &ParsedGraphQLSchema,
+) -> (String, String, String) {
+    let (ref_coltype, ref_colname, ref_tablename) = f
+        .directives
+        .iter()
+        .find(|d| d.node.name.to_string() == "join")
+        .map(|d| {
+            let typdef_name = f.ty.to_string().replace('!', "");
+            let ref_field_name = d.clone().node.arguments.pop().unwrap().1.to_string();
+            let fk_field_id = format!("{typdef_name}.{ref_field_name}");
+            let fk_field_type = parsed
+                .field_type_mappings()
+                .get(&fk_field_id)
+                .unwrap()
+                .to_string();
+
+            (
+                fk_field_type.replace('!', ""),
+                ref_field_name,
+                typdef_name.to_lowercase(),
+            )
+        })
+        .unwrap_or((
+            IdCol::to_uppercase_string(),
+            IdCol::to_lowercase_string(),
+            f.ty.to_string().replace('!', "").to_lowercase(),
+        ));
+
+    (ref_coltype, ref_colname, ref_tablename)
 }

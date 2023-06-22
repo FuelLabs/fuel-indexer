@@ -981,7 +981,7 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.usesnotableentity LIMIT 1")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.usesvirtualentity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();

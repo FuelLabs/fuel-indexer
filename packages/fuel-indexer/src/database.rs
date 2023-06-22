@@ -1,9 +1,7 @@
 use crate::ffi;
 use crate::{IndexerResult, Manifest};
-use fuel_indexer_database::{
-    queries, types::IdCol, IndexerConnection, IndexerConnectionPool,
-};
-use fuel_indexer_lib::ExecutionSource;
+use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
+use fuel_indexer_lib::{graphql::types::IdCol, ExecutionSource};
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
 use tracing::{debug, error, info};
@@ -30,6 +28,7 @@ fn is_id_only_upsert(columns: &[String]) -> bool {
 }
 
 impl Database {
+    /// Create a new `Database`.
     pub async fn new(conn_uri: &str) -> IndexerResult<Database> {
         let pool = IndexerConnectionPool::connect(conn_uri).await?;
 
@@ -44,6 +43,7 @@ impl Database {
         })
     }
 
+    /// Open a database transaction.
     pub async fn start_transaction(&mut self) -> IndexerResult<usize> {
         let conn = self.pool.acquire().await?;
         self.stashed = Some(conn);
@@ -55,6 +55,7 @@ impl Database {
         Ok(result)
     }
 
+    /// Commit transaction to database.
     pub async fn commit_transaction(&mut self) -> IndexerResult<usize> {
         let conn = self
             .stashed
@@ -64,6 +65,7 @@ impl Database {
         Ok(res)
     }
 
+    /// Revert open transaction.
     pub async fn revert_transaction(&mut self) -> IndexerResult<usize> {
         let conn = self
             .stashed
@@ -73,6 +75,7 @@ impl Database {
         Ok(res)
     }
 
+    /// Build an upsert query using a set of columns, insert values, update values, and a table name.
     fn upsert_query(
         &self,
         table: &str,
@@ -108,14 +111,17 @@ impl Database {
         }
     }
 
-    fn namespace(&self) -> String {
+    /// Get the fully qualified namespace for this indexer.
+    fn fully_qualified_namespace(&self) -> String {
         format!("{}_{}", self.namespace, self.identifier)
     }
 
+    /// Return a query to get an object from the database.
     fn get_query(&self, table: &str, object_id: u64) -> String {
         format!("SELECT object from {table} where id = {object_id}")
     }
 
+    /// Put an object into the database.
     pub async fn put_object(
         &mut self,
         type_id: i64,
@@ -130,7 +136,9 @@ impl Database {
 
 Does the schema version in SchemaManager::new_schema match the schema version in Database::load_schema?
 
-Do your WASM modules need to be rebuilt?"#,
+Do your WASM modules need to be rebuilt?
+
+"#,
                     type_id, self.tables,
                 );
                 return;
@@ -158,6 +166,7 @@ Do your WASM modules need to be rebuilt?"#,
         }
     }
 
+    /// Get an object from the database.
     pub async fn get_object(&mut self, type_id: i64, object_id: u64) -> Option<Vec<u8>> {
         let table = &self.tables[&type_id];
         let query = self.get_query(table, object_id);
@@ -179,6 +188,8 @@ Do your WASM modules need to be rebuilt?"#,
         }
     }
 
+    /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to
+    /// tables.
     pub async fn load_schema(
         &mut self,
         manifest: &Manifest,
@@ -203,7 +214,11 @@ Do your WASM modules need to be rebuilt?"#,
                 .await?;
 
                 for column in results {
-                    let table = &format!("{}.{}", self.namespace(), &column.table_name);
+                    let table = &format!(
+                        "{}.{}",
+                        self.fully_qualified_namespace(),
+                        &column.table_name
+                    );
 
                     self.tables
                         .entry(column.type_id)
@@ -230,7 +245,7 @@ Do your WASM modules need to be rebuilt?"#,
                 );
 
                 let mut conn = self.pool.acquire().await?;
-                let results = queries::columns_get_schema(
+                let columns = queries::columns_get_schema(
                     &mut conn,
                     &self.namespace,
                     &self.identifier,
@@ -238,8 +253,12 @@ Do your WASM modules need to be rebuilt?"#,
                 )
                 .await?;
 
-                for column in results {
-                    let table = &format!("{}.{}", self.namespace(), &column.table_name);
+                for column in columns {
+                    let table = &format!(
+                        "{}.{}",
+                        self.fully_qualified_namespace(),
+                        &column.table_name
+                    );
 
                     self.tables
                         .entry(column.type_id)

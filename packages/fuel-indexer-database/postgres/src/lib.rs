@@ -286,7 +286,7 @@ pub async fn new_column_insert(
     conn: &mut PoolConnection<Postgres>,
     cols: Vec<Column>,
 ) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type, is_unique)");
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type, is_unique, persistence)");
 
     builder.push_values(cols.into_iter(), |mut b, new_col| {
         b.push_bind(new_col.type_id)
@@ -295,7 +295,8 @@ pub async fn new_column_insert(
             .push_bind(new_col.coltype.to_string())
             .push_bind(new_col.nullable)
             .push_bind(new_col.graphql_type)
-            .push_bind(new_col.unique);
+            .push_bind(new_col.unique)
+            .push_bind(new_col.persistence.to_string());
     });
 
     let query = builder.build();

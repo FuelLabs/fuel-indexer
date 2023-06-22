@@ -3101,8 +3101,10 @@ name = "fuel-indexer-database-types"
 version = "0.17.1"
 dependencies = [
  "async-graphql-parser 5.0.9",
+ "async-graphql-value 5.0.9",
  "chrono",
  "fuel-indexer-lib",
+ "linked_hash_set",
  "serde",
  "strum",
 ]

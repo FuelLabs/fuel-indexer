@@ -118,6 +118,8 @@ pub struct ParsedGraphQLSchema {
     ast: ServiceDocument,
 
     /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
+    ///
+    /// We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
     field_defs: HashMap<String, (FieldDefinition, String)>,
 
     /// GraphQL schema content.
@@ -438,6 +440,10 @@ impl ParsedGraphQLSchema {
         &self.type_defs
     }
 
+    pub fn field_defs(&self) -> &HashMap<String, (FieldDefinition, String)> {
+        &self.field_defs
+    }
+
     pub fn foreign_key_mappings(
         &self,
     ) -> &HashMap<String, HashMap<String, (String, String)>> {
@@ -463,7 +469,7 @@ impl ParsedGraphQLSchema {
 
     /// Whether the given field type name is a type from which tables are not created.
     pub fn is_virtual_type(&self, name: &str) -> bool {
-        self.virtual_type_names.contains(name)
+        self.virtual_type_names.contains(name) && !self.is_enum_type(name)
     }
 
     /// Whether the given field type name is an enum type.

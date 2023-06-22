@@ -4,8 +4,10 @@ use crate::constants::*;
 use async_graphql_parser::types::{BaseType, FieldDefinition, Type, UnionType};
 use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
-use fuel_indexer_database_types::*;
-use fuel_indexer_lib::{graphql::*, type_id, ExecutionSource};
+use fuel_indexer_lib::{
+    graphql::{extract_foreign_key_info, types::IdCol, ParsedGraphQLSchema},
+    ExecutionSource,
+};
 use fuels_code_gen::utils::Source;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -484,11 +486,6 @@ pub fn generate_from_traits_for_union(
     from_method_impls
 }
 
-/// Derive a type ID for a `TypeKind` under a given indexer namespace and identifier.
-pub fn typedef_type_id(namespace: &str, identifier: &str, typedef_name: &str) -> i64 {
-    type_id(&format!("{namespace}_{identifier}"), typedef_name)
-}
-
 /// Type of special fields in GraphQL schema.
 #[derive(Debug, Clone)]
 pub enum FieldKind {
@@ -522,32 +519,8 @@ pub fn process_typedef_field(
     match fieldkind {
         FieldKind::ForeignKey => {
             // Determine implicit vs explicit FK
-            let (ref_coltype, _ref_colname, _ref_tablename) = field_def
-                .directives
-                .iter()
-                .find(|d| d.node.name.to_string() == "join")
-                .map(|d| {
-                    let typdef_name = field_def.ty.to_string().replace('!', "");
-                    let ref_field_name =
-                        d.clone().node.arguments.pop().unwrap().1.to_string();
-                    let fk_field_id = format!("{typdef_name}.{ref_field_name}");
-                    let fk_field_type = parsed
-                        .field_type_mappings()
-                        .get(&fk_field_id)
-                        .unwrap()
-                        .to_string();
-
-                    (
-                        fk_field_type.replace('!', ""),
-                        ref_field_name,
-                        typdef_name.to_lowercase(),
-                    )
-                })
-                .unwrap_or((
-                    IdCol::to_uppercase_string(),
-                    IdCol::to_lowercase_string(),
-                    field_def.ty.to_string().replace('!', "").to_lowercase(),
-                ));
+            let (ref_coltype, _ref_colname, _ref_tablename) =
+                extract_foreign_key_info(&field_def, parsed);
 
             let field_typ_name = nullable_type(&field_def, &ref_coltype);
 
@@ -587,34 +560,8 @@ pub fn process_typedef_field(
                 false => match parsed.is_possible_foreign_key(&field_typ_name) {
                     true => {
                         // Determine implicit vs explicit FK
-                        let (ref_coltype, _ref_colname, _ref_tablename) = field_def
-                            .directives
-                            .iter()
-                            .find(|d| d.node.name.to_string() == "join")
-                            .map(|d| {
-                                let typdef_name =
-                                    field_def.ty.to_string().replace('!', "");
-                                let ref_field_name =
-                                    d.clone().node.arguments.pop().unwrap().1.to_string();
-                                let fk_field_id =
-                                    format!("{typdef_name}.{ref_field_name}");
-                                let fk_field_type = parsed
-                                    .field_type_mappings()
-                                    .get(&fk_field_id)
-                                    .unwrap()
-                                    .to_string();
-
-                                (
-                                    fk_field_type.replace('!', ""),
-                                    ref_field_name,
-                                    typdef_name.to_lowercase(),
-                                )
-                            })
-                            .unwrap_or((
-                                IdCol::to_uppercase_string(),
-                                IdCol::to_lowercase_string(),
-                                field_def.ty.to_string().replace('!', "").to_lowercase(),
-                            ));
+                        let (ref_coltype, _ref_colname, _ref_tablename) =
+                            extract_foreign_key_info(&field_def, parsed);
 
                         let field_typ_name = nullable_type(&field_def, &ref_coltype);
                         // We're manually updated the field type here because we need to substitute the field name

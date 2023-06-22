@@ -1,44 +1,35 @@
+use fuel_indexer_database::DbType;
 use fuel_indexer_graphql::{
     arguments::{Filter, FilterType, ParsedValue, QueryParams},
     graphql::*,
     queries::{QueryElement, UserQuery},
 };
-use fuel_indexer_schema::db::tables::Schema;
-use std::collections::{HashMap, HashSet};
-use std::iter::FromIterator;
+use fuel_indexer_lib::graphql::GraphQLSchema;
+use fuel_indexer_schema::db::tables::IndexerSchema;
+use std::collections::{HashMap};
 
-fn generate_schema() -> Schema {
-    let types = ["Address", "Bytes32", "ID", "Thing1", "Thing2", "UInt16"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect::<HashSet<String>>();
+fn generate_schema() -> IndexerSchema {
+    let schema = r#"
+type Thing1 {
+    id: ID!
+    account: Address!
+    huge_number: UInt16!
+}
 
-    let f2 = [
-        ("id", "ID"),
-        ("account", "Address"),
-        ("huge_number", "UInt16"),
-    ]
-    .iter()
-    .map(|(k, v)| (k.to_string(), v.to_string()))
-    .collect::<HashMap<String, String>>();
+type Thing2 {
+    id: ID!
+    account: Address!
+    hash: Bytes32!
+}
+"#;
 
-    let f3 = HashMap::from_iter(
-        [("id", "ID"), ("account", "Address"), ("hash", "Bytes32")]
-            .iter()
-            .map(|(k, v)| (k.to_string(), v.to_string())),
-    );
-    let fields =
-        HashMap::from_iter([("Thing1".to_string(), f2), ("Thing2".to_string(), f3)]);
-
-    let mut schema = Schema {
-        version: "123456".into(),
-        namespace: "test_namespace".to_string(),
-        identifier: "index1".to_string(),
-        types,
-        fields,
-        foreign_keys: HashMap::new(),
-        non_indexable_types: HashSet::new(),
-    };
+    let mut schema = IndexerSchema::new(
+        "test_namespace",
+        "index1",
+        &GraphQLSchema::new(schema.to_owned()),
+        DbType::Postgres,
+    )
+    .unwrap();
 
     schema.register_queryroot_fields();
 
