@@ -1,9 +1,13 @@
-use super::arguments::{parse_argument_into_param, ParamType, QueryParams};
-use super::queries::{JoinCondition, QueryElement, QueryJoinNode, UserQuery};
-use async_graphql_parser::parse_query;
-use async_graphql_parser::types::{
-    DocumentOperations, ExecutableDocument, Field, FragmentDefinition, FragmentSpread,
-    OperationDefinition, OperationType, SelectionSet, TypeCondition,
+use super::{
+    arguments::{parse_argument_into_param, ParamType, QueryParams},
+    queries::{JoinCondition, QueryElement, QueryJoinNode, UserQuery},
+};
+use async_graphql_parser::{
+    parse_query,
+    types::{
+        DocumentOperations, ExecutableDocument, Field, FragmentDefinition,
+        FragmentSpread, OperationDefinition, OperationType, SelectionSet, TypeCondition,
+    },
 };
 use fuel_indexer_database_types::DbType;
 use fuel_indexer_schema::{db::tables::IndexerSchema, QUERY_ROOT};
@@ -648,6 +652,7 @@ impl<'a> GraphqlQueryBuilder<'a> {
 mod tests {
 
     use super::*;
+    use fuel_indexer_lib::graphql::GraphQLSchema;
 
     #[test]
     fn test_operation_parse_into_user_query() {
@@ -728,38 +733,28 @@ mod tests {
             },
         };
 
-        let _fields = HashMap::from([
-            (
-                "Tx".to_string(),
-                HashMap::from([
-                    ("timestamp".to_string(), "Int8!".to_string()),
-                    ("input_data".to_string(), "Json!".to_string()),
-                    ("id".to_string(), "ID!".to_string()),
-                    ("object".to_string(), "__".to_string()),
-                    ("block".to_string(), "BlockData".to_string()),
-                ]),
-            ),
-            (
-                "BlockData".to_string(),
-                HashMap::from([
-                    ("id".to_string(), "ID!".to_string()),
-                    ("height".to_string(), "UInt8!".to_string()),
-                    ("object".to_string(), "__".to_string()),
-                    ("timestamp".to_string(), "Int8!".to_string()),
-                ]),
-            ),
-        ]);
+        let schema = r#"
+type BlockData {
+    id: ID!
+    height: UInt8!
+    timestamp: Int8!
+}
 
-        let _foreign_keys = HashMap::from([(
-            "tx".to_string(),
-            HashMap::from([(
-                "block".to_string(),
-                ("block".to_string(), "id".to_string()),
-            )]),
-        )]);
+type Tx {
+    id: ID!
+    timestamp: Int8!
+    block: BlockData
+    input_data: BlockData!
+}
+"#;
 
-        // REFACTOR: make this like the test above
-        let mut schema = IndexerSchema::default();
+        let mut schema = IndexerSchema::new(
+            "fuel_indexer_test",
+            "test_index",
+            &GraphQLSchema::new(schema.to_string()),
+            DbType::Postgres,
+        )
+        .unwrap();
 
         schema.register_queryroot_fields();
 

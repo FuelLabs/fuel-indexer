@@ -22,4 +22,5 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+fuel-indexer-lib = { workspace = true, default-features = true }
 pretty_assertions = "0.5.0"
