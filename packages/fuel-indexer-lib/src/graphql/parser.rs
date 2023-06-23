@@ -311,7 +311,11 @@ impl ParsedGraphQLSchema {
 
                             for val in &e.values {
                                 let val_name = &val.node.value.to_string();
-                                let val_id = format!("{name}.{val_name}");
+                                let val_id = format!("{}.{val_name}", name.clone());
+                                object_field_mappings
+                                    .entry(name.clone())
+                                    .or_insert_with(BTreeMap::new)
+                                    .insert(val_name.to_string(), name.clone());
                                 field_type_mappings.insert(val_id, name.to_string());
                             }
                         }
