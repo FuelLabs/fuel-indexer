@@ -20,7 +20,7 @@ pub async fn graph_root_latest(
 pub async fn new_graph_root(
     conn: &mut IndexerConnection,
     root: GraphRoot,
-) -> sqlx::Result<GraphRoot> {
+) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::new_graph_root(c, root).await,
     }
