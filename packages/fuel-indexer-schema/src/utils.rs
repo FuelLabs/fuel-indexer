@@ -134,7 +134,7 @@ pub fn get_join_directive_info(
         let mut ref_field_type_name = types_map
             .get(&field_id)
             .unwrap_or_else(|| {
-                panic!("Implicit foreign key field '{field_id}' is not defined in the schema.",)
+                panic!("Implicit foreign key field '{field_id}' is not defined in the schema.")
             })
             .to_owned();
 

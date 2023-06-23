@@ -2,6 +2,7 @@ use fuel_indexer_lib::defaults;
 use std::path::PathBuf;
 
 pub const CARGO_MANIFEST_FILE_NAME: &str = "Cargo.toml";
+
 pub const INDEXER_LIB_FILENAME: &str = "lib.rs";
 pub const INDEXER_BINARY_FILENAME: &str = "main.rs";
 pub const CARGO_CONFIG_DIR_NAME: &str = ".cargo";
@@ -146,12 +147,12 @@ pub mod {indexer_name}_index_mod {{
     fn {indexer_name}_handler(block_data: BlockData) {{
         info!("Processing Block#{{}}. (>'.')>", block_data.height);
 
-        let block_id = first8_bytes_to_u64(block_data.id);
+        let block_id = id8(block_data.id);
         let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
         block.save();
 
         for transaction in block_data.transactions.iter() {{
-            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_data.id, hash: transaction.id }};
+            let tx = Transaction{{ id: id8(transaction.id), block: block_data.id, hash: transaction.id }};
             tx.save();
         }}
     }}
@@ -182,12 +183,12 @@ pub mod {indexer_name}_index_mod {{
     async fn {indexer_name}_handler(block_data: BlockData) {{
         info!("Processing Block#{{}}. (>'.')>", block_data.height);
 
-        let block_id = first8_bytes_to_u64(block_data.id);
+        let block_id = id8(block_data.id);
         let block = Block{{ id: block_id, height: block_data.height, hash: block_data.id }};
         block.save().await;
 
         for transaction in block_data.transactions.iter() {{
-            let tx = Transaction{{ id: first8_bytes_to_u64(transaction.id), block: block_data.id, hash: transaction.id }};
+            let tx = Transaction{{ id: id8(transaction.id), block: block_data.id, hash: transaction.id }};
             tx.save().await;
         }}
     }}
