@@ -43,17 +43,20 @@ type Genesis {
   coins_root: Bytes32!
   contracts_root: Bytes32!
   messages_root: Bytes32!
+  is_genesis: Boolean!
   label: ConsensusLabel!
 }
 
 type PoA {
   id: ID!
   signature: Signature!
+  is_poa: Boolean!
   label: ConsensusLabel!
 }
 
 type Unknown {
   id: ID!
+  is_unknown: Boolean!
   label: ConsensusLabel!
 }
 
@@ -430,6 +433,20 @@ type InstructionResult {
   instruction: UInt4!
 }
 
+enum ReceiptLabel {
+  Call
+  Return
+  ReturnData
+  Panic
+  Revert
+  Log
+  LogData
+  Transfer
+  TransferOut
+  ScriptResult
+  MessageOut
+}
+
 type CallReceipt {
   contract_id: ContractId! @virtual
   # `recipient` has a different type of different `Reciept` members, so
@@ -443,6 +460,8 @@ type CallReceipt {
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
+  label: ReceiptLabel!
+  is_call: Boolean!
 }
 
 type ReturnDataReceipt {
@@ -454,6 +473,8 @@ type ReturnDataReceipt {
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
+  label: ReceiptLabel!
+  is_return_data: Boolean!
 }
 
 type PanicReceipt {
@@ -462,6 +483,8 @@ type PanicReceipt {
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
+  label: ReceiptLabel!
+  is_panic: Boolean!
 }
 
 type RevertReceipt {
@@ -470,6 +493,8 @@ type RevertReceipt {
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
+  label: ReceiptLabel!
+  is_revert: Boolean!
 }
 
 type LogReceipt {
@@ -481,6 +506,8 @@ type LogReceipt {
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
+  label: ReceiptLabel!
+  is_log: Boolean!
 }
 
 type LogDataReceipt {
@@ -494,6 +521,8 @@ type LogDataReceipt {
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
+  label: ReceiptLabel!
+  is_log_data: Boolean!
 }
 
 type ReturnReceipt {
@@ -502,6 +531,8 @@ type ReturnReceipt {
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
+  label: ReceiptLabel!
+  is_return: Boolean!
 }
 
 type TransferReceipt {
@@ -514,6 +545,8 @@ type TransferReceipt {
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
+  label: ReceiptLabel!
+  is_transfer: Boolean!
 }
 
 type TransferOutReceipt {
@@ -526,6 +559,8 @@ type TransferOutReceipt {
   pc: UInt8!
   # `is` is a reserved keyword in PostgreSQL.
   isr: UInt8!
+  label: ReceiptLabel!
+  is_transfer_out: Boolean!
 }
 
 enum ScriptExecutionResult {
@@ -538,6 +573,8 @@ enum ScriptExecutionResult {
 type ScriptResultReceipt {
   result: ScriptExecutionResult! @virtual
   gas_used: UInt8!
+  label: ReceiptLabel!
+  is_script_result: Boolean!
 }
 
 type MessageOutReceipt {
@@ -550,6 +587,8 @@ type MessageOutReceipt {
   len: UInt8!
   digest: Bytes32!
   data: Blob!
+  label: ReceiptLabel!
+  is_message_out: Boolean!
 }
 
 union Receipt =

@@ -543,6 +543,8 @@ fn process_type_def(
 
                     derived_type_fields.insert(field_name);
 
+                    // We can't derive this FieldType info from the actual field because since
+                    // this is a union, all fields are nullable except field type `ID` (if present).
                     let field_type = Type {
                         base: BaseType::Named(Name::new(field_typ_name)),
                         nullable: field_typ_name != IdCol::to_uppercase_str(),
@@ -566,6 +568,7 @@ fn process_type_def(
                         quote! {}
                     };
 
+                    // For union types, all field types except `ID` (if present) are nullable.
                     let decoder = if field_type.nullable {
                         quote! { FtColumn::#scalar_typ(self.#field_name #clone), }
                     } else {

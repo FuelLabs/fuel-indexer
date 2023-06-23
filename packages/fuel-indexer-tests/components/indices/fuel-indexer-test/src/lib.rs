@@ -9,7 +9,7 @@ mod fuel_indexer_test {
 
     fn fuel_indexer_test_blocks(block_data: BlockData) {
         let block = BlockEntity {
-            id: first8_bytes_to_u64(block_data.id),
+            id: id8(block_data.id),
             height: block_data.height,
             timestamp: block_data.time,
         };
@@ -20,7 +20,7 @@ mod fuel_indexer_test {
 
         for tx in block_data.transactions.iter() {
             let tx = TxEntity {
-                id: first8_bytes_to_u64(tx.id),
+                id: id8(tx.id),
                 block: block.id,
                 timestamp: block_data.time,
                 input_data: Json(input_data.clone()),
@@ -67,7 +67,7 @@ mod fuel_indexer_test {
         } = transfer;
 
         let entity = TransferEntity {
-            id: first8_bytes_to_u64(contract_id),
+            id: id8(contract_id),
             contract_id,
             recipient: to,
             amount,
@@ -92,7 +92,7 @@ mod fuel_indexer_test {
         } = transferout;
 
         let entity = TransferOutEntity {
-            id: first8_bytes_to_u64(contract_id),
+            id: id8(contract_id),
             contract_id,
             recipient: to,
             amount,
@@ -113,7 +113,7 @@ mod fuel_indexer_test {
         } = log;
 
         let entity = LogEntity {
-            id: first8_bytes_to_u64(contract_id),
+            id: id8(contract_id),
             contract_id: log.contract_id,
             ra,
             rb,
@@ -176,7 +176,7 @@ mod fuel_indexer_test {
         } = messageout;
 
         let entity = MessageOutEntity {
-            id: first8_bytes_to_u64(message_id),
+            id: id8(message_id),
             message_id,
             sender,
             recipient,
@@ -213,7 +213,7 @@ mod fuel_indexer_test {
         );
 
         let block = BlockEntity {
-            id: first8_bytes_to_u64(block_data.id),
+            id: id8(block_data.id),
             height: block_data.height,
             timestamp: block_data.time,
         };

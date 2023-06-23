@@ -104,13 +104,14 @@ impl From<fuel::Consensus> for Consensus {
                 g.coins_root,
                 g.contracts_root,
                 g.messages_root,
+                true,
                 ConsensusLabel::Genesis.into(),
             )),
             fuel::Consensus::PoA(poa) => {
-                Consensus::from(PoA::new(poa.signature, ConsensusLabel::PoA.into()))
+                Consensus::from(PoA::new(poa.signature, true, ConsensusLabel::PoA.into()))
             }
             fuel::Consensus::Unknown => {
-                Consensus::from(Unknown::new(ConsensusLabel::Unknown.into()))
+                Consensus::from(Unknown::new(true, ConsensusLabel::Unknown.into()))
             }
         }
     }
@@ -162,8 +163,6 @@ impl From<fuel::Input> for Input {
     fn from(input: fuel::Input) -> Self {
         match input {
             fuel::Input::Coin(input) => {
-                // TODO: Create UID here.
-                let id = 1;
                 let fuel::InputCoin {
                     utxo_id,
                     owner,
@@ -179,35 +178,24 @@ impl From<fuel::Input> for Input {
                 let utxo_id = UtxoId::from(utxo_id);
                 let tx_pointer = TxPointer::from(tx_pointer);
 
-                Self {
-                    id,
-                    utxo_id: Some(utxo_id.id),
-                    owner: Some(owner),
-                    amount: Some(amount),
-                    asset_id: Some(asset_id),
-                    tx_pointer: Some(tx_pointer.id),
-                    witness_index: Some(witness_index.into()),
-                    maturity: Some(maturity),
-                    predicate: Some(predicate),
-                    predicate_data: Some(predicate_data.into()),
-                    label: Some(InputLabel::Coin.into()),
-                    balance_root: None,
-                    state_root: None,
-                    contract: None,
-                    sender: None,
-                    recipient: None,
-                    nonce: None,
-                    data: None,
-                    is_coin: Some(true),
-                    is_message: None,
-                    is_contract: None,
-                }
-            }
-            fuel::Input::Contract(input) => {
-                // TODO: Create UID here.
-                let id = 1;
+                let input = InputCoin::new(
+                    utxo_id.id,
+                    owner,
+                    amount,
+                    asset_id,
+                    tx_pointer.id,
+                    witness_index.into(),
+                    maturity,
+                    predicate.into(),
+                    predicate_data.into(),
+                    InputLabel::Coin.into(),
+                    true,
+                );
 
-                #[allow(unused)]
+                Self::from(input)
+            }
+            #[allow(unused)]
+            fuel::Input::Contract(input) => {
                 let fuel::InputContract {
                     utxo_id,
                     balance_root,
@@ -216,37 +204,22 @@ impl From<fuel::Input> for Input {
                     contract_id,
                 } = input;
 
+                let utxo_id = UtxoId::from(utxo_id);
                 let tx_pointer = TxPointer::from(tx_pointer);
-                // TODO: derive contract ID u64 from contract_id
-                let contract_id = 1;
 
-                Self {
-                    id,
-                    utxo_id: None,
-                    owner: None,
-                    amount: None,
-                    asset_id: None,
-                    tx_pointer: Some(tx_pointer.id),
-                    witness_index: None,
-                    maturity: None,
-                    predicate: None,
-                    predicate_data: None,
-                    label: Some(InputLabel::Contract.into()),
-                    balance_root: Some(balance_root),
-                    state_root: None,
-                    contract: Some(contract_id),
-                    sender: None,
-                    recipient: None,
-                    nonce: None,
-                    data: None,
-                    is_coin: None,
-                    is_message: None,
-                    is_contract: Some(true),
-                }
+                let input = InputContract::new(
+                    utxo_id.id,
+                    balance_root,
+                    state_root,
+                    tx_pointer.id,
+                    id8(contract_id),
+                    InputLabel::Contract.into(),
+                    true,
+                );
+
+                Self::from(input)
             }
             fuel::Input::Message(input) => {
-                // TODO: Create UID here.
-                let id = 1;
                 let fuel::InputMessage {
                     sender,
                     recipient,
@@ -258,29 +231,20 @@ impl From<fuel::Input> for Input {
                     predicate_data,
                 } = input;
 
-                Self {
-                    id,
-                    utxo_id: None,
-                    owner: None,
-                    amount: Some(amount),
-                    asset_id: None,
-                    tx_pointer: None,
-                    witness_index: Some(witness_index.into()),
-                    maturity: None,
-                    predicate: Some(predicate.into()),
-                    predicate_data: Some(predicate_data.into()),
-                    label: Some(InputLabel::Message.into()),
-                    balance_root: None,
-                    state_root: None,
-                    contract: None,
-                    sender: Some(sender),
-                    recipient: Some(recipient),
-                    nonce: Some(nonce),
-                    data: Some(data.into()),
-                    is_coin: None,
-                    is_message: Some(true),
-                    is_contract: None,
-                }
+                let input = InputMessage::new(
+                    sender,
+                    recipient,
+                    amount,
+                    nonce,
+                    witness_index.into(),
+                    data.into(),
+                    predicate.into(),
+                    predicate_data.into(),
+                    InputLabel::Message.into(),
+                    true,
+                );
+
+                Self::from(input)
             }
         }
     }
@@ -295,25 +259,11 @@ impl From<fuel::Output> for Output {
                     amount,
                     asset_id,
                 } = output;
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    recipient: Some(to),
-                    amount: Some(amount),
-                    asset_id: Some(asset_id),
-                    contract: None,
-                    input_index: None,
-                    balance_root: None,
-                    state_root: None,
-                    is_variable: None,
-                    is_contract: None,
-                    is_contract_created: None,
-                    is_change: None,
-                    is_coin: Some(true),
-                    is_unknown: None,
-                    label: Some(OutputLabel::Coin.into()),
-                }
+
+                let output =
+                    CoinOutput::new(to, amount, asset_id, true, OutputLabel::Coin.into());
+
+                Self::from(output)
             }
             fuel::Output::ContractOutput(output) => {
                 let fuel::ContractOutput {
@@ -321,25 +271,16 @@ impl From<fuel::Output> for Output {
                     balance_root,
                     state_root,
                 } = output;
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    recipient: None,
-                    amount: None,
-                    asset_id: None,
-                    contract: None,
-                    input_index: Some(input_index.into()),
-                    balance_root: Some(balance_root),
-                    state_root: Some(state_root),
-                    is_variable: None,
-                    is_contract: Some(true),
-                    is_contract_created: None,
-                    is_change: None,
-                    is_coin: None,
-                    is_unknown: None,
-                    label: Some(OutputLabel::Contract.into()),
-                }
+
+                let output = ContractOutput::new(
+                    input_index.into(),
+                    balance_root,
+                    state_root,
+                    true,
+                    OutputLabel::Contract.into(),
+                );
+
+                Self::from(output)
             }
             fuel::Output::ChangeOutput(output) => {
                 let fuel::ChangeOutput {
@@ -347,25 +288,15 @@ impl From<fuel::Output> for Output {
                     amount,
                     asset_id,
                 } = output;
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    recipient: Some(to),
-                    amount: Some(amount),
-                    asset_id: Some(asset_id),
-                    contract: None,
-                    input_index: None,
-                    balance_root: None,
-                    state_root: None,
-                    is_variable: None,
-                    is_contract: None,
-                    is_contract_created: None,
-                    is_change: Some(true),
-                    is_coin: None,
-                    is_unknown: None,
-                    label: Some(OutputLabel::Change.into()),
-                }
+                let output = ChangeOutput::new(
+                    to,
+                    amount,
+                    asset_id,
+                    true,
+                    OutputLabel::Change.into(),
+                );
+
+                Self::from(output)
             }
             fuel::Output::VariableOutput(output) => {
                 let fuel::VariableOutput {
@@ -374,77 +305,35 @@ impl From<fuel::Output> for Output {
                     asset_id,
                 } = output;
 
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    recipient: Some(to),
-                    amount: Some(amount),
-                    asset_id: Some(asset_id),
-                    contract: None,
-                    input_index: None,
-                    balance_root: None,
-                    state_root: None,
-                    is_variable: Some(true),
-                    is_contract: None,
-                    is_contract_created: None,
-                    is_change: None,
-                    is_coin: None,
-                    is_unknown: None,
-                    label: Some(OutputLabel::Variable.into()),
-                }
+                let output = VariableOutput::new(
+                    to,
+                    amount,
+                    asset_id,
+                    true,
+                    OutputLabel::Variable.into(),
+                );
+
+                Self::from(output)
             }
             fuel::Output::ContractCreated(output) => {
-                #[allow(unused)]
                 let fuel::ContractCreated {
                     contract_id,
                     state_root,
                 } = output;
 
-                // TODO: Create UID here.
-                let id = 1;
+                let output = ContractCreated::new(
+                    id8(contract_id),
+                    state_root,
+                    OutputLabel::ContractCreated.into(),
+                    true,
+                );
 
-                // TODO: calculate contract ID
-                let contract_id = 1;
-
-                Self {
-                    id,
-                    recipient: None,
-                    amount: None,
-                    asset_id: None,
-                    contract: Some(contract_id),
-                    input_index: None,
-                    balance_root: None,
-                    state_root: Some(state_root),
-                    is_variable: None,
-                    is_contract: None,
-                    is_contract_created: None,
-                    is_change: None,
-                    is_coin: None,
-                    is_unknown: Some(true),
-                    label: Some(OutputLabel::ContractCreated.into()),
-                }
+                Self::from(output)
             }
             fuel::Output::Unknown => {
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    recipient: None,
-                    amount: None,
-                    asset_id: None,
-                    contract: None,
-                    input_index: None,
-                    balance_root: None,
-                    state_root: None,
-                    is_variable: None,
-                    is_contract: None,
-                    is_contract_created: None,
-                    is_unknown: Some(true),
-                    is_change: None,
-                    is_coin: None,
-                    label: Some(OutputLabel::Unknown.into()),
-                }
+                let output = UnknownOutput::new(OutputLabel::Unknown.into(), true);
+
+                Self::from(output)
             }
         }
     }
@@ -454,38 +343,21 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
     fn from(status: fuel::TransactionStatus) -> Self {
         match status {
             fuel::TransactionStatus::Submitted { submitted_at } => {
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    label: Some(TransactionStatusLabel::Submitted.into()),
-                    time: Some(submitted_at),
-                    reason: None,
-                    block: None,
-                    program_state: None,
-                    is_submitted: Some(true),
-                    is_squeezed_out: None,
-                    is_failure: None,
-                    is_success: None,
-                    is_unknown: None,
-                }
+                let status = SubmittedStatus::new(
+                    submitted_at,
+                    TransactionStatusLabel::Submitted.into(),
+                    true,
+                );
+                Self::from(status)
             }
             fuel::TransactionStatus::SqueezedOut { reason } => {
-                // TODO: Create UID here.
-                let id = 1;
-                Self {
-                    id,
-                    label: Some(TransactionStatusLabel::SqueezedOut.into()),
-                    time: None,
-                    reason: Some(reason),
-                    block: None,
-                    program_state: None,
-                    is_submitted: None,
-                    is_squeezed_out: Some(true),
-                    is_failure: None,
-                    is_success: None,
-                    is_unknown: None,
-                }
+                let status = SqueezedOutStatus::new(
+                    reason,
+                    TransactionStatusLabel::SqueezedOut.into(),
+                    true,
+                );
+
+                Self::from(status)
             }
             #[allow(unused)]
             fuel::TransactionStatus::Failure {
@@ -495,24 +367,19 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 program_state,
             } => {
                 // TODO: Create UID here.
-                let id = 1;
-                // TODO: Create UID here.
                 let block_id = 1;
                 let program_state = program_state.map(|p| p.into());
 
-                Self {
-                    id,
-                    label: Some(TransactionStatusLabel::Failure.into()),
-                    time: Some(time),
-                    reason: None,
-                    block: Some(block_id),
+                let status = FailureStatus::new(
+                    block_id,
+                    time,
+                    reason,
                     program_state,
-                    is_submitted: None,
-                    is_squeezed_out: None,
-                    is_failure: Some(true),
-                    is_success: None,
-                    is_unknown: None,
-                }
+                    TransactionStatusLabel::Failure.into(),
+                    true,
+                );
+
+                Self::from(status)
             }
             #[allow(unused)]
             fuel::TransactionStatus::Success {
@@ -521,23 +388,18 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 program_state,
             } => {
                 // TODO: Create UID here.
-                let id = 1;
-                // TODO: Create UID here.
                 let block_id = 1;
                 let program_state = program_state.map(|p| p.into());
-                Self {
-                    id,
-                    label: Some(TransactionStatusLabel::Success.into()),
-                    time: Some(time),
-                    reason: None,
-                    block: Some(block_id),
+
+                let status = SuccessStatus::new(
+                    block_id,
+                    time,
                     program_state,
-                    is_submitted: None,
-                    is_squeezed_out: None,
-                    is_failure: None,
-                    is_success: Some(true),
-                    is_unknown: None,
-                }
+                    TransactionStatusLabel::Success.into(),
+                    true,
+                );
+
+                Self::from(status)
             }
         }
     }
@@ -569,61 +431,40 @@ impl From<fuel::Receipt> for Receipt {
                 param2,
                 pc,
                 is: isr,
-            } => Self {
-                amount: Some(amount),
-                asset_id: Some(asset_id),
-                contract_id: Some(contract_id),
-                data: None,
-                digest: None,
-                gas_used: None,
-                gas: Some(gas),
-                isr: Some(isr),
-                len: None,
-                nonce: None,
-                param1: Some(param1),
-                param2: Some(param2),
-                pc: Some(pc),
-                ptr: None,
-                ra: None,
-                rb: None,
-                rc: None,
-                rd: None,
-                reason: None,
-                recipient: Some(fuel::Identity::ContractId(recipient)),
-                result: None,
-                sender: None,
-                val: None,
-            },
+            } => {
+                let receipt = CallReceipt {
+                    contract_id,
+                    recipient: Identity::ContractId(recipient),
+                    amount,
+                    asset_id,
+                    gas,
+                    param1,
+                    param2,
+                    pc,
+                    isr,
+                    label: ReceiptLabel::Call.into(),
+                    is_call: true,
+                };
+
+                Self::from(receipt)
+            }
             fuel::Receipt::Return {
                 id: contract_id,
                 val,
                 pc,
                 is: isr,
-            } => Self {
-                amount: None,
-                asset_id: None,
-                contract_id: Some(contract_id),
-                data: None,
-                digest: None,
-                gas_used: None,
-                gas: None,
-                isr: Some(isr),
-                len: None,
-                nonce: None,
-                param1: None,
-                param2: None,
-                pc: Some(pc),
-                ptr: None,
-                ra: None,
-                rb: None,
-                rc: None,
-                rd: None,
-                reason: None,
-                recipient: None,
-                result: None,
-                sender: None,
-                val: Some(val),
-            },
+            } => {
+                let receipt = ReturnReceipt {
+                    contract_id,
+                    val,
+                    pc,
+                    isr,
+                    label: ReceiptLabel::Return.into(),
+                    is_return: true,
+                };
+
+                Self::from(receipt)
+            }
             fuel::Receipt::ReturnData {
                 id: contract_id,
                 ptr,
@@ -632,31 +473,22 @@ impl From<fuel::Receipt> for Receipt {
                 data,
                 pc,
                 is: isr,
-            } => Self {
-                amount: None,
-                asset_id: None,
-                contract_id: Some(contract_id),
-                data: Some(data.into()),
-                digest: Some(digest),
-                gas_used: None,
-                gas: None,
-                isr: Some(isr),
-                len: Some(len),
-                nonce: None,
-                param1: None,
-                param2: None,
-                pc: Some(pc),
-                ptr: Some(ptr),
-                ra: None,
-                rb: None,
-                rc: None,
-                rd: None,
-                reason: None,
-                recipient: None,
-                result: None,
-                sender: None,
-                val: None,
-            },
+            } => {
+                let receipt = ReturnDataReceipt {
+                    contract_id,
+                    ptr,
+                    len,
+                    digest,
+                    data: data.into(),
+                    pc,
+                    isr,
+                    label: ReceiptLabel::ReturnData.into(),
+                    is_return_data: true,
+                };
+
+                Self::from(receipt)
+            }
+            // TODO: What to do with this id?
             #[allow(unused)]
             fuel::Receipt::Panic {
                 id,
@@ -664,67 +496,41 @@ impl From<fuel::Receipt> for Receipt {
                 reason,
                 pc,
                 is: isr,
-            } => Self {
-                amount: None,
-                asset_id: None,
-                contract_id: Some(id),
-                data: None,
-                digest: None,
-                gas_used: None,
-                gas: None,
-                isr: Some(isr),
-                len: None,
-                nonce: None,
-                param1: None,
-                param2: None,
-                pc: Some(pc),
-                ptr: None,
-                ra: None,
-                rb: None,
-                rc: None,
-                rd: None,
-                reason: Some(
-                    InstructionResult {
-                        reason: PanicReason::from(reason.reason().to_owned()).into(),
-                        instruction: *reason.instruction(),
-                    }
-                    .into(),
-                ),
-                recipient: None,
-                result: None,
-                sender: None,
-                val: None,
-            },
+            } => {
+                let receipt = PanicReceipt {
+                    contract_id,
+                    reason: Some(
+                        InstructionResult {
+                            reason: PanicReason::from(reason.reason().to_owned()).into(),
+                            instruction: *reason.instruction(),
+                        }
+                        .into(),
+                    ),
+                    pc,
+                    isr,
+                    label: ReceiptLabel::Panic.into(),
+                    is_panic: true,
+                };
+
+                Self::from(receipt)
+            }
             fuel::Receipt::Revert {
                 id: contract_id,
                 ra,
                 pc,
                 is: isr,
-            } => Self {
-                amount: None,
-                asset_id: None,
-                contract_id: Some(contract_id),
-                data: None,
-                digest: None,
-                gas_used: None,
-                gas: None,
-                isr: Some(isr),
-                len: None,
-                nonce: None,
-                param1: None,
-                param2: None,
-                pc: Some(pc),
-                ptr: None,
-                ra: Some(ra),
-                rb: None,
-                rc: None,
-                rd: None,
-                reason: None,
-                recipient: None,
-                result: None,
-                sender: None,
-                val: None,
-            },
+            } => {
+                let receipt = RevertReceipt {
+                    contract_id,
+                    ra,
+                    pc,
+                    isr,
+                    label: ReceiptLabel::Revert.into(),
+                    is_revert: true,
+                };
+
+                Self::from(receipt)
+            }
             fuel::Receipt::Log {
                 id: contract_id,
                 ra,
@@ -733,31 +539,21 @@ impl From<fuel::Receipt> for Receipt {
                 rd,
                 pc,
                 is: isr,
-            } => Self {
-                amount: None,
-                asset_id: None,
-                contract_id: Some(contract_id),
-                data: None,
-                digest: None,
-                gas_used: None,
-                gas: None,
-                isr: Some(isr),
-                len: None,
-                nonce: None,
-                param1: None,
-                param2: None,
-                pc: Some(pc),
-                ptr: None,
-                ra: Some(ra),
-                rb: Some(rb),
-                rc: Some(rc),
-                rd: Some(rd),
-                reason: None,
-                recipient: None,
-                result: None,
-                sender: None,
-                val: None,
-            },
+            } => {
+                let receipt = LogReceipt {
+                    contract_id,
+                    ra,
+                    rb,
+                    rc,
+                    rd,
+                    pc,
+                    isr,
+                    label: ReceiptLabel::Log.into(),
+                    is_log: true,
+                };
+
+                Self::from(receipt)
+            }
             fuel::Receipt::LogData {
                 id: contract_id,
                 ra,
@@ -768,31 +564,23 @@ impl From<fuel::Receipt> for Receipt {
                 data,
                 pc,
                 is: isr,
-            } => Self {
-                amount: None,
-                asset_id: None,
-                contract_id: Some(contract_id),
-                data: Some(data.into()),
-                digest: Some(digest),
-                gas_used: None,
-                gas: None,
-                isr: Some(isr),
-                len: Some(len),
-                nonce: None,
-                param1: None,
-                param2: None,
-                pc: Some(pc),
-                ptr: Some(ptr),
-                ra: Some(ra),
-                rb: Some(rb),
-                rc: None,
-                rd: None,
-                reason: None,
-                recipient: None,
-                result: None,
-                sender: None,
-                val: None,
-            },
+            } => {
+                let receipt = LogDataReceipt {
+                    contract_id,
+                    ra,
+                    rb,
+                    ptr,
+                    len,
+                    digest,
+                    data: data.into(),
+                    pc,
+                    isr,
+                    label: ReceiptLabel::LogData.into(),
+                    is_log_data: true,
+                };
+
+                Self::from(receipt)
+            }
             fuel::Receipt::Transfer {
                 id: contract_id,
                 to: recipient,
@@ -800,31 +588,20 @@ impl From<fuel::Receipt> for Receipt {
                 asset_id,
                 pc,
                 is: isr,
-            } => Self {
-                amount: Some(amount),
-                asset_id: Some(asset_id),
-                contract_id: Some(contract_id),
-                data: None,
-                digest: None,
-                gas_used: None,
-                gas: None,
-                isr: Some(isr),
-                len: None,
-                nonce: None,
-                param1: None,
-                param2: None,
-                pc: Some(pc),
-                ptr: None,
-                ra: None,
-                rb: None,
-                rc: None,
-                rd: None,
-                reason: None,
-                recipient: Some(Identity::ContractId(recipient)),
-                result: None,
-                sender: None,
-                val: None,
-            },
+            } => {
+                let receipt = TransferReceipt {
+                    contract_id,
+                    recipient: Identity::ContractId(recipient),
+                    amount,
+                    asset_id,
+                    pc,
+                    isr,
+                    label: ReceiptLabel::Transfer.into(),
+                    is_transfer: true,
+                };
+
+                Self::from(receipt)
+            }
             fuel::Receipt::TransferOut {
                 id: contract_id,
                 to: recipient,
@@ -832,56 +609,30 @@ impl From<fuel::Receipt> for Receipt {
                 asset_id,
                 pc,
                 is: isr,
-            } => Self {
-                amount: Some(amount),
-                asset_id: Some(asset_id),
-                contract_id: Some(contract_id),
-                data: None,
-                digest: None,
-                gas_used: None,
-                gas: None,
-                isr: Some(isr),
-                len: None,
-                nonce: None,
-                param1: None,
-                param2: None,
-                pc: Some(pc),
-                ptr: None,
-                ra: None,
-                rb: None,
-                rc: None,
-                rd: None,
-                reason: None,
-                recipient: Some(Identity::Address(recipient)),
-                result: None,
-                sender: None,
-                val: None,
-            },
-            fuel::Receipt::ScriptResult { result, gas_used } => Self {
-                amount: None,
-                asset_id: None,
-                contract_id: None,
-                data: None,
-                digest: None,
-                gas_used: Some(gas_used),
-                gas: None,
-                isr: None,
-                len: None,
-                nonce: None,
-                param1: None,
-                param2: None,
-                pc: None,
-                ptr: None,
-                ra: None,
-                rb: None,
-                rc: None,
-                rd: None,
-                reason: None,
-                recipient: None,
-                result: Some(ScriptExecutionResult::from(result).into()),
-                sender: None,
-                val: None,
-            },
+            } => {
+                let receipt = TransferOutReceipt {
+                    contract_id,
+                    recipient: Identity::Address(recipient),
+                    amount,
+                    asset_id,
+                    pc,
+                    isr,
+                    label: ReceiptLabel::TransferOut.into(),
+                    is_transfer_out: true,
+                };
+
+                Self::from(receipt)
+            }
+            fuel::Receipt::ScriptResult { result, gas_used } => {
+                let receipt = ScriptResultReceipt {
+                    result: ScriptExecutionResult::from(result).into(),
+                    gas_used,
+                    label: ReceiptLabel::ScriptResult.into(),
+                    is_script_result: true,
+                };
+
+                Self::from(receipt)
+            }
             fuel::Receipt::MessageOut {
                 sender,
                 recipient,
@@ -890,31 +641,21 @@ impl From<fuel::Receipt> for Receipt {
                 len,
                 digest,
                 data,
-            } => Self {
-                amount: Some(amount),
-                asset_id: None,
-                contract_id: None,
-                data: Some(data.into()),
-                digest: Some(digest),
-                gas_used: None,
-                gas: None,
-                isr: None,
-                len: Some(len),
-                nonce: Some(nonce),
-                param1: None,
-                param2: None,
-                pc: None,
-                ptr: None,
-                ra: None,
-                rb: None,
-                rc: None,
-                rd: None,
-                reason: None,
-                recipient: Some(Identity::Address(recipient)),
-                result: None,
-                sender: Some(sender),
-                val: None,
-            },
+            } => {
+                let receipt = MessageOutReceipt {
+                    sender,
+                    recipient: Identity::Address(recipient),
+                    amount,
+                    nonce,
+                    len,
+                    digest,
+                    data: data.into(),
+                    label: ReceiptLabel::MessageOut.into(),
+                    is_message_out: true,
+                };
+
+                Self::from(receipt)
+            }
         }
     }
 }
