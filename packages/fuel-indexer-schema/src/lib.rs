@@ -33,8 +33,6 @@ pub enum IndexerSchemaError {
     ListTypesUnsupported,
     #[error("Inconsistent use of virtual union types. {0:?}")]
     InconsistentVirtualUnion(String),
-    #[error("Unable to parse GraphQL schema: {0:?}")]
-    ParsedError(#[from] fuel_indexer_lib::graphql::ParsedError),
 }
 
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]

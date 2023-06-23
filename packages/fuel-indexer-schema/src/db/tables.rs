@@ -88,6 +88,7 @@ impl IndexerSchema {
 
         queries::new_graph_root(conn, root).await?;
 
+        // TODO: Abstract this into a SQLSchema (or named something else)?
         match self.db_type {
             DbType::Postgres => {
                 let create = format!(
@@ -102,7 +103,7 @@ impl IndexerSchema {
             .parsed
             .type_defs()
             .iter()
-            .map(|(_, t)| TypeId::from_typdef(t, self.parsed()))
+            .map(|(_, t)| TypeId::from_typdef(t, &self.parsed))
             .unique_by(|t| t.id)
             .collect::<Vec<TypeId>>();
 
@@ -112,11 +113,7 @@ impl IndexerSchema {
             .parsed
             .type_defs()
             .iter()
-            .filter_map(|(_, typ)| match &typ.kind {
-                TypeKind::Object(_o) => Some(Table::from_typdef(typ, &self.parsed)),
-                TypeKind::Union(_u) => Some(Table::from_typdef(typ, &self.parsed)),
-                _ => None,
-            })
+            .map(|(_, t)| Table::from_typdef(t, &self.parsed))
             .collect::<Vec<Table>>();
 
         let columns = tables
@@ -167,9 +164,13 @@ impl IndexerSchema {
 
         let indexer_id =
             queries::get_indexer_id(&mut conn, namespace, identifier).await?;
-        let IndexerAssetBundle { manifest, .. } =
-            queries::latest_assets_for_indexer(&mut conn, &indexer_id).await?;
-        let manifest = Manifest::try_from(&manifest.bytes).expect("Bad manifest.");
+        let IndexerAsset { bytes, .. } = queries::latest_asset_for_indexer(
+            &mut conn,
+            &indexer_id,
+            IndexerAssetType::Manifest,
+        )
+        .await?;
+        let manifest = Manifest::try_from(&bytes)?;
 
         let schema = GraphQLSchema::new(root.schema.clone());
         let parsed = ParsedGraphQLSchema::new(

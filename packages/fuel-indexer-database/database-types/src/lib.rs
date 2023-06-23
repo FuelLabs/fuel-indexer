@@ -10,7 +10,9 @@ use chrono::{
 };
 use fuel_indexer_lib::{
     graphql::{
-        extract_foreign_key_info, field_id, types::ObjectCol, ParsedGraphQLSchema,
+        extract_foreign_key_info, field_id,
+        types::{IdCol, ObjectCol},
+        ParsedGraphQLSchema,
     },
     type_id,
 };
@@ -30,6 +32,7 @@ pub enum IndexMethod {
     #[default]
     #[strum(serialize = "btree")]
     BTree,
+
     #[strum(serialize = "hash")]
     Hash,
 }
@@ -211,11 +214,11 @@ impl From<&str> for ColumnType {
 
 /// Represents a root column in the graph.
 #[derive(Debug, Default)]
-pub struct RootColumns {
+pub struct RootColumn {
     /// Database ID of the column.
     pub id: i64,
 
-    /// Database ID of the `GraphRoot` associated with this `RootColumns`.
+    /// Database ID of the `GraphRoot` associated with this `RootColumn`.
     pub root_id: i64,
 
     /// Column name.
@@ -242,11 +245,13 @@ pub enum Persistence {
 
 /// SQL statements that can be executed against a database.
 pub trait SqlFragment {
+    /// Return the SQL create statement for a given SQL item.
     fn create(&self) -> String;
 }
 
 /// A named SQL statement.
 pub trait SqlNamed {
+    /// Return the SQL name of the SQL item.
     fn sql_name(&self) -> String;
 }
 
@@ -315,9 +320,9 @@ impl Column {
                 // field type. We can't use the `ID` type as normal because we 
                 // can't have multiple primary keys on the same table.
                 .unwrap_or("UInt8".to_string());
-        } else if parsed.is_virtual_type(&field_type) {
+        } else if parsed.is_virtual_typedef(&field_type) {
             field_type = "Virtual".to_string();
-        } else if parsed.is_enum_type(&field_type) {
+        } else if parsed.is_enum_typedef(&field_type) {
             field_type = "Charfield".to_string();
         }
 
@@ -392,6 +397,7 @@ impl Column {
 }
 
 impl SqlFragment for Column {
+    /// Return the SQL create statement for a `Column`.
     fn create(&self) -> String {
         let null_frag = if self.nullable { "" } else { "not null" };
         let unique_frag = if self.unique { "unique" } else { "" };
@@ -452,32 +458,13 @@ impl TypeId {
     /// Create a new `TypeId` from a given `TypeDefinition`.
     pub fn from_typdef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         let type_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
-        match &typ.kind {
-            TypeKind::Object(_o) => Self {
-                id: type_id,
-                version: parsed.schema().version().to_string(),
-                namespace: parsed.namespace().to_string(),
-                identifier: parsed.identifier().to_string(),
-                graphql_name: typ.name.to_string(),
-                table_name: typ.name.to_string().to_lowercase(),
-            },
-            TypeKind::Union(_u) => Self {
-                id: type_id,
-                version: parsed.schema().version().to_string(),
-                namespace: parsed.namespace().to_string(),
-                identifier: parsed.identifier().to_string(),
-                graphql_name: typ.name.to_string(),
-                table_name: typ.name.to_string().to_lowercase(),
-            },
-            TypeKind::Enum(_e) => Self {
-                id: type_id,
-                version: parsed.schema().version().to_string(),
-                namespace: parsed.namespace().to_string(),
-                identifier: parsed.identifier().to_string(),
-                graphql_name: typ.name.to_string(),
-                table_name: typ.name.to_string().to_lowercase(),
-            },
-            _ => panic!("Type '{}' does not support TypeId derivation.", typ.name),
+        Self {
+            id: type_id,
+            version: parsed.schema().version().to_string(),
+            namespace: parsed.namespace().to_string(),
+            identifier: parsed.identifier().to_string(),
+            graphql_name: typ.name.to_string(),
+            table_name: typ.name.to_string().to_lowercase(),
         }
     }
 }
@@ -530,8 +517,10 @@ pub struct IndexerAssetBundle {
 pub enum IndexerAssetType {
     #[strum(serialize = "wasm")]
     Wasm,
+
     #[strum(serialize = "manifest")]
     Manifest,
+
     #[strum(serialize = "schema")]
     Schema,
 }
@@ -610,6 +599,7 @@ impl SqlNamed for SqlIndex {
 }
 
 impl SqlFragment for SqlIndex {
+    /// Return the SQL create statement for a `SqlIndex`.
     fn create(&self) -> String {
         let mut frag = "CREATE ".to_string();
         if self.unique {
@@ -662,6 +652,7 @@ pub enum Constraint {
 }
 
 impl SqlFragment for Constraint {
+    /// Return the SQL create statement for a `Constraint`.
     fn create(&self) -> String {
         match self {
             Constraint::Index(idx) => idx.create(),
@@ -702,6 +693,7 @@ pub struct ForeignKey {
 }
 
 impl SqlNamed for ForeignKey {
+    /// Return the SQL name of the foreign key.
     fn sql_name(&self) -> String {
         format!(
             "fk_{}_{}__{}_{}",
@@ -711,6 +703,7 @@ impl SqlNamed for ForeignKey {
 }
 
 impl SqlFragment for ForeignKey {
+    /// Return the SQL create statement for the a `ForeignKey`.
     fn create(&self) -> String {
         match self.db_type {
             DbType::Postgres => {
@@ -742,6 +735,7 @@ pub struct Nonce {
 }
 
 impl Nonce {
+    /// Determine whether or not this nonce has expired.
     pub fn is_expired(&self) -> bool {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -800,7 +794,7 @@ impl Table {
         let ty_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
         match &typ.kind {
             TypeKind::Object(o) => {
-                let persistence = if parsed.is_virtual_type(&typ.name.to_string()) {
+                let persistence = if parsed.is_virtual_typedef(&typ.name.to_string()) {
                     Persistence::Virtual
                 } else {
                     Persistence::Regular
@@ -918,8 +912,11 @@ impl Table {
                             .field_defs()
                             .get(&fid)
                             .expect("FielDefinition not found in parsed schema.");
+                        // All fields in a derived union type are nullable, except for
+                        // the `ID` field.
                         let mut f = f.0.clone();
-                        f.ty.node.nullable = true;
+                        f.ty.node.nullable =
+                            f.name.to_string() != IdCol::to_lowercase_str();
                         Positioned {
                             pos: Pos::default(),
                             node: f,
@@ -949,6 +946,7 @@ impl Table {
 }
 
 impl SqlFragment for Table {
+    /// Return the SQL create statement for a `Table`.
     fn create(&self) -> String {
         match self.persistence {
             Persistence::Regular => {

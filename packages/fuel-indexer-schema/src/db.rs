@@ -30,4 +30,6 @@ pub enum IndexerSchemaDbError {
     Utf8Error(#[from] std::str::Utf8Error),
     #[error("Unable to parse GraphQL schema: {0:?}")]
     ParsedError(#[from] fuel_indexer_lib::graphql::ParsedError),
+    #[error("Manifest Error: {0:?}")]
+    ManifestError(#[from] fuel_indexer_lib::manifest::ManifestError),
 }

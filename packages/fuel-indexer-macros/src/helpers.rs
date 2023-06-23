@@ -312,7 +312,7 @@ pub fn field_extractor(
     is_nullable: bool,
 ) -> proc_macro2::TokenStream {
     let type_name = field_type.to_string();
-    if schema.is_enum_type(&type_name) {
+    if schema.is_enum_typedef(&type_name) {
         field_type = format_ident! {"UInt1"};
     }
 
@@ -518,43 +518,44 @@ pub fn process_typedef_field(
 
     match fieldkind {
         FieldKind::ForeignKey => {
-            // Determine implicit vs explicit FK
             let (ref_coltype, _ref_colname, _ref_tablename) =
                 extract_foreign_key_info(&field_def, parsed);
 
-            let field_typ_name = nullable_type(&field_def, &ref_coltype);
+            let field_typ_name = nullable_field_type_name(&field_def, &ref_coltype);
 
             // We're manually updated the field type here because we need to substitute the field name
             // into a scalar type name.
             field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(field_typ_name.replace('!', ""))),
+                base: BaseType::Named(Name::new(field_typ_name)),
                 nullable: field_def.ty.node.nullable,
             };
 
             process_typedef_field(parsed, field_def)
         }
         FieldKind::Enum => {
-            let field_typ_name = nullable_type(&field_def, "Charfield");
             field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(field_typ_name.replace('!', ""))),
+                base: BaseType::Named(Name::new("Charfield")),
                 nullable: field_def.ty.node.nullable,
             };
             process_typedef_field(parsed, field_def)
         }
         FieldKind::Virtual => {
-            let field_typ_name = nullable_type(&field_def, "Virtual");
+            let field_typ_name = nullable_field_type_name(&field_def, "Virtual");
             field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(field_typ_name.replace('!', ""))),
+                base: BaseType::Named(Name::new(field_typ_name)),
                 nullable: field_def.ty.node.nullable,
             };
             process_typedef_field(parsed, field_def)
         }
         FieldKind::Union => {
             let field_typ_name = field_def.ty.to_string().replace('!', "");
-            match parsed.is_virtual_type(&field_typ_name) {
+            match parsed.is_virtual_typedef(&field_typ_name) {
                 true => {
-                    // All union derived type fields are optional.
-                    field_def.ty.node = Type::new("Virtual").expect("Bad type.");
+                    let field_typ_name = nullable_field_type_name(&field_def, "Virtual");
+                    field_def.ty.node = Type {
+                        base: BaseType::Named(Name::new(field_typ_name)),
+                        nullable: field_def.ty.node.nullable,
+                    };
                     process_typedef_field(parsed, field_def)
                 }
                 false => match parsed.is_possible_foreign_key(&field_typ_name) {
@@ -563,13 +564,10 @@ pub fn process_typedef_field(
                         let (ref_coltype, _ref_colname, _ref_tablename) =
                             extract_foreign_key_info(&field_def, parsed);
 
-                        let field_typ_name = nullable_type(&field_def, &ref_coltype);
-                        // We're manually updated the field type here because we need to substitute the field name
-                        // into a scalar type name.
+                        let field_typ_name =
+                            nullable_field_type_name(&field_def, &ref_coltype);
                         field_def.ty.node = Type {
-                            base: BaseType::Named(Name::new(
-                                field_typ_name.replace('!', ""),
-                            )),
+                            base: BaseType::Named(Name::new(field_typ_name)),
                             nullable: field_def.ty.node.nullable,
                         };
 
@@ -600,7 +598,13 @@ pub fn process_type(
 ) -> (proc_macro2::TokenStream, proc_macro2::Ident) {
     match &typ.base {
         BaseType::Named(t) => {
-            let name = t.to_string();
+            // A `TypeDefinition` name and a given `FieldDefinition` name can be the same,
+            // but when using FKs, the `FieldDefinition` type name will include a `!` token
+            // if the field is required.
+            let mut name = t.to_string();
+            if name.ends_with('!') {
+                name.pop();
+            }
             if !schema.has_type(&name) {
                 panic!("Type '{name}' is not defined in the schema.");
             }
@@ -620,7 +624,7 @@ pub fn process_type(
 /// Return `FieldKind` for a given `FieldDefinition` within the context of a
 /// particularly parsed GraphQL schema.
 pub fn field_kind(field_typ_name: &str, parser: &ParsedGraphQLSchema) -> FieldKind {
-    if parser.is_union_type(field_typ_name)
+    if parser.is_union_typedef(field_typ_name)
         && !parser.is_possible_foreign_key(field_typ_name)
     {
         return FieldKind::Union;
@@ -630,11 +634,11 @@ pub fn field_kind(field_typ_name: &str, parser: &ParsedGraphQLSchema) -> FieldKi
         return FieldKind::ForeignKey;
     }
 
-    if parser.is_enum_type(field_typ_name) {
+    if parser.is_enum_typedef(field_typ_name) {
         return FieldKind::Enum;
     }
 
-    if parser.is_virtual_type(field_typ_name) {
+    if parser.is_virtual_typedef(field_typ_name) {
         return FieldKind::Virtual;
     }
 
@@ -727,7 +731,7 @@ pub fn can_derive_id(
 }
 
 /// Return the GraphQL type with nullable suffix.
-pub fn nullable_type(f: &FieldDefinition, field_name: &str) -> String {
+pub fn nullable_field_type_name(f: &FieldDefinition, field_name: &str) -> String {
     if f.ty.node.nullable {
         format!("{field_name}!")
     } else {

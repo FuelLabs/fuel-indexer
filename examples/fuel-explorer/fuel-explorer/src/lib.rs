@@ -682,7 +682,7 @@ pub mod explorer_index {
         consensus.save();
 
         let block = Block {
-            id: first8_bytes_to_u64(block_data.header.id),
+            id: id8(block_data.header.id),
             block_id: block_data.header.id,
             header: header.id,
             consensus: consensus.id,
@@ -692,7 +692,7 @@ pub mod explorer_index {
         block.save();
 
         let block_frag = BlockIdFragment {
-            id: first8_bytes_to_u64(block_data.header.id),
+            id: id8(block_data.header.id),
             hash: Bytes32::default(),
         };
 

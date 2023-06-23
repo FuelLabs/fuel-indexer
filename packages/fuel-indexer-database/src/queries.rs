@@ -152,7 +152,7 @@ pub async fn execute_query(
 pub async fn root_columns_list_by_id(
     conn: &mut IndexerConnection,
     root_id: i64,
-) -> sqlx::Result<Vec<RootColumns>> {
+) -> sqlx::Result<Vec<RootColumn>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::root_columns_list_by_id(c, root_id).await
@@ -162,8 +162,8 @@ pub async fn root_columns_list_by_id(
 
 pub async fn new_root_columns(
     conn: &mut IndexerConnection,
-    cols: Vec<RootColumns>,
-) -> sqlx::Result<RootColumns> {
+    cols: Vec<RootColumn>,
+) -> sqlx::Result<RootColumn> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::new_root_columns(c, cols).await

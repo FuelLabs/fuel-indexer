@@ -321,7 +321,6 @@ impl ParsedGraphQLSchema {
                                 });
                             });
                         }
-
                         _ => {
                             return Err(ParsedError::UnsupportedTypeKind);
                         }
@@ -441,22 +440,22 @@ impl ParsedGraphQLSchema {
     pub fn is_possible_foreign_key(&self, name: &str) -> bool {
         self.parsed_type_names.contains(name)
             && !self.has_scalar(name)
-            && !self.is_enum_type(name)
-            && !self.is_virtual_type(name)
+            && !self.is_enum_typedef(name)
+            && !self.is_virtual_typedef(name)
     }
 
     /// Whether the given field type name is a type from which tables are not created.
-    pub fn is_virtual_type(&self, name: &str) -> bool {
-        self.virtual_type_names.contains(name) && !self.is_enum_type(name)
+    pub fn is_virtual_typedef(&self, name: &str) -> bool {
+        self.virtual_type_names.contains(name) && !self.is_enum_typedef(name)
     }
 
     /// Whether the given field type name is an enum type.
-    pub fn is_enum_type(&self, name: &str) -> bool {
+    pub fn is_enum_typedef(&self, name: &str) -> bool {
         self.enum_names.contains(name)
     }
 
     /// Whether the given field type name is a union type.
-    pub fn is_union_type(&self, name: &str) -> bool {
+    pub fn is_union_typedef(&self, name: &str) -> bool {
         self.union_names.contains(name)
     }
 

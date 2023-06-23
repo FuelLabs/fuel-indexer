@@ -2,7 +2,7 @@ use crate::graphql::constants::*;
 use async_graphql_parser::types::{TypeDefinition, TypeKind};
 use std::collections::HashSet;
 
-/// General container used to store a set of schema/type validation functions.
+/// General container used to store a set of GraphQL schema validation functions.
 pub struct GraphQLSchemaValidator;
 
 impl GraphQLSchemaValidator {
@@ -63,6 +63,17 @@ impl GraphQLSchemaValidator {
                 }
             }
             _ => panic!("`TypeKind::Union(UnionType)` expected."),
+        }
+    }
+
+    /// Ensure that a derived union type's fields are all of a consistent, single type.
+    pub fn derived_field_type_is_consistent(
+        union_name: &str,
+        field_name: &str,
+        fields: &HashSet<String>,
+    ) {
+        if fields.contains(field_name) {
+            panic!("Derived type from Union({union_name}) contains Field({field_name}) which does not have a consistent type across all members.");
         }
     }
 }

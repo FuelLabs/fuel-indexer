@@ -221,12 +221,12 @@ impl Decoder for ObjectDecoder {
                     .collect::<HashSet<String>>();
 
                 for (field_name, field_typ_name) in member_fields.iter() {
-                    // Field types must be consistent across all members of a union.
-                    if derived_type_fields.contains(field_name) {
-                        panic!("Derived type from Union({}) contains Field({}) which does not have a consistent type across all members.", union_name, field_name);
-                    }
-
-                    derived_type_fields.insert(field_name);
+                    GraphQLSchemaValidator::derived_field_type_is_consistent(
+                        &union_name,
+                        &field_name,
+                        &derived_type_fields,
+                    );
+                    derived_type_fields.insert(field_name.to_owned());
 
                     let field = FieldDefinition {
                         description: None,
@@ -322,7 +322,7 @@ impl Decoder for ObjectDecoder {
                     },
                 }
             }
-            _ => panic!("Expected TypeKind::Object or TypeKind::Union."),
+            _ => panic!("Expected `TypeKind::Union` or `TypeKind::Object."),
         }
     }
 }
@@ -393,7 +393,7 @@ impl Decoder for EnumDecoder {
                     type_id,
                 }
             }
-            _ => panic!("Expected TypeKind::Enum"),
+            _ => panic!("Expected `TypeKind::Enum`."),
         }
     }
 }

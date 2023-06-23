@@ -291,12 +291,12 @@ pub fn build_dynamic_schema(schema: &IndexerSchema) -> GraphqlResult<DynamicSche
                             //
                             // For now, setting them to a String type does not
                             // cause errors, but we should decide what the final process is.
-                            if schema.parsed().is_virtual_type(field_type) {
+                            if schema.parsed().is_virtual_typedef(field_type) {
                                 TypeRef::named(TypeRef::STRING)
                             } else {
                                 TypeRef::named(type_name.to_string())
                             }
-                        } else if schema.parsed().is_virtual_type(field_type) {
+                        } else if schema.parsed().is_virtual_typedef(field_type) {
                             TypeRef::named_nn(TypeRef::STRING)
                         } else {
                             TypeRef::named_nn(type_name.to_string())

@@ -80,7 +80,7 @@ pub async fn execute_query(
 pub async fn root_columns_list_by_id(
     conn: &mut PoolConnection<Postgres>,
     root_id: i64,
-) -> sqlx::Result<Vec<RootColumns>> {
+) -> sqlx::Result<Vec<RootColumn>> {
     Ok(
         sqlx::query("SELECT * FROM graph_registry_root_columns WHERE root_id = $1")
             .bind(root_id)
@@ -92,22 +92,22 @@ pub async fn root_columns_list_by_id(
                 let root_id: i64 = row.get(1);
                 let column_name: String = row.get(2);
                 let graphql_type: String = row.get(3);
-                RootColumns {
+                RootColumn {
                     id,
                     root_id,
                     column_name,
                     graphql_type,
                 }
             })
-            .collect::<Vec<RootColumns>>(),
+            .collect::<Vec<RootColumn>>(),
     )
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_root_columns(
     conn: &mut PoolConnection<Postgres>,
-    cols: Vec<RootColumns>,
-) -> sqlx::Result<RootColumns> {
+    cols: Vec<RootColumn>,
+) -> sqlx::Result<RootColumn> {
     let mut builder = sqlx::QueryBuilder::new(
         "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)",
     );
@@ -121,7 +121,7 @@ pub async fn new_root_columns(
     let query = builder.build();
     let _result = query.execute(conn).await?;
 
-    Ok(RootColumns::default())
+    Ok(RootColumn::default())
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
