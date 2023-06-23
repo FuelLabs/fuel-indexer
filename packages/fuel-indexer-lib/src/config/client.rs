@@ -7,8 +7,9 @@ use http::Uri;
 use serde::Deserialize;
 use std::net::SocketAddr;
 
+/// Fuel GraphQL API configuration.
 #[derive(Clone, Deserialize, Debug)]
-pub struct FuelNodeConfig {
+pub struct FuelClientConfig {
     /// Host of the running Fuel node.
     #[serde(default)]
     pub host: String,
@@ -18,7 +19,7 @@ pub struct FuelNodeConfig {
     pub port: String,
 }
 
-impl FuelNodeConfig {
+impl FuelClientConfig {
     pub fn health_check_uri(self) -> Uri {
         let base = Uri::from(self);
         format!("{}{}", base, "health")
@@ -27,14 +28,14 @@ impl FuelNodeConfig {
     }
 }
 
-impl Env for FuelNodeConfig {
+impl Env for FuelClientConfig {
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         Ok(())
     }
 }
 
-impl From<FuelNodeConfig> for Uri {
-    fn from(config: FuelNodeConfig) -> Self {
+impl From<FuelClientConfig> for Uri {
+    fn from(config: FuelClientConfig) -> Self {
         let uri = derive_http_url(&config.host, &config.port);
         uri.parse().unwrap_or_else(|e| {
             panic!("Cannot parse HTTP URI from Fuel node config {config:?}: {e}")
@@ -42,7 +43,7 @@ impl From<FuelNodeConfig> for Uri {
     }
 }
 
-impl Default for FuelNodeConfig {
+impl Default for FuelClientConfig {
     fn default() -> Self {
         Self {
             host: defaults::FUEL_NODE_HOST.into(),
@@ -51,16 +52,16 @@ impl Default for FuelNodeConfig {
     }
 }
 
-impl From<SocketAddr> for FuelNodeConfig {
-    fn from(s: SocketAddr) -> FuelNodeConfig {
+impl From<SocketAddr> for FuelClientConfig {
+    fn from(s: SocketAddr) -> FuelClientConfig {
         let parts: Vec<String> = s.to_string().split(':').map(|x| x.to_owned()).collect();
         let host = parts[0].to_owned();
         let port = parts[1].to_owned();
-        FuelNodeConfig { host, port }
+        FuelClientConfig { host, port }
     }
 }
 
-impl std::string::ToString for FuelNodeConfig {
+impl std::string::ToString for FuelClientConfig {
     fn to_string(&self) -> String {
         format!("{}:{}", self.host, self.port)
     }

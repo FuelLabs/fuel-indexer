@@ -1,4 +1,4 @@
-use crate::{ops::forc_index_check, utils::defaults};
+use crate::{defaults, ops::forc_index_check};
 use anyhow::Result;
 use clap::Parser;
 

@@ -1,7 +1,4 @@
-use crate::{
-    cli::BuildCommand,
-    utils::{defaults, project_dir_info},
-};
+use crate::{cli::BuildCommand, defaults, utils::project_dir_info};
 use fuel_indexer_lib::manifest::{Manifest, Module};
 use indicatif::{ProgressBar, ProgressStyle};
 use serde::Deserialize;

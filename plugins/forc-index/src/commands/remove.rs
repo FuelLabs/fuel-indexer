@@ -1,4 +1,4 @@
-use crate::{ops::forc_index_remove, utils::defaults};
+use crate::{defaults, ops::forc_index_remove};
 use anyhow::Result;
 use clap::Parser;
 use std::path::PathBuf;

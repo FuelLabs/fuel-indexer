@@ -39,7 +39,6 @@ pub enum DatabaseConfig {
 }
 
 impl Env for DatabaseConfig {
-    /// Inject environment variables into `DatabaseConfig`.
     fn inject_opt_env_vars(&mut self) -> IndexerConfigResult<()> {
         match self {
             DatabaseConfig::Postgres {

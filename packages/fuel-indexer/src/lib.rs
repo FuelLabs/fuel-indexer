@@ -29,7 +29,7 @@ pub mod prelude {
         WasmIndexExecutor,
     };
     pub use async_std::sync::{Arc, Mutex};
-    pub use fuel_indexer_lib::config::{DatabaseConfig, FuelNodeConfig, GraphQLConfig};
+    pub use fuel_indexer_lib::config::{DatabaseConfig, FuelClientConfig, GraphQLConfig};
     pub use fuel_indexer_types::*;
 }
 

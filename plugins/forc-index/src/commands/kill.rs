@@ -1,4 +1,4 @@
-use crate::{ops::forc_index_kill, utils::defaults};
+use crate::{defaults, ops::forc_index_kill};
 use clap::Parser;
 
 /// Kill the indexer process. Note that this command will kill any process

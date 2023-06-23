@@ -13,6 +13,10 @@ pub const GRAPHQL_API_PORT: &str = defaults::GRAPHQL_API_PORT;
 pub const WASM_TARGET: &str = "wasm32-unknown-unknown";
 pub const INDEXER_TARGET: &str = "wasm32-unknown-unknown";
 pub const BUILD_RELEASE_PROFILE: &str = "true";
+pub const MESSAGE_PADDING: usize = 55;
+pub const SUCCESS_EMOJI_PADDING: usize = 3;
+pub const FAIL_EMOJI_PADDING: usize = 6;
+pub const HEADER_PADDING: usize = 20;
 
 pub fn default_native_indexer_cargo_toml(indexer_name: &str) -> String {
     format!(

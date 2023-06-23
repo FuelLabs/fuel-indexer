@@ -1,4 +1,4 @@
-use crate::{ops::forc_index_status, utils::defaults};
+use crate::{defaults, ops::forc_index_status};
 use clap::Parser;
 
 /// Check the status of a registered indexer.

@@ -1,7 +1,4 @@
-use crate::{
-    cli::InitCommand,
-    utils::{default_manifest_filename, default_schema_filename, defaults},
-};
+use crate::{cli::InitCommand, defaults, utils::*};
 use anyhow::Context;
 use forc_util::{kebab_to_snake_case, validate_name};
 use std::{
