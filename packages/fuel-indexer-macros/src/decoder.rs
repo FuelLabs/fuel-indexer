@@ -223,7 +223,7 @@ impl Decoder for ObjectDecoder {
                 for (field_name, field_typ_name) in member_fields.iter() {
                     GraphQLSchemaValidator::derived_field_type_is_consistent(
                         &union_name,
-                        &field_name,
+                        field_name,
                         &derived_type_fields,
                     );
                     derived_type_fields.insert(field_name.to_owned());

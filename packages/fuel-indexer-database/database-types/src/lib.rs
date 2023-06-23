@@ -571,7 +571,7 @@ impl DbType {
 }
 
 /// SQL database index for a given column.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct SqlIndex {
     /// The type of database.
     pub db_type: DbType,
@@ -593,6 +593,7 @@ pub struct SqlIndex {
 }
 
 impl SqlNamed for SqlIndex {
+    /// Return the SQL name of the index.
     fn sql_name(&self) -> String {
         format!("{}_{}_idx", &self.table_name, &self.column_name)
     }
@@ -647,7 +648,10 @@ pub enum OnUpdate {
 /// SQL database constraint for a given column.
 #[derive(Debug)]
 pub enum Constraint {
+    /// SQL index constraint.
     Index(SqlIndex),
+
+    /// SQL foreign key constraint.
     Fk(ForeignKey),
 }
 
@@ -747,6 +751,7 @@ impl Nonce {
 }
 
 /// SQL database table for a given `GraphRoot` in the database.
+#[derive(Default, Debug)]
 pub struct Table {
     /// The name of the table.
     name: String,
@@ -765,19 +770,6 @@ pub struct Table {
 
     /// How this typedef is persisted to the database.
     persistence: Persistence,
-}
-
-impl Default for Table {
-    fn default() -> Self {
-        Self {
-            name: "default".to_string(),
-            namespace: "default".to_string(),
-            identifier: "default".to_string(),
-            columns: vec![],
-            constraints: vec![],
-            persistence: Persistence::Virtual,
-        }
-    }
 }
 
 impl Table {
@@ -830,16 +822,19 @@ impl Table {
                                 db_type: DbType::Postgres,
                                 table_name: typ.name.to_string().to_lowercase(),
                                 namespace: parsed.fully_qualified_namespace(),
-                                method: IndexMethod::BTree,
                                 unique: true,
                                 column_name: f.node.name.to_string(),
+                                ..SqlIndex::default()
                             }));
                         }
 
                         let field_typ = f.node.ty.node.to_string().replace('!', "");
                         if parsed.is_possible_foreign_key(&field_typ) {
                             let (ref_coltype, ref_colname, ref_tablename) =
-                                extract_foreign_key_info(&f.node, parsed);
+                                extract_foreign_key_info(
+                                    &f.node,
+                                    parsed.field_type_mappings(),
+                                );
 
                             return Some(Constraint::Fk(ForeignKey {
                                 db_type: DbType::Postgres,

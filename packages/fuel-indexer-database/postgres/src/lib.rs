@@ -107,7 +107,7 @@ pub async fn root_columns_list_by_id(
 pub async fn new_root_columns(
     conn: &mut PoolConnection<Postgres>,
     cols: Vec<RootColumn>,
-) -> sqlx::Result<RootColumn> {
+) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new(
         "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)",
     );
@@ -119,9 +119,9 @@ pub async fn new_root_columns(
     });
 
     let query = builder.build();
-    let _result = query.execute(conn).await?;
+    let result = query.execute(conn).await?;
 
-    Ok(RootColumn::default())
+    Ok(result.rows_affected() as usize)
 }
 
 #[cfg_attr(feature = "metrics", metrics)]

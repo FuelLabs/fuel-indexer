@@ -519,7 +519,7 @@ pub fn process_typedef_field(
     match fieldkind {
         FieldKind::ForeignKey => {
             let (ref_coltype, _ref_colname, _ref_tablename) =
-                extract_foreign_key_info(&field_def, parsed);
+                extract_foreign_key_info(&field_def, parsed.field_type_mappings());
 
             let field_typ_name = nullable_field_type_name(&field_def, &ref_coltype);
 
@@ -562,7 +562,10 @@ pub fn process_typedef_field(
                     true => {
                         // Determine implicit vs explicit FK
                         let (ref_coltype, _ref_colname, _ref_tablename) =
-                            extract_foreign_key_info(&field_def, parsed);
+                            extract_foreign_key_info(
+                                &field_def,
+                                parsed.field_type_mappings(),
+                            );
 
                         let field_typ_name =
                             nullable_field_type_name(&field_def, &ref_coltype);

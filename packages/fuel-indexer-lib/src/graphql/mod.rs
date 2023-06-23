@@ -9,6 +9,7 @@ pub use validator::GraphQLSchemaValidator;
 use async_graphql_parser::types::FieldDefinition;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use std::collections::HashMap;
 use types::IdCol;
 
 pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
@@ -93,9 +94,13 @@ impl ToString for GraphQLSchema {
 
 /// Given a `FieldDefinition` that is a possible foreign key (according to `ParsedGraphQLSchema`),
 /// return the column type, column name, and table name of the foreign key.
+///
+/// We pass `ParsedGraphQLSchema::field_type_mappings` here instead of the full `ParsedGraphQLSchema`
+/// because when using `extract_foreign_key_info` in `ParsedGraphQLSchema` we don't have access to the
+/// fully parsed `ParsedGraphQLSchema` yet.
 pub fn extract_foreign_key_info(
     f: &FieldDefinition,
-    parsed: &ParsedGraphQLSchema,
+    field_type_mappings: &HashMap<String, String>,
 ) -> (String, String, String) {
     let (ref_coltype, ref_colname, ref_tablename) = f
         .directives
@@ -105,11 +110,7 @@ pub fn extract_foreign_key_info(
             let typdef_name = f.ty.to_string().replace('!', "");
             let ref_field_name = d.clone().node.arguments.pop().unwrap().1.to_string();
             let fk_fid = field_id(&typdef_name, &ref_field_name);
-            let fk_field_type = parsed
-                .field_type_mappings()
-                .get(&fk_fid)
-                .unwrap()
-                .to_string();
+            let fk_field_type = field_type_mappings.get(&fk_fid).unwrap().to_string();
 
             (
                 fk_field_type.replace('!', ""),

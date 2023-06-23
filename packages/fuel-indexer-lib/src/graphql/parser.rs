@@ -1,7 +1,7 @@
 use crate::{
     graphql::{
-        field_id, fully_qualified_namespace, GraphQLSchema, GraphQLSchemaValidator,
-        BASE_SCHEMA,
+        extract_foreign_key_info, field_id, fully_qualified_namespace, GraphQLSchema,
+        GraphQLSchemaValidator, BASE_SCHEMA,
     },
     ExecutionSource,
 };
@@ -194,7 +194,8 @@ impl ParsedGraphQLSchema {
         let mut unions = HashMap::new();
         let mut field_defs = HashMap::new();
         let mut field_type_optionality = HashMap::new();
-        let mut foreign_key_mappings = HashMap::new();
+        let mut foreign_key_mappings: HashMap<String, HashMap<String, (String, String)>> =
+            HashMap::new();
         let mut type_defs = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
@@ -228,11 +229,54 @@ impl ParsedGraphQLSchema {
                                     virtual_type_names.insert(obj_name.clone());
                                 }
 
-                                // Manually derive the foreign keys here.
+                                // Manually version of `ParsedGraphQLSchema::is_possible_foreign_key`
                                 if parsed_type_names.contains(&field_name)
                                     && !scalar_names.contains(&field_name)
                                     && !enum_names.contains(&field_name)
                                 {
+                                    let (_ref_coltype, ref_colname, _ref_tablename) =
+                                        extract_foreign_key_info(
+                                            &field.node,
+                                            &field_type_mappings,
+                                        );
+
+                                    let fk = foreign_key_mappings
+                                        .get_mut(&t.node.name.to_string().to_lowercase());
+                                    match fk {
+                                        Some(fks_for_field) => {
+                                            fks_for_field.insert(
+                                                field.node.name.to_string(),
+                                                (
+                                                    field
+                                                        .node
+                                                        .name
+                                                        .to_string()
+                                                        .replace('!', "")
+                                                        .to_lowercase(),
+                                                    ref_colname.clone(),
+                                                ),
+                                            );
+                                        }
+                                        None => {
+                                            let fks_for_field = HashMap::from([(
+                                                field.node.name.to_string(),
+                                                (
+                                                    field
+                                                        .node
+                                                        .name
+                                                        .to_string()
+                                                        .replace('!', "")
+                                                        .to_lowercase(),
+                                                    ref_colname.clone(),
+                                                ),
+                                            )]);
+                                            foreign_key_mappings.insert(
+                                                t.node.name.to_string().to_lowercase(),
+                                                fks_for_field,
+                                            );
+                                        }
+                                    }
+
                                     let field_typ_name =
                                         field.node.ty.to_string().replace('!', "");
                                     foreign_key_mappings.insert(
