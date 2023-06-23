@@ -2,8 +2,7 @@ use crate::ffi;
 use crate::{IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_lib::{
-    graphql::{fully_qualified_namespace, types::IdCol},
-    ExecutionSource,
+    fully_qualified_namespace, graphql::types::IdCol, ExecutionSource,
 };
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;

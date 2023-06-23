@@ -131,8 +131,3 @@ pub fn extract_foreign_key_info(
 pub fn field_id(typdef_name: &str, field_name: &str) -> String {
     format!("{typdef_name}.{field_name}")
 }
-
-/// Return a fully qualified indexer namespace.
-pub fn fully_qualified_namespace(namespace: &str, identifier: &str) -> String {
-    format!("{}_{}", namespace, identifier)
-}

@@ -1,7 +1,8 @@
 use crate::{
+    fully_qualified_namespace,
     graphql::{
-        extract_foreign_key_info, field_id, fully_qualified_namespace, GraphQLSchema,
-        GraphQLSchemaValidator, BASE_SCHEMA,
+        extract_foreign_key_info, field_id, GraphQLSchema, GraphQLSchemaValidator,
+        BASE_SCHEMA,
     },
     ExecutionSource,
 };
