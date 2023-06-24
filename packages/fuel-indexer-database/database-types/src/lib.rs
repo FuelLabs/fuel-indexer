@@ -19,6 +19,7 @@ use fuel_indexer_lib::{
 use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
 use std::{
+    collections::BTreeMap,
     fmt,
     fmt::Write,
     string::ToString,
@@ -881,21 +882,17 @@ impl Table {
                 // just get the set of all member fields and manually build an
                 // `TypeDefinition(TypeKind::Object)` from that.
                 let union_name = typ.name.to_string();
+                let default = BTreeMap::<String, String>::new();
 
                 let fields = u
                     .members
                     .iter()
                     .flat_map(|m| {
                         let name = m.node.to_string();
-
                         parsed
                             .object_field_mappings
                             .get(&name)
-                            .unwrap_or_else(|| {
-                                panic!(
-                                    "Could not find union member '{name}' in the schema.",
-                                )
-                            })
+                            .unwrap_or(&default)
                             .iter()
                             .map(|(k, v)| (k.to_owned(), v.to_owned()))
                     })

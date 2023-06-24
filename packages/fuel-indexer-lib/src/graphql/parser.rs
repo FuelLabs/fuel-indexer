@@ -9,8 +9,8 @@ use crate::{
 use async_graphql_parser::{
     parse_schema,
     types::{
-        EnumType, FieldDefinition, ObjectType, ServiceDocument, TypeDefinition, TypeKind,
-        TypeSystemDefinition, UnionType,
+        FieldDefinition, ObjectType, ServiceDocument, TypeDefinition, TypeKind,
+        TypeSystemDefinition,
     },
 };
 
@@ -94,14 +94,8 @@ pub struct ParsedGraphQLSchema {
     /// All unique names of enums in the schema.
     enum_names: HashSet<String>,
 
-    /// Mapping of enum names to enum objects.
-    enums: HashMap<String, EnumType>,
-
     /// All unique names of union types in the schema.
     union_names: HashSet<String>,
-
-    /// Mapping of union names to union objects.
-    unions: HashMap<String, UnionType>,
 
     // FIXME: Can't be private due to the `register_queryroot_fields` hack?
     /// All objects and their field names and types, indexed by object name.
@@ -154,8 +148,6 @@ impl Default for ParsedGraphQLSchema {
             enum_names: HashSet::new(),
             union_names: HashSet::new(),
             objects: HashMap::new(),
-            enums: HashMap::new(),
-            unions: HashMap::new(),
             virtual_type_names: HashSet::new(),
             parsed_type_names: HashSet::new(),
             field_type_mappings: HashMap::new(),
@@ -191,8 +183,6 @@ impl ParsedGraphQLSchema {
         let mut virtual_type_names = HashSet::new();
         let mut field_type_mappings = HashMap::new();
         let mut objects = HashMap::new();
-        let mut enums = HashMap::new();
-        let mut unions = HashMap::new();
         let mut field_defs = HashMap::new();
         let mut field_type_optionality = HashMap::new();
         let mut foreign_key_mappings: HashMap<String, HashMap<String, (String, String)>> =
@@ -305,7 +295,7 @@ impl ParsedGraphQLSchema {
                         TypeKind::Enum(e) => {
                             let name = t.node.name.to_string();
                             type_defs.insert(name.clone(), t.node.clone());
-                            enums.insert(name.clone(), e.clone());
+
                             virtual_type_names.insert(name.clone());
                             enum_names.insert(name.clone());
 
@@ -324,7 +314,7 @@ impl ParsedGraphQLSchema {
 
                             parsed_type_names.insert(union_name.clone());
                             type_defs.insert(union_name.clone(), t.node.clone());
-                            unions.insert(union_name.clone(), u.clone());
+
                             union_names.insert(union_name.clone());
 
                             GraphQLSchemaValidator::check_derived_union_is_well_formed(
@@ -385,8 +375,6 @@ impl ParsedGraphQLSchema {
             type_names,
             union_names,
             objects,
-            enums,
-            unions,
             field_defs,
             foreign_key_mappings,
             object_field_mappings,
@@ -414,36 +402,8 @@ impl ParsedGraphQLSchema {
         &self.exec_source
     }
 
-    pub fn type_names(&self) -> &HashSet<String> {
-        &self.type_names
-    }
-
-    pub fn enum_names(&self) -> &HashSet<String> {
-        &self.enum_names
-    }
-
-    pub fn union_names(&self) -> &HashSet<String> {
-        &self.union_names
-    }
-
     pub fn objects(&self) -> &HashMap<String, ObjectType> {
         &self.objects
-    }
-
-    pub fn enums(&self) -> &HashMap<String, EnumType> {
-        &self.enums
-    }
-
-    pub fn unions(&self) -> &HashMap<String, UnionType> {
-        &self.unions
-    }
-
-    pub fn virtual_type_names(&self) -> &HashSet<String> {
-        &self.virtual_type_names
-    }
-
-    pub fn parsed_type_names(&self) -> &HashSet<String> {
-        &self.parsed_type_names
     }
 
     pub fn field_type_mappings(&self) -> &HashMap<String, String> {
@@ -480,15 +440,21 @@ impl ParsedGraphQLSchema {
         &self.object_field_mappings
     }
 
-    /// Whether the schema has a scalar type with the given name.
-    pub fn has_scalar(&self, name: &str) -> bool {
-        self.scalar_names.contains(name)
+    /// Return a list of all non-enum type definitions.
+    pub fn non_enum_typdefs(&self) -> Vec<(&String, &TypeDefinition)> {
+        self.type_defs
+            .iter()
+            .filter(|(_, t)| match &t.kind {
+                TypeKind::Enum(_) => false,
+                _ => true,
+            })
+            .collect()
     }
 
     /// Whether the given field type name is a possible foreign key.
     pub fn is_possible_foreign_key(&self, name: &str) -> bool {
         self.parsed_type_names.contains(name)
-            && !self.has_scalar(name)
+            && !self.scalar_names.contains(name)
             && !self.is_enum_typedef(name)
             && !self.is_virtual_typedef(name)
     }

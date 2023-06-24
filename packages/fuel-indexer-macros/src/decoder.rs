@@ -88,7 +88,7 @@ impl Decoder for ObjectDecoder {
                 let mut impl_new_fields = quote! {};
 
                 let mut fields_map = BTreeMap::new();
-                let obj_fields = parsed
+                let obj_field_names = parsed
                     .object_field_mappings
                     .get(&obj_name)
                     .unwrap_or_else(|| {
@@ -100,7 +100,7 @@ impl Decoder for ObjectDecoder {
                 GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
                 for field in &o.fields {
-                    let (typ_tokens, field_name, field_typ_scalar_name, extractor) =
+                    let (field_typ_tokens, field_name, field_typ_scalar_name, extractor) =
                         process_typedef_field(parsed, field.node.clone());
 
                     let field_typ_scalar_name = &field_typ_scalar_name.to_string();
@@ -118,7 +118,7 @@ impl Decoder for ObjectDecoder {
 
                     struct_fields = quote! {
                         #struct_fields
-                        #field_name: #typ_tokens,
+                        #field_name: #field_typ_tokens,
                     };
 
                     field_extractors = quote! {
@@ -142,9 +142,10 @@ impl Decoder for ObjectDecoder {
                     );
                     let to_bytes = to_bytes_tokens(field_typ_scalar_name);
 
-                    if can_derive_id(&obj_fields, &field_name.to_string(), &obj_name) {
+                    if can_derive_id(&obj_field_names, &field_name.to_string(), &obj_name)
+                    {
                         parameters =
-                            parameters_tokens(parameters, &field_name, typ_tokens);
+                            parameters_tokens(parameters, &field_name, field_typ_tokens);
                         if let Some(tokens) = hasher_tokens(
                             field_typ_scalar_name,
                             hasher.clone(),
@@ -178,12 +179,17 @@ impl Decoder for ObjectDecoder {
                         object_name: obj_name,
                         struct_fields: impl_new_fields,
                         exec_source: parsed.exec_source().clone(),
-                        field_set: obj_fields,
+                        field_set: obj_field_names,
                     },
                     type_id,
                 }
             }
             TypeKind::Union(u) => {
+                // TODO: `ImplNewParameters::UnionType` prevents from being able to call `Self::from_typedef`
+                // on a derived union object, so some of the logic for `TypeKind::Union` is copied over from
+                // `TypeKind::Object`. `ImplNewParameters::UnionType` just converts a `TypeDefinition` into a token
+                // stream so we should ideally be able to call `ImplNewParameters::from_typedef().into()`.
+
                 let union_name = typ.name.to_string();
                 let ident = format_ident!("{}", union_name);
                 let type_id = type_id(&parsed.fully_qualified_namespace(), &union_name);
@@ -215,7 +221,7 @@ impl Decoder for ObjectDecoder {
                 let mut derived_type_fields = HashSet::new();
                 let mut union_field_set = HashSet::new();
 
-                let obj_fields = member_fields
+                let obj_field_names = member_fields
                     .iter()
                     .map(|(k, _v)| k.to_owned())
                     .collect::<HashSet<String>>();
@@ -246,7 +252,7 @@ impl Decoder for ObjectDecoder {
 
                     // Since we've already processed the member's fields, we don't need
                     // to do any type of special field processing here.
-                    let (typ_tokens, field_name, field_typ_scalar_name, extractor) =
+                    let (field_typ_tokens, field_name, field_typ_scalar_name, extractor) =
                         process_typedef_field(parsed, field.clone());
 
                     let field_typ_scalar_name = &field_typ_scalar_name.to_string();
@@ -261,7 +267,7 @@ impl Decoder for ObjectDecoder {
 
                     struct_fields = quote! {
                         #struct_fields
-                        #field_name: #typ_tokens,
+                        #field_name: #field_typ_tokens,
                     };
 
                     field_extractors = quote! {
@@ -285,9 +291,13 @@ impl Decoder for ObjectDecoder {
                     );
                     let to_bytes = to_bytes_tokens(field_typ_scalar_name);
 
-                    if can_derive_id(&obj_fields, &field_name.to_string(), &union_name) {
+                    if can_derive_id(
+                        &obj_field_names,
+                        &field_name.to_string(),
+                        &union_name,
+                    ) {
                         parameters =
-                            parameters_tokens(parameters, &field_name, typ_tokens);
+                            parameters_tokens(parameters, &field_name, field_typ_tokens);
                         if let Some(tokens) = hasher_tokens(
                             field_typ_scalar_name,
                             hasher.clone(),
@@ -318,7 +328,7 @@ impl Decoder for ObjectDecoder {
                         schema: parsed.clone(),
                         union_obj: u.clone(),
                         union_ident: ident,
-                        union_field_set: obj_fields,
+                        union_field_set: obj_field_names,
                     },
                 }
             }
@@ -343,6 +353,8 @@ pub struct EnumDecoder {
     values: Vec<TokenStream>,
 
     /// The unique ID of this GraphQL type.
+    ///
+    /// Type IDs for enum types are only for reference since an enum is a virtual type.
     #[allow(unused)]
     type_id: i64,
 }

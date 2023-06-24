@@ -1,5 +1,4 @@
 use crate::{db::IndexerSchemaDbResult, QUERY_ROOT};
-use async_graphql_parser::types::TypeKind;
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
@@ -111,7 +110,7 @@ impl IndexerSchema {
 
         let tables = self
             .parsed
-            .type_defs()
+            .non_enum_typdefs()
             .iter()
             .map(|(_, t)| Table::from_typdef(t, &self.parsed))
             .collect::<Vec<Table>>();
@@ -181,13 +180,9 @@ impl IndexerSchema {
         )?;
 
         let tables = parsed
-            .type_defs()
+            .non_enum_typdefs()
             .iter()
-            .filter_map(|(_, typ)| match &typ.kind {
-                TypeKind::Object(_o) => Some(Table::from_typdef(typ, &parsed)),
-                TypeKind::Union(_u) => Some(Table::from_typdef(typ, &parsed)),
-                _ => None,
-            })
+            .map(|(_, t)| Table::from_typdef(t, &parsed))
             .collect::<Vec<Table>>();
 
         let mut schema = IndexerSchema {
