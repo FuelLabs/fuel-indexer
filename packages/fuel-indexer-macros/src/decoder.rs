@@ -14,6 +14,8 @@ use quote::{format_ident, quote};
 use std::collections::{BTreeMap, HashSet};
 use syn::Ident;
 
+/// `Decoder`s are responsible for transforming GraphQL `TypeDefinition`s into
+/// token streams that can be used to generate Rust code for indexing types.
 pub trait Decoder {
     /// Create a decoder from a GraphQL `TypeDefinition`.
     fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self;
@@ -185,11 +187,7 @@ impl Decoder for ObjectDecoder {
                 }
             }
             TypeKind::Union(u) => {
-                // TODO: `ImplNewParameters::UnionType` prevents from being able to call `Self::from_typedef`
-                // on a derived union object, so some of the logic for `TypeKind::Union` is copied over from
-                // `TypeKind::Object`. `ImplNewParameters::UnionType` just converts a `TypeDefinition` into a token
-                // stream so we should ideally be able to call `ImplNewParameters::from_typedef().into()`.
-
+                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1031
                 let union_name = typ.name.to_string();
                 let ident = format_ident!("{}", union_name);
                 let type_id = type_id(&parsed.fully_qualified_namespace(), &union_name);
@@ -606,5 +604,82 @@ impl From<EnumDecoder> for TokenStream {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use async_graphql_parser::types::ObjectType;
+    use fuel_indexer_lib::graphql::GraphQLSchema;
+
+    #[test]
+    fn test_can_create_object_decoder_containing_expected_tokens_from_object_typedef() {
+        let schema = r#"
+type Person {
+    id: ID!
+    name: Charfield!
+    age: UInt1!
+}"#;
+
+        let fields = [("id", "ID"), ("name", "Charfield"), ("age", "UInt1")]
+            .iter()
+            .map(|(name, typ)| Positioned {
+                pos: Pos::default(),
+                node: FieldDefinition {
+                    description: None,
+                    name: Positioned {
+                        pos: Pos::default(),
+                        node: Name::new(name),
+                    },
+                    arguments: vec![],
+                    ty: Positioned {
+                        pos: Pos::default(),
+                        node: Type {
+                            base: BaseType::Named(Name::new(typ)),
+                            nullable: false,
+                        },
+                    },
+                    directives: vec![],
+                },
+            })
+            .collect::<Vec<Positioned<FieldDefinition>>>();
+        let typdef = TypeDefinition {
+            description: None,
+            extend: false,
+            name: Positioned {
+                pos: Pos::default(),
+                node: Name::new("Person"),
+            },
+            kind: TypeKind::Object(ObjectType {
+                implements: vec![],
+                fields,
+            }),
+            directives: vec![],
+        };
+
+        let schema = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+
+        let decoder = ObjectDecoder::from_typedef(&typdef, &schema);
+        let tokenstream = TokenStream::from(decoder).to_string();
+
+        // Trying to assert we have every single token expected might be a bit much, so
+        // let's just assert that we have the main/primary method and function definitions.
+        assert!(tokenstream.contains("pub struct Person"));
+        assert!(tokenstream.contains("impl Entity for Person"));
+        assert!(tokenstream.contains("impl Person"));
+        assert!(
+            tokenstream.contains("pub fn new (name : Charfield , age : UInt1 ,) -> Self")
+        );
+        assert!(tokenstream.contains("pub fn get_or_create (self) -> Self"));
+        assert!(tokenstream.contains("fn from_row (mut vec : Vec < FtColumn >) -> Self"));
+        assert!(tokenstream.contains("fn to_row (& self) -> Vec < FtColumn >"));
     }
 }

@@ -444,10 +444,7 @@ impl ParsedGraphQLSchema {
     pub fn non_enum_typdefs(&self) -> Vec<(&String, &TypeDefinition)> {
         self.type_defs
             .iter()
-            .filter(|(_, t)| match &t.kind {
-                TypeKind::Enum(_) => false,
-                _ => true,
-            })
+            .filter(|(_, t)| !matches!(&t.kind, TypeKind::Enum(_)))
             .collect()
     }
 
@@ -496,5 +493,66 @@ impl ParsedGraphQLSchema {
     /// Fully qualified GraphQL namespace for indexer.
     pub fn fully_qualified_namespace(&self) -> String {
         fully_qualified_namespace(&self.namespace, &self.identifier)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parser_caches_all_related_typedefs_when_instantiated() {
+        let schema = r#"
+enum AccountLabel {
+    PRIMARY
+    SECONDARY
+}
+
+type Account {
+    id: ID!
+    address: Address!
+    label: AccountLabel
+}
+
+type User {
+    id: ID!
+    account: Account!
+    username: Charfield!
+}
+
+type Loser {
+    id: ID!
+    account: Account!
+    age: UInt8!
+}
+
+type Metadata {
+    count: UInt8! @virtual
+}
+
+union Person = User | Loser
+"#;
+
+        let parsed = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        );
+
+        assert!(parsed.is_ok());
+
+        let parsed = parsed.unwrap();
+
+        assert!(parsed.has_type("Account"));
+        assert!(parsed.has_type("User"));
+        assert!(parsed.is_possible_foreign_key("Account"));
+        assert!(parsed.is_virtual_typedef("Metadata"));
+        assert!(parsed.is_enum_typedef("AccountLabel"));
+        assert!(parsed
+            .field_type_optionality()
+            .contains_key("Account.label"));
+
+        assert!(parsed.is_union_typedef("Person"));
     }
 }

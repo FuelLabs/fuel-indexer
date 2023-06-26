@@ -318,7 +318,7 @@ impl Column {
                     fk_field_typ
                 })
                 // Special case of parsing FKs here where we change the derived
-                // field type. We can't use the `ID` type as normal because we 
+                // field type. We can't use the `ID` type as normal because we
                 // can't have multiple primary keys on the same table.
                 .unwrap_or("UInt8".to_string());
         } else if parsed.is_virtual_typedef(&field_type) {
@@ -882,7 +882,7 @@ impl Table {
                 // just get the set of all member fields and manually build an
                 // `TypeDefinition(TypeKind::Object)` from that.
                 let union_name = typ.name.to_string();
-                let default = BTreeMap::<String, String>::new();
+                let default_ = BTreeMap::<String, String>::new();
 
                 let fields = u
                     .members
@@ -892,7 +892,7 @@ impl Table {
                         parsed
                             .object_field_mappings
                             .get(&name)
-                            .unwrap_or(&default)
+                            .unwrap_or(&default_)
                             .iter()
                             .map(|(k, v)| (k.to_owned(), v.to_owned()))
                     })
@@ -963,5 +963,147 @@ impl SqlFragment for Table {
             }
             _ => "".to_string(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use async_graphql_parser::types::BaseType;
+    use async_graphql_parser::types::ConstDirective;
+    use async_graphql_parser::types::ObjectType;
+    use async_graphql_parser::types::Type;
+    use fuel_indexer_lib::graphql::GraphQLSchema;
+    use fuel_indexer_lib::ExecutionSource;
+
+    #[test]
+    fn test_can_create_well_formed_table_and_table_components_when_passed_typedef() {
+        let schema = r#"
+type Person {
+    id: ID!
+    name: Charfield! @unique
+    age: UInt1!
+}"#;
+
+        let fields = [
+            ("id", "ID", None),
+            (
+                "name",
+                "Charfield",
+                Some(vec![Positioned {
+                    pos: Pos::default(),
+                    node: ConstDirective {
+                        name: Positioned {
+                            pos: Pos::default(),
+                            node: Name::new("unique"),
+                        },
+                        arguments: vec![],
+                    },
+                }]),
+            ),
+            ("age", "UInt1", None),
+        ]
+        .iter()
+        .map(|(name, typ, directives)| {
+            let directives = directives.clone().unwrap_or(vec![]);
+            Positioned {
+                pos: Pos::default(),
+                node: FieldDefinition {
+                    description: None,
+                    name: Positioned {
+                        pos: Pos::default(),
+                        node: Name::new(name),
+                    },
+                    arguments: vec![],
+                    ty: Positioned {
+                        pos: Pos::default(),
+                        node: Type {
+                            base: BaseType::Named(Name::new(typ)),
+                            nullable: false,
+                        },
+                    },
+                    directives,
+                },
+            }
+        })
+        .collect::<Vec<Positioned<FieldDefinition>>>();
+        let typdef = TypeDefinition {
+            description: None,
+            extend: false,
+            name: Positioned {
+                pos: Pos::default(),
+                node: Name::new("Person"),
+            },
+            kind: TypeKind::Object(ObjectType {
+                implements: vec![],
+                fields,
+            }),
+            directives: vec![],
+        };
+
+        let schema = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+
+        let table = Table::from_typdef(&typdef, &schema);
+        assert_eq!(table.columns().len(), 4);
+        assert_eq!(table.constraints().len(), 1);
+    }
+
+    #[test]
+    fn test_can_create_well_formed_column_from_field_defintion() {
+        let schema = r#"
+type Person {
+    id: ID!
+    name: Charfield! @unique
+    age: UInt1!
+}"#;
+
+        let schema = ParsedGraphQLSchema::new(
+            "test",
+            "test",
+            ExecutionSource::Wasm,
+            Some(&GraphQLSchema::new(schema.to_string())),
+        )
+        .unwrap();
+
+        let field_def = FieldDefinition {
+            description: None,
+            name: Positioned {
+                pos: Pos::default(),
+                node: Name::new("name"),
+            },
+            arguments: vec![],
+            ty: Positioned {
+                pos: Pos::default(),
+                node: Type {
+                    base: BaseType::Named(Name::new("Charfield")),
+                    nullable: false,
+                },
+            },
+            directives: vec![Positioned {
+                pos: Pos::default(),
+                node: ConstDirective {
+                    name: Positioned {
+                        pos: Pos::default(),
+                        node: Name::new("unique"),
+                    },
+                    arguments: vec![],
+                },
+            }],
+        };
+
+        let type_id = type_id(&schema.fully_qualified_namespace(), "Person");
+        let column =
+            Column::from_field_def(&field_def, &schema, type_id, 0, Persistence::Regular);
+        assert_eq!(column.graphql_type, "Charfield".to_string());
+        assert_eq!(column.coltype, ColumnType::Charfield);
+        assert!(column.unique);
+        assert!(!column.nullable);
     }
 }
