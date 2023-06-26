@@ -4,7 +4,7 @@ use fuel_indexer_graphql::{
     graphql::*,
     queries::{QueryElement, UserQuery},
 };
-use fuel_indexer_lib::graphql::GraphQLSchema;
+use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};
 use fuel_indexer_schema::db::tables::IndexerSchema;
 use std::collections::HashMap;
 
@@ -28,6 +28,7 @@ type Thing2 {
         "index1",
         &GraphQLSchema::new(schema.to_owned()),
         DbType::Postgres,
+        ExecutionSource::Wasm,
     )
     .unwrap();
 

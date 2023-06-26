@@ -652,7 +652,7 @@ impl<'a> GraphqlQueryBuilder<'a> {
 mod tests {
 
     use super::*;
-    use fuel_indexer_lib::graphql::GraphQLSchema;
+    use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};
 
     #[test]
     fn test_operation_parse_into_user_query() {
@@ -734,7 +734,7 @@ mod tests {
         };
 
         let schema = r#"
-type BlockData {
+type Block {
     id: ID!
     height: UInt8!
     timestamp: Int8!
@@ -743,8 +743,8 @@ type BlockData {
 type Tx {
     id: ID!
     timestamp: Int8!
-    block: BlockData
-    input_data: BlockData!
+    block: Block
+    input_data: Json!
 }
 "#;
 
@@ -753,6 +753,7 @@ type Tx {
             "test_index",
             &GraphQLSchema::new(schema.to_string()),
             DbType::Postgres,
+            ExecutionSource::Wasm,
         )
         .unwrap();
 

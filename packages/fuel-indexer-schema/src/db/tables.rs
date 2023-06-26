@@ -38,13 +38,19 @@ impl IndexerSchema {
         identifier: &str,
         schema: &GraphQLSchema,
         db_type: DbType,
+        exec_source: ExecutionSource,
     ) -> IndexerSchemaDbResult<Self> {
         Ok(IndexerSchema {
             db_type,
             namespace: namespace.to_string(),
             identifier: identifier.to_string(),
             schema: schema.to_owned(),
-            parsed: ParsedGraphQLSchema::default(),
+            parsed: ParsedGraphQLSchema::new(
+                namespace,
+                identifier,
+                exec_source,
+                Some(schema),
+            )?,
             tables: Vec::new(),
         })
     }

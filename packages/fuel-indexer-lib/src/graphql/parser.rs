@@ -220,8 +220,9 @@ impl ParsedGraphQLSchema {
                                     virtual_type_names.insert(obj_name.clone());
                                 }
 
-                                // Manually version of `ParsedGraphQLSchema::is_possible_foreign_key`
-                                if parsed_type_names.contains(&field_name)
+                                // Manual version of `ParsedGraphQLSchema::is_possible_foreign_key`
+                                if parsed_type_names
+                                    .contains(&field.node.ty.to_string().replace('!', ""))
                                     && !scalar_names.contains(&field_name)
                                     && !enum_names.contains(&field_name)
                                 {
@@ -240,7 +241,7 @@ impl ParsedGraphQLSchema {
                                                 (
                                                     field
                                                         .node
-                                                        .name
+                                                        .ty
                                                         .to_string()
                                                         .replace('!', "")
                                                         .to_lowercase(),
@@ -254,7 +255,7 @@ impl ParsedGraphQLSchema {
                                                 (
                                                     field
                                                         .node
-                                                        .name
+                                                        .ty
                                                         .to_string()
                                                         .replace('!', "")
                                                         .to_lowercase(),
@@ -267,16 +268,6 @@ impl ParsedGraphQLSchema {
                                             );
                                         }
                                     }
-
-                                    let field_typ_name =
-                                        field.node.ty.to_string().replace('!', "");
-                                    foreign_key_mappings.insert(
-                                        fid.clone(),
-                                        HashMap::from([(
-                                            field_name.clone(),
-                                            (obj_name.clone(), field_typ_name.clone()),
-                                        )]),
-                                    );
                                 }
 
                                 let field_typ_name =

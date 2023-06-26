@@ -34,6 +34,7 @@ impl SchemaManager {
                 identifier,
                 &schema,
                 self.pool.database_type(),
+                exec_source.clone(),
             )?
             .commit(&schema, exec_source, conn)
             .await?;

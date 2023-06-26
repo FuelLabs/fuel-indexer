@@ -157,6 +157,7 @@ pub async fn execute_query(
                 GraphqlQueryBuilder::new(&schema, user_query.as_str())?.build()?;
 
             let queries = query.as_sql(&schema, pool.database_type())?.join(";\n");
+
             let mut conn = match pool.acquire().await {
                 Ok(c) => c,
                 Err(e) => return Err(GraphqlError::QueryError(e.to_string())),
