@@ -2,6 +2,7 @@
 
 extern crate alloc;
 
+use fuel_indexer_types::db::ColumnType;
 use fuel_indexer_types::prelude::fuel::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -12,6 +13,7 @@ pub const QUERY_ROOT: &str = "QueryRoot";
 pub mod db;
 
 const NULL_VALUE: &str = "NULL";
+const MAX_BYTE_LENGTH: usize = 10485760;
 
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
 
@@ -70,16 +72,22 @@ pub enum FtColumn {
     UInt8(Option<UInt8>),
     Virtual(Option<Virtual>),
     BlockId(Option<BlockId>),
+    ListScalar(Option<Vec<FtColumn>>),
+    ListFK(Option<Vec<FtColumn>>),
 }
 
 impl FtColumn {
+    /// Return query fragments for `INSERT` and `SELECT` statements.
+    ///
+    /// Since `FtColumn` column is used when compiling indexers we can panic here. Anything that panics,
+    /// will panic when compiling indexers, so will be caught before runtime.
     pub fn query_fragment(&self) -> String {
         match self {
             FtColumn::ID(value) => {
                 if let Some(val) = value {
                     format!("{val}")
                 } else {
-                    panic!("Schema fields of type ID cannot be nullable")
+                    panic!("Schema fields of type `ID` cannot be nullable.")
                 }
             }
             FtColumn::Address(value) => match value {
@@ -214,6 +222,260 @@ impl FtColumn {
                 Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
+            FtColumn::ListScalar(value) => match value {
+                Some(list) => {
+                    // Using first item of list to determine column type
+                    let discriminant = std::mem::discriminant(&list[0]);
+                    let type_id = i64::from(ColumnType::from(list[0].clone()));
+                    let type_id_bytes = hex::encode(type_id.to_le_bytes());
+                    let elems = list
+                            .iter()
+                            .map(|e| {
+                                if std::mem::discriminant(e) != discriminant {
+                                    panic!(
+                                        "List elements are not of the same column type. ExpectedL {discriminant:#?} - Actual: {:#?}",
+                                        std::mem::discriminant(e)
+                                    )
+                                } else {
+                                    e.to_owned().into()
+                                }
+                            })
+                            .collect::<Vec<Vec<u8>>>();
+                    format!("'{}{}'", type_id_bytes, hex::encode(elems.concat()))
+                }
+                None => String::from(NULL_VALUE),
+            },
+            FtColumn::ListFK(values) => match values {
+                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/947
+                Some(list) => {
+                    let type_id = i64::from(ColumnType::from(list[0].to_owned()));
+                    let type_bytes = hex::encode(type_id.to_le_bytes());
+                    let elems = list
+                        .iter()
+                        .map(|val| match val {
+                            FtColumn::Blob(_)
+                            | FtColumn::Charfield(_)
+                            | FtColumn::Enum(_)
+                            | FtColumn::HexString(_)
+                            | FtColumn::Json(_)
+                            | FtColumn::Virtual(_)
+                            | FtColumn::ListScalar(_)
+                            | FtColumn::ListFK(_) => {
+                                panic!("FtColumn::ListFK validation error.");
+                            }
+                            _ => val.to_owned().into(),
+                        })
+                        .collect::<Vec<Vec<u8>>>();
+                    format!("'{}{}'", type_bytes, hex::encode(elems.concat()))
+                }
+                None => String::from(NULL_VALUE),
+            },
+        }
+    }
+}
+
+impl From<FtColumn> for ColumnType {
+    fn from(col: FtColumn) -> Self {
+        match col {
+            FtColumn::ID(_) => ColumnType::ID,
+            FtColumn::Address(_) => ColumnType::Address,
+            FtColumn::AssetId(_) => ColumnType::AssetId,
+            FtColumn::Blob(_) => ColumnType::Blob,
+            FtColumn::BlockHeight(_) => ColumnType::BlockHeight,
+            FtColumn::Boolean(_) => ColumnType::Boolean,
+            FtColumn::Bytes32(_) => ColumnType::Bytes32,
+            FtColumn::Bytes4(_) => ColumnType::Bytes4,
+            FtColumn::Bytes64(_) => ColumnType::Bytes64,
+            FtColumn::Bytes8(_) => ColumnType::Bytes8,
+            FtColumn::Charfield(_) => ColumnType::Charfield,
+            FtColumn::ContractId(_) => ColumnType::ContractId,
+            FtColumn::Enum(_) => ColumnType::Enum,
+            FtColumn::HexString(_) => ColumnType::HexString,
+            FtColumn::Identity(_) => ColumnType::Identity,
+            FtColumn::Int1(_) => ColumnType::Int1,
+            FtColumn::Int16(_) => ColumnType::Int16,
+            FtColumn::Int4(_) => ColumnType::Int4,
+            FtColumn::Int8(_) => ColumnType::Int8,
+            FtColumn::Json(_) => ColumnType::Json,
+            FtColumn::MessageId(_) => ColumnType::MessageId,
+            FtColumn::Nonce(_) => ColumnType::Nonce,
+            FtColumn::Salt(_) => ColumnType::Salt,
+            FtColumn::Signature(_) => ColumnType::Signature,
+            FtColumn::Tai64Timestamp(_) => ColumnType::Tai64Timestamp,
+            FtColumn::Timestamp(_) => ColumnType::Timestamp,
+            FtColumn::TxId(_) => ColumnType::TxId,
+            FtColumn::UInt1(_) => ColumnType::UInt1,
+            FtColumn::UInt16(_) => ColumnType::UInt16,
+            FtColumn::UInt4(_) => ColumnType::UInt4,
+            FtColumn::UInt8(_) => ColumnType::UInt8,
+            FtColumn::Virtual(_) => ColumnType::Virtual,
+            FtColumn::BlockId(_) => ColumnType::BlockId,
+            FtColumn::ListScalar(_) => unimplemented!("Foo"),
+            FtColumn::ListFK(_) => unimplemented!("Foo"),
+        }
+    }
+}
+
+impl From<FtColumn> for Vec<u8> {
+    fn from(c: FtColumn) -> Self {
+        match c {
+            FtColumn::Address(val) => match val {
+                Some(addr) => addr.to_vec(),
+                None => vec![],
+            },
+            FtColumn::AssetId(val) => match val {
+                Some(asset_id) => asset_id.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Blob(val) => match val {
+                Some(blob) => blob.0,
+                None => vec![],
+            },
+            FtColumn::BlockHeight(val) => match val {
+                Some(block_height) => block_height.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Boolean(val) => match val {
+                Some(b) => vec![b as u8],
+                None => vec![],
+            },
+            FtColumn::Bytes32(val) | FtColumn::BlockId(val) | FtColumn::TxId(val) => {
+                match val {
+                    Some(b32) => b32.to_vec(),
+                    None => vec![],
+                }
+            }
+            FtColumn::Bytes4(val) => match val {
+                Some(b4) => b4.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Bytes64(val) | FtColumn::Signature(val) => match val {
+                Some(b64) => b64.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Bytes8(val) => match val {
+                Some(b8) => b8.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Charfield(val) | FtColumn::Enum(val) => match val {
+                Some(s) => {
+                    let bytes = s.as_bytes();
+                    let bytes_length = bytes.len();
+
+                    if bytes_length > (MAX_BYTE_LENGTH - (usize::BITS / 8) as usize) {
+                        panic!("String value {s} exceeds max byte length of {MAX_BYTE_LENGTH}");
+                    } else {
+                        [bytes_length.to_le_bytes().to_vec(), bytes.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                }
+                None => vec![],
+            },
+            FtColumn::ContractId(val) => match val {
+                Some(contract_id) => contract_id.to_vec(),
+                None => vec![],
+            },
+            FtColumn::HexString(val) => match val {
+                Some(hex_str) => {
+                    if hex_str.len() > (MAX_BYTE_LENGTH - (usize::BITS / 8) as usize) {
+                        panic!("HexString value {hex_str:?} exceeds max byte length of {MAX_BYTE_LENGTH}");
+                    } else {
+                        [hex_str.len().to_le_bytes().to_vec(), hex_str.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                }
+                None => vec![],
+            },
+            FtColumn::ID(val) => match val {
+                Some(id) => id.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Identity(val) => match val {
+                Some(ident) => match ident {
+                    Identity::Address(addr) => {
+                        [0u8.to_le_bytes().to_vec(), addr.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                    Identity::ContractId(contract_id) => {
+                        [1u8.to_le_bytes().to_vec(), contract_id.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                },
+                None => vec![],
+            },
+            FtColumn::Int1(val) => match val {
+                Some(i) => i.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Int16(val) => match val {
+                Some(i) => i.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Int4(val) => match val {
+                Some(i) => i.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Int8(val) => match val {
+                Some(i) => i.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Json(val) | FtColumn::Virtual(val) => match val {
+                Some(s) => {
+                    let bytes = s.0.as_bytes();
+                    let bytes_length = bytes.len();
+
+                    if bytes_length > (MAX_BYTE_LENGTH - (usize::BITS / 8) as usize) {
+                        panic!("String value {} exceeds max byte length of {MAX_BYTE_LENGTH}", s.0);
+                    } else {
+                        [bytes_length.to_le_bytes().to_vec(), bytes.to_vec()]
+                            .concat()
+                            .to_vec()
+                    }
+                }
+                None => vec![],
+            },
+            FtColumn::MessageId(val) => match val {
+                Some(msg_id) => msg_id.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Nonce(val) => match val {
+                Some(nonce) => nonce.to_vec(),
+                None => vec![],
+            },
+            FtColumn::Salt(val) => match val {
+                Some(salt) => salt.as_slice().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Tai64Timestamp(val) => match val {
+                Some(tai_timestamp) => tai_timestamp.to_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::Timestamp(val) => match val {
+                Some(timestamp) => timestamp.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::UInt1(val) => match val {
+                Some(u) => u.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::UInt16(val) => match val {
+                Some(u) => u.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::UInt4(val) => match val {
+                Some(u) => u.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::UInt8(val) => match val {
+                Some(u) => u.to_le_bytes().to_vec(),
+                None => vec![],
+            },
+            FtColumn::ListScalar(_) => unimplemented!("List of lists unsupported."),
+            FtColumn::ListFK(_) => unimplemented!("List of lists unsupported."),
         }
     }
 }

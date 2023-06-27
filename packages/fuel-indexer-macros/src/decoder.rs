@@ -1,11 +1,11 @@
-use crate::helpers::*;
+use crate::{constants::*, helpers::*};
 use async_graphql_parser::types::{
-    BaseType, FieldDefinition, Type, TypeDefinition, TypeKind,
+    FieldDefinition, ObjectType, TypeDefinition, TypeKind,
 };
 use async_graphql_parser::{Pos, Positioned};
 use async_graphql_value::Name;
 use fuel_indexer_lib::{
-    graphql::{types::IdCol, GraphQLSchemaValidator, ParsedGraphQLSchema},
+    graphql::{field_id, types::IdCol, GraphQLSchemaValidator, ParsedGraphQLSchema},
     type_id, ExecutionSource,
 };
 use linked_hash_set::LinkedHashSet;
@@ -19,6 +19,352 @@ use syn::Ident;
 pub trait Decoder {
     /// Create a decoder from a GraphQL `TypeDefinition`.
     fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self;
+}
+
+/// Like `Decoder`, but specifically used to derive `::new()` function and
+/// `::get_or_create()` function.
+#[derive(Debug)]
+pub struct ImplementationDecoder {
+    /// Token stream of params passed to `::new()`.
+    parameters: proc_macro2::TokenStream,
+
+    /// Token stream of hasher.
+    hasher: proc_macro2::TokenStream,
+
+    /// Token stream of struct fields.
+    struct_fields: TokenStream,
+
+    /// Execution source of indexer.
+    exec_source: ExecutionSource,
+
+    /// `TypeDefinition`.
+    typdef: TypeDefinition,
+
+    /// The parsed GraphQL schema.
+    ///
+    /// Since `From<ImplementationDecoder> for TokenStream` uses `ParsedGraphQLSchema` to lookup
+    /// the fields of each member in the union, we need to include it here.
+    parsed: ParsedGraphQLSchema,
+}
+
+impl Default for ImplementationDecoder {
+    fn default() -> Self {
+        Self {
+            parameters: quote! {},
+            hasher: quote! {},
+            struct_fields: quote! {},
+            exec_source: ExecutionSource::Wasm,
+            typdef: TypeDefinition {
+                description: None,
+                extend: false,
+                name: Positioned::new(Name::new(""), Pos::default()),
+                kind: TypeKind::Object(ObjectType {
+                    implements: vec![],
+                    fields: vec![],
+                }),
+                directives: vec![],
+            },
+            parsed: ParsedGraphQLSchema::default(),
+        }
+    }
+}
+
+impl Decoder for ImplementationDecoder {
+    /// Create a decoder from a GraphQL `TypeDefinition`.
+    fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
+        match &typ.kind {
+            TypeKind::Object(o) => {
+                let obj_name = typ.name.to_string();
+                let mut struct_fields = quote! {};
+                let mut parameters = quote! {};
+                let mut hasher = quote! { Sha256::new() };
+
+                let obj_field_names = parsed
+                    .object_field_mappings
+                    .get(&obj_name)
+                    .expect("TypeDefinition not found in parsed GraphQL schema.")
+                    .iter()
+                    .map(|(k, _v)| k.to_owned())
+                    .collect::<HashSet<String>>();
+
+                for field in &o.fields {
+                    let (field_typ_tokens, field_name, field_typ_scalar_name, _extractor) =
+                        process_typedef_field(parsed, field.node.clone());
+
+                    let field_typ_scalar_name = &field_typ_scalar_name.to_string();
+
+                    let clone = clone_tokens(field_typ_scalar_name);
+
+                    let unwrap_or_default = unwrap_or_default_tokens(
+                        field_typ_scalar_name,
+                        field.node.ty.node.nullable,
+                    );
+                    let to_bytes = to_bytes_tokens(field_typ_scalar_name);
+
+                    if can_derive_id(&obj_field_names, &field_name.to_string(), &obj_name)
+                    {
+                        parameters =
+                            parameters_tokens(parameters, &field_name, field_typ_tokens);
+                        if let Some(tokens) = hasher_tokens(
+                            field_typ_scalar_name,
+                            hasher.clone(),
+                            &field_name,
+                            clone,
+                            unwrap_or_default,
+                            to_bytes,
+                        ) {
+                            hasher = tokens;
+                        }
+
+                        struct_fields = quote! {
+                            #struct_fields
+                            #field_name,
+                        };
+                    }
+                }
+
+                ImplementationDecoder {
+                    parameters,
+                    hasher,
+                    struct_fields,
+                    exec_source: parsed.exec_source().clone(),
+                    typdef: typ.clone(),
+                    parsed: parsed.clone(),
+                }
+            }
+            TypeKind::Union(u) => {
+                let union_name = typ.name.to_string();
+                let member_fields = u
+                    .members
+                    .iter()
+                    .flat_map(|m| {
+                        let name = m.node.to_string();
+                        parsed
+                            .object_field_mappings
+                            .get(&name)
+                            .expect("Could not find union member in parsed schema.")
+                            .iter()
+                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                    })
+                    .collect::<LinkedHashSet<(String, String)>>()
+                    .iter()
+                    .map(|(k, _)| {
+                        let fid = field_id(&union_name, k);
+                        let f = &parsed
+                            .field_defs()
+                            .get(&fid)
+                            .expect("FielDefinition not found in parsed schema.");
+                        // All fields in a derived union type are nullable, except for
+                        // the `ID` field.
+                        let mut f = f.0.clone();
+                        f.ty.node.nullable =
+                            f.name.to_string() != IdCol::to_lowercase_str();
+                        Positioned {
+                            pos: Pos::default(),
+                            node: f,
+                        }
+                    })
+                    .collect::<Vec<Positioned<FieldDefinition>>>();
+
+                let typdef = TypeDefinition {
+                    description: None,
+                    extend: false,
+                    name: Positioned {
+                        pos: Pos::default(),
+                        node: Name::new(union_name),
+                    },
+                    kind: TypeKind::Object(ObjectType {
+                        implements: vec![],
+                        fields: member_fields,
+                    }),
+                    directives: vec![],
+                };
+
+                Self::from_typedef(&typdef, parsed)
+            }
+            _ => unimplemented!(
+                "TypeDefinition does not support ::new() and ::get_or_create()."
+            ),
+        }
+    }
+}
+
+impl From<ImplementationDecoder> for TokenStream {
+    fn from(decoder: ImplementationDecoder) -> Self {
+        let ImplementationDecoder {
+            parameters,
+            hasher,
+            struct_fields,
+            exec_source,
+            typdef,
+            parsed,
+        } = decoder;
+
+        let typdef_name = typdef.name.to_string();
+        let ident = format_ident!("{}", typdef_name);
+
+        // When processing `TypeDefinition::Union`, instead of duplicating a lot of logic
+        // in the `Decoder`s, we just recursively call `ImplementationDecoder::from_typedef`.
+        //
+        // This works fine, but means that we will only technically ever have a `TypeDefinition::ObjectType`
+        // on `ImplementationDecoder` - which means the `TypeKind::Union` codepath below will never
+        // be called.
+        //
+        // To prevent this, we manually look into our `ParsedGraphQLSchema` to see if the `TypeDefinition`
+        // we're given is a union type, and if so, we replace this `TypeDefinition::Object`, with that
+        // `TypeDefinition::Union`.
+        let typdef = parsed.get_union(&typdef_name).unwrap_or(&typdef);
+
+        match &typdef.kind {
+            TypeKind::Object(o) => {
+                let field_set = o
+                    .fields
+                    .iter()
+                    .map(|f| f.node.name.to_string())
+                    .collect::<HashSet<String>>();
+
+                if INTERNAL_INDEXER_ENTITIES.contains(typdef_name.as_str()) {
+                    return quote! {};
+                }
+
+                if !field_set.contains(IdCol::to_lowercase_str()) {
+                    return quote! {};
+                }
+
+                let impl_get_or_create = match exec_source {
+                    ExecutionSource::Native => {
+                        quote! {
+                            pub async fn get_or_create(self) -> Self {
+                                match Self::load(self.id).await {
+                                    Some(instance) => instance,
+                                    None => self,
+                                }
+                            }
+                        }
+                    }
+                    ExecutionSource::Wasm => {
+                        quote! {
+                            pub fn get_or_create(self) -> Self {
+                                match Self::load(self.id) {
+                                    Some(instance) => instance,
+                                    None => self,
+                                }
+                            }
+                        }
+                    }
+                };
+
+                quote! {
+                    impl #ident {
+                        pub fn new(#parameters) -> Self {
+                            let raw_bytes = #hasher.chain_update(#typdef_name).finalize();
+
+                            let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
+
+                            let id = u64::from_le_bytes(id_bytes);
+
+                            Self {
+                                id,
+                                #struct_fields
+                            }
+                        }
+
+                        #impl_get_or_create
+                    }
+                }
+            }
+            TypeKind::Union(u) => {
+                let mut from_method_impls = quote! {};
+
+                let union_field_set = u
+                    .members
+                    .iter()
+                    .flat_map(|m| {
+                        let name = m.node.to_string();
+                        parsed
+                            .object_field_mappings
+                            .get(&name)
+                            .expect("Could not find union member in parsed schema.")
+                            .iter()
+                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                    })
+                    .collect::<LinkedHashSet<(String, String)>>()
+                    .iter()
+                    .map(|(k, _v)| k.to_owned())
+                    .collect::<HashSet<String>>();
+
+                u.members.iter().for_each(|m| {
+                    let member_ident = format_ident!("{}", m.to_string());
+
+                    let member_fields = parsed
+                        .object_field_mappings
+                        .get(m.to_string().as_str())
+                        .expect("Could not get field mappings for union member.")
+                        .keys()
+                        .map(|k| k.to_owned())
+                        .collect::<HashSet<String>>();
+
+                    // Member fields that match with union fields are checked for optionality
+                    // and are assigned accordingly.
+                    let common_fields = union_field_set
+                        .intersection(&member_fields)
+                        .fold(quote! {}, |acc, common_field| {
+                            let ident = format_ident!("{}", common_field);
+                            let fid = field_id(&m.node, common_field);
+                            if common_field == &IdCol::to_lowercase_string() {
+                                quote! {
+                                    #acc
+                                    #ident: member.#ident,
+                                }
+                            } else if let Some(field_already_option) =
+                                parsed.field_type_optionality().get(&fid)
+                            {
+                                if *field_already_option {
+                                    quote! {
+                                        #acc
+                                        #ident: member.#ident,
+                                    }
+                                } else {
+                                    quote! {
+                                        #acc
+                                        #ident: Some(member.#ident),
+                                    }
+                                }
+                            } else {
+                                quote! { #acc }
+                            }
+                        });
+
+                    // Any member fields that don't have a match with union fields should be assigned to None.
+                    let disjoint_fields = union_field_set
+                        .difference(&member_fields)
+                        .fold(quote! {}, |acc, disjoint_field| {
+                            let ident = format_ident!("{}", disjoint_field);
+                            quote! {
+                                #acc
+                                #ident: None,
+                            }
+                        });
+
+                    from_method_impls = quote! {
+                        #from_method_impls
+
+                        impl From<#member_ident> for #ident {
+                            fn from(member: #member_ident) -> Self {
+                                Self {
+                                    #common_fields
+                                    #disjoint_fields
+                                }
+                            }
+                        }
+                    };
+                });
+
+                from_method_impls
+            }
+            _ => unimplemented!("Cannot do this with enum."),
+        }
+    }
 }
 
 /// A wrapper object used to process GraphQL `TypeKind::Object` type definitions
@@ -40,7 +386,7 @@ pub struct ObjectDecoder {
     to_row: TokenStream,
 
     /// Tokens for the parameters of the `Entity::new` function.
-    impl_new_params: ImplNewParameters,
+    impl_decoder: ImplementationDecoder,
 
     /// The source of the GraphQL schema.
     exec_source: ExecutionSource,
@@ -58,26 +404,21 @@ impl Default for ObjectDecoder {
             from_row: quote! {},
             to_row: quote! {},
             exec_source: ExecutionSource::Wasm,
-            impl_new_params: ImplNewParameters::ObjectType {
-                strct: format_ident!("ObjectDecoder"),
-                parameters: quote! {},
-                hasher: quote! {},
-                object_name: "".to_string(),
-                struct_fields: quote! {},
-                exec_source: ExecutionSource::Wasm,
-                field_set: HashSet::new(),
-            },
+            impl_decoder: ImplementationDecoder::default(),
             type_id: std::i64::MAX,
         }
     }
 }
 
 impl Decoder for ObjectDecoder {
-    /// Create a decoder from a GraphQL `TypeKind::Object`.
+    /// Create a decoder from a GraphQL `TypeDefinition`.
     fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         match &typ.kind {
             TypeKind::Object(o) => {
                 let obj_name = typ.name.to_string();
+
+                GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
+
                 let ident = format_ident!("{}", obj_name);
                 let type_id = type_id(&parsed.fully_qualified_namespace(), &obj_name);
 
@@ -85,21 +426,8 @@ impl Decoder for ObjectDecoder {
                 let mut field_extractors = quote! {};
                 let mut from_row = quote! {};
                 let mut to_row = quote! {};
-                let mut parameters = quote! {};
-                let mut hasher = quote! { Sha256::new() };
-                let mut impl_new_fields = quote! {};
 
                 let mut fields_map = BTreeMap::new();
-                let obj_field_names = parsed
-                    .object_field_mappings
-                    .get(&obj_name)
-                    .unwrap_or_else(|| {
-                        panic!("TypeDefinition '{obj_name}' not found in parsed schema.")
-                    })
-                    .iter()
-                    .map(|(k, _v)| k.to_owned())
-                    .collect::<HashSet<String>>();
-                GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
                 for field in &o.fields {
                     let (field_typ_tokens, field_name, field_typ_scalar_name, extractor) =
@@ -137,198 +465,68 @@ impl Decoder for ObjectDecoder {
                         #to_row
                         #field_decoder
                     };
-
-                    let unwrap_or_default = unwrap_or_default_tokens(
-                        field_typ_scalar_name,
-                        field.node.ty.node.nullable,
-                    );
-                    let to_bytes = to_bytes_tokens(field_typ_scalar_name);
-
-                    if can_derive_id(&obj_field_names, &field_name.to_string(), &obj_name)
-                    {
-                        parameters =
-                            parameters_tokens(parameters, &field_name, field_typ_tokens);
-                        if let Some(tokens) = hasher_tokens(
-                            field_typ_scalar_name,
-                            hasher.clone(),
-                            &field_name,
-                            clone,
-                            unwrap_or_default,
-                            to_bytes,
-                        ) {
-                            hasher = tokens;
-                        }
-
-                        impl_new_fields = quote! {
-                            #impl_new_fields
-                            #field_name,
-                        };
-                    }
                 }
 
                 Self {
-                    ident: ident.clone(),
+                    ident,
                     struct_fields,
                     field_extractors,
                     from_row,
                     to_row,
                     exec_source: parsed.exec_source().clone(),
-                    impl_new_params: ImplNewParameters::ObjectType {
-                        // standardize all these names
-                        strct: ident,
-                        parameters,
-                        hasher,
-                        object_name: obj_name,
-                        struct_fields: impl_new_fields,
-                        exec_source: parsed.exec_source().clone(),
-                        field_set: obj_field_names,
-                    },
+                    impl_decoder: ImplementationDecoder::from_typedef(typ, parsed),
                     type_id,
                 }
             }
             TypeKind::Union(u) => {
-                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1031
                 let union_name = typ.name.to_string();
-                let ident = format_ident!("{}", union_name);
-                let type_id = type_id(&parsed.fully_qualified_namespace(), &union_name);
-
-                let mut struct_fields = quote! {};
-                let mut field_extractors = quote! {};
-                let mut from_row = quote! {};
-                let mut to_row = quote! {};
-                let mut parameters = quote! {};
-                let mut hasher = quote! { Sha256::new() };
-                let mut impl_new_fields = quote! {};
-
-                let member_fields =
-                    u.members
-                        .iter()
-                        .flat_map(|m| {
-                            let name = m.node.to_string();
-                            parsed
-                        .object_field_mappings
-                        .get(&name)
-                        .unwrap_or_else(|| {
-                            panic!("Could not find union member '{name}' in the schema.",)
-                        })
-                        .iter()
-                        .map(|(k, v)| (k.to_owned(), v.to_owned()))
-                        })
-                        .collect::<LinkedHashSet<(String, String)>>();
-
-                let mut derived_type_fields = HashSet::new();
-                let mut union_field_set = HashSet::new();
-
-                let obj_field_names = member_fields
+                let fields = u
+                    .members
                     .iter()
-                    .map(|(k, _v)| k.to_owned())
-                    .collect::<HashSet<String>>();
-
-                for (field_name, field_typ_name) in member_fields.iter() {
-                    GraphQLSchemaValidator::derived_field_type_is_consistent(
-                        &union_name,
-                        field_name,
-                        &derived_type_fields,
-                    );
-                    derived_type_fields.insert(field_name.to_owned());
-
-                    let field = FieldDefinition {
-                        description: None,
-                        name: Positioned::new(Name::new(field_name), Pos::default()),
-                        arguments: Vec::new(),
-                        ty: Positioned::new(
-                            Type {
-                                base: BaseType::Named(Name::new(field_typ_name)),
-                                nullable: field_typ_name != IdCol::to_uppercase_str(),
-                            },
-                            Pos::default(),
-                        ),
-                        directives: Vec::new(),
-                    };
-
-                    union_field_set.insert(field_name.clone());
-
-                    // Since we've already processed the member's fields, we don't need
-                    // to do any type of special field processing here.
-                    let (field_typ_tokens, field_name, field_typ_scalar_name, extractor) =
-                        process_typedef_field(parsed, field.clone());
-
-                    let field_typ_scalar_name = &field_typ_scalar_name.to_string();
-
-                    let clone = clone_tokens(field_typ_scalar_name);
-                    let field_decoder = field_decoder_tokens(
-                        field.ty.node.nullable,
-                        field_typ_scalar_name,
-                        &field_name,
-                        clone.clone(),
-                    );
-
-                    struct_fields = quote! {
-                        #struct_fields
-                        #field_name: #field_typ_tokens,
-                    };
-
-                    field_extractors = quote! {
-                        #extractor
-                        #field_extractors
-                    };
-
-                    from_row = quote! {
-                        #from_row
-                        #field_name,
-                    };
-
-                    to_row = quote! {
-                        #to_row
-                        #field_decoder
-                    };
-
-                    let unwrap_or_default = unwrap_or_default_tokens(
-                        field_typ_scalar_name,
-                        field.ty.node.nullable,
-                    );
-                    let to_bytes = to_bytes_tokens(field_typ_scalar_name);
-
-                    if can_derive_id(
-                        &obj_field_names,
-                        &field_name.to_string(),
-                        &union_name,
-                    ) {
-                        parameters =
-                            parameters_tokens(parameters, &field_name, field_typ_tokens);
-                        if let Some(tokens) = hasher_tokens(
-                            field_typ_scalar_name,
-                            hasher.clone(),
-                            &field_name,
-                            clone,
-                            unwrap_or_default,
-                            to_bytes,
-                        ) {
-                            hasher = tokens;
+                    .flat_map(|m| {
+                        let name = m.node.to_string();
+                        parsed
+                            .object_field_mappings
+                            .get(&name)
+                            .expect("Could not find union member in parsed schema.")
+                            .iter()
+                            .map(|(k, v)| (k.to_owned(), v.to_owned()))
+                    })
+                    .collect::<LinkedHashSet<(String, String)>>()
+                    .iter()
+                    .map(|(k, _)| {
+                        let fid = field_id(&union_name, k);
+                        let f = &parsed
+                            .field_defs()
+                            .get(&fid)
+                            .expect("FieldDefinition not found in parsed schema.");
+                        // All fields in a derived union type are nullable, except for
+                        // the `ID` field.
+                        let mut f = f.0.clone();
+                        f.ty.node.nullable =
+                            f.name.to_string() != IdCol::to_lowercase_str();
+                        Positioned {
+                            pos: Pos::default(),
+                            node: f,
                         }
+                    })
+                    .collect::<Vec<Positioned<FieldDefinition>>>();
 
-                        impl_new_fields = quote! {
-                            #impl_new_fields
-                            #field_name,
-                        };
-                    }
-                }
-
-                Self {
-                    ident: ident.clone(),
-                    type_id,
-                    struct_fields,
-                    field_extractors,
-                    from_row,
-                    to_row,
-                    exec_source: parsed.exec_source().clone(),
-                    impl_new_params: ImplNewParameters::UnionType {
-                        schema: parsed.clone(),
-                        union_obj: u.clone(),
-                        union_ident: ident,
-                        union_field_set: obj_field_names,
+                let typdef = TypeDefinition {
+                    description: None,
+                    extend: false,
+                    name: Positioned {
+                        pos: Pos::default(),
+                        node: Name::new(union_name),
                     },
-                }
+                    kind: TypeKind::Object(ObjectType {
+                        implements: vec![],
+                        fields,
+                    }),
+                    directives: vec![],
+                };
+
+                Self::from_typedef(&typdef, parsed)
             }
             _ => panic!("Expected `TypeKind::Union` or `TypeKind::Object."),
         }
@@ -358,7 +556,7 @@ pub struct EnumDecoder {
 }
 
 impl Decoder for EnumDecoder {
-    /// Create a decoder from a GraphQL `TypeKind::Enum`.
+    /// Create a decoder from a GraphQL `TypeDefinition`.
     fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         match &typ.kind {
             TypeKind::Enum(e) => {
@@ -416,7 +614,7 @@ impl From<ObjectDecoder> for TokenStream {
             field_extractors,
             from_row,
             to_row,
-            impl_new_params,
+            impl_decoder,
             exec_source,
             type_id,
             ..
@@ -524,41 +722,7 @@ impl From<ObjectDecoder> for TokenStream {
             },
         };
 
-        let impl_new = match impl_new_params {
-            ImplNewParameters::ObjectType {
-                strct,
-                parameters,
-                hasher,
-                object_name,
-                struct_fields,
-                exec_source,
-                field_set,
-            } => {
-                if field_set.contains(&IdCol::to_lowercase_string()) {
-                    generate_struct_new_method_impl(
-                        strct,
-                        parameters,
-                        hasher,
-                        object_name,
-                        struct_fields,
-                        exec_source,
-                    )
-                } else {
-                    quote! {}
-                }
-            }
-            ImplNewParameters::UnionType {
-                schema,
-                union_obj,
-                union_ident,
-                union_field_set,
-            } => generate_from_traits_for_union(
-                &schema,
-                &union_obj,
-                union_ident,
-                union_field_set,
-            ),
-        };
+        let impl_new = TokenStream::from(impl_decoder);
 
         quote! {
             #impl_entity
@@ -611,7 +775,7 @@ impl From<EnumDecoder> for TokenStream {
 mod tests {
 
     use super::*;
-    use async_graphql_parser::types::ObjectType;
+    use async_graphql_parser::types::{BaseType, ObjectType, Type};
     use fuel_indexer_lib::graphql::GraphQLSchema;
 
     #[test]

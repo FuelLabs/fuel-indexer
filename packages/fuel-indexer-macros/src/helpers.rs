@@ -1,39 +1,16 @@
 use std::collections::HashSet;
 
 use crate::constants::*;
-use async_graphql_parser::types::{BaseType, FieldDefinition, Type, UnionType};
+use async_graphql_parser::types::{BaseType, FieldDefinition, Type};
 use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
-use fuel_indexer_lib::{
-    graphql::{extract_foreign_key_info, types::IdCol, ParsedGraphQLSchema},
-    ExecutionSource,
+use fuel_indexer_lib::graphql::{
+    extract_foreign_key_info, types::IdCol, ParsedGraphQLSchema,
 };
 use fuels_code_gen::utils::Source;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
-
-/// Parameters for generating traits for different `TypeKind` variants.
-pub enum ImplNewParameters {
-    ObjectType {
-        strct: Ident,
-        parameters: proc_macro2::TokenStream,
-        hasher: proc_macro2::TokenStream,
-        object_name: String,
-        struct_fields: proc_macro2::TokenStream,
-        exec_source: ExecutionSource,
-        field_set: HashSet<String>,
-    },
-    // This is actually used, but it's implemented in a `TokenStream` which prevents
-    // `clippy` from being able to find it, so ignore this lint.
-    #[allow(unused)]
-    UnionType {
-        schema: ParsedGraphQLSchema,
-        union_obj: UnionType,
-        union_ident: Ident,
-        union_field_set: HashSet<String>,
-    },
-}
 
 /// Provides a TokenStream to be used as a conversion to bytes
 /// for external types; this is done because traits cannot be
@@ -340,152 +317,6 @@ pub fn field_extractor(
     }
 }
 
-/// Construct a `::new()` method for a particular struct; `::new()`
-/// will automatically create an ID for the user for use in a database.
-pub fn generate_struct_new_method_impl(
-    ident: Ident,
-    parameters: proc_macro2::TokenStream,
-    hasher: proc_macro2::TokenStream,
-    typedef_name: String,
-    struct_fields: proc_macro2::TokenStream,
-    exec_source: ExecutionSource,
-) -> proc_macro2::TokenStream {
-    let get_or_create_impl = match exec_source {
-        ExecutionSource::Native => {
-            quote! {
-                pub async fn get_or_create(self) -> Self {
-                    match Self::load(self.id).await {
-                        Some(instance) => instance,
-                        None => self,
-                    }
-                }
-            }
-        }
-        ExecutionSource::Wasm => {
-            quote! {
-                pub fn get_or_create(self) -> Self {
-                    match Self::load(self.id) {
-                        Some(instance) => instance,
-                        None => self,
-                    }
-                }
-            }
-        }
-    };
-
-    if !INTERNAL_INDEXER_ENTITIES.contains(typedef_name.as_str()) {
-        quote! {
-            impl #ident {
-                pub fn new(#parameters) -> Self {
-                    let raw_bytes = #hasher.chain_update(#typedef_name).finalize();
-                    // let raw_bytes: [u8; 16] = [0u8; 16];
-
-                    let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
-
-                    let id = u64::from_le_bytes(id_bytes);
-
-                    Self {
-                        id,
-                        #struct_fields
-                    }
-                }
-
-                #get_or_create_impl
-            }
-        }
-    } else {
-        quote! {}
-    }
-}
-
-/// Generate `From` trait implementations for each member type in a union.
-pub fn generate_from_traits_for_union(
-    schema: &ParsedGraphQLSchema,
-    union_obj: &UnionType,
-    union_ident: Ident,
-    union_field_set: HashSet<String>,
-) -> proc_macro2::TokenStream {
-    let mut from_method_impls = quote! {};
-    for m in union_obj.members.iter() {
-        let member_ident = format_ident!("{}", m.to_string());
-
-        let member_fields = schema
-            .object_field_mappings
-            .get(&m.to_string())
-            .unwrap_or_else(|| {
-                panic!(
-                "Could not get field mappings for union member; union: {}, member: {}",
-                union_ident,
-                m
-            )
-            })
-            .keys()
-            .fold(HashSet::new(), |mut set, f| {
-                set.insert(f.clone());
-                set
-            });
-
-        // Member fields that match with union fields are checked for optionality
-        // and are assigned accordingly.
-        let common_fields = union_field_set.intersection(&member_fields).fold(
-            quote! {},
-            |acc, common_field| {
-                let ident = format_ident!("{}", common_field);
-                if common_field == &IdCol::to_lowercase_string() {
-                    quote! {
-                        #acc
-                        #ident: member.#ident,
-                    }
-                } else if let Some(field_already_option) = schema
-                    .field_type_optionality()
-                    .get(&format!("{m}.{common_field}"))
-                {
-                    if *field_already_option {
-                        quote! {
-                            #acc
-                            #ident: member.#ident,
-                        }
-                    } else {
-                        quote! {
-                            #acc
-                            #ident: Some(member.#ident),
-                        }
-                    }
-                } else {
-                    quote! { #acc }
-                }
-            },
-        );
-
-        // Any member fields that don't have a match with union fields should be assigned to None.
-        let disjoint_fields = union_field_set.difference(&member_fields).fold(
-            quote! {},
-            |acc, disjoint_field| {
-                let ident = format_ident!("{}", disjoint_field);
-                quote! {
-                    #acc
-                    #ident: None,
-                }
-            },
-        );
-
-        from_method_impls = quote! {
-            #from_method_impls
-
-            impl From<#member_ident> for #union_ident {
-                fn from(member: #member_ident) -> Self {
-                    Self {
-                        #common_fields
-                        #disjoint_fields
-                    }
-                }
-            }
-        };
-    }
-
-    from_method_impls
-}
-
 /// Type of special fields in GraphQL schema.
 #[derive(Debug, Clone)]
 pub enum FieldKind {
@@ -514,7 +345,10 @@ pub fn process_typedef_field(
 ) {
     let field_name = field_def.name.to_string();
     let (typ_tokens, field_type_ident) = process_type(parsed, &field_def.ty.node);
-    let fieldkind = field_kind(&field_type_ident.to_string().replace('!', ""), parsed);
+    let fieldkind = field_kind(
+        &field_type_ident.to_string().replace(['[', ']', '!'], ""),
+        parsed,
+    );
 
     match fieldkind {
         FieldKind::ForeignKey => {
@@ -548,7 +382,7 @@ pub fn process_typedef_field(
             process_typedef_field(parsed, field_def)
         }
         FieldKind::Union => {
-            let field_typ_name = field_def.ty.to_string().replace('!', "");
+            let field_typ_name = field_def.ty.to_string().replace(['[', ']', '!'], "");
             match parsed.is_virtual_typedef(&field_typ_name) {
                 true => {
                     let field_typ_name = nullable_field_type_name(&field_def, "Virtual");
@@ -620,7 +454,15 @@ pub fn process_type(
                 (quote! { #name }, name)
             }
         }
-        BaseType::List(_t) => panic!("Got a list type, we don't handle this yet..."),
+        BaseType::List(t) => {
+            let (_typ_tokens, typ_ident) = process_type(schema, t);
+            let name = format_ident! {"Vec<{}>", typ_ident};
+            if typ.nullable {
+                (quote! { Option<#name> }, name)
+            } else {
+                (quote! { #name }, name)
+            }
+        }
     }
 }
 
@@ -698,7 +540,7 @@ pub fn hasher_tokens(
     None
 }
 
-/// Get tokens for parameters.
+/// Get tokens for parameters used in `::new()` function signatures.
 pub fn parameters_tokens(
     parameters: TokenStream,
     field_name: &Ident,

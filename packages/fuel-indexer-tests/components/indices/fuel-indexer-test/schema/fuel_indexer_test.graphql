@@ -304,3 +304,12 @@ type VirtualUnionContainerEntity {
     union_entity: VirtualUnionEntity
     union_type: UnionType!
 }
+
+
+# type ListTypeScalarEntity {
+#     id: ID!
+#     non_null_all: [UInt8!]!
+#     null_inner: [UInt8]!
+#     nullable_all: [UInt8]
+# }
+
