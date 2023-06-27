@@ -107,13 +107,13 @@ pub fn extract_foreign_key_info(
         .iter()
         .find(|d| d.node.name.to_string() == "join")
         .map(|d| {
-            let typdef_name = f.ty.to_string().replace('!', "");
+            let typdef_name = f.ty.to_string().replace(['[', ']', '!'], "");
             let ref_field_name = d.clone().node.arguments.pop().unwrap().1.to_string();
             let fk_fid = field_id(&typdef_name, &ref_field_name);
             let fk_field_type = field_type_mappings.get(&fk_fid).unwrap().to_string();
 
             (
-                fk_field_type.replace('!', ""),
+                fk_field_type.replace(['[', ']', '!'], ""),
                 ref_field_name,
                 typdef_name.to_lowercase(),
             )
@@ -121,7 +121,7 @@ pub fn extract_foreign_key_info(
         .unwrap_or((
             IdCol::to_uppercase_string(),
             IdCol::to_lowercase_string(),
-            f.ty.to_string().replace('!', "").to_lowercase(),
+            f.ty.to_string().replace(['[', ']', '!'], "").to_lowercase(),
         ));
 
     (ref_coltype, ref_colname, ref_tablename)
@@ -130,4 +130,9 @@ pub fn extract_foreign_key_info(
 /// Return a fully qualified name for a given `FieldDefinition` on a given `TypeDefinition`.
 pub fn field_id(typdef_name: &str, field_name: &str) -> String {
     format!("{typdef_name}.{field_name}")
+}
+
+/// Whether a given `FieldDefinition` is a `List` type.
+pub fn is_list_type(f: &FieldDefinition) -> bool {
+    f.ty.to_string().matches(['[', ']']).count() == 2
 }

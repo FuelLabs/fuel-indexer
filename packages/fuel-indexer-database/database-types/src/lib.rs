@@ -10,17 +10,17 @@ use chrono::{
 };
 use fuel_indexer_lib::{
     graphql::{
-        extract_foreign_key_info, field_id,
+        extract_foreign_key_info, field_id, is_list_type,
         types::{IdCol, ObjectCol},
         ParsedGraphQLSchema,
     },
     type_id,
 };
+pub use fuel_indexer_types::db::ColumnType;
 use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
-    fmt,
     fmt::Write,
     string::ToString,
     time::{SystemTime, UNIX_EPOCH},
@@ -36,181 +36,6 @@ pub enum IndexMethod {
 
     #[strum(serialize = "hash")]
     Hash,
-}
-
-/// SQL database types used by indexers.
-#[derive(Copy, Clone, Debug, Eq, PartialEq, Default, AsRefStr)]
-pub enum ColumnType {
-    #[default]
-    ID = 0,
-    Address = 1,
-    AssetId = 2,
-    Bytes4 = 3,
-    Bytes8 = 4,
-    Bytes32 = 5,
-    ContractId = 6,
-    Salt = 7,
-    Int4 = 8,
-    Int8 = 9,
-    UInt4 = 10,
-    UInt8 = 11,
-    Timestamp = 12,
-    Blob = 13,
-    ForeignKey = 14,
-    Json = 15,
-    MessageId = 16,
-    Charfield = 17,
-    Identity = 18,
-    Boolean = 19,
-    Object = 20,
-    UInt16 = 21,
-    Int16 = 22,
-    Bytes64 = 23,
-    Signature = 24,
-    Nonce = 25,
-    HexString = 26,
-    Tai64Timestamp = 27,
-    TxId = 28,
-    BlockHeight = 29,
-    Enum = 30,
-    Int1 = 31,
-    UInt1 = 32,
-    Virtual = 33,
-    BlockId = 34,
-}
-
-impl From<ColumnType> for i32 {
-    fn from(typ: ColumnType) -> i32 {
-        match typ {
-            ColumnType::ID => 0,
-            ColumnType::Address => 1,
-            ColumnType::AssetId => 2,
-            ColumnType::Bytes4 => 3,
-            ColumnType::Bytes8 => 4,
-            ColumnType::Bytes32 => 5,
-            ColumnType::ContractId => 6,
-            ColumnType::Salt => 7,
-            ColumnType::Int4 => 8,
-            ColumnType::Int8 => 9,
-            ColumnType::UInt4 => 10,
-            ColumnType::UInt8 => 11,
-            ColumnType::Timestamp => 12,
-            ColumnType::Blob => 13,
-            ColumnType::ForeignKey => 14,
-            ColumnType::Json => 15,
-            ColumnType::MessageId => 16,
-            ColumnType::Charfield => 17,
-            ColumnType::Identity => 18,
-            ColumnType::Boolean => 19,
-            ColumnType::Object => 20,
-            ColumnType::UInt16 => 21,
-            ColumnType::Int16 => 22,
-            ColumnType::Bytes64 => 23,
-            ColumnType::Signature => 24,
-            ColumnType::Nonce => 25,
-            ColumnType::HexString => 26,
-            ColumnType::Tai64Timestamp => 27,
-            ColumnType::TxId => 28,
-            ColumnType::BlockHeight => 29,
-            ColumnType::Enum => 30,
-            ColumnType::Int1 => 31,
-            ColumnType::UInt1 => 32,
-            ColumnType::Virtual => 33,
-            ColumnType::BlockId => 34,
-        }
-    }
-}
-
-impl fmt::Display for ColumnType {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{self:?}")
-    }
-}
-
-impl From<i32> for ColumnType {
-    fn from(num: i32) -> ColumnType {
-        match num {
-            0 => ColumnType::ID,
-            1 => ColumnType::Address,
-            2 => ColumnType::AssetId,
-            3 => ColumnType::Bytes4,
-            4 => ColumnType::Bytes8,
-            5 => ColumnType::Bytes32,
-            6 => ColumnType::ContractId,
-            7 => ColumnType::Salt,
-            8 => ColumnType::Int4,
-            9 => ColumnType::Int8,
-            10 => ColumnType::UInt4,
-            11 => ColumnType::UInt8,
-            12 => ColumnType::Timestamp,
-            13 => ColumnType::Blob,
-            14 => ColumnType::ForeignKey,
-            15 => ColumnType::Json,
-            16 => ColumnType::MessageId,
-            17 => ColumnType::Charfield,
-            18 => ColumnType::Identity,
-            19 => ColumnType::Boolean,
-            20 => ColumnType::Object,
-            21 => ColumnType::Int16,
-            22 => ColumnType::UInt16,
-            23 => ColumnType::Bytes64,
-            24 => ColumnType::Signature,
-            25 => ColumnType::Nonce,
-            26 => ColumnType::HexString,
-            27 => ColumnType::Tai64Timestamp,
-            28 => ColumnType::TxId,
-            29 => ColumnType::BlockHeight,
-            30 => ColumnType::Enum,
-            31 => ColumnType::Int1,
-            32 => ColumnType::UInt1,
-            33 => ColumnType::Virtual,
-            34 => ColumnType::BlockId,
-            _ => panic!("Invalid ColumnType."),
-        }
-    }
-}
-
-impl From<&str> for ColumnType {
-    fn from(name: &str) -> ColumnType {
-        match name {
-            "ID" => ColumnType::ID,
-            "Address" => ColumnType::Address,
-            "AssetId" => ColumnType::AssetId,
-            "Bytes4" => ColumnType::Bytes4,
-            "Bytes8" => ColumnType::Bytes8,
-            "Bytes32" => ColumnType::Bytes32,
-            "ContractId" => ColumnType::ContractId,
-            "Salt" => ColumnType::Salt,
-            "Int4" => ColumnType::Int4,
-            "Int8" => ColumnType::Int8,
-            "UInt4" => ColumnType::UInt4,
-            "UInt8" => ColumnType::UInt8,
-            "Timestamp" => ColumnType::Timestamp,
-            "Blob" => ColumnType::Blob,
-            "ForeignKey" => ColumnType::ForeignKey,
-            "Json" => ColumnType::Json,
-            "MessageId" => ColumnType::MessageId,
-            "Charfield" => ColumnType::Charfield,
-            "Identity" => ColumnType::Identity,
-            "Boolean" => ColumnType::Boolean,
-            "Object" => ColumnType::Object,
-            "UInt16" => ColumnType::UInt16,
-            "Int16" => ColumnType::Int16,
-            "Bytes64" => ColumnType::Bytes64,
-            "Signature" => ColumnType::Signature,
-            "Nonce" => ColumnType::Nonce,
-            "HexString" => ColumnType::HexString,
-            "Tai64Timestamp" => ColumnType::Tai64Timestamp,
-            "TxId" => ColumnType::TxId,
-            "BlockHeight" => ColumnType::BlockHeight,
-            "Enum" => ColumnType::Enum,
-            "Int1" => ColumnType::Int1,
-            "UInt1" => ColumnType::UInt1,
-            "Virtual" => ColumnType::Virtual,
-            "BlockId" => ColumnType::BlockId,
-            _ => panic!("Invalid ColumnType: '{name}'"),
-        }
-    }
 }
 
 /// Represents a root column in the graph.
@@ -239,8 +64,8 @@ pub enum Persistence {
     #[default]
     Virtual,
 
-    /// Regular columns are persisted to the database.
-    Regular,
+    /// Scalar columns are persisted to the database.
+    Scalar,
 }
 
 /// SQL statements that can be executed against a database.
@@ -287,6 +112,11 @@ pub struct Column {
 
     /// Whether this column is nullable.
     pub nullable: bool,
+
+    /// SQL type of the array's contents
+    ///
+    /// Only if this is a `ColumnType::Array`
+    pub array_coltype: Option<ColumnType>,
 }
 
 impl SqlNamed for Column {
@@ -305,56 +135,97 @@ impl Column {
         position: i32,
         persistence: Persistence,
     ) -> Self {
-        let mut field_type = f.ty.to_string().replace('!', "");
+        let mut field_type = f.ty.to_string().replace(['[', ']', '!'], "");
         if parsed.is_possible_foreign_key(&field_type) {
-            // Determine implicit vs explicit FK type
             field_type = f
-                .directives
-                .iter()
-                .find(|d| d.node.name.to_string() == "join")
-                .map(|d| {
-                    let ref_field_name =
-                        d.clone().node.arguments.pop().unwrap().1.to_string();
-                    let fk_fid = field_id(&field_type, &ref_field_name);
-                    let fk_field_typ = parsed
-                        .field_type_mappings()
-                        .get(&fk_fid)
-                        .expect("Failed to find field in ParsedGraphQLSchema field type mappings.")
-                        .to_string();
-                    fk_field_typ
-                })
-                // Special case of parsing FKs here where we change the derived
-                // field type. We can't use the `ID` type as normal because we
-                // can't have multiple primary keys on the same table.
-                .unwrap_or("UInt8".to_string());
-        } else if parsed.is_virtual_typedef(&field_type) {
-            field_type = "Virtual".to_string();
-        } else if parsed.is_enum_typedef(&field_type) {
-            field_type = "Charfield".to_string();
-        }
-
-        let unique = f
             .directives
             .iter()
-            .any(|d| d.node.name.to_string() == "unique");
+            .find(|d| d.node.name.to_string() == "join")
+            .map(|d| {
+                let ref_field_name =
+                    d.clone().node.arguments.pop().unwrap().1.to_string();
+                let fk_fid = field_id(&field_type, &ref_field_name);
+                let fk_field_typ = parsed
+                    .field_type_mappings()
+                    .get(&fk_fid)
+                    .expect("Failed to find field in ParsedGraphQLSchema field type mappings.")
+                    .to_string();
+                fk_field_typ
+            })
+            // Special case of parsing FKs here where we change the derived
+            // field type. We can't use the `ID` type as normal because we
+            // can't have multiple primary keys on the same table.
+            .unwrap_or("UInt8".to_string());
+        }
 
-        let coltype = field_type.as_str();
+        match is_list_type(f) {
+            true => Self {
+                type_id,
+                name: f.name.to_string(),
+                graphql_type: format!("[{field_type}]"),
+                coltype: ColumnType::Array,
+                position,
+                array_coltype: Some(ColumnType::from(field_type.as_str())),
+                nullable: f.ty.node.nullable,
+                persistence,
+                ..Self::default()
+            },
+            false => {
+                if parsed.is_possible_foreign_key(&field_type) {
+                    // Determine implicit vs explicit FK type
+                    field_type = f
+                        .directives
+                        .iter()
+                        .find(|d| d.node.name.to_string() == "join")
+                        .map(|d| {
+                            let ref_field_name =
+                                d.clone().node.arguments.pop().unwrap().1.to_string();
+                            let fk_fid = field_id(&field_type, &ref_field_name);
+                            let fk_field_typ = parsed
+                                .field_type_mappings()
+                                .get(&fk_fid)
+                                .expect("Failed to find field in ParsedGraphQLSchema field type mappings.")
+                                .to_string();
+                            fk_field_typ
+                        })
+                        // Special case of parsing FKs here where we change the derived
+                        // field type. We can't use the `ID` type as normal because we
+                        // can't have multiple primary keys on the same table.
+                        .unwrap_or("UInt8".to_string());
+                } else if parsed.is_virtual_typedef(&field_type) {
+                    field_type = "Virtual".to_string();
+                } else if parsed.is_enum_typedef(&field_type) {
+                    field_type = "Charfield".to_string();
+                }
 
-        Self {
-            type_id,
-            name: f.name.to_string(),
-            graphql_type: coltype.to_owned(),
-            coltype: ColumnType::from(coltype),
-            position,
-            unique,
-            nullable: f.ty.node.nullable,
-            persistence,
-            ..Self::default()
+                if is_list_type(f) {
+                    field_type = "Array".to_string();
+                }
+
+                let unique = f
+                    .directives
+                    .iter()
+                    .any(|d| d.node.name.to_string() == "unique");
+
+                let coltype = field_type.as_str();
+
+                Self {
+                    type_id,
+                    name: f.name.to_string(),
+                    graphql_type: coltype.to_owned(),
+                    coltype: ColumnType::from(coltype),
+                    position,
+                    unique,
+                    nullable: f.ty.node.nullable,
+                    persistence,
+                    ..Self::default()
+                }
+            }
         }
     }
 
     /// Derive the respective PostgreSQL field type for a given `Columns`
-    fn sql_type(&self) -> &str {
+    fn sql_type(&self) -> String {
         // Here we're essentially matching `ColumnType`s to PostgreSQL field
         // types. Note that we're using `numeric` field types for integer-like
         // fields due to the ability to specify custom scale and precision. Some
@@ -362,42 +233,78 @@ impl Column {
         // just define these types as `numeric`, then convert them into their base
         // types (e.g., u64) using `BigDecimal`.
         match self.coltype {
-            ColumnType::ID => "numeric(20, 0) primary key",
-            ColumnType::Address => "varchar(64)",
-            ColumnType::Bytes4 => "varchar(8)",
-            ColumnType::Bytes8 => "varchar(16)",
-            ColumnType::Bytes32 => "varchar(64)",
-            ColumnType::AssetId => "varchar(64)",
-            ColumnType::ContractId => "varchar(64)",
-            ColumnType::Salt => "varchar(64)",
-            ColumnType::Int4 => "integer",
-            ColumnType::Int8 => "bigint",
-            ColumnType::Int16 => "numeric(39, 0)",
-            ColumnType::UInt4 | ColumnType::BlockHeight => "integer",
-            ColumnType::UInt8 => "numeric(20, 0)",
-            ColumnType::UInt16 => "numeric(39, 0)",
-            ColumnType::Timestamp => "timestamp",
-            ColumnType::Object => "bytea",
-            ColumnType::Blob => "varchar(10485760)",
-            ColumnType::ForeignKey => {
-                panic!("ForeignKey ColumnType is a reference type only.")
+            ColumnType::ID => "numeric(20, 0) primary key".to_string(),
+            ColumnType::Address => "varchar(64)".to_string(),
+            ColumnType::Bytes4 => "varchar(8)".to_string(),
+            ColumnType::Bytes8 => "varchar(16)".to_string(),
+            ColumnType::Bytes32 => "varchar(64)".to_string(),
+            ColumnType::AssetId => "varchar(64)".to_string(),
+            ColumnType::ContractId => "varchar(64)".to_string(),
+            ColumnType::Salt => "varchar(64)".to_string(),
+            ColumnType::Int4 => "integer".to_string(),
+            ColumnType::Int8 => "bigint".to_string(),
+            ColumnType::Int16 => "numeric(39, 0)".to_string(),
+            ColumnType::UInt4 | ColumnType::BlockHeight => "integer".to_string(),
+            ColumnType::UInt8 => "numeric(20, 0)".to_string(),
+            ColumnType::UInt16 => "numeric(39, 0)".to_string(),
+            ColumnType::Timestamp => "timestamp".to_string(),
+            ColumnType::Object => "bytea".to_string(),
+            ColumnType::Blob => "varchar(10485760)".to_string(),
+            ColumnType::ForeignKey => "numeric(20, 0)".to_string(),
+            ColumnType::Json => "json".to_string(),
+            ColumnType::MessageId => "varchar(64)".to_string(),
+            ColumnType::Charfield => "varchar(255)".to_string(),
+            ColumnType::Identity => "varchar(66)".to_string(),
+            ColumnType::Boolean => "boolean".to_string(),
+            ColumnType::Bytes64 => "varchar(128)".to_string(),
+            ColumnType::Signature => "varchar(128)".to_string(),
+            ColumnType::Nonce => "varchar(64)".to_string(),
+            ColumnType::HexString => "varchar(10485760)".to_string(),
+            ColumnType::Tai64Timestamp => "varchar(128)".to_string(),
+            ColumnType::TxId => "varchar(64)".to_string(),
+            ColumnType::Enum => "varchar(255)".to_string(),
+            ColumnType::Int1 => "integer".to_string(),
+            ColumnType::UInt1 => "integer".to_string(),
+            ColumnType::Virtual => "json".to_string(),
+            ColumnType::BlockId => "varchar(64)".to_string(),
+            ColumnType::Array => {
+                let t = match self.array_coltype.expect(
+                    "Column.array_coltype cannot be None when using `ColumnType::Array`.",
+                ) {
+                    ColumnType::ID
+                    | ColumnType::Int1
+                    | ColumnType::UInt1
+                    | ColumnType::Int4
+                    | ColumnType::UInt4
+                    | ColumnType::Int8
+                    | ColumnType::UInt8
+                    | ColumnType::Int16
+                    | ColumnType::UInt16
+                    | ColumnType::Timestamp
+                    | ColumnType::BlockHeight => "integer",
+                    ColumnType::Address
+                    | ColumnType::Bytes4
+                    | ColumnType::Bytes8
+                    | ColumnType::Bytes32
+                    | ColumnType::AssetId
+                    | ColumnType::ContractId
+                    | ColumnType::Salt
+                    | ColumnType::MessageId
+                    | ColumnType::Charfield
+                    | ColumnType::Identity
+                    | ColumnType::Bytes64
+                    | ColumnType::Signature
+                    | ColumnType::Nonce
+                    | ColumnType::HexString
+                    | ColumnType::TxId
+                    | ColumnType::BlockId => "varchar",
+                    ColumnType::Blob => "bytea",
+                    ColumnType::Json | ColumnType::Virtual => "json",
+                    _ => unimplemented!(),
+                };
+
+                format!("{t} [1000]")
             }
-            ColumnType::Json => "Json",
-            ColumnType::MessageId => "varchar(64)",
-            ColumnType::Charfield => "varchar(255)",
-            ColumnType::Identity => "varchar(66)",
-            ColumnType::Boolean => "boolean",
-            ColumnType::Bytes64 => "varchar(128)",
-            ColumnType::Signature => "varchar(128)",
-            ColumnType::Nonce => "varchar(64)",
-            ColumnType::HexString => "varchar(10485760)",
-            ColumnType::Tai64Timestamp => "varchar(128)",
-            ColumnType::TxId => "varchar(64)",
-            ColumnType::Enum => "varchar(255)",
-            ColumnType::Int1 => "integer",
-            ColumnType::UInt1 => "integer",
-            ColumnType::Virtual => "Json",
-            ColumnType::BlockId => "varchar(64)",
         }
     }
 }
@@ -410,6 +317,7 @@ impl SqlFragment for Column {
         format!(
             "{} {} {} {}",
             self.name,
+            // Will only panic if given an array type
             self.sql_type(),
             null_frag,
             unique_frag
@@ -462,7 +370,7 @@ pub struct TypeId {
 
 impl TypeId {
     /// Create a new `TypeId` from a given `TypeDefinition`.
-    pub fn from_typdef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
+    pub fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         let type_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
         Self {
             id: type_id,
@@ -797,14 +705,14 @@ impl Table {
     }
 
     /// Create a new `Table` from a given `TypeDefinition`.
-    pub fn from_typdef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
+    pub fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         let ty_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
         match &typ.kind {
             TypeKind::Object(o) => {
                 let persistence = if parsed.is_virtual_typedef(&typ.name.to_string()) {
                     Persistence::Virtual
                 } else {
-                    Persistence::Regular
+                    Persistence::Scalar
                 };
 
                 let mut columns = o
@@ -826,6 +734,12 @@ impl Table {
                     .fields
                     .iter()
                     .filter_map(|f| {
+
+                        // Can't create constraints on array fields.
+                        if is_list_type(&f.node) {
+                            return None;
+                        }
+
                         let has_unique = f
                             .node
                             .directives
@@ -843,7 +757,7 @@ impl Table {
                             }));
                         }
 
-                        let field_typ = f.node.ty.node.to_string().replace('!', "");
+                        let field_typ = f.node.ty.node.to_string().replace(['[', ']', '!'], "");
                         if parsed.is_possible_foreign_key(&field_typ) {
                             let (ref_coltype, ref_colname, ref_tablename) =
                                 extract_foreign_key_info(
@@ -944,9 +858,9 @@ impl Table {
                     directives: vec![],
                 };
 
-                Self::from_typdef(&typdef, parsed)
+                Self::from_typedef(&typdef, parsed)
             }
-            _ => unreachable!("An EnumType TypeDefinition should not have been passed to Table::from_typdef."),
+            _ => unimplemented!("An EnumType TypeDefinition should not have been passed to Table::from_typedef."),
         }
     }
 }
@@ -955,7 +869,7 @@ impl SqlFragment for Table {
     /// Return the SQL create statement for a `Table`.
     fn create(&self) -> String {
         match self.persistence {
-            Persistence::Regular => {
+            Persistence::Scalar => {
                 let mut s = format!(
                     "CREATE TABLE {}_{}.{} (\n",
                     self.namespace, self.identifier, self.name
@@ -1064,7 +978,7 @@ type Person {
         )
         .unwrap();
 
-        let table = Table::from_typdef(&typdef, &schema);
+        let table = Table::from_typedef(&typdef, &schema);
         assert_eq!(table.columns().len(), 4);
         assert_eq!(table.constraints().len(), 1);
     }
@@ -1114,7 +1028,7 @@ type Person {
 
         let type_id = type_id(&schema.fully_qualified_namespace(), "Person");
         let column =
-            Column::from_field_def(&field_def, &schema, type_id, 0, Persistence::Regular);
+            Column::from_field_def(&field_def, &schema, type_id, 0, Persistence::Scalar);
         assert_eq!(column.graphql_type, "Charfield".to_string());
         assert_eq!(column.coltype, ColumnType::Charfield);
         assert!(column.unique);

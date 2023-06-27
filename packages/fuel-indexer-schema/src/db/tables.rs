@@ -108,7 +108,7 @@ impl IndexerSchema {
             .parsed
             .type_defs()
             .iter()
-            .map(|(_, t)| TypeId::from_typdef(t, &self.parsed))
+            .map(|(_, t)| TypeId::from_typedef(t, &self.parsed))
             .unique_by(|t| t.id)
             .collect::<Vec<TypeId>>();
 
@@ -118,7 +118,7 @@ impl IndexerSchema {
             .parsed
             .non_enum_typdefs()
             .iter()
-            .map(|(_, t)| Table::from_typdef(t, &self.parsed))
+            .map(|(_, t)| Table::from_typedef(t, &self.parsed))
             .collect::<Vec<Table>>();
 
         let columns = tables
@@ -188,7 +188,7 @@ impl IndexerSchema {
         let tables = parsed
             .non_enum_typdefs()
             .iter()
-            .map(|(_, t)| Table::from_typdef(t, &parsed))
+            .map(|(_, t)| Table::from_typedef(t, &parsed))
             .collect::<Vec<Table>>();
 
         let mut schema = IndexerSchema {

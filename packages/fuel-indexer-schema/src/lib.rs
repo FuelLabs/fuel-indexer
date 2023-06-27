@@ -2,6 +2,7 @@
 
 extern crate alloc;
 
+use fuel_indexer_types::db::ColumnType;
 use fuel_indexer_types::prelude::fuel::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -12,6 +13,7 @@ pub const QUERY_ROOT: &str = "QueryRoot";
 pub mod db;
 
 const NULL_VALUE: &str = "NULL";
+const MAX_BYTE_LENGTH: usize = 10485760;
 
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
 
@@ -70,16 +72,22 @@ pub enum FtColumn {
     UInt8(Option<UInt8>),
     Virtual(Option<Virtual>),
     BlockId(Option<BlockId>),
+    Array(Option<Vec<FtColumn>>),
+    // ListFK(Option<Vec<FtColumn>>),
 }
 
 impl FtColumn {
+    /// Return query fragments for `INSERT` and `SELECT` statements.
+    ///
+    /// Since `FtColumn` column is used when compiling indexers we can panic here. Anything that panics,
+    /// will panic when compiling indexers, so will be caught before runtime.
     pub fn query_fragment(&self) -> String {
         match self {
             FtColumn::ID(value) => {
                 if let Some(val) = value {
                     format!("{val}")
                 } else {
-                    panic!("Schema fields of type ID cannot be nullable")
+                    panic!("Schema fields of type `ID` cannot be nullable.")
                 }
             }
             FtColumn::Address(value) => match value {
@@ -214,6 +222,71 @@ impl FtColumn {
                 Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
+            FtColumn::Array(arr) => match arr {
+                Some(arr) => {
+                    // Using first item of list to determine column type
+                    let discriminant = std::mem::discriminant(&arr[0]);
+                    let type_id = i64::from(ColumnType::from(arr[0].clone()));
+                    let type_id_bytes = hex::encode(type_id.to_le_bytes());
+                    let result = arr
+                            .iter()
+                            .map(|e| {
+                                if std::mem::discriminant(e) != discriminant {
+                                    panic!(
+                                        "Array elements are not of the same column type. Expected {discriminant:#?} - Actual: {:#?}",
+                                        std::mem::discriminant(e)
+                                    )
+                                } else {
+                                    e.to_owned().query_fragment()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(",");
+                    format!("{{'{}'}}", result)
+                }
+                None => String::from(NULL_VALUE),
+            },
+        }
+    }
+}
+
+impl From<FtColumn> for ColumnType {
+    fn from(col: FtColumn) -> Self {
+        match col {
+            FtColumn::ID(_) => ColumnType::ID,
+            FtColumn::Address(_) => ColumnType::Address,
+            FtColumn::AssetId(_) => ColumnType::AssetId,
+            FtColumn::Blob(_) => ColumnType::Blob,
+            FtColumn::BlockHeight(_) => ColumnType::BlockHeight,
+            FtColumn::Boolean(_) => ColumnType::Boolean,
+            FtColumn::Bytes32(_) => ColumnType::Bytes32,
+            FtColumn::Bytes4(_) => ColumnType::Bytes4,
+            FtColumn::Bytes64(_) => ColumnType::Bytes64,
+            FtColumn::Bytes8(_) => ColumnType::Bytes8,
+            FtColumn::Charfield(_) => ColumnType::Charfield,
+            FtColumn::ContractId(_) => ColumnType::ContractId,
+            FtColumn::Enum(_) => ColumnType::Enum,
+            FtColumn::HexString(_) => ColumnType::HexString,
+            FtColumn::Identity(_) => ColumnType::Identity,
+            FtColumn::Int1(_) => ColumnType::Int1,
+            FtColumn::Int16(_) => ColumnType::Int16,
+            FtColumn::Int4(_) => ColumnType::Int4,
+            FtColumn::Int8(_) => ColumnType::Int8,
+            FtColumn::Json(_) => ColumnType::Json,
+            FtColumn::MessageId(_) => ColumnType::MessageId,
+            FtColumn::Nonce(_) => ColumnType::Nonce,
+            FtColumn::Salt(_) => ColumnType::Salt,
+            FtColumn::Signature(_) => ColumnType::Signature,
+            FtColumn::Tai64Timestamp(_) => ColumnType::Tai64Timestamp,
+            FtColumn::Timestamp(_) => ColumnType::Timestamp,
+            FtColumn::TxId(_) => ColumnType::TxId,
+            FtColumn::UInt1(_) => ColumnType::UInt1,
+            FtColumn::UInt16(_) => ColumnType::UInt16,
+            FtColumn::UInt4(_) => ColumnType::UInt4,
+            FtColumn::UInt8(_) => ColumnType::UInt8,
+            FtColumn::Virtual(_) => ColumnType::Virtual,
+            FtColumn::BlockId(_) => ColumnType::BlockId,
+            FtColumn::Array(_) => ColumnType::Array,
         }
     }
 }
@@ -319,7 +392,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Schema fields of type ID cannot be nullable")]
+    #[should_panic(expected = "Schema fields of type `ID` cannot be nullable.")]
     fn test_panic_on_none_id_fragment() {
         use super::*;
 

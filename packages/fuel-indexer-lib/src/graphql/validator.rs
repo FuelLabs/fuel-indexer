@@ -1,5 +1,5 @@
 use crate::graphql::constants::*;
-use async_graphql_parser::types::{TypeDefinition, TypeKind};
+use async_graphql_parser::types::{FieldDefinition, TypeDefinition, TypeKind};
 use std::collections::HashSet;
 
 /// General container used to store a set of GraphQL schema validation functions.
@@ -9,14 +9,14 @@ impl GraphQLSchemaValidator {
     /// Check that the given name is not a reserved object name.
     pub fn check_disallowed_graphql_typedef_name(name: &str) {
         if DISALLOWED_OBJECT_NAMES.contains(name) {
-            panic!("Object name '{name}' is reserved.",);
+            panic!("Object name '{name}' is reserved.");
         }
     }
 
     /// Check the given `TypeDefinition` name is not a disallowed Sway ABI name.
     pub fn check_disallowed_abi_typedef_name(name: &str) {
         if FUEL_PRIMITIVES.contains(name) {
-            panic!("Object name '{name}' is reserved.",);
+            panic!("Object name '{name}' is reserved.");
         }
     }
 
@@ -75,5 +75,10 @@ impl GraphQLSchemaValidator {
         if fields.contains(field_name) {
             panic!("Derived type from Union({union_name}) contains Field({field_name}) which does not have a consistent type across all members.");
         }
+    }
+
+    /// Ensure a `FieldDefinition` is not a reference to a nested list.
+    pub fn ensure_fielddef_is_not_nested_list(_f: &FieldDefinition) {
+        unimplemented!()
     }
 }

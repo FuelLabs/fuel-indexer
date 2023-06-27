@@ -741,6 +741,20 @@ pub mod test_web {
         HttpResponse::Ok()
     }
 
+    async fn fuel_indexer_test_trigger_list(
+        state: web::Data<Arc<AppState>>,
+    ) -> impl Responder {
+        let _ = state
+            .contract
+            .methods()
+            .trigger_ping()
+            .tx_params(tx_params())
+            .call()
+            .await;
+
+        HttpResponse::Ok()
+    }
+
     pub struct AppState {
         pub contract: FuelIndexerTest<WalletUnlocked>,
     }
@@ -807,6 +821,7 @@ pub mod test_web {
                 web::post().to(fuel_indexer_test_trigger_enum_error),
             )
             .route("/enum", web::post().to(fuel_indexer_test_trigger_enum))
+            .route("/route", web::post().to(fuel_indexer_test_trigger_list))
     }
 
     pub async fn server() -> Result<(), Box<dyn std::error::Error>> {
