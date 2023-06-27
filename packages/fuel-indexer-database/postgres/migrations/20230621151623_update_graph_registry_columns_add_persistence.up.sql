@@ -1,1 +1,1 @@
-ALTER TABLE graph_registry_columns ADD COLUMN persistence varchar(255) NOT NULL DEFAULT 'Regular';
+ALTER TABLE graph_registry_columns ADD COLUMN persistence varchar(255) NOT NULL DEFAULT 'Virtual';

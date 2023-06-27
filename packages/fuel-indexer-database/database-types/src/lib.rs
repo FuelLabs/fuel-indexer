@@ -290,6 +290,13 @@ pub struct Column {
     pub nullable: bool,
 }
 
+impl SqlNamed for Column {
+    /// Return the SQL name of the column.
+    fn sql_name(&self) -> String {
+        self.name.to_string()
+    }
+}
+
 impl Column {
     /// Create a new `Column` from a given `FieldDefinition`.
     pub fn from_field_def(
@@ -470,7 +477,7 @@ impl TypeId {
     }
 }
 
-/// I don't actually know wtf this is for
+/// `ColumnInfo` is a derived version of `Column` that is only for `queries::columns_get_schema`.
 #[derive(Debug)]
 pub struct ColumnInfo {
     pub type_id: i64,
@@ -632,8 +639,10 @@ pub enum OnDelete {
     #[default]
     #[strum(serialize = "NO ACTION")]
     NoAction,
+
     #[strum(serialize = "CASCADE")]
     Cascade,
+
     #[strum(serialize = "SET NULL")]
     SetNull,
 }
@@ -771,6 +780,13 @@ pub struct Table {
 
     /// How this typedef is persisted to the database.
     persistence: Persistence,
+}
+
+impl SqlNamed for Table {
+    /// Return the SQL name of the table.
+    fn sql_name(&self) -> String {
+        self.name.to_string()
+    }
 }
 
 impl Table {
@@ -932,7 +948,7 @@ impl Table {
 
                 Self::from_typdef(&typdef, parsed)
             }
-            _ => Self::default(),
+            _ => unreachable!("An EnumType TypeDefinition should not have been passed to Table::from_typdef."),
         }
     }
 }

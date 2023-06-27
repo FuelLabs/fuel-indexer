@@ -97,8 +97,8 @@ impl IndexerSchema {
         match self.db_type {
             DbType::Postgres => {
                 let create = format!(
-                    "CREATE SCHEMA IF NOT EXISTS {}_{};",
-                    self.namespace, self.identifier
+                    "CREATE SCHEMA IF NOT EXISTS {};",
+                    self.parsed.fully_qualified_namespace(),
                 );
                 statements.push(create);
             }
