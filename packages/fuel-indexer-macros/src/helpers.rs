@@ -1,11 +1,19 @@
 use std::collections::HashSet;
 
 use crate::constants::*;
+<<<<<<< HEAD
 use async_graphql_parser::types::{BaseType, FieldDefinition, Type, TypeDefinition};
 use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
 use fuel_indexer_lib::graphql::{
     extract_foreign_key_info, field_id, types::IdCol, ParsedGraphQLSchema,
+=======
+use async_graphql_parser::types::{BaseType, FieldDefinition, Type};
+use async_graphql_value::Name;
+use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
+use fuel_indexer_lib::graphql::{
+    extract_foreign_key_info, types::IdCol, ParsedGraphQLSchema,
+>>>>>>> 7519a222 (enhancement: list types)
 };
 use fuels_code_gen::utils::Source;
 use proc_macro2::TokenStream;
