@@ -185,9 +185,15 @@ impl From<ClientInput> for Input {
                 ..
             } => Input::Coin(InputCoin {
                 utxo_id,
-                owner,
+                owner: Address::from(
+                    <[u8; 32]>::try_from(owner)
+                        .expect("Could not convert owner address to bytes"),
+                ),
                 amount,
-                asset_id,
+                asset_id: AssetId::from(
+                    <[u8; 32]>::try_from(asset_id)
+                        .expect("Could not convert asset ID to bytes"),
+                ),
                 tx_pointer: tx_pointer.into(),
                 witness_index,
                 maturity,
@@ -206,9 +212,15 @@ impl From<ClientInput> for Input {
                 ..
             } => Input::Coin(InputCoin {
                 utxo_id,
-                owner,
+                owner: Address::from(
+                    <[u8; 32]>::try_from(owner)
+                        .expect("Could not convert owner address to bytes"),
+                ),
                 amount,
-                asset_id,
+                asset_id: AssetId::from(
+                    <[u8; 32]>::try_from(asset_id)
+                        .expect("Could not convert asset ID to bytes"),
+                ),
                 tx_pointer: tx_pointer.into(),
                 witness_index: 0,
                 maturity,
@@ -223,10 +235,19 @@ impl From<ClientInput> for Input {
                 contract_id,
             } => Input::Contract(InputContract {
                 utxo_id,
-                balance_root,
-                state_root,
+                balance_root: Bytes32::from(
+                    <[u8; 32]>::try_from(balance_root)
+                        .expect("Could not convert balance root to bytes"),
+                ),
+                state_root: Bytes32::from(
+                    <[u8; 32]>::try_from(state_root)
+                        .expect("Could not convert state root to bytes"),
+                ),
                 tx_pointer: tx_pointer.into(),
-                contract_id,
+                contract_id: ContractId::from(
+                    <[u8; 32]>::try_from(contract_id)
+                        .expect("Could not convert contract ID to bytes"),
+                ),
             }),
             // ClientInput::MessageSigned {
             //     amount,
@@ -256,8 +277,14 @@ impl From<ClientInput> for Input {
             } => Input::Message(InputMessage {
                 amount,
                 nonce: nonce.into(),
-                recipient,
-                sender,
+                recipient: Address::from(
+                    <[u8; 32]>::try_from(recipient)
+                        .expect("Could not convert recipient to bytes"),
+                ),
+                sender: Address::from(
+                    <[u8; 32]>::try_from(sender)
+                        .expect("Could not convert sender to bytes"),
+                ),
                 witness_index,
                 data: data.into(),
                 predicate: "".into(),
@@ -291,8 +318,14 @@ impl From<ClientInput> for Input {
                 data,
                 ..
             } => Input::Message(InputMessage {
-                sender,
-                recipient,
+                sender: Address::from(
+                    <[u8; 32]>::try_from(sender)
+                        .expect("Could not convert sender to bytes"),
+                ),
+                recipient: Address::from(
+                    <[u8; 32]>::try_from(recipient)
+                        .expect("Could not convert recipient to bytes"),
+                ),
                 amount,
                 nonce: nonce.into(),
                 witness_index: 0,
@@ -398,9 +431,14 @@ impl From<ClientOutput> for Output {
                 amount,
                 asset_id,
             } => Output::CoinOutput(CoinOutput {
-                to,
+                to: Address::from(
+                    <[u8; 32]>::try_from(to).expect("Could not convert 'to' to bytes"),
+                ),
                 amount,
-                asset_id,
+                asset_id: AssetId::from(
+                    <[u8; 32]>::try_from(asset_id)
+                        .expect("Could not convert asset ID to bytes"),
+                ),
             }),
             ClientOutput::Contract {
                 input_index,
@@ -408,36 +446,64 @@ impl From<ClientOutput> for Output {
                 state_root,
             } => Output::ContractOutput(ContractOutput {
                 input_index: input_index.into(),
-                balance_root,
-                state_root,
+                balance_root: Bytes32::from(
+                    <[u8; 32]>::try_from(balance_root)
+                        .expect("Could not convert balance root to bytes"),
+                ),
+                state_root: Bytes32::from(
+                    <[u8; 32]>::try_from(state_root)
+                        .expect("Could not convert state root to bytes"),
+                ),
             }),
             ClientOutput::Change {
                 to,
                 amount,
                 asset_id,
             } => Output::ChangeOutput(ChangeOutput {
-                to,
+                to: Address::from(
+                    <[u8; 32]>::try_from(to).expect("Could not convert 'to' to bytes"),
+                ),
                 amount,
-                asset_id,
+                asset_id: AssetId::from(
+                    <[u8; 32]>::try_from(asset_id)
+                        .expect("Could not convert asset ID to bytes"),
+                ),
             }),
             ClientOutput::Variable {
                 to,
                 amount,
                 asset_id,
             } => Output::VariableOutput(VariableOutput {
-                to,
+                to: Address::from(
+                    <[u8; 32]>::try_from(to).expect("Could not convert 'to' to bytes"),
+                ),
                 amount,
-                asset_id,
+                asset_id: AssetId::from(
+                    <[u8; 32]>::try_from(asset_id)
+                        .expect("Could not convert asset ID to bytes"),
+                ),
             }),
             ClientOutput::ContractCreated {
                 contract_id,
                 state_root,
             } => Output::ContractCreated(ContractCreated {
-                contract_id,
-                state_root,
+                contract_id: ContractId::from(
+                    <[u8; 32]>::try_from(contract_id)
+                        .expect("Could not convert contract ID to bytes"),
+                ),
+                state_root: Bytes32::from(
+                    <[u8; 32]>::try_from(state_root)
+                        .expect("Could not convert state root to bytes"),
+                ),
             }),
             ClientOutput::Message { recipient, amount } => {
-                Output::Message(MessageOutput { amount, recipient })
+                Output::Message(MessageOutput {
+                    amount,
+                    recipient: Address::from(
+                        <[u8; 32]>::try_from(recipient)
+                            .expect("Could not convert recipient to bytes"),
+                    ),
+                })
             }
         }
     }

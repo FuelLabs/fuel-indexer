@@ -1,5 +1,5 @@
 use bytes::Bytes;
-pub use fuel_tx::{
+pub use fuel_types::{
     Address, AssetId, Bytes32, Bytes4, Bytes64, Bytes8, ContractId, MessageId, Salt, Word,
 };
 pub use fuel_types::{BlockHeight, Nonce};

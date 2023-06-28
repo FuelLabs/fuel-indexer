@@ -155,9 +155,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     }
                 }
 
-                let producer = block.block_producer().map(|pk| {
-                    fuel_tx::Bytes32::from(<[u8; 32]>::try_from(pk.hash()).unwrap())
-                });
+                let producer = block
+                    .block_producer()
+                    .map(|pk| Bytes32::from(<[u8; 32]>::try_from(pk.hash()).unwrap()));
 
                 let mut transactions = Vec::new();
 
@@ -263,8 +263,12 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 .storage_slots()
                                 .iter()
                                 .map(|x| StorageSlot {
-                                    key: *x.key(),
-                                    value: *x.value(),
+                                    key: <[u8; 32]>::try_from(*x.key())
+                                        .expect("Could not convert key to bytes")
+                                        .into(),
+                                    value: <[u8; 32]>::try_from(*x.value())
+                                        .expect("Could not convert key to bytes")
+                                        .into(),
                                 })
                                 .collect(),
                             inputs: tx
@@ -278,7 +282,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 .map(|o| o.to_owned().into())
                                 .collect(),
                             witnesses: tx.witnesses().to_vec(),
-                            salt: *tx.salt(),
+                            salt: <[u8; 32]>::try_from(*tx.salt())
+                                .expect("Could not convert key to bytes")
+                                .into(),
                             metadata: None,
                         }),
                         _ => Transaction::default(),
@@ -337,7 +343,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 let block = BlockData {
                     height: block.header.height.clone().into(),
                     id: Bytes32::from(<[u8; 32]>::try_from(block.id.0 .0).unwrap()),
-                    producer,
+                    producer: producer.into(),
                     time: block.header.time.0.to_unix(),
                     consensus,
                     header: Header {
