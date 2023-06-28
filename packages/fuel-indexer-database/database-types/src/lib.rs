@@ -229,8 +229,7 @@ pub struct RootColumn {
     pub graphql_type: String,
 }
 
-/// Whether a given column is virtual or regular. Virtual columns are not
-/// persisted to the database.
+/// How the column is persisted to the DB.
 #[derive(
     Copy, Clone, Debug, Eq, PartialEq, Default, AsRefStr, strum::Display, EnumString,
 )]
@@ -320,7 +319,7 @@ impl Column {
                     let fk_field_typ = parsed
                         .field_type_mappings()
                         .get(&fk_fid)
-                        .unwrap()
+                        .expect("Failed to find field in ParsedGraphQLSchema field type mappings.")
                         .to_string();
                     fk_field_typ
                 })
@@ -355,14 +354,13 @@ impl Column {
     }
 
     /// Derive the respective PostgreSQL field type for a given `Columns`
-    ///
-    /// Here we're essentially matching `ColumnType`s to PostgreSQL field
-    /// types. Note that we're using `numeric` field types for integer-like
-    /// fields due to the ability to specify custom scale and precision. Some
-    /// crates don't play well with unsigned integers (e.g., `sqlx`), so we
-    /// just define these types as `numeric`, then convert them into their base
-    /// types (e.g., u64) using `BigDecimal`.
     fn sql_type(&self) -> &str {
+        // Here we're essentially matching `ColumnType`s to PostgreSQL field
+        // types. Note that we're using `numeric` field types for integer-like
+        // fields due to the ability to specify custom scale and precision. Some
+        // crates don't play well with unsigned integers (e.g., `sqlx`), so we
+        // just define these types as `numeric`, then convert them into their base
+        // types (e.g., u64) using `BigDecimal`.
         match self.coltype {
             ColumnType::ID => "numeric(20, 0) primary key",
             ColumnType::Address => "varchar(64)",
@@ -919,7 +917,7 @@ impl Table {
                         let f = &parsed
                             .field_defs()
                             .get(&fid)
-                            .expect("FielDefinition not found in parsed schema.");
+                            .expect("FieldDefinition not found in parsed schema.");
                         // All fields in a derived union type are nullable, except for
                         // the `ID` field.
                         let mut f = f.0.clone();

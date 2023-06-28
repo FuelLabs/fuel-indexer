@@ -56,7 +56,7 @@ impl GraphQLSchemaValidator {
                 if has_virtual_member {
                     virtual_type_names.insert(union_name.clone());
 
-                    // All members of a union must all be regualar or virtual
+                    // All members of a union must all be regular or virtual
                     if virtual_member_count != member_count {
                         panic!("Union({union_name})'s members are not all virtual");
                     }

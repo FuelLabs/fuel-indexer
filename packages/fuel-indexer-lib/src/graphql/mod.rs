@@ -86,18 +86,18 @@ impl GraphQLSchema {
     }
 }
 
-impl ToString for GraphQLSchema {
-    fn to_string(&self) -> String {
-        self.schema.clone()
+impl std::fmt::Display for GraphQLSchema {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.schema)
     }
 }
 
 /// Given a `FieldDefinition` that is a possible foreign key (according to `ParsedGraphQLSchema`),
 /// return the column type, column name, and table name of the foreign key.
-///
-/// We pass `ParsedGraphQLSchema::field_type_mappings` here instead of the full `ParsedGraphQLSchema`
-/// because when using `extract_foreign_key_info` in `ParsedGraphQLSchema` we don't have access to the
-/// fully parsed `ParsedGraphQLSchema` yet.
+
+// We pass `ParsedGraphQLSchema::field_type_mappings` here instead of the full `ParsedGraphQLSchema`
+// because when using `extract_foreign_key_info` in `ParsedGraphQLSchema` we don't have access to the
+// fully parsed `ParsedGraphQLSchema` yet.
 pub fn extract_foreign_key_info(
     f: &FieldDefinition,
     field_type_mappings: &HashMap<String, String>,

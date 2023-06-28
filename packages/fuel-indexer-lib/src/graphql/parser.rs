@@ -70,10 +70,10 @@ pub fn build_schema_types_set(
 
 /// A wrapper object used to encapsulate a lot of the boilerplate logic related
 /// to parsing schema, creating mappings of types, fields, objects, etc.
-///
-/// Ideally `ParsedGraphQLSchema` prevents from having to manually parse `async_graphql_parser`
-/// `TypeDefinition`s in order to get metadata on the types (e.g., Is a foreign key? is a virtual type?
-/// and so on).
+//
+// Ideally `ParsedGraphQLSchema` prevents from having to manually parse `async_graphql_parser`
+// `TypeDefinition`s in order to get metadata on the types (e.g., Is a foreign key? is a virtual type?
+// and so on).
 #[derive(Debug, Clone)]
 pub struct ParsedGraphQLSchema {
     /// Namespace of the indexer.
@@ -113,15 +113,15 @@ pub struct ParsedGraphQLSchema {
     /// All unique names of scalar types in the schema.
     scalar_names: HashSet<String>,
 
-    // A mapping of fully qualified field names to their respective optionalities.
+    /// A mapping of fully qualified field names to their respective optionalities.
     field_type_optionality: HashMap<String, bool>,
 
     /// The parsed schema.
     ast: ServiceDocument,
 
     /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
-    ///
-    /// We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
+    //
+    // We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
     field_defs: HashMap<String, (FieldDefinition, String)>,
 
     /// GraphQL schema content.
@@ -130,7 +130,7 @@ pub struct ParsedGraphQLSchema {
     /// All unique names of foreign key types in the schema.
     foreign_key_mappings: HashMap<String, HashMap<String, (String, String)>>,
 
-    // All type definitions in the schema.
+    /// All type definitions in the schema.
     type_defs: HashMap<String, TypeDefinition>,
 }
 
