@@ -3,6 +3,7 @@
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
 use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
+use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
 
@@ -79,7 +80,7 @@ pub async fn execute_query(
 pub async fn root_columns_list_by_id(
     conn: &mut PoolConnection<Postgres>,
     root_id: i64,
-) -> sqlx::Result<Vec<RootColumns>> {
+) -> sqlx::Result<Vec<RootColumn>> {
     Ok(
         sqlx::query("SELECT * FROM graph_registry_root_columns WHERE root_id = $1")
             .bind(root_id)
@@ -91,21 +92,21 @@ pub async fn root_columns_list_by_id(
                 let root_id: i64 = row.get(1);
                 let column_name: String = row.get(2);
                 let graphql_type: String = row.get(3);
-                RootColumns {
+                RootColumn {
                     id,
                     root_id,
                     column_name,
                     graphql_type,
                 }
             })
-            .collect::<Vec<RootColumns>>(),
+            .collect::<Vec<RootColumn>>(),
     )
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_root_columns(
     conn: &mut PoolConnection<Postgres>,
-    cols: Vec<NewRootColumns>,
+    cols: Vec<RootColumn>,
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new(
         "INSERT INTO graph_registry_root_columns (root_id, column_name, graphql_type)",
@@ -119,13 +120,14 @@ pub async fn new_root_columns(
 
     let query = builder.build();
     let result = query.execute(conn).await?;
+
     Ok(result.rows_affected() as usize)
 }
 
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_graph_root(
     conn: &mut PoolConnection<Postgres>,
-    root: NewGraphRoot,
+    root: GraphRoot,
 ) -> sqlx::Result<usize> {
     let mut builder = sqlx::QueryBuilder::new(
         "INSERT INTO graph_registry_graph_root (version, schema_name, schema_identifier, schema)",
@@ -194,23 +196,19 @@ pub async fn type_id_list_by_name(
     .into_iter()
     .map(|row| {
         let id: i64 = row.get(0);
-        let schema_version: String = row.get(1);
-        let schema_name: String = row.get(2);
+        let version: String = row.get(1);
+        let namespace: String = row.get(2);
         let graphql_name: String = row.get(3);
         let table_name: String = row.get(4);
-        let _schema_identifier: String = row.get(5);
-        let cols: Vec<u8> = row.get(6);
-        let virtual_columns: Vec<VirtualColumn> =
-            bincode::deserialize(&cols).expect("Bad virtual cols.");
+        let identifier: String = row.get(5);
 
         TypeId {
             id,
-            schema_version,
-            schema_name,
+            version,
+            namespace,
             table_name,
             graphql_name,
-            schema_identifier: identifier.to_string(),
-            virtual_columns,
+            identifier,
         }
     })
     .collect::<Vec<TypeId>>())
@@ -243,18 +241,15 @@ pub async fn type_id_insert(
     conn: &mut PoolConnection<Postgres>,
     type_ids: Vec<TypeId>,
 ) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name, virtual_columns)");
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_type_ids (id, schema_version, schema_name, schema_identifier, graphql_name, table_name)");
 
     builder.push_values(type_ids.into_iter(), |mut b, tid| {
-        let virtual_cols =
-            bincode::serialize(&tid.virtual_columns).expect("Bad virtual cols.");
         b.push_bind(tid.id)
-            .push_bind(tid.schema_version)
-            .push_bind(tid.schema_name)
-            .push_bind(tid.schema_identifier)
+            .push_bind(tid.version)
+            .push_bind(tid.namespace)
+            .push_bind(tid.identifier)
             .push_bind(tid.graphql_name)
-            .push_bind(tid.table_name)
-            .push_bind(virtual_cols);
+            .push_bind(tid.table_name);
     });
 
     let query = builder.build();
@@ -289,17 +284,19 @@ pub async fn schema_exists(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn new_column_insert(
     conn: &mut PoolConnection<Postgres>,
-    cols: Vec<NewColumn>,
+    cols: Vec<Column>,
 ) -> sqlx::Result<usize> {
-    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type)");
+    let mut builder = sqlx::QueryBuilder::new("INSERT INTO graph_registry_columns (type_id, column_position, column_name, column_type, nullable, graphql_type, is_unique, persistence)");
 
     builder.push_values(cols.into_iter(), |mut b, new_col| {
         b.push_bind(new_col.type_id)
-            .push_bind(new_col.column_position)
-            .push_bind(new_col.column_name)
-            .push_bind(new_col.column_type)
+            .push_bind(new_col.position)
+            .push_bind(new_col.name)
+            .push_bind(new_col.coltype.to_string())
             .push_bind(new_col.nullable)
-            .push_bind(new_col.graphql_type);
+            .push_bind(new_col.graphql_type)
+            .push_bind(new_col.unique)
+            .push_bind(new_col.persistence.to_string());
     });
 
     let query = builder.build();
@@ -313,7 +310,7 @@ pub async fn new_column_insert(
 pub async fn list_column_by_id(
     conn: &mut PoolConnection<Postgres>,
     col_id: i64,
-) -> sqlx::Result<Vec<Columns>> {
+) -> sqlx::Result<Vec<Column>> {
     Ok(
         sqlx::query("SELECT * FROM graph_registry_columns WHERE type_id = $1")
             .bind(col_id)
@@ -323,23 +320,28 @@ pub async fn list_column_by_id(
             .map(|row| {
                 let id: i64 = row.get(0);
                 let type_id: i64 = row.get(1);
-                let column_position: i32 = row.get(2);
-                let column_name: String = row.get(3);
-                let column_type: String = row.get(4);
+                let position: i32 = row.get(2);
+                let name: String = row.get(3);
+                let coltype: String = row.get(4);
                 let nullable: bool = row.get(5);
                 let graphql_type: String = row.get(6);
+                let unique: bool = row.get(7);
+                let persistence: String = row.get(8);
 
-                Columns {
+                Column {
                     id,
                     type_id,
-                    column_position,
-                    column_name,
-                    column_type,
+                    position,
+                    name,
+                    coltype: ColumnType::from(coltype.as_str()),
                     nullable,
                     graphql_type,
+                    unique,
+                    persistence: Persistence::from_str(persistence.as_str())
+                        .expect("Bad persistence."),
                 }
             })
-            .collect::<Vec<Columns>>(),
+            .collect::<Vec<Column>>(),
     )
 }
 
@@ -497,7 +499,7 @@ pub async fn all_registered_indexers(
 pub async fn indexer_asset_version(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
-    asset_type: &IndexAssetType,
+    asset_type: &IndexerAssetType,
 ) -> sqlx::Result<i64> {
     match sqlx::query(&format!(
         "SELECT COUNT(*)
@@ -520,9 +522,9 @@ pub async fn register_indexer_asset(
     namespace: &str,
     identifier: &str,
     bytes: Vec<u8>,
-    asset_type: IndexAssetType,
+    asset_type: IndexerAssetType,
     pubkey: Option<&str>,
-) -> sqlx::Result<IndexAsset> {
+) -> sqlx::Result<IndexerAsset> {
     let index = match get_indexer(conn, namespace, identifier).await? {
         Some(index) => index,
         None => {
@@ -572,7 +574,7 @@ pub async fn register_indexer_asset(
     let digest = row.get(3);
     let bytes = row.get(4);
 
-    Ok(IndexAsset {
+    Ok(IndexerAsset {
         id,
         index_id,
         version,
@@ -585,8 +587,8 @@ pub async fn register_indexer_asset(
 pub async fn latest_asset_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
-    asset_type: IndexAssetType,
-) -> sqlx::Result<IndexAsset> {
+    asset_type: IndexerAssetType,
+) -> sqlx::Result<IndexerAsset> {
     let query = format!(
         "SELECT * FROM index_asset_registry_{} WHERE index_id = {} ORDER BY id DESC LIMIT 1",
         asset_type.as_ref(),
@@ -601,7 +603,7 @@ pub async fn latest_asset_for_indexer(
     let digest = row.get(3);
     let bytes = row.get(4);
 
-    Ok(IndexAsset {
+    Ok(IndexerAsset {
         id,
         index_id,
         version,
@@ -613,14 +615,15 @@ pub async fn latest_asset_for_indexer(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn latest_assets_for_indexer(
     conn: &mut PoolConnection<Postgres>,
-    index_id: &i64,
-) -> sqlx::Result<IndexAssetBundle> {
-    let wasm = latest_asset_for_indexer(conn, index_id, IndexAssetType::Wasm).await?;
-    let schema = latest_asset_for_indexer(conn, index_id, IndexAssetType::Schema).await?;
+    indexer_id: &i64,
+) -> sqlx::Result<IndexerAssetBundle> {
+    let wasm = latest_asset_for_indexer(conn, indexer_id, IndexerAssetType::Wasm).await?;
+    let schema =
+        latest_asset_for_indexer(conn, indexer_id, IndexerAssetType::Schema).await?;
     let manifest =
-        latest_asset_for_indexer(conn, index_id, IndexAssetType::Manifest).await?;
+        latest_asset_for_indexer(conn, indexer_id, IndexerAssetType::Manifest).await?;
 
-    Ok(IndexAssetBundle {
+    Ok(IndexerAssetBundle {
         wasm,
         schema,
         manifest,
@@ -650,10 +653,10 @@ pub async fn last_block_height_for_indexer(
 #[cfg_attr(feature = "metrics", metrics)]
 pub async fn asset_already_exists(
     conn: &mut PoolConnection<Postgres>,
-    asset_type: &IndexAssetType,
+    asset_type: &IndexerAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
-) -> sqlx::Result<Option<IndexAsset>> {
+) -> sqlx::Result<Option<IndexerAsset>> {
     let digest = sha256_digest(bytes);
 
     let query = format!(
@@ -671,7 +674,7 @@ pub async fn asset_already_exists(
             let digest = row.get(3);
             let bytes = row.get(4);
 
-            Ok(Some(IndexAsset {
+            Ok(Some(IndexerAsset {
                 id,
                 index_id,
                 version,
@@ -709,8 +712,8 @@ pub async fn penultimate_asset_for_indexer(
     conn: &mut PoolConnection<Postgres>,
     namespace: &str,
     identifier: &str,
-    asset_type: IndexAssetType,
-) -> sqlx::Result<IndexAsset> {
+    asset_type: IndexerAssetType,
+) -> sqlx::Result<IndexerAsset> {
     let index_id = get_indexer_id(conn, namespace, identifier).await?;
     let query = format!(
         "SELECT * FROM index_asset_registry_{}
@@ -726,7 +729,7 @@ pub async fn penultimate_asset_for_indexer(
     let digest = row.get(3);
     let bytes = row.get(4);
 
-    Ok(IndexAsset {
+    Ok(IndexerAsset {
         id,
         index_id,
         version,
@@ -848,7 +851,7 @@ pub async fn remove_asset_by_version(
     conn: &mut PoolConnection<Postgres>,
     index_id: &i64,
     version: &i32,
-    asset_type: IndexAssetType,
+    asset_type: IndexerAssetType,
 ) -> sqlx::Result<()> {
     execute_query(
         conn,
@@ -922,22 +925,23 @@ pub async fn remove_latest_assets_for_indexer(
 ) -> sqlx::Result<()> {
     let indexer_id = get_indexer_id(conn, namespace, identifier).await?;
 
-    let wasm = latest_asset_for_indexer(conn, &indexer_id, IndexAssetType::Wasm).await?;
+    let wasm =
+        latest_asset_for_indexer(conn, &indexer_id, IndexerAssetType::Wasm).await?;
     let manifest =
-        latest_asset_for_indexer(conn, &indexer_id, IndexAssetType::Manifest).await?;
+        latest_asset_for_indexer(conn, &indexer_id, IndexerAssetType::Manifest).await?;
     let schema =
-        latest_asset_for_indexer(conn, &indexer_id, IndexAssetType::Schema).await?;
+        latest_asset_for_indexer(conn, &indexer_id, IndexerAssetType::Schema).await?;
 
-    remove_asset_by_version(conn, &indexer_id, &wasm.version, IndexAssetType::Wasm)
+    remove_asset_by_version(conn, &indexer_id, &wasm.version, IndexerAssetType::Wasm)
         .await?;
     remove_asset_by_version(
         conn,
         &indexer_id,
         &manifest.version,
-        IndexAssetType::Manifest,
+        IndexerAssetType::Manifest,
     )
     .await?;
-    remove_asset_by_version(conn, &indexer_id, &schema.version, IndexAssetType::Schema)
+    remove_asset_by_version(conn, &indexer_id, &schema.version, IndexerAssetType::Schema)
         .await?;
 
     Ok(())

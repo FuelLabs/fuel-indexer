@@ -1,12 +1,16 @@
-use super::arguments::{parse_argument_into_param, ParamType, QueryParams};
-use super::queries::{JoinCondition, QueryElement, QueryJoinNode, UserQuery};
-use async_graphql_parser::parse_query;
-use async_graphql_parser::types::{
-    DocumentOperations, ExecutableDocument, Field, FragmentDefinition, FragmentSpread,
-    OperationDefinition, OperationType, SelectionSet, TypeCondition,
+use super::{
+    arguments::{parse_argument_into_param, ParamType, QueryParams},
+    queries::{JoinCondition, QueryElement, QueryJoinNode, UserQuery},
+};
+use async_graphql_parser::{
+    parse_query,
+    types::{
+        DocumentOperations, ExecutableDocument, Field, FragmentDefinition,
+        FragmentSpread, OperationDefinition, OperationType, SelectionSet, TypeCondition,
+    },
 };
 use fuel_indexer_database_types::DbType;
-use fuel_indexer_schema::{db::tables::Schema, QUERY_ROOT};
+use fuel_indexer_schema::{db::tables::IndexerSchema, QUERY_ROOT};
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -73,7 +77,7 @@ pub struct Selections {
 
 impl Selections {
     pub fn new(
-        schema: &Schema,
+        schema: &IndexerSchema,
         field_type: &str,
         set: &SelectionSet,
     ) -> GraphqlResult<Selections> {
@@ -93,6 +97,7 @@ impl Selections {
                     } = &field.node;
 
                     let subfield_type = schema
+                        .parsed()
                         .field_type(field_type, &name.to_string())
                         .ok_or(GraphqlError::UnrecognizedField(
                             field_type.into(),
@@ -143,7 +148,7 @@ impl Selections {
 
     pub fn resolve_fragments(
         &mut self,
-        schema: &Schema,
+        schema: &IndexerSchema,
         cond: &str,
         fragments: &HashMap<String, Fragment>,
     ) -> GraphqlResult<usize> {
@@ -175,6 +180,7 @@ impl Selections {
                     alias,
                 } => {
                     let field_type = schema
+                        .parsed()
                         .field_type(cond, name)
                         .expect("Unable to retrieve field type");
                     let _ = sub_selections
@@ -208,7 +214,7 @@ pub struct Fragment {
 
 impl Fragment {
     pub fn new(
-        schema: &Schema,
+        schema: &IndexerSchema,
         cond: String,
         selection_set: &async_graphql_parser::types::SelectionSet,
     ) -> GraphqlResult<Fragment> {
@@ -228,7 +234,7 @@ impl Fragment {
     /// Return the number of fragments resolved
     pub fn resolve_fragments(
         &mut self,
-        schema: &Schema,
+        schema: &IndexerSchema,
         fragments: &HashMap<String, Fragment>,
     ) -> GraphqlResult<usize> {
         self.selections
@@ -256,7 +262,7 @@ impl Operation {
         }
     }
 
-    pub fn parse(&self, schema: &Schema) -> Vec<UserQuery> {
+    pub fn parse(&self, schema: &IndexerSchema) -> Vec<UserQuery> {
         let Operation {
             namespace,
             identifier,
@@ -357,8 +363,10 @@ impl Operation {
                             // If the current entity has a foreign key on the current
                             // selection, join the foreign table on that primary key
                             // and set the field as the innermost entity by pushing to the stack.
-                            if let Some(field_to_foreign_key) =
-                                schema.foreign_keys.get(&entity_name.to_lowercase())
+                            if let Some(field_to_foreign_key) = schema
+                                .parsed()
+                                .foreign_key_mappings()
+                                .get(&entity_name.to_lowercase())
                             {
                                 if let Some((foreign_key_table, foreign_key_col)) =
                                     field_to_foreign_key.get(&field_name.to_lowercase())
@@ -493,7 +501,7 @@ pub struct GraphqlQuery {
 }
 
 impl GraphqlQuery {
-    pub fn parse(&self, schema: &Schema) -> Vec<UserQuery> {
+    pub fn parse(&self, schema: &IndexerSchema) -> Vec<UserQuery> {
         let queries: Vec<UserQuery> = self
             .operations
             .iter()
@@ -505,7 +513,7 @@ impl GraphqlQuery {
 
     pub fn as_sql(
         &self,
-        schema: &Schema,
+        schema: &IndexerSchema,
         db_type: DbType,
     ) -> Result<Vec<String>, GraphqlError> {
         let queries = self.parse(schema);
@@ -518,13 +526,13 @@ impl GraphqlQuery {
 }
 
 pub struct GraphqlQueryBuilder<'a> {
-    schema: &'a Schema,
+    schema: &'a IndexerSchema,
     document: ExecutableDocument,
 }
 
 impl<'a> GraphqlQueryBuilder<'a> {
     pub fn new(
-        schema: &'a Schema,
+        schema: &'a IndexerSchema,
         query: &'a str,
     ) -> GraphqlResult<GraphqlQueryBuilder<'a>> {
         let document = parse_query::<&str>(query)?;
@@ -551,8 +559,8 @@ impl<'a> GraphqlQueryBuilder<'a> {
                 selections.resolve_fragments(self.schema, QUERY_ROOT, fragments)?;
 
                 Ok(Operation::new(
-                    self.schema.namespace.clone(),
-                    self.schema.identifier.clone(),
+                    self.schema.parsed().namespace().to_string(),
+                    self.schema.parsed().identifier().to_string(),
                     selections,
                 ))
             }
@@ -600,7 +608,7 @@ impl<'a> GraphqlQueryBuilder<'a> {
 
             let TypeCondition { on: cond } = &type_condition.node;
 
-            if !self.schema.check_type(&cond.to_string()) {
+            if !self.schema.parsed().has_type(&cond.to_string()) {
                 return Err(GraphqlError::UnrecognizedType(cond.to_string()));
             }
 
@@ -642,9 +650,9 @@ impl<'a> GraphqlQueryBuilder<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
 
     use super::*;
+    use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};
 
     #[test]
     fn test_operation_parse_into_user_query() {
@@ -725,45 +733,29 @@ mod tests {
             },
         };
 
-        let fields = HashMap::from([
-            (
-                "Tx".to_string(),
-                HashMap::from([
-                    ("timestamp".to_string(), "Int8!".to_string()),
-                    ("input_data".to_string(), "Json!".to_string()),
-                    ("id".to_string(), "ID!".to_string()),
-                    ("object".to_string(), "__".to_string()),
-                    ("block".to_string(), "BlockData".to_string()),
-                ]),
-            ),
-            (
-                "BlockData".to_string(),
-                HashMap::from([
-                    ("id".to_string(), "ID!".to_string()),
-                    ("height".to_string(), "UInt8!".to_string()),
-                    ("object".to_string(), "__".to_string()),
-                    ("timestamp".to_string(), "Int8!".to_string()),
-                ]),
-            ),
-        ]);
+        let schema = r#"
+type Block {
+    id: ID!
+    height: UInt8!
+    timestamp: Int8!
+}
 
-        let foreign_keys = HashMap::from([(
-            "tx".to_string(),
-            HashMap::from([(
-                "block".to_string(),
-                ("block".to_string(), "id".to_string()),
-            )]),
-        )]);
+type Tx {
+    id: ID!
+    timestamp: Int8!
+    block: Block
+    input_data: Json!
+}
+"#;
 
-        let mut schema = Schema {
-            version: "test_version".to_string(),
-            namespace: "fuel_indexer_test".to_string(),
-            identifier: "test_index".to_string(),
-            types: HashSet::from(["Tx".to_string(), "BlockData".to_string()]),
-            fields,
-            foreign_keys,
-            non_indexable_types: HashSet::new(),
-        };
+        let mut schema = IndexerSchema::new(
+            "fuel_indexer_test",
+            "test_index",
+            &GraphQLSchema::new(schema.to_string()),
+            DbType::Postgres,
+            ExecutionSource::Wasm,
+        )
+        .unwrap();
 
         schema.register_queryroot_fields();
 

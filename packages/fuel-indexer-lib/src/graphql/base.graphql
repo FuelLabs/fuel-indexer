@@ -34,11 +34,11 @@ scalar UInt4
 scalar UInt8
 
 enum IndexType {
-    Btree,
+    BTree,
     Hash,
 }
 
-directive @indexed(type: IndexType = Btree) on FIELD_DEFINITION | ENUM_VALUE
+directive @indexed(type: IndexType = BTree) on FIELD_DEFINITION | ENUM_VALUE
 
 directive @join(on: String) on OBJECT
 

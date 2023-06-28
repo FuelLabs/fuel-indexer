@@ -1,6 +1,6 @@
 use super::graphql::GraphqlError;
 use fuel_indexer_database::DbType;
-use fuel_indexer_schema::db::tables::Schema;
+use fuel_indexer_schema::db::tables::IndexerSchema;
 
 use async_graphql_value::{indexmap::IndexMap, Name, Value};
 use std::fmt;
@@ -376,7 +376,7 @@ pub fn parse_argument_into_param(
     entity_type: &String,
     arg: &str,
     value: Value,
-    schema: &Schema,
+    schema: &IndexerSchema,
 ) -> Result<ParamType, GraphqlError> {
     match arg {
         "filter" => {
@@ -399,7 +399,11 @@ pub fn parse_argument_into_param(
         "order" => {
             if let Value::Object(obj) = value {
                 if let Some((field, sort_order)) = obj.into_iter().next() {
-                    if schema.field_type(entity_type, field.as_str()).is_some() {
+                    if schema
+                        .parsed()
+                        .field_type(entity_type, field.as_str())
+                        .is_some()
+                    {
                         if let Value::Enum(sort_order) = sort_order {
                             match sort_order.as_str() {
                                 "asc" => {
@@ -467,7 +471,7 @@ pub fn parse_argument_into_param(
 fn parse_filter_object(
     obj: IndexMap<Name, Value>,
     entity_type: &String,
-    schema: &Schema,
+    schema: &IndexerSchema,
     prior_filter: &mut Option<FilterType>,
 ) -> Result<FilterType, GraphqlError> {
     let mut iter = obj.into_iter();
@@ -496,7 +500,7 @@ fn parse_arg_pred_pair(
     key: &str,
     predicate: Value,
     entity_type: &String,
-    schema: &Schema,
+    schema: &IndexerSchema,
     prior_filter: &mut Option<FilterType>,
     top_level_arg_value_iter: &mut impl Iterator<Item = (Name, Value)>,
 ) -> Result<FilterType, GraphqlError> {
@@ -506,7 +510,11 @@ fn parse_arg_pred_pair(
                 let mut column_list = vec![];
                 for element in elements {
                     if let Value::Enum(column) = element {
-                        if schema.field_type(entity_type, column.as_str()).is_some() {
+                        if schema
+                            .parsed()
+                            .field_type(entity_type, column.as_str())
+                            .is_some()
+                        {
                             column_list.push(column.to_string())
                         } else {
                             return Err(GraphqlError::UnrecognizedField(
@@ -548,7 +556,7 @@ fn parse_arg_pred_pair(
             }
         }
         other => {
-            if schema.field_type(entity_type, other).is_some() {
+            if schema.parsed().field_type(entity_type, other).is_some() {
                 if let Value::Object(inner_obj) = predicate {
                     for (key, predicate) in inner_obj.iter() {
                         match key.as_str() {
@@ -649,7 +657,7 @@ fn parse_binary_logical_operator(
     key: &str,
     predicate: Value,
     entity_type: &String,
-    schema: &Schema,
+    schema: &IndexerSchema,
     top_level_arg_value_iter: &mut impl Iterator<Item = (Name, Value)>,
     prior_filter: &mut Option<FilterType>,
 ) -> Result<FilterType, GraphqlError> {

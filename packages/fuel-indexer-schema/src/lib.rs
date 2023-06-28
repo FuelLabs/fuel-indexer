@@ -1,4 +1,4 @@
-#![deny(unused_crate_dependencies)]
+// TODO: Deny `clippy::unused_crate_dependencies` when including feature-flagged dependency `itertools`
 
 extern crate alloc;
 
@@ -10,10 +10,7 @@ pub const QUERY_ROOT: &str = "QueryRoot";
 
 #[cfg(feature = "db-models")]
 pub mod db;
-pub mod parser;
-pub mod utils;
 
-pub const BASE_SCHEMA: &str = include_str!("./base.graphql");
 const NULL_VALUE: &str = "NULL";
 
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;

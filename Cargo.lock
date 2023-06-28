@@ -3100,7 +3100,11 @@ dependencies = [
 name = "fuel-indexer-database-types"
 version = "0.17.1"
 dependencies = [
+ "async-graphql-parser 5.0.9",
+ "async-graphql-value 5.0.9",
  "chrono",
+ "fuel-indexer-lib",
+ "linked_hash_set",
  "serde",
  "strum",
 ]
@@ -3114,6 +3118,7 @@ dependencies = [
  "async-graphql-value 5.0.9",
  "fuel-indexer-database",
  "fuel-indexer-database-types",
+ "fuel-indexer-lib",
  "fuel-indexer-schema",
  "fuel-indexer-types",
  "lazy_static",
@@ -3127,9 +3132,13 @@ name = "fuel-indexer-lib"
 version = "0.17.1"
 dependencies = [
  "anyhow",
+ "async-graphql-parser 5.0.9",
  "bincode",
  "clap 3.2.25",
  "http",
+ "lazy_static",
+ "proc-macro2",
+ "quote",
  "serde",
  "serde_json",
  "serde_yaml",
@@ -3216,7 +3225,6 @@ dependencies = [
 name = "fuel-indexer-postgres"
 version = "0.17.1"
 dependencies = [
- "bincode",
  "chrono",
  "fuel-indexer-database-types",
  "fuel-indexer-lib",
@@ -3232,15 +3240,13 @@ name = "fuel-indexer-schema"
 version = "0.17.1"
 dependencies = [
  "async-graphql-parser 5.0.9",
- "async-graphql-value 5.0.9",
  "fuel-indexer-database",
- "fuel-indexer-database-types",
+ "fuel-indexer-lib",
  "fuel-indexer-types",
  "hex",
  "insta",
- "linked_hash_set",
+ "itertools",
  "serde",
- "sha2 0.9.9",
  "sqlx",
  "thiserror",
  "tracing",
@@ -3302,12 +3308,12 @@ version = "0.17.1"
 dependencies = [
  "bincode",
  "bytes",
+ "fuel-indexer-lib",
  "fuel-tx 0.31.2",
  "fuel-types 0.31.2",
  "fuels",
  "serde",
  "serde_json",
- "sha2 0.9.9",
  "tai64",
 ]
 

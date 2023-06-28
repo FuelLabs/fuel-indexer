@@ -1,7 +1,6 @@
 #![deny(unused_crate_dependencies)]
 pub mod ffi;
 pub mod fuel;
-pub mod graphql;
 pub mod receipt;
 pub mod scalar;
 
@@ -12,7 +11,6 @@ pub use fuels::{
         Bits256, Identity, SizedAsciiString,
     },
 };
-use sha2::{Digest, Sha256};
 
 pub const FUEL_TYPES_NAMESPACE: &str = "fuel";
 
@@ -23,18 +21,9 @@ pub trait TypeId {
 pub mod prelude {
     pub use crate::ffi::*;
     pub use crate::fuel;
-    pub use crate::graphql::*;
     pub use crate::receipt::*;
     pub use crate::scalar::*;
     pub use crate::{TypeId, FUEL_TYPES_NAMESPACE};
-}
-
-/// Derive a type ID from a namespace and given abstraction name.
-pub fn type_id(namespace: &str, name: &str) -> i64 {
-    // IMPORTANT: https://github.com/launchbadge/sqlx/issues/499
-    let mut bytes = [0u8; 8];
-    bytes.copy_from_slice(&Sha256::digest(format!("{namespace}:{name}").as_bytes())[..8]);
-    i64::from_le_bytes(bytes)
 }
 
 #[cfg(test)]

@@ -1,0 +1,1 @@
+ALTER TABLE graph_registry_columns ADD COLUMN is_unique BOOLEAN NOT NULL DEFAULT FALSE;

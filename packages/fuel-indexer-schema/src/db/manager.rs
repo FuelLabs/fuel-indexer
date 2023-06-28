@@ -1,56 +1,54 @@
-use crate::{
-    db::tables::{Schema, SchemaBuilder},
-    db::IndexerSchemaDbResult,
-    utils::{inject_native_entities_into_schema, schema_version},
-};
+use crate::db::{tables::IndexerSchema, IndexerSchemaDbResult};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
+use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};
 use tracing::info;
 
+/// `SchemaManager` is a wrapper for `IndexerSchema` that also provides
+/// stateful database connectivity.
 pub struct SchemaManager {
     pool: IndexerConnectionPool,
 }
 
 impl SchemaManager {
+    /// Create a new `SchemaManager`.
     pub fn new(pool: IndexerConnectionPool) -> SchemaManager {
         SchemaManager { pool }
     }
 
+    /// Create a new schema for the given indexer.
     pub async fn new_schema(
         &self,
         namespace: &str,
         identifier: &str,
         schema: &str,
+        exec_source: ExecutionSource,
         conn: &mut IndexerConnection,
-        is_native: bool,
     ) -> IndexerSchemaDbResult<()> {
-        // Schema is built in serveral different places so we add default entities here
-        let schema = inject_native_entities_into_schema(schema);
+        let schema = GraphQLSchema::new(schema.to_string());
+        let version = schema.version();
 
-        // TODO: Not doing much with version, but might be useful if we do graph schema upgrades
-        let version = schema_version(&schema);
-
-        if !queries::schema_exists(conn, namespace, identifier, &version).await? {
+        if !queries::schema_exists(conn, namespace, identifier, version).await? {
             info!("Creating schema for Indexer({namespace}.{identifier}) with Version({version}).");
-            let _db_schema = SchemaBuilder::new(
+            let _ = IndexerSchema::new(
                 namespace,
                 identifier,
-                &version,
+                &schema,
                 self.pool.database_type(),
-                is_native,
+                exec_source.clone(),
             )?
-            .build(&schema)?
-            .commit_metadata(conn)
+            .commit(&schema, exec_source, conn)
             .await?;
         }
         Ok(())
     }
 
+    /// Load an existing schema for the given indexer.
     pub async fn load_schema(
         &self,
         namespace: &str,
         identifier: &str,
-    ) -> IndexerSchemaDbResult<Schema> {
+    ) -> IndexerSchemaDbResult<IndexerSchema> {
         // TODO: might be nice to cache this data in server?
-        Schema::load_from_db(&self.pool, namespace, identifier).await
+        IndexerSchema::load(&self.pool, namespace, identifier).await
     }
 }

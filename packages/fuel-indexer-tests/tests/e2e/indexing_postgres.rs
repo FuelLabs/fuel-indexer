@@ -505,7 +505,7 @@ async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
             .unwrap();
 
     assert!(row.get::<BigDecimal, usize>(0).to_u64().unwrap() >= 1);
-    assert!(row.get::<i64, usize>(1) >= 1);
+    assert!(row.get::<BigDecimal, usize>(1).to_u64().unwrap() >= 1);
 }
 
 #[actix_web::test]
@@ -956,7 +956,7 @@ async fn test_can_trigger_and_index_enum_types_postgres() {
 
 // Taken from fuel_indexer_test.graphql
 #[derive(Serialize, Deserialize)]
-struct NoTableEntity {
+struct VirtualEntity {
     name: Option<String>,
     size: u8,
 }
@@ -981,7 +981,7 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 
     let mut conn = test_db.pool.acquire().await.unwrap();
     let row =
-        sqlx::query("SELECT * FROM fuel_indexer_test_index1.usesnotableentity LIMIT 1")
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.usesvirtualentity LIMIT 1")
             .fetch_one(&mut conn)
             .await
             .unwrap();
@@ -989,7 +989,7 @@ async fn test_can_trigger_and_index_nonindexable_events() {
     assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
     assert_eq!(row.get::<&str, usize>(1), "hello world");
 
-    let entity: NoTableEntity =
+    let entity: VirtualEntity =
         serde_json::from_value(row.get::<serde_json::Value, usize>(2)).unwrap();
 
     assert_eq!(entity.name, Some("virtual".to_string()));

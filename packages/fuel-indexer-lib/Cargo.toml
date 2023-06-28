@@ -11,9 +11,13 @@ description = "Fuel Indexer Library"
 
 [dependencies]
 anyhow = "1.0"
+async-graphql-parser = { workspace = true, optional = true }
 bincode = { workspace = true }
 clap = { features = ["cargo", "derive", "env"], workspace = true }
 http = { version = "0.2", default-features = false }
+lazy_static = { version = "1.4", optional = true }
+proc-macro2 = "1.0"
+quote = "1.0"
 serde = { workspace = true }
 serde_json = { workspace = true }
 serde_yaml = "0.8"
@@ -24,3 +28,7 @@ tokio = { features = ["time", "rt"], workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { version = "0.3", features = ["ansi", "json", "env-filter"] }
 url = "2.3"
+
+[features]
+default = ["graphql"]
+graphql = ["async-graphql-parser", "lazy_static"]

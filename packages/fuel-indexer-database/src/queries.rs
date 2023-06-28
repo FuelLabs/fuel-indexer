@@ -19,7 +19,7 @@ pub async fn graph_root_latest(
 
 pub async fn new_graph_root(
     conn: &mut IndexerConnection,
-    root: NewGraphRoot,
+    root: GraphRoot,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => postgres::new_graph_root(c, root).await,
@@ -77,7 +77,7 @@ pub async fn schema_exists(
 
 pub async fn new_column_insert(
     conn: &mut IndexerConnection,
-    cols: Vec<NewColumn>,
+    cols: Vec<Column>,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -89,7 +89,7 @@ pub async fn new_column_insert(
 pub async fn list_column_by_id(
     conn: &mut IndexerConnection,
     col_id: i64,
-) -> sqlx::Result<Vec<Columns>> {
+) -> sqlx::Result<Vec<Column>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::list_column_by_id(c, col_id).await
@@ -152,7 +152,7 @@ pub async fn execute_query(
 pub async fn root_columns_list_by_id(
     conn: &mut IndexerConnection,
     root_id: i64,
-) -> sqlx::Result<Vec<RootColumns>> {
+) -> sqlx::Result<Vec<RootColumn>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::root_columns_list_by_id(c, root_id).await
@@ -162,7 +162,7 @@ pub async fn root_columns_list_by_id(
 
 pub async fn new_root_columns(
     conn: &mut IndexerConnection,
-    cols: Vec<NewRootColumns>,
+    cols: Vec<RootColumn>,
 ) -> sqlx::Result<usize> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -210,7 +210,7 @@ pub async fn all_registered_indexers(
 pub async fn indexer_asset_version(
     conn: &mut IndexerConnection,
     index_id: &i64,
-    asset_type: &IndexAssetType,
+    asset_type: &IndexerAssetType,
 ) -> sqlx::Result<i64> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
@@ -224,9 +224,9 @@ pub async fn register_indexer_asset(
     namespace: &str,
     identifier: &str,
     bytes: Vec<u8>,
-    asset_type: IndexAssetType,
+    asset_type: IndexerAssetType,
     pubkey: Option<&str>,
-) -> sqlx::Result<IndexAsset> {
+) -> sqlx::Result<IndexerAsset> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::register_indexer_asset(
@@ -240,8 +240,8 @@ pub async fn register_indexer_asset(
 pub async fn latest_asset_for_indexer(
     conn: &mut IndexerConnection,
     index_id: &i64,
-    asset_type: IndexAssetType,
-) -> sqlx::Result<IndexAsset> {
+    asset_type: IndexerAssetType,
+) -> sqlx::Result<IndexerAsset> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::latest_asset_for_indexer(c, index_id, asset_type).await
@@ -252,7 +252,7 @@ pub async fn latest_asset_for_indexer(
 pub async fn latest_assets_for_indexer(
     conn: &mut IndexerConnection,
     index_id: &i64,
-) -> sqlx::Result<IndexAssetBundle> {
+) -> sqlx::Result<IndexerAssetBundle> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::latest_assets_for_indexer(c, index_id).await
@@ -274,10 +274,10 @@ pub async fn last_block_height_for_indexer(
 
 pub async fn asset_already_exists(
     conn: &mut IndexerConnection,
-    asset_type: &IndexAssetType,
+    asset_type: &IndexerAssetType,
     bytes: &Vec<u8>,
     index_id: &i64,
-) -> sqlx::Result<Option<IndexAsset>> {
+) -> sqlx::Result<Option<IndexerAsset>> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::asset_already_exists(c, asset_type, bytes, index_id).await
@@ -301,8 +301,8 @@ pub async fn penultimate_asset_for_indexer(
     conn: &mut IndexerConnection,
     namespace: &str,
     identifier: &str,
-    asset_type: IndexAssetType,
-) -> sqlx::Result<IndexAsset> {
+    asset_type: IndexerAssetType,
+) -> sqlx::Result<IndexerAsset> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {
             postgres::penultimate_asset_for_indexer(c, namespace, identifier, asset_type)
@@ -363,7 +363,7 @@ pub async fn remove_asset_by_version(
     conn: &mut IndexerConnection,
     index_id: &i64,
     version: &i32,
-    asset_type: IndexAssetType,
+    asset_type: IndexerAssetType,
 ) -> sqlx::Result<()> {
     match conn {
         IndexerConnection::Postgres(ref mut c) => {

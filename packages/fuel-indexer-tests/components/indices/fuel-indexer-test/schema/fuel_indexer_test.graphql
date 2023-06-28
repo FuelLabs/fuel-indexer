@@ -244,16 +244,16 @@ type ComplexEnumEntity {
     one: EnumEntity
 }
 
-type NoTableEntity {
+type VirtualEntity {
     name: Charfield @virtual
     size: UInt1!
 }
 
 
-type UsesNoTableEntity {
+type UsesVirtualEntity {
     id: ID!
     name: Charfield!
-    no_table: NoTableEntity!
+    no_table: VirtualEntity!
 }
 
 enum UnionType {

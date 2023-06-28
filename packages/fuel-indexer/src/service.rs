@@ -4,7 +4,7 @@ use crate::{
 };
 use async_std::sync::{Arc, Mutex};
 use fuel_indexer_database::{
-    queries, types::IndexAssetType, IndexerConnection, IndexerConnectionPool,
+    queries, types::IndexerAssetType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::{defaults, utils::ServiceRequest};
 use fuel_indexer_schema::db::manager::SchemaManager;
@@ -101,8 +101,8 @@ impl IndexerService {
                 &manifest.namespace,
                 &manifest.identifier,
                 &schema,
+                manifest.execution_source(),
                 &mut conn,
-                manifest.is_native(),
             )
             .await?;
 
@@ -113,12 +113,12 @@ impl IndexerService {
                 .await?;
 
         let mut items = vec![
-            (IndexAssetType::Wasm, exec_source.to_vec()),
+            (IndexerAssetType::Wasm, exec_source.to_vec()),
             (
-                IndexAssetType::Manifest,
+                IndexerAssetType::Manifest,
                 Manifest::try_into(manifest.clone())?,
             ),
-            (IndexAssetType::Schema, schema_bytes),
+            (IndexerAssetType::Schema, schema_bytes),
         ];
 
         while let Some((asset_type, bytes)) = items.pop() {
@@ -194,8 +194,8 @@ impl IndexerService {
                 &manifest.namespace,
                 &manifest.identifier,
                 &schema,
+                manifest.execution_source(),
                 &mut conn,
-                true,
             )
             .await?;
 

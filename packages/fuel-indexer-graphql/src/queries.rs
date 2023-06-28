@@ -49,14 +49,19 @@ pub struct QueryJoinNode {
 pub struct UserQuery {
     /// The individal parts or tokens of what will become a selection statement.
     pub elements: Vec<QueryElement>,
+
     /// Contains information about the dependents and dependencies of a particular table join.
     pub joins: HashMap<String, QueryJoinNode>,
+
     /// The full isolated namespace in which an indexer's entity tables reside.
     pub namespace_identifier: String,
+
     /// The top-level entity contained in a query.
     pub entity_name: String,
+
     /// The full set of parameters that can be applied to a query.
     pub query_params: QueryParams,
+
     // An optional user-suppled alias for an entity field.
     pub alias: Option<String>,
 }
