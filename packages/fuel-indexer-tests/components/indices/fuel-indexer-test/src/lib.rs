@@ -8,7 +8,7 @@ use fuel_indexer_utils::prelude::*;
 mod fuel_indexer_test {
 
     fn foo(b: BlockData) {
-        Logger::info("bar");
+        Logger::info("dddd");
     }
 
     // fn fuel_indexer_test_blocks(block_data: BlockData) {

@@ -432,7 +432,6 @@ impl Decoder for ObjectDecoder {
                 for field in &o.fields {
                     let (field_typ_tokens, field_name, field_typ_scalar_name, extractor) =
                         process_typedef_field(parsed, field.node.clone(), &typ);
-
                     let field_typ_scalar_name = &field_typ_scalar_name.to_string();
 
                     fields_map
@@ -444,6 +443,12 @@ impl Decoder for ObjectDecoder {
                         field_typ_scalar_name,
                         &field_name,
                         clone.clone(),
+                    );
+
+                    println!(
+                        ">>> {}:{}",
+                        field_name.to_string(),
+                        field_typ_tokens.to_string()
                     );
 
                     struct_fields = quote! {

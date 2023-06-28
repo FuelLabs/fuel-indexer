@@ -624,15 +624,16 @@ pub fn process_type(parsed: &ParsedGraphQLSchema, typ: &Type) -> ProcessTypeResu
             }
 
             let field_type_ident = format_ident! {"List"};
+            let name = format_ident! {"{name}"};
 
             let (inner_nullable, field_type_tokens) =
                 match t.to_string().matches('!').count() {
                     0 => (false, quote! { Vec<#name> }),
                     1 => {
                         if t.to_string().ends_with('!') {
-                            (false, quote! { Option<Vec<#name>> })
-                        } else {
                             (true, quote! { Vec<Option<#name>> })
+                        } else {
+                            (false, quote! { Option<Vec<#name>> })
                         }
                     }
                     2 => (true, quote! { Option<Vec<Option<#name>>>> }),

@@ -308,8 +308,9 @@ type BlockEntity {
 
 type ListTypeScalarEntity {
     id: ID!
+    foo: Charfield!
     non_null_all: [BlockEntity!]!
-    null_inner: [UInt8]!
-    nullable_all: [UInt8]
+    # null_inner: [UInt8]!
+    # nullable_all: [UInt8]
 }
 
