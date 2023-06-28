@@ -122,7 +122,7 @@ type CreateTransaction {
   id: ID!
   gas_price: UInt8!
   gas_limit: UInt8!
-  maturity: BlockHeight!
+  maturity: UInt8!
   bytecode_length: UInt8!
   bytecode_witness_index: UInt1!
   #   storage_slots: [StorageSlot]!
@@ -138,7 +138,7 @@ type ScriptTransaction {
   id: ID!
   gas_price: UInt8!
   gas_limit: UInt8!
-  maturity: BlockHeight!
+  maturity: UInt8!
   script: Blob!
   #   inputs: [Input]!
   #   outputs: [Output]!
@@ -230,7 +230,7 @@ type Header {
   message_receipt_count: UInt8!
   transactions_root: Bytes32!
   message_receipt_root: Bytes32!
-  height: UInt4!
+  height: UInt8!
   prev_root: Bytes32!
   time: Int8!
   application_hash: Bytes32!
@@ -260,6 +260,7 @@ enum OutputLabel {
   Change
   Variable
   ContractCreated
+  MessageOutput
   Unknown
 }
 
@@ -317,7 +318,13 @@ type CoinOutput {
   label: OutputLabel!
 }
 
-union Output = CoinOutput | ContractOutput | ChangeOutput | VariableOutput | ContractCreated | UnknownOutput
+type MessageOutput {
+  id: ID!
+  amount: UInt8!
+  recipient: Address!
+}
+
+union Output = CoinOutput | ContractOutput | ChangeOutput | VariableOutput | ContractCreated | MessageOutput | UnknownOutput
 
 type DryRun {
   tx: HexString! @virtual

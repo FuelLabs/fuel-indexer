@@ -260,8 +260,8 @@ fn process_fn_items(
                 .iter()
                 .map(|id| {
                     quote! {
-                        Bech32ContractId::from_str(#id)
-                            .expect("Failed to parse manifest 'contract_id' as Bech32ContractId")
+                        let id_bytes = <[u8; 32]>::try_from(ContractId::from(#id)).expect("Could not convert contract ID into bytes");
+                        Bech32ContractId::new("fuel", id_bytes)
                     }
                 })
                 .collect::<Vec<proc_macro2::TokenStream>>();
@@ -276,8 +276,10 @@ fn process_fn_items(
         ContractIds::Single(contract_id) => match contract_id {
             Some(contract_id) => {
                 quote! {
+                    // TODO: Temporary conversion; remove once we update back to latest fuel-types version.
+                    let id_bytes = <[u8; 32]>::try_from(id).expect("Could not convert contract ID into bytes");
+                    let bech32_id = Bech32ContractId::new("fuel", id_bytes);
                     let manifest_contract_id = Bech32ContractId::from_str(#contract_id).expect("Failed to parse manifest 'contract_id' as Bech32ContractId");
-                    let bech32_id = Bech32ContractId::from(id);
                     if bech32_id != manifest_contract_id {
                         debug!("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
                         continue;
@@ -288,7 +290,9 @@ fn process_fn_items(
         },
         ContractIds::Multiple(_) => {
             quote! {
-                let bech32_id = Bech32ContractId::from(id);
+                // TODO: Temporary conversion; remove once we update back to latest fuel-types version.
+                let id_bytes = <[u8; 32]>::try_from(id).expect("Could not convert contract ID into bytes");
+                let bech32_id = Bech32ContractId::new("fuel", id_bytes);
 
                 if !contract_ids.contains(&bech32_id) {
                     debug!("Not subscribed to this contract. Will skip this receipt event. <('-'<)");
@@ -508,6 +512,10 @@ fn process_fn_items(
                                 }
                             }
                             fuel::Receipt::MessageOut { sender, recipient, amount, nonce, len, digest, data, .. } => {
+                                // TODO: Temporary conversion; remove once we update back to latest fuel-types version.
+                                let nonce_bytes = <[u8; 32]>::try_from(nonce).expect("Could not convert nonce to bytes");
+                                let nonce = Nonce::from(nonce_bytes);
+
                                 let message_id = decoder.compute_message_id(&sender, &recipient, nonce, amount, &data[..]);
 
                                 // It's possible that the data field was generated from an empty Sway `Bytes` array

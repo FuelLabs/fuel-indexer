@@ -231,11 +231,13 @@ impl From<fuel::Input> for Input {
                     predicate_data,
                 } = input;
 
+                let nonce_bytes = <[u8; 32]>::try_from(nonce).unwrap();
+
                 let input = InputMessage::new(
                     sender,
                     recipient,
                     amount,
-                    nonce,
+                    Nonce::from(nonce_bytes),
                     witness_index.into(),
                     data.into(),
                     predicate.into(),
@@ -327,6 +329,13 @@ impl From<fuel::Output> for Output {
                     OutputLabel::ContractCreated.into(),
                     true,
                 );
+
+                Self::from(output)
+            }
+            fuel::Output::Message(output) => {
+                let fuel::MessageOutput { amount, recipient } = output;
+
+                let output = MessageOutput::new(amount, recipient);
 
                 Self::from(output)
             }
@@ -432,9 +441,12 @@ impl From<fuel::Receipt> for Receipt {
                 pc,
                 is: isr,
             } => {
+                let recipient_bytes = <[u8; 32]>::try_from(recipient).unwrap();
                 let receipt = CallReceipt {
                     contract_id,
-                    recipient: Identity::ContractId(recipient),
+                    recipient: Identity::ContractId(fuels::types::ContractId::from(
+                        recipient_bytes,
+                    )),
                     amount,
                     asset_id,
                     gas,
@@ -589,9 +601,12 @@ impl From<fuel::Receipt> for Receipt {
                 pc,
                 is: isr,
             } => {
+                let recipient_bytes = <[u8; 32]>::try_from(recipient).unwrap();
                 let receipt = TransferReceipt {
                     contract_id,
-                    recipient: Identity::ContractId(recipient),
+                    recipient: Identity::ContractId(fuels::types::ContractId::from(
+                        recipient_bytes,
+                    )),
                     amount,
                     asset_id,
                     pc,
@@ -610,9 +625,12 @@ impl From<fuel::Receipt> for Receipt {
                 pc,
                 is: isr,
             } => {
+                let recipient_bytes = <[u8; 32]>::try_from(recipient).unwrap();
                 let receipt = TransferOutReceipt {
                     contract_id,
-                    recipient: Identity::Address(recipient),
+                    recipient: Identity::Address(fuels::types::Address::from(
+                        recipient_bytes,
+                    )),
                     amount,
                     asset_id,
                     pc,
@@ -641,12 +659,17 @@ impl From<fuel::Receipt> for Receipt {
                 len,
                 digest,
                 data,
+                ..
             } => {
+                let recipient_bytes = <[u8; 32]>::try_from(recipient).unwrap();
+                let nonce_bytes = <[u8; 32]>::try_from(nonce).unwrap();
                 let receipt = MessageOutReceipt {
                     sender,
-                    recipient: Identity::Address(recipient),
+                    recipient: Identity::Address(fuels::types::Address::from(
+                        recipient_bytes,
+                    )),
                     amount,
-                    nonce,
+                    nonce: Nonce::from(nonce_bytes),
                     len,
                     digest,
                     data: data.into(),

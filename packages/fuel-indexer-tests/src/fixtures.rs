@@ -421,7 +421,7 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
-    use fuel_indexer_types::scalar::{AssetId, Bech32ContractId};
+    use fuel_indexer_types::scalar::Bech32ContractId;
     use fuels::accounts::wallet::WalletUnlocked;
     use fuels::prelude::{CallParameters, Provider};
     use std::path::Path;
@@ -455,7 +455,8 @@ pub mod test_web {
     async fn fuel_indexer_test_transfer(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
 
         let _ = state
             .contract
@@ -514,7 +515,8 @@ pub mod test_web {
     async fn fuel_indexer_test_transferout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
 
         let _ = state
             .contract
@@ -533,7 +535,8 @@ pub mod test_web {
     async fn fuel_indexer_test_messageout(
         state: web::Data<Arc<AppState>>,
     ) -> impl Responder {
-        let call_params = CallParameters::new(1_000_000, AssetId::default(), 1000);
+        let call_params =
+            CallParameters::new(1_000_000, fuels::types::AssetId::default(), 1000);
 
         let _ = state
             .contract
