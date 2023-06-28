@@ -89,7 +89,7 @@ impl Decoder for ImplementationDecoder {
 
                 for field in &o.fields {
                     let (field_typ_tokens, field_name, field_typ_scalar_name, _extractor) =
-                        process_typedef_field(parsed, field.node.clone());
+                        process_typedef_field(parsed, field.node.clone(), &typ);
 
                     let field_typ_scalar_name = &field_typ_scalar_name.to_string();
 
@@ -204,7 +204,7 @@ impl From<ImplementationDecoder> for TokenStream {
         let ident = format_ident!("{}", typdef_name);
 
         // When processing `TypeDefinition::Union`, instead of duplicating a lot of logic
-        // in the `Decoder`s, we just recursively call `ImplementationDecoder::from_typedef`.
+        // in the `Decoder`s, we just recursively call `Decoder::from_typedef`.
         //
         // This works fine, but means that we will only technically ever have a `TypeDefinition::ObjectType`
         // on `ImplementationDecoder` - which means the `TypeKind::Union` codepath below will never
@@ -431,7 +431,7 @@ impl Decoder for ObjectDecoder {
 
                 for field in &o.fields {
                     let (field_typ_tokens, field_name, field_typ_scalar_name, extractor) =
-                        process_typedef_field(parsed, field.node.clone());
+                        process_typedef_field(parsed, field.node.clone(), &typ);
 
                     let field_typ_scalar_name = &field_typ_scalar_name.to_string();
 

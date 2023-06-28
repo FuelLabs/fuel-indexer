@@ -1,3 +1,4 @@
+use crate::db::ColumnType;
 use bytes::Bytes;
 pub use fuel_tx::{
     Address, AssetId, Bytes32, Bytes4, Bytes64, Bytes8, ContractId, MessageId, Salt, Word,
@@ -65,6 +66,12 @@ pub type UInt1 = u8;
 #[derive(Deserialize, Serialize, Clone, Eq, PartialEq, Debug, Hash, Default)]
 pub struct Blob(pub Vec<u8>);
 
+// impl From<ColumnType> for Blob {
+//     fn from(value: ColumnType) -> Self {
+//         Blob::from(bincode::serialize(&value).unwrap().to_vec())
+//     }
+// }
+
 impl From<Vec<u8>> for Blob {
     fn from(value: Vec<u8>) -> Self {
         Blob(value)
@@ -129,3 +136,5 @@ macro_rules! blob_impl {
 
 json_impl!(i32, i64, i128, u32, u64, u128);
 blob_impl!(i32, i64, i128, u32, u64, u128);
+
+pub type List = Vec<Blob>;

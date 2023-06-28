@@ -86,7 +86,7 @@ pub struct ParsedGraphQLSchema {
     exec_source: ExecutionSource,
 
     /// All unique names of types in the schema (whether objects, enums, or scalars).
-    type_names: HashSet<String>,
+    pub type_names: HashSet<String>,
 
     /// Mapping of object names to objects.
     objects: HashMap<String, ObjectType>,
@@ -136,8 +136,8 @@ pub struct ParsedGraphQLSchema {
     // All type definitions in the schema.
     type_defs: HashMap<String, TypeDefinition>,
 
-    /// Type names that are specified as being list types in the GraphQL schema.
-    list_type_names: HashSet<String>,
+    /// `FieldDefinition` names in the GraphQL that are a `List` type.
+    pub list_field_types: HashSet<String>,
 
     /// `TypeDefinition`s that contain a `FieldDefinition` which is a `List` type.
     list_type_defs: HashMap<String, TypeDefinition>,
@@ -168,7 +168,7 @@ impl Default for ParsedGraphQLSchema {
             type_defs: HashMap::new(),
             ast,
             schema: GraphQLSchema::default(),
-            list_type_names: HashSet::new(),
+            list_field_types: HashSet::new(),
             list_type_defs: HashMap::new(),
             unions: HashMap::new(),
         }
@@ -200,7 +200,7 @@ impl ParsedGraphQLSchema {
         let mut foreign_key_mappings: HashMap<String, HashMap<String, (String, String)>> =
             HashMap::new();
         let mut type_defs = HashMap::new();
-        let mut list_type_names = HashSet::new();
+        let mut list_field_types = HashSet::new();
         let mut list_type_defs = HashMap::new();
         let mut unions = HashMap::new();
 
@@ -228,13 +228,15 @@ impl ParsedGraphQLSchema {
                                 if field.node.ty.to_string().contains('[')
                                     && field.node.ty.to_string().contains(']')
                                 {
-                                    list_type_names.insert(
-                                        field
-                                            .node
-                                            .ty
-                                            .to_string()
-                                            .replace(['[', ']', '!'], ""),
-                                    );
+                                    let ty_name = field
+                                        .node
+                                        .ty
+                                        .to_string()
+                                        .replace(['!', '[', ']'], "");
+
+                                    let fid = field_id(&obj_name, &field_name);
+                                    // TODO: Also add to optionality?
+                                    list_field_types.insert(fid);
 
                                     list_type_defs
                                         .insert(obj_name.clone(), t.node.clone());
@@ -422,7 +424,7 @@ impl ParsedGraphQLSchema {
             schema: schema.cloned().unwrap(),
             ast,
             type_defs,
-            list_type_names,
+            list_field_types,
             list_type_defs,
             unions,
         })
@@ -510,8 +512,8 @@ impl ParsedGraphQLSchema {
     }
 
     /// Whether the given field type name is a list type.
-    pub fn is_list_type(&self, name: &str) -> bool {
-        self.list_type_names.contains(name)
+    pub fn is_list_field_type(&self, name: &str) -> bool {
+        self.list_field_types.contains(name)
     }
 
     /// Whether a given `TypeDefinition` contains a field that is a list type.

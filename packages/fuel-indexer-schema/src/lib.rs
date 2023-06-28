@@ -72,8 +72,8 @@ pub enum FtColumn {
     UInt8(Option<UInt8>),
     Virtual(Option<Virtual>),
     BlockId(Option<BlockId>),
-    ListScalar(Option<Vec<FtColumn>>),
-    ListFK(Option<Vec<FtColumn>>),
+    List(Option<Vec<FtColumn>>),
+    // ListFK(Option<Vec<FtColumn>>),
 }
 
 impl FtColumn {
@@ -222,7 +222,7 @@ impl FtColumn {
                 Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::ListScalar(value) => match value {
+            FtColumn::List(value) => match value {
                 Some(list) => {
                     // Using first item of list to determine column type
                     let discriminant = std::mem::discriminant(&list[0]);
@@ -245,31 +245,31 @@ impl FtColumn {
                 }
                 None => String::from(NULL_VALUE),
             },
-            FtColumn::ListFK(values) => match values {
-                // TODO: https://github.com/FuelLabs/fuel-indexer/issues/947
-                Some(list) => {
-                    let type_id = i64::from(ColumnType::from(list[0].to_owned()));
-                    let type_bytes = hex::encode(type_id.to_le_bytes());
-                    let elems = list
-                        .iter()
-                        .map(|val| match val {
-                            FtColumn::Blob(_)
-                            | FtColumn::Charfield(_)
-                            | FtColumn::Enum(_)
-                            | FtColumn::HexString(_)
-                            | FtColumn::Json(_)
-                            | FtColumn::Virtual(_)
-                            | FtColumn::ListScalar(_)
-                            | FtColumn::ListFK(_) => {
-                                panic!("FtColumn::ListFK validation error.");
-                            }
-                            _ => val.to_owned().into(),
-                        })
-                        .collect::<Vec<Vec<u8>>>();
-                    format!("'{}{}'", type_bytes, hex::encode(elems.concat()))
-                }
-                None => String::from(NULL_VALUE),
-            },
+            // FtColumn::ListFK(values) => match values {
+            //     // TODO: https://github.com/FuelLabs/fuel-indexer/issues/947
+            //     Some(list) => {
+            //         let type_id = i64::from(ColumnType::from(list[0].to_owned()));
+            //         let type_bytes = hex::encode(type_id.to_le_bytes());
+            //         let elems = list
+            //             .iter()
+            //             .map(|val| match val {
+            //                 FtColumn::Blob(_)
+            //                 | FtColumn::Charfield(_)
+            //                 | FtColumn::Enum(_)
+            //                 | FtColumn::HexString(_)
+            //                 | FtColumn::Json(_)
+            //                 | FtColumn::Virtual(_)
+            //                 | FtColumn::List(_)
+            //                 | FtColumn::ListFK(_) => {
+            //                     panic!("FtColumn::ListFK validation error.");
+            //                 }
+            //                 _ => val.to_owned().into(),
+            //             })
+            //             .collect::<Vec<Vec<u8>>>();
+            //         format!("'{}{}'", type_bytes, hex::encode(elems.concat()))
+            //     }
+            //     None => String::from(NULL_VALUE),
+            // },
         }
     }
 }
@@ -310,8 +310,8 @@ impl From<FtColumn> for ColumnType {
             FtColumn::UInt8(_) => ColumnType::UInt8,
             FtColumn::Virtual(_) => ColumnType::Virtual,
             FtColumn::BlockId(_) => ColumnType::BlockId,
-            FtColumn::ListScalar(_) => unimplemented!("Foo"),
-            FtColumn::ListFK(_) => unimplemented!("Foo"),
+            FtColumn::List(_) => unimplemented!("Foo"),
+            // FtColumn::ListFK(_) => unimplemented!("Foo"),
         }
     }
 }
@@ -474,8 +474,8 @@ impl From<FtColumn> for Vec<u8> {
                 Some(u) => u.to_le_bytes().to_vec(),
                 None => vec![],
             },
-            FtColumn::ListScalar(_) => unimplemented!("List of lists unsupported."),
-            FtColumn::ListFK(_) => unimplemented!("List of lists unsupported."),
+            FtColumn::List(_) => unimplemented!("List of lists unsupported."),
+            // FtColumn::ListFK(_) => unimplemented!("List of lists unsupported."),
         }
     }
 }
@@ -581,7 +581,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Schema fields of type ID cannot be nullable")]
+    #[should_panic(expected = "Schema fields of type `ID` cannot be nullable.")]
     fn test_panic_on_none_id_fragment() {
         use super::*;
 

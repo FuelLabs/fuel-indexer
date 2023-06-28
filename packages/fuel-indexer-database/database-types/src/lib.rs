@@ -65,8 +65,8 @@ pub enum Persistence {
     #[default]
     Virtual,
 
-    /// Regular columns are persisted to the database.
-    Regular,
+    /// Scalar columns are persisted to the database.
+    Scalar,
 }
 
 /// SQL statements that can be executed against a database.
@@ -631,7 +631,7 @@ impl Table {
                 let persistence = if parsed.is_virtual_typedef(&typ.name.to_string()) {
                     Persistence::Virtual
                 } else {
-                    Persistence::Regular
+                    Persistence::Scalar
                 };
 
                 let mut columns = o
@@ -782,7 +782,7 @@ impl SqlFragment for Table {
     /// Return the SQL create statement for a `Table`.
     fn create(&self) -> String {
         match self.persistence {
-            Persistence::Regular => {
+            Persistence::Scalar => {
                 let mut s = format!(
                     "CREATE TABLE {}_{}.{} (\n",
                     self.namespace, self.identifier, self.name
@@ -941,7 +941,7 @@ type Person {
 
         let type_id = type_id(&schema.fully_qualified_namespace(), "Person");
         let column =
-            Column::from_field_def(&field_def, &schema, type_id, 0, Persistence::Regular);
+            Column::from_field_def(&field_def, &schema, type_id, 0, Persistence::Scalar);
         assert_eq!(column.graphql_type, "Charfield".to_string());
         assert_eq!(column.coltype, ColumnType::Charfield);
         assert!(column.unique);

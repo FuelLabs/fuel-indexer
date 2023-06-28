@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use strum::AsRefStr;
+// use crate::scalar::Blob;
 
 /// SQL database types used by indexers.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Default, AsRefStr)]
@@ -41,6 +43,12 @@ pub enum ColumnType {
     Virtual = 33,
     BlockId = 34,
 }
+
+// impl From<Blob> for ColumnType {
+//     fn from(b: Blob) -> Self {
+//         Self::Blob
+//     }
+// }
 
 impl From<ColumnType> for i32 {
     fn from(typ: ColumnType) -> i32 {
