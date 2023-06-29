@@ -40,7 +40,7 @@ impl IndexMetadata {
 type IndexMetadataEntity {
     id: ID!
     time: UInt8!
-    block_height: UInt4!
+    block_height: UInt8!
 }
 "#
     }

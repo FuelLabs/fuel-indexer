@@ -11,13 +11,13 @@ use fuel_indexer_lib::{
     utils::{derive_socket_addr, ServiceRequest},
 };
 use fuel_indexer_postgres;
-use fuels::accounts::wallet::WalletUnlocked;
 use fuels::{
     macros::abigen,
     prelude::{
-        setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Config,
-        Contract, LoadConfiguration, Provider, TxParameters, DEFAULT_COIN_AMOUNT,
+        setup_single_asset_coins, setup_test_client, AssetId, Bech32ContractId, Contract,
+        LoadConfiguration, Provider, TxParameters, WalletUnlocked, DEFAULT_COIN_AMOUNT,
     },
+    test_helpers::Config,
 };
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -215,10 +215,9 @@ pub async fn setup_test_fuel_node(
         ..Config::local_node()
     };
 
-    let (client, _, consensus_parameters) =
-        setup_test_client(coins, vec![], Some(config), None).await;
+    let (client, _) = setup_test_client(coins, vec![], Some(config), None, None).await;
 
-    let provider = Provider::new(client, consensus_parameters);
+    let provider = Provider::new(client);
 
     wallet.set_provider(provider.clone());
 
@@ -270,7 +269,9 @@ pub fn get_test_contract_id() -> Bech32ContractId {
     .expect("Failed to load compiled contract");
     let id = loaded_contract.contract_id();
 
-    Bech32ContractId::from(id)
+    Bech32ContractId::from(fuels::tx::ContractId::from(
+        <[u8; 32]>::try_from(id).unwrap(),
+    ))
 }
 
 pub async fn api_server_app_postgres(
@@ -403,7 +404,8 @@ pub async fn connect_to_deployed_contract(
         wallet_path.display()
     );
 
-    let contract_id: Bech32ContractId = get_test_contract_id();
+    let contract_id: Bech32ContractId =
+        Bech32ContractId::from(fuels::tx::ContractId::from(get_test_contract_id()));
 
     let contract = FuelIndexerTest::new(contract_id.clone(), wallet);
 
@@ -421,9 +423,8 @@ pub mod test_web {
         web, App, Error, HttpResponse, HttpServer, Responder,
     };
     use async_std::sync::Arc;
-    use fuel_indexer_types::scalar::Bech32ContractId;
-    use fuels::accounts::wallet::WalletUnlocked;
-    use fuels::prelude::{CallParameters, Provider};
+    use fuels::prelude::{CallParameters, Provider, WalletUnlocked};
+    use fuels::types::bech32::Bech32ContractId;
     use std::path::Path;
 
     use super::{tx_params, FuelIndexerTest};
@@ -542,6 +543,7 @@ pub mod test_web {
             .contract
             .methods()
             .trigger_messageout()
+            .append_message_outputs(1)
             .tx_params(tx_params())
             .call_params(call_params)
             .expect("Could not set call parameters for contract method")

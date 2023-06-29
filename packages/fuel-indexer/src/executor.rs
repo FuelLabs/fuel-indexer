@@ -343,7 +343,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 let block = BlockData {
                     height: block.header.height.clone().into(),
                     id: Bytes32::from(<[u8; 32]>::try_from(block.id.0 .0).unwrap()),
-                    producer: producer.into(),
+                    producer,
                     time: block.header.time.0.to_unix(),
                     consensus,
                     header: Header {
