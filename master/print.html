@@ -185,7 +185,7 @@
 </blockquote>
 <p>Also, it's assumed that you have the Rust programming language installed on your system. If that is not the case, please refer to the <a href="https://www.rust-lang.org/tools/install">Rust installation instructions</a> for more information.</p>
 <h2 id="fuelup"><a class="header" href="#fuelup"><code>fuelup</code></a></h2>
-<p>We strongly recommend that you use the Fuel indexer through <a href="https://fuellabs.github.io/sway/master/forc/index.html"><code>forc</code>, the Fuel orchestrator</a>. You can get <code>forc</code> (and other Fuel components) by way of <a href="https://fuellabs.github.io/fuelup/latest"><code>fuelup</code>, the Fuel toolchain manager</a>. Install <code>fuelup</code> by running the following command, which downloads and runs the installation script.</p>
+<p>We strongly recommend that you use the Fuel indexer through <a href="https://fuellabs.github.io/sway/master/book/forc/index.html"><code>forc</code>, the Fuel orchestrator</a>. You can get <code>forc</code> (and other Fuel components) by way of <a href="https://fuellabs.github.io/fuelup/latest"><code>fuelup</code>, the Fuel toolchain manager</a>. Install <code>fuelup</code> by running the following command, which downloads and runs the installation script.</p>
 <pre><code class="language-bash">curl --proto '=https' --tlsv1.2 -sSf https://install.fuel.network/fuelup-init.sh | sh
 </code></pre>
 <p>After <code>fuelup</code> has been installed, the <code>forc index</code> command and <code>fuel-indexer</code> binaries will be available on your system.</p>
@@ -445,8 +445,8 @@ impl Greet for Contract {
 type Greeter {
     id: ID!
     name: Charfield!
-    first_seen: UInt4!
-    last_seen: UInt4!
+    first_seen: UInt8!
+    last_seen: UInt8!
     visits: Blob!
 }
 
@@ -456,8 +456,8 @@ type Salutation {
     message_hash: Bytes32!
     message: Charfield!
     greeter: Greeter!
-    first_seen: UInt4!
-    last_seen: UInt4!
+    first_seen: UInt8!
+    last_seen: UInt8!
 }
 </code></pre>
 <p>Now that our schema is defined, here is how we can implement the WASM module in our <code>lib.rs</code> file:</p>
@@ -500,7 +500,7 @@ mod hello_world_indexer {
         // generates an ID for the entity. Then, we use `::get_or_create()` to
         // load the corresponding record from the database, if present.
         let greeter = Greeter::new(
-            trim_sized_ascii_string(&amp;event.person.name),
+            event.person.name.to_right_trimmed_str().into(),
             block.height,
             block.height,
             vec![1u8, 2, 3, 4, 5, 6, 7, 8].into(),
@@ -512,8 +512,8 @@ mod hello_world_indexer {
         // functions for byte conversion, string manipulation, etc.
         let message = format!(
             &quot;{} 👋, my name is {}&quot;,
-            trim_sized_ascii_string(&amp;event.greeting),
-            trim_sized_ascii_string(&amp;event.person.name)
+            event.greeting.to_right_trimmed_str(),
+            event.person.name.to_right_trimmed_str(),
         );
         let message_hash = first32_bytes_to_bytes32(&amp;message);
 
@@ -762,7 +762,7 @@ OPTIONS:
 </ul>
 <p>We'll describe these three different implementations below.</p>
 <h3 id="as-tooling-for-compiling-indexers"><a class="header" href="#as-tooling-for-compiling-indexers">As tooling for compiling indexers</a></h3>
-<p>The Fuel indexer provides functionality to make it easy to build and compile abitrary indexers by using <a href="project-components/../plugins/forc-index/index.html"><code>forc index</code></a>. For info on how to use indexer tooling to compile arbitrary indexers, check out our <a href="project-components/../getting-started/quickstart.html">Quickstart</a> and <a href="project-components/../getting-started/hello-world.html">Hello World</a> examples for a more in-depth exploration of how to compile indexers.</p>
+<p>The Fuel indexer provides functionality to make it easy to build and compile abitrary indexers by using <a href="project-components/../forc-index/index.html"><code>forc index</code></a>. For info on how to use indexer tooling to compile arbitrary indexers, check out our <a href="project-components/../getting-started/quickstart.html">Quickstart</a> and <a href="project-components/../getting-started/hello-world.html">Hello World</a> examples for a more in-depth exploration of how to compile indexers.</p>
 <h3 id="as-a-standalone-service"><a class="header" href="#as-a-standalone-service">As a standalone service</a></h3>
 <p>You can also start the Fuel indexer as a standalone binary that connects to a Fuel node to monitor the Fuel blockchain for new blocks and transactions. To do so, run the requisite database migrations, adjust the configuration to connect to a Fuel node, and start the service.</p>
 <h3 id="as-part-of-a-fuel-project"><a class="header" href="#as-part-of-a-fuel-project">As part of a Fuel project</a></h3>
@@ -865,7 +865,7 @@ type SecondThing {
 }
 </code></pre>
 <p>The types you see above (e.g., <code>ID</code>, <code>UInt8</code>, etc) are Fuel abstractions that were created to more seamlessly integrate with the Fuel VM and are not native to GraphQL. A deeper explanation on these
-types can be found in <a href="project-components/../../data-types/types.html">the Types section</a>.</p>
+types can be found in <a href="project-components/../data-types/types.html">the Types section</a>.</p>
 <blockquote>
 <p>Important: It is up to developers to manage their own unique IDs for each type, meaning that a data structure's <code>ID</code> field needs to be manually generated prior to saving it to the database. This generation can be as simple or complex as you want in order to fit your particular situation; the only requirement is that the developer implement their own custom generation.</p>
 </blockquote>
