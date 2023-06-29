@@ -4,7 +4,6 @@ use fuel_indexer_lib::{
     fully_qualified_namespace, graphql::GraphQLSchema, manifest::Manifest, type_id,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
-use fuels::prelude::Address;
 use wasmer::{imports, Instance, Module, Store, WasmerEnv};
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_universal::Universal;
@@ -129,7 +128,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
     let object_id = 4;
     let columns = vec![
         FtColumn::ID(Some(object_id)),
-        FtColumn::Address(Some(Address::from([0x04; 32]))),
+        FtColumn::Address(Some(fuel_indexer_types::fuel::Address::from([0x04; 32]))),
     ];
 
     let thing1_ty_id = type_id(

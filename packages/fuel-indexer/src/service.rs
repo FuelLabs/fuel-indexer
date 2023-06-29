@@ -323,7 +323,7 @@ async fn create_service_task(
 async fn get_start_block(
     conn: &mut IndexerConnection,
     manifest: &Manifest,
-) -> Result<u32, IndexerError> {
+) -> Result<u64, IndexerError> {
     let Manifest {
         namespace,
         identifier,
