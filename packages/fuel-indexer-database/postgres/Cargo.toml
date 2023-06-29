@@ -16,7 +16,7 @@ fuel-indexer-database-types = { workspace = true }
 fuel-indexer-lib = { workspace = true }
 fuel-indexer-macro-utils = { workspace = true, optional = true }
 fuel-indexer-metrics = { workspace = true, optional = true }
-sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres", "offline", "time", "chrono"] }
+sqlx = { version = "0.6", features = ["runtime-tokio-rustls", "postgres", "offline", "time", "chrono", "bigdecimal"] }
 tracing = { workspace = true }
 uuid = { version = "1.3", features = ["v4"] }
 
