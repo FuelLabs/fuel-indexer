@@ -1,8 +1,14 @@
 #![deny(unused_crate_dependencies)]
 
+use bigdecimal::ToPrimitive;
 use fuel_indexer_database_types::*;
 use fuel_indexer_lib::utils::sha256_digest;
-use sqlx::{pool::PoolConnection, postgres::PgRow, types::JsonValue, Postgres, Row};
+use sqlx::{
+    pool::PoolConnection,
+    postgres::PgRow,
+    types::{BigDecimal, JsonValue},
+    Postgres, Row,
+};
 use std::str::FromStr;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tracing::info;
@@ -637,16 +643,15 @@ pub async fn last_block_height_for_indexer(
     identifier: &str,
 ) -> sqlx::Result<u64> {
     let query = format!(
-        "SELECT MAX(id) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1"
+        "SELECT MAX(block_height) FROM {namespace}_{identifier}.indexmetadataentity LIMIT 1"
     );
 
     let row = sqlx::query(&query).fetch_one(conn).await?;
-    let id: i64 = match row.try_get(0) {
-        Ok(id) => id,
-        Err(_e) => return Ok(1),
-    };
 
-    Ok(id as u64)
+    Ok(row
+        .try_get::<BigDecimal, usize>(0)
+        .map(|id| id.to_u64().expect("Bad block height."))
+        .unwrap_or_else(|_e| 1))
 }
 
 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/251
