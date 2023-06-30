@@ -5,8 +5,8 @@ use fuel_indexer_types::ffi::{
 use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 use wasmer::{
-    ExportError, Exports, Function, FunctionEnv, FunctionEnvMut, Instance, MemoryView,
-    RuntimeError, Store, WasmPtr,
+    ExportError, Exports, Function, FunctionEnvMut, Instance, MemoryView, RuntimeError,
+    Store, StoreMut, WasmPtr,
 };
 
 use crate::{IndexEnv, IndexerResult};
@@ -27,7 +27,7 @@ pub enum FFIError {
 }
 
 pub(crate) fn get_namespace(
-    store: &mut Store,
+    store: &mut StoreMut,
     instance: &Instance,
 ) -> Result<String, FFIError> {
     let exports = &instance.exports;
@@ -51,7 +51,7 @@ pub(crate) fn get_namespace(
 }
 
 pub(crate) fn get_identifier(
-    store: &mut Store,
+    store: &mut StoreMut,
     instance: &Instance,
 ) -> Result<String, FFIError> {
     let exports = &instance.exports;
@@ -77,7 +77,7 @@ pub(crate) fn get_identifier(
 }
 
 pub(crate) fn get_version(
-    store: &mut Store,
+    store: &mut StoreMut,
     instance: &Instance,
 ) -> Result<String, FFIError> {
     let exports = &instance.exports;
@@ -97,22 +97,25 @@ pub(crate) fn get_version(
 }
 
 fn get_string(mem: &MemoryView, ptr: u32, len: u32) -> Result<String, FFIError> {
-    let result = WasmPtr::<u8, wasmer::Array>::new(ptr)
-        .get_utf8_string(mem, len)
-        .ok_or(FFIError::MemoryBound)?;
+    let result = WasmPtr::<u8>::new(ptr)
+        .read_utf8_string(mem, len)
+        .or(Err(FFIError::MemoryBound))?;
     Ok(result)
 }
 
 fn get_object_id(mem: &MemoryView, ptr: u32) -> u64 {
-    // TODO: get rid of unwrap
-    WasmPtr::<u64>::new(ptr).deref(mem).read().unwrap()
-    // .expect("Failed to  WasmPtrs.")
-    // .get()
+    WasmPtr::<u64>::new(ptr)
+        .deref(mem)
+        .read()
+        .expect("Could not read object ID")
 }
 
 fn log_data(env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u32) {
-    let mem = env.data().memory.expect("Memory uninitialized.");
-    let log_string = get_string(mem, ptr, len).expect("Log string could not be fetched.");
+    let (idx_env, store) = env.data_and_store_mut();
+    let mem = idx_env.memory.expect("Memory unitialized.").view(&store);
+
+    let log_string =
+        get_string(&mem, ptr, len).expect("Log string could not be fetched.");
 
     match log_level {
         LOG_LEVEL_ERROR => error!("{log_string}",),
@@ -130,31 +133,26 @@ fn get_object(
     ptr: u32,
     len_ptr: u32,
 ) -> u32 {
-    let mem = env.data().memory.expect("Memory uninitialized").view();
-    // let mem = env.data().memory_ref().expect("Memory uninitialized.");
+    let (idx_env, store) = env.data_and_store_mut();
+    let mem = idx_env.memory.expect("Memory unitialized.").view(&store);
 
-    let id = get_object_id(mem, ptr);
+    let id = get_object_id(&mem, ptr);
 
     // TODO: stash this thing somewhere??
     let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
     let bytes =
-        rt.block_on(async { env.data().db.lock().await.get_object(type_id, id).await });
+        rt.block_on(async { idx_env.db.lock().await.get_object(type_id, id).await });
 
     if let Some(bytes) = bytes {
-        let alloc_fn = env.data().alloc.expect("Alloc export is missing.");
+        let alloc_fn = idx_env.alloc.expect("Alloc export is missing.");
 
         let size = bytes.len() as u32;
-        let result = alloc_fn.call(size).expect("Alloc failed.");
+        let result = alloc_fn.call(&mut store, size).expect("Alloc failed.");
         let range = result as usize..result as usize + size as usize;
 
-        WasmPtr::<u32>::new(len_ptr)
-            .deref(mem)
-            .expect("Failed to deref WasmPtr.")
-            .set(size);
+        WasmPtr::<u32>::new(len_ptr).deref(&mem).write(size);
 
-        unsafe {
-            mem.data_unchecked_mut()[range].copy_from_slice(&bytes);
-        }
+        mem.write(ptr as u64, &bytes);
 
         result
     } else {
@@ -163,26 +161,20 @@ fn get_object(
 }
 
 fn put_object(env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
-    let mem = env
-        .data_mut()
-        .memory
-        .expect("Memory uninitialized.")
-        .view(store);
+    let (idx_env, store) = env.data_and_store_mut();
+    let mem = idx_env.memory.expect("Memory unitialized").view(&store);
 
     let mut bytes = Vec::with_capacity(len as usize);
     let range = ptr as usize..ptr as usize + len as usize;
 
-    // bytes.extend_from_slice(&mem)
-    unsafe {
-        bytes.extend_from_slice(&mem.data_unchecked()[range]);
-    }
+    &mem.read(ptr as u64, &mut bytes);
 
     let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
 
     // TODO: stash this??
     let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
     rt.block_on(async {
-        env.data_mut()
+        idx_env
             .db
             .lock()
             .await
@@ -191,12 +183,13 @@ fn put_object(env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
     });
 }
 
-pub fn get_exports(env: &FunctionEnv<IndexEnv>, store: &mut Store) -> Exports {
+pub fn get_exports(env: &FunctionEnvMut<IndexEnv>) -> Exports {
+    let (idx_env, store) = env.data_and_store_mut();
     let mut exports = Exports::new();
 
-    let f_get_obj = Function::new_typed_with_env(store, env, get_object);
-    let f_put_obj = Function::new_typed_with_env(store, env, put_object);
-    let f_log_data = Function::new_typed_with_env(store, env, log_data);
+    let f_get_obj = Function::new_typed_with_env(&mut store, &env.as_ref(), get_object);
+    let f_put_obj = Function::new_typed_with_env(&mut store, &env.as_ref(), put_object);
+    let f_log_data = Function::new_typed_with_env(&mut store, &env.as_ref(), log_data);
     exports.insert(format!("ff_get_object"), f_get_obj);
     exports.insert(format!("ff_get_object"), f_put_obj);
     exports.insert(format!("ff_get_object"), f_log_data);

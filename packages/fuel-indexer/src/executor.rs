@@ -523,33 +523,32 @@ where
 #[derive(Debug)]
 pub struct WasmIndexExecutor {
     instance: Instance,
-    module: Module,
+    _module: Module,
     store: Store,
     db: Arc<Mutex<Database>>,
     #[allow(unused)]
     timeout: u64,
 }
 
-impl WasmIndexExecutor {
+impl<'a> WasmIndexExecutor {
     pub async fn new(
         config: &IndexerConfig,
         manifest: &Manifest,
         wasm_bytes: impl AsRef<[u8]>,
-    ) -> IndexerResult<Self> {
+    ) -> IndexerResult<WasmIndexExecutor> {
         let db_url = config.database.to_string();
         let mut store = Store::new(Cranelift::default());
         let module = Module::new(&store, &wasm_bytes)?;
 
-        let mut env = FunctionEnv::new(&mut store, IndexEnv::new(db_url).await?)
-            .into_mut(&mut store);
-        let mut import_object = imports! {};
-        let exports = ffi::get_exports(&env.as_ref(), &mut store);
+        let env = FunctionEnv::new(&mut store, IndexEnv::new(db_url).await?);
+        let mut imports = imports! {};
+        let instance = Instance::new(&mut store, &module, &imports)?;
 
-        for (export_name, export) in exports.iter() {
-            import_object.define("env", &export_name, export.clone());
+        let mut env_mut = env.into_mut(&mut store);
+        for (export_name, export) in ffi::get_exports(&env_mut) {
+            imports.define("env", &export_name, export.clone());
         }
 
-        let instance = Instance::new(&mut store, &module, &import_object)?;
         if !instance
             .exports
             .contains(ffi::MODULE_ENTRYPOINT.to_string())
@@ -557,7 +556,7 @@ impl WasmIndexExecutor {
             return Err(IndexerError::MissingHandler);
         }
 
-        let (mut data_mut, mut store_mut) = env.data_and_store_mut();
+        let (mut data_mut, mut store_mut) = env_mut.data_and_store_mut();
         data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
         data_mut.alloc = Some(
             instance
@@ -574,12 +573,12 @@ impl WasmIndexExecutor {
             .db
             .lock()
             .await
-            .load_schema(manifest, Some(&mut store), Some(&instance))
+            .load_schema(manifest, Some(&mut store_mut), Some(&instance))
             .await?;
 
         Ok(WasmIndexExecutor {
             instance,
-            module,
+            _module: module,
             store,
             db: data_mut.db.clone(),
             timeout: config.indexer_handler_timeout,
@@ -590,7 +589,7 @@ impl WasmIndexExecutor {
     pub async fn from_file(
         p: impl AsRef<Path>,
         config: Option<IndexerConfig>,
-    ) -> IndexerResult<Self> {
+    ) -> IndexerResult<WasmIndexExecutor> {
         let config = config.unwrap_or_default();
         let manifest = Manifest::from_file(p)?;
         let bytes = manifest.module_bytes()?;
@@ -642,7 +641,7 @@ impl WasmIndexExecutor {
 }
 
 #[async_trait]
-impl Executor for WasmIndexExecutor {
+impl<'a> Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);
