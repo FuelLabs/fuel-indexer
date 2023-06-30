@@ -1,5 +1,4 @@
 #![deny(unused_crate_dependencies)]
-pub mod db;
 pub mod ffi;
 pub mod fuel;
 pub mod receipt;

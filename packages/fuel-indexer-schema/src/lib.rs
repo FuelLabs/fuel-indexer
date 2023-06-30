@@ -2,7 +2,6 @@
 
 extern crate alloc;
 
-use fuel_indexer_types::db::ColumnType;
 use fuel_indexer_types::prelude::fuel::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -249,47 +248,6 @@ impl FtColumn {
                 }
                 None => String::from(NULL_VALUE),
             },
-        }
-    }
-}
-
-impl From<FtColumn> for ColumnType {
-    fn from(col: FtColumn) -> Self {
-        match col {
-            FtColumn::ID(_) => ColumnType::ID,
-            FtColumn::Address(_) => ColumnType::Address,
-            FtColumn::AssetId(_) => ColumnType::AssetId,
-            FtColumn::Blob(_) => ColumnType::Blob,
-            FtColumn::BlockHeight(_) => ColumnType::BlockHeight,
-            FtColumn::Boolean(_) => ColumnType::Boolean,
-            FtColumn::Bytes32(_) => ColumnType::Bytes32,
-            FtColumn::Bytes4(_) => ColumnType::Bytes4,
-            FtColumn::Bytes64(_) => ColumnType::Bytes64,
-            FtColumn::Bytes8(_) => ColumnType::Bytes8,
-            FtColumn::Charfield(_) => ColumnType::Charfield,
-            FtColumn::ContractId(_) => ColumnType::ContractId,
-            FtColumn::Enum(_) => ColumnType::Enum,
-            FtColumn::HexString(_) => ColumnType::HexString,
-            FtColumn::Identity(_) => ColumnType::Identity,
-            FtColumn::Int1(_) => ColumnType::Int1,
-            FtColumn::Int16(_) => ColumnType::Int16,
-            FtColumn::Int4(_) => ColumnType::Int4,
-            FtColumn::Int8(_) => ColumnType::Int8,
-            FtColumn::Json(_) => ColumnType::Json,
-            FtColumn::MessageId(_) => ColumnType::MessageId,
-            FtColumn::Nonce(_) => ColumnType::Nonce,
-            FtColumn::Salt(_) => ColumnType::Salt,
-            FtColumn::Signature(_) => ColumnType::Signature,
-            FtColumn::Tai64Timestamp(_) => ColumnType::Tai64Timestamp,
-            FtColumn::Timestamp(_) => ColumnType::Timestamp,
-            FtColumn::TxId(_) => ColumnType::TxId,
-            FtColumn::UInt1(_) => ColumnType::UInt1,
-            FtColumn::UInt16(_) => ColumnType::UInt16,
-            FtColumn::UInt4(_) => ColumnType::UInt4,
-            FtColumn::UInt8(_) => ColumnType::UInt8,
-            FtColumn::Virtual(_) => ColumnType::Virtual,
-            FtColumn::BlockId(_) => ColumnType::BlockId,
-            FtColumn::Array(_) => ColumnType::Array,
         }
     }
 }

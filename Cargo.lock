@@ -3316,7 +3316,6 @@ dependencies = [
  "async-graphql-value 5.0.10",
  "chrono",
  "fuel-indexer-lib",
- "fuel-indexer-types",
  "linked_hash_set",
  "serde",
  "strum 0.24.1",
@@ -3528,7 +3527,6 @@ dependencies = [
  "fuels 0.43.0",
  "serde",
  "serde_json",
- "strum 0.24.1",
  "tai64",
 ]
 

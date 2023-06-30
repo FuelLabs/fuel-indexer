@@ -14,7 +14,6 @@ async-graphql-parser = { workspace = true }
 async-graphql-value = { workspace = true }
 chrono = { version = "0.4.24", features = ["serde"] }
 fuel-indexer-lib = { workspace = true, default-features = true }
-fuel-indexer-types = { workspace = true }
 linked_hash_set = "0.1"
 serde = { features = ["derive", "alloc"], workspace = true }
 strum = { version = "0.24", default-features = false, features = ["derive"] }

@@ -20,8 +20,7 @@ impl GraphQLSchemaValidator {
         }
     }
 
-    /// Check that a `TypeKind::Union(UnionType)`'s members are either all
-    /// virtual, or all regular/non-virtual
+    /// Check that a `TypeKind::Union(UnionType)`'s members are either all virtual, or all regular/non-virtual
     pub fn check_derived_union_is_well_formed(
         typ: &TypeDefinition,
         virtual_type_names: &mut HashSet<String>,

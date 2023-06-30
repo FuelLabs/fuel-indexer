@@ -229,7 +229,6 @@ impl ParsedGraphQLSchema {
                                     && field.node.ty.to_string().contains(']')
                                 {
                                     let fid = field_id(&obj_name, &field_name);
-                                    // TODO: Also add to optionality?
                                     list_field_types.insert(fid);
 
                                     list_type_defs

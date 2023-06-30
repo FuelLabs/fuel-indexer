@@ -706,19 +706,6 @@ pub fn to_bytes_tokens(
             }
         }
         FieldBaseType::List => {
-            // if *nullable {
-            //     if *inner_nullable {
-            //         quote! { .as_ref().map(|items| items.iter().map(|x| x.to_bytes()).collect::<Vec<_>>()) }
-            //     } else {
-            //         quote! { .as_ref().map(|items| items.iter().map(|x| x.to_bytes()).collect::<Vec<_>>()) }
-            //     }
-            // } else {
-            //     if *inner_nullable {
-            //         quote! { .iter().filter_map(|x| x).map(|x| x.to_bytes()).collect::<Vec<_>>() }
-            //     } else {
-            //         quote! { .iter().filter_map(|x| x).map(|x| x.to_bytes()).collect::<Vec<_>>() }
-            //     }
-            // }
             // TODO: Do we want to allow list types to be hashed into an ID? Would make for
             // better/greater entropy but would add complexity.
             quote! {}
