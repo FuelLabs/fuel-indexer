@@ -8,6 +8,9 @@ use wasmer::{
     ExportError, Exports, Function, HostEnvInitError, Instance, Memory, RuntimeError,
     Store, WasmPtr,
 };
+use wasmer_middlewares::metering::{
+    get_remaining_points, set_remaining_points, MeteringPoints,
+};
 
 use crate::{IndexEnv, IndexerResult};
 pub const MODULE_ENTRYPOINT: &str = "handle_events";
@@ -182,11 +185,16 @@ pub(crate) struct WasmArg<'a> {
     instance: &'a Instance,
     ptr: u32,
     len: u32,
+    metering_enabled: bool,
 }
 
 impl<'a> WasmArg<'a> {
     #[allow(clippy::result_large_err)]
-    pub fn new(instance: &Instance, bytes: Vec<u8>) -> IndexerResult<WasmArg> {
+    pub fn new(
+        instance: &Instance,
+        bytes: Vec<u8>,
+        metering_enabled: bool,
+    ) -> IndexerResult<WasmArg> {
         let alloc_fn = instance
             .exports
             .get_native_function::<u32, u32>("alloc_fn")?;
@@ -200,7 +208,12 @@ impl<'a> WasmArg<'a> {
             memory.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
 
-        Ok(WasmArg { instance, ptr, len })
+        Ok(WasmArg {
+            instance,
+            ptr,
+            len,
+            metering_enabled,
+        })
     }
 
     pub fn get_ptr(&self) -> u32 {
@@ -219,6 +232,17 @@ impl<'a> Drop for WasmArg<'a> {
             .exports
             .get_native_function::<(u32, u32), ()>("dealloc_fn")
             .expect("No dealloc fn");
-        dealloc_fn.call(self.ptr, self.len).expect("Dealloc failed");
+        // Need to track whether metering is enabled or otherwise getting or setting points will panic
+        if self.metering_enabled {
+            let pts = match get_remaining_points(&self.instance) {
+                MeteringPoints::Exhausted => 0,
+                MeteringPoints::Remaining(pts) => pts,
+            };
+            set_remaining_points(&self.instance, 100_000);
+            dealloc_fn.call(self.ptr, self.len).expect("Dealloc failed");
+            set_remaining_points(&self.instance, pts);
+        } else {
+            dealloc_fn.call(self.ptr, self.len).expect("Dealloc failed");
+        }
     }
 }

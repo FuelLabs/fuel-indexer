@@ -1,4 +1,5 @@
 extern crate alloc;
+use fuel_indexer::{Executor, IndexerConfig, WasmIndexExecutor};
 use fuel_indexer_lib::manifest::Manifest;
 use fuel_indexer_tests::{defaults, fixtures::indexer_service_postgres};
 use fuels::prelude::{LoadConfiguration, TxParameters};
@@ -21,6 +22,76 @@ abigen!(Contract(
     abi =
         "packages/fuel-indexer-tests/contracts/simple-wasm/out/debug/contracts-abi.json"
 ));
+
+#[tokio::test]
+async fn test_wasm_executor_can_meter_execution() {
+    use async_std::{fs::File, io::ReadExt};
+
+    if let Ok(current_dir) = std::env::current_dir() {
+        println!("Current directory: {}", current_dir.display());
+    }
+
+    use std::env;
+
+    if let Ok(mut current_dir) = env::current_dir() {
+        current_dir.pop();
+        current_dir.pop();
+        if let Err(e) = env::set_current_dir(current_dir) {
+            eprintln!("Failed to change directory: {}", e);
+        }
+    }
+
+    let config = IndexerConfig::default();
+    let manifest = Manifest::from_file(
+        "packages/fuel-indexer-tests/components/indices/simple-wasm/simple_wasm.yaml",
+    )
+    .unwrap();
+
+    let mut exhausted = false;
+
+    match &manifest.module {
+        fuel_indexer_lib::manifest::Module::Wasm(ref module) => {
+            let mut bytes = Vec::<u8>::new();
+            let mut file = File::open(module).await.unwrap();
+            file.read_to_end(&mut bytes).await.unwrap();
+
+            let mut executor =
+                WasmIndexExecutor::new(&config, &manifest, bytes.clone(), Some(2_000u64))
+                    .await
+                    .unwrap();
+
+            let blocks: Vec<fuel_indexer_types::fuel::BlockData> = vec![];
+
+            for i in 0..30 {
+                if let Err(e) = executor.handle_events(blocks.clone()).await {
+                    if let fuel_indexer::IndexerError::RuntimeError(e) = e {
+                        if let Some(e) = e.to_trap() {
+                            assert_eq!(e, wasmer_types::TrapCode::UnreachableCodeReached);
+                            assert_eq!(
+                                wasmer_middlewares::metering::MeteringPoints::Exhausted,
+                                executor.get_metering_points()
+                            );
+                            println!("Metering points exhausted in loop iteration {i}.");
+                            exhausted = true;
+                            break;
+                        }
+                    } else {
+                        match executor.get_metering_points() {
+                            wasmer_middlewares::metering::MeteringPoints::Remaining(
+                                pts,
+                            ) => {
+                                assert!(pts > 0)
+                            }
+                            _ => panic!("expected remaining points > 0"),
+                        }
+                    }
+                }
+            }
+        }
+        _ => panic!("unexpected!"),
+    }
+    assert!(exhausted, "expected exhausted metering points");
+}
 
 #[tokio::test]
 #[cfg_attr(feature = "e2e", ignore)]

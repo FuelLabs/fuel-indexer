@@ -56,6 +56,8 @@ url = "2.3"
 wasmer = "2.3"
 wasmer-compiler-cranelift = { version = "2.3" }
 wasmer-engine-universal = "2.3"
+wasmer-types = "2.3"
+wasmer-middlewares = "2.3"
 
 [features]
 e2e = []

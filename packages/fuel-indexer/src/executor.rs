@@ -36,8 +36,8 @@ use tokio::{
 };
 use tracing::{debug, error, info, warn};
 use wasmer::{
-    imports, Instance, LazyInit, Memory, Module, NativeFunc, RuntimeError, Store,
-    WasmerEnv,
+    imports, CompilerConfig, Instance, LazyInit, Memory, Module, NativeFunc,
+    RuntimeError, Store, WasmerEnv,
 };
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_universal::Universal;
@@ -537,6 +537,7 @@ pub struct WasmIndexExecutor {
     db: Arc<Mutex<Database>>,
     #[allow(unused)]
     timeout: u64,
+    metering_points: Option<u64>,
 }
 
 impl WasmIndexExecutor {
@@ -544,9 +545,23 @@ impl WasmIndexExecutor {
         config: &IndexerConfig,
         manifest: &Manifest,
         wasm_bytes: impl AsRef<[u8]>,
+        metering_points: Option<u64>,
     ) -> IndexerResult<Self> {
         let db_url = config.database.to_string();
-        let store = Store::new(&Universal::new(compiler()).engine());
+
+        let mut compiler_config = compiler();
+
+        if let Some(metering_points) = metering_points {
+            // `Metering` needs to be configured with a limit and a cost
+            // function. For each `Operator`, the metering middleware will call
+            // the cost function and subtract the cost from the remaining
+            // points.
+            let metering =
+                Arc::new(wasmer_middlewares::Metering::new(metering_points, |_| 1));
+            compiler_config.push_middleware(metering);
+        }
+
+        let store = Store::new(&Universal::new(compiler_config).engine());
         let module = Module::new(&store, &wasm_bytes)?;
 
         let mut import_object = imports! {};
@@ -577,6 +592,7 @@ impl WasmIndexExecutor {
             _store: store,
             db: env.db.clone(),
             timeout: config.indexer_handler_timeout,
+            metering_points,
         })
     }
 
@@ -588,7 +604,7 @@ impl WasmIndexExecutor {
         let config = config.unwrap_or_default();
         let manifest = Manifest::from_file(p)?;
         let bytes = manifest.module_bytes()?;
-        Self::new(&config, &manifest, bytes).await
+        Self::new(&config, &manifest, bytes, None).await
     }
 
     pub async fn create(
@@ -606,7 +622,8 @@ impl WasmIndexExecutor {
                     file.read_to_end(&mut bytes).await?;
 
                     let executor =
-                        WasmIndexExecutor::new(config, manifest, bytes.clone()).await?;
+                        WasmIndexExecutor::new(config, manifest, bytes.clone(), None)
+                            .await?;
                     let handle = tokio::spawn(run_executor(
                         config,
                         manifest,
@@ -621,7 +638,8 @@ impl WasmIndexExecutor {
                 }
             },
             ExecutorSource::Registry(bytes) => {
-                let executor = WasmIndexExecutor::new(config, manifest, bytes).await?;
+                let executor =
+                    WasmIndexExecutor::new(config, manifest, bytes, None).await?;
                 let handle = tokio::spawn(run_executor(
                     config,
                     manifest,
@@ -633,6 +651,10 @@ impl WasmIndexExecutor {
             }
         }
     }
+
+    pub fn get_metering_points(&self) -> wasmer_middlewares::metering::MeteringPoints {
+        wasmer_middlewares::metering::get_remaining_points(&self.instance)
+    }
 }
 
 #[async_trait]
@@ -640,7 +662,7 @@ impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);
-        let arg = ffi::WasmArg::new(&self.instance, bytes)?;
+        let arg = ffi::WasmArg::new(&self.instance, bytes, self.metering_points.is_some())?;
 
         let fun = self
             .instance
