@@ -35,7 +35,7 @@ pub fn unwrap_or_default_for_external_type(
     }
 }
 
-/// If TypeDeclaration is tuple type
+/// Whether or not a `TypeDeclaration` is tuple type
 pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
     typ.type_field.as_str().starts_with('(')
 }
@@ -411,9 +411,17 @@ pub enum FieldKind {
     List(Box<FieldKind>),
 }
 
+/// The result of a call to `helpers::process_typedef_field`.
 pub struct ProcessTypedefResult {
+    /// The `Ident` for the processed `FieldDefinition`'s name.
     pub field_name_ident: proc_macro2::Ident,
+
+    /// The tokens for the processed `FieldDefinition`'s extractor.
+    ///
+    /// This is used in `T::from_row` where `T: Entity`.
     pub extractor: proc_macro2::TokenStream,
+
+    /// The result of a call to `helpers::process_type`.
     pub processed_type_result: ProcessTypeResult,
 }
 
@@ -543,17 +551,36 @@ pub fn process_typedef_field(
 /// Process a named field into its type tokens, and the Ident for those type tokens.
 #[derive(Debug, Clone)]
 pub struct ProcessTypeResult {
+    /// The tokens for the processed `FieldDefinition`'s type.
     pub field_type_tokens: proc_macro2::TokenStream,
+
+    /// The `Ident` for the processed `FieldDefinition`'s type.
     pub field_type_ident: proc_macro2::Ident,
+
+    /// The `Ident` for the processed `FieldDefinition`'s inner type.
+    ///
+    /// Only used when processing a `FieldDefinition` who's type is a GraphQL list type.
     pub inner_type_ident: Option<proc_macro2::Ident>,
+
+    /// Whether or not the processed `FieldDefinition`'s type is nullable.
     pub nullable: bool,
+
+    /// Whether or not the processed `FieldDefinition`'s inner type is nullable.
+    ///
+    /// Only used when processing a `FieldDefinition` who's type is a GraphQL list type.
     pub inner_nullable: bool,
+
+    /// The base type of the processed `FieldDefinition`.
     pub base_type: FieldBaseType,
 }
 
+/// The base type of a `FieldDefinition`.
 #[derive(Debug, Clone)]
 pub enum FieldBaseType {
+    /// The named (or non-list) type.
     Named,
+
+    /// A list type.
     List,
 }
 
@@ -623,8 +650,8 @@ pub fn process_type(parsed: &ParsedGraphQLSchema, typ: &Type) -> ProcessTypeResu
     }
 }
 
-/// Return `FieldKind` for a given `FieldDefinition` within the context of a
-/// particularly parsed GraphQL schema.
+/// Return `FieldKind` for a given `FieldDefinition` within the context of a particularly
+/// parsed GraphQL schema.
 pub fn field_kind(
     field_typ_name: &str,
     fid: &str,

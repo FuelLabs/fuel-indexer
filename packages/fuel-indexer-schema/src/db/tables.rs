@@ -1,3 +1,10 @@
+//! # fuel_indexer_schema::db::tables
+//!
+//! Runtime logic used to create SQL tables and persist those tables (and various metadata
+//! about the structure of those tables) to the database.
+//!
+//! Also used to load tables from the database when web requests are made.
+
 use crate::{db::IndexerSchemaDbResult, QUERY_ROOT};
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,

@@ -1,3 +1,7 @@
+//! # fuel-indexer-database-types
+//!
+//! A collection of types used to create SQL-based indexing components.
+
 #![deny(unused_crate_dependencies)]
 use async_graphql_parser::{
     types::{FieldDefinition, ObjectType, TypeDefinition, TypeKind},
@@ -10,7 +14,7 @@ use chrono::{
 };
 use fuel_indexer_lib::{
     graphql::{
-        extract_foreign_key_info, field_id, is_list_type,
+        extract_foreign_key_info, field_id, field_type_name, is_list_type,
         types::{IdCol, ObjectCol},
         JoinTableItem, ParsedGraphQLSchema,
     },
@@ -321,7 +325,7 @@ impl Column {
         position: i32,
         persistence: Persistence,
     ) -> Self {
-        let mut field_type = f.ty.to_string().replace(['[', ']', '!'], "");
+        let mut field_type = field_type_name(&f);
         if parsed.is_possible_foreign_key(&field_type) {
             field_type = f
             .directives
@@ -346,11 +350,7 @@ impl Column {
 
         match is_list_type(f) {
             true => {
-                let array_coltype = if parsed.is_virtual_typedef(&field_type) {
-                    ColumnType::Virtual
-                } else {
-                    ColumnType::from(field_type.as_str())
-                };
+                let array_coltype = ColumnType::from(parsed.scalar_type_for(&f).as_str());
 
                 Self {
                     type_id,
@@ -640,12 +640,15 @@ pub struct IndexerAssetBundle {
 /// All assets that can be used on indexers.
 #[derive(Debug, Eq, PartialEq, Hash, Clone, EnumString, AsRefStr)]
 pub enum IndexerAssetType {
+    /// Indexer WebAssembly (WASM) module asset.
     #[strum(serialize = "wasm")]
     Wasm,
 
+    /// Indexer YAML manifest asset.
     #[strum(serialize = "manifest")]
     Manifest,
 
+    /// Indexer GraphQL schema asset.
     #[strum(serialize = "schema")]
     Schema,
 }
@@ -682,6 +685,7 @@ impl RegisteredIndexer {
 /// SQL database types used by indexers.
 #[derive(Eq, PartialEq, Debug, Clone, Default)]
 pub enum DbType {
+    /// PostgreSQL database backend.
     #[default]
     Postgres,
 }
@@ -753,13 +757,16 @@ impl SqlFragment for SqlIndex {
 /// On delete action for a FK constraint.
 #[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
 pub enum OnDelete {
+    /// Take no action on delete.
     #[default]
     #[strum(serialize = "NO ACTION")]
     NoAction,
 
+    /// Cascade the delete to all child FK references.
     #[strum(serialize = "CASCADE")]
     Cascade,
 
+    /// Set the child FK references to null.
     #[strum(serialize = "SET NULL")]
     SetNull,
 }
@@ -921,10 +928,12 @@ impl SqlNamed for Table {
 }
 
 impl Table {
+    /// Table constraints.
     pub fn constraints(&self) -> &Vec<Constraint> {
         &self.constraints
     }
 
+    /// Table columns.
     pub fn columns(&self) -> &Vec<Column> {
         &self.columns
     }

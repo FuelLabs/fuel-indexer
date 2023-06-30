@@ -1,4 +1,4 @@
-//! # fuel-indexer-lib
+//! # fuel_indexer_lib
 //!
 //! A collection of utilities used by the various `fuel-indexer-*` crates.
 

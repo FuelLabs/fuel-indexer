@@ -1,3 +1,8 @@
+//! # fuel_indexer_lib::parser
+//!
+//! A utility used to help parse and cache various components of indexer
+//! GraphQL schema. This is meant to be a productivity tool for project devs.
+
 use crate::{
     fully_qualified_namespace,
     graphql::{
@@ -49,20 +54,20 @@ pub struct JoinTableItem {
     /// This is always `id` for now.
     pub column_name: String,
 
-    /// Type of the column on the local table to which to join.
+    /// Type of the column on the local table on which to join.
     ///
     /// This is always `ColumnType::UInt8` for now.
     pub column_type: String,
 
-    /// `TypeDefinition` name to which join references.
+    /// `TypeDefinition` name to which this join references.
     pub ref_table_name: String,
 
-    /// Name of the column on the referenced table to which to join.
+    /// Name of the column on the referenced table on which to join.
     ///
     /// This is always `id` for now.
     pub ref_column_name: String,
 
-    /// Type of the column on the referenced table to which to join.
+    /// Type of the column on the referenced table on which to join.
     ///
     /// This is always `ColumnType::UInt8` for now.
     pub ref_column_type: String,
@@ -161,7 +166,7 @@ pub struct ParsedGraphQLSchema {
     /// All unique names of types that have already been parsed.
     parsed_type_names: HashSet<String>,
 
-    /// A mapping of fully qualified field names to their field types.
+    /// Mapping of fully qualified field names to their field types.
     field_type_mappings: HashMap<String, String>,
 
     /// All unique names of scalar types in the schema.
@@ -170,7 +175,7 @@ pub struct ParsedGraphQLSchema {
     /// A mapping of fully qualified field names to their respective optionalities.
     field_type_optionality: HashMap<String, bool>,
 
-    /// The parsed schema.
+    /// The parsed schema AST.
     ast: ServiceDocument,
 
     /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
@@ -178,7 +183,7 @@ pub struct ParsedGraphQLSchema {
     // We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
     field_defs: HashMap<String, (FieldDefinition, String)>,
 
-    /// GraphQL schema content.
+    /// Raw GraphQL schema content.
     schema: GraphQLSchema,
 
     /// All unique names of foreign key types in the schema.
@@ -463,58 +468,91 @@ impl ParsedGraphQLSchema {
         })
     }
 
+    /// Namespace of the indexer.
     pub fn namespace(&self) -> &str {
         &self.namespace
     }
 
+    /// Identifier of the indexer.
     pub fn identifier(&self) -> &str {
         &self.identifier
     }
 
+    /// Indexer method of execution.
     pub fn exec_source(&self) -> &ExecutionSource {
         &self.exec_source
     }
 
+    /// Mapping of object names to objects.    
     pub fn objects(&self) -> &HashMap<String, ObjectType> {
         &self.objects
     }
 
+    /// Mapping of fully qualified field names to their field types.
     pub fn field_type_mappings(&self) -> &HashMap<String, String> {
         &self.field_type_mappings
     }
 
+    /// All unique names of scalar types in the schema.
     pub fn field_type_optionality(&self) -> &HashMap<String, bool> {
         &self.field_type_optionality
     }
 
+    /// The parsed schema AST.
     pub fn ast(&self) -> &ServiceDocument {
         &self.ast
     }
 
+    /// Raw GraphQL schema content.
     pub fn schema(&self) -> &GraphQLSchema {
         &self.schema
     }
 
+    /// All type definitions in the schema.
     pub fn type_defs(&self) -> &HashMap<String, TypeDefinition> {
         &self.type_defs
     }
 
+    /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
     pub fn field_defs(&self) -> &HashMap<String, (FieldDefinition, String)> {
         &self.field_defs
     }
 
+    /// All unique names of foreign key types in the schema.
     pub fn foreign_key_mappings(
         &self,
     ) -> &HashMap<String, HashMap<String, (String, String)>> {
         &self.foreign_key_mappings
     }
 
+    /// All objects and their field names and types, indexed by object name.
     pub fn object_field_mappings(&self) -> &HashMap<String, BTreeMap<String, String>> {
         &self.object_field_mappings
     }
 
+    /// Metadata related to many-to-many relationships in the GraphQL schema.
     pub fn join_table_info(&self) -> &HashMap<String, JoinTableItem> {
         &self.join_table_info
+    }
+
+    /// All unique names of scalar types in the schema.
+    pub fn scalar_type_for(&self, f: &FieldDefinition) -> String {
+        let typ_name = field_type_name(&f);
+        if self.is_possible_foreign_key(&typ_name) {
+            let (ref_coltype, _ref_colname, _ref_tablename) =
+                extract_foreign_key_info(f, &self.field_type_mappings);
+            return ref_coltype;
+        }
+
+        if self.is_virtual_typedef(&typ_name) {
+            return "Virtual".to_string();
+        }
+
+        if self.is_enum_typedef(&typ_name) {
+            return "Charfield".to_string();
+        }
+
+        typ_name
     }
 
     /// Return the `TypeDefinition` associated with a given union name.
@@ -565,11 +603,11 @@ impl ParsedGraphQLSchema {
 
     /// Return the GraphQL type for a given field name.
     pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
-        match self.object_field_mappings.get(cond) {
+        match self.object_field_mappings().get(cond) {
             Some(fieldset) => fieldset.get(name),
             _ => {
                 let tablename = cond.replace(['[', ']', '!'], "");
-                match self.object_field_mappings.get(&tablename) {
+                match self.object_field_mappings().get(&tablename) {
                     Some(fieldset) => fieldset.get(name),
                     _ => None,
                 }

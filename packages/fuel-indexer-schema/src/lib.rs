@@ -1,3 +1,8 @@
+//! # fuel_indexer_schema
+//!
+//! A collection of utilities used to create SQL-based objects that interact with
+//! objects being pulled from, and being persisted to, the database backend.
+
 // TODO: Deny `clippy::unused_crate_dependencies` when including feature-flagged dependency `itertools`
 
 extern crate alloc;
@@ -10,11 +15,14 @@ use thiserror::Error;
 #[cfg(feature = "db-models")]
 pub mod db;
 
+/// Placeholder value for SQL `NULL` values.
 const NULL_VALUE: &str = "null";
 pub const QUERY_ROOT: &str = "QueryRoot";
 
+/// Result type used by indexer schema operations.
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
 
+/// Error type used by indexer schema operations.
 #[derive(Error, Debug)]
 pub enum IndexerSchemaError {
     #[error("Generic error")]
@@ -35,6 +43,10 @@ pub enum IndexerSchemaError {
     InconsistentVirtualUnion(String),
 }
 
+/// `FtColumn` is an abstraction that represents a sized type that can be persisted to, and
+/// fetched from the database.
+///
+/// Each `FtColumn` corresponds to a Fuel-specific GraphQL scalar type.
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
     Address(Option<Address>),
