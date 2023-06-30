@@ -12,7 +12,7 @@ use fuel_indexer_lib::{
     graphql::{
         extract_foreign_key_info, field_id, is_list_type,
         types::{IdCol, ObjectCol},
-        ParsedGraphQLSchema,
+        JoinTableItem, ParsedGraphQLSchema,
     },
     type_id,
 };
@@ -567,6 +567,23 @@ impl TypeId {
             table_name: typ.name.to_string().to_lowercase(),
         }
     }
+
+    /// Create a new `TypeId` from a given `JoinTableItem`.
+    pub fn from_join_info(info: JoinTableItem, parsed: &ParsedGraphQLSchema) -> Self {
+        let JoinTableItem { table_name, .. } = info;
+
+        let type_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
+        Self {
+            id: type_id,
+            version: parsed.schema().version().to_string(),
+            namespace: parsed.namespace().to_string(),
+            identifier: parsed.identifier().to_string(),
+            // Doesn't matter what this is, but let's use `ID` since all column types
+            // on join tables are `ColumnType::ID` for now.
+            graphql_name: ColumnType::ID.to_string(),
+            table_name,
+        }
+    }
 }
 
 /// `ColumnInfo` is a derived version of `Column` that is only for `queries::columns_get_schema`.
@@ -852,6 +869,16 @@ impl Nonce {
     }
 }
 
+#[derive(Default, Debug)]
+pub enum TableType {
+    /// A table that is used to join two other tables.
+    Join,
+
+    /// A normal SQL table with basic constraints.
+    #[default]
+    Regular,
+}
+
 /// SQL database table for a given `GraphRoot` in the database.
 #[derive(Default, Debug)]
 pub struct Table {
@@ -872,6 +899,9 @@ pub struct Table {
 
     /// How this typedef is persisted to the database.
     persistence: Persistence,
+
+    /// The type of table.
+    table_type: TableType,
 }
 
 impl SqlNamed for Table {
@@ -989,6 +1019,7 @@ impl Table {
                     columns,
                     constraints,
                     persistence,
+                    table_type: TableType::Regular
                 }
             }
             TypeKind::Union(u) => {
@@ -1047,6 +1078,76 @@ impl Table {
                 Self::from_typedef(&typdef, parsed)
             }
             _ => unimplemented!("An EnumType TypeDefinition should not have been passed to Table::from_typedef."),
+        }
+    }
+
+    pub fn from_join_info(item: JoinTableItem, parsed: &ParsedGraphQLSchema) -> Self {
+        let JoinTableItem {
+            table_name,
+            local_table_name,
+            column_name,
+            ref_table_name,
+            ref_column_name,
+            ref_column_type,
+        } = item;
+
+        let ty_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
+        let columns = vec![
+            Column {
+                type_id: ty_id,
+                name: format!("{table_name}_{column_name}"),
+                graphql_type: ColumnType::UInt8.to_string(),
+                coltype: ColumnType::UInt8,
+                position: 0,
+                unique: false,
+                nullable: false,
+                persistence: Persistence::Scalar,
+                ..Column::default()
+            },
+            Column {
+                type_id: ty_id,
+                name: format!("{ref_table_name}_{ref_column_name}"),
+                graphql_type: ColumnType::UInt8.to_string(),
+                coltype: ColumnType::UInt8,
+                position: 1,
+                unique: false,
+                nullable: false,
+                persistence: Persistence::Scalar,
+                ..Column::default()
+            },
+        ];
+
+        let constraints = vec![
+            Constraint::Fk(ForeignKey {
+                db_type: DbType::Postgres,
+                namespace: parsed.fully_qualified_namespace(),
+                table_name: local_table_name.clone(),
+                column_name: column_name.clone(),
+                ref_tablename: ref_table_name.clone(),
+                ref_colname: ref_column_name.clone(),
+                ref_coltype: ref_column_type.clone(),
+                ..ForeignKey::default()
+            }),
+            Constraint::Fk(ForeignKey {
+                db_type: DbType::Postgres,
+                namespace: parsed.fully_qualified_namespace(),
+                table_name: ref_table_name,
+                column_name: ref_column_name,
+                ref_tablename: local_table_name.clone(),
+                ref_colname: column_name.clone(),
+                ref_coltype: ref_column_type.clone(),
+                ..ForeignKey::default()
+            }),
+        ];
+
+        Self {
+            name: table_name,
+            namespace: parsed.namespace().to_string(),
+            identifier: parsed.identifier().to_string(),
+            columns,
+            constraints,
+            persistence: Persistence::Scalar,
+            table_type: TableType::Join,
         }
     }
 }

@@ -104,7 +104,7 @@ impl IndexerSchema {
             }
         }
 
-        let type_ids = self
+        let mut type_ids = self
             .parsed
             .type_defs()
             .iter()
@@ -112,14 +112,32 @@ impl IndexerSchema {
             .unique_by(|t| t.id)
             .collect::<Vec<TypeId>>();
 
+        let mut join_type_ids = self
+            .parsed
+            .join_table_info()
+            .iter()
+            .map(|(_, info)| TypeId::from_join_info(info.to_owned(), &self.parsed))
+            .collect::<Vec<TypeId>>();
+
+        type_ids.append(&mut join_type_ids);
+
         queries::type_id_insert(conn, type_ids).await?;
 
-        let tables = self
+        let mut tables = self
             .parsed
             .non_enum_typdefs()
             .iter()
             .map(|(_, t)| Table::from_typedef(t, &self.parsed))
             .collect::<Vec<Table>>();
+
+        let mut join_tables = self
+            .parsed
+            .join_table_info()
+            .iter()
+            .map(|(_, item)| Table::from_join_info(item.to_owned(), &self.parsed))
+            .collect::<Vec<Table>>();
+
+        tables.append(&mut join_tables);
 
         let columns = tables
             .iter()

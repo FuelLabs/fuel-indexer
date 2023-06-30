@@ -3,7 +3,7 @@ pub mod parser;
 pub mod types;
 pub mod validator;
 
-pub use parser::{ParsedError, ParsedGraphQLSchema};
+pub use parser::{JoinTableItem, ParsedError, ParsedGraphQLSchema};
 pub use validator::GraphQLSchemaValidator;
 
 use async_graphql_parser::types::FieldDefinition;

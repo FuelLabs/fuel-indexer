@@ -35,6 +35,50 @@ pub enum ParsedError {
     InconsistentVirtualUnion(String),
 }
 
+/// Represents metadata related to a many-to-many relationship in the GraphQL schema.
+#[derive(Debug, Clone)]
+pub struct JoinTableItem {
+    /// Name of the join table
+    pub table_name: String,
+
+    /// `TypeDefinition` name on which join relationship was found.
+    pub local_table_name: String,
+
+    /// Name of local column on which to join.
+    ///
+    /// This is always `id` for now.
+    pub column_name: String,
+
+    /// `TypeDefinition` name to which join references.
+    pub ref_table_name: String,
+
+    /// Name of the column on the referenced table to which to join.
+    ///
+    /// This is always `id` for now.
+    pub ref_column_name: String,
+
+    /// Type of the column on the referenced table to which to join.
+    ///
+    /// This is always `ColumnType::UInt8` for now.
+    pub ref_column_type: String,
+}
+
+impl JoinTableItem {
+    pub fn new(local_table_name: &str, ref_table_name: &str) -> Self {
+        let local_table_name = local_table_name.to_string().to_lowercase();
+        let ref_table_name = ref_table_name.to_string().to_lowercase();
+
+        Self {
+            table_name: format!("{local_table_name}s_{ref_table_name}s"),
+            local_table_name,
+            column_name: "id".to_string(),
+            ref_table_name,
+            ref_column_name: "id".to_string(),
+            ref_column_type: "ID".to_string(),
+        }
+    }
+}
+
 /// Given a GraphQL document, return a two `HashSet`s - one for each
 /// unique field type, and one for each unique directive.
 pub fn build_schema_types_set(
@@ -86,7 +130,7 @@ pub struct ParsedGraphQLSchema {
     exec_source: ExecutionSource,
 
     /// All unique names of types in the schema (whether objects, enums, or scalars).
-    pub type_names: HashSet<String>,
+    type_names: HashSet<String>,
 
     /// Mapping of object names to objects.
     objects: HashMap<String, ObjectType>,
@@ -137,10 +181,13 @@ pub struct ParsedGraphQLSchema {
     type_defs: HashMap<String, TypeDefinition>,
 
     /// `FieldDefinition` names in the GraphQL that are a `List` type.
-    pub list_field_types: HashSet<String>,
+    list_field_types: HashSet<String>,
 
     /// `TypeDefinition`s that contain a `FieldDefinition` which is a `List` type.
     list_type_defs: HashMap<String, TypeDefinition>,
+
+    /// Metadata related to many-to-many relationships in the GraphQL schema.
+    join_table_info: HashMap<String, JoinTableItem>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -171,6 +218,7 @@ impl Default for ParsedGraphQLSchema {
             list_field_types: HashSet::new(),
             list_type_defs: HashMap::new(),
             unions: HashMap::new(),
+            join_table_info: HashMap::new(),
         }
     }
 }
@@ -203,6 +251,7 @@ impl ParsedGraphQLSchema {
         let mut list_field_types = HashSet::new();
         let mut list_type_defs = HashMap::new();
         let mut unions = HashMap::new();
+        let mut join_table_info = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
@@ -254,11 +303,17 @@ impl ParsedGraphQLSchema {
                                         .replace(['[', ']', '!'], ""),
                                 ) && !scalar_names.contains(&field_name)
                                     && !enum_names.contains(&field_name)
+                                    && !virtual_type_names.contains(&field_name)
                                 {
-                                    let (_ref_coltype, ref_colname, _ref_tablename) =
+                                    let (_ref_coltype, ref_colname, ref_tablename) =
                                         extract_foreign_key_info(
                                             &field.node,
                                             &field_type_mappings,
+                                        );
+                                        
+                                        join_table_info.insert(
+                                            obj_name.clone(),
+                                            JoinTableItem::new(&obj_name, &ref_tablename),
                                         );
 
                                     let fk = foreign_key_mappings
@@ -420,6 +475,7 @@ impl ParsedGraphQLSchema {
             list_field_types,
             list_type_defs,
             unions,
+            join_table_info,
         })
     }
 
@@ -471,6 +527,10 @@ impl ParsedGraphQLSchema {
 
     pub fn object_field_mappings(&self) -> &HashMap<String, BTreeMap<String, String>> {
         &self.object_field_mappings
+    }
+
+    pub fn join_table_info(&self) -> &HashMap<String, JoinTableItem> {
+        &self.join_table_info
     }
 
     /// Return the `TypeDefinition` associated with a given union name.
