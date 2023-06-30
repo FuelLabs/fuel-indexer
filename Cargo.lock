@@ -3697,6 +3697,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel_explorer"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-utils",
+ "fuels 0.43.0",
+ "serde",
+]
+
+[[package]]
 name = "fuels"
 version = "0.40.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4521,6 +4530,26 @@ dependencies = [
  "clap 3.2.25",
  "fuel-indexer-tests",
  "tokio 1.29.1",
+]
+
+[[package]]
+name = "hello_indexer"
+version = "0.0.0"
+dependencies = [
+ "fuel-indexer-utils",
+ "fuels 0.43.0",
+ "serde",
+]
+
+[[package]]
+name = "hello_indexer_native"
+version = "0.0.0"
+dependencies = [
+ "async-trait",
+ "fuel-indexer",
+ "fuel-indexer-utils",
+ "fuels 0.43.0",
+ "serde",
 ]
 
 [[package]]

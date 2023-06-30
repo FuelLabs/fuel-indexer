@@ -12,8 +12,8 @@ pub const QUERY_ROOT: &str = "QueryRoot";
 #[cfg(feature = "db-models")]
 pub mod db;
 
-const NULL_VALUE: &str = "NULL";
-const MAX_BYTE_LENGTH: usize = 10485760;
+const NULL_VALUE: &str = "null";
+const MAX_ARRAY_LENGTH: usize = 1000;
 
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
 
@@ -73,7 +73,6 @@ pub enum FtColumn {
     Virtual(Option<Virtual>),
     BlockId(Option<BlockId>),
     Array(Option<Vec<FtColumn>>),
-    // ListFK(Option<Vec<FtColumn>>),
 }
 
 impl FtColumn {
@@ -224,10 +223,12 @@ impl FtColumn {
             },
             FtColumn::Array(arr) => match arr {
                 Some(arr) => {
+                    assert!(
+                        arr.len() <= MAX_ARRAY_LENGTH,
+                        "Array length exceeds maximum allowed length."
+                    );
                     // Using first item of list to determine column type
                     let discriminant = std::mem::discriminant(&arr[0]);
-                    let type_id = i64::from(ColumnType::from(arr[0].clone()));
-                    let type_id_bytes = hex::encode(type_id.to_le_bytes());
                     let result = arr
                             .iter()
                             .map(|e| {

@@ -12,22 +12,9 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
-/// Provides a TokenStream to be used as a conversion to bytes
-/// for external types; this is done because traits cannot be
-/// implemented on external types due to the orphan rule.
-pub fn to_bytes_method_for_external_type(
-    field_type_name: &str,
-) -> proc_macro2::TokenStream {
-    match field_type_name {
-        "Identity" => quote! { .0 },
-        "Tai64Timestamp" => quote! { .0.to_le_bytes() },
-        _ => panic!("From<{field_type_name}> not implemented for AsRef<u8>."),
-    }
-}
-
-/// Provides a TokenStream to be used for unwrapping `Option`s
-/// for external types; this is done because traits cannot be
-/// implemented on external types due to the orphan rule.
+/// Provides a TokenStream to be used for unwrapping `Option`s for external types.
+///
+/// This is done because traits cannot be implemented on external types due to the orphan rule.
 pub fn unwrap_or_default_for_external_type(
     field_type_name: &str,
 ) -> proc_macro2::TokenStream {
@@ -93,10 +80,7 @@ pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
 
 /// Whether this TypeDeclaration should be used in the codgen
 pub fn is_ignored_type(typ: &TypeDeclaration) -> bool {
-    if is_tuple_type(typ) {
-        return true;
-    }
-    false
+    is_tuple_type(typ)
 }
 
 /// Whether the TypeDeclaration should be used to build struct fields and decoders
@@ -283,20 +267,18 @@ pub fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
 
 /// Generate tokens for retrieving necessary indexer data through FFI.
 pub fn field_extractor(
-    schema: &ParsedGraphQLSchema,
     field_name: proc_macro2::Ident,
     processed_type: ProcessTypeResult,
 ) -> proc_macro2::TokenStream {
     let ProcessTypeResult {
         field_type_ident,
-        field_type_tokens,
         base_type,
         inner_type_ident,
         nullable,
         inner_nullable,
+        ..
     } = processed_type;
 
-    let type_name = field_type_ident.to_string();
     let item_popper = quote! { let item = vec.pop().expect("Missing item in row."); };
 
     let field_extractor = match base_type {
@@ -445,15 +427,12 @@ pub fn process_typedef_field(
     let processed_type_result = process_type(parsed, &field_def.ty.node);
     let ProcessTypeResult {
         field_type_ident,
-        field_type_tokens,
-        base_type,
         inner_type_ident,
-        nullable,
-        inner_nullable,
+        ..
     } = processed_type_result.clone();
 
     let fid = field_id(&typdef.name.to_string(), &field_name);
-    let lookup_type = inner_type_ident.clone().unwrap_or(field_type_ident.clone());
+    let lookup_type = inner_type_ident.unwrap_or(field_type_ident);
 
     let fieldkind = field_kind(&lookup_type.to_string(), &fid, parsed);
     match fieldkind {
@@ -524,7 +503,7 @@ pub fn process_typedef_field(
 
                 field_def.ty.node = Type {
                     base: BaseType::List(Box::new(Type {
-                        base: BaseType::Named(Name::new(&ref_coltype)),
+                        base: BaseType::Named(Name::new(ref_coltype)),
                         nullable: inner_nullable,
                     })),
                     nullable: field_def.ty.node.nullable,
@@ -535,7 +514,6 @@ pub fn process_typedef_field(
             FieldKind::Scalar => {
                 let field_name_ident = format_ident! {"{field_name}"};
                 let extractor = field_extractor(
-                    parsed,
                     field_name_ident.clone(),
                     processed_type_result.clone(),
                 );
@@ -550,11 +528,8 @@ pub fn process_typedef_field(
         },
         _ => {
             let field_name_ident = format_ident! {"{field_name}"};
-            let extractor = field_extractor(
-                parsed,
-                field_name_ident.clone(),
-                processed_type_result.clone(),
-            );
+            let extractor =
+                field_extractor(field_name_ident.clone(), processed_type_result.clone());
 
             ProcessTypedefResult {
                 field_name_ident,
@@ -710,32 +685,68 @@ pub fn unwrap_or_default_tokens(field_typ_name: &str, nullabel: bool) -> TokenSt
     }
 }
 
-/// Get tokens for a field's `.to_bytes()`.
-pub fn to_bytes_tokens(field_typ_name: &str) -> TokenStream {
-    if EXTERNAL_FIELD_TYPES.contains(field_typ_name) {
-        to_bytes_method_for_external_type(field_typ_name)
-    } else if !ASREF_BYTE_TYPES.contains(field_typ_name) {
-        quote! { .to_le_bytes() }
-    } else {
-        quote! {}
+/// Get tokens for a given field type's `.to_bytes()`.
+pub fn to_bytes_tokens(
+    field_typ_name: &str,
+    processed_type_result: &ProcessTypeResult,
+) -> TokenStream {
+    let ProcessTypeResult { base_type, .. } = &processed_type_result;
+    match base_type {
+        FieldBaseType::Named => {
+            if EXTERNAL_FIELD_TYPES.contains(field_typ_name) {
+                match field_typ_name {
+                    "Identity" => quote! { .0 },
+                    "Tai64Timestamp" => quote! { .0.to_le_bytes() },
+                    _ => panic!("From<{field_typ_name}> not implemented for AsRef<u8>."),
+                }
+            } else if !ASREF_BYTE_TYPES.contains(field_typ_name) {
+                quote! { .to_le_bytes() }
+            } else {
+                quote! {}
+            }
+        }
+        FieldBaseType::List => {
+            // if *nullable {
+            //     if *inner_nullable {
+            //         quote! { .as_ref().map(|items| items.iter().map(|x| x.to_bytes()).collect::<Vec<_>>()) }
+            //     } else {
+            //         quote! { .as_ref().map(|items| items.iter().map(|x| x.to_bytes()).collect::<Vec<_>>()) }
+            //     }
+            // } else {
+            //     if *inner_nullable {
+            //         quote! { .iter().filter_map(|x| x).map(|x| x.to_bytes()).collect::<Vec<_>>() }
+            //     } else {
+            //         quote! { .iter().filter_map(|x| x).map(|x| x.to_bytes()).collect::<Vec<_>>() }
+            //     }
+            // }
+            // TODO: Do we want to allow list types to be hashed into an ID? Would make for
+            // better/greater entropy but would add complexity.
+            quote! {}
+        }
     }
 }
 
-/// Get tokens for hasher.
+/// Get tokens for hasher from which to derive a unique ID for this object.
 pub fn hasher_tokens(
     field_type_scalar_name: &str,
+    field_name_ident: &Ident,
+    base_type: &FieldBaseType,
     hasher: TokenStream,
-    field_name: &Ident,
     clone: TokenStream,
     unwrap_or_default: TokenStream,
     to_bytes: TokenStream,
 ) -> Option<TokenStream> {
-    if !NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
-        return Some(
-            quote! { #hasher.chain_update(#field_name #clone #unwrap_or_default #to_bytes) },
-        );
+    match base_type {
+        FieldBaseType::Named => {
+            if !NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
+                return Some(
+                    quote! { #hasher.chain_update(#field_name_ident #clone #unwrap_or_default #to_bytes) },
+                );
+            }
+            None
+        }
+        FieldBaseType::List => None,
     }
-    None
 }
 
 /// Get tokens for parameters used in `::new()` function and `::get_or_create()`
@@ -750,28 +761,25 @@ pub fn parameters_tokens(
 
 /// Get tokens for a field decoder.
 pub fn field_decoder_tokens(
-    nullable: bool,
-    field_type_scalar_name: &str,
     field_name: &Ident,
     clone: TokenStream,
-    inner_type: Option<&Ident>,
-    inner_type_nullable: bool,
-    base_type: &FieldBaseType,
+    processed_type_result: &ProcessTypeResult,
 ) -> TokenStream {
-    let field_type_scalar_name = format_ident! {"{}", field_type_scalar_name};
-
-    //println!("> {} out({}) in({}) base({:?})", field_name.to_string(), nullable, inner_type_nullable, base_type);
+    let ProcessTypeResult {
+        field_type_ident,
+        inner_type_ident,
+        base_type,
+        nullable,
+        inner_nullable,
+        ..
+    } = &processed_type_result;
 
     match base_type {
         FieldBaseType::Named => {
-            if nullable {
-                // Clarify: this is really f'n confusing
-                //
-                // This reads like it's incorrect (but it's correct). Need to explain that
-                // #self.field_name has already been set as an Option<T> prior to calling field_decoder_tokens.
-                quote! { FtColumn::#field_type_scalar_name(self.#field_name #clone), }
+            if *nullable {
+                quote! { FtColumn::#field_type_ident(self.#field_name #clone), }
             } else {
-                quote! { FtColumn::#field_type_scalar_name(Some(self.#field_name #clone)), }
+                quote! { FtColumn::#field_type_ident(Some(self.#field_name #clone)), }
             }
         }
         // `FieldBaseType::List` is pretty much similar to `FieldBaseType::Named`. The main difference is, that
@@ -779,19 +787,28 @@ pub fn field_decoder_tokens(
         //
         // This prevents us from having to use `FtColumn` in struct fields.
         FieldBaseType::List => {
-            let inner_type = inner_type.expect("Missing inner type.");
-            if nullable {
-                if inner_type_nullable {
-                    quote! { FtColumn::#field_type_scalar_name(self.#field_name.as_ref().map(|items| items.iter().map(|x| FtColumn::#inner_type(x.to_owned())).collect::<Vec<FtColumn>>())), }
+            let inner_type_ident =
+                inner_type_ident.to_owned().expect("Missing inner type.");
+            if *nullable {
+                if *inner_nullable {
+                    quote! { FtColumn::#field_type_ident(self.#field_name.as_ref().map(|items| items.iter().filter_map(|x| {
+                        if x.is_none() {
+                            return None;
+                        }
+                        Some(FtColumn::#inner_type_ident(x.to_owned()))
+                    }).collect::<Vec<FtColumn>>())), }
                 } else {
-                    quote! { FtColumn::#field_type_scalar_name(self.#field_name.as_ref().map(|items| items.iter().map(|x| FtColumn::#inner_type(Some(x.to_owned()))).collect::<Vec<FtColumn>>())), }
+                    quote! { FtColumn::#field_type_ident(self.#field_name.as_ref().map(|items| items.iter().map(|x| FtColumn::#inner_type_ident(Some(x.to_owned()))).collect::<Vec<FtColumn>>())), }
                 }
+            } else if *inner_nullable {
+                quote! { FtColumn::#field_type_ident(Some(self.#field_name.iter().filter_map(|x| {
+                    if x.is_none() {
+                        return None;
+                    }
+                    Some(FtColumn::#inner_type_ident(x.to_owned()))
+                }).collect::<Vec<FtColumn>>())), }
             } else {
-                if inner_type_nullable {
-                    quote! { FtColumn::#field_type_scalar_name(Some(self.#field_name.iter().map(|x| FtColumn::#inner_type(x.to_owned())).collect::<Vec<FtColumn>>())), }
-                } else {
-                    quote! { FtColumn::#field_type_scalar_name(Some(self.#field_name.iter().map(|x| FtColumn::#inner_type(Some(x.to_owned()))).collect::<Vec<FtColumn>>())), }
-                }
+                quote! { FtColumn::#field_type_ident(Some(self.#field_name.iter().map(|x| FtColumn::#inner_type_ident(Some(x.to_owned()))).collect::<Vec<FtColumn>>())), }
             }
         }
     }

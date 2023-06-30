@@ -90,29 +90,32 @@ impl Decoder for ImplementationDecoder {
                 for field in &o.fields {
                     let ProcessTypedefResult {
                         field_name_ident,
-                        extractor,
                         processed_type_result,
-                    } = process_typedef_field(parsed, field.node.clone(), &typ);
+                        ..
+                    } = process_typedef_field(parsed, field.node.clone(), typ);
 
                     let ProcessTypeResult {
                         field_type_tokens,
                         field_type_ident,
+                        nullable,
+                        base_type,
                         ..
-                    } = processed_type_result;
-
-                    let field_typ_scalar_name = &field_type_ident.to_string();
+                    } = &processed_type_result;
 
                     let clone = clone_tokens(
-                        field_typ_scalar_name,
+                        &field_type_ident.to_string(),
                         &field_id(&obj_name, &field_name_ident.to_string()),
-                        &parsed,
+                        parsed,
                     );
 
                     let unwrap_or_default = unwrap_or_default_tokens(
-                        field_typ_scalar_name,
-                        field.node.ty.node.nullable,
+                        &field_type_ident.to_string(),
+                        *nullable,
                     );
-                    let to_bytes = to_bytes_tokens(field_typ_scalar_name);
+                    let to_bytes = to_bytes_tokens(
+                        &field_type_ident.to_string(),
+                        &processed_type_result,
+                    );
 
                     if can_derive_id(
                         &obj_field_names,
@@ -122,12 +125,13 @@ impl Decoder for ImplementationDecoder {
                         parameters = parameters_tokens(
                             parameters,
                             &field_name_ident,
-                            field_type_tokens,
+                            field_type_tokens.clone(),
                         );
                         if let Some(tokens) = hasher_tokens(
-                            field_typ_scalar_name,
-                            hasher.clone(),
+                            &field_type_ident.to_string(),
                             &field_name_ident,
+                            base_type,
+                            hasher.clone(),
                             clone,
                             unwrap_or_default,
                             to_bytes,
@@ -453,37 +457,28 @@ impl Decoder for ObjectDecoder {
                         field_name_ident,
                         extractor,
                         processed_type_result,
-                    } = process_typedef_field(parsed, field.node.clone(), &typ);
+                    } = process_typedef_field(parsed, field.node.clone(), typ);
 
                     let ProcessTypeResult {
                         field_type_tokens,
                         field_type_ident,
-                        inner_type_ident,
-                        base_type,
-                        nullable,
-                        inner_nullable,
-                    } = processed_type_result;
-
-                    let field_typ_scalar_name = &field_type_ident.to_string();
+                        ..
+                    } = &processed_type_result;
 
                     fields_map.insert(
                         field_name_ident.to_string(),
-                        field_typ_scalar_name.clone(),
+                        field_type_ident.to_string(),
                     );
 
                     let clone = clone_tokens(
-                        field_typ_scalar_name,
+                        &field_type_ident.to_string(),
                         &field_id(&obj_name, &field_name_ident.to_string()),
-                        &parsed,
+                        parsed,
                     );
                     let field_decoder = field_decoder_tokens(
-                        field.node.ty.node.nullable,
-                        field_typ_scalar_name,
                         &field_name_ident,
                         clone.clone(),
-                        inner_type_ident.as_ref(),
-                        inner_nullable,
-                        &base_type,
+                        &processed_type_result,
                     );
 
                     struct_fields = quote! {
@@ -769,7 +764,7 @@ impl From<ObjectDecoder> for TokenStream {
         quote! {
             #impl_entity
 
-            //#impl_new
+            #impl_new
 
             #impl_json
         }

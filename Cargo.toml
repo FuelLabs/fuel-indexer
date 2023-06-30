@@ -3,9 +3,9 @@
 resolver = "2"
 
 members = [
-   # "examples/fuel-explorer/fuel-explorer",
-   # "examples/hello-world-native/hello-indexer-native",
-   # "examples/hello-world/hello-indexer",
+   "examples/fuel-explorer/fuel-explorer",
+   "examples/hello-world-native/hello-indexer-native",
+   "examples/hello-world/hello-indexer",
    "examples/hello-world/hello-world-data",
    "examples/hello-world/hello-world-node",
    "packages/fuel-indexer",
