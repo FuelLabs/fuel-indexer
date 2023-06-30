@@ -28,6 +28,7 @@ type BlockEntity {
     timestamp: Int8!
 }
 
+
 type TxEntity {
     id: ID!
     block: BlockEntity!
