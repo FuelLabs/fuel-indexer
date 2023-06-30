@@ -2,17 +2,16 @@
 
 extern crate alloc;
 
+use fuel_indexer_lib::MAX_ARRAY_LENGTH;
 use fuel_indexer_types::prelude::fuel::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-pub const QUERY_ROOT: &str = "QueryRoot";
 
 #[cfg(feature = "db-models")]
 pub mod db;
 
 const NULL_VALUE: &str = "null";
-const MAX_ARRAY_LENGTH: usize = 1000;
+pub const QUERY_ROOT: &str = "QueryRoot";
 
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
 
@@ -227,6 +226,7 @@ impl FtColumn {
                         "Array length exceeds maximum allowed length."
                     );
                     // Using first item of list to determine column type
+                    let first = arr[0].clone();
                     let discriminant = std::mem::discriminant(&arr[0]);
                     let result = arr
                             .iter()
@@ -242,9 +242,17 @@ impl FtColumn {
                             })
                             .collect::<Vec<String>>()
                             .join(",");
+
+                    // We have to force sqlx to see this as a JSON type else it will think this type
+                    // should be TEXT
+                    let suffix = match first {
+                        FtColumn::Virtual(_) | FtColumn::Json(_) => "::json[]",
+                        _ => "",
+                    };
+
                     // Using ARRAY syntax vs curly braces so we can keep the single quotes used by
                     // `ColumnType::query_fragment`
-                    format!("ARRAY [{result}]")
+                    format!("ARRAY [{result}]{suffix}")
                 }
                 None => String::from(NULL_VALUE),
             },

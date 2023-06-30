@@ -319,5 +319,6 @@ type ListTypeEntity {
     optional_inner: [Charfield]!
     optional_outer: [UInt8!]
     optional_all: [UInt8]
+    virtual_optional_inner: [VirtualEntity]!
 }
 

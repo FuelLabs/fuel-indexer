@@ -14,7 +14,7 @@ use fuel_indexer_lib::{
         types::{IdCol, ObjectCol},
         JoinTableItem, ParsedGraphQLSchema,
     },
-    type_id,
+    type_id, MAX_ARRAY_LENGTH,
 };
 use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
@@ -341,21 +341,29 @@ impl Column {
             // Special case of parsing FKs here where we change the derived
             // field type. We can't use the `ID` type as normal because we
             // can't have multiple primary keys on the same table.
-            .unwrap_or("UInt8".to_string());
+            .unwrap_or(ColumnType::UInt8.to_string());
         }
 
         match is_list_type(f) {
-            true => Self {
-                type_id,
-                name: f.name.to_string(),
-                graphql_type: format!("[{field_type}]"),
-                coltype: ColumnType::Array,
-                position,
-                array_coltype: Some(ColumnType::from(field_type.as_str())),
-                nullable: f.ty.node.nullable,
-                persistence,
-                ..Self::default()
-            },
+            true => {
+                let array_coltype = if parsed.is_virtual_typedef(&field_type) {
+                    ColumnType::Virtual
+                } else {
+                    ColumnType::from(field_type.as_str())
+                };
+
+                Self {
+                    type_id,
+                    name: f.name.to_string(),
+                    graphql_type: format!("[{field_type}]"),
+                    coltype: ColumnType::Array,
+                    position,
+                    array_coltype: Some(array_coltype),
+                    nullable: f.ty.node.nullable,
+                    persistence,
+                    ..Self::default()
+                }
+            }
             false => {
                 if parsed.is_possible_foreign_key(&field_type) {
                     // Determine implicit vs explicit FK type
@@ -377,15 +385,15 @@ impl Column {
                         // Special case of parsing FKs here where we change the derived
                         // field type. We can't use the `ID` type as normal because we
                         // can't have multiple primary keys on the same table.
-                        .unwrap_or("UInt8".to_string());
+                        .unwrap_or(ColumnType::UInt8.to_string());
                 } else if parsed.is_virtual_typedef(&field_type) {
-                    field_type = "Virtual".to_string();
+                    field_type = ColumnType::Virtual.to_string();
                 } else if parsed.is_enum_typedef(&field_type) {
-                    field_type = "Charfield".to_string();
+                    field_type = ColumnType::Charfield.to_string();
                 }
 
                 if is_list_type(f) {
-                    field_type = "Array".to_string();
+                    field_type = ColumnType::Array.to_string();
                 }
 
                 let unique = f
@@ -419,40 +427,41 @@ impl Column {
         // just define these types as `numeric`, then convert them into their base
         // types (e.g., u64) using `BigDecimal`.
         match self.coltype {
-            ColumnType::ID => "numeric(20, 0) primary key".to_string(),
             ColumnType::Address => "varchar(64)".to_string(),
-            ColumnType::Bytes4 => "varchar(8)".to_string(),
-            ColumnType::Bytes8 => "varchar(16)".to_string(),
-            ColumnType::Bytes32 => "varchar(64)".to_string(),
             ColumnType::AssetId => "varchar(64)".to_string(),
+            ColumnType::Blob => "varchar(10485760)".to_string(),
+            ColumnType::BlockHeight => "integer".to_string(),
+            ColumnType::BlockId => "varchar(64)".to_string(),
+            ColumnType::Boolean => "boolean".to_string(),
+            ColumnType::Bytes32 => "varchar(64)".to_string(),
+            ColumnType::Bytes4 => "varchar(8)".to_string(),
+            ColumnType::Bytes64 => "varchar(128)".to_string(),
+            ColumnType::Bytes8 => "varchar(16)".to_string(),
+            ColumnType::Charfield => "varchar(255)".to_string(),
             ColumnType::ContractId => "varchar(64)".to_string(),
-            ColumnType::Salt => "varchar(64)".to_string(),
+            ColumnType::Enum => "varchar(255)".to_string(),
+            ColumnType::ForeignKey => "numeric(20, 0)".to_string(),
+            ColumnType::HexString => "varchar(10485760)".to_string(),
+            ColumnType::ID => "numeric(20, 0) primary key".to_string(),
+            ColumnType::Identity => "varchar(66)".to_string(),
+            ColumnType::Int1 => "integer".to_string(),
+            ColumnType::Int16 => "numeric(39, 0)".to_string(),
             ColumnType::Int4 => "integer".to_string(),
             ColumnType::Int8 => "bigint".to_string(),
-            ColumnType::Int16 => "numeric(39, 0)".to_string(),
-            ColumnType::UInt4 | ColumnType::BlockHeight => "integer".to_string(),
-            ColumnType::UInt8 => "numeric(20, 0)".to_string(),
-            ColumnType::UInt16 => "numeric(39, 0)".to_string(),
-            ColumnType::Timestamp => "timestamp".to_string(),
-            ColumnType::Object => "bytea".to_string(),
-            ColumnType::Blob => "varchar(10485760)".to_string(),
-            ColumnType::ForeignKey => "numeric(20, 0)".to_string(),
             ColumnType::Json => "json".to_string(),
             ColumnType::MessageId => "varchar(64)".to_string(),
-            ColumnType::Charfield => "varchar(255)".to_string(),
-            ColumnType::Identity => "varchar(66)".to_string(),
-            ColumnType::Boolean => "boolean".to_string(),
-            ColumnType::Bytes64 => "varchar(128)".to_string(),
-            ColumnType::Signature => "varchar(128)".to_string(),
             ColumnType::Nonce => "varchar(64)".to_string(),
-            ColumnType::HexString => "varchar(10485760)".to_string(),
+            ColumnType::Object => "bytea".to_string(),
+            ColumnType::Salt => "varchar(64)".to_string(),
+            ColumnType::Signature => "varchar(128)".to_string(),
             ColumnType::Tai64Timestamp => "varchar(128)".to_string(),
+            ColumnType::Timestamp => "timestamp".to_string(),
             ColumnType::TxId => "varchar(64)".to_string(),
-            ColumnType::Enum => "varchar(255)".to_string(),
-            ColumnType::Int1 => "integer".to_string(),
             ColumnType::UInt1 => "integer".to_string(),
+            ColumnType::UInt16 => "numeric(39, 0)".to_string(),
+            ColumnType::UInt4 => "integer".to_string(),
+            ColumnType::UInt8 => "numeric(20, 0)".to_string(),
             ColumnType::Virtual => "json".to_string(),
-            ColumnType::BlockId => "varchar(64)".to_string(),
             ColumnType::Array => {
                 let t = match self.array_coltype.expect(
                     "Column.array_coltype cannot be None when using `ColumnType::Array`.",
@@ -462,12 +471,11 @@ impl Column {
                     | ColumnType::UInt1
                     | ColumnType::Int4
                     | ColumnType::UInt4
-                    | ColumnType::Int8
-                    | ColumnType::UInt8
-                    | ColumnType::Int16
-                    | ColumnType::UInt16
-                    | ColumnType::Timestamp
                     | ColumnType::BlockHeight => "integer",
+                    ColumnType::Timestamp => "timestamp",
+                    ColumnType::Int8 => "bigint",
+                    ColumnType::UInt8 => "numeric(20, 0)",
+                    ColumnType::UInt16 | ColumnType::Int16 => "numeric(39, 0)",
                     ColumnType::Address
                     | ColumnType::Bytes4
                     | ColumnType::Bytes8
@@ -489,7 +497,7 @@ impl Column {
                     _ => unimplemented!(),
                 };
 
-                format!("{t} [1000]")
+                format!("{t} [{MAX_ARRAY_LENGTH}]")
             }
         }
     }

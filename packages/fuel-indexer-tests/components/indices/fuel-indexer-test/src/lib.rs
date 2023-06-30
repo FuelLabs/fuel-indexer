@@ -763,6 +763,24 @@ mod fuel_indexer_test {
             ],
             optional_outer: Some(vec![1, 2, 3, 4, 5]),
             optional_all: Some(vec![Some(1), None, Some(3), None]),
+            virtual_optional_inner: vec![
+                Some(
+                    VirtualEntity {
+                        name: Some("foo".to_string()),
+                        size: 1,
+                    }
+                    .into(),
+                ),
+                None,
+                None,
+                Some(
+                    VirtualEntity {
+                        name: Some("bar".to_string()),
+                        size: 2,
+                    }
+                    .into(),
+                ),
+            ],
         };
 
         e.save();

@@ -593,7 +593,11 @@ pub fn process_type(parsed: &ParsedGraphQLSchema, typ: &Type) -> ProcessTypeResu
             }
 
             let field_type_ident = format_ident! {"Array"};
-            let name = format_ident! {"{name}"};
+            let name = if parsed.is_virtual_typedef(&name) {
+                format_ident! {"Virtual"}
+            } else {
+                format_ident! {"{name}"}
+            };
 
             let field_type_tokens = {
                 if typ.nullable && t.nullable {
