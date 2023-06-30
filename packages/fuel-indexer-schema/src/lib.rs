@@ -75,7 +75,7 @@ pub enum FtColumn {
 }
 
 impl FtColumn {
-    /// Return query fragments for `INSERT` and `SELECT` statements.
+    /// Return query fragments for `INSERT` statements.
     ///
     /// Since `FtColumn` column is used when compiling indexers we can panic here. Anything that panics,
     /// will panic when compiling indexers, so will be caught before runtime.
