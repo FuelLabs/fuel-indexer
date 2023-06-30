@@ -242,7 +242,9 @@ impl FtColumn {
                             })
                             .collect::<Vec<String>>()
                             .join(",");
-                    format!("{{'{}'}}", result)
+                    // Using ARRAY syntax vs curly braces so we can keep the single quotes used by
+                    // `ColumnType::query_fragment`
+                    format!("ARRAY [{result}]")
                 }
                 None => String::from(NULL_VALUE),
             },

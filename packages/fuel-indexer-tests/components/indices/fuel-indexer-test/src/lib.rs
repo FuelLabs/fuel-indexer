@@ -743,7 +743,6 @@ mod fuel_indexer_test {
     //     e.save();
     // }
 
-    
     fn fuel_indexer_test_trigger_list(b: BlockData) {
         info!("fuel_indexer_test_trigger_list handling trigger_list event.");
 
