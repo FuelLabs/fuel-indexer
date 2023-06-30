@@ -2,5 +2,5 @@
 source: packages/fuel-indexer-schema/src/lib.rs
 expression: json_none.query_fragment()
 ---
-"NULL"
+"null"
 
