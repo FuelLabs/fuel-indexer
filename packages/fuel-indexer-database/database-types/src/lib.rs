@@ -901,6 +901,7 @@ pub struct Table {
     persistence: Persistence,
 
     /// The type of table.
+    #[allow(unused)]
     table_type: TableType,
 }
 
@@ -1089,13 +1090,13 @@ impl Table {
             ref_table_name,
             ref_column_name,
             ref_column_type,
+            ..
         } = item;
-
         let ty_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
         let columns = vec![
             Column {
                 type_id: ty_id,
-                name: format!("{table_name}_{column_name}"),
+                name: format!("{local_table_name}_{column_name}"),
                 graphql_type: ColumnType::UInt8.to_string(),
                 coltype: ColumnType::UInt8,
                 position: 0,
@@ -1121,8 +1122,8 @@ impl Table {
             Constraint::Fk(ForeignKey {
                 db_type: DbType::Postgres,
                 namespace: parsed.fully_qualified_namespace(),
-                table_name: local_table_name.clone(),
-                column_name: column_name.clone(),
+                table_name: table_name.clone(),
+                column_name: format!("{local_table_name}_{column_name}"),
                 ref_tablename: ref_table_name.clone(),
                 ref_colname: ref_column_name.clone(),
                 ref_coltype: ref_column_type.clone(),
@@ -1131,11 +1132,11 @@ impl Table {
             Constraint::Fk(ForeignKey {
                 db_type: DbType::Postgres,
                 namespace: parsed.fully_qualified_namespace(),
-                table_name: ref_table_name,
-                column_name: ref_column_name,
-                ref_tablename: local_table_name.clone(),
-                ref_colname: column_name.clone(),
-                ref_coltype: ref_column_type.clone(),
+                table_name: table_name.clone(),
+                column_name: format!("{ref_table_name}_{ref_column_name}"),
+                ref_tablename: local_table_name,
+                ref_colname: column_name,
+                ref_coltype: ref_column_type,
                 ..ForeignKey::default()
             }),
         ];

@@ -1,8 +1,8 @@
 use crate::{
     fully_qualified_namespace,
     graphql::{
-        extract_foreign_key_info, field_id, GraphQLSchema, GraphQLSchemaValidator,
-        BASE_SCHEMA,
+        extract_foreign_key_info, field_id, field_type_name, GraphQLSchema,
+        GraphQLSchemaValidator, BASE_SCHEMA,
     },
     ExecutionSource,
 };
@@ -49,6 +49,11 @@ pub struct JoinTableItem {
     /// This is always `id` for now.
     pub column_name: String,
 
+    /// Type of the column on the local table to which to join.
+    ///
+    /// This is always `ColumnType::UInt8` for now.
+    pub column_type: String,
+
     /// `TypeDefinition` name to which join references.
     pub ref_table_name: String,
 
@@ -64,6 +69,7 @@ pub struct JoinTableItem {
 }
 
 impl JoinTableItem {
+    /// Create a new `JoinTableItem`.
     pub fn new(local_table_name: &str, ref_table_name: &str) -> Self {
         let local_table_name = local_table_name.to_string().to_lowercase();
         let ref_table_name = ref_table_name.to_string().to_lowercase();
@@ -72,6 +78,7 @@ impl JoinTableItem {
             table_name: format!("{local_table_name}s_{ref_table_name}s"),
             local_table_name,
             column_name: "id".to_string(),
+            column_type: "ID".to_string(),
             ref_table_name,
             ref_column_name: "id".to_string(),
             ref_column_type: "ID".to_string(),
@@ -295,26 +302,23 @@ impl ParsedGraphQLSchema {
                                 }
 
                                 // Manual version of `ParsedGraphQLSchema::is_possible_foreign_key`
-                                if parsed_type_names.contains(
-                                    &field
-                                        .node
-                                        .ty
-                                        .to_string()
-                                        .replace(['[', ']', '!'], ""),
-                                ) && !scalar_names.contains(&field_name)
-                                    && !enum_names.contains(&field_name)
-                                    && !virtual_type_names.contains(&field_name)
+                                let ftype = field_type_name(&field.node);
+                                if parsed_type_names
+                                    .contains(&field_type_name(&field.node))
+                                    && !scalar_names.contains(&ftype)
+                                    && !enum_names.contains(&ftype)
+                                    && !virtual_type_names.contains(&ftype)
                                 {
                                     let (_ref_coltype, ref_colname, ref_tablename) =
                                         extract_foreign_key_info(
                                             &field.node,
                                             &field_type_mappings,
                                         );
-                                        
-                                        join_table_info.insert(
-                                            obj_name.clone(),
-                                            JoinTableItem::new(&obj_name, &ref_tablename),
-                                        );
+
+                                    join_table_info.insert(
+                                        obj_name.clone(),
+                                        JoinTableItem::new(&obj_name, &ref_tablename),
+                                    );
 
                                     let fk = foreign_key_mappings
                                         .get_mut(&t.node.name.to_string().to_lowercase());
@@ -323,11 +327,7 @@ impl ParsedGraphQLSchema {
                                             fks_for_field.insert(
                                                 field.node.name.to_string(),
                                                 (
-                                                    field
-                                                        .node
-                                                        .ty
-                                                        .to_string()
-                                                        .replace(['[', ']', '!'], "")
+                                                    field_type_name(&field.node)
                                                         .to_lowercase(),
                                                     ref_colname.clone(),
                                                 ),
@@ -337,11 +337,7 @@ impl ParsedGraphQLSchema {
                                             let fks_for_field = HashMap::from([(
                                                 field.node.name.to_string(),
                                                 (
-                                                    field
-                                                        .node
-                                                        .ty
-                                                        .to_string()
-                                                        .replace(['[', ']', '!'], "")
+                                                    field_type_name(&field.node)
                                                         .to_lowercase(),
                                                     ref_colname.clone(),
                                                 ),
@@ -354,11 +350,7 @@ impl ParsedGraphQLSchema {
                                     }
                                 }
 
-                                let field_typ_name = field
-                                    .node
-                                    .ty
-                                    .to_string()
-                                    .replace(['[', ']', '!'], "");
+                                let field_typ_name = field_type_name(&field.node);
 
                                 parsed_type_names.insert(field_name.clone());
                                 field_mapping.insert(field_name, field_typ_name.clone());
@@ -421,23 +413,15 @@ impl ParsedGraphQLSchema {
                                         (f.node.clone(), member_name.clone()),
                                     );
 
-                                    field_type_mappings.insert(
-                                        fid.clone(),
-                                        f.node
-                                            .ty
-                                            .to_string()
-                                            .replace(['[', ']', '!'], ""),
-                                    );
+                                    field_type_mappings
+                                        .insert(fid.clone(), field_type_name(&f.node));
 
                                     object_field_mappings
                                         .entry(union_name.clone())
                                         .or_insert_with(BTreeMap::new)
                                         .insert(
                                             f.node.name.to_string(),
-                                            f.node
-                                                .ty
-                                                .to_string()
-                                                .replace(['[', ']', '!'], ""),
+                                            field_type_name(&f.node),
                                         );
 
                                     field_type_optionality
