@@ -493,7 +493,7 @@ impl ParsedGraphQLSchema {
         &self.field_type_mappings
     }
 
-    /// All unique names of scalar types in the schema.
+    /// A mapping of fully qualified field names to their respective optionalities.
     pub fn field_type_optionality(&self) -> &HashMap<String, bool> {
         &self.field_type_optionality
     }
@@ -535,7 +535,7 @@ impl ParsedGraphQLSchema {
         &self.join_table_meta
     }
 
-    /// All unique names of scalar types in the schema.
+    /// Return the base scalar type for a given `FieldDefinition`.
     pub fn scalar_type_for(&self, f: &FieldDefinition) -> String {
         let typ_name = field_type_name(f);
         if self.is_possible_foreign_key(&typ_name) {

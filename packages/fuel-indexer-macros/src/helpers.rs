@@ -268,9 +268,9 @@ pub fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
 /// Generate tokens for retrieving necessary indexer data through FFI.
 pub fn field_extractor(
     field_name: proc_macro2::Ident,
-    processed_type: ProcessTypeResult,
+    processed_type: ProcessedFieldType,
 ) -> proc_macro2::TokenStream {
-    let ProcessTypeResult {
+    let ProcessedFieldType {
         field_type_ident,
         base_type,
         inner_type_ident,
@@ -412,7 +412,7 @@ pub enum FieldKind {
 }
 
 /// The result of a call to `helpers::process_typedef_field`.
-pub struct ProcessTypedefResult {
+pub struct ProcessedTypedefField {
     /// The `Ident` for the processed `FieldDefinition`'s name.
     pub field_name_ident: proc_macro2::Ident,
 
@@ -422,7 +422,7 @@ pub struct ProcessTypedefResult {
     pub extractor: proc_macro2::TokenStream,
 
     /// The result of a call to `helpers::process_type`.
-    pub processed_type_result: ProcessTypeResult,
+    pub processed_type_result: ProcessedFieldType,
 }
 
 /// Process an object's field and return a group of tokens.
@@ -430,10 +430,10 @@ pub fn process_typedef_field(
     parsed: &ParsedGraphQLSchema,
     mut field_def: FieldDefinition,
     typdef: &TypeDefinition,
-) -> ProcessTypedefResult {
+) -> ProcessedTypedefField {
     let field_name = field_def.name.to_string();
-    let processed_type_result = process_type(parsed, &field_def.ty.node);
-    let ProcessTypeResult {
+    let processed_type_result = process_type(parsed, &field_def);
+    let ProcessedFieldType {
         field_type_ident,
         inner_type_ident,
         ..
@@ -526,7 +526,7 @@ pub fn process_typedef_field(
                     processed_type_result.clone(),
                 );
 
-                ProcessTypedefResult {
+                ProcessedTypedefField {
                     field_name_ident,
                     extractor,
                     processed_type_result,
@@ -539,7 +539,7 @@ pub fn process_typedef_field(
             let extractor =
                 field_extractor(field_name_ident.clone(), processed_type_result.clone());
 
-            ProcessTypedefResult {
+            ProcessedTypedefField {
                 field_name_ident,
                 extractor,
                 processed_type_result,
@@ -550,7 +550,7 @@ pub fn process_typedef_field(
 
 /// Process a named field into its type tokens, and the Ident for those type tokens.
 #[derive(Debug, Clone)]
-pub struct ProcessTypeResult {
+pub struct ProcessedFieldType {
     /// The tokens for the processed `FieldDefinition`'s type.
     pub field_type_tokens: proc_macro2::TokenStream,
 
@@ -585,7 +585,11 @@ pub enum FieldBaseType {
 }
 
 /// Process a named type into its type tokens, and the Ident for those type tokens.
-pub fn process_type(parsed: &ParsedGraphQLSchema, typ: &Type) -> ProcessTypeResult {
+pub fn process_type(
+    parsed: &ParsedGraphQLSchema,
+    f: &FieldDefinition,
+) -> ProcessedFieldType {
+    let typ = &f.ty.node;
     match &typ.base {
         BaseType::Named(t) => {
             // A `TypeDefinition` name and a given `FieldDefinition` name can be the same,
@@ -603,7 +607,7 @@ pub fn process_type(parsed: &ParsedGraphQLSchema, typ: &Type) -> ProcessTypeResu
                 quote! { #field_type_ident }
             };
 
-            ProcessTypeResult {
+            ProcessedFieldType {
                 field_type_ident,
                 field_type_tokens,
                 base_type: FieldBaseType::Named,
@@ -619,32 +623,28 @@ pub fn process_type(parsed: &ParsedGraphQLSchema, typ: &Type) -> ProcessTypeResu
                 panic!("List type '{name}' is not defined in the schema.");
             }
 
-            let field_type_ident = format_ident! {"Array"};
-            let name = if parsed.is_virtual_typedef(&name) {
-                format_ident! {"Virtual"}
-            } else {
-                format_ident! {"{name}"}
-            };
+            let field_type_name = parsed.scalar_type_for(f);
+            let inner_ident = format_ident! {"{field_type_name}"};
 
             let field_type_tokens = {
                 if typ.nullable && t.nullable {
-                    quote! { Option<Vec<Option<#name>>> }
+                    quote! { Option<Vec<Option<#inner_ident>>> }
                 } else if typ.nullable && !t.nullable {
-                    quote! { Option<Vec<#name>> }
+                    quote! { Option<Vec<#inner_ident>> }
                 } else if !typ.nullable && t.nullable {
-                    quote! { Vec<Option<#name>> }
+                    quote! { Vec<Option<#inner_ident>> }
                 } else {
-                    quote! { Vec<#name> }
+                    quote! { Vec<#inner_ident> }
                 }
             };
 
-            ProcessTypeResult {
-                field_type_ident,
+            ProcessedFieldType {
+                field_type_ident: format_ident! { "Array" },
                 field_type_tokens,
                 base_type: FieldBaseType::List,
                 nullable: typ.nullable,
                 inner_nullable: t.nullable,
-                inner_type_ident: Some(name),
+                inner_type_ident: Some(inner_ident),
             }
         }
     }
@@ -719,9 +719,9 @@ pub fn unwrap_or_default_tokens(field_typ_name: &str, nullabel: bool) -> TokenSt
 /// Get tokens for a given field type's `.to_bytes()`.
 pub fn to_bytes_tokens(
     field_typ_name: &str,
-    processed_type_result: &ProcessTypeResult,
+    processed_type_result: &ProcessedFieldType,
 ) -> TokenStream {
-    let ProcessTypeResult { base_type, .. } = &processed_type_result;
+    let ProcessedFieldType { base_type, .. } = &processed_type_result;
     match base_type {
         FieldBaseType::Named => {
             if EXTERNAL_FIELD_TYPES.contains(field_typ_name) {
@@ -747,18 +747,19 @@ pub fn to_bytes_tokens(
 /// Get tokens for hasher from which to derive a unique ID for this object.
 pub fn hasher_tokens(
     field_type_scalar_name: &str,
-    field_name_ident: &Ident,
+    field_name: &str,
     base_type: &FieldBaseType,
-    hasher: TokenStream,
-    clone: TokenStream,
-    unwrap_or_default: TokenStream,
-    to_bytes: TokenStream,
+    hasher: &TokenStream,
+    clone: &TokenStream,
+    unwrap_or_default: &TokenStream,
+    to_bytes: &TokenStream,
 ) -> Option<TokenStream> {
     match base_type {
         FieldBaseType::Named => {
+            let ident = format_ident! {"{field_name}"};
             if !NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
                 return Some(
-                    quote! { #hasher.chain_update(#field_name_ident #clone #unwrap_or_default #to_bytes) },
+                    quote! { #hasher.chain_update(#ident #clone #unwrap_or_default #to_bytes) },
                 );
             }
             None
@@ -770,20 +771,21 @@ pub fn hasher_tokens(
 /// Get tokens for parameters used in `::new()` function and `::get_or_create()`
 /// function/method signatures.
 pub fn parameters_tokens(
-    parameters: TokenStream,
+    parameters: &TokenStream,
     field_name: &Ident,
-    typ_tokens: TokenStream,
+    typ_tokens: &TokenStream,
 ) -> TokenStream {
-    quote! { #parameters #field_name: #typ_tokens, }
+    let ident = format_ident! {"{field_name}"};
+    quote! { #parameters #ident: #typ_tokens, }
 }
 
 /// Get tokens for a field decoder.
 pub fn field_decoder_tokens(
     field_name: &Ident,
-    clone: TokenStream,
-    processed_type_result: &ProcessTypeResult,
+    clone: &TokenStream,
+    processed_type_result: &ProcessedFieldType,
 ) -> TokenStream {
-    let ProcessTypeResult {
+    let ProcessedFieldType {
         field_type_ident,
         inner_type_ident,
         base_type,
@@ -832,7 +834,8 @@ pub fn field_decoder_tokens(
     }
 }
 
-/// Whether a given field is elligible for auto ID.
+/// Whether a given field is elligible for autogenerated ID, where the ID
+/// will be derived from the struct's fiels' values.
 pub fn can_derive_id(
     field_set: &HashSet<String>,
     field_name: &str,

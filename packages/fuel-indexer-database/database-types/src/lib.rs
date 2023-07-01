@@ -330,21 +330,17 @@ impl Column {
         let field_type = parsed.scalar_type_for(f);
 
         match is_list_type(f) {
-            true => {
-                let array_coltype = ColumnType::from(parsed.scalar_type_for(f).as_str());
-
-                Self {
-                    type_id,
-                    name: f.name.to_string(),
-                    graphql_type: format!("[{field_type}]"),
-                    coltype: ColumnType::Array,
-                    position,
-                    array_coltype: Some(array_coltype),
-                    nullable: f.ty.node.nullable,
-                    persistence,
-                    ..Self::default()
-                }
-            }
+            true => Self {
+                type_id,
+                name: f.name.to_string(),
+                graphql_type: format!("[{field_type}]"),
+                coltype: ColumnType::Array,
+                position,
+                array_coltype: Some(ColumnType::from(field_type.as_str())),
+                nullable: f.ty.node.nullable,
+                persistence,
+                ..Self::default()
+            },
             false => {
                 let unique = f
                     .directives

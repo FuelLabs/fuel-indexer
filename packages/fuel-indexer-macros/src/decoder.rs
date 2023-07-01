@@ -21,7 +21,7 @@ pub trait Decoder {
     fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self;
 }
 
-/// Like `Decoder`, but specifically used to derive `::new()` function and
+/// Similar to `{Object,Enum}Decoder`, but specifically used to derive `::new()` function and
 /// `::get_or_create()` function.
 #[derive(Debug)]
 pub struct ImplementationDecoder {
@@ -57,7 +57,7 @@ impl Default for ImplementationDecoder {
             typdef: TypeDefinition {
                 description: None,
                 extend: false,
-                name: Positioned::new(Name::new(""), Pos::default()),
+                name: Positioned::new(Name::new(String::new()), Pos::default()),
                 kind: TypeKind::Object(ObjectType {
                     implements: vec![],
                     fields: vec![],
@@ -88,13 +88,13 @@ impl Decoder for ImplementationDecoder {
                     .collect::<HashSet<String>>();
 
                 for field in &o.fields {
-                    let ProcessTypedefResult {
+                    let ProcessedTypedefField {
                         field_name_ident,
                         processed_type_result,
                         ..
                     } = process_typedef_field(parsed, field.node.clone(), typ);
 
-                    let ProcessTypeResult {
+                    let ProcessedFieldType {
                         field_type_tokens,
                         field_type_ident,
                         nullable,
@@ -102,39 +102,34 @@ impl Decoder for ImplementationDecoder {
                         ..
                     } = &processed_type_result;
 
+                    let field_type_name = &field_type_ident.to_string();
+                    let field_name = &field_name_ident.to_string();
+
                     let clone = clone_tokens(
-                        &field_type_ident.to_string(),
-                        &field_id(&obj_name, &field_name_ident.to_string()),
+                        field_type_name,
+                        &field_id(&obj_name, field_name),
                         parsed,
                     );
 
-                    let unwrap_or_default = unwrap_or_default_tokens(
-                        &field_type_ident.to_string(),
-                        *nullable,
-                    );
-                    let to_bytes = to_bytes_tokens(
-                        &field_type_ident.to_string(),
-                        &processed_type_result,
-                    );
+                    let unwrap_or_default =
+                        unwrap_or_default_tokens(field_type_name, *nullable);
+                    let to_bytes =
+                        to_bytes_tokens(field_type_name, &processed_type_result);
 
-                    if can_derive_id(
-                        &obj_field_names,
-                        &field_name_ident.to_string(),
-                        &obj_name,
-                    ) {
+                    if can_derive_id(&obj_field_names, field_name, &obj_name) {
                         parameters = parameters_tokens(
-                            parameters,
+                            &parameters,
                             &field_name_ident,
-                            field_type_tokens.clone(),
+                            field_type_tokens,
                         );
                         if let Some(tokens) = hasher_tokens(
-                            &field_type_ident.to_string(),
-                            &field_name_ident,
+                            field_type_name,
+                            field_name,
                             base_type,
-                            hasher.clone(),
-                            clone,
-                            unwrap_or_default,
-                            to_bytes,
+                            &hasher,
+                            &clone,
+                            &unwrap_or_default,
+                            &to_bytes,
                         ) {
                             hasher = tokens;
                         }
@@ -442,7 +437,7 @@ impl Decoder for ObjectDecoder {
 
                 GraphQLSchemaValidator::check_disallowed_graphql_typedef_name(&obj_name);
 
-                let ident = format_ident!("{}", obj_name);
+                let ident = format_ident!("{obj_name}");
                 let type_id = type_id(&parsed.fully_qualified_namespace(), &obj_name);
 
                 let mut struct_fields = quote! {};
@@ -453,13 +448,13 @@ impl Decoder for ObjectDecoder {
                 let mut fields_map = BTreeMap::new();
 
                 for field in &o.fields {
-                    let ProcessTypedefResult {
+                    let ProcessedTypedefField {
                         field_name_ident,
                         extractor,
                         processed_type_result,
                     } = process_typedef_field(parsed, field.node.clone(), typ);
 
-                    let ProcessTypeResult {
+                    let ProcessedFieldType {
                         field_type_tokens,
                         field_type_ident,
                         ..
@@ -477,7 +472,7 @@ impl Decoder for ObjectDecoder {
                     );
                     let field_decoder = field_decoder_tokens(
                         &field_name_ident,
-                        clone.clone(),
+                        &clone,
                         &processed_type_result,
                     );
 
@@ -596,7 +591,7 @@ impl Decoder for EnumDecoder {
         match &typ.kind {
             TypeKind::Enum(e) => {
                 let enum_name = typ.name.to_string();
-                let ident = format_ident!("{}", enum_name);
+                let ident = format_ident!("{enum_name}");
                 let type_id = type_id(&parsed.fully_qualified_namespace(), &enum_name);
 
                 let values = e
@@ -613,7 +608,7 @@ impl Decoder for EnumDecoder {
                     .iter()
                     .map(|v| {
                         let value_ident = format_ident! {"{}", v.node.value.to_string()};
-                        let as_str = format!("{}::{}", ident, value_ident);
+                        let as_str = format!("{ident}::{value_ident}");
                         quote! { #as_str => #ident::#value_ident, }
                     })
                     .collect::<Vec<proc_macro2::TokenStream>>();
@@ -623,7 +618,7 @@ impl Decoder for EnumDecoder {
                     .iter()
                     .map(|v| {
                         let value_ident = format_ident! {"{}", v.node.value.to_string()};
-                        let as_str = format!("{}::{}", ident, value_ident);
+                        let as_str = format!("{ident}::{value_ident}");
                         quote! { #ident::#value_ident => #as_str.to_string(), }
                     })
                     .collect::<Vec<proc_macro2::TokenStream>>();
@@ -744,14 +739,12 @@ impl From<ObjectDecoder> for TokenStream {
                         Self {
                             #from_row
                         }
-                        // unimplemented!()
                     }
 
                     fn to_row(&self) -> Vec<FtColumn> {
                         vec![
                             #to_row
                         ]
-                        // unimplemented!()
                     }
 
                 }
