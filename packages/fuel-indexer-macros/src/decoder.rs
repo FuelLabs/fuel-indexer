@@ -92,7 +92,7 @@ impl Decoder for ImplementationDecoder {
                         field_name_ident,
                         processed_type_result,
                         ..
-                    } = process_typedef_field(parsed, field.node.clone(), typ);
+                    } = process_typedef_field(parsed, field.node.clone());
 
                     let ProcessedFieldType {
                         field_type_tokens,
@@ -102,19 +102,19 @@ impl Decoder for ImplementationDecoder {
                         ..
                     } = &processed_type_result;
 
-                    let field_type_name = &field_type_ident.to_string();
+                    let field_typ_name = &field_type_ident.to_string();
                     let field_name = &field_name_ident.to_string();
 
                     let clone = clone_tokens(
-                        field_type_name,
+                        field_typ_name,
                         &field_id(&obj_name, field_name),
                         parsed,
                     );
-
                     let unwrap_or_default =
-                        unwrap_or_default_tokens(field_type_name, *nullable);
+                        unwrap_or_default_tokens(field_typ_name, *nullable);
+
                     let to_bytes =
-                        to_bytes_tokens(field_type_name, &processed_type_result);
+                        to_bytes_tokens(field_typ_name, &processed_type_result);
 
                     if can_derive_id(&obj_field_names, field_name, &obj_name) {
                         parameters = parameters_tokens(
@@ -123,7 +123,7 @@ impl Decoder for ImplementationDecoder {
                             field_type_tokens,
                         );
                         if let Some(tokens) = hasher_tokens(
-                            field_type_name,
+                            field_typ_name,
                             field_name,
                             base_type,
                             &hasher,
@@ -452,7 +452,7 @@ impl Decoder for ObjectDecoder {
                         field_name_ident,
                         extractor,
                         processed_type_result,
-                    } = process_typedef_field(parsed, field.node.clone(), typ);
+                    } = process_typedef_field(parsed, field.node.clone());
 
                     let ProcessedFieldType {
                         field_type_tokens,

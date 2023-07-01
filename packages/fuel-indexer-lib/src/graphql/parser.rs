@@ -6,8 +6,8 @@
 use crate::{
     fully_qualified_namespace,
     graphql::{
-        extract_foreign_key_info, field_id, field_type_name, GraphQLSchema,
-        GraphQLSchemaValidator, BASE_SCHEMA,
+        extract_foreign_key_info, field_id, field_type_name, list_field_type_name,
+        GraphQLSchema, GraphQLSchemaValidator, BASE_SCHEMA,
     },
     ExecutionSource,
 };
@@ -284,13 +284,14 @@ impl ParsedGraphQLSchema {
                             let mut field_mapping = BTreeMap::new();
                             for field in &o.fields {
                                 let field_name = field.node.name.to_string();
+                                let field_typ_name = field.node.ty.to_string();
                                 let fid = field_id(&obj_name, &field_name);
 
-                                if field.node.ty.to_string().contains('[')
-                                    && field.node.ty.to_string().contains(']')
+                                if field_typ_name.contains('[')
+                                    && field_typ_name.contains(']')
                                 {
-                                    let fid = field_id(&obj_name, &field_name);
-                                    list_field_types.insert(fid);
+                                    list_field_types
+                                        .insert(field_typ_name.replace('!', ""));
 
                                     list_type_defs
                                         .insert(obj_name.clone(), t.node.clone());
@@ -537,7 +538,23 @@ impl ParsedGraphQLSchema {
 
     /// Return the base scalar type for a given `FieldDefinition`.
     pub fn scalar_type_for(&self, f: &FieldDefinition) -> String {
-        let typ_name = field_type_name(f);
+        let typ_name = list_field_type_name(f);
+        if self.is_list_field_type(&typ_name) {
+            let typ_name = field_type_name(f);
+            if self.is_possible_foreign_key(&typ_name) {
+                let (ref_coltype, _ref_colname, _ref_tablename) =
+                    extract_foreign_key_info(f, &self.field_type_mappings);
+
+                return ref_coltype;
+            } else if self.is_virtual_typedef(&typ_name) {
+                return "Virtual".to_string();
+            } else if self.is_enum_typedef(&typ_name) {
+                return "Charfield".to_string();
+            } else {
+                return typ_name;
+            }
+        }
+
         if self.is_possible_foreign_key(&typ_name) {
             let (ref_coltype, _ref_colname, _ref_tablename) =
                 extract_foreign_key_info(f, &self.field_type_mappings);

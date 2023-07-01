@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 
 use crate::constants::*;
-use async_graphql_parser::types::{BaseType, FieldDefinition, Type, TypeDefinition};
+use async_graphql_parser::types::{BaseType, FieldDefinition, Type};
 use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
 use fuel_indexer_lib::graphql::{
-    extract_foreign_key_info, field_id, types::IdCol, ParsedGraphQLSchema,
+    list_field_type_name, types::IdCol, ParsedGraphQLSchema,
 };
 use fuels_code_gen::utils::Source;
 use proc_macro2::TokenStream;
@@ -387,30 +387,6 @@ pub fn field_extractor(
     }
 }
 
-/// Type of special fields in GraphQL schema.
-#[derive(Debug, Clone)]
-pub enum FieldKind {
-    /// `ForeignKey` kinds reference other `TypeDefinition`s in the GraphQL schema.
-    ForeignKey,
-
-    /// `Enum` kinds are GraphQL enums (converted into `Charfield` or String types).
-    Enum,
-
-    /// `Virtual` kinds are GraphQL `TypeDefinition`s from which no SQL table is generated.
-    Virtual,
-
-    /// `Union` kinds are GraphQL `TypeDefinition`s from which new struct/entities
-    /// are derived using the set of each union member's fields.
-    Union,
-
-    /// `Scalar` kinds are just scalar types.
-    Scalar,
-
-    /// `List` kinds are lists are GraphQL list types who's items are either a `FieldKind::Scalar`
-    /// type or a `FieldKind::ForeignKey` type.
-    List(Box<FieldKind>),
-}
-
 /// The result of a call to `helpers::process_typedef_field`.
 pub struct ProcessedTypedefField {
     /// The `Ident` for the processed `FieldDefinition`'s name.
@@ -429,99 +405,40 @@ pub struct ProcessedTypedefField {
 pub fn process_typedef_field(
     parsed: &ParsedGraphQLSchema,
     mut field_def: FieldDefinition,
-    typdef: &TypeDefinition,
 ) -> ProcessedTypedefField {
     let field_name = field_def.name.to_string();
     let processed_type_result = process_type(parsed, &field_def);
     let ProcessedFieldType {
-        field_type_ident,
-        inner_type_ident,
         inner_nullable,
         nullable,
         ..
-    } = processed_type_result.clone();
+    } = processed_type_result;
 
-    let fid = field_id(&typdef.name.to_string(), &field_name);
-    let lookup_type = inner_type_ident.unwrap_or(field_type_ident);
+    let field_name_ident = format_ident! {"{field_name}"};
+    let field_typ_name = &parsed.scalar_type_for(&field_def);
 
-    let fieldkind = field_kind(&lookup_type.to_string(), &fid, parsed);
-
-    match fieldkind {
-        FieldKind::ForeignKey => {
-            let (ref_coltype, _ref_colname, _ref_tablename) =
-                extract_foreign_key_info(&field_def, parsed.field_type_mappings());
-
-            // We're manually updated the field type here because we need to substitute the field name
-            // into a scalar type name.
-            field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(ref_coltype)),
-                nullable,
-            };
-
-            process_typedef_field(parsed, field_def, typdef)
-        }
-        FieldKind::Enum => {
-            field_def.ty.node = Type {
-                base: BaseType::Named(Name::new("Charfield")),
-                nullable,
-            };
-            process_typedef_field(parsed, field_def, typdef)
-        }
-        FieldKind::Virtual => {
-            field_def.ty.node = Type {
-                base: BaseType::Named(Name::new("Virtual")),
-                nullable,
-            };
-            process_typedef_field(parsed, field_def, typdef)
-        }
-        FieldKind::Union => {
-            let field_typ_name = parsed.scalar_type_for(&field_def);
-            field_def.ty.node = Type {
+    if parsed.is_list_field_type(&list_field_type_name(&field_def)) {
+        field_def.ty.node = Type {
+            base: BaseType::List(Box::new(Type {
                 base: BaseType::Named(Name::new(field_typ_name)),
-                nullable,
-            };
-            process_typedef_field(parsed, field_def, typdef)
-        }
-        FieldKind::List(kind) => match *kind {
-            FieldKind::ForeignKey => {
-                let field_type_name = parsed.scalar_type_for(&field_def);
+                nullable: inner_nullable,
+            })),
+            nullable,
+        };
+    } else {
+        field_def.ty.node = Type {
+            base: BaseType::Named(Name::new(field_typ_name)),
+            nullable,
+        };
+    }
 
-                field_def.ty.node = Type {
-                    base: BaseType::List(Box::new(Type {
-                        base: BaseType::Named(Name::new(field_type_name)),
-                        nullable: inner_nullable,
-                    })),
-                    nullable,
-                };
+    let extractor =
+        field_extractor(field_name_ident.clone(), processed_type_result.clone());
 
-                process_typedef_field(parsed, field_def, typdef)
-            }
-            FieldKind::Scalar => {
-                let field_name_ident = format_ident! {"{field_name}"};
-                let extractor = field_extractor(
-                    field_name_ident.clone(),
-                    processed_type_result.clone(),
-                );
-
-                ProcessedTypedefField {
-                    field_name_ident,
-                    extractor,
-                    processed_type_result,
-                }
-            }
-            _ => unimplemented!("Expected FieldKindList(FieldKind::Scalar) or FieldKindList(FieldKind::ForeignKey)."),
-        },
-        _ => {
-            let field_name_ident = format_ident! {"{field_name}"};
-            let extractor =
-                field_extractor(field_name_ident.clone(), processed_type_result.clone());
-
-            ProcessedTypedefField {
-                field_name_ident,
-                extractor,
-                processed_type_result,
-            }
-        }
+    ProcessedTypedefField {
+        field_name_ident,
+        extractor,
+        processed_type_result,
     }
 }
 
@@ -577,7 +494,8 @@ pub fn process_type(
                 panic!("Type '{name}' is not defined in the schema.");
             }
 
-            let field_type_ident = format_ident! {"{name}"};
+            let field_type_name = parsed.scalar_type_for(f);
+            let field_type_ident = format_ident! {"{field_type_name}"};
             let field_type_tokens = if typ.nullable {
                 quote! { Option<#field_type_ident> }
             } else {
@@ -625,42 +543,6 @@ pub fn process_type(
             }
         }
     }
-}
-
-/// Return `FieldKind` for a given `FieldDefinition` within the context of a particularly
-/// parsed GraphQL schema.
-pub fn field_kind(
-    field_typ_name: &str,
-    fid: &str,
-    parsed: &ParsedGraphQLSchema,
-) -> FieldKind {
-    if parsed.is_list_field_type(fid) {
-        let kind = if parsed.is_possible_foreign_key(field_typ_name) {
-            FieldKind::ForeignKey
-        } else {
-            FieldKind::Scalar
-        };
-        return FieldKind::List(Box::new(kind));
-    }
-    if parsed.is_union_typedef(field_typ_name)
-        && !parsed.is_possible_foreign_key(field_typ_name)
-    {
-        return FieldKind::Union;
-    }
-
-    if parsed.is_possible_foreign_key(field_typ_name) {
-        return FieldKind::ForeignKey;
-    }
-
-    if parsed.is_enum_typedef(field_typ_name) {
-        return FieldKind::Enum;
-    }
-
-    if parsed.is_virtual_typedef(field_typ_name) {
-        return FieldKind::Virtual;
-    }
-
-    FieldKind::Scalar
 }
 
 /// Get tokens for a field's `.clone()`.
