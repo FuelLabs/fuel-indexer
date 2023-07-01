@@ -436,6 +436,8 @@ pub fn process_typedef_field(
     let ProcessedFieldType {
         field_type_ident,
         inner_type_ident,
+        inner_nullable,
+        nullable,
         ..
     } = processed_type_result.clone();
 
@@ -443,6 +445,7 @@ pub fn process_typedef_field(
     let lookup_type = inner_type_ident.unwrap_or(field_type_ident);
 
     let fieldkind = field_kind(&lookup_type.to_string(), &fid, parsed);
+
     match fieldkind {
         FieldKind::ForeignKey => {
             let (ref_coltype, _ref_colname, _ref_tablename) =
@@ -452,7 +455,7 @@ pub fn process_typedef_field(
             // into a scalar type name.
             field_def.ty.node = Type {
                 base: BaseType::Named(Name::new(ref_coltype)),
-                nullable: field_def.ty.node.nullable,
+                nullable,
             };
 
             process_typedef_field(parsed, field_def, typdef)
@@ -460,61 +463,35 @@ pub fn process_typedef_field(
         FieldKind::Enum => {
             field_def.ty.node = Type {
                 base: BaseType::Named(Name::new("Charfield")),
-                nullable: field_def.ty.node.nullable,
+                nullable,
             };
             process_typedef_field(parsed, field_def, typdef)
         }
         FieldKind::Virtual => {
             field_def.ty.node = Type {
                 base: BaseType::Named(Name::new("Virtual")),
-                nullable: field_def.ty.node.nullable,
+                nullable,
             };
             process_typedef_field(parsed, field_def, typdef)
         }
         FieldKind::Union => {
-            let field_typ_name = field_def.ty.to_string().replace(['[', ']', '!'], "");
-            match parsed.is_virtual_typedef(&field_typ_name) {
-                true => {
-                    field_def.ty.node = Type {
-                        base: BaseType::Named(Name::new("Virtual")),
-                        nullable: field_def.ty.node.nullable,
-                    };
-                    process_typedef_field(parsed, field_def, typdef)
-                }
-                false => match parsed.is_possible_foreign_key(&field_typ_name) {
-                    true => {
-                        // Determine implicit vs explicit FK
-                        let (ref_coltype, _ref_colname, _ref_tablename) =
-                            extract_foreign_key_info(
-                                &field_def,
-                                parsed.field_type_mappings(),
-                            );
-
-                        field_def.ty.node = Type {
-                            base: BaseType::Named(Name::new(ref_coltype)),
-                            nullable: field_def.ty.node.nullable,
-                        };
-
-                        process_typedef_field(parsed, field_def, typdef)
-                    }
-                    false => process_typedef_field(parsed, field_def, typdef),
-                },
-            }
+            let field_typ_name = parsed.scalar_type_for(&field_def);
+            field_def.ty.node = Type {
+                base: BaseType::Named(Name::new(field_typ_name)),
+                nullable,
+            };
+            process_typedef_field(parsed, field_def, typdef)
         }
         FieldKind::List(kind) => match *kind {
             FieldKind::ForeignKey => {
-                let (ref_coltype, _ref_colname, _ref_tablename) =
-                    extract_foreign_key_info(&field_def, parsed.field_type_mappings());
-
-                let inner_nullable = field_def.ty.node.to_string().contains('!')
-                    && !field_def.ty.node.to_string().ends_with('!');
+                let field_type_name = parsed.scalar_type_for(&field_def);
 
                 field_def.ty.node = Type {
                     base: BaseType::List(Box::new(Type {
-                        base: BaseType::Named(Name::new(ref_coltype)),
+                        base: BaseType::Named(Name::new(field_type_name)),
                         nullable: inner_nullable,
                     })),
-                    nullable: field_def.ty.node.nullable,
+                    nullable,
                 };
 
                 process_typedef_field(parsed, field_def, typdef)
@@ -532,7 +509,7 @@ pub fn process_typedef_field(
                     processed_type_result,
                 }
             }
-            _ => unimplemented!("cant reach this"),
+            _ => unimplemented!("Expected FieldKindList(FieldKind::Scalar) or FieldKindList(FieldKind::ForeignKey)."),
         },
         _ => {
             let field_name_ident = format_ident! {"{field_name}"};

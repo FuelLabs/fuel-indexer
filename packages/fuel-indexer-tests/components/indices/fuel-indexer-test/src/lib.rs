@@ -781,6 +781,7 @@ mod fuel_indexer_test {
                     .into(),
                 ),
             ],
+            enum_required_all: vec![EnumEntity::One.into(), EnumEntity::Two.into()],
         };
 
         e.save();
