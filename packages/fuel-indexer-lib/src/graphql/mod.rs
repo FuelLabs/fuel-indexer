@@ -3,7 +3,7 @@ pub mod parser;
 pub mod types;
 pub mod validator;
 
-pub use parser::{JoinTableItem, ParsedError, ParsedGraphQLSchema};
+pub use parser::{JoinTableMeta, ParsedError, ParsedGraphQLSchema};
 pub use validator::GraphQLSchemaValidator;
 
 use async_graphql_parser::types::FieldDefinition;
@@ -119,7 +119,7 @@ pub fn extract_foreign_key_info(
             )
         })
         .unwrap_or((
-            IdCol::to_uppercase_string(),
+            "UInt8".to_string(),
             IdCol::to_lowercase_string(),
             field_type_name(f).to_lowercase(),
         ));

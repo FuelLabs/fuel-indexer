@@ -42,7 +42,7 @@ pub enum ParsedError {
 
 /// Represents metadata related to a many-to-many relationship in the GraphQL schema.
 #[derive(Debug, Clone)]
-pub struct JoinTableItem {
+pub struct JoinTableMeta {
     /// Name of the join table
     pub table_name: String,
 
@@ -73,8 +73,8 @@ pub struct JoinTableItem {
     pub ref_column_type: String,
 }
 
-impl JoinTableItem {
-    /// Create a new `JoinTableItem`.
+impl JoinTableMeta {
+    /// Create a new `JoinTableMeta`.
     pub fn new(local_table_name: &str, ref_table_name: &str) -> Self {
         let local_table_name = local_table_name.to_string().to_lowercase();
         let ref_table_name = ref_table_name.to_string().to_lowercase();
@@ -199,7 +199,7 @@ pub struct ParsedGraphQLSchema {
     list_type_defs: HashMap<String, TypeDefinition>,
 
     /// Metadata related to many-to-many relationships in the GraphQL schema.
-    join_table_info: HashMap<String, JoinTableItem>,
+    join_table_meta: HashMap<String, JoinTableMeta>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -230,7 +230,7 @@ impl Default for ParsedGraphQLSchema {
             list_field_types: HashSet::new(),
             list_type_defs: HashMap::new(),
             unions: HashMap::new(),
-            join_table_info: HashMap::new(),
+            join_table_meta: HashMap::new(),
         }
     }
 }
@@ -263,7 +263,7 @@ impl ParsedGraphQLSchema {
         let mut list_field_types = HashSet::new();
         let mut list_type_defs = HashMap::new();
         let mut unions = HashMap::new();
-        let mut join_table_info = HashMap::new();
+        let mut join_table_meta = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
@@ -320,9 +320,9 @@ impl ParsedGraphQLSchema {
                                             &field_type_mappings,
                                         );
 
-                                    join_table_info.insert(
+                                    join_table_meta.insert(
                                         obj_name.clone(),
-                                        JoinTableItem::new(&obj_name, &ref_tablename),
+                                        JoinTableMeta::new(&obj_name, &ref_tablename),
                                     );
 
                                     let fk = foreign_key_mappings
@@ -464,7 +464,7 @@ impl ParsedGraphQLSchema {
             list_field_types,
             list_type_defs,
             unions,
-            join_table_info,
+            join_table_meta,
         })
     }
 
@@ -531,13 +531,13 @@ impl ParsedGraphQLSchema {
     }
 
     /// Metadata related to many-to-many relationships in the GraphQL schema.
-    pub fn join_table_info(&self) -> &HashMap<String, JoinTableItem> {
-        &self.join_table_info
+    pub fn join_table_meta(&self) -> &HashMap<String, JoinTableMeta> {
+        &self.join_table_meta
     }
 
     /// All unique names of scalar types in the schema.
     pub fn scalar_type_for(&self, f: &FieldDefinition) -> String {
-        let typ_name = field_type_name(&f);
+        let typ_name = field_type_name(f);
         if self.is_possible_foreign_key(&typ_name) {
             let (ref_coltype, _ref_colname, _ref_tablename) =
                 extract_foreign_key_info(f, &self.field_type_mappings);

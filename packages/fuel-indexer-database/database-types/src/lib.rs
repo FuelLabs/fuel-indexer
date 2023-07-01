@@ -14,9 +14,9 @@ use chrono::{
 };
 use fuel_indexer_lib::{
     graphql::{
-        extract_foreign_key_info, field_id, field_type_name, is_list_type,
+        extract_foreign_key_info, field_id, is_list_type,
         types::{IdCol, ObjectCol},
-        JoinTableItem, ParsedGraphQLSchema,
+        JoinTableMeta, ParsedGraphQLSchema,
     },
     type_id, MAX_ARRAY_LENGTH,
 };
@@ -34,10 +34,12 @@ use strum::{AsRefStr, EnumString};
 // SQL index method.
 #[derive(Debug, EnumString, AsRefStr, Default)]
 pub enum IndexMethod {
+    /// SQL BTree index.
     #[default]
     #[strum(serialize = "btree")]
     BTree,
 
+    /// SQL Hash index.
     #[strum(serialize = "hash")]
     Hash,
 }
@@ -325,32 +327,11 @@ impl Column {
         position: i32,
         persistence: Persistence,
     ) -> Self {
-        let mut field_type = field_type_name(&f);
-        if parsed.is_possible_foreign_key(&field_type) {
-            field_type = f
-            .directives
-            .iter()
-            .find(|d| d.node.name.to_string() == "join")
-            .map(|d| {
-                let ref_field_name =
-                    d.clone().node.arguments.pop().unwrap().1.to_string();
-                let fk_fid = field_id(&field_type, &ref_field_name);
-                let fk_field_typ = parsed
-                    .field_type_mappings()
-                    .get(&fk_fid)
-                    .expect("Failed to find field in ParsedGraphQLSchema field type mappings.")
-                    .to_string();
-                fk_field_typ
-            })
-            // Special case of parsing FKs here where we change the derived
-            // field type. We can't use the `ID` type as normal because we
-            // can't have multiple primary keys on the same table.
-            .unwrap_or(ColumnType::UInt8.to_string());
-        }
+        let field_type = parsed.scalar_type_for(f);
 
         match is_list_type(f) {
             true => {
-                let array_coltype = ColumnType::from(parsed.scalar_type_for(&f).as_str());
+                let array_coltype = ColumnType::from(parsed.scalar_type_for(f).as_str());
 
                 Self {
                     type_id,
@@ -365,49 +346,16 @@ impl Column {
                 }
             }
             false => {
-                if parsed.is_possible_foreign_key(&field_type) {
-                    // Determine implicit vs explicit FK type
-                    field_type = f
-                        .directives
-                        .iter()
-                        .find(|d| d.node.name.to_string() == "join")
-                        .map(|d| {
-                            let ref_field_name =
-                                d.clone().node.arguments.pop().unwrap().1.to_string();
-                            let fk_fid = field_id(&field_type, &ref_field_name);
-                            let fk_field_typ = parsed
-                                .field_type_mappings()
-                                .get(&fk_fid)
-                                .expect("Failed to find field in ParsedGraphQLSchema field type mappings.")
-                                .to_string();
-                            fk_field_typ
-                        })
-                        // Special case of parsing FKs here where we change the derived
-                        // field type. We can't use the `ID` type as normal because we
-                        // can't have multiple primary keys on the same table.
-                        .unwrap_or(ColumnType::UInt8.to_string());
-                } else if parsed.is_virtual_typedef(&field_type) {
-                    field_type = ColumnType::Virtual.to_string();
-                } else if parsed.is_enum_typedef(&field_type) {
-                    field_type = ColumnType::Charfield.to_string();
-                }
-
-                if is_list_type(f) {
-                    field_type = ColumnType::Array.to_string();
-                }
-
                 let unique = f
                     .directives
                     .iter()
                     .any(|d| d.node.name.to_string() == "unique");
 
-                let coltype = field_type.as_str();
-
                 Self {
                     type_id,
                     name: f.name.to_string(),
-                    graphql_type: coltype.to_owned(),
-                    coltype: ColumnType::from(coltype),
+                    graphql_type: field_type.clone(),
+                    coltype: ColumnType::from(field_type.as_str()),
                     position,
                     unique,
                     nullable: f.ty.node.nullable,
@@ -576,9 +524,9 @@ impl TypeId {
         }
     }
 
-    /// Create a new `TypeId` from a given `JoinTableItem`.
-    pub fn from_join_info(info: JoinTableItem, parsed: &ParsedGraphQLSchema) -> Self {
-        let JoinTableItem { table_name, .. } = info;
+    /// Create a new `TypeId` from a given `JoinTableMeta`.
+    pub fn from_join_meta(info: JoinTableMeta, parsed: &ParsedGraphQLSchema) -> Self {
+        let JoinTableMeta { table_name, .. } = info;
 
         let type_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
         Self {
@@ -969,7 +917,8 @@ impl Table {
                     .iter()
                     .filter_map(|f| {
 
-                        // Can't create constraints on array fields.
+                        // Can't create constraints on array fields. We should have already validated the 
+                        // GraphQL schema to ensure this isn't possible, but this check doesn't hurt.
                         if is_list_type(&f.node) {
                             return None;
                         }
@@ -1099,8 +1048,11 @@ impl Table {
         }
     }
 
-    pub fn from_join_info(item: JoinTableItem, parsed: &ParsedGraphQLSchema) -> Self {
-        let JoinTableItem {
+    /// Create a new `Table` from a given `JoinTableMeta`.
+    pub fn from_join_meta(item: JoinTableMeta, parsed: &ParsedGraphQLSchema) -> Self {
+        // Since the join table is just two pre-determined columns, with two pre-determined
+        // constraints, we can just manually create it.
+        let JoinTableMeta {
             table_name,
             local_table_name,
             column_name,
