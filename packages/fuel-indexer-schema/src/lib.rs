@@ -240,7 +240,7 @@ impl FtColumn {
 
                     // If the array has no items, then we have no `FtColumn`s from which to determine
                     // what type of PostgreSQL array this is. In this case, the user should be using a
-                    // completely optional array (e.g., [Foo!]) in their schema.
+                    // inner required (outer optional) array (e.g., [Foo!]) in their schema.
                     //
                     // Ideally we need a way to validate this in something like `fuel_indexer_lib::graphql::GraphQLSchemaValidator`.
                     if arr.is_empty() {

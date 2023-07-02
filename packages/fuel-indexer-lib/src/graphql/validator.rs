@@ -9,14 +9,14 @@ impl GraphQLSchemaValidator {
     /// Check that the given name is not a reserved object name.
     pub fn check_disallowed_graphql_typedef_name(name: &str) {
         if DISALLOWED_OBJECT_NAMES.contains(name) {
-            panic!("Object name '{name}' is reserved.");
+            panic!("TypeDefinition name '{name}' is reserved.");
         }
     }
 
     /// Check the given `TypeDefinition` name is not a disallowed Sway ABI name.
     pub fn check_disallowed_abi_typedef_name(name: &str) {
         if FUEL_PRIMITIVES.contains(name) {
-            panic!("Object name '{name}' is reserved.");
+            panic!("TypeDefinition name '{name}' is reserved.");
         }
     }
 
@@ -57,7 +57,7 @@ impl GraphQLSchemaValidator {
 
                     // All members of a union must all be regular or virtual
                     if virtual_member_count != member_count {
-                        panic!("Union({union_name})'s members are not all virtual");
+                        panic!("TypeDefinition(Union({union_name})) does not have consistent virtual/non-virtual members.");
                     }
                 }
             }
@@ -77,7 +77,10 @@ impl GraphQLSchemaValidator {
     }
 
     /// Ensure a `FieldDefinition` is not a reference to a nested list.
-    pub fn ensure_fielddef_is_not_nested_list(_f: &FieldDefinition) {
-        unimplemented!()
+    pub fn ensure_fielddef_is_not_nested_list(f: &FieldDefinition) {
+        let name = f.name.to_string();
+        if f.ty.node.to_string().matches('[').count() > 1 {
+            panic!("FieldDefinition({name}) is a nested list, which is not supported.");
+        }
     }
 }

@@ -255,6 +255,8 @@ impl From<fuel::Input> for Input {
                     balance_root,
                     state_root,
                     tx_pointer.id,
+                    // Don't need to load the object here since the `ContractIdFragment.id` is
+                    // just `id8(ContractId)`
                     id8(contract_id),
                     InputLabel::Contract.into(),
                     true,
@@ -420,6 +422,8 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 reason,
                 program_state,
             } => {
+                // Don't need to load the object here since the `BlockFragment.id` is
+                // just `id8(hash)
                 let block_id = id8(block);
                 let program_state = program_state.map(|p| p.into());
 
@@ -439,6 +443,8 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                 time,
                 program_state,
             } => {
+                // Don't need to load the object here since the `BlockFragment.id` is
+                // just `id8(hash)
                 let block_id = id8(block);
                 let program_state = program_state.map(|p| p.into());
 
