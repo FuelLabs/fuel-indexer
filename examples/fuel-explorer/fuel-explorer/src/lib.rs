@@ -724,7 +724,7 @@ pub mod explorer_index {
         block_frag.save();
 
         for transaction in block_data.transactions.iter() {
-            let tx_status = TransactionStatus::from(transaction.status.clone());
+            let _tx_status = TransactionStatus::from(transaction.status.clone());
 
             match &transaction.transaction {
                 #[allow(unused)]
