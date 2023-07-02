@@ -131,31 +131,28 @@ impl From<fuel::TxPointer> for TxPointer {
             block_height,
             tx_index,
         } = tx_pointer;
-        // TODO: Create UID here.
-        let id = 1;
-        Self {
-            id,
-            block_height,
-            tx_index,
-        }
+        Self::new(block_height, tx_index).get_or_create()
     }
 }
 
 impl From<fuel::UtxoId> for UtxoId {
     fn from(utxo_id: fuel::UtxoId) -> Self {
-        // TODO: Create UID here.
-        let id = 1;
-        Self {
-            id,
-            tx_id: *utxo_id.tx_id(),
-            output_index: utxo_id.output_index().into(),
-        }
+        Self::new(*utxo_id.tx_id(), utxo_id.output_index() as u32).get_or_create()
     }
 }
 
 impl From<u64> for ContractIdFragment {
     fn from(id: u64) -> Self {
+        // We don't have to load anything here since a fragment is just the
+        // ID of the object anyway.
         Self { id }
+    }
+}
+
+impl From<fuel::StorageSlot> for StorageSlot {
+    fn from(slot: fuel::StorageSlot) -> Self {
+        let fuel::StorageSlot { key, value } = slot;
+        Self::new(key, value)
     }
 }
 
@@ -192,9 +189,8 @@ impl From<fuel::Input> for Input {
                     true,
                 );
 
-                Self::from(input)
+                Self::from(input).get_or_create()
             }
-            #[allow(unused)]
             fuel::Input::Contract(input) => {
                 let fuel::InputContract {
                     utxo_id,
@@ -217,7 +213,7 @@ impl From<fuel::Input> for Input {
                     true,
                 );
 
-                Self::from(input)
+                Self::from(input).get_or_create()
             }
             fuel::Input::Message(input) => {
                 let fuel::InputMessage {
@@ -246,7 +242,7 @@ impl From<fuel::Input> for Input {
                     true,
                 );
 
-                Self::from(input)
+                Self::from(input).get_or_create()
             }
         }
     }
@@ -265,7 +261,7 @@ impl From<fuel::Output> for Output {
                 let output =
                     CoinOutput::new(to, amount, asset_id, true, OutputLabel::Coin.into());
 
-                Self::from(output)
+                Self::from(output).get_or_create()
             }
             fuel::Output::ContractOutput(output) => {
                 let fuel::ContractOutput {
@@ -282,7 +278,7 @@ impl From<fuel::Output> for Output {
                     OutputLabel::Contract.into(),
                 );
 
-                Self::from(output)
+                Self::from(output).get_or_create()
             }
             fuel::Output::ChangeOutput(output) => {
                 let fuel::ChangeOutput {
@@ -298,7 +294,7 @@ impl From<fuel::Output> for Output {
                     OutputLabel::Change.into(),
                 );
 
-                Self::from(output)
+                Self::from(output).get_or_create()
             }
             fuel::Output::VariableOutput(output) => {
                 let fuel::VariableOutput {
@@ -315,7 +311,7 @@ impl From<fuel::Output> for Output {
                     OutputLabel::Variable.into(),
                 );
 
-                Self::from(output)
+                Self::from(output).get_or_create()
             }
             fuel::Output::ContractCreated(output) => {
                 let fuel::ContractCreated {
@@ -330,7 +326,7 @@ impl From<fuel::Output> for Output {
                     true,
                 );
 
-                Self::from(output)
+                Self::from(output).get_or_create()
             }
             fuel::Output::Message(output) => {
                 let fuel::MessageOutput { amount, recipient } = output;
@@ -342,7 +338,7 @@ impl From<fuel::Output> for Output {
             fuel::Output::Unknown => {
                 let output = UnknownOutput::new(OutputLabel::Unknown.into(), true);
 
-                Self::from(output)
+                Self::from(output).get_or_create()
             }
         }
     }
@@ -357,7 +353,7 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                     TransactionStatusLabel::Submitted.into(),
                     true,
                 );
-                Self::from(status)
+                Self::from(status).get_or_create()
             }
             fuel::TransactionStatus::SqueezedOut { reason } => {
                 let status = SqueezedOutStatus::new(
@@ -366,17 +362,15 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                     true,
                 );
 
-                Self::from(status)
+                Self::from(status).get_or_create()
             }
-            #[allow(unused)]
             fuel::TransactionStatus::Failure {
                 block,
                 time,
                 reason,
                 program_state,
             } => {
-                // TODO: Create UID here.
-                let block_id = 1;
+                let block_id = id8(block);
                 let program_state = program_state.map(|p| p.into());
 
                 let status = FailureStatus::new(
@@ -388,16 +382,14 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                     true,
                 );
 
-                Self::from(status)
+                Self::from(status).get_or_create()
             }
-            #[allow(unused)]
             fuel::TransactionStatus::Success {
                 block,
                 time,
                 program_state,
             } => {
-                // TODO: Create UID here.
-                let block_id = 1;
+                let block_id = id8(block);
                 let program_state = program_state.map(|p| p.into());
 
                 let status = SuccessStatus::new(
@@ -408,7 +400,7 @@ impl From<fuel::TransactionStatus> for TransactionStatus {
                     true,
                 );
 
-                Self::from(status)
+                Self::from(status).get_or_create()
             }
         }
     }
@@ -684,6 +676,148 @@ impl From<fuel::Receipt> for Receipt {
     }
 }
 
+impl From<fuel::TransactionData> for Transaction {
+    fn from(transaction: fuel::TransactionData) -> Self {
+        let tx_status = TransactionStatus::from(transaction.status.clone());
+        match transaction.transaction {
+            fuel::Transaction::Script(fuel::Script {
+                gas_limit,
+                gas_price,
+                maturity,
+                script,
+                script_data,
+                receipts_root,
+                inputs,
+                outputs,
+                witnesses,
+                metadata,
+            }) => {
+                let inputs = inputs
+                    .iter()
+                    .map(|i| Input::from(i.to_owned()))
+                    .map(|i| i.id)
+                    .collect::<Vec<u64>>();
+                let outputs = outputs
+                    .iter()
+                    .map(|o| Output::from(o.to_owned()))
+                    .map(|o| o.id)
+                    .collect::<Vec<u64>>();
+                let witnesses = witnesses
+                    .iter()
+                    .map(|w| Witness::from(w.to_owned()))
+                    .map(|w| w.into())
+                    .collect::<Vec<_>>();
+
+                let script_tx = ScriptTransaction::new(
+                    gas_limit,
+                    gas_price,
+                    maturity.clone(),
+                    script.to_owned().into(),
+                    script_data.to_owned().into(),
+                    inputs,
+                    outputs,
+                    witnesses,
+                    receipts_root,
+                    metadata.to_owned().map(|m| m.into()),
+                    true,
+                    transaction
+                        .receipts
+                        .iter()
+                        .map(|r| Receipt::from(r.to_owned()).into())
+                        .collect::<Vec<_>>(),
+                    tx_status.id,
+                );
+
+                Self::from(script_tx).get_or_create()
+            }
+            fuel::Transaction::Create(fuel::Create {
+                gas_limit,
+                gas_price,
+                maturity,
+                bytecode_length,
+                bytecode_witness_index,
+                inputs,
+                outputs,
+                witnesses,
+                salt,
+                storage_slots,
+                metadata,
+            }) => {
+                let storage_slots = storage_slots
+                    .iter()
+                    .map(|s| StorageSlot::from(s.to_owned()))
+                    .map(|s| s.id)
+                    .collect::<Vec<u64>>();
+                let inputs = inputs
+                    .iter()
+                    .map(|i| Input::from(i.to_owned()))
+                    .map(|i| i.id)
+                    .collect::<Vec<u64>>();
+                let outputs = outputs
+                    .iter()
+                    .map(|o| Output::from(o.to_owned()))
+                    .map(|o| o.id)
+                    .collect::<Vec<u64>>();
+                let witnesses = witnesses
+                    .iter()
+                    .map(|w| Witness::from(w.to_owned()))
+                    .map(|w| w.into())
+                    .collect::<Vec<_>>();
+
+                let create_tx = CreateTransaction::new(
+                    gas_limit,
+                    gas_price,
+                    maturity.clone(),
+                    bytecode_length,
+                    bytecode_witness_index,
+                    storage_slots,
+                    inputs,
+                    outputs,
+                    witnesses,
+                    salt,
+                    metadata.to_owned().map(|m| m.into()),
+                    true,
+                    transaction
+                        .receipts
+                        .iter()
+                        .map(|r| Receipt::from(r.to_owned()).into())
+                        .collect::<Vec<_>>(),
+                    tx_status.id,
+                );
+
+                Self::from(create_tx).get_or_create()
+            }
+            fuel::Transaction::Mint(fuel::Mint {
+                tx_pointer,
+                outputs,
+                metadata,
+            }) => {
+                let tx_pointer = TxPointer::from(tx_pointer.to_owned());
+                let outputs = outputs
+                    .iter()
+                    .map(|o| Output::from(o.to_owned()))
+                    .map(|o| o.id)
+                    .collect::<Vec<u64>>();
+
+                let mint_tx = MintTransaction::new(
+                    tx_pointer.id,
+                    outputs,
+                    metadata.to_owned().map(|m| m.into()),
+                    true,
+                    transaction
+                        .receipts
+                        .iter()
+                        .map(|r| Receipt::from(r.to_owned()).into())
+                        .collect::<Vec<_>>(),
+                    tx_status.id,
+                );
+
+                Self::from(mint_tx).get_or_create()
+            }
+        }
+    }
+}
+
 #[indexer(manifest = "examples/fuel-explorer/fuel-explorer/fuel_explorer.manifest.yaml")]
 pub mod explorer_index {
 
@@ -723,152 +857,10 @@ pub mod explorer_index {
 
         block_frag.save();
 
-        for transaction in block_data.transactions.iter() {
-            let _tx_status = TransactionStatus::from(transaction.status.clone());
-
-            match &transaction.transaction {
-                #[allow(unused)]
-                fuel::Transaction::Script(fuel::Script {
-                    gas_limit,
-                    gas_price,
-                    maturity,
-                    script,
-                    script_data,
-                    receipts_root,
-                    inputs,
-                    outputs,
-                    witnesses,
-                    metadata,
-                }) => {
-                    let inputs = inputs
-                        .iter()
-                        .map(|i| Input::from(i.to_owned()))
-                        .map(|i| i.id)
-                        .collect::<Vec<u64>>();
-                    let outputs = outputs
-                        .iter()
-                        .map(|o| Output::from(o.to_owned()))
-                        .map(|o| o.id)
-                        .collect::<Vec<u64>>();
-                    let witnesses = witnesses
-                        .iter()
-                        .map(|w| Witness::from(w.to_owned()))
-                        .map(|w| w.into())
-                        .collect::<Vec<Json>>();
-
-                    let script_tx = ScriptTransaction::new(
-                        // tx_status.id
-                        *gas_limit,
-                        *gas_price,
-                        maturity.clone(),
-                        script.to_owned().into(),
-                        inputs,
-                        outputs,
-                        witnesses,
-                        *receipts_root,
-                        metadata.to_owned().map(|m| m.into()),
-                        true,
-                        transaction
-                            .receipts
-                            .iter()
-                            .map(|r| Receipt::from(r.to_owned()).into())
-                            .collect::<Vec<_>>(),
-                    );
-
-                    let script_tx_frag = TransactionIdFragment { id: script_tx.id };
-                    script_tx_frag.save();
-
-                    script_tx.save();
-                }
-                #[allow(unused)]
-                fuel::Transaction::Create(fuel::Create {
-                    gas_limit,
-                    gas_price,
-                    maturity,
-                    bytecode_length,
-                    bytecode_witness_index,
-                    inputs,
-                    outputs,
-                    witnesses,
-                    salt,
-                    storage_slots,
-                    metadata,
-                }) => {
-                    let inputs = inputs
-                        .iter()
-                        .map(|i| Input::from(i.to_owned()))
-                        .map(|i| i.id)
-                        .collect::<Vec<u64>>();
-                    let outputs = outputs
-                        .iter()
-                        .map(|o| Output::from(o.to_owned()))
-                        .map(|o| o.id)
-                        .collect::<Vec<u64>>();
-                    let witnesses = witnesses
-                        .iter()
-                        .map(|w| Witness::from(w.to_owned()))
-                        .map(|w| w.into())
-                        .collect::<Vec<Json>>();
-
-                    let create_tx = CreateTransaction::new(
-                        // tx_status.id,
-                        *gas_limit,
-                        *gas_price,
-                        maturity.clone(),
-                        *bytecode_length,
-                        *bytecode_witness_index,
-                        vec![], // storage slots
-                        inputs,
-                        outputs,
-                        witnesses,
-                        *salt,
-                        metadata.to_owned().map(|m| m.into()),
-                        true,
-                        transaction
-                            .receipts
-                            .iter()
-                            .map(|r| Receipt::from(r.to_owned()).into())
-                            .collect::<Vec<_>>(),
-                    );
-
-                    create_tx.save();
-
-                    let create_tx_frag = TransactionIdFragment { id: create_tx.id };
-                    create_tx_frag.save();
-                }
-                #[allow(unused)]
-                fuel::Transaction::Mint(fuel::Mint {
-                    tx_pointer,
-                    outputs,
-                    metadata,
-                }) => {
-                    // TODO: Create UID here.
-                    let id = 1;
-                    let mint_tx_frag = TransactionIdFragment { id };
-                    mint_tx_frag.save();
-
-                    // let mint_tx = Mint
-                }
-            }
-
-            for receipt in transaction.receipts.iter() {
-                // TODO: Capture all contract IDs from all receipts
-                // TODO: Capture all addresses from all receipts
-                let _receipt_entity = Receipt::from(receipt.to_owned());
-                match receipt {
-                    fuel::Receipt::Call { .. } => {}
-                    fuel::Receipt::ReturnData { .. } => {}
-                    fuel::Receipt::Transfer { .. } => {}
-                    fuel::Receipt::TransferOut { .. } => {}
-                    fuel::Receipt::Log { .. } => {}
-                    fuel::Receipt::LogData { .. } => {}
-                    fuel::Receipt::ScriptResult { .. } => {}
-                    fuel::Receipt::MessageOut { .. } => {}
-                    _ => {
-                        Logger::warn("This Receipt type is not handled yet.");
-                    }
-                }
-            }
-        }
+        let _transactions = block_data
+            .transactions
+            .iter()
+            .map(|t| Transaction::from(t.to_owned()))
+            .collect::<Vec<Transaction>>();
     }
 }

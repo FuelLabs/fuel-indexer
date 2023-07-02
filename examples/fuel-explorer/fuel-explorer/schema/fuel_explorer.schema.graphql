@@ -371,7 +371,6 @@ union Receipt =
 # transaction type names.
 type CreateTransaction {
   id: ID!
-  # status: TransactionStatus!
   gas_price: UInt8!
   gas_limit: UInt8!
   maturity: UInt8!
@@ -385,15 +384,16 @@ type CreateTransaction {
   metadata: Json
   is_create: Boolean!
   receipts: [Receipt!]!
+  status: TransactionStatus!
 }
 
 type ScriptTransaction {
   id: ID!
-  # status: TransactionStatus!
   gas_price: UInt8!
   gas_limit: UInt8!
   maturity: UInt8!
   script: Blob!
+  script_data: Blob!
   inputs: [Input!]!
   outputs: [Output!]!
   witnesses: [Witness!]!
@@ -401,17 +401,23 @@ type ScriptTransaction {
   metadata: Json
   is_script: Boolean!
   receipts: [Receipt!]!
+  status: TransactionStatus!
 }
 
 type MintTransaction {
   id: ID!
-  # status: TransactionStatus!
   tx_pointer: TransactionPointer!
   outputs: [Output!]!
   metadata: Json
   is_mint: Boolean!
   receipts: [Receipt!]!
+  status: TransactionStatus!
 }
+
+union Transaction =
+    CreateTransaction
+  | ScriptTransaction
+  | MintTransaction
 
 type SubmittedStatus {
   id: ID!

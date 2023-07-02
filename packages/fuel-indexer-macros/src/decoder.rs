@@ -233,6 +233,29 @@ impl From<ImplementationDecoder> for TokenStream {
         // `TypeDefinition::Union`.
         let typdef = parsed.get_union(&typdef_name).unwrap_or(&typdef);
 
+        let impl_get_or_create = match exec_source {
+            ExecutionSource::Native => {
+                quote! {
+                    pub async fn get_or_create(self) -> Self {
+                        match Self::load(self.id).await {
+                            Some(instance) => instance,
+                            None => self,
+                        }
+                    }
+                }
+            }
+            ExecutionSource::Wasm => {
+                quote! {
+                    pub fn get_or_create(self) -> Self {
+                        match Self::load(self.id) {
+                            Some(instance) => instance,
+                            None => self,
+                        }
+                    }
+                }
+            }
+        };
+
         match &typdef.kind {
             TypeKind::Object(o) => {
                 let field_set = o
@@ -248,29 +271,6 @@ impl From<ImplementationDecoder> for TokenStream {
                 if !field_set.contains(IdCol::to_lowercase_str()) {
                     return quote! {};
                 }
-
-                let impl_get_or_create = match exec_source {
-                    ExecutionSource::Native => {
-                        quote! {
-                            pub async fn get_or_create(self) -> Self {
-                                match Self::load(self.id).await {
-                                    Some(instance) => instance,
-                                    None => self,
-                                }
-                            }
-                        }
-                    }
-                    ExecutionSource::Wasm => {
-                        quote! {
-                            pub fn get_or_create(self) -> Self {
-                                match Self::load(self.id) {
-                                    Some(instance) => instance,
-                                    None => self,
-                                }
-                            }
-                        }
-                    }
-                };
 
                 quote! {
                     impl #ident {
@@ -293,6 +293,15 @@ impl From<ImplementationDecoder> for TokenStream {
             }
             TypeKind::Union(u) => {
                 let mut from_method_impls = quote! {};
+                let get_or_create_tokens = if parsed.is_virtual_typedef(&typdef_name) {
+                    quote! {}
+                } else {
+                    quote! {
+                        impl #ident {
+                            #impl_get_or_create
+                        }
+                    }
+                };
 
                 let union_field_set = u
                     .members
@@ -378,7 +387,11 @@ impl From<ImplementationDecoder> for TokenStream {
                     };
                 });
 
-                from_method_impls
+                quote! {
+                    #from_method_impls
+
+                    #get_or_create_tokens
+                }
             }
             _ => unimplemented!("Cannot do this with enum."),
         }
