@@ -239,7 +239,10 @@ impl From<ImplementationDecoder> for TokenStream {
                     pub async fn get_or_create(self) -> Self {
                         match Self::load(self.id).await {
                             Some(instance) => instance,
-                            None => self,
+                            None => {
+                                self.save().await;
+                                self
+                            },
                         }
                     }
                 }
@@ -249,7 +252,10 @@ impl From<ImplementationDecoder> for TokenStream {
                     pub fn get_or_create(self) -> Self {
                         match Self::load(self.id) {
                             Some(instance) => instance,
-                            None => self,
+                            None => {
+                                self.save();
+                                self
+                            },
                         }
                     }
                 }

@@ -113,14 +113,9 @@ type DryRun {
   utxo_validation: Boolean
 }
 
-type TransactionPointer {
-  id: ID!
-  block_height: BlockHeight!
-  tx_index: UInt4!
-}
-
 type TransactionIdFragment {
   id: ID!
+  hash: Bytes32!
 }
 
 type UtxoId {
@@ -137,6 +132,7 @@ type TxPointer {
 
 type ContractIdFragment {
   id: ID!
+  hash: Bytes32!
 }
 
 type BlockIdFragment {
@@ -156,6 +152,8 @@ type Genesis {
 
 type PoA {
   id: ID!
+  # TODO: Is this important? The fact that signature is different
+  # on almost every `PoA` implies that this type might be virtual?
   signature: Signature!
   is_poa: Boolean!
   label: ConsensusLabel!
@@ -175,7 +173,7 @@ type InputCoin {
   owner: Address!
   amount: UInt8!
   asset_id: AssetId!
-  tx_pointer: TransactionPointer!
+  tx_pointer: TxPointer!
   witness_index: Int8!
   maturity: UInt8!
   predicate: HexString!
@@ -189,7 +187,7 @@ type InputContract {
   utxo_id: UtxoId!
   balance_root: Bytes32!
   state_root: Bytes32!
-  tx_pointer: TransactionPointer!
+  tx_pointer: TxPointer!
   contract: ContractIdFragment!
   label: InputLabel!
   is_contract: Boolean!
@@ -376,14 +374,14 @@ type CreateTransaction {
   maturity: UInt8!
   bytecode_length: UInt8!
   bytecode_witness_index: UInt1!
-  storage_slots: [StorageSlot!]!
-  inputs: [Input!]!
-  outputs: [Output!]!
-  witnesses: [Witness!]!
+  storage_slots: [StorageSlot!]
+  inputs: [Input!]
+  outputs: [Output!]
+  witnesses: [Witness!]
   salt: Salt!
   metadata: Json
   is_create: Boolean!
-  receipts: [Receipt!]!
+  receipts: [Receipt!]
   status: TransactionStatus!
 }
 
@@ -394,23 +392,23 @@ type ScriptTransaction {
   maturity: UInt8!
   script: Blob!
   script_data: Blob!
-  inputs: [Input!]!
-  outputs: [Output!]!
-  witnesses: [Witness!]!
+  inputs: [Input!]
+  outputs: [Output!]
+  witnesses: [Witness!]
   receipts_root: Bytes32!
   metadata: Json
   is_script: Boolean!
-  receipts: [Receipt!]!
+  receipts: [Receipt!]
   status: TransactionStatus!
 }
 
 type MintTransaction {
   id: ID!
-  tx_pointer: TransactionPointer!
-  outputs: [Output!]!
+  tx_pointer: TxPointer!
+  outputs: [Output!]
   metadata: Json
   is_mint: Boolean!
-  receipts: [Receipt!]!
+  receipts: [Receipt!]
   status: TransactionStatus!
 }
 
@@ -484,7 +482,7 @@ type Block {
   block_id: BlockId!
   header: Header!
   consensus: Consensus!
-  transactions: [TransactionIdFragment!]!
+  transactions: [TransactionIdFragment!]
 }
 
 type NodeInfo {

@@ -234,9 +234,19 @@ impl FtColumn {
             FtColumn::Array(arr) => match arr {
                 Some(arr) => {
                     assert!(
-                        arr.len() <= MAX_ARRAY_LENGTH,
+                        arr.len() < MAX_ARRAY_LENGTH,
                         "Array length exceeds maximum allowed length."
                     );
+
+                    // If the array has no items, then we have no `FtColumn`s from which to determine
+                    // what type of PostgreSQL array this is. In this case, the user should be using a
+                    // completely optional array (e.g., [Foo!]) in their schema.
+                    //
+                    // Ideally we need a way to validate this in something like `fuel_indexer_lib::graphql::GraphQLSchemaValidator`.
+                    if arr.is_empty() {
+                        return String::from(NULL_VALUE);
+                    }
+
                     // Using first item of list to determine column type
                     let first = arr[0].clone();
                     let discriminant = std::mem::discriminant(&arr[0]);
