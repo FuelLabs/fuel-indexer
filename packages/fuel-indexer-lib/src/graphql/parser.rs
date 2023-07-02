@@ -164,7 +164,7 @@ pub struct ParsedGraphQLSchema {
     virtual_type_names: HashSet<String>,
 
     /// All unique names of types that have already been parsed.
-    parsed_type_names: HashSet<String>,
+    parsed_typedef_names: HashSet<String>,
 
     /// Mapping of fully qualified field names to their field types.
     field_type_mappings: HashMap<String, String>,
@@ -217,7 +217,7 @@ impl Default for ParsedGraphQLSchema {
             union_names: HashSet::new(),
             objects: HashMap::new(),
             virtual_type_names: HashSet::new(),
-            parsed_type_names: HashSet::new(),
+            parsed_typedef_names: HashSet::new(),
             field_type_mappings: HashMap::new(),
             object_field_mappings: HashMap::new(),
             scalar_names: HashSet::new(),
@@ -249,7 +249,7 @@ impl ParsedGraphQLSchema {
         type_names.extend(scalar_names.clone());
 
         let mut object_field_mappings = HashMap::new();
-        let mut parsed_type_names = HashSet::new();
+        let mut parsed_typedef_names = HashSet::new();
         let mut enum_names = HashSet::new();
         let mut union_names = HashSet::new();
         let mut virtual_type_names = HashSet::new();
@@ -279,7 +279,7 @@ impl ParsedGraphQLSchema {
 
                             type_defs.insert(obj_name.clone(), t.node.clone());
                             objects.insert(obj_name.clone(), o.clone());
-                            parsed_type_names.insert(t.node.name.to_string());
+                            parsed_typedef_names.insert(t.node.name.to_string());
 
                             let mut field_mapping = BTreeMap::new();
                             for field in &o.fields {
@@ -309,7 +309,7 @@ impl ParsedGraphQLSchema {
 
                                 // Manual version of `ParsedGraphQLSchema::is_possible_foreign_key`
                                 let ftype = field_type_name(&field.node);
-                                if parsed_type_names
+                                if parsed_typedef_names
                                     .contains(&field_type_name(&field.node))
                                     && !scalar_names.contains(&ftype)
                                     && !enum_names.contains(&ftype)
@@ -358,7 +358,7 @@ impl ParsedGraphQLSchema {
 
                                 let field_typ_name = field_type_name(&field.node);
 
-                                parsed_type_names.insert(field_name.clone());
+                                parsed_typedef_names.insert(field_name.clone());
                                 field_mapping.insert(field_name, field_typ_name.clone());
                                 field_type_optionality
                                     .insert(fid.clone(), field.node.ty.node.nullable);
@@ -388,7 +388,7 @@ impl ParsedGraphQLSchema {
                         TypeKind::Union(u) => {
                             let union_name = t.node.name.to_string();
 
-                            parsed_type_names.insert(union_name.clone());
+                            parsed_typedef_names.insert(union_name.clone());
                             type_defs.insert(union_name.clone(), t.node.clone());
                             unions.insert(union_name.clone(), t.node.clone());
 
@@ -455,7 +455,7 @@ impl ParsedGraphQLSchema {
             object_field_mappings,
             enum_names,
             virtual_type_names,
-            parsed_type_names,
+            parsed_typedef_names,
             field_type_mappings,
             scalar_names,
             field_type_optionality,
@@ -587,7 +587,7 @@ impl ParsedGraphQLSchema {
 
     /// Whether the given field type name is a possible foreign key.
     pub fn is_possible_foreign_key(&self, name: &str) -> bool {
-        self.parsed_type_names.contains(name)
+        self.parsed_typedef_names.contains(name)
             && !self.scalar_names.contains(name)
             && !self.is_enum_typedef(name)
             && !self.is_virtual_typedef(name)

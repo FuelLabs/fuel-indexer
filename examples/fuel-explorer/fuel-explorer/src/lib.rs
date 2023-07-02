@@ -710,6 +710,7 @@ pub mod explorer_index {
             block_id: block_data.header.id,
             header: header.id,
             consensus: consensus.id,
+            transactions: vec![],
         };
 
         // Save partial block
@@ -723,7 +724,7 @@ pub mod explorer_index {
         block_frag.save();
 
         for transaction in block_data.transactions.iter() {
-            let _tx_status = &transaction.status;
+            let tx_status = TransactionStatus::from(transaction.status.clone());
 
             match &transaction.transaction {
                 #[allow(unused)]
@@ -739,34 +740,42 @@ pub mod explorer_index {
                     witnesses,
                     metadata,
                 }) => {
+                    let inputs = inputs
+                        .iter()
+                        .map(|i| Input::from(i.to_owned()))
+                        .map(|i| i.id)
+                        .collect::<Vec<u64>>();
                     let outputs = outputs
                         .iter()
                         .map(|o| Output::from(o.to_owned()))
-                        .collect::<Vec<Output>>();
+                        .map(|o| o.id)
+                        .collect::<Vec<u64>>();
                     let witnesses = witnesses
                         .iter()
-                        .map(|w| w.to_owned().into())
-                        .collect::<Vec<Witness>>();
+                        .map(|w| Witness::from(w.to_owned()))
+                        .map(|w| w.into())
+                        .collect::<Vec<Json>>();
 
-                    // TODO: Create UID here.
-                    let id = 1;
-                    let script_tx = ScriptTransaction {
-                        id,
-                        gas_limit: *gas_limit,
-                        gas_price: *gas_price,
-                        maturity: maturity.clone(),
-                        script: script.to_owned().into(),
-                        // storage_slots: [],
-                        // inputs: [],
-                        // inputs: [],
-                        // outputs: [],
-                        // witnesses: [],
-                        receipts_root: *receipts_root,
-                        metadata: metadata.to_owned().map(|m| m.into()),
-                        is_script: true,
-                    };
+                    let script_tx = ScriptTransaction::new(
+                        // tx_status.id
+                        *gas_limit,
+                        *gas_price,
+                        maturity.clone(),
+                        script.to_owned().into(),
+                        inputs,
+                        outputs,
+                        witnesses,
+                        *receipts_root,
+                        metadata.to_owned().map(|m| m.into()),
+                        true,
+                        transaction
+                            .receipts
+                            .iter()
+                            .map(|r| Receipt::from(r.to_owned()).into())
+                            .collect::<Vec<_>>(),
+                    );
 
-                    let script_tx_frag = TransactionIdFragment { id };
+                    let script_tx_frag = TransactionIdFragment { id: script_tx.id };
                     script_tx_frag.save();
 
                     script_tx.save();
@@ -785,38 +794,47 @@ pub mod explorer_index {
                     storage_slots,
                     metadata,
                 }) => {
+                    let inputs = inputs
+                        .iter()
+                        .map(|i| Input::from(i.to_owned()))
+                        .map(|i| i.id)
+                        .collect::<Vec<u64>>();
                     let outputs = outputs
                         .iter()
                         .map(|o| Output::from(o.to_owned()))
-                        .collect::<Vec<Output>>();
+                        .map(|o| o.id)
+                        .collect::<Vec<u64>>();
                     let witnesses = witnesses
                         .iter()
-                        .map(|w| w.to_owned().into())
-                        .collect::<Vec<Witness>>();
+                        .map(|w| Witness::from(w.to_owned()))
+                        .map(|w| w.into())
+                        .collect::<Vec<Json>>();
 
-                    // TODO: Create UID here.
-                    let id = 1;
-                    let create_tx = CreateTransaction {
-                        id,
-                        gas_limit: *gas_limit,
-                        gas_price: *gas_price,
-                        maturity: maturity.clone(),
-                        bytecode_length: *bytecode_length,
-                        bytecode_witness_index: *bytecode_witness_index,
-                        // storage_slots: [],
-                        // inputs: [],
-                        // inputs: [],
-                        // outputs: [],
-                        // witnesses: [],
-                        salt: *salt,
-                        metadata: metadata.to_owned().map(|m| m.into()),
-                        is_create: true,
-                    };
-
-                    let create_tx_frag = TransactionIdFragment { id };
-                    create_tx_frag.save();
+                    let create_tx = CreateTransaction::new(
+                        // tx_status.id,
+                        *gas_limit,
+                        *gas_price,
+                        maturity.clone(),
+                        *bytecode_length,
+                        *bytecode_witness_index,
+                        vec![], // storage slots
+                        inputs,
+                        outputs,
+                        witnesses,
+                        *salt,
+                        metadata.to_owned().map(|m| m.into()),
+                        true,
+                        transaction
+                            .receipts
+                            .iter()
+                            .map(|r| Receipt::from(r.to_owned()).into())
+                            .collect::<Vec<_>>(),
+                    );
 
                     create_tx.save();
+
+                    let create_tx_frag = TransactionIdFragment { id: create_tx.id };
+                    create_tx_frag.save();
                 }
                 #[allow(unused)]
                 fuel::Transaction::Mint(fuel::Mint {
@@ -825,8 +843,11 @@ pub mod explorer_index {
                     metadata,
                 }) => {
                     // TODO: Create UID here.
-                    let mint_tx_frag = TransactionIdFragment { id: 1 };
+                    let id = 1;
+                    let mint_tx_frag = TransactionIdFragment { id };
                     mint_tx_frag.save();
+
+                    // let mint_tx = Mint
                 }
             }
 

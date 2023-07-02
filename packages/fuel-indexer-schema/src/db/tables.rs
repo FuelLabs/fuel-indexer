@@ -119,6 +119,10 @@ impl IndexerSchema {
             .unique_by(|t| t.id)
             .collect::<Vec<TypeId>>();
 
+        // Since join tables aren't derived from `TypeDefinition`s, we have to create them
+        // separately. But since `TypeId`s and `Table`s for join tables `impl SqlFragment`,
+        // we can group them all together when generating SQL.
+
         let mut join_type_ids = self
             .parsed
             .join_table_meta()

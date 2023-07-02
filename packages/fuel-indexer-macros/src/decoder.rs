@@ -41,9 +41,9 @@ pub struct ImplementationDecoder {
     typdef: TypeDefinition,
 
     /// The parsed GraphQL schema.
-    ///
-    /// Since `From<ImplementationDecoder> for TokenStream` uses `ParsedGraphQLSchema` to lookup
-    /// the fields of each member in the union, we need to include it here.
+    //
+    // Since `From<ImplementationDecoder> for TokenStream` uses `ParsedGraphQLSchema` to lookup
+    // the fields of each member in the union, we need to include it here.
     parsed: ParsedGraphQLSchema,
 }
 

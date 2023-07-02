@@ -1,5 +1,118 @@
 # https://github.com/FuelLabs/fuel-indexer/issues/897
 
+enum ReceiptLabel {
+  Call
+  Return
+  ReturnData
+  Panic
+  Revert
+  Log
+  LogData
+  Transfer
+  TransferOut
+  ScriptResult
+  MessageOut
+}
+
+enum ConsensusLabel {
+  Genesis
+  PoA
+  Unknown
+}
+
+enum InputLabel {
+  Coin
+  Contract
+  Message
+}
+
+enum PanicReason {
+  Success
+  Revert
+  OutOfGas
+  TransactionValidity
+  MemoryOverflow
+  ArithmeticOverflow
+  ContractNotFound
+  MemoryOwnership
+  NotEnoughBalance
+  ExpectedInternalContext
+  AssetIdNotFound
+  InputNotFound
+  OutputNotFound
+  WitnessNotFound
+  TransactionMaturity
+  InvalidMetadataIdentifier
+  MalformedCallStructure
+  ReservedRegisterNotWritable
+  ErrorFlag
+  InvalidImmediateValue
+  ExpectedCoinInput
+  MaxMemoryAccess
+  MemoryWriteOverlap
+  ContractNotInInputs
+  InternalBalanceOverflow
+  ContractMaxSize
+  ExpectedUnallocatedStack
+  MaxStaticContractsReached
+  TransferAmountCannotBeZero
+  ExpectedOutputVariable
+  ExpectedParentInternalContext
+  IllegalJump
+  ContractIdAlreadyDeployed
+  Unknown
+}
+
+enum ScriptExecutionResult {
+  Success
+  Revert
+  Panic
+  GenericFailure
+}
+
+enum TransactionStatusLabel {
+  Submitted
+  SqueezedOut
+  Failure
+  Success
+  Unknown
+}
+
+enum ReturnType {
+  Return
+  ReturnData
+  Revert
+}
+
+enum OutputLabel {
+  Coin
+  Contract
+  Change
+  Variable
+  ContractCreated
+  MessageOutput
+  Unknown
+}
+
+type Witness {
+  data: Blob! @virtual
+}
+
+type InstructionResult {
+  reason: PanicReason! @virtual
+  instruction: UInt4!
+}
+
+type ProgramState {
+  return_type: ReturnType! @virtual
+  data: HexString!
+}
+
+type DryRun {
+  tx: HexString! @virtual
+  utxo_validation: Boolean
+}
+
 type TransactionPointer {
   id: ID!
   block_height: BlockHeight!
@@ -31,12 +144,6 @@ type BlockIdFragment {
   hash: Bytes32!
 }
 
-enum ConsensusLabel {
-  Genesis
-  PoA
-  Unknown
-}
-
 type Genesis {
   id: ID!
   chain_config_hash: Bytes32!
@@ -61,17 +168,6 @@ type Unknown {
 }
 
 union Consensus = Genesis | PoA | Unknown
-
-type Witness {
-  data: Blob! @virtual
-}
-
-enum InputLabel {
-  Coin
-  Contract
-  Message
-}
-
 
 type InputCoin {
   id: ID!
@@ -113,345 +209,12 @@ type InputMessage {
   is_message: Boolean!
 }
 
-union Input =
-    InputCoin
-  | InputContract
-  | InputMessage
+union Input = InputCoin | InputContract | InputMessage
 
-type CreateTransaction {
+type StorageSlot {
   id: ID!
-  gas_price: UInt8!
-  gas_limit: UInt8!
-  maturity: UInt8!
-  bytecode_length: UInt8!
-  bytecode_witness_index: UInt1!
-  #   storage_slots: [StorageSlot]!
-  #   inputs: [Input]!
-  #   outputs: [Output]!
-  #   witnesses: [Witness]!
-  salt: Salt!
-  metadata: Json
-  is_create: Boolean!
-}
-
-type ScriptTransaction {
-  id: ID!
-  gas_price: UInt8!
-  gas_limit: UInt8!
-  maturity: UInt8!
-  script: Blob!
-  #   inputs: [Input]!
-  #   outputs: [Output]!
-  #   witnesses: [Witness]!
-  receipts_root: Bytes32!
-  metadata: Json
-  is_script: Boolean!
-}
-
-type MintTransaction {
-  id: ID!
-  tx_pointer: TransactionPointer!
-  #   outputs: [Output]!
-  metadata: Json
-  is_mint: Boolean!
-}
-
-enum TransactionStatusLabel {
-  Submitted
-  SqueezedOut
-  Failure
-  Success
-  Unknown
-}
-
-type SubmittedStatus {
-  id: ID!
-  time: UInt8!
-  label: TransactionStatusLabel!
-  is_submitted: Boolean!
-}
-
-type SqueezedOutStatus {
-  id: ID!
-  reason: Charfield!
-  label: TransactionStatusLabel!
-  is_squeezed_out: Boolean!
-}
-
-enum ReturnType {
-  Return
-  ReturnData
-  Revert
-}
-
-type ProgramState {
-  return_type: ReturnType! @virtual
-  data: HexString!
-}
-
-type FailureStatus {
-  id: ID!
-  block: BlockIdFragment!
-  time: UInt8!
-  reason: Charfield!
-  program_state: ProgramState
-  label: TransactionStatusLabel!
-  is_failure: Boolean!
-}
-
-
-type SuccessStatus {
-  id: ID!
-  time: UInt8!
-  block: BlockIdFragment!
-  program_state: ProgramState
-  label: TransactionStatusLabel!
-  is_success: Boolean!
-}
-
-type UnknownStatus {
-  id: ID!
-  label: TransactionStatusLabel!
-  is_unknown: Boolean!
-}
-
-union TransactionStatus =
-    SubmittedStatus
-  | SqueezedOutStatus
-  | FailureStatus
-  | SuccessStatus
-  | UnknownStatus
-
-type Header {
-  id: ID!
-  block_id: BlockId!
-  da_height: UInt8!
-  transactions_count: UInt8!
-  message_receipt_count: UInt8!
-  transactions_root: Bytes32!
-  message_receipt_root: Bytes32!
-  height: UInt8!
-  prev_root: Bytes32!
-  time: Int8!
-  application_hash: Bytes32!
-}
-
-type Block {
-  id: ID!
-  block_id: BlockId!
-  header: Header!
-  consensus: Consensus!
-  #   transactions: [TransactionIdFragment]!
-}
-
-type NodeInfo {
-  id: ID!
-  utxo_validation: Boolean!
-  vm_backtrace: Boolean!
-  min_gas_price: UInt8!
-  max_tx: UInt8!
-  max_depth: UInt8!
-  node_version: Charfield!
-}
-
-enum OutputLabel {
-  Coin
-  Contract
-  Change
-  Variable
-  ContractCreated
-  MessageOutput
-  Unknown
-}
-
-
-type UnknownOutput {
-  id: ID!
-  label: OutputLabel!
-  is_unknown: Boolean!
-}
-
-type ContractCreated {
-  id: ID!
-  contract: ContractIdFragment!
-  state_root: Bytes32!
-  label: OutputLabel!
-  is_contract_created: Boolean!
-}
-
-type VariableOutput {
-  id: ID!
-  # `to` is a reserved keyword in PostgreSQL.
-  recipient: Address!
-  amount: UInt8!
-  asset_id: AssetId!
-  is_variable: Boolean!
-  label: OutputLabel!
-}
-
-type ChangeOutput {
-  id: ID!
-  # `to` is a reserved keyword in PostgreSQL.
-  recipient: Address!
-  amount: UInt8!
-  asset_id: AssetId!
-  is_change: Boolean!
-  label: OutputLabel!
-}
-
-type ContractOutput {
-  id: ID!
-  input_index: Int8!
-  balance_root: Bytes32!
-  state_root: Bytes32!
-  is_contract: Boolean!
-  label: OutputLabel!
-}
-
-type CoinOutput {
-  id: ID!
-  # `to` is a reserved keyword in PostgreSQL.
-  recipient: Address!
-  amount: UInt8!
-  asset_id: AssetId!
-  is_coin: Boolean!
-  label: OutputLabel!
-}
-
-type MessageOutput {
-  id: ID!
-  amount: UInt8!
-  recipient: Address!
-}
-
-union Output = CoinOutput | ContractOutput | ChangeOutput | VariableOutput | ContractCreated | MessageOutput | UnknownOutput
-
-type DryRun {
-  tx: HexString! @virtual
-  utxo_validation: Boolean
-}
-
-type Balance {
-  id: ID!
-  owner: Address!
-  amount: UInt8!
-  asset_id: AssetId!
-}
-
-type ConsensusParameters {
-  id: ID!
-  contract_max_size: UInt8!
-  max_inputs: UInt8!
-  max_outputs: UInt8!
-  max_witnesses: UInt8!
-  max_gas_per_tx: UInt8!
-  max_script_length: UInt8!
-  max_script_data_length: UInt8!
-  max_storage_slots: UInt8!
-  max_predicate_length: UInt8!
-  gas_price_factor: UInt8!
-  gas_per_byte: UInt8!
-  max_message_data_length: UInt8!
-  chain_id: UInt8!
-}
-
-type ChainInfo {
-  id: ID!
-  base_chain_height: UInt4!
-  name: Charfield!
-  peer_count: Int4!
-  latest_block: Block!
-  consensus_parameters: ConsensusParameters!
-}
-
-type Coin {
-  id: ID!
-  amount: UInt8!
-  block_created: UInt4!
-  asset_id: AssetId!
-  utxo_id: UtxoId!
-  maturity: UInt4!
-  owner: Address!
-}
-
-type MessageCoin {
-  id: ID!
-  amount: UInt8!
-  sender: Address!
-  recipient: Address!
-  nonce: Nonce!
-  da_height: UInt8!
-}
-
-# TODO: Remove this
-type ContractBalance {
-  id: ID!
-  contract_id: ContractId!
-  amount: UInt8!
-  asset_id: AssetId!
-}
-
-type Contract {
-  id: ID!
-  contract_id: ContractId!
-  bytecode: HexString!
-  salt: Salt!
-}
-
-enum PanicReason {
-  Success
-  Revert
-  OutOfGas
-  TransactionValidity
-  MemoryOverflow
-  ArithmeticOverflow
-  ContractNotFound
-  MemoryOwnership
-  NotEnoughBalance
-  ExpectedInternalContext
-  AssetIdNotFound
-  InputNotFound
-  OutputNotFound
-  WitnessNotFound
-  TransactionMaturity
-  InvalidMetadataIdentifier
-  MalformedCallStructure
-  ReservedRegisterNotWritable
-  ErrorFlag
-  InvalidImmediateValue
-  ExpectedCoinInput
-  MaxMemoryAccess
-  MemoryWriteOverlap
-  ContractNotInInputs
-  InternalBalanceOverflow
-  ContractMaxSize
-  ExpectedUnallocatedStack
-  MaxStaticContractsReached
-  TransferAmountCannotBeZero
-  ExpectedOutputVariable
-  ExpectedParentInternalContext
-  IllegalJump
-  ContractIdAlreadyDeployed
-  Unknown
-}
-
-type InstructionResult {
-  reason: PanicReason! @virtual
-  instruction: UInt4!
-}
-
-enum ReceiptLabel {
-  Call
-  Return
-  ReturnData
-  Panic
-  Revert
-  Log
-  LogData
-  Transfer
-  TransferOut
-  ScriptResult
-  MessageOut
+  key: Bytes32!
+  value: Bytes32!
 }
 
 type CallReceipt {
@@ -570,13 +333,6 @@ type TransferOutReceipt {
   is_transfer_out: Boolean!
 }
 
-enum ScriptExecutionResult {
-  Success
-  Revert
-  Panic
-  GenericFailure
-}
-
 type ScriptResultReceipt {
   result: ScriptExecutionResult! @virtual
   gas_used: UInt8!
@@ -610,3 +366,247 @@ union Receipt =
   | TransferOutReceipt
   | ScriptResultReceipt
   | MessageOutReceipt
+
+# `Create` is a reserved word in SQL so we append the suffix `Transaction` to these
+# transaction type names.
+type CreateTransaction {
+  id: ID!
+  # status: TransactionStatus!
+  gas_price: UInt8!
+  gas_limit: UInt8!
+  maturity: UInt8!
+  bytecode_length: UInt8!
+  bytecode_witness_index: UInt1!
+  storage_slots: [StorageSlot!]!
+  inputs: [Input!]!
+  outputs: [Output!]!
+  witnesses: [Witness!]!
+  salt: Salt!
+  metadata: Json
+  is_create: Boolean!
+  receipts: [Receipt!]!
+}
+
+type ScriptTransaction {
+  id: ID!
+  # status: TransactionStatus!
+  gas_price: UInt8!
+  gas_limit: UInt8!
+  maturity: UInt8!
+  script: Blob!
+  inputs: [Input!]!
+  outputs: [Output!]!
+  witnesses: [Witness!]!
+  receipts_root: Bytes32!
+  metadata: Json
+  is_script: Boolean!
+  receipts: [Receipt!]!
+}
+
+type MintTransaction {
+  id: ID!
+  # status: TransactionStatus!
+  tx_pointer: TransactionPointer!
+  outputs: [Output!]!
+  metadata: Json
+  is_mint: Boolean!
+  receipts: [Receipt!]!
+}
+
+type SubmittedStatus {
+  id: ID!
+  time: UInt8!
+  label: TransactionStatusLabel!
+  is_submitted: Boolean!
+}
+
+type SqueezedOutStatus {
+  id: ID!
+  reason: Charfield!
+  label: TransactionStatusLabel!
+  is_squeezed_out: Boolean!
+}
+
+type FailureStatus {
+  id: ID!
+  block: BlockIdFragment!
+  time: UInt8!
+  reason: Charfield!
+  program_state: ProgramState
+  label: TransactionStatusLabel!
+  is_failure: Boolean!
+}
+
+type SuccessStatus {
+  id: ID!
+  time: UInt8!
+  block: BlockIdFragment!
+  program_state: ProgramState
+  label: TransactionStatusLabel!
+  is_success: Boolean!
+}
+
+type UnknownStatus {
+  id: ID!
+  label: TransactionStatusLabel!
+  is_unknown: Boolean!
+}
+
+union TransactionStatus =
+    SubmittedStatus
+  | SqueezedOutStatus
+  | FailureStatus
+  | SuccessStatus
+  | UnknownStatus
+
+type Header {
+  id: ID!
+  block_id: BlockId!
+  da_height: UInt8!
+  transactions_count: UInt8!
+  message_receipt_count: UInt8!
+  transactions_root: Bytes32!
+  message_receipt_root: Bytes32!
+  height: UInt8!
+  prev_root: Bytes32!
+  time: Int8!
+  application_hash: Bytes32!
+}
+
+type Block {
+  id: ID!
+  block_id: BlockId!
+  header: Header!
+  consensus: Consensus!
+  transactions: [TransactionIdFragment!]!
+}
+
+type NodeInfo {
+  id: ID!
+  utxo_validation: Boolean!
+  vm_backtrace: Boolean!
+  min_gas_price: UInt8!
+  max_tx: UInt8!
+  max_depth: UInt8!
+  node_version: Charfield!
+}
+
+type UnknownOutput {
+  id: ID!
+  label: OutputLabel!
+  is_unknown: Boolean!
+}
+
+type ContractCreated {
+  id: ID!
+  contract: ContractIdFragment!
+  state_root: Bytes32!
+  label: OutputLabel!
+  is_contract_created: Boolean!
+}
+
+type VariableOutput {
+  id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
+  recipient: Address!
+  amount: UInt8!
+  asset_id: AssetId!
+  is_variable: Boolean!
+  label: OutputLabel!
+}
+
+type ChangeOutput {
+  id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
+  recipient: Address!
+  amount: UInt8!
+  asset_id: AssetId!
+  is_change: Boolean!
+  label: OutputLabel!
+}
+
+type ContractOutput {
+  id: ID!
+  input_index: Int8!
+  balance_root: Bytes32!
+  state_root: Bytes32!
+  is_contract: Boolean!
+  label: OutputLabel!
+}
+
+type CoinOutput {
+  id: ID!
+  # `to` is a reserved keyword in PostgreSQL.
+  recipient: Address!
+  amount: UInt8!
+  asset_id: AssetId!
+  is_coin: Boolean!
+  label: OutputLabel!
+}
+
+type MessageOutput {
+  id: ID!
+  amount: UInt8!
+  recipient: Address!
+}
+
+union Output =
+    CoinOutput
+  | ContractOutput
+  | ChangeOutput
+  | VariableOutput
+  | ContractCreated
+  | MessageOutput
+  | UnknownOutput
+
+type ConsensusParameters {
+  id: ID!
+  contract_max_size: UInt8!
+  max_inputs: UInt8!
+  max_outputs: UInt8!
+  max_witnesses: UInt8!
+  max_gas_per_tx: UInt8!
+  max_script_length: UInt8!
+  max_script_data_length: UInt8!
+  max_storage_slots: UInt8!
+  max_predicate_length: UInt8!
+  gas_price_factor: UInt8!
+  gas_per_byte: UInt8!
+  max_message_data_length: UInt8!
+  chain_id: UInt8!
+}
+
+type ChainInfo {
+  id: ID!
+  base_chain_height: UInt4!
+  name: Charfield!
+  peer_count: Int4!
+  latest_block: Block!
+  consensus_parameters: ConsensusParameters!
+}
+
+type Coin {
+  id: ID!
+  amount: UInt8!
+  block_created: UInt4!
+  asset_id: AssetId!
+  utxo_id: UtxoId!
+  maturity: UInt4!
+  owner: Address!
+}
+
+type MessageCoin {
+  id: ID!
+  amount: UInt8!
+  sender: Address!
+  recipient: Address!
+  nonce: Nonce!
+  da_height: UInt8!
+}
+
+type Contract {
+  id: ID!
+  contract_id: ContractId!
+  bytecode: HexString!
+  salt: Salt!
+}
