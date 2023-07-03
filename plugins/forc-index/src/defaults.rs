@@ -156,7 +156,7 @@ pub mod {indexer_name}_index_mod {{
         block.save();
 
         for transaction in block_data.transactions.iter() {{
-            let tx = Transaction{{ id: id8(transaction.id), block: block_data.id, hash: transaction.id }};
+            let tx = Transaction{{ id: id8(transaction.id), block: block_data.id, hash: Bytes32::from(<[u8; 32]>::from(transaction.id)) }};
             tx.save();
         }}
     }}
