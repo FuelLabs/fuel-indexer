@@ -3,6 +3,8 @@
 # Don't add the generated MDBook artifacts
 docs/book/
 
+.DS_Store
+
 .dockerignore
 *.swp
 *.db
