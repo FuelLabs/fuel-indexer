@@ -108,9 +108,13 @@ impl IndexerService {
 
         let start_block = get_start_block(&mut conn, &manifest).await?;
         manifest.start_block = Some(start_block);
-        let (handle, exec_source, killer) =
-            WasmIndexExecutor::create(&self.config, &manifest, ExecutorSource::Manifest)
-                .await?;
+        let (handle, exec_source, killer) = WasmIndexExecutor::create(
+            &self.config,
+            &manifest,
+            ExecutorSource::Manifest,
+            self.pool.clone(),
+        )
+        .await?;
 
         let mut items = vec![
             (IndexerAssetType::Wasm, exec_source.to_vec()),
@@ -160,6 +164,7 @@ impl IndexerService {
                 &self.config,
                 &manifest,
                 ExecutorSource::Registry(assets.wasm.bytes),
+                self.pool.clone(),
             )
             .await?;
 
@@ -202,9 +207,13 @@ impl IndexerService {
         let start_block = get_start_block(&mut conn, &manifest).await.unwrap_or(1);
         manifest.start_block = Some(start_block);
         let uid = manifest.uid();
-        let (handle, _module_bytes, killer) =
-            NativeIndexExecutor::<T>::create(&self.config, &manifest, handle_events)
-                .await?;
+        let (handle, _module_bytes, killer) = NativeIndexExecutor::<T>::create(
+            &self.config,
+            &manifest,
+            self.pool.clone(),
+            handle_events,
+        )
+        .await?;
 
         info!("Registered NativeIndex({})", uid);
 
@@ -279,6 +288,7 @@ async fn create_service_task(
                                     &config,
                                     &manifest,
                                     ExecutorSource::Registry(assets.wasm.bytes),
+                                    pool.clone(),
                                 )
                                 .await?;
 
