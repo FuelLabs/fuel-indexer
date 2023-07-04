@@ -62,14 +62,6 @@ wasmer-middlewares = "2.3"
 [dev-dependencies]
 criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
 
-[[bench]]
-name = "wasm_metering_benchmark"
-harness = false
-
-[[bench]]
-name = "wasm_executor_benchmark"
-harness = false
-
 [features]
 default = ["e2e", "postgres"]
 e2e = []
