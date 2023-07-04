@@ -40,7 +40,7 @@ The Fuel indexer requires the use of a database. We currently support [PostgresS
 
 On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). 
 
-Once installed, you can add PostgreSQL to your system by running `brew install postgresql`. 
+Once installed, you can add PostgreSQL to your system by running `brew install postgresql@15`. 
 
 ## WASM
 

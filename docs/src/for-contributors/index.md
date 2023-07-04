@@ -2,19 +2,22 @@
 
 Thanks for your interest in contributing to the Fuel indexer! Below we've compiled a list of sections that you may find useful as you work on a potential contribution:
 
-- [Dependencies](#dependencies)
-  - [`fuelup`](#fuelup)
-  - [`docker`](#docker)
-  - [Database](#database)
-    - [PostgreSQL](#postgresql)
-  - [SQLx](#sqlx)
-- [Building from source](#building-from-source)
-- [Run migrations](#run-migrations)
-- [Start the service](#start-the-service)
-- [Testing](#testing)
-  - [Default tests](#default-tests)
-  - [End-to-end tests](#end-to-end-tests)
-  - [`trybuild` tests](#trybuild-tests)
+- [For Contributors](#for-contributors)
+  - [Dependencies](#dependencies)
+    - [`fuelup`](#fuelup)
+    - [`docker`](#docker)
+    - [Database](#database)
+      - [PostgreSQL](#postgresql)
+    - [SQLx](#sqlx)
+  - [Building from Source](#building-from-source)
+    - [Clone repository](#clone-repository)
+    - [Run migrations](#run-migrations)
+      - [Postgres migrations](#postgres-migrations)
+    - [Start the service](#start-the-service)
+  - [Testing](#testing)
+    - [Default tests](#default-tests)
+    - [End-to-end tests](#end-to-end-tests)
+    - [`trybuild` tests](#trybuild-tests)
 
 ## Dependencies
 
@@ -34,7 +37,7 @@ At this time, the Fuel indexer requires the use of a database. We currently supp
 
 > Note: The following explanation is for demonstration purposes only. A production setup should use secure users, permissions, and passwords.
 
-On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add PostgreSQL to your system by running `brew install postgresql`. You can then start the service through `brew services start postgresql`. You'll need to create a database for your indexed data, which you can do by running `createdb [DATABASE_NAME]`. You may also need to create the `postgres` role; you can do so by running `createuser -s postgres`.
+On macOS systems, you can install PostgreSQL through Homebrew. If it isn't present on your system, you can install it according to the [instructions](https://brew.sh/). Once installed, you can add PostgreSQL to your system by running `brew install postgresql@15`. You can then start the service through `brew services start postgresql`. You'll need to create a database for your indexed data, which you can do by running `createdb [DATABASE_NAME]`. You may also need to create the `postgres` role; you can do so by running `createuser -s postgres`.
 
 For Linux-based systems, the installation process is similar. First, you should install PostgreSQL according to your distribution's instructions. Once installed, there should be a new `postgres` user account; you can switch to that account by running `sudo -i -u postgres`. After you have switched accounts, you may need to create a `postgres` database role by running `createuser --interactive`. You will be asked a few questions; the name of the role should be `postgres` and you should elect for the new role to be a superuser. Finally, you can create a database by running `createdb [DATABASE_NAME]`.
 
