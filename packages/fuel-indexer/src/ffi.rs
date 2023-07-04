@@ -238,7 +238,7 @@ impl<'a> Drop for WasmArg<'a> {
                 MeteringPoints::Exhausted => 0,
                 MeteringPoints::Remaining(pts) => pts,
             };
-            set_remaining_points(&self.instance, 100_000);
+            set_remaining_points(&self.instance, 1_000_000);
             dealloc_fn.call(self.ptr, self.len).expect("Dealloc failed");
             set_remaining_points(&self.instance, pts);
         } else {
