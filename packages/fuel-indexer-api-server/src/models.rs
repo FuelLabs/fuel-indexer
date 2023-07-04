@@ -5,13 +5,17 @@ use std::time::{SystemTime, UNIX_EPOCH};
 /// Request for signature verification.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct VerifySignatureRequest {
+    /// Hexdigest of signature to be verified.
     pub signature: String,
+
+    /// Message to be verified against signature.
     pub message: String,
 }
 
 /// GraphQL web API response.
 #[derive(Serialize)]
 pub(crate) struct QueryResponse {
+    /// Arbitrarily sized JSON response.
     pub data: Value,
 }
 
