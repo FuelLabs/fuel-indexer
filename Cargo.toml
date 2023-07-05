@@ -3,6 +3,7 @@
 resolver = "2"
 
 members = [
+   "benches",
    "examples/fuel-explorer/fuel-explorer",
    "examples/hello-world-native/hello-indexer-native",
    "examples/hello-world/hello-indexer",
