@@ -26,8 +26,7 @@ Make sure you have the latest version of `fuelup` by running the following comma
 
 ```console
 $ fuelup self update
-```
-```
+
 Fetching binary from https://github.com/FuelLabs/fuelup/releases/download/v0.18.0/fuelup-0.18.0-aarch64-apple-darwin.tar.gz
 Downloading component fuelup without verifying checksum
 Unpacking and moving fuelup to /var/folders/tp/0l8zdx9j4s9_n609ykwxl0qw0000gn/T/.tmpiNJQHt
@@ -40,6 +39,7 @@ Finally, set the `beta-3` toolchain as your default distribution with the follow
 
 ```console
 $ fuelup default beta-3
+
 default toolchain set to 'beta-3-aarch64-apple-darwin'
 ```
 
@@ -99,9 +99,7 @@ The primary means of interfacing with the Fuel indexer for indexer development i
 
 ```console
 $ which forc-index
-```
 
-```text
 /Users/me/.fuelup/bin/forc-index
 ```
 
@@ -109,9 +107,7 @@ $ which forc-index
 
 ```console
 $ which fuel-indexer
-```
 
-```text
 /Users/me/.fuelup/bin/fuel-indexer
 ```
 
@@ -122,10 +118,8 @@ Once the `forc-index` plugin is installed, let's go ahead and see what indexer c
 > Many of these components are required for development work (e.g., `fuel-core`, `psql`) but some are even required for non-development usage as well (e.g., `wasm-snip`, `fuelup`).
 
 ```console
-forc index check
-```
+$ forc index check
 
-```text
 +--------+------------------------+---------------------------------------------------------+
 | Status |       Component        |                         Details                         |
 +--------+------------------------+---------------------------------------------------------+
@@ -159,13 +153,11 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 
 > IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped. 
 
-```console
-$ forc index start --embedded-database --fuel-node-host beta-3.fuel.network --fuel-node-port 80 --run-migrations
-```
-
 You should see output indicating the successful creation of a database and start of the indexer service and start processing blocks from the beta-3 testnet.
 
 ```console
+$ forc index start --embedded-database --fuel-node-host beta-3.fuel.network --fuel-node-port 80 --run-migrations
+
 ✅ Successfully started the indexer service at PID 18235
 ▪▪▪▪▪ ⏱  Setting up database...
                                                                                                                                                                                                                       2023-07-05T18:49:12.086725Z  INFO fuel_indexer::commands::run: 65: Configuration: IndexerConfig { indexer_handler_timeout: 5, log_level: "info", verbose: false, local_fuel_node: false, indexer_net_config: false, fuel_node: FuelClientConfig { host: "beta-3.fuel.network", port: "80" }, graphql_api: GraphQLConfig { host: "localhost", port: "29987", max_body_size: 5242880 }, database: PostgresConfig { user: "postgres", password: "XXXX", host: "localhost", port: "5432", database: "postgres", verbose: "false" }, metrics: false, stop_idle_indexers: false, run_migrations: true, authentication: AuthenticationConfig { enabled: false, strategy: None, jwt_secret: "XXXX", jwt_issuer: None, jwt_expiry: None }, rate_limit: RateLimitConfig { enabled: false, request_count: None, window_size: None }, replace_indexer: false }
