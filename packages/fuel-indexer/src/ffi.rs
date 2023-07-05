@@ -232,13 +232,13 @@ impl<'a> Drop for WasmArg<'a> {
             .expect("No dealloc fn");
         // Need to track whether metering is enabled or otherwise getting or setting points will panic
         if self.metering_enabled {
-            let pts = match get_remaining_points(&self.instance) {
+            let pts = match get_remaining_points(self.instance) {
                 MeteringPoints::Exhausted => 0,
                 MeteringPoints::Remaining(pts) => pts,
             };
-            set_remaining_points(&self.instance, 1_000_000);
+            set_remaining_points(self.instance, 1_000_000);
             dealloc_fn.call(self.ptr, self.len).expect("Dealloc failed");
-            set_remaining_points(&self.instance, pts);
+            set_remaining_points(self.instance, pts);
         } else {
             dealloc_fn.call(self.ptr, self.len).expect("Dealloc failed");
         }
