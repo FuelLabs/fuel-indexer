@@ -479,7 +479,6 @@ where
     F: Future<Output = IndexerResult<()>> + Send,
 {
     pub async fn new(
-        config: &IndexerConfig,
         manifest: &Manifest,
         pool: IndexerConnectionPool,
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
@@ -500,7 +499,7 @@ where
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let executor =
-            NativeIndexExecutor::new(config, manifest, pool, handle_events).await?;
+            NativeIndexExecutor::new(manifest, pool, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
         let handle = tokio::spawn(run_executor(
             config,
@@ -549,7 +548,6 @@ impl WasmIndexExecutor {
         wasm_bytes: impl AsRef<[u8]>,
         pool: IndexerConnectionPool,
     ) -> IndexerResult<Self> {
-        let db_url = config.database.to_string();
         let store = Store::new(&Universal::new(compiler()).engine());
         let module = Module::new(&store, &wasm_bytes)?;
 
