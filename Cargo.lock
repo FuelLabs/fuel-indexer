@@ -3547,6 +3547,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "fuel-indexer-benchmarks"
+version = "0.1.0"
+dependencies = [
+ "criterion",
+ "fuel-indexer",
+ "fuel-indexer-lib",
+ "fuel-indexer-types",
+ "sqlx",
+ "tokio 1.29.1",
+]
+
+[[package]]
 name = "fuel-indexer-database"
 version = "0.17.3"
 dependencies = [
@@ -3734,7 +3746,6 @@ dependencies = [
  "axum 0.6.18",
  "bigdecimal",
  "chrono",
- "criterion",
  "fuel-indexer",
  "fuel-indexer-api-server",
  "fuel-indexer-database",

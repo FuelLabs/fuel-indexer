@@ -59,14 +59,7 @@ wasmer-engine-universal = "2.3"
 wasmer-middlewares = "2.3"
 wasmer-types = "2.3"
 
-[dev-dependencies]
-criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
-
 [features]
 default = ["e2e", "postgres"]
 e2e = []
 postgres = []
-
-[[bench]]
-name = "wasm_metering_benchmark"
-harness = false
