@@ -17,7 +17,7 @@ In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github
 Note macOS you can install the latest version of PostgreSQL through `brew` by simply running:
 
 ```bash
-brew install postgresql@15
+$ brew install postgresql@15
 ```
 
 3. [Install the Fuel toolchain](https://github.com/FuelLabs/fuelup).
@@ -115,9 +115,9 @@ $ which fuel-indexer
 /Users/me/.fuelup/bin/fuel-indexer
 ```
 
-### Check for components (TODO: Should come after starting up the indxer)
+### Check for components
 
-Once the `forc-index` plugin is installed, let's go ahead and see what indexer components we have installed.
+Once the `forc-index` plugin is installed, let's go ahead and see what indexer components we have installed. Note that the `fuel-indexer service` status is down but we  will start that in the next step!
 
 > Many of these components are required for development work (e.g., `fuel-core`, `psql`) but some are even required for non-development usage as well (e.g., `wasm-snip`, `fuelup`).
 
@@ -129,25 +129,25 @@ forc index check
 +--------+------------------------+---------------------------------------------------------+
 | Status |       Component        |                         Details                         |
 +--------+------------------------+---------------------------------------------------------+
-|   ⛔️   | fuel-indexer binary    |  Can't locate fuel-indexer.                             |
+|   ✅   | fuel-indexer binary    |  /Users/fuel-env/.fuelup/bin/fuel-indexer               |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-indexer service   |  Local service found: PID(63967) | Port(29987).         |
+|   ⛔️   | fuel-indexer service   |  Failed to detect service at Port(29987).               |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | psql                   |  /usr/local/bin/psql                                    |
+|   ✅   | psql                   |  /opt/homebrew/bin/psql                                 |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | fuel-core              |  /Users/me/.cargo/bin/fuel-core                         |
+|   ✅   | fuel-core              |  /Users/fuel-env/.fuelup/bin/fuel-core                  |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | docker                 |  /usr/local/bin/docker                                  |
 +--------+------------------------+---------------------------------------------------------+
-|   ⛔️   | fuelup                 |  Can't locate fuelup.                                   |
+|   ✅   | fuelup                 |  /Users/fuel-env/.fuelup/bin/fuelup                     |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | wasm-snip              |  /Users/me/.cargo/bin/wasm-snip                         |
+|   ✅   | wasm-snip              |  /Users/fuel-env/.cargo/bin/wasm-snip                   |
 +--------+------------------------+---------------------------------------------------------+
-|   ⛔️   | forc-postgres          |  Can't locate fuelup.                                   |
+|   ⛔️   | forc-postgres          |  Can't locate forc-postgres.                            |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | rustc                  |  /Users/me/.cargo/bin/rustc                             |
+|   ✅   | rustc                  |  /Users/fuel-env/.cargo/bin/rustc                       |
 +--------+------------------------+---------------------------------------------------------+
-|   ✅   | forc-wallet            |  /Users/me/.cargo/bin/forc-wallet                       |
+|   ✅   | forc-wallet            |  /Users/fuel-env/.fuelup/bin/forc-wallet                |
 +--------+------------------------+---------------------------------------------------------+
 ```
 
@@ -157,37 +157,74 @@ To quickly setup and bootstrap the PostgreSQL database that we'll need, we'll us
 
 We can quickly create a bootstrapped database and start the Fuel indexer service by running the following command:
 
-> IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped.
+> IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped. 
 
 ```bash
-$ forc index start \
-    --embedded-database \
-    --fuel-node-host beta-3.fuel.network \
-    --fuel-node-port 80 \
-    --run-migrations
+$ forc index start --embedded-database --fuel-node-host beta-3.fuel.network --fuel-node-port 80 --run-migrations
 ```
 
-You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:
+You should see output indicating the successful creation of a database and start of the indexer service and start processing blocks from the beta-3 testnet.
 
-```text (TODO: new output)
-📦 Downloading, unpacking, and bootstrapping database...
-
-▹▹▸▹▹ ⏱  Setting up database...
-
-💡 Creating database at 'postgres://postgres:postgres@localhost:5432/postgres'
-
-✅ Successfully created database at 'postgres://postgres:postgres@localhost:5432/postgres'.
-
-✅ Successfully started database at 'postgres://postgres:postgres@localhost:5432/postgres'.
-
-✅ Successfully started the indexer service.
+```console
+✅ Successfully started the indexer service at PID 18235
+▪▪▪▪▪ ⏱  Setting up database...
+                                                                                                                                                                                                                      2023-07-05T18:49:12.086725Z  INFO fuel_indexer::commands::run: 65: Configuration: IndexerConfig { indexer_handler_timeout: 5, log_level: "info", verbose: false, local_fuel_node: false, indexer_net_config: false, fuel_node: FuelClientConfig { host: "beta-3.fuel.network", port: "80" }, graphql_api: GraphQLConfig { host: "localhost", port: "29987", max_body_size: 5242880 }, database: PostgresConfig { user: "postgres", password: "XXXX", host: "localhost", port: "5432", database: "postgres", verbose: "false" }, metrics: false, stop_idle_indexers: false, run_migrations: true, authentication: AuthenticationConfig { enabled: false, strategy: None, jwt_secret: "XXXX", jwt_issuer: None, jwt_expiry: None }, rate_limit: RateLimitConfig { enabled: false, request_count: None, window_size: None }, replace_indexer: false }
+2023-07-05T18:49:12.107787Z  INFO sqlx::postgres::notice: 157: relation "_sqlx_migrations" already exists, skipping
+2023-07-05T18:49:12.196241Z  INFO fuel_indexer::database: 239: Loading schema for Indexer(my_project.hello_indexer) with Version(2738d221cf1e926d28e62bc93604a96ec6f7c5093e766f45a4555ed06e437b7f).
+2023-07-05T18:49:12.197368Z  WARN fuel_indexer::executor: 89: No end_block specified in manifest. Indexer will run forever.
+2023-07-05T18:49:12.197378Z  INFO fuel_indexer::executor: 109: Subscribing to Fuel node at beta-3.fuel.network:80
+2023-07-05T18:49:12.197426Z  INFO fuel_indexer::service: 166: Registered Indexer(my_project.hello_indexer)
+2023-07-05T18:49:12.198082Z  INFO fuel_indexer_lib::utils: 132: Parsed SocketAddr '127.0.0.1:29987' from 'localhost:29987'
+2023-07-05T18:49:12.348128Z  INFO fuel_indexer::ffi: 110: Processing Block#1. (>'.')>
+2023-07-05T18:49:12.349776Z  INFO fuel_indexer::ffi: 110: Processing Block#2. (>'.')>
+2023-07-05T18:49:12.350789Z  INFO fuel_indexer::ffi: 110: Processing Block#3. (>'.')>
+2023-07-05T18:49:12.351750Z  INFO fuel_indexer::ffi: 110: Processing Block#4. (>'.')>
+2023-07-05T18:49:12.352704Z  INFO fuel_indexer::ffi: 110: Processing Block#5. (>'.')>
 ```
 
-> You can `Ctrl+C` to exit the `forc index start` process, and your indexer service and database should still be running in the background.
+Now if you run `forc-index check` again you should see the indexer service running! 
+
+```console
+$forc index check
+```
+
+```console
+✅ Sucessfully fetched service health:
+
+{
+  "database_status": "OK",
+  "fuel_core_status": "OK",
+  "uptime(seconds)": "24"
+}
+
++--------+------------------------+---------------------------------------------------------+
+| Status |       Component        |                         Details                         |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | fuel-indexer binary    |  /Users/fuel-env/.fuelup/bin/fuel-indexer               |
++--------+------------------------+---------------------------------------------------------+
+|  ✅  | fuel-indexer service   |  Local service found: PID(5137) | Port(29987).          |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | psql                   |  /opt/homebrew/bin/psql                                 |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | fuel-core              |  /Users/fuel-env/.fuelup/bin/fuel-core                  |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | docker                 |  /usr/local/bin/docker                                  |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | fuelup                 |  /Users/fuel-env/.fuelup/bin/fuelup                     |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | wasm-snip              |  /Users/fuel-env/.cargo/bin/wasm-snip                   |
++--------+------------------------+---------------------------------------------------------+
+|   ⛔️   | forc-postgres          |  Can't locate forc-postgres.                            |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | rustc                  |  /Users/fuel-env/.cargo/bin/rustc                       |
++--------+------------------------+---------------------------------------------------------+
+|   ✅   | forc-wallet            |  /Users/fuel-env/.fuelup/bin/forc-wallet                |
++--------+------------------------+---------------------------------------------------------+
+```
 
 ### 2.3 Creating a new indexer
 
-Now that we have our development environment set up, the next step is to create an indexer.
+Now that we have our development environment set up, in a seperate terminal we will create indexer.
 
 ```bash
 forc index new hello-indexer --namespace my_project && cd hello-indexer
