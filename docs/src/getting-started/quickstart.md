@@ -81,8 +81,9 @@ $ brew install llvm
 
 Open up your `.zshrc` or `.bashrc` file and add the following environment variables to the end of that file. 
 
-```bash
+```console
 $ nano ~/.zshrc
+
 ```
 
 ```console
@@ -96,8 +97,9 @@ Save and close the file by pressing `Ctrl+O` followed by `Ctrl+X`
 
 Apply the changes without opening a new terminal by running:
 
-```bash
+```console
 $ source ~/.zshrc
+
 ```
 
 
