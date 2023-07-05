@@ -16,7 +16,7 @@ In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github
 
 Note macOS you can install the latest version of PostgreSQL through `brew` by simply running:
 
-```bash
+```console
 $ brew install postgresql@15
 ```
 
@@ -24,7 +24,7 @@ $ brew install postgresql@15
 
 Make sure you have the latest version of `fuelup` by running the following command:
 
-```bash
+```console
 $ fuelup self update
 ```
 ```
@@ -38,7 +38,7 @@ Then run `fuelup toolchain install beta-3` to install the `beta-3` toolchain.
 
 Finally, set the `beta-3` toolchain as your default distribution with the following command:
 
-```bash
+```console
 $ fuelup default beta-3
 default toolchain set to 'beta-3-aarch64-apple-darwin'
 ```
@@ -51,13 +51,13 @@ You can check your current toolchain anytime by running `fuelup show`.
 
 Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
-```bash
+```console
 $ rustup target add wasm32-unknown-unknown
 ```
 
 Additionally, you'll need the `wasm-snip` utility in order to remove errant symbols from your compiled WASM binary. You can install this tool using `cargo`:
 
-```bash
+```console
 $ cargo install wasm-snip
 ```
 
@@ -65,13 +65,13 @@ $ cargo install wasm-snip
 
 Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its `clang` binary not supporting WASM targets. 
 
-```bash
+```console
 $ brew install llvm
 ```
 
 Open up your `.zshrc` or `.bashrc` file and add the following environment variables to the end of that file. 
 
-```bash
+```console
 $ nano ~/.zshrc
 ```
 
@@ -86,7 +86,7 @@ Save and close the file by pressing `Ctrl+O` followed by `Ctrl+X`
 
 Apply the changes without opening a new terminal by running:
 
-```bash
+```console
 $ source ~/.zshrc
 ```
 
@@ -97,7 +97,7 @@ $ source ~/.zshrc
 
 The primary means of interfacing with the Fuel indexer for indexer development is the [`forc-index` CLI tool](https://crates.io/crates/forc-index). `forc-index` is a [`forc`](https://github.com/FuelLabs/sway/tree/master/forc) plugin specifically created to interface with the Fuel indexer service. Since we already installed `fuelup` in a previous step <sup>[1.1](#11-install-fuelup)</sup>, we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
 
-```bash
+```console
 $ which forc-index
 ```
 
@@ -107,7 +107,7 @@ $ which forc-index
 
 > IMPORTANT: `fuelup` will install several binaries from the Fuel ecosystem and add them into your `PATH`, including the `fuel-indexer` binary. The `fuel-indexer` binary is the primary binary that users can use to spin up a Fuel indexer service.
 
-```bash
+```console
 $ which fuel-indexer
 ```
 
@@ -121,7 +121,7 @@ Once the `forc-index` plugin is installed, let's go ahead and see what indexer c
 
 > Many of these components are required for development work (e.g., `fuel-core`, `psql`) but some are even required for non-development usage as well (e.g., `wasm-snip`, `fuelup`).
 
-```bash
+```console
 forc index check
 ```
 
@@ -159,7 +159,7 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 
 > IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped. 
 
-```bash
+```console
 $ forc index start --embedded-database --fuel-node-host beta-3.fuel.network --fuel-node-port 80 --run-migrations
 ```
 
@@ -226,7 +226,7 @@ $forc index check
 
 Now that we have our development environment set up, in a seperate terminal we will create indexer.
 
-```bash
+```console
 forc index new hello-indexer --namespace my_project && cd hello-indexer
 ```
 
@@ -284,7 +284,7 @@ Take a quick tour.
 
 At this point, we have a brand new indexer that will index some blocks and transactions. And with both our database and Fuel indexer services up and running, all that's left is to build and deploy the indexer in order to see it in action. Let's build and deploy our indexer:
 
-```bash
+```console
 forc index deploy
 ```
 
@@ -304,7 +304,7 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
-```bash
+```console
 curl -X POST -H "Content-Type: application/graphql"
 --data '{ "query": "query { tx { id, hash, block } }" }'
 http://127.0.0.1:29987/api/graph/my_project/hello_indexer
