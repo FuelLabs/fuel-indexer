@@ -5,13 +5,12 @@ use std::sync::{Arc, Mutex};
 use std::{fs::File, io::Read};
 
 fn criterion_benchmark(c: &mut Criterion) {
-    if let Ok(current_dir) = std::env::current_dir() {
-        println!("Current directory: {}", current_dir.display());
-    }
-
     if let Ok(mut current_dir) = std::env::current_dir() {
-        current_dir.pop();
-        current_dir.pop();
+        if current_dir.ends_with("fuel-indexer-benchmarks") {
+            current_dir.pop();
+            current_dir.pop();
+        }
+
         if let Err(e) = std::env::set_current_dir(current_dir) {
             eprintln!("Failed to change directory: {}", e);
         }
