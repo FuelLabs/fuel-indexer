@@ -66,3 +66,7 @@ criterion = { version = "0.5", features = ["html_reports", "async_tokio"] }
 default = ["e2e", "postgres"]
 e2e = []
 postgres = []
+
+[[bench]]
+name = "wasm_metering_benchmark"
+harness = false

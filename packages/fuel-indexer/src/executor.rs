@@ -662,7 +662,8 @@ impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);
-        let arg = ffi::WasmArg::new(&self.instance, bytes, self.metering_points.is_some())?;
+        let arg =
+            ffi::WasmArg::new(&self.instance, bytes, self.metering_points.is_some())?;
 
         let fun = self
             .instance

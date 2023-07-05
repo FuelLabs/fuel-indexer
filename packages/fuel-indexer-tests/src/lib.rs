@@ -165,14 +165,9 @@ mod tests {
             // .await
             // .unwrap();
 
-            WasmIndexExecutor::new(
-                &config,
-                &manifest,
-                wasm_bytes,
-                metering_points,
-            )
-            .await
-            .unwrap()
+            WasmIndexExecutor::new(&config, &manifest, wasm_bytes, metering_points)
+                .await
+                .unwrap()
         });
 
         let blocks: Vec<fuel_indexer_types::fuel::BlockData> = vec![];
