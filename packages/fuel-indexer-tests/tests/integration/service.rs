@@ -1,7 +1,7 @@
 extern crate alloc;
 use fuel_indexer::{Executor, IndexerConfig, WasmIndexExecutor};
-use fuel_indexer_lib::manifest::Manifest;
-use fuel_indexer_tests::{defaults, fixtures::indexer_service_postgres};
+use fuel_indexer_lib::{config::DatabaseConfig, manifest::Manifest};
+use fuel_indexer_tests::{defaults, fixtures::{indexer_service_postgres, TestPostgresDb}};
 use fuels::prelude::{LoadConfiguration, TxParameters};
 use fuels::{
     accounts::wallet::WalletUnlocked,
@@ -12,6 +12,7 @@ use fuels::{
     },
 };
 use std::path::Path;
+use std::str::FromStr;
 
 const SIMPLE_WASM_MANIFEST: &str =
     include_str!("./../../components/indices/simple-wasm/simple_wasm.yaml");
@@ -41,7 +42,6 @@ async fn test_wasm_executor_can_meter_execution() {
         }
     }
 
-    let config = IndexerConfig::default();
     let manifest = Manifest::from_file(
         "packages/fuel-indexer-tests/components/indices/simple-wasm/simple_wasm.yaml",
     )
@@ -54,6 +54,10 @@ async fn test_wasm_executor_can_meter_execution() {
             let mut bytes = Vec::<u8>::new();
             let mut file = File::open(module).await.unwrap();
             file.read_to_end(&mut bytes).await.unwrap();
+
+            let test_db = TestPostgresDb::new().await.unwrap();
+            let mut config = IndexerConfig::default();
+            config.database = DatabaseConfig::from_str(&test_db.url).unwrap();
 
             let mut executor =
                 WasmIndexExecutor::new(&config, &manifest, bytes.clone(), Some(2_000u64))
