@@ -247,8 +247,6 @@ impl FtColumn {
                         return String::from(NULL_VALUE);
                     }
 
-                    // Using first item of list to determine column type
-                    let first = arr[0].clone();
                     let discriminant = std::mem::discriminant(&arr[0]);
                     let result = arr
                             .iter()
@@ -267,7 +265,7 @@ impl FtColumn {
 
                     // We have to force sqlx to see this as a JSON type else it will think this type
                     // should be TEXT
-                    let suffix = match first {
+                    let suffix = match arr[0] {
                         FtColumn::Virtual(_) | FtColumn::Json(_) => "::json[]",
                         _ => "",
                     };

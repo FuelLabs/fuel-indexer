@@ -6,8 +6,8 @@
 use crate::{
     fully_qualified_namespace,
     graphql::{
-        extract_foreign_key_info, field_id, field_type_name, list_field_type_name,
-        GraphQLSchema, GraphQLSchemaValidator, BASE_SCHEMA,
+        extract_foreign_key_info, field_id, field_type_name, is_list_type,
+        list_field_type_name, GraphQLSchema, GraphQLSchemaValidator, BASE_SCHEMA,
     },
     ExecutionSource,
 };
@@ -199,6 +199,9 @@ pub struct ParsedGraphQLSchema {
     list_type_defs: HashMap<String, TypeDefinition>,
 
     /// Metadata related to many-to-many relationships in the GraphQL schema.
+    ///
+    /// Many-to-many (m2m) relationships are created when a `FieldDefinition` contains a
+    /// list type, whose inner content type is a foreign key reference to another `TypeDefinition`.
     join_table_meta: HashMap<String, JoinTableMeta>,
 }
 
@@ -287,9 +290,7 @@ impl ParsedGraphQLSchema {
                                 let field_typ_name = field.node.ty.to_string();
                                 let fid = field_id(&obj_name, &field_name);
 
-                                if field_typ_name.contains('[')
-                                    && field_typ_name.contains(']')
-                                {
+                                if is_list_type(&field.node) {
                                     list_field_types
                                         .insert(field_typ_name.replace('!', ""));
 

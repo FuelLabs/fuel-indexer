@@ -108,9 +108,19 @@ pub fn extract_foreign_key_info(
         .find(|d| d.node.name.to_string() == "join")
         .map(|d| {
             let typdef_name = field_type_name(f);
-            let ref_field_name = d.clone().node.arguments.pop().unwrap().1.to_string();
+            let ref_field_name = d
+                .clone()
+                .node
+                .arguments
+                .pop()
+                .expect("Expected directive info")
+                .1
+                .to_string();
             let fk_fid = field_id(&typdef_name, &ref_field_name);
-            let fk_field_type = field_type_mappings.get(&fk_fid).unwrap().to_string();
+            let fk_field_type = field_type_mappings
+                .get(&fk_fid)
+                .expect("Field ID not found in schema")
+                .to_string();
 
             (
                 fk_field_type.replace(['[', ']', '!'], ""),

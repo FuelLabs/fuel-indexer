@@ -13,10 +13,10 @@ pub mod tables;
 use fuel_indexer_database::IndexerDatabaseError;
 use thiserror::Error;
 
-/// Result type returned by indexer schema database-specfici operations.
+/// Result type returned by indexer schema database-specific operations.
 pub type IndexerSchemaDbResult<T> = core::result::Result<T, IndexerSchemaDbError>;
 
-/// Error type returned by indexer schema database-specfici operations.
+/// Error type returned by indexer schema database-specific operations.
 #[derive(Error, Debug)]
 pub enum IndexerSchemaDbError {
     #[error("Error from sqlx: {0:#?}")]
