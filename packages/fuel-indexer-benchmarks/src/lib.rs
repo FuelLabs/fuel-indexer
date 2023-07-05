@@ -11,12 +11,8 @@ mod tests {
     use std::{fs::File, io::Read};
 
     fn make_executor_metering_benchmark(b: &mut Bencher, metering_points: Option<u64>) {
-        if let Ok(current_dir) = std::env::current_dir() {
-            println!("Current directory: {}", current_dir.display());
-        }
-
         if let Ok(mut current_dir) = std::env::current_dir() {
-            if !current_dir.ends_with("fuel-indexer") {
+            if current_dir.ends_with("fuel-indexer-benchmarks") {
                 current_dir.pop();
                 current_dir.pop();
             }
