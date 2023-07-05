@@ -122,8 +122,7 @@ fn get_object(env: &IndexEnv, type_id: i64, ptr: u32, len_ptr: u32) -> u32 {
 
     let id = get_object_id(mem, ptr);
 
-    // TODO: stash this thing somewhere??
-    let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
+    let rt = tokio::runtime::Handle::current();
     let bytes = rt.block_on(async { env.db.lock().await.get_object(type_id, id).await });
 
     if let Some(bytes) = bytes {
@@ -160,8 +159,7 @@ fn put_object(env: &IndexEnv, type_id: i64, ptr: u32, len: u32) {
 
     let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
 
-    // TODO: stash this??
-    let rt = tokio::runtime::Runtime::new().expect("Could not create tokio runtime.");
+    let rt = tokio::runtime::Handle::current();
     rt.block_on(async {
         env.db
             .lock()
