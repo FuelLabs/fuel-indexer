@@ -116,6 +116,13 @@ pub struct MintMetadata {
     pub outputs_offset_at: Vec<usize>,
 }
 
+impl From<MintMetadata> for Json {
+    fn from(metadata: MintMetadata) -> Self {
+        let s = serde_json::to_string(&metadata).expect("Serde error.");
+        Self(s)
+    }
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct TransactionData {
     pub transaction: Transaction,

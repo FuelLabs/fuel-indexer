@@ -3,7 +3,7 @@ pub mod parser;
 pub mod types;
 pub mod validator;
 
-pub use parser::{ParsedError, ParsedGraphQLSchema};
+pub use parser::{JoinTableMeta, ParsedError, ParsedGraphQLSchema};
 pub use validator::GraphQLSchemaValidator;
 
 use async_graphql_parser::types::FieldDefinition;
@@ -107,21 +107,31 @@ pub fn extract_foreign_key_info(
         .iter()
         .find(|d| d.node.name.to_string() == "join")
         .map(|d| {
-            let typdef_name = f.ty.to_string().replace('!', "");
-            let ref_field_name = d.clone().node.arguments.pop().unwrap().1.to_string();
+            let typdef_name = field_type_name(f);
+            let ref_field_name = d
+                .clone()
+                .node
+                .arguments
+                .pop()
+                .expect("Expected directive info")
+                .1
+                .to_string();
             let fk_fid = field_id(&typdef_name, &ref_field_name);
-            let fk_field_type = field_type_mappings.get(&fk_fid).unwrap().to_string();
+            let fk_field_type = field_type_mappings
+                .get(&fk_fid)
+                .expect("Field ID not found in schema")
+                .to_string();
 
             (
-                fk_field_type.replace('!', ""),
+                fk_field_type.replace(['[', ']', '!'], ""),
                 ref_field_name,
                 typdef_name.to_lowercase(),
             )
         })
         .unwrap_or((
-            IdCol::to_uppercase_string(),
+            "UInt8".to_string(),
             IdCol::to_lowercase_string(),
-            f.ty.to_string().replace('!', "").to_lowercase(),
+            field_type_name(f).to_lowercase(),
         ));
 
     (ref_coltype, ref_colname, ref_tablename)
@@ -130,4 +140,19 @@ pub fn extract_foreign_key_info(
 /// Return a fully qualified name for a given `FieldDefinition` on a given `TypeDefinition`.
 pub fn field_id(typdef_name: &str, field_name: &str) -> String {
     format!("{typdef_name}.{field_name}")
+}
+
+/// Whether a given `FieldDefinition` is a `List` type.
+pub fn is_list_type(f: &FieldDefinition) -> bool {
+    f.ty.to_string().matches(['[', ']']).count() == 2
+}
+
+/// Return the simple field name for a given `FieldDefinition`.
+pub fn field_type_name(f: &FieldDefinition) -> String {
+    f.ty.to_string().replace(['[', ']', '!'], "")
+}
+
+/// Return the simple field name for a given list `FieldDefinition`.
+pub fn list_field_type_name(f: &FieldDefinition) -> String {
+    f.ty.to_string().replace(['!'], "")
 }

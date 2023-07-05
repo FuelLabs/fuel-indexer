@@ -1,0 +1,1 @@
+ALTER TABLE graph_registry_type_ids ALTER COLUMN table_name TYPE varchar(255);
