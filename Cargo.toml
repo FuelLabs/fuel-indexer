@@ -26,7 +26,6 @@ members = [
    "packages/fuel-indexer-tests/components/indices/simple-wasm/simple-wasm",
    "packages/fuel-indexer-tests/components/web-api",
    "packages/fuel-indexer-types",
-   "packages/fuel-indexer",
    "packages/fuel-indexer-utils",
    "plugins/forc-index",
    "plugins/forc-index-tests",
