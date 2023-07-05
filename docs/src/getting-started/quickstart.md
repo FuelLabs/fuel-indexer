@@ -53,12 +53,22 @@ Indexers are typically compiled to WASM so you'll need to have the proper WASM c
 
 ```console
 $ rustup target add wasm32-unknown-unknown
+
+info: downloading component 'rust-std' for 'wasm32-unknown-unknown'
+info: installing component 'rust-std' for 'wasm32-unknown-unknown'
 ```
 
 Additionally, you'll need the `wasm-snip` utility in order to remove errant symbols from your compiled WASM binary. You can install this tool using `cargo`:
 
 ```console
 $ cargo install wasm-snip
+
+Updating crates.io index
+Installing wasm-snip v0.4.0
+Updating crates.io index
+...
+Installing /Users/calldelegation/.cargo/bin/wasm-snip
+Installed package `wasm-snip v0.4.0` (executable `wasm-snip`)
 ```
 
 5. Install LLVM and set environment variables (For macOS users)
@@ -71,11 +81,11 @@ $ brew install llvm
 
 Open up your `.zshrc` or `.bashrc` file and add the following environment variables to the end of that file. 
 
-```console
+```bash
 $ nano ~/.zshrc
 ```
 
-```
+```console
 export AR=/opt/homebrew/opt/llvm/bin/llvm-ar
 export CC=/opt/homebrew/opt/llvm/bin/clang
 export LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"
@@ -86,7 +96,7 @@ Save and close the file by pressing `Ctrl+O` followed by `Ctrl+X`
 
 Apply the changes without opening a new terminal by running:
 
-```console
+```bash
 $ source ~/.zshrc
 ```
 
