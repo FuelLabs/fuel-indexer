@@ -498,8 +498,7 @@ where
         pool: IndexerConnectionPool,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
-        let executor =
-            NativeIndexExecutor::new(manifest, pool, handle_events).await?;
+        let executor = NativeIndexExecutor::new(manifest, pool, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
         let handle = tokio::spawn(run_executor(
             config,
