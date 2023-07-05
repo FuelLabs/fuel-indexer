@@ -1,7 +1,10 @@
 extern crate alloc;
 use fuel_indexer::{Executor, IndexerConfig, WasmIndexExecutor};
 use fuel_indexer_lib::{config::DatabaseConfig, manifest::Manifest};
-use fuel_indexer_tests::{defaults, fixtures::{indexer_service_postgres, TestPostgresDb}};
+use fuel_indexer_tests::{
+    defaults,
+    fixtures::{indexer_service_postgres, TestPostgresDb},
+};
 use fuels::prelude::{LoadConfiguration, TxParameters};
 use fuels::{
     accounts::wallet::WalletUnlocked,
