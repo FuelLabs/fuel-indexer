@@ -1,10 +1,12 @@
-#![feature(test)]
+#![cfg_attr(feature = "benchmarks", feature(test))]
 
+#[cfg(feature = "benchmarks")]
+#[cfg(test)]
 extern crate test;
 
+#[cfg(feature = "benchmarks")]
 #[cfg(test)]
 mod tests {
-    use super::*;
     use test::Bencher;
 
     use fuel_indexer::{Executor, IndexerConfig, Manifest, WasmIndexExecutor};
