@@ -6,42 +6,99 @@ In this tutorial you will:
 2. Create, build, and deploy an indexer to an indexer service hooked up to Fuel's `beta-3` testnet.
 3. Query your newly created index for data using GraphQL.
 
-## 1. Setting up your environment
+## 1. Prerequisites
 
-In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` component that we'll use to develop our indexer.
+In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` component that we'll use to develop our indexer. There are a lot of prerequisites so please read through each installation carefully.  
 
-### 1.1 Install `fuelup`
+1. [Install the Rust toolchain](https://www.rust-lang.org/tools/install).
 
-To install fuelup with the default features/options, use the following command to download the fuelup installation script and run it interactively.
+2. [Install PostgreSQL](https://www.postgresql.org/docs/).
+
+Note macOS you can install the latest version of PostgreSQL through `brew` by simply running:
 
 ```bash
-curl \
-  --proto '=https' \
-  --tlsv1.2 -sSf https://fuellabs.github.io/fuelup/fuelup-init.sh | sh
+brew install postgresql@15
 ```
 
-> If you require a non-default `fuelup` installation, please [read the `fuelup` installation docs.](https://github.com/FuelLabs/fuelup)
+3. [Install the Fuel toolchain](https://github.com/FuelLabs/fuelup).
 
-### 1.2 WebAssembly (WASM) Setup
+Make sure you have the latest version of `fuelup` by running the following command:
+
+```bash
+$ fuelup self update
+```
+```
+Fetching binary from https://github.com/FuelLabs/fuelup/releases/download/v0.18.0/fuelup-0.18.0-aarch64-apple-darwin.tar.gz
+Downloading component fuelup without verifying checksum
+Unpacking and moving fuelup to /var/folders/tp/0l8zdx9j4s9_n609ykwxl0qw0000gn/T/.tmpiNJQHt
+Moving /var/folders/tp/0l8zdx9j4s9_n609ykwxl0qw0000gn/T/.tmpiNJQHt/fuelup to /Users/.fuelup/bin/fuelup
+```
+
+Then run `fuelup toolchain install beta-3` to install the `beta-3` toolchain.
+
+Finally, set the `beta-3` toolchain as your default distribution with the following command:
+
+```bash
+$ fuelup default beta-3
+default toolchain set to 'beta-3-aarch64-apple-darwin'
+```
+
+You can check your current toolchain anytime by running `fuelup show`.
+
+> Having problems with this part? Post your question on our forum [https://forum.fuel.network/](https://forum.fuel.network/). To help you as efficiently as possible, include the output of this command in your post: `fuelup show.`
+
+4. WebAssembly (WASM) Setup
 
 Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
-```
-rustup target add wasm32-unknown-unknown
+```bash
+$ rustup target add wasm32-unknown-unknown
 ```
 
 Additionally, you'll need the `wasm-snip` utility in order to remove errant symbols from your compiled WASM binary. You can install this tool using `cargo`:
 
+```bash
+$ cargo install wasm-snip
 ```
-cargo install wasm-snip
+
+5. Install LLVM and set environment variables (For macOS users)
+
+Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its `clang` binary not supporting WASM targets. 
+
+```bash
+$ brew install llvm
 ```
+
+Open up your `.zshrc` or `.bashrc` file and add the following environment variables to the end of that file. 
+
+```bash
+$ nano ~/.zshrc
+```
+
+```
+export AR=/opt/homebrew/opt/llvm/bin/llvm-ar
+export CC=/opt/homebrew/opt/llvm/bin/clang
+export LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"
+export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+```
+Save and close the file by pressing `Ctrl+O` followed by `Ctrl+X`
+
+Apply the changes without opening a new terminal by running:
+
+```bash
+$ source ~/.zshrc
+```
+
+
+
 
 ## 2. Using the `forc-index` plugin
 
 The primary means of interfacing with the Fuel indexer for indexer development is the [`forc-index` CLI tool](https://crates.io/crates/forc-index). `forc-index` is a [`forc`](https://github.com/FuelLabs/sway/tree/master/forc) plugin specifically created to interface with the Fuel indexer service. Since we already installed `fuelup` in a previous step <sup>[1.1](#11-install-fuelup)</sup>, we should be able to check that our `forc-index` binary was successfully installed and added to our `PATH`.
 
 ```bash
-which forc-index
+$ which forc-index
 ```
 
 ```text
@@ -51,14 +108,14 @@ which forc-index
 > IMPORTANT: `fuelup` will install several binaries from the Fuel ecosystem and add them into your `PATH`, including the `fuel-indexer` binary. The `fuel-indexer` binary is the primary binary that users can use to spin up a Fuel indexer service.
 
 ```bash
-which fuel-indexer
+$ which fuel-indexer
 ```
 
 ```text
 /Users/me/.fuelup/bin/fuel-indexer
 ```
 
-### 2.1 Check for components
+### Check for components (TODO: Should come after starting up the indxer)
 
 Once the `forc-index` plugin is installed, let's go ahead and see what indexer components we have installed.
 
@@ -103,8 +160,8 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 > IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped.
 
 ```bash
-forc index start \
-    --embedded-database
+$ forc index start \
+    --embedded-database \
     --fuel-node-host beta-3.fuel.network \
     --fuel-node-port 80 \
     --run-migrations
@@ -112,7 +169,7 @@ forc index start \
 
 You should see output indicating the successful creation of a database and start of the indexer service; there may be much more content in your session, but it should generally contain output similar to the following lines:
 
-```text
+```text (TODO: new output)
 📦 Downloading, unpacking, and bootstrapping database...
 
 ▹▹▸▹▹ ⏱  Setting up database...
