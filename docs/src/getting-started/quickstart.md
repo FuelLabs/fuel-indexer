@@ -1,3 +1,4 @@
+<!-- markdownlint-capture -->
 # Quickstart
 
 In this tutorial you will:
@@ -16,13 +17,13 @@ In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github
 
 Note macOS you can install the latest version of PostgreSQL through `brew` by simply running:
 
-<!-- markdownlint-disable MD012-->
+<!-- markdownlint-disable MD014 -->
 ```console
 $ brew install postgresql@15
 ```
-<!-- markdownlint-enable MD012-->
+<!-- markdownlint-restore -->
 
-3. [Install the Fuel toolchain](https://github.com/FuelLabs/fuelup).
+1. [Install the Fuel toolchain](https://github.com/FuelLabs/fuelup).
 
 Make sure you have the latest version of `fuelup` by running the following command:
 
@@ -77,19 +78,19 @@ Installed package `wasm-snip v0.4.0` (executable `wasm-snip`)
 
 Users on Apple Silicon macOS systems may experience trouble when trying to build WASM modules due to its `clang` binary not supporting WASM targets. 
 
-<!-- markdownlint-disable MD012-->
+<!-- markdownlint-disable MD014 -->
 ```console
 $ brew install llvm
 ```
-<!-- markdownlint-enable MD012-->
+<!-- markdownlint-restore -->
 
 Open up your `.zshrc` or `.bashrc` file and add the following environment variables to the end of that file. 
 
-<!-- markdownlint-disable MD012-->
+<!-- markdownlint-disable MD014 -->
 ```console
 $ nano ~/.zshrc
 ```
-<!-- markdownlint-enable MD012-->
+<!-- markdownlint-restore -->
 
 ```console
 export AR=/opt/homebrew/opt/llvm/bin/llvm-ar
@@ -103,13 +104,11 @@ Save and close the file by pressing `Ctrl+O` followed by `Ctrl+X`
 
 Apply the changes without opening a new terminal by running:
 
-<!-- markdownlint-disable MD012-->
+<!-- markdownlint-disable MD014 -->
 ```console
 $ source ~/.zshrc
 ```
-<!-- markdownlint-enable MD012-->
-
-
+<!-- markdownlint-restore -->
 
 ## 2. Using the `forc-index` plugin
 
