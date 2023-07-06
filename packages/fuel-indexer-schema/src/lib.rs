@@ -1,20 +1,28 @@
+//! # fuel_indexer_schema
+//!
+//! A collection of utilities used to create SQL-based objects that interact with
+//! objects being pulled from, and being persisted to, the database backend.
+
 // TODO: Deny `clippy::unused_crate_dependencies` when including feature-flagged dependency `itertools`
 
 extern crate alloc;
 
+use fuel_indexer_lib::MAX_ARRAY_LENGTH;
 use fuel_indexer_types::prelude::fuel::*;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-pub const QUERY_ROOT: &str = "QueryRoot";
-
 #[cfg(feature = "db-models")]
 pub mod db;
 
+/// Placeholder value for SQL `NULL` values.
 const NULL_VALUE: &str = "NULL";
+pub const QUERY_ROOT: &str = "QueryRoot";
 
+/// Result type used by indexer schema operations.
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
 
+/// Error type used by indexer schema operations.
 #[derive(Error, Debug)]
 pub enum IndexerSchemaError {
     #[error("Generic error")]
@@ -35,6 +43,10 @@ pub enum IndexerSchemaError {
     InconsistentVirtualUnion(String),
 }
 
+/// `FtColumn` is an abstraction that represents a sized type that can be persisted to, and
+/// fetched from the database.
+///
+/// Each `FtColumn` corresponds to a Fuel-specific GraphQL scalar type.
 #[derive(Debug, PartialEq, Eq, Deserialize, Serialize, Clone, Hash)]
 pub enum FtColumn {
     Address(Option<Address>),
@@ -70,16 +82,21 @@ pub enum FtColumn {
     UInt8(Option<UInt8>),
     Virtual(Option<Virtual>),
     BlockId(Option<BlockId>),
+    Array(Option<Vec<FtColumn>>),
 }
 
 impl FtColumn {
+    /// Return query fragments for `INSERT` statements.
+    ///
+    /// Since `FtColumn` column is used when compiling indexers we can panic here. Anything that panics,
+    /// will panic when compiling indexers, so will be caught before runtime.
     pub fn query_fragment(&self) -> String {
         match self {
             FtColumn::ID(value) => {
                 if let Some(val) = value {
                     format!("{val}")
                 } else {
-                    panic!("Schema fields of type ID cannot be nullable")
+                    panic!("Schema fields of type `ID` cannot be nullable.")
                 }
             }
             FtColumn::Address(value) => match value {
@@ -214,6 +231,51 @@ impl FtColumn {
                 Some(val) => format!("'{val}'"),
                 None => String::from(NULL_VALUE),
             },
+            FtColumn::Array(arr) => match arr {
+                Some(arr) => {
+                    assert!(
+                        arr.len() < MAX_ARRAY_LENGTH,
+                        "Array length exceeds maximum allowed length."
+                    );
+
+                    // If the array has no items, then we have no `FtColumn`s from which to determine
+                    // what type of PostgreSQL array this is. In this case, the user should be using a
+                    // inner required (outer optional) array (e.g., [Foo!]) in their schema.
+                    //
+                    // Ideally we need a way to validate this in something like `fuel_indexer_lib::graphql::GraphQLSchemaValidator`.
+                    if arr.is_empty() {
+                        return String::from(NULL_VALUE);
+                    }
+
+                    let discriminant = std::mem::discriminant(&arr[0]);
+                    let result = arr
+                            .iter()
+                            .map(|e| {
+                                if std::mem::discriminant(e) != discriminant {
+                                    panic!(
+                                        "Array elements are not of the same column type. Expected {discriminant:#?} - Actual: {:#?}",
+                                        std::mem::discriminant(e)
+                                    )
+                                } else {
+                                    e.to_owned().query_fragment()
+                                }
+                            })
+                            .collect::<Vec<String>>()
+                            .join(",");
+
+                    // We have to force sqlx to see this as a JSON type else it will think this type
+                    // should be TEXT
+                    let suffix = match arr[0] {
+                        FtColumn::Virtual(_) | FtColumn::Json(_) => "::json[]",
+                        _ => "",
+                    };
+
+                    // Using ARRAY syntax vs curly braces so we can keep the single quotes used by
+                    // `ColumnType::query_fragment`
+                    format!("ARRAY [{result}]{suffix}")
+                }
+                None => String::from(NULL_VALUE),
+            },
         }
     }
 }
@@ -319,7 +381,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Schema fields of type ID cannot be nullable")]
+    #[should_panic(expected = "Schema fields of type `ID` cannot be nullable.")]
     fn test_panic_on_none_id_fragment() {
         use super::*;
 

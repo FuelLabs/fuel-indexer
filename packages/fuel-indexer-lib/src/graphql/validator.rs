@@ -1,5 +1,5 @@
 use crate::graphql::constants::*;
-use async_graphql_parser::types::{TypeDefinition, TypeKind};
+use async_graphql_parser::types::{FieldDefinition, TypeDefinition, TypeKind};
 use std::collections::HashSet;
 
 /// General container used to store a set of GraphQL schema validation functions.
@@ -9,19 +9,18 @@ impl GraphQLSchemaValidator {
     /// Check that the given name is not a reserved object name.
     pub fn check_disallowed_graphql_typedef_name(name: &str) {
         if DISALLOWED_OBJECT_NAMES.contains(name) {
-            panic!("Object name '{name}' is reserved.",);
+            panic!("TypeDefinition name '{name}' is reserved.");
         }
     }
 
     /// Check the given `TypeDefinition` name is not a disallowed Sway ABI name.
     pub fn check_disallowed_abi_typedef_name(name: &str) {
         if FUEL_PRIMITIVES.contains(name) {
-            panic!("Object name '{name}' is reserved.",);
+            panic!("TypeDefinition name '{name}' is reserved.");
         }
     }
 
-    /// Check that a `TypeKind::Union(UnionType)`'s members are either all
-    /// virtual, or all regular/non-virtual
+    /// Check that a `TypeKind::Union(UnionType)`'s members are either all virtual, or all regular/non-virtual
     pub fn check_derived_union_is_well_formed(
         typ: &TypeDefinition,
         virtual_type_names: &mut HashSet<String>,
@@ -58,7 +57,7 @@ impl GraphQLSchemaValidator {
 
                     // All members of a union must all be regular or virtual
                     if virtual_member_count != member_count {
-                        panic!("Union({union_name})'s members are not all virtual");
+                        panic!("TypeDefinition(Union({union_name})) does not have consistent virtual/non-virtual members.");
                     }
                 }
             }
@@ -74,6 +73,14 @@ impl GraphQLSchemaValidator {
     ) {
         if fields.contains(field_name) {
             panic!("Derived type from Union({union_name}) contains Field({field_name}) which does not have a consistent type across all members.");
+        }
+    }
+
+    /// Ensure a `FieldDefinition` is not a reference to a nested list.
+    pub fn ensure_fielddef_is_not_nested_list(f: &FieldDefinition) {
+        let name = f.name.to_string();
+        if f.ty.node.to_string().matches('[').count() > 1 {
+            panic!("FieldDefinition({name}) is a nested list, which is not supported.");
         }
     }
 }

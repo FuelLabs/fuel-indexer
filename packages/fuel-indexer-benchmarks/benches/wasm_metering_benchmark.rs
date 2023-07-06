@@ -43,17 +43,17 @@ fn criterion_benchmark(c: &mut Criterion) {
             let manifest = manifest.clone();
             let wasm_bytes = wasm_bytes.clone();
 
-            // let pool = fuel_indexer_database::IndexerConnectionPool::connect(
-            //     &config.database.to_string(),
-            // )
-            // .await
-            // .unwrap();
+            let pool = fuel_indexer_database::IndexerConnectionPool::connect(
+                &config.database.to_string(),
+            )
+            .await
+            .unwrap();
 
             let executor = WasmIndexExecutor::new(
                 &config,
                 &manifest,
                 wasm_bytes,
-                // pool,
+                pool,
             )
             .await
             .unwrap();

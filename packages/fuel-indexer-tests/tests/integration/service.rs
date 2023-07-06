@@ -59,12 +59,13 @@ async fn test_wasm_executor_can_meter_execution() {
             file.read_to_end(&mut bytes).await.unwrap();
 
             let test_db = TestPostgresDb::new().await.unwrap();
+            let pool = fuel_indexer_database::IndexerConnectionPool::Postgres(test_db.pool.clone());
             let mut config = IndexerConfig::default();
             config.database = DatabaseConfig::from_str(&test_db.url).unwrap();
             config.indexer_handler_metering_points = Some(2_000u64);
 
             let mut executor =
-                WasmIndexExecutor::new(&config, &manifest, bytes.clone())
+                WasmIndexExecutor::new(&config, &manifest, bytes.clone(), pool)
                     .await
                     .unwrap();
 

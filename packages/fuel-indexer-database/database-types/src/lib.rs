@@ -1,3 +1,7 @@
+//! # fuel-indexer-database-types
+//!
+//! A collection of types used to create SQL-based indexing components.
+
 #![deny(unused_crate_dependencies)]
 use async_graphql_parser::{
     types::{FieldDefinition, ObjectType, TypeDefinition, TypeKind},
@@ -10,11 +14,11 @@ use chrono::{
 };
 use fuel_indexer_lib::{
     graphql::{
-        extract_foreign_key_info, field_id,
+        extract_foreign_key_info, field_id, is_list_type,
         types::{IdCol, ObjectCol},
-        ParsedGraphQLSchema,
+        JoinTableMeta, ParsedGraphQLSchema,
     },
-    type_id,
+    type_id, MAX_ARRAY_LENGTH,
 };
 use linked_hash_set::LinkedHashSet;
 use serde::{Deserialize, Serialize};
@@ -30,10 +34,12 @@ use strum::{AsRefStr, EnumString};
 // SQL index method.
 #[derive(Debug, EnumString, AsRefStr, Default)]
 pub enum IndexMethod {
+    /// SQL BTree index.
     #[default]
     #[strum(serialize = "btree")]
     BTree,
 
+    /// SQL Hash index.
     #[strum(serialize = "hash")]
     Hash,
 }
@@ -77,6 +83,7 @@ pub enum ColumnType {
     UInt1 = 32,
     Virtual = 33,
     BlockId = 34,
+    Array = 35,
 }
 
 impl From<ColumnType> for i32 {
@@ -117,7 +124,15 @@ impl From<ColumnType> for i32 {
             ColumnType::UInt1 => 32,
             ColumnType::Virtual => 33,
             ColumnType::BlockId => 34,
+            ColumnType::Array => 35,
         }
+    }
+}
+
+impl From<ColumnType> for i64 {
+    fn from(typ: ColumnType) -> i64 {
+        let typ = i32::from(typ);
+        typ as i64
     }
 }
 
@@ -165,7 +180,8 @@ impl From<i32> for ColumnType {
             32 => ColumnType::UInt1,
             33 => ColumnType::Virtual,
             34 => ColumnType::BlockId,
-            _ => panic!("Invalid ColumnType."),
+            35 => ColumnType::Array,
+            _ => unimplemented!("Invalid ColumnType: {num}."),
         }
     }
 }
@@ -208,7 +224,8 @@ impl From<&str> for ColumnType {
             "UInt1" => ColumnType::UInt1,
             "Virtual" => ColumnType::Virtual,
             "BlockId" => ColumnType::BlockId,
-            _ => panic!("Invalid ColumnType: '{name}'"),
+            "Array" => ColumnType::Array,
+            _ => unimplemented!("Invalid ColumnType: '{name}'."),
         }
     }
 }
@@ -239,8 +256,8 @@ pub enum Persistence {
     #[default]
     Virtual,
 
-    /// Regular columns are persisted to the database.
-    Regular,
+    /// Scalar columns are persisted to the database.
+    Scalar,
 }
 
 /// SQL statements that can be executed against a database.
@@ -287,6 +304,11 @@ pub struct Column {
 
     /// Whether this column is nullable.
     pub nullable: bool,
+
+    /// SQL type of the array's contents
+    ///
+    /// Only if this is a `ColumnType::Array`
+    pub array_coltype: Option<ColumnType>,
 }
 
 impl SqlNamed for Column {
@@ -305,56 +327,43 @@ impl Column {
         position: i32,
         persistence: Persistence,
     ) -> Self {
-        let mut field_type = f.ty.to_string().replace('!', "");
-        if parsed.is_possible_foreign_key(&field_type) {
-            // Determine implicit vs explicit FK type
-            field_type = f
-                .directives
-                .iter()
-                .find(|d| d.node.name.to_string() == "join")
-                .map(|d| {
-                    let ref_field_name =
-                        d.clone().node.arguments.pop().unwrap().1.to_string();
-                    let fk_fid = field_id(&field_type, &ref_field_name);
-                    let fk_field_typ = parsed
-                        .field_type_mappings()
-                        .get(&fk_fid)
-                        .expect("Failed to find field in ParsedGraphQLSchema field type mappings.")
-                        .to_string();
-                    fk_field_typ
-                })
-                // Special case of parsing FKs here where we change the derived
-                // field type. We can't use the `ID` type as normal because we
-                // can't have multiple primary keys on the same table.
-                .unwrap_or("UInt8".to_string());
-        } else if parsed.is_virtual_typedef(&field_type) {
-            field_type = "Virtual".to_string();
-        } else if parsed.is_enum_typedef(&field_type) {
-            field_type = "Charfield".to_string();
-        }
+        let field_type = parsed.scalar_type_for(f);
 
-        let unique = f
-            .directives
-            .iter()
-            .any(|d| d.node.name.to_string() == "unique");
+        match is_list_type(f) {
+            true => Self {
+                type_id,
+                name: f.name.to_string(),
+                graphql_type: format!("[{field_type}]"),
+                coltype: ColumnType::Array,
+                position,
+                array_coltype: Some(ColumnType::from(field_type.as_str())),
+                nullable: f.ty.node.nullable,
+                persistence,
+                ..Self::default()
+            },
+            false => {
+                let unique = f
+                    .directives
+                    .iter()
+                    .any(|d| d.node.name.to_string() == "unique");
 
-        let coltype = field_type.as_str();
-
-        Self {
-            type_id,
-            name: f.name.to_string(),
-            graphql_type: coltype.to_owned(),
-            coltype: ColumnType::from(coltype),
-            position,
-            unique,
-            nullable: f.ty.node.nullable,
-            persistence,
-            ..Self::default()
+                Self {
+                    type_id,
+                    name: f.name.to_string(),
+                    graphql_type: field_type.clone(),
+                    coltype: ColumnType::from(field_type.as_str()),
+                    position,
+                    unique,
+                    nullable: f.ty.node.nullable,
+                    persistence,
+                    ..Self::default()
+                }
+            }
         }
     }
 
     /// Derive the respective PostgreSQL field type for a given `Columns`
-    fn sql_type(&self) -> &str {
+    fn sql_type(&self) -> String {
         // Here we're essentially matching `ColumnType`s to PostgreSQL field
         // types. Note that we're using `numeric` field types for integer-like
         // fields due to the ability to specify custom scale and precision. Some
@@ -362,42 +371,78 @@ impl Column {
         // just define these types as `numeric`, then convert them into their base
         // types (e.g., u64) using `BigDecimal`.
         match self.coltype {
-            ColumnType::ID => "numeric(20, 0) primary key",
-            ColumnType::Address => "varchar(64)",
-            ColumnType::Bytes4 => "varchar(8)",
-            ColumnType::Bytes8 => "varchar(16)",
-            ColumnType::Bytes32 => "varchar(64)",
-            ColumnType::AssetId => "varchar(64)",
-            ColumnType::ContractId => "varchar(64)",
-            ColumnType::Salt => "varchar(64)",
-            ColumnType::Int4 => "integer",
-            ColumnType::Int8 => "bigint",
-            ColumnType::Int16 => "numeric(39, 0)",
-            ColumnType::UInt4 | ColumnType::BlockHeight => "integer",
-            ColumnType::UInt8 => "numeric(20, 0)",
-            ColumnType::UInt16 => "numeric(39, 0)",
-            ColumnType::Timestamp => "timestamp",
-            ColumnType::Object => "bytea",
-            ColumnType::Blob => "varchar(10485760)",
-            ColumnType::ForeignKey => {
-                panic!("ForeignKey ColumnType is a reference type only.")
+            ColumnType::Address => "varchar(64)".to_string(),
+            ColumnType::AssetId => "varchar(64)".to_string(),
+            ColumnType::Blob => "varchar(10485760)".to_string(),
+            ColumnType::BlockHeight => "integer".to_string(),
+            ColumnType::BlockId => "varchar(64)".to_string(),
+            ColumnType::Boolean => "boolean".to_string(),
+            ColumnType::Bytes32 => "varchar(64)".to_string(),
+            ColumnType::Bytes4 => "varchar(8)".to_string(),
+            ColumnType::Bytes64 => "varchar(128)".to_string(),
+            ColumnType::Bytes8 => "varchar(16)".to_string(),
+            ColumnType::Charfield => "varchar(255)".to_string(),
+            ColumnType::ContractId => "varchar(64)".to_string(),
+            ColumnType::Enum => "varchar(255)".to_string(),
+            ColumnType::ForeignKey => "numeric(20, 0)".to_string(),
+            ColumnType::HexString => "varchar(10485760)".to_string(),
+            ColumnType::ID => "numeric(20, 0) primary key".to_string(),
+            ColumnType::Identity => "varchar(66)".to_string(),
+            ColumnType::Int1 => "integer".to_string(),
+            ColumnType::Int16 => "numeric(39, 0)".to_string(),
+            ColumnType::Int4 => "integer".to_string(),
+            ColumnType::Int8 => "bigint".to_string(),
+            ColumnType::Json => "json".to_string(),
+            ColumnType::MessageId => "varchar(64)".to_string(),
+            ColumnType::Nonce => "varchar(64)".to_string(),
+            ColumnType::Object => "bytea".to_string(),
+            ColumnType::Salt => "varchar(64)".to_string(),
+            ColumnType::Signature => "varchar(128)".to_string(),
+            ColumnType::Tai64Timestamp => "varchar(128)".to_string(),
+            ColumnType::Timestamp => "timestamp".to_string(),
+            ColumnType::TxId => "varchar(64)".to_string(),
+            ColumnType::UInt1 => "integer".to_string(),
+            ColumnType::UInt16 => "numeric(39, 0)".to_string(),
+            ColumnType::UInt4 => "integer".to_string(),
+            ColumnType::UInt8 => "numeric(20, 0)".to_string(),
+            ColumnType::Virtual => "json".to_string(),
+            ColumnType::Array => {
+                let t = match self.array_coltype.expect(
+                    "Column.array_coltype cannot be None when using `ColumnType::Array`.",
+                ) {
+                    ColumnType::ID
+                    | ColumnType::Int1
+                    | ColumnType::UInt1
+                    | ColumnType::Int4
+                    | ColumnType::UInt4
+                    | ColumnType::BlockHeight => "integer",
+                    ColumnType::Timestamp => "timestamp",
+                    ColumnType::Int8 => "bigint",
+                    ColumnType::UInt8 => "numeric(20, 0)",
+                    ColumnType::UInt16 | ColumnType::Int16 => "numeric(39, 0)",
+                    ColumnType::Address
+                    | ColumnType::Bytes4
+                    | ColumnType::Bytes8
+                    | ColumnType::Bytes32
+                    | ColumnType::AssetId
+                    | ColumnType::ContractId
+                    | ColumnType::Salt
+                    | ColumnType::MessageId
+                    | ColumnType::Charfield
+                    | ColumnType::Identity
+                    | ColumnType::Bytes64
+                    | ColumnType::Signature
+                    | ColumnType::Nonce
+                    | ColumnType::HexString
+                    | ColumnType::TxId
+                    | ColumnType::BlockId => "varchar",
+                    ColumnType::Blob => "bytea",
+                    ColumnType::Json | ColumnType::Virtual => "json",
+                    _ => unimplemented!(),
+                };
+
+                format!("{t} [{MAX_ARRAY_LENGTH}]")
             }
-            ColumnType::Json => "Json",
-            ColumnType::MessageId => "varchar(64)",
-            ColumnType::Charfield => "varchar(255)",
-            ColumnType::Identity => "varchar(66)",
-            ColumnType::Boolean => "boolean",
-            ColumnType::Bytes64 => "varchar(128)",
-            ColumnType::Signature => "varchar(128)",
-            ColumnType::Nonce => "varchar(64)",
-            ColumnType::HexString => "varchar(10485760)",
-            ColumnType::Tai64Timestamp => "varchar(128)",
-            ColumnType::TxId => "varchar(64)",
-            ColumnType::Enum => "varchar(255)",
-            ColumnType::Int1 => "integer",
-            ColumnType::UInt1 => "integer",
-            ColumnType::Virtual => "Json",
-            ColumnType::BlockId => "varchar(64)",
         }
     }
 }
@@ -410,6 +455,7 @@ impl SqlFragment for Column {
         format!(
             "{} {} {} {}",
             self.name,
+            // Will only panic if given an array type
             self.sql_type(),
             null_frag,
             unique_frag
@@ -462,7 +508,7 @@ pub struct TypeId {
 
 impl TypeId {
     /// Create a new `TypeId` from a given `TypeDefinition`.
-    pub fn from_typdef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
+    pub fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         let type_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
         Self {
             id: type_id,
@@ -471,6 +517,23 @@ impl TypeId {
             identifier: parsed.identifier().to_string(),
             graphql_name: typ.name.to_string(),
             table_name: typ.name.to_string().to_lowercase(),
+        }
+    }
+
+    /// Create a new `TypeId` from a given `JoinTableMeta`.
+    pub fn from_join_meta(info: JoinTableMeta, parsed: &ParsedGraphQLSchema) -> Self {
+        let JoinTableMeta { table_name, .. } = info;
+
+        let type_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
+        Self {
+            id: type_id,
+            version: parsed.schema().version().to_string(),
+            namespace: parsed.namespace().to_string(),
+            identifier: parsed.identifier().to_string(),
+            // Doesn't matter what this is, but let's use `ID` since all column types
+            // on join tables are `ColumnType::ID` for now.
+            graphql_name: ColumnType::ID.to_string(),
+            table_name,
         }
     }
 }
@@ -521,12 +584,15 @@ pub struct IndexerAssetBundle {
 /// All assets that can be used on indexers.
 #[derive(Debug, Eq, PartialEq, Hash, Clone, EnumString, AsRefStr)]
 pub enum IndexerAssetType {
+    /// Indexer WebAssembly (WASM) module asset.
     #[strum(serialize = "wasm")]
     Wasm,
 
+    /// Indexer YAML manifest asset.
     #[strum(serialize = "manifest")]
     Manifest,
 
+    /// Indexer GraphQL schema asset.
     #[strum(serialize = "schema")]
     Schema,
 }
@@ -563,6 +629,7 @@ impl RegisteredIndexer {
 /// SQL database types used by indexers.
 #[derive(Eq, PartialEq, Debug, Clone, Default)]
 pub enum DbType {
+    /// PostgreSQL database backend.
     #[default]
     Postgres,
 }
@@ -634,13 +701,16 @@ impl SqlFragment for SqlIndex {
 /// On delete action for a FK constraint.
 #[derive(Debug, Clone, Copy, Default, EnumString, AsRefStr)]
 pub enum OnDelete {
+    /// Take no action on delete.
     #[default]
     #[strum(serialize = "NO ACTION")]
     NoAction,
 
+    /// Cascade the delete to all child FK references.
     #[strum(serialize = "CASCADE")]
     Cascade,
 
+    /// Set the child FK references to null.
     #[strum(serialize = "SET NULL")]
     SetNull,
 }
@@ -758,6 +828,16 @@ impl Nonce {
     }
 }
 
+#[derive(Default, Debug)]
+pub enum TableType {
+    /// A table that is used to join two other tables.
+    Join,
+
+    /// A normal SQL table with basic constraints.
+    #[default]
+    Regular,
+}
+
 /// SQL database table for a given `GraphRoot` in the database.
 #[derive(Default, Debug)]
 pub struct Table {
@@ -778,6 +858,10 @@ pub struct Table {
 
     /// How this typedef is persisted to the database.
     persistence: Persistence,
+
+    /// The type of table.
+    #[allow(unused)]
+    table_type: TableType,
 }
 
 impl SqlNamed for Table {
@@ -788,23 +872,25 @@ impl SqlNamed for Table {
 }
 
 impl Table {
+    /// Table constraints.
     pub fn constraints(&self) -> &Vec<Constraint> {
         &self.constraints
     }
 
+    /// Table columns.
     pub fn columns(&self) -> &Vec<Column> {
         &self.columns
     }
 
     /// Create a new `Table` from a given `TypeDefinition`.
-    pub fn from_typdef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
+    pub fn from_typedef(typ: &TypeDefinition, parsed: &ParsedGraphQLSchema) -> Self {
         let ty_id = type_id(&parsed.fully_qualified_namespace(), &typ.name.to_string());
         match &typ.kind {
             TypeKind::Object(o) => {
                 let persistence = if parsed.is_virtual_typedef(&typ.name.to_string()) {
                     Persistence::Virtual
                 } else {
-                    Persistence::Regular
+                    Persistence::Scalar
                 };
 
                 let mut columns = o
@@ -826,6 +912,13 @@ impl Table {
                     .fields
                     .iter()
                     .filter_map(|f| {
+
+                        // Can't create constraints on array fields. We should have already validated the 
+                        // GraphQL schema to ensure this isn't possible, but this check doesn't hurt.
+                        if is_list_type(&f.node) {
+                            return None;
+                        }
+
                         let has_unique = f
                             .node
                             .directives
@@ -843,7 +936,7 @@ impl Table {
                             }));
                         }
 
-                        let field_typ = f.node.ty.node.to_string().replace('!', "");
+                        let field_typ = f.node.ty.node.to_string().replace(['[', ']', '!'], "");
                         if parsed.is_possible_foreign_key(&field_typ) {
                             let (ref_coltype, ref_colname, ref_tablename) =
                                 extract_foreign_key_info(
@@ -889,6 +982,7 @@ impl Table {
                     columns,
                     constraints,
                     persistence,
+                    table_type: TableType::Regular
                 }
             }
             TypeKind::Union(u) => {
@@ -944,9 +1038,82 @@ impl Table {
                     directives: vec![],
                 };
 
-                Self::from_typdef(&typdef, parsed)
+                Self::from_typedef(&typdef, parsed)
             }
-            _ => unreachable!("An EnumType TypeDefinition should not have been passed to Table::from_typdef."),
+            _ => unimplemented!("An EnumType TypeDefinition should not have been passed to Table::from_typedef."),
+        }
+    }
+
+    /// Create a new `Table` from a given `JoinTableMeta`.
+    pub fn from_join_meta(item: JoinTableMeta, parsed: &ParsedGraphQLSchema) -> Self {
+        // Since the join table is just two pre-determined columns, with two pre-determined
+        // constraints, we can just manually create it.
+        let JoinTableMeta {
+            table_name,
+            local_table_name,
+            column_name,
+            ref_table_name,
+            ref_column_name,
+            ref_column_type,
+            ..
+        } = item;
+        let ty_id = type_id(&parsed.fully_qualified_namespace(), &table_name);
+        let columns = vec![
+            Column {
+                type_id: ty_id,
+                name: format!("{local_table_name}_{column_name}"),
+                graphql_type: ColumnType::UInt8.to_string(),
+                coltype: ColumnType::UInt8,
+                position: 0,
+                unique: false,
+                nullable: false,
+                persistence: Persistence::Scalar,
+                ..Column::default()
+            },
+            Column {
+                type_id: ty_id,
+                name: format!("{ref_table_name}_{ref_column_name}"),
+                graphql_type: ColumnType::UInt8.to_string(),
+                coltype: ColumnType::UInt8,
+                position: 1,
+                unique: false,
+                nullable: false,
+                persistence: Persistence::Scalar,
+                ..Column::default()
+            },
+        ];
+
+        let constraints = vec![
+            Constraint::Fk(ForeignKey {
+                db_type: DbType::Postgres,
+                namespace: parsed.fully_qualified_namespace(),
+                table_name: table_name.clone(),
+                column_name: format!("{local_table_name}_{column_name}"),
+                ref_tablename: ref_table_name.clone(),
+                ref_colname: ref_column_name.clone(),
+                ref_coltype: ref_column_type.clone(),
+                ..ForeignKey::default()
+            }),
+            Constraint::Fk(ForeignKey {
+                db_type: DbType::Postgres,
+                namespace: parsed.fully_qualified_namespace(),
+                table_name: table_name.clone(),
+                column_name: format!("{ref_table_name}_{ref_column_name}"),
+                ref_tablename: local_table_name,
+                ref_colname: column_name,
+                ref_coltype: ref_column_type,
+                ..ForeignKey::default()
+            }),
+        ];
+
+        Self {
+            name: table_name,
+            namespace: parsed.namespace().to_string(),
+            identifier: parsed.identifier().to_string(),
+            columns,
+            constraints,
+            persistence: Persistence::Scalar,
+            table_type: TableType::Join,
         }
     }
 }
@@ -955,7 +1122,7 @@ impl SqlFragment for Table {
     /// Return the SQL create statement for a `Table`.
     fn create(&self) -> String {
         match self.persistence {
-            Persistence::Regular => {
+            Persistence::Scalar => {
                 let mut s = format!(
                     "CREATE TABLE {}_{}.{} (\n",
                     self.namespace, self.identifier, self.name
@@ -1064,7 +1231,7 @@ type Person {
         )
         .unwrap();
 
-        let table = Table::from_typdef(&typdef, &schema);
+        let table = Table::from_typedef(&typdef, &schema);
         assert_eq!(table.columns().len(), 4);
         assert_eq!(table.constraints().len(), 1);
     }
@@ -1114,7 +1281,7 @@ type Person {
 
         let type_id = type_id(&schema.fully_qualified_namespace(), "Person");
         let column =
-            Column::from_field_def(&field_def, &schema, type_id, 0, Persistence::Regular);
+            Column::from_field_def(&field_def, &schema, type_id, 0, Persistence::Scalar);
         assert_eq!(column.graphql_type, "Charfield".to_string());
         assert_eq!(column.coltype, ColumnType::Charfield);
         assert!(column.unique);

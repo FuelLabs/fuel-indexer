@@ -1,3 +1,8 @@
+//! # fuel_indexer_schema::db::manager
+//!
+//! A wrapper object that encapsulates `IndexerSchema` and provides stateful database
+//! connectivity.
+
 use crate::db::{tables::IndexerSchema, IndexerSchemaDbResult};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
 use fuel_indexer_lib::{graphql::GraphQLSchema, ExecutionSource};

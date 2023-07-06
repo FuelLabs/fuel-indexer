@@ -130,6 +130,7 @@ lazy_static! {
         "Option<Identity>",
         "Option<Json>",
         "Option<Virtual>",
+        "Vec<FtColumn>"
     ]);
 
     /// Type names that are not allowed in GraphQL schema.

@@ -958,10 +958,10 @@ async fn test_can_trigger_and_index_enum_types_postgres() {
 }
 
 // Taken from fuel_indexer_test.graphql
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, sqlx::FromRow, sqlx::Decode, Debug, Eq, PartialEq)]
 struct VirtualEntity {
     name: Option<String>,
-    size: u8,
+    size: i8,
 }
 
 #[actix_web::test]
@@ -1133,4 +1133,89 @@ async fn test_can_trigger_and_index_union_types() {
     assert_eq!(entity.a.unwrap(), 2);
     assert!(entity.b.is_none());
     assert_eq!(entity.c.unwrap(), 6);
+}
+
+#[derive(sqlx::FromRow, sqlx::Type)]
+struct ListFKType {
+    id: BigDecimal,
+    value: BigDecimal,
+}
+
+#[actix_web::test]
+#[cfg(all(feature = "e2e", feature = "postgres"))]
+async fn test_can_trigger_and_index_list_types() {
+    let (node_handle, test_db, mut srvc) = setup_test_components().await;
+
+    let mut manifest = Manifest::try_from(assets::FUEL_INDEXER_TEST_MANIFEST).unwrap();
+    update_test_manifest_asset_paths(&mut manifest);
+
+    srvc.register_indexer_from_manifest(manifest).await.unwrap();
+
+    let contract = connect_to_deployed_contract().await.unwrap();
+    let app = test::init_service(app(contract)).await;
+    let req = test::TestRequest::post().uri("/block").to_request();
+    let _ = app.call(req).await;
+
+    sleep(Duration::from_secs(defaults::INDEXED_EVENT_WAIT)).await;
+    node_handle.abort();
+
+    let mut conn = test_db.pool.acquire().await.unwrap();
+    let row =
+        sqlx::query("SELECT * FROM fuel_indexer_test_index1.listtypeentity LIMIT 1")
+            .fetch_one(&mut conn)
+            .await
+            .unwrap();
+
+    let expected_required_all = vec![1, 2, 3];
+    assert_eq!(row.get::<BigDecimal, usize>(0).to_u64().unwrap(), 1);
+    assert_eq!(row.get::<&str, usize>(1), "hello world");
+    assert_eq!(
+        row.get::<Vec<BigDecimal>, usize>(2)
+            .iter()
+            .map(|x| x.to_u64().unwrap())
+            .collect::<Vec<u64>>(),
+        expected_required_all
+    );
+
+    let expected_optional_inner = vec!["hello".to_string(), "world".to_string()];
+    assert_eq!(row.get::<Vec<String>, usize>(3), expected_optional_inner);
+
+    let optional_outer = vec![1, 2, 3, 4, 5];
+    assert_eq!(
+        row.get::<Vec<BigDecimal>, usize>(4)
+            .iter()
+            .map(|x| x.to_u64().unwrap())
+            .collect::<Vec<u64>>(),
+        optional_outer
+    );
+
+    let optional_all = vec![1, 3];
+    assert_eq!(
+        row.get::<Vec<BigDecimal>, usize>(5)
+            .iter()
+            .map(|x| x.to_u64().unwrap())
+            .collect::<Vec<u64>>(),
+        optional_all
+    );
+
+    let expected_virtual_optional_inner = vec![
+        Some(VirtualEntity {
+            name: Some("foo".to_string()),
+            size: 1,
+        }),
+        Some(VirtualEntity {
+            name: Some("bar".to_string()),
+            size: 2,
+        }),
+    ];
+
+    assert_eq!(
+        row.get::<Vec<serde_json::Value>, usize>(6)
+            .iter()
+            .map(|x| {
+                Some(serde_json::from_value::<VirtualEntity>(x.to_owned()).unwrap())
+            })
+            .collect::<Vec<Option<VirtualEntity>>>(),
+        expected_virtual_optional_inner
+    );
 }
