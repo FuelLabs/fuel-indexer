@@ -656,7 +656,9 @@ impl WasmIndexExecutor {
         }
     }
 
-    pub fn get_instance_metering_points(&self) -> wasmer_middlewares::metering::MeteringPoints {
+    pub fn get_instance_metering_points(
+        &self,
+    ) -> wasmer_middlewares::metering::MeteringPoints {
         wasmer_middlewares::metering::get_remaining_points(&self.instance)
     }
 

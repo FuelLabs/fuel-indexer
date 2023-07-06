@@ -38,7 +38,8 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         let executor = r.block_on(async {
             let mut config = IndexerConfig::default();
-            config.indexer_handler_metering_points = if t { Some(9_000_000_000_000) } else { None };
+            config.indexer_handler_metering_points =
+                if t { Some(9_000_000_000_000) } else { None };
 
             let manifest = manifest.clone();
             let wasm_bytes = wasm_bytes.clone();
@@ -49,14 +50,9 @@ fn criterion_benchmark(c: &mut Criterion) {
             .await
             .unwrap();
 
-            let executor = WasmIndexExecutor::new(
-                &config,
-                &manifest,
-                wasm_bytes,
-                pool,
-            )
-            .await
-            .unwrap();
+            let executor = WasmIndexExecutor::new(&config, &manifest, wasm_bytes, pool)
+                .await
+                .unwrap();
 
             Arc::new(Mutex::new(executor))
         });
