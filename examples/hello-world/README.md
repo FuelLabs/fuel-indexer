@@ -1,6 +1,6 @@
 # hello world
 
- A "Hello World" type of program for the Fuel Indexer service.
+A "Hello World" type of program for the Fuel Indexer service.
 
 ## Usage
 
@@ -21,7 +21,7 @@ docker compose up --build
 ```bash
 forc index deploy \
    --path hello-indexer \
-   --target-dir /path/to/repository/fuel-indexer \
+   --target-dir $PWD/../../ \
    --url http://0.0.0.0:29987
 ```
 
@@ -35,11 +35,19 @@ cargo run -p hello-world-data --bin hello-world-data -- --host 0.0.0.0:4000
 
 ### Validate
 
-Ensure that test data was indexed via a GraphQL query.
+Ensure that test data was indexed via a GraphQL query:
+  1. Open this GraphQL playground link http://localhost:29987/api/playground/fuel_examples/hello_indexer.
+  2. Submit the following query
 
-```bash
-curl -X POST http://0.0.0.0:29987/api/graph/fuel_examples/hello_indexer \
-   -H 'Content-Type: application/graphql' \
-   -d '{"query": "query { salutation { id message_hash message greeter first_seen last_seen }}", "params": "b"}' \
-| json_pp
+```graphql
+query {
+   salutation {
+      id
+      message_hash
+      message
+      greeter
+      first_seen
+      last_seen
+   }
+}
 ```
