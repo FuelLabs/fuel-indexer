@@ -32,7 +32,7 @@ mod tests {
         let wasm_bytes = match &manifest.module {
             fuel_indexer_lib::manifest::Module::Wasm(ref module) => {
                 let mut bytes = Vec::<u8>::new();
-                let mut file = File::open(module).unwrap();
+                let mut file = File::open(module).expect(&format!("{module}"));
                 file.read_to_end(&mut bytes).unwrap();
                 bytes
             }
