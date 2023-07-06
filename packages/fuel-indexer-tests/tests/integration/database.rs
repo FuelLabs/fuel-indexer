@@ -34,13 +34,13 @@ const TEST_COLUMNS: [(&str, i32, &str); 11] = [
 const TEST_NAMESPACE: &str = "test_namespace";
 const TEST_INDENTIFIER: &str = "simple_wasm_executor";
 
-async fn load_wasm_module(database_url: &str) -> IndexerResult<Instance> {
+async fn load_wasm_module(pool: IndexerConnectionPool) -> IndexerResult<Instance> {
     let compiler = compiler();
     let store = Store::new(&Universal::new(compiler).engine());
     let module = Module::new(&store, SIMPLE_WASM_WASM)?;
 
     let mut import_object = imports! {};
-    let mut env = IndexEnv::new(database_url.to_string()).await?;
+    let mut env = IndexEnv::new(pool).await?;
 
     let exports = ffi::get_exports(&env, &store);
     import_object.register("env", exports);
@@ -105,11 +105,11 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         assert_eq!(result.column_name, TEST_COLUMNS[index].2);
     }
 
-    let instance = load_wasm_module(database_url)
+    let instance = load_wasm_module(pool.clone())
         .await
         .expect("Error creating WASM module");
 
-    let mut db = Database::new(database_url)
+    let mut db = Database::new(pool.clone())
         .await
         .expect("Failed to create database object.");
 
