@@ -47,6 +47,8 @@ pub enum IndexerError {
     ExportError(#[from] ExportError),
     #[error("Error executing function: {0:#?}")]
     RuntimeError(#[from] RuntimeError),
+    #[error("Run time limit exceeded error")]
+    RunTimeLimitExceededError,
     #[error("Could not initialize host environment: {0:#?}")]
     HostEnvInitError(#[from] HostEnvInitError),
     #[error("IO Error: {0:#?}")]

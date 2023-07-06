@@ -73,7 +73,7 @@ pub trait Env {
 impl Default for IndexerArgs {
     fn default() -> Self {
         Self {
-            indexer_handler_timeout: defaults::INDEXER_HANDLER_TIMEOUT,
+            indexer_handler_metering_points: defaults::INDEXER_HANDLER_METERING_POINTS,
             log_level: defaults::LOG_LEVEL.to_string(),
             config: None,
             manifest: None,
@@ -111,7 +111,7 @@ impl Default for IndexerArgs {
 /// Fuel indexer service configuration.
 #[derive(Clone, Deserialize, Default, Debug)]
 pub struct IndexerConfig {
-    pub indexer_handler_timeout: u64,
+    pub indexer_handler_metering_points: Option<u64>,
     pub log_level: String,
     #[serde(default)]
     pub verbose: bool,
@@ -175,7 +175,7 @@ impl From<IndexerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
-            indexer_handler_timeout: args.indexer_handler_timeout,
+            indexer_handler_metering_points: args.indexer_handler_metering_points,
             log_level: args.log_level,
             verbose: args.verbose,
             local_fuel_node: args.local_fuel_node,
@@ -260,7 +260,7 @@ impl From<ApiServerArgs> for IndexerConfig {
         };
 
         let mut config = IndexerConfig {
-            indexer_handler_timeout: defaults::INDEXER_HANDLER_TIMEOUT,
+            indexer_handler_metering_points: defaults::INDEXER_HANDLER_METERING_POINTS,
             log_level: args.log_level,
             verbose: args.verbose,
             local_fuel_node: defaults::LOCAL_FUEL_NODE,
@@ -315,8 +315,8 @@ impl IndexerConfig {
         let content: serde_yaml::Value = serde_yaml::from_reader(file)?;
 
         let log_level_key = serde_yaml::Value::String("log_level".into());
-        let indexer_handler_timeout_key =
-            serde_yaml::Value::String("indexer_handler_timeout".into());
+        let indexer_handler_metering_key =
+            serde_yaml::Value::String("indexer_handler_metering_points".into());
         let metrics_key = serde_yaml::Value::String("metrics".into());
         let stop_idle_indexers_key =
             serde_yaml::Value::String("stop_idle_indexers".into());
@@ -326,8 +326,11 @@ impl IndexerConfig {
         let indexer_net_config_key =
             serde_yaml::Value::String("indexer_net_config".into());
 
-        if let Some(indexer_handler_timeout) = content.get(indexer_handler_timeout_key) {
-            config.indexer_handler_timeout = indexer_handler_timeout.as_u64().unwrap();
+        if let Some(indexer_handler_metering_points) =
+            content.get(indexer_handler_metering_key)
+        {
+            config.indexer_handler_metering_points =
+                Some(indexer_handler_metering_points.as_u64().unwrap());
         }
 
         if let Some(log_level) = content.get(log_level_key) {

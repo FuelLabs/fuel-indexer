@@ -162,13 +162,12 @@ pub struct IndexerArgs {
     #[clap(long, help = "Number of seconds over which to allow --rate-limit-rps.")]
     pub rate_limit_window_size: Option<u64>,
 
-    /// Maximum length of time (in seconds) that an indexer's event handler can run before timing out.
+    /// The number of WASM opcodes after which the indexer's event handler will stop execution.
     #[clap(
         long,
-        default_value_t = defaults::INDEXER_HANDLER_TIMEOUT,
-        help = "Maximum length of time (in seconds) that an indexer's event handler can run before timing out."
+        help = "The number of WASM opcodes after which the indexer's event handler will stop execution."
     )]
-    pub indexer_handler_timeout: u64,
+    pub indexer_handler_metering_points: Option<u64>,
 
     /// Whether to allow replacing an existing indexer. If not specified, an attempt to deploy over an existing indexer results in an error.
     #[clap(

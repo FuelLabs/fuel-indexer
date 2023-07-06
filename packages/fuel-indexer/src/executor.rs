@@ -32,7 +32,7 @@ use std::{
 use thiserror::Error;
 use tokio::{
     task::{spawn_blocking, JoinHandle},
-    time::{sleep, timeout, Duration},
+    time::{sleep, Duration},
 };
 use tracing::{debug, error, info, warn};
 use wasmer::{
@@ -41,6 +41,7 @@ use wasmer::{
 };
 use wasmer_compiler_cranelift::Cranelift;
 use wasmer_engine_universal::Universal;
+use wasmer_middlewares::metering::MeteringPoints;
 
 fn compiler() -> Cranelift {
     Cranelift::default()
@@ -380,6 +381,11 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             let result = executor.handle_events(block_info).await;
 
             if let Err(e) = result {
+                // Run time metering is deterministic. There is no point in retrying.
+                if let IndexerError::RunTimeLimitExceededError = e {
+                    error!("Indexer executor run time limit exceeded. Giving up. <('.')>. Consider increasing metering points");
+                    break;
+                }
                 error!("Indexer executor failed {e:?}, retrying.");
                 sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
                 retry_count += 1;
@@ -535,8 +541,6 @@ pub struct WasmIndexExecutor {
     _module: Module,
     _store: Store,
     db: Arc<Mutex<Database>>,
-    #[allow(unused)]
-    timeout: u64,
     metering_points: Option<u64>,
 }
 
@@ -545,13 +549,12 @@ impl WasmIndexExecutor {
         config: &IndexerConfig,
         manifest: &Manifest,
         wasm_bytes: impl AsRef<[u8]>,
-        metering_points: Option<u64>,
     ) -> IndexerResult<Self> {
         let db_url = config.database.to_string();
 
         let mut compiler_config = compiler();
 
-        if let Some(metering_points) = metering_points {
+        if let Some(metering_points) = config.indexer_handler_metering_points {
             // `Metering` needs to be configured with a limit and a cost
             // function. For each `Operator`, the metering middleware will call
             // the cost function and subtract the cost from the remaining
@@ -591,8 +594,7 @@ impl WasmIndexExecutor {
             _module: module,
             _store: store,
             db: env.db.clone(),
-            timeout: config.indexer_handler_timeout,
-            metering_points,
+            metering_points: config.indexer_handler_metering_points,
         })
     }
 
@@ -604,7 +606,7 @@ impl WasmIndexExecutor {
         let config = config.unwrap_or_default();
         let manifest = Manifest::from_file(p)?;
         let bytes = manifest.module_bytes()?;
-        Self::new(&config, &manifest, bytes, None).await
+        Self::new(&config, &manifest, bytes).await
     }
 
     pub async fn create(
@@ -622,8 +624,7 @@ impl WasmIndexExecutor {
                     file.read_to_end(&mut bytes).await?;
 
                     let executor =
-                        WasmIndexExecutor::new(config, manifest, bytes.clone(), None)
-                            .await?;
+                        WasmIndexExecutor::new(config, manifest, bytes.clone()).await?;
                     let handle = tokio::spawn(run_executor(
                         config,
                         manifest,
@@ -638,8 +639,7 @@ impl WasmIndexExecutor {
                 }
             },
             ExecutorSource::Registry(bytes) => {
-                let executor =
-                    WasmIndexExecutor::new(config, manifest, bytes, None).await?;
+                let executor = WasmIndexExecutor::new(config, manifest, bytes).await?;
                 let handle = tokio::spawn(run_executor(
                     config,
                     manifest,
@@ -652,8 +652,15 @@ impl WasmIndexExecutor {
         }
     }
 
-    pub fn get_metering_points(&self) -> wasmer_middlewares::metering::MeteringPoints {
+    pub fn get_instance_metering_points(&self) -> wasmer_middlewares::metering::MeteringPoints {
         wasmer_middlewares::metering::get_remaining_points(&self.instance)
+    }
+
+    pub fn set_instance_metering_points(&self, metering_points: u64) {
+        wasmer_middlewares::metering::set_remaining_points(
+            &self.instance,
+            metering_points,
+        )
     }
 }
 
@@ -661,6 +668,9 @@ impl WasmIndexExecutor {
 impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
+        if let Some(metering_points) = self.metering_points {
+            self.set_instance_metering_points(metering_points)
+        }
         let bytes = serialize(&blocks);
         let arg =
             ffi::WasmArg::new(&self.instance, bytes, self.metering_points.is_some())?;
@@ -675,23 +685,21 @@ impl Executor for WasmIndexExecutor {
         let ptr = arg.get_ptr();
         let len = arg.get_len();
 
-        let res = timeout(
-            Duration::from_secs(self.timeout),
-            spawn_blocking(move || fun.call(ptr, len)),
-        )
-        .await;
+        let res = spawn_blocking(move || fun.call(ptr, len)).await?;
 
         if let Err(e) = res {
-            error!("WasmIndexExecutor handle_events timed out: {e:?}.");
-            let _ = self.db.lock().await.revert_transaction().await?;
-            return Err(IndexerError::from(e));
-        } else {
-            let inner = res.unwrap();
-            if let Err(e) = inner {
+            if self.get_instance_metering_points() == MeteringPoints::Exhausted
+                && e.clone().to_trap()
+                    == Some(wasmer_types::TrapCode::UnreachableCodeReached)
+            {
+                let _ = self.db.lock().await.revert_transaction().await?;
+                return Err(IndexerError::RunTimeLimitExceededError);
+            } else {
                 error!("WasmIndexExecutor handle_events failed: {e:?}.");
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }
+        } else {
             let _ = self.db.lock().await.commit_transaction().await?;
         }
         Ok(())

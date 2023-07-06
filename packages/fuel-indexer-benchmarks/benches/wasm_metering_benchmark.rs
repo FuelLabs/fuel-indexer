@@ -38,12 +38,10 @@ fn criterion_benchmark(c: &mut Criterion) {
 
         let executor = r.block_on(async {
             let mut config = IndexerConfig::default();
-            config.indexer_handler_timeout = 30;
+            config.indexer_handler_metering_points = if t { Some(9_000_000_000_000) } else { None };
 
             let manifest = manifest.clone();
             let wasm_bytes = wasm_bytes.clone();
-
-            let metering_points = if t { Some(9_000_000_000_000) } else { None };
 
             // let pool = fuel_indexer_database::IndexerConnectionPool::connect(
             //     &config.database.to_string(),
@@ -55,7 +53,6 @@ fn criterion_benchmark(c: &mut Criterion) {
                 &config,
                 &manifest,
                 wasm_bytes,
-                metering_points,
                 // pool,
             )
             .await

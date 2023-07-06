@@ -61,9 +61,10 @@ async fn test_wasm_executor_can_meter_execution() {
             let test_db = TestPostgresDb::new().await.unwrap();
             let mut config = IndexerConfig::default();
             config.database = DatabaseConfig::from_str(&test_db.url).unwrap();
+            config.indexer_handler_metering_points = Some(2_000u64);
 
             let mut executor =
-                WasmIndexExecutor::new(&config, &manifest, bytes.clone(), Some(2_000u64))
+                WasmIndexExecutor::new(&config, &manifest, bytes.clone())
                     .await
                     .unwrap();
 
@@ -76,14 +77,14 @@ async fn test_wasm_executor_can_meter_execution() {
                             assert_eq!(e, wasmer_types::TrapCode::UnreachableCodeReached);
                             assert_eq!(
                                 wasmer_middlewares::metering::MeteringPoints::Exhausted,
-                                executor.get_metering_points()
+                                executor.get_instance_metering_points()
                             );
                             println!("Metering points exhausted in loop iteration {i}.");
                             exhausted = true;
                             break;
                         }
                     } else {
-                        match executor.get_metering_points() {
+                        match executor.get_instance_metering_points() {
                             wasmer_middlewares::metering::MeteringPoints::Remaining(
                                 pts,
                             ) => {

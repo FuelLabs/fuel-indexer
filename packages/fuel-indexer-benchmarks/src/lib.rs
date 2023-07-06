@@ -43,7 +43,7 @@ mod tests {
 
         let mut executor = rt.block_on(async {
             let mut config = IndexerConfig::default();
-            config.indexer_handler_timeout = 60;
+            config.indexer_handler_metering_points = metering_points;
 
             let manifest = manifest.clone();
             let wasm_bytes = wasm_bytes.clone();
@@ -54,7 +54,7 @@ mod tests {
             // .await
             // .unwrap();
 
-            WasmIndexExecutor::new(&config, &manifest, wasm_bytes, metering_points)
+            WasmIndexExecutor::new(&config, &manifest, wasm_bytes)
                 .await
                 .unwrap()
         });
