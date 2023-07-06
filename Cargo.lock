@@ -3512,6 +3512,7 @@ dependencies = [
  "wasmer-compiler-cranelift",
  "wasmer-engine-universal",
  "wasmer-middlewares",
+ "wasmer-types",
 ]
 
 [[package]]
