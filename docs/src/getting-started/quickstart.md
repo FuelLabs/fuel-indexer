@@ -84,22 +84,19 @@ Open up your `.zshrc` or `.bashrc` file and add the following environment variab
 ```console
 $ nano ~/.zshrc
 
-```
-
-```console
 export AR=/opt/homebrew/opt/llvm/bin/llvm-ar
 export CC=/opt/homebrew/opt/llvm/bin/clang
 export LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"
 export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
 ```
+
 Save and close the file by pressing `Ctrl+O` followed by `Ctrl+X`
 
 Apply the changes without opening a new terminal by running:
 
 ```console
 $ source ~/.zshrc
-
 ```
 
 
