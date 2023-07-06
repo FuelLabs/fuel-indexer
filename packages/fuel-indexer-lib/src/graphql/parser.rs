@@ -578,6 +578,11 @@ impl ParsedGraphQLSchema {
         self.unions.get(name)
     }
 
+    /// Return a mapping of union names to their `TypeDefinition`s.
+    pub fn unions(&self) -> &HashMap<String, TypeDefinition> {
+        &self.unions
+    }
+
     /// Return a list of all non-enum type definitions.
     pub fn non_enum_typdefs(&self) -> Vec<(&String, &TypeDefinition)> {
         self.type_defs

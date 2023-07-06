@@ -249,6 +249,7 @@ impl IndexerSchema {
             self.parsed
                 .objects()
                 .keys()
+                .chain(self.parsed.unions().keys())
                 .map(|k| (k.to_lowercase(), k.clone()))
                 .collect::<BTreeMap<String, String>>(),
         );
