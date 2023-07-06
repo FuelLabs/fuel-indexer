@@ -226,14 +226,14 @@ Now that we have our development environment set up, in a seperate terminal we w
 
 <!-- markdownlint-disable MD014 -->
 ```console
-forc index new hello-indexer --namespace my_project && cd hello-indexer
+$ forc index new hello-indexer --namespace my_project && cd hello-indexer
 ```
 <!-- markdownlint-restore -->
 
 > The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`. For a complete list of options passed to `forc index new`, see [here](../forc-index/new.md)
 
 ```text
-forc index new hello-indexer --namespace my_project
+$ forc index new hello-indexer --namespace my_project
 
 ███████╗██╗   ██╗███████╗██╗         ██╗███╗   ██╗██████╗ ███████╗██╗  ██╗███████╗██████╗
 ██╔════╝██║   ██║██╔════╝██║         ██║████╗  ██║██╔══██╗██╔════╝╚██╗██╔╝██╔════╝██╔══██╗
@@ -284,9 +284,11 @@ Take a quick tour.
 
 At this point, we have a brand new indexer that will index some blocks and transactions. And with both our database and Fuel indexer services up and running, all that's left is to build and deploy the indexer in order to see it in action. Let's build and deploy our indexer:
 
+<!-- markdownlint-disable MD014 -->
 ```console
-forc index deploy
+$ forc index deploy
 ```
+<!-- markdownlint-restore -->
 
 > IMPORTANT: `forc index deploy` by defaults runs `forc index build` prior to deploying the indexer. The same result can be produced by running `forc index build` then subsequently running `forc index deploy`.
 
@@ -305,12 +307,8 @@ With our indexer deployed, we should be able to query for newly indexed data aft
 Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ```console
-curl -X POST -H "Content-Type: application/graphql"
---data '{ "query": "query { tx { id, hash, block } }" }'
-http://127.0.0.1:29987/api/graph/my_project/hello_indexer
-```
+$ curl -X POST -H "Content-Type: application/graphql" --data '{ "query": "query { tx { id, hash, block } }" }' http://127.0.0.1:29987/api/graph/my_project/hello_indexer
 
-```text
 [
    {
       "block" : 7017844286925529648,
