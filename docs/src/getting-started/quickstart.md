@@ -23,28 +23,25 @@ $ brew install postgresql@15
 ```
 <!-- markdownlint-restore -->
 
-1. [Install the Fuel toolchain](https://github.com/FuelLabs/fuelup).
+3. [Install the Fuel toolchain](https://github.com/FuelLabs/fuelup).
 
 Make sure you have the latest version of `fuelup` by running the following command:
 
+<!-- markdownlint-disable MD014 -->
 ```console
 $ fuelup self update
-
-Fetching binary from https://github.com/FuelLabs/fuelup/releases/download/v0.18.0/fuelup-0.18.0-aarch64-apple-darwin.tar.gz
-Downloading component fuelup without verifying checksum
-Unpacking and moving fuelup to /var/folders/tp/0l8zdx9j4s9_n609ykwxl0qw0000gn/T/.tmpiNJQHt
-Moving /var/folders/tp/0l8zdx9j4s9_n609ykwxl0qw0000gn/T/.tmpiNJQHt/fuelup to /Users/.fuelup/bin/fuelup
 ```
+<!-- markdownlint-restore -->
 
 Then run `fuelup toolchain install beta-3` to install the `beta-3` toolchain.
 
 Finally, set the `beta-3` toolchain as your default distribution with the following command:
 
+<!-- markdownlint-disable MD014 -->
 ```console
 $ fuelup default beta-3
-
-default toolchain set to 'beta-3-aarch64-apple-darwin'
 ```
+<!-- markdownlint-restore -->
 
 You can check your current toolchain anytime by running `fuelup show`.
 
@@ -54,25 +51,19 @@ You can check your current toolchain anytime by running `fuelup show`.
 
 Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
+<!-- markdownlint-disable MD014 -->
 ```console
 $ rustup target add wasm32-unknown-unknown
-
-info: downloading component 'rust-std' for 'wasm32-unknown-unknown'
-info: installing component 'rust-std' for 'wasm32-unknown-unknown'
 ```
+<!-- markdownlint-restore -->
 
 Additionally, you'll need the `wasm-snip` utility in order to remove errant symbols from your compiled WASM binary. You can install this tool using `cargo`:
 
+<!-- markdownlint-disable MD014 -->
 ```console
 $ cargo install wasm-snip
-
-Updating crates.io index
-Installing wasm-snip v0.4.0
-Updating crates.io index
-...
-Installing /Users/calldelegation/.cargo/bin/wasm-snip
-Installed package `wasm-snip v0.4.0` (executable `wasm-snip`)
 ```
+<!-- markdownlint-restore -->
 
 5. Install LLVM and set environment variables (For macOS users)
 
@@ -170,7 +161,7 @@ We can quickly create a bootstrapped database and start the Fuel indexer service
 
 > IMPORTANT: Ensure that any local PostgreSQL instance that is running on port `5432` is stopped. 
 
-You should see output indicating the successful creation of a database and start of the indexer service and start processing blocks from the beta-3 testnet.
+You should see output indicating the successful creation of a database and start of the indexer service.
 
 ```console
 $ forc index start --embedded-database --fuel-node-host beta-3.fuel.network --fuel-node-port 80 --run-migrations
@@ -194,10 +185,8 @@ $ forc index start --embedded-database --fuel-node-host beta-3.fuel.network --fu
 Now if you run `forc-index check` again you should see the indexer service running! 
 
 ```console
-$forc index check
-```
+$ forc-index check
 
-```console
 ✅ Sucessfully fetched service health:
 
 {
@@ -235,9 +224,11 @@ $forc index check
 
 Now that we have our development environment set up, in a seperate terminal we will create indexer.
 
+<!-- markdownlint-disable MD014 -->
 ```console
 forc index new hello-indexer --namespace my_project && cd hello-indexer
 ```
+<!-- markdownlint-restore -->
 
 > The `namespace` of your project is a required option. You can think of a `namespace` as your organization name or company name. Your project might contain one or many indexers all under the same `namespace`. For a complete list of options passed to `forc index new`, see [here](../forc-index/new.md)
 
