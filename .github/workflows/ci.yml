@@ -363,7 +363,7 @@ jobs:
   publish-docker-image:
     needs:
       - set-env-vars
-    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
+#    if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -398,10 +398,11 @@ jobs:
           username: fuellabs
           password: '${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}'
       - name: Build and push the image to ghcr.io
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: deployment/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: '${{ steps.meta.outputs.tags }}'
           labels: '${{ steps.meta.outputs.labels }}'
