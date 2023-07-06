@@ -247,10 +247,9 @@ impl IndexerSchema {
         self.parsed.object_field_mappings.insert(
             QUERY_ROOT.to_string(),
             self.parsed
-                .objects()
-                .keys()
-                .chain(self.parsed.unions().keys())
-                .map(|k| (k.to_lowercase(), k.clone()))
+                .non_enum_typdefs()
+                .iter()
+                .map(|(k, _)| (k.to_lowercase(), k.to_string()))
                 .collect::<BTreeMap<String, String>>(),
         );
     }
