@@ -4,6 +4,8 @@ A "Hello World" type of program for the Fuel Indexer service.
 
 ## Usage
 
+> NOTE: Commands are run from `fuel-indexer/examples/hello-world`
+
 ### Spin up containers
 
 Spin up containers for the Postgres indexer service backend, the indexer service, and a test Fuel node.

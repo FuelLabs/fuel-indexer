@@ -2,7 +2,7 @@
 
 ## Usage
 
-> NOTE: Commands are run from the project root at `$PWD/../../`
+> NOTE: Commands are run from `fuel-indexer/examples/hello-world-native`
 
 ### Start a Fuel node
 

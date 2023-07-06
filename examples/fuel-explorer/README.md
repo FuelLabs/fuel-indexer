@@ -4,6 +4,8 @@ The Fuel block explorer.
 
 ## Usage
 
+> NOTE: Commands are run from `fuel-indexer/examples/fuel-explorer`
+
 ### Spin up containers
 
 Spin up containers for the Postgres indexer service backend, the indexer service.
