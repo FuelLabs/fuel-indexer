@@ -1,8 +1,13 @@
+//! # fuel_indexer_lib::parser
+//!
+//! A utility used to help parse and cache various components of indexer
+//! GraphQL schema. This is meant to be a productivity tool for project devs.
+
 use crate::{
     fully_qualified_namespace,
     graphql::{
-        extract_foreign_key_info, field_id, GraphQLSchema, GraphQLSchemaValidator,
-        BASE_SCHEMA,
+        extract_foreign_key_info, field_id, field_type_name, is_list_type,
+        list_field_type_name, GraphQLSchema, GraphQLSchemaValidator, BASE_SCHEMA,
     },
     ExecutionSource,
 };
@@ -33,6 +38,57 @@ pub enum ParsedError {
     ListTypesUnsupported,
     #[error("Inconsistent use of virtual union types. {0:?}")]
     InconsistentVirtualUnion(String),
+}
+
+/// Represents metadata related to a many-to-many relationship in the GraphQL schema.
+#[derive(Debug, Clone)]
+pub struct JoinTableMeta {
+    /// Name of the join table
+    pub table_name: String,
+
+    /// `TypeDefinition` name on which join relationship was found.
+    pub local_table_name: String,
+
+    /// Name of local column on which to join.
+    ///
+    /// This is always `id` for now.
+    pub column_name: String,
+
+    /// Type of the column on the local table on which to join.
+    ///
+    /// This is always `ColumnType::UInt8` for now.
+    pub column_type: String,
+
+    /// `TypeDefinition` name to which this join references.
+    pub ref_table_name: String,
+
+    /// Name of the column on the referenced table on which to join.
+    ///
+    /// This is always `id` for now.
+    pub ref_column_name: String,
+
+    /// Type of the column on the referenced table on which to join.
+    ///
+    /// This is always `ColumnType::UInt8` for now.
+    pub ref_column_type: String,
+}
+
+impl JoinTableMeta {
+    /// Create a new `JoinTableMeta`.
+    pub fn new(local_table_name: &str, ref_table_name: &str) -> Self {
+        let local_table_name = local_table_name.to_string().to_lowercase();
+        let ref_table_name = ref_table_name.to_string().to_lowercase();
+
+        Self {
+            table_name: format!("{local_table_name}s_{ref_table_name}s"),
+            local_table_name,
+            column_name: "id".to_string(),
+            column_type: "ID".to_string(),
+            ref_table_name,
+            ref_column_name: "id".to_string(),
+            ref_column_type: "ID".to_string(),
+        }
+    }
 }
 
 /// Given a GraphQL document, return a two `HashSet`s - one for each
@@ -91,6 +147,9 @@ pub struct ParsedGraphQLSchema {
     /// Mapping of object names to objects.
     objects: HashMap<String, ObjectType>,
 
+    /// Mapping of union names to unions.
+    unions: HashMap<String, TypeDefinition>,
+
     /// All unique names of enums in the schema.
     enum_names: HashSet<String>,
 
@@ -105,9 +164,9 @@ pub struct ParsedGraphQLSchema {
     virtual_type_names: HashSet<String>,
 
     /// All unique names of types that have already been parsed.
-    parsed_type_names: HashSet<String>,
+    parsed_typedef_names: HashSet<String>,
 
-    /// A mapping of fully qualified field names to their field types.
+    /// Mapping of fully qualified field names to their field types.
     field_type_mappings: HashMap<String, String>,
 
     /// All unique names of scalar types in the schema.
@@ -116,7 +175,7 @@ pub struct ParsedGraphQLSchema {
     /// A mapping of fully qualified field names to their respective optionalities.
     field_type_optionality: HashMap<String, bool>,
 
-    /// The parsed schema.
+    /// The parsed schema AST.
     ast: ServiceDocument,
 
     /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
@@ -124,7 +183,7 @@ pub struct ParsedGraphQLSchema {
     // We keep the `TypeDefinition` name so that we can know what type of object the field belongs to.
     field_defs: HashMap<String, (FieldDefinition, String)>,
 
-    /// GraphQL schema content.
+    /// Raw GraphQL schema content.
     schema: GraphQLSchema,
 
     /// All unique names of foreign key types in the schema.
@@ -132,6 +191,18 @@ pub struct ParsedGraphQLSchema {
 
     /// All type definitions in the schema.
     type_defs: HashMap<String, TypeDefinition>,
+
+    /// `FieldDefinition` names in the GraphQL that are a `List` type.
+    list_field_types: HashSet<String>,
+
+    /// `TypeDefinition`s that contain a `FieldDefinition` which is a `List` type.
+    list_type_defs: HashMap<String, TypeDefinition>,
+
+    /// Metadata related to many-to-many relationships in the GraphQL schema.
+    ///
+    /// Many-to-many (m2m) relationships are created when a `FieldDefinition` contains a
+    /// list type, whose inner content type is a foreign key reference to another `TypeDefinition`.
+    join_table_meta: HashMap<String, JoinTableMeta>,
 }
 
 impl Default for ParsedGraphQLSchema {
@@ -149,7 +220,7 @@ impl Default for ParsedGraphQLSchema {
             union_names: HashSet::new(),
             objects: HashMap::new(),
             virtual_type_names: HashSet::new(),
-            parsed_type_names: HashSet::new(),
+            parsed_typedef_names: HashSet::new(),
             field_type_mappings: HashMap::new(),
             object_field_mappings: HashMap::new(),
             scalar_names: HashSet::new(),
@@ -159,6 +230,10 @@ impl Default for ParsedGraphQLSchema {
             type_defs: HashMap::new(),
             ast,
             schema: GraphQLSchema::default(),
+            list_field_types: HashSet::new(),
+            list_type_defs: HashMap::new(),
+            unions: HashMap::new(),
+            join_table_meta: HashMap::new(),
         }
     }
 }
@@ -177,7 +252,7 @@ impl ParsedGraphQLSchema {
         type_names.extend(scalar_names.clone());
 
         let mut object_field_mappings = HashMap::new();
-        let mut parsed_type_names = HashSet::new();
+        let mut parsed_typedef_names = HashSet::new();
         let mut enum_names = HashSet::new();
         let mut union_names = HashSet::new();
         let mut virtual_type_names = HashSet::new();
@@ -188,6 +263,10 @@ impl ParsedGraphQLSchema {
         let mut foreign_key_mappings: HashMap<String, HashMap<String, (String, String)>> =
             HashMap::new();
         let mut type_defs = HashMap::new();
+        let mut list_field_types = HashSet::new();
+        let mut list_type_defs = HashMap::new();
+        let mut unions = HashMap::new();
+        let mut join_table_meta = HashMap::new();
 
         // Parse _everything_ in the GraphQL schema
         if let Some(schema) = schema {
@@ -203,12 +282,21 @@ impl ParsedGraphQLSchema {
 
                             type_defs.insert(obj_name.clone(), t.node.clone());
                             objects.insert(obj_name.clone(), o.clone());
-                            parsed_type_names.insert(t.node.name.to_string());
+                            parsed_typedef_names.insert(t.node.name.to_string());
 
                             let mut field_mapping = BTreeMap::new();
                             for field in &o.fields {
                                 let field_name = field.node.name.to_string();
+                                let field_typ_name = field.node.ty.to_string();
                                 let fid = field_id(&obj_name, &field_name);
+
+                                if is_list_type(&field.node) {
+                                    list_field_types
+                                        .insert(field_typ_name.replace('!', ""));
+
+                                    list_type_defs
+                                        .insert(obj_name.clone(), t.node.clone());
+                                }
 
                                 let is_virtual = field
                                     .node
@@ -221,16 +309,23 @@ impl ParsedGraphQLSchema {
                                 }
 
                                 // Manual version of `ParsedGraphQLSchema::is_possible_foreign_key`
-                                if parsed_type_names
-                                    .contains(&field.node.ty.to_string().replace('!', ""))
-                                    && !scalar_names.contains(&field_name)
-                                    && !enum_names.contains(&field_name)
+                                let ftype = field_type_name(&field.node);
+                                if parsed_typedef_names
+                                    .contains(&field_type_name(&field.node))
+                                    && !scalar_names.contains(&ftype)
+                                    && !enum_names.contains(&ftype)
+                                    && !virtual_type_names.contains(&ftype)
                                 {
-                                    let (_ref_coltype, ref_colname, _ref_tablename) =
+                                    let (_ref_coltype, ref_colname, ref_tablename) =
                                         extract_foreign_key_info(
                                             &field.node,
                                             &field_type_mappings,
                                         );
+
+                                    join_table_meta.insert(
+                                        obj_name.clone(),
+                                        JoinTableMeta::new(&obj_name, &ref_tablename),
+                                    );
 
                                     let fk = foreign_key_mappings
                                         .get_mut(&t.node.name.to_string().to_lowercase());
@@ -239,11 +334,7 @@ impl ParsedGraphQLSchema {
                                             fks_for_field.insert(
                                                 field.node.name.to_string(),
                                                 (
-                                                    field
-                                                        .node
-                                                        .ty
-                                                        .to_string()
-                                                        .replace('!', "")
+                                                    field_type_name(&field.node)
                                                         .to_lowercase(),
                                                     ref_colname.clone(),
                                                 ),
@@ -253,11 +344,7 @@ impl ParsedGraphQLSchema {
                                             let fks_for_field = HashMap::from([(
                                                 field.node.name.to_string(),
                                                 (
-                                                    field
-                                                        .node
-                                                        .ty
-                                                        .to_string()
-                                                        .replace('!', "")
+                                                    field_type_name(&field.node)
                                                         .to_lowercase(),
                                                     ref_colname.clone(),
                                                 ),
@@ -270,10 +357,9 @@ impl ParsedGraphQLSchema {
                                     }
                                 }
 
-                                let field_typ_name =
-                                    field.node.ty.to_string().replace('!', "");
+                                let field_typ_name = field_type_name(&field.node);
 
-                                parsed_type_names.insert(field_name.clone());
+                                parsed_typedef_names.insert(field_name.clone());
                                 field_mapping.insert(field_name, field_typ_name.clone());
                                 field_type_optionality
                                     .insert(fid.clone(), field.node.ty.node.nullable);
@@ -303,8 +389,9 @@ impl ParsedGraphQLSchema {
                         TypeKind::Union(u) => {
                             let union_name = t.node.name.to_string();
 
-                            parsed_type_names.insert(union_name.clone());
+                            parsed_typedef_names.insert(union_name.clone());
                             type_defs.insert(union_name.clone(), t.node.clone());
+                            unions.insert(union_name.clone(), t.node.clone());
 
                             union_names.insert(union_name.clone());
 
@@ -333,17 +420,15 @@ impl ParsedGraphQLSchema {
                                         (f.node.clone(), member_name.clone()),
                                     );
 
-                                    field_type_mappings.insert(
-                                        fid.clone(),
-                                        f.node.ty.to_string().replace('!', ""),
-                                    );
+                                    field_type_mappings
+                                        .insert(fid.clone(), field_type_name(&f.node));
 
                                     object_field_mappings
                                         .entry(union_name.clone())
                                         .or_insert_with(BTreeMap::new)
                                         .insert(
                                             f.node.name.to_string(),
-                                            f.node.ty.to_string().replace('!', ""),
+                                            field_type_name(&f.node),
                                         );
 
                                     field_type_optionality
@@ -371,64 +456,126 @@ impl ParsedGraphQLSchema {
             object_field_mappings,
             enum_names,
             virtual_type_names,
-            parsed_type_names,
+            parsed_typedef_names,
             field_type_mappings,
             scalar_names,
             field_type_optionality,
             schema: schema.cloned().unwrap(),
             ast,
             type_defs,
+            list_field_types,
+            list_type_defs,
+            unions,
+            join_table_meta,
         })
     }
 
+    /// Namespace of the indexer.
     pub fn namespace(&self) -> &str {
         &self.namespace
     }
 
+    /// Identifier of the indexer.
     pub fn identifier(&self) -> &str {
         &self.identifier
     }
 
+    /// Indexer method of execution.
     pub fn exec_source(&self) -> &ExecutionSource {
         &self.exec_source
     }
 
+    /// Mapping of object names to objects.    
     pub fn objects(&self) -> &HashMap<String, ObjectType> {
         &self.objects
     }
 
+    /// Mapping of fully qualified field names to their field types.
     pub fn field_type_mappings(&self) -> &HashMap<String, String> {
         &self.field_type_mappings
     }
 
+    /// A mapping of fully qualified field names to their respective optionalities.
     pub fn field_type_optionality(&self) -> &HashMap<String, bool> {
         &self.field_type_optionality
     }
 
+    /// The parsed schema AST.
     pub fn ast(&self) -> &ServiceDocument {
         &self.ast
     }
 
+    /// Raw GraphQL schema content.
     pub fn schema(&self) -> &GraphQLSchema {
         &self.schema
     }
 
+    /// All type definitions in the schema.
     pub fn type_defs(&self) -> &HashMap<String, TypeDefinition> {
         &self.type_defs
     }
 
+    /// Mapping of fully qualified field names to their `FieldDefinition` and `TypeDefinition` name.
     pub fn field_defs(&self) -> &HashMap<String, (FieldDefinition, String)> {
         &self.field_defs
     }
 
+    /// All unique names of foreign key types in the schema.
     pub fn foreign_key_mappings(
         &self,
     ) -> &HashMap<String, HashMap<String, (String, String)>> {
         &self.foreign_key_mappings
     }
 
+    /// All objects and their field names and types, indexed by object name.
     pub fn object_field_mappings(&self) -> &HashMap<String, BTreeMap<String, String>> {
         &self.object_field_mappings
+    }
+
+    /// Metadata related to many-to-many relationships in the GraphQL schema.
+    pub fn join_table_meta(&self) -> &HashMap<String, JoinTableMeta> {
+        &self.join_table_meta
+    }
+
+    /// Return the base scalar type for a given `FieldDefinition`.
+    pub fn scalar_type_for(&self, f: &FieldDefinition) -> String {
+        let typ_name = list_field_type_name(f);
+        if self.is_list_field_type(&typ_name) {
+            let typ_name = field_type_name(f);
+            if self.is_possible_foreign_key(&typ_name) {
+                let (ref_coltype, _ref_colname, _ref_tablename) =
+                    extract_foreign_key_info(f, &self.field_type_mappings);
+
+                return ref_coltype;
+            } else if self.is_virtual_typedef(&typ_name) {
+                return "Virtual".to_string();
+            } else if self.is_enum_typedef(&typ_name) {
+                return "Charfield".to_string();
+            } else {
+                return typ_name;
+            }
+        }
+
+        if self.is_possible_foreign_key(&typ_name) {
+            let (ref_coltype, _ref_colname, _ref_tablename) =
+                extract_foreign_key_info(f, &self.field_type_mappings);
+            return ref_coltype;
+        }
+
+        if self.is_virtual_typedef(&typ_name) {
+            return "Virtual".to_string();
+        }
+
+        if self.is_enum_typedef(&typ_name) {
+            return "Charfield".to_string();
+        }
+
+        typ_name
+    }
+
+    /// Return the `TypeDefinition` associated with a given union name.
+    pub fn get_union(&self, name: &str) -> Option<&TypeDefinition> {
+        self.unions.get(name)
     }
 
     /// Return a list of all non-enum type definitions.
@@ -441,7 +588,7 @@ impl ParsedGraphQLSchema {
 
     /// Whether the given field type name is a possible foreign key.
     pub fn is_possible_foreign_key(&self, name: &str) -> bool {
-        self.parsed_type_names.contains(name)
+        self.parsed_typedef_names.contains(name)
             && !self.scalar_names.contains(name)
             && !self.is_enum_typedef(name)
             && !self.is_virtual_typedef(name)
@@ -457,6 +604,16 @@ impl ParsedGraphQLSchema {
         self.enum_names.contains(name)
     }
 
+    /// Whether the given field type name is a list type.
+    pub fn is_list_field_type(&self, name: &str) -> bool {
+        self.list_field_types.contains(name)
+    }
+
+    /// Whether a given `TypeDefinition` contains a field that is a list type.
+    pub fn is_list_typedef(&self, name: &str) -> bool {
+        self.list_type_defs.contains_key(name)
+    }
+
     /// Whether the given field type name is a union type.
     pub fn is_union_typedef(&self, name: &str) -> bool {
         self.union_names.contains(name)
@@ -464,11 +621,11 @@ impl ParsedGraphQLSchema {
 
     /// Return the GraphQL type for a given field name.
     pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
-        match self.object_field_mappings.get(cond) {
+        match self.object_field_mappings().get(cond) {
             Some(fieldset) => fieldset.get(name),
             _ => {
-                let tablename = cond.replace('!', "");
-                match self.object_field_mappings.get(&tablename) {
+                let tablename = cond.replace(['[', ']', '!'], "");
+                match self.object_field_mappings().get(&tablename) {
                     Some(fieldset) => fieldset.get(name),
                     _ => None,
                 }

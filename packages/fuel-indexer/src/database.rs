@@ -31,9 +31,7 @@ fn is_id_only_upsert(columns: &[String]) -> bool {
 
 impl Database {
     /// Create a new `Database`.
-    pub async fn new(conn_uri: &str) -> IndexerResult<Database> {
-        let pool = IndexerConnectionPool::connect(conn_uri).await?;
-
+    pub async fn new(pool: IndexerConnectionPool) -> IndexerResult<Database> {
         Ok(Database {
             pool,
             stashed: None,

@@ -28,6 +28,7 @@ type BlockEntity {
     timestamp: Int8!
 }
 
+
 type TxEntity {
     id: ID!
     block: BlockEntity!
@@ -304,3 +305,21 @@ type VirtualUnionContainerEntity {
     union_entity: VirtualUnionEntity
     union_type: UnionType!
 }
+
+
+type ListFKType {
+    id: ID!
+    value: UInt8!
+}
+
+type ListTypeEntity {
+    id: ID!
+    foo: Charfield!
+    required_all: [ListFKType!]!
+    optional_inner: [Charfield]!
+    optional_outer: [UInt8!]
+    optional_all: [UInt8]
+    virtual_optional_inner: [VirtualEntity]!
+    enum_required_all: [EnumEntity!]!
+}
+

@@ -1,4 +1,4 @@
-//! # fuel-indexer-lib
+//! # fuel_indexer_lib
 //!
 //! A collection of utilities used by the various `fuel-indexer-*` crates.
 
@@ -14,6 +14,8 @@ pub mod graphql;
 use proc_macro2::TokenStream;
 use quote::quote;
 use sha2::{Digest, Sha256};
+
+pub const MAX_ARRAY_LENGTH: usize = 1000;
 
 /// The source of execution for the indexer.
 #[derive(Default, Clone, Debug)]

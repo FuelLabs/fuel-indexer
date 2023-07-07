@@ -333,6 +333,7 @@ pub async fn list_column_by_id(
                 let graphql_type: String = row.get(6);
                 let unique: bool = row.get(7);
                 let persistence: String = row.get(8);
+                let array_coltype: Option<String> = row.get(9);
 
                 Column {
                     id,
@@ -345,6 +346,7 @@ pub async fn list_column_by_id(
                     unique,
                     persistence: Persistence::from_str(persistence.as_str())
                         .expect("Bad persistence."),
+                    array_coltype: array_coltype.map(|t| ColumnType::from(t.as_str())),
                 }
             })
             .collect::<Vec<Column>>(),

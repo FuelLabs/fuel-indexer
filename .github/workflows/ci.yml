@@ -243,8 +243,7 @@ jobs:
         run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
 
   cargo-test-forc-index-plugins:
-    # if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
-    if: false
+    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
     needs:
       - cargo-toml-fmt-check
       - check-is-semver-branch
@@ -275,6 +274,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
 
       - name: Docker meta
         id: meta

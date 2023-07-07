@@ -8,5 +8,5 @@ publish = false
 clap = { features = ["cargo", "derive", "env"], workspace = true }
 fuel-indexer-tests = { version = "0.0.0", path = "./../../../fuel-indexer-tests" }
 fuel-types = { workspace = true }
-fuels = { features = ["fuel-core-lib"], workspace = true }
+fuels = { default-features = true, workspace = true }
 tokio = { features = ["macros", "rt-multi-thread"], workspace = true }

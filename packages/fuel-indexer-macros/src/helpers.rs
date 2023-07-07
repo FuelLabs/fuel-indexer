@@ -1,56 +1,20 @@
 use std::collections::HashSet;
 
 use crate::constants::*;
-use async_graphql_parser::types::{BaseType, FieldDefinition, Type, UnionType};
+use async_graphql_parser::types::{BaseType, FieldDefinition, Type};
 use async_graphql_value::Name;
 use fuel_abi_types::abi::program::{ProgramABI, TypeDeclaration};
-use fuel_indexer_lib::{
-    graphql::{extract_foreign_key_info, types::IdCol, ParsedGraphQLSchema},
-    ExecutionSource,
+use fuel_indexer_lib::graphql::{
+    list_field_type_name, types::IdCol, ParsedGraphQLSchema,
 };
 use fuels_code_gen::utils::Source;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
-/// Parameters for generating traits for different `TypeKind` variants.
-pub enum ImplNewParameters {
-    ObjectType {
-        strct: Ident,
-        parameters: proc_macro2::TokenStream,
-        hasher: proc_macro2::TokenStream,
-        object_name: String,
-        struct_fields: proc_macro2::TokenStream,
-        exec_source: ExecutionSource,
-        field_set: HashSet<String>,
-    },
-    // This is actually used, but it's implemented in a `TokenStream` which prevents
-    // `clippy` from being able to find it, so ignore this lint.
-    #[allow(unused)]
-    UnionType {
-        schema: ParsedGraphQLSchema,
-        union_obj: UnionType,
-        union_ident: Ident,
-        union_field_set: HashSet<String>,
-    },
-}
-
-/// Provides a TokenStream to be used as a conversion to bytes
-/// for external types; this is done because traits cannot be
-/// implemented on external types due to the orphan rule.
-pub fn to_bytes_method_for_external_type(
-    field_type_name: &str,
-) -> proc_macro2::TokenStream {
-    match field_type_name {
-        "Identity" => quote! { .0 },
-        "Tai64Timestamp" => quote! { .0.to_le_bytes() },
-        _ => panic!("From<{field_type_name}> not implemented for AsRef<u8>."),
-    }
-}
-
-/// Provides a TokenStream to be used for unwrapping `Option`s
-/// for external types; this is done because traits cannot be
-/// implemented on external types due to the orphan rule.
+/// Provides a TokenStream to be used for unwrapping `Option`s for external types.
+///
+/// This is done because traits cannot be implemented on external types due to the orphan rule.
 pub fn unwrap_or_default_for_external_type(
     field_type_name: &str,
 ) -> proc_macro2::TokenStream {
@@ -71,7 +35,7 @@ pub fn unwrap_or_default_for_external_type(
     }
 }
 
-/// If TypeDeclaration is tuple type
+/// Whether or not a `TypeDeclaration` is tuple type
 pub fn is_tuple_type(typ: &TypeDeclaration) -> bool {
     typ.type_field.as_str().starts_with('(')
 }
@@ -116,10 +80,7 @@ pub fn get_json_abi(abi_path: Option<String>) -> Option<ProgramABI> {
 
 /// Whether this TypeDeclaration should be used in the codgen
 pub fn is_ignored_type(typ: &TypeDeclaration) -> bool {
-    if is_tuple_type(typ) {
-        return true;
-    }
-    false
+    is_tuple_type(typ)
 }
 
 /// Whether the TypeDeclaration should be used to build struct fields and decoders
@@ -306,355 +267,299 @@ pub fn const_item(id: &str, value: &str) -> proc_macro2::TokenStream {
 
 /// Generate tokens for retrieving necessary indexer data through FFI.
 pub fn field_extractor(
-    schema: &ParsedGraphQLSchema,
     field_name: proc_macro2::Ident,
-    mut field_type: proc_macro2::Ident,
-    is_nullable: bool,
+    processed_type: ProcessedFieldType,
 ) -> proc_macro2::TokenStream {
-    let type_name = field_type.to_string();
-    if schema.is_enum_typedef(&type_name) {
-        field_type = format_ident! {"UInt1"};
-    }
+    let ProcessedFieldType {
+        field_type_ident,
+        base_type,
+        inner_type_ident,
+        nullable,
+        inner_nullable,
+        ..
+    } = processed_type;
 
-    if is_nullable {
-        quote! {
-            let item = vec.pop().expect("Missing item in row.");
-            let #field_name = match item {
-                FtColumn::#field_type(t) => t,
-                _ => panic!("Invalid nullable column type: {:?}.", item),
-            };
-        }
-    } else {
-        quote! {
-            let item = vec.pop().expect("Missing item in row.");
-            let #field_name = match item {
-                FtColumn::#field_type(t) => match t {
-                    Some(inner_type) => { inner_type },
-                    None => {
-                        panic!("Non-nullable type is returning a None value.")
-                    }
-                },
-                _ => panic!("Invalid non-nullable column type: {:?}.", item),
-            };
-        }
-    }
-}
+    let item_popper = quote! { let item = vec.pop().expect("Missing item in row."); };
 
-/// Construct a `::new()` method for a particular struct; `::new()`
-/// will automatically create an ID for the user for use in a database.
-pub fn generate_struct_new_method_impl(
-    ident: Ident,
-    parameters: proc_macro2::TokenStream,
-    hasher: proc_macro2::TokenStream,
-    typedef_name: String,
-    struct_fields: proc_macro2::TokenStream,
-    exec_source: ExecutionSource,
-) -> proc_macro2::TokenStream {
-    let get_or_create_impl = match exec_source {
-        ExecutionSource::Native => {
-            quote! {
-                pub async fn get_or_create(self) -> Self {
-                    match Self::load(self.id).await {
-                        Some(instance) => instance,
-                        None => self,
-                    }
+    let field_extractor = match base_type {
+        FieldBaseType::Named => {
+            if nullable {
+                quote! {
+                    let #field_name = match item {
+                        FtColumn::#field_type_ident(t) => t,
+                        _ => panic!("Invalid nullable column type: {:?}.", item),
+                    };
+                }
+            } else {
+                quote! {
+                    let #field_name = match item {
+                        FtColumn::#field_type_ident(t) => match t {
+                            Some(inner_type) => { inner_type },
+                            None => {
+                                panic!("Non-nullable type is returning a None value.")
+                            }
+                        },
+                        _ => panic!("Invalid column type: {:?}.", item),
+                    };
                 }
             }
         }
-        ExecutionSource::Wasm => {
-            quote! {
-                pub fn get_or_create(self) -> Self {
-                    match Self::load(self.id) {
-                        Some(instance) => instance,
-                        None => self,
-                    }
+        FieldBaseType::List => {
+            // Nullable list of nullable elements: [Entity]
+            if nullable && inner_nullable {
+                quote! {
+                    let #field_name = match item {
+                        FtColumn::#field_type_ident(list) => match list {
+                            Some(list) => {
+                                let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
+                                    FtColumn::#inner_type_ident(t) => t,
+                                    _ => panic!("Invalid column type: {:?}.", item),
+                                }).collect::<Vec<_>>();
+                                Some(unwrapped_list)
+                            }
+                            None => None,
+                        },
+                        _ => panic!("Invalid column type: {:?}.", item),
+                    };
+                }
+            // Nullable list of non-nullable elements: [Entity!]
+            } else if nullable && !inner_nullable {
+                quote! {
+                    let #field_name = match item {
+                        FtColumn::#field_type_ident(nullable_list) => match nullable_list {
+                            Some(list) => {
+                                let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
+                                    FtColumn::#inner_type_ident(t) => match t {
+                                        Some(inner_type) => inner_type,
+                                        None => panic!("Non-nullable inner type of list is returning a None value."),
+                                    },
+                                    _ => panic!("Invalid column type: {:?}.", item),
+                                }).collect::<Vec<_>>();
+                                Some(unwrapped_list)
+                            }
+                            None => None,
+                        },
+                        _ => panic!("Invalid column type: {:?}.", item),
+                    };
+                }
+
+            // Non-nullable list of nullable elements: [Entity]!
+            } else if !nullable && inner_nullable {
+                quote! {
+                    let #field_name = match item {
+                        FtColumn::#field_type_ident(list) => match list {
+                            Some(list) => {
+                                let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
+                                    FtColumn::#inner_type_ident(t) => t, // will return Option<T>
+                                    _ => panic!("Invalid column type: {:?}.", item),
+                                }).collect::<Vec<_>>();
+                                unwrapped_list
+                            }
+                            None => panic!("Non-nullable type is returning a None value."),
+                        }
+                        _ => panic!("Invalid column type: {:?}.", item),
+                    };
+                }
+            // Non-nullable list of non-nullable elements: [Entity!]!
+            } else {
+                quote! {
+                    let #field_name = match item {
+                        FtColumn::#field_type_ident(list) => match list {
+                            Some(list) => {
+                                let unwrapped_list: Vec<_> = list.into_iter().map(|item| match item {
+                                    FtColumn::#inner_type_ident(t) => t.expect("Inner type should not be null."),
+                                    _ => panic!("Invalid column type: {:?}.", item),
+                                }).collect::<Vec<_>>();
+                                unwrapped_list
+                            }
+                            None => panic!("Non-nullable type is returning a None value."),
+                        }
+                        _ => panic!("Invalid column type: {:?}.", item),
+                    };
                 }
             }
         }
     };
 
-    if !INTERNAL_INDEXER_ENTITIES.contains(typedef_name.as_str()) {
-        quote! {
-            impl #ident {
-                pub fn new(#parameters) -> Self {
-                    let raw_bytes = #hasher.chain_update(#typedef_name).finalize();
-                    // let raw_bytes: [u8; 16] = [0u8; 16];
-
-                    let id_bytes = <[u8; 8]>::try_from(&raw_bytes[..8]).expect("Could not calculate bytes for ID from struct fields");
-
-                    let id = u64::from_le_bytes(id_bytes);
-
-                    Self {
-                        id,
-                        #struct_fields
-                    }
-                }
-
-                #get_or_create_impl
-            }
-        }
-    } else {
-        quote! {}
+    quote! {
+        #item_popper
+        #field_extractor
     }
 }
 
-/// Generate `From` trait implementations for each member type in a union.
-pub fn generate_from_traits_for_union(
-    schema: &ParsedGraphQLSchema,
-    union_obj: &UnionType,
-    union_ident: Ident,
-    union_field_set: HashSet<String>,
-) -> proc_macro2::TokenStream {
-    let mut from_method_impls = quote! {};
-    for m in union_obj.members.iter() {
-        let member_ident = format_ident!("{}", m.to_string());
+/// The result of a call to `helpers::process_typedef_field`.
+pub struct ProcessedTypedefField {
+    /// The `Ident` for the processed `FieldDefinition`'s name.
+    pub field_name_ident: proc_macro2::Ident,
 
-        let member_fields = schema
-            .object_field_mappings
-            .get(&m.to_string())
-            .unwrap_or_else(|| {
-                panic!(
-                "Could not get field mappings for union member; union: {}, member: {}",
-                union_ident,
-                m
-            )
-            })
-            .keys()
-            .fold(HashSet::new(), |mut set, f| {
-                set.insert(f.clone());
-                set
-            });
+    /// The tokens for the processed `FieldDefinition`'s extractor.
+    ///
+    /// This is used in `T::from_row` where `T: Entity`.
+    pub extractor: proc_macro2::TokenStream,
 
-        // Member fields that match with union fields are checked for optionality
-        // and are assigned accordingly.
-        let common_fields = union_field_set.intersection(&member_fields).fold(
-            quote! {},
-            |acc, common_field| {
-                let ident = format_ident!("{}", common_field);
-                if common_field == &IdCol::to_lowercase_string() {
-                    quote! {
-                        #acc
-                        #ident: member.#ident,
-                    }
-                } else if let Some(field_already_option) = schema
-                    .field_type_optionality()
-                    .get(&format!("{m}.{common_field}"))
-                {
-                    if *field_already_option {
-                        quote! {
-                            #acc
-                            #ident: member.#ident,
-                        }
-                    } else {
-                        quote! {
-                            #acc
-                            #ident: Some(member.#ident),
-                        }
-                    }
-                } else {
-                    quote! { #acc }
-                }
-            },
-        );
-
-        // Any member fields that don't have a match with union fields should be assigned to None.
-        let disjoint_fields = union_field_set.difference(&member_fields).fold(
-            quote! {},
-            |acc, disjoint_field| {
-                let ident = format_ident!("{}", disjoint_field);
-                quote! {
-                    #acc
-                    #ident: None,
-                }
-            },
-        );
-
-        from_method_impls = quote! {
-            #from_method_impls
-
-            impl From<#member_ident> for #union_ident {
-                fn from(member: #member_ident) -> Self {
-                    Self {
-                        #common_fields
-                        #disjoint_fields
-                    }
-                }
-            }
-        };
-    }
-
-    from_method_impls
-}
-
-/// Type of special fields in GraphQL schema.
-#[derive(Debug, Clone)]
-pub enum FieldKind {
-    ForeignKey,
-    Enum,
-    Virtual,
-    Union,
-    Regular,
+    /// The result of a call to `helpers::process_type`.
+    pub processed_type_result: ProcessedFieldType,
 }
 
 /// Process an object's field and return a group of tokens.
-///
-/// This group of tokens include:
-///     - The field's type tokens.
-///     - The field's name as an Ident.
-///     - The field's type as an Ident.
-///     - The field's row extractor tokens.
 pub fn process_typedef_field(
     parsed: &ParsedGraphQLSchema,
     mut field_def: FieldDefinition,
-) -> (
-    proc_macro2::TokenStream,
-    proc_macro2::Ident,
-    proc_macro2::Ident,
-    proc_macro2::TokenStream,
-) {
+) -> ProcessedTypedefField {
     let field_name = field_def.name.to_string();
-    let (typ_tokens, field_type_ident) = process_type(parsed, &field_def.ty.node);
-    let fieldkind = field_kind(&field_type_ident.to_string().replace('!', ""), parsed);
+    let processed_type_result = process_type(parsed, &field_def);
+    let ProcessedFieldType {
+        inner_nullable,
+        nullable,
+        ..
+    } = processed_type_result;
 
-    match fieldkind {
-        FieldKind::ForeignKey => {
-            let (ref_coltype, _ref_colname, _ref_tablename) =
-                extract_foreign_key_info(&field_def, parsed.field_type_mappings());
+    let field_name_ident = format_ident! {"{field_name}"};
+    let field_typ_name = &parsed.scalar_type_for(&field_def);
 
-            let field_typ_name = nullable_field_type_name(&field_def, &ref_coltype);
-
-            // We're manually updated the field type here because we need to substitute the field name
-            // into a scalar type name.
-            field_def.ty.node = Type {
+    if parsed.is_list_field_type(&list_field_type_name(&field_def)) {
+        field_def.ty.node = Type {
+            base: BaseType::List(Box::new(Type {
                 base: BaseType::Named(Name::new(field_typ_name)),
-                nullable: field_def.ty.node.nullable,
-            };
-
-            process_typedef_field(parsed, field_def)
-        }
-        FieldKind::Enum => {
-            field_def.ty.node = Type {
-                base: BaseType::Named(Name::new("Charfield")),
-                nullable: field_def.ty.node.nullable,
-            };
-            process_typedef_field(parsed, field_def)
-        }
-        FieldKind::Virtual => {
-            let field_typ_name = nullable_field_type_name(&field_def, "Virtual");
-            field_def.ty.node = Type {
-                base: BaseType::Named(Name::new(field_typ_name)),
-                nullable: field_def.ty.node.nullable,
-            };
-            process_typedef_field(parsed, field_def)
-        }
-        FieldKind::Union => {
-            let field_typ_name = field_def.ty.to_string().replace('!', "");
-            match parsed.is_virtual_typedef(&field_typ_name) {
-                true => {
-                    let field_typ_name = nullable_field_type_name(&field_def, "Virtual");
-                    field_def.ty.node = Type {
-                        base: BaseType::Named(Name::new(field_typ_name)),
-                        nullable: field_def.ty.node.nullable,
-                    };
-                    process_typedef_field(parsed, field_def)
-                }
-                false => match parsed.is_possible_foreign_key(&field_typ_name) {
-                    true => {
-                        // Determine implicit vs explicit FK
-                        let (ref_coltype, _ref_colname, _ref_tablename) =
-                            extract_foreign_key_info(
-                                &field_def,
-                                parsed.field_type_mappings(),
-                            );
-
-                        let field_typ_name =
-                            nullable_field_type_name(&field_def, &ref_coltype);
-                        field_def.ty.node = Type {
-                            base: BaseType::Named(Name::new(field_typ_name)),
-                            nullable: field_def.ty.node.nullable,
-                        };
-
-                        process_typedef_field(parsed, field_def)
-                    }
-                    false => process_typedef_field(parsed, field_def),
-                },
-            }
-        }
-        _ => {
-            let name_ident = format_ident! {"{field_name}"};
-            let extractor = field_extractor(
-                parsed,
-                name_ident.clone(),
-                field_type_ident.clone(),
-                field_def.ty.node.nullable,
-            );
-
-            (typ_tokens, name_ident, field_type_ident, extractor)
-        }
+                nullable: inner_nullable,
+            })),
+            nullable,
+        };
+    } else {
+        field_def.ty.node = Type {
+            base: BaseType::Named(Name::new(field_typ_name)),
+            nullable,
+        };
     }
+
+    let extractor =
+        field_extractor(field_name_ident.clone(), processed_type_result.clone());
+
+    ProcessedTypedefField {
+        field_name_ident,
+        extractor,
+        processed_type_result,
+    }
+}
+
+/// Process a named field into its type tokens, and the Ident for those type tokens.
+#[derive(Debug, Clone)]
+pub struct ProcessedFieldType {
+    /// The tokens for the processed `FieldDefinition`'s type.
+    pub field_type_tokens: proc_macro2::TokenStream,
+
+    /// The `Ident` for the processed `FieldDefinition`'s type.
+    pub field_type_ident: proc_macro2::Ident,
+
+    /// The `Ident` for the processed `FieldDefinition`'s inner type.
+    ///
+    /// Only used when processing a `FieldDefinition` whose type is a GraphQL list type.
+    pub inner_type_ident: Option<proc_macro2::Ident>,
+
+    /// Whether or not the processed `FieldDefinition`'s type is nullable.
+    pub nullable: bool,
+
+    /// Whether or not the processed `FieldDefinition`'s inner type is nullable.
+    ///
+    /// Only used when processing a `FieldDefinition` whose type is a GraphQL list type.
+    pub inner_nullable: bool,
+
+    /// The base type of the processed `FieldDefinition`.
+    pub base_type: FieldBaseType,
+}
+
+/// The base type of a `FieldDefinition`.
+#[derive(Debug, Clone)]
+pub enum FieldBaseType {
+    /// The named (or non-list) type.
+    Named,
+
+    /// A list type.
+    List,
 }
 
 /// Process a named type into its type tokens, and the Ident for those type tokens.
 pub fn process_type(
-    schema: &ParsedGraphQLSchema,
-    typ: &Type,
-) -> (proc_macro2::TokenStream, proc_macro2::Ident) {
+    parsed: &ParsedGraphQLSchema,
+    f: &FieldDefinition,
+) -> ProcessedFieldType {
+    let typ = &f.ty.node;
     match &typ.base {
         BaseType::Named(t) => {
             // A `TypeDefinition` name and a given `FieldDefinition` name can be the same,
             // but when using FKs, the `FieldDefinition` type name will include a `!` token
             // if the field is required.
-            let mut name = t.to_string();
-            if name.ends_with('!') {
-                name.pop();
-            }
-            if !schema.has_type(&name) {
+            let name = t.to_string().replace('!', "");
+            if !parsed.has_type(&name) {
                 panic!("Type '{name}' is not defined in the schema.");
             }
 
-            let name = format_ident! {"{}", name};
-
-            if typ.nullable {
-                (quote! { Option<#name> }, name)
+            let field_type_name = parsed.scalar_type_for(f);
+            let field_type_ident = format_ident! {"{field_type_name}"};
+            let field_type_tokens = if typ.nullable {
+                quote! { Option<#field_type_ident> }
             } else {
-                (quote! { #name }, name)
+                quote! { #field_type_ident }
+            };
+
+            ProcessedFieldType {
+                field_type_ident,
+                field_type_tokens,
+                base_type: FieldBaseType::Named,
+                nullable: typ.nullable,
+                inner_nullable: false,
+                inner_type_ident: None,
             }
         }
-        BaseType::List(_t) => panic!("Got a list type, we don't handle this yet..."),
-    }
-}
 
-/// Return `FieldKind` for a given `FieldDefinition` within the context of a
-/// particularly parsed GraphQL schema.
-pub fn field_kind(field_typ_name: &str, parser: &ParsedGraphQLSchema) -> FieldKind {
-    if parser.is_union_typedef(field_typ_name)
-        && !parser.is_possible_foreign_key(field_typ_name)
-    {
-        return FieldKind::Union;
-    }
+        BaseType::List(t) => {
+            let name = t.to_string().replace('!', "");
+            if !parsed.has_type(&name) {
+                panic!("List type '{name}' is not defined in the schema.");
+            }
 
-    if parser.is_possible_foreign_key(field_typ_name) {
-        return FieldKind::ForeignKey;
-    }
+            let field_type_name = parsed.scalar_type_for(f);
+            let inner_ident = format_ident! {"{field_type_name}"};
 
-    if parser.is_enum_typedef(field_typ_name) {
-        return FieldKind::Enum;
-    }
+            let field_type_tokens = {
+                if typ.nullable && t.nullable {
+                    quote! { Option<Vec<Option<#inner_ident>>> }
+                } else if typ.nullable && !t.nullable {
+                    quote! { Option<Vec<#inner_ident>> }
+                } else if !typ.nullable && t.nullable {
+                    quote! { Vec<Option<#inner_ident>> }
+                } else {
+                    quote! { Vec<#inner_ident> }
+                }
+            };
 
-    if parser.is_virtual_typedef(field_typ_name) {
-        return FieldKind::Virtual;
+            ProcessedFieldType {
+                field_type_ident: format_ident! { "Array" },
+                field_type_tokens,
+                base_type: FieldBaseType::List,
+                nullable: typ.nullable,
+                inner_nullable: t.nullable,
+                inner_type_ident: Some(inner_ident),
+            }
+        }
     }
-
-    FieldKind::Regular
 }
 
 /// Get tokens for a field's `.clone()`.
-pub fn clone_tokens(field_typ_name: &str) -> TokenStream {
+pub fn clone_tokens(
+    field_typ_name: &str,
+    field_id: &str,
+    parsed: &ParsedGraphQLSchema,
+) -> TokenStream {
     if COPY_TYPES.contains(field_typ_name) {
-        quote! {.clone()}
-    } else {
-        quote! {}
+        return quote! {.clone()};
     }
+
+    if parsed.is_list_field_type(field_id) {
+        return quote! {.clone()};
+    }
+
+    quote! {}
 }
 
 /// Get tokens for a field's `.unwrap_or_default()`.
@@ -670,59 +575,125 @@ pub fn unwrap_or_default_tokens(field_typ_name: &str, nullabel: bool) -> TokenSt
     }
 }
 
-/// Get tokens for a field's `.to_bytes()`.
-pub fn to_bytes_tokens(field_typ_name: &str) -> TokenStream {
-    if EXTERNAL_FIELD_TYPES.contains(field_typ_name) {
-        to_bytes_method_for_external_type(field_typ_name)
-    } else if !ASREF_BYTE_TYPES.contains(field_typ_name) {
-        quote! { .to_le_bytes() }
-    } else {
-        quote! {}
+/// Get tokens for a given field type's `.to_bytes()`.
+pub fn to_bytes_tokens(
+    field_typ_name: &str,
+    processed_type_result: &ProcessedFieldType,
+) -> TokenStream {
+    let ProcessedFieldType { base_type, .. } = &processed_type_result;
+    match base_type {
+        FieldBaseType::Named => {
+            if EXTERNAL_FIELD_TYPES.contains(field_typ_name) {
+                match field_typ_name {
+                    "Identity" => quote! { .0 },
+                    "Tai64Timestamp" => quote! { .0.to_le_bytes() },
+                    _ => panic!("From<{field_typ_name}> not implemented for AsRef<u8>."),
+                }
+            } else if !ASREF_BYTE_TYPES.contains(field_typ_name) {
+                quote! { .to_le_bytes() }
+            } else {
+                quote! {}
+            }
+        }
+        FieldBaseType::List => {
+            // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1063
+            quote! {}
+        }
     }
 }
 
-/// Get tokens for hasher.
+/// Get tokens for hasher from which to derive a unique ID for this object.
 pub fn hasher_tokens(
     field_type_scalar_name: &str,
-    hasher: TokenStream,
-    field_name: &Ident,
-    clone: TokenStream,
-    unwrap_or_default: TokenStream,
-    to_bytes: TokenStream,
+    field_name: &str,
+    base_type: &FieldBaseType,
+    hasher: &TokenStream,
+    clone: &TokenStream,
+    unwrap_or_default: &TokenStream,
+    to_bytes: &TokenStream,
 ) -> Option<TokenStream> {
-    if !NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
-        return Some(
-            quote! { #hasher.chain_update(#field_name #clone #unwrap_or_default #to_bytes) },
-        );
+    match base_type {
+        FieldBaseType::Named => {
+            let ident = format_ident! {"{field_name}"};
+            if !NON_DIGESTIBLE_FIELD_TYPES.contains(field_type_scalar_name) {
+                return Some(
+                    quote! { #hasher.chain_update(#ident #clone #unwrap_or_default #to_bytes) },
+                );
+            }
+            None
+        }
+        FieldBaseType::List => None,
     }
-    None
 }
 
-/// Get tokens for parameters.
+/// Get tokens for parameters used in `::new()` function and `::get_or_create()`
+/// function/method signatures.
 pub fn parameters_tokens(
-    parameters: TokenStream,
+    parameters: &TokenStream,
     field_name: &Ident,
-    typ_tokens: TokenStream,
+    typ_tokens: &TokenStream,
 ) -> TokenStream {
-    quote! { #parameters #field_name: #typ_tokens, }
+    let ident = format_ident! {"{field_name}"};
+    quote! { #parameters #ident: #typ_tokens, }
 }
 
 /// Get tokens for a field decoder.
 pub fn field_decoder_tokens(
-    nullable: bool,
-    field_type_scalar_name: &str,
     field_name: &Ident,
-    clone: TokenStream,
+    clone: &TokenStream,
+    processed_type_result: &ProcessedFieldType,
 ) -> TokenStream {
-    let field_type_scalar_name = format_ident! {"{}", field_type_scalar_name};
-    if nullable {
-        quote! { FtColumn::#field_type_scalar_name(self.#field_name #clone), }
-    } else {
-        quote! { FtColumn::#field_type_scalar_name(Some(self.#field_name #clone)), }
+    let ProcessedFieldType {
+        field_type_ident,
+        inner_type_ident,
+        base_type,
+        nullable,
+        inner_nullable,
+        ..
+    } = &processed_type_result;
+
+    match base_type {
+        FieldBaseType::Named => {
+            if *nullable {
+                quote! { FtColumn::#field_type_ident(self.#field_name #clone), }
+            } else {
+                quote! { FtColumn::#field_type_ident(Some(self.#field_name #clone)), }
+            }
+        }
+        // `FieldBaseType::List` is pretty much similar to `FieldBaseType::Named`. The main difference is, that
+        // we need to convert each inner type `T` into a `FtColumn::T`.
+        //
+        // This prevents us from having to use `FtColumn` in struct fields.
+        FieldBaseType::List => {
+            let inner_type_ident =
+                inner_type_ident.to_owned().expect("Missing inner type.");
+            if *nullable {
+                if *inner_nullable {
+                    quote! { FtColumn::#field_type_ident(self.#field_name.as_ref().map(|items| items.iter().filter_map(|x| {
+                        if x.is_none() {
+                            return None;
+                        }
+                        Some(FtColumn::#inner_type_ident(x.to_owned()))
+                    }).collect::<Vec<FtColumn>>())), }
+                } else {
+                    quote! { FtColumn::#field_type_ident(self.#field_name.as_ref().map(|items| items.iter().map(|x| FtColumn::#inner_type_ident(Some(x.to_owned()))).collect::<Vec<FtColumn>>())), }
+                }
+            } else if *inner_nullable {
+                quote! { FtColumn::#field_type_ident(Some(self.#field_name.iter().filter_map(|x| {
+                    if x.is_none() {
+                        return None;
+                    }
+                    Some(FtColumn::#inner_type_ident(x.to_owned()))
+                }).collect::<Vec<FtColumn>>())), }
+            } else {
+                quote! { FtColumn::#field_type_ident(Some(self.#field_name.iter().map(|x| FtColumn::#inner_type_ident(Some(x.to_owned()))).collect::<Vec<FtColumn>>())), }
+            }
+        }
     }
 }
 
-/// Whether a given field is elligible for auto ID.
+/// Whether a given field is eligible for autogenerated ID, where the ID
+/// will be derived from the struct's fiels' values.
 pub fn can_derive_id(
     field_set: &HashSet<String>,
     field_name: &str,
@@ -731,13 +702,4 @@ pub fn can_derive_id(
     field_set.contains(IdCol::to_lowercase_str())
         && !INTERNAL_INDEXER_ENTITIES.contains(typedef_name)
         && field_name != IdCol::to_lowercase_str()
-}
-
-/// Return the GraphQL type with nullable suffix.
-pub fn nullable_field_type_name(f: &FieldDefinition, field_name: &str) -> String {
-    if f.ty.node.nullable {
-        format!("{field_name}!")
-    } else {
-        field_name.to_string()
-    }
 }
