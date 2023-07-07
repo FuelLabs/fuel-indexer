@@ -224,7 +224,6 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 /// it's not needed anymore, then tells WASM to deallocate.
 pub(crate) struct WasmArg<'a> {
     instance: &'a Instance,
-    store: std::sync::Arc<std::sync::Mutex<Store>>,
     ptr: u32,
     len: u32,
 }
@@ -232,28 +231,25 @@ pub(crate) struct WasmArg<'a> {
 impl<'a> WasmArg<'a> {
     #[allow(clippy::result_large_err)]
     pub fn new(
-        store: std::sync::Arc<std::sync::Mutex<Store>>,
+        store: &mut Store,
         instance: &'a Instance,
         bytes: Vec<u8>,
     ) -> IndexerResult<WasmArg<'a>> {
-        let store_ = store.clone();
-        let mut store_guard = store_.lock().unwrap();
         let alloc_fn = instance
             .exports
-            .get_typed_function::<u32, u32>(&store_guard, "alloc_fn")?;
+            .get_typed_function::<u32, u32>(store, "alloc_fn")?;
 
         let len = bytes.len() as u32;
-        let ptr = alloc_fn.call(&mut store_guard, len)?;
+        let ptr = alloc_fn.call(store, len)?;
         let range = ptr as usize..(ptr + len) as usize;
 
-        let memory = instance.exports.get_memory("memory")?.view(&store_guard);
+        let memory = instance.exports.get_memory("memory")?.view(store);
         unsafe {
             memory.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
 
         Ok(WasmArg {
             instance,
-            store,
             ptr,
             len,
         })
@@ -267,15 +263,14 @@ impl<'a> WasmArg<'a> {
         self.len
     }
 
-    pub fn drop(&mut self) {
-        let mut store_guard = self.store.lock().unwrap();
+    pub fn drop(&mut self, store: &mut Store) {
         let dealloc_fn = self
             .instance
             .exports
-            .get_typed_function::<(u32, u32), ()>(&mut store_guard, "dealloc_fn")
+            .get_typed_function::<(u32, u32), ()>(store, "dealloc_fn")
             .expect("No dealloc fn");
         dealloc_fn
-            .call(&mut store_guard, self.ptr, self.len)
+            .call(store, self.ptr, self.len)
             .expect("Dealloc failed");
     }
 }

@@ -659,7 +659,11 @@ impl<'a> Executor for WasmIndexExecutor {
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);
 
-        let mut arg = ffi::WasmArg::new(self.store.clone(), &self.instance, bytes)?;
+        let mut arg = {
+            let store = self.store.clone();
+            let mut store_guard = store.lock().unwrap();
+            ffi::WasmArg::new(&mut store_guard, &self.instance, bytes)?
+        };
 
         let fun = {
             let store = self.store.lock().unwrap();
@@ -699,7 +703,11 @@ impl<'a> Executor for WasmIndexExecutor {
             let _ = self.db.lock().await.commit_transaction().await?;
         }
 
-        arg.drop();
+        {
+            let store = self.store.clone();
+            let mut store_guard = store.lock().unwrap();
+            arg.drop(&mut store_guard);
+        }
 
         Ok(())
     }
