@@ -110,7 +110,7 @@ fn get_object_id(mem: &MemoryView, ptr: u32) -> u64 {
         .expect("Could not read object ID")
 }
 
-fn log_data(env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u32) {
+fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u32) {
     let (idx_env, store) = env.data_and_store_mut();
     let mem = idx_env.memory.expect("Memory unitialized.").view(&store);
 
@@ -182,7 +182,7 @@ fn put_object(env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
 }
 
 pub fn get_exports(env: &FunctionEnvMut<IndexEnv>) -> Exports {
-    let (idx_env, store) = env.data_and_store_mut();
+    let (idx_env, mut store) = env.data_and_store_mut();
     let mut exports = Exports::new();
 
     let f_get_obj = Function::new_typed_with_env(&mut store, &env.as_ref(), get_object);
