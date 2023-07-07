@@ -38,7 +38,7 @@ thiserror = { workspace = true }
 tokio = { features = ["macros", "rt-multi-thread", "sync", "process"], workspace = true }
 tokio-util = { workspace = true }
 tracing = { workspace = true }
-wasmer = "3.3"
+wasmer = "4"
 
 [dependencies.openssl]
 version = "0.10.52"
