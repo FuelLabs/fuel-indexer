@@ -8,7 +8,7 @@ The Fuel block explorer.
 
 ### Spin up containers
 
-Spin up containers for the Postgres indexer service backend, the indexer service.
+Spin up containers for the Postgres database server and the indexer service.
 
 > IMPORTANT: If you're on a platform using Apple Silicon, you will have to build your image locally, rather than pulling an image from the image registry. We have [an open issue](https://github.com/FuelLabs/fuel-indexer/issues/578) to add support for ARM Arch64 images.
 >
@@ -30,6 +30,10 @@ forc index deploy \
    --target-dir $PWD/../../ \
    --url http://0.0.0.0:29987
 ```
+
+### Interact
+
+Since this example does not require a smart contract, we don't need any type of interaction to trigger events.
 
 ### Validate
 
