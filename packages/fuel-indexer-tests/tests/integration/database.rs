@@ -4,9 +4,7 @@ use fuel_indexer_lib::{
     fully_qualified_namespace, graphql::GraphQLSchema, manifest::Manifest, type_id,
 };
 use fuel_indexer_schema::db::manager::SchemaManager;
-use wasmer::{imports, Instance, Module, Store, WasmerEnv};
-use wasmer_compiler_cranelift::Cranelift;
-use wasmer_engine_universal::Universal;
+use wasmer::{imports, Cranelift, Instance, Module, Store};
 
 fn compiler() -> Cranelift {
     Cranelift::default()
@@ -34,21 +32,24 @@ const TEST_COLUMNS: [(&str, i32, &str); 11] = [
 const TEST_NAMESPACE: &str = "test_namespace";
 const TEST_INDENTIFIER: &str = "simple_wasm_executor";
 
-async fn load_wasm_module(pool: IndexerConnectionPool) -> IndexerResult<Instance> {
+async fn load_wasm_module(
+    pool: IndexerConnectionPool,
+) -> IndexerResult<(Instance, Store)> {
     let compiler = compiler();
-    let store = Store::new(&Universal::new(compiler).engine());
+    let mut store = Store::new(compiler);
     let module = Module::new(&store, SIMPLE_WASM_WASM)?;
 
+    let env = wasmer::FunctionEnv::new(&mut store, IndexEnv::new(pool).await?);
+
     let mut import_object = imports! {};
-    let mut env = IndexEnv::new(pool).await?;
+    for (export_name, export) in ffi::get_exports(&mut store, &env) {
+        import_object.define("env", &export_name, export.clone());
+    }
 
-    let exports = ffi::get_exports(&env, &store);
-    import_object.register("env", exports);
+    let instance = Instance::new(&mut store, &module, &import_object)?;
+    // env.init_with_instance(&instance)?;
 
-    let instance = Instance::new(&module, &import_object)?;
-    env.init_with_instance(&instance)?;
-
-    Ok(instance)
+    Ok((instance, store))
 }
 
 #[tokio::test]
@@ -105,7 +106,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         assert_eq!(result.column_name, TEST_COLUMNS[index].2);
     }
 
-    let instance = load_wasm_module(pool.clone())
+    let (instance, mut store) = load_wasm_module(pool.clone())
         .await
         .expect("Error creating WASM module");
 
@@ -113,7 +114,9 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         .await
         .expect("Failed to create database object.");
 
-    db.load_schema(&manifest, Some(&instance))
+    let env =
+        wasmer::FunctionEnv::new(&mut store, IndexEnv::new(pool.clone()).await.unwrap());
+    db.load_schema(&manifest, Some((&mut store, env)), Some(&instance))
         .await
         .expect("Could not load db schema");
 

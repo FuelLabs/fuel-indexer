@@ -31,7 +31,6 @@ pub(crate) fn get_namespace(
     instance: &Instance,
 ) -> Result<String, FFIError> {
     let exports = &instance.exports;
-    let memory = exports.get_memory("memory")?.view(store);
 
     let ptr = exports
         .get_function("get_namespace_ptr")?
@@ -45,6 +44,7 @@ pub(crate) fn get_namespace(
         .i32()
         .ok_or_else(|| FFIError::None("get_namespace".to_string()))? as u32;
 
+    let memory = exports.get_memory("memory")?.view(store);
     let namespace = get_string(&memory, ptr, len)?;
 
     Ok(namespace)
@@ -55,7 +55,6 @@ pub(crate) fn get_identifier(
     instance: &Instance,
 ) -> Result<String, FFIError> {
     let exports = &instance.exports;
-    let memory = exports.get_memory("memory")?.view(store);
 
     let ptr = exports
         .get_function("get_identifier_ptr")?
@@ -71,6 +70,7 @@ pub(crate) fn get_identifier(
         .ok_or_else(|| FFIError::None("get_identifier".to_string()))?
         as u32;
 
+    let memory = exports.get_memory("memory")?.view(store);
     let identifier = get_string(&memory, ptr, len)?;
 
     Ok(identifier)
@@ -81,7 +81,6 @@ pub(crate) fn get_version(
     instance: &Instance,
 ) -> Result<String, FFIError> {
     let exports = &instance.exports;
-    let memory = exports.get_memory("memory")?.view(store);
 
     let ptr = exports.get_function("get_version_ptr")?.call(store, &[])?[0]
         .i32()
@@ -91,6 +90,7 @@ pub(crate) fn get_version(
         .i32()
         .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
 
+    let memory = exports.get_memory("memory")?.view(store);
     let version = get_string(&memory, ptr, len)?;
 
     Ok(version)
@@ -112,7 +112,11 @@ fn get_object_id(mem: &MemoryView, ptr: u32) -> u64 {
 
 fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u32) {
     let (idx_env, store) = env.data_and_store_mut();
-    let mem = idx_env.memory.expect("Memory unitialized.").view(&store);
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .expect("Memory unitialized.")
+        .view(&store);
 
     let log_string =
         get_string(&mem, ptr, len).expect("Log string could not be fetched.");
@@ -128,30 +132,44 @@ fn log_data(mut env: FunctionEnvMut<IndexEnv>, ptr: u32, len: u32, log_level: u3
 }
 
 fn get_object(
-    env: FunctionEnvMut<IndexEnv>,
+    mut env: FunctionEnvMut<IndexEnv>,
     type_id: i64,
     ptr: u32,
     len_ptr: u32,
 ) -> u32 {
-    let (idx_env, store) = env.data_and_store_mut();
-    let mem = idx_env.memory.expect("Memory unitialized.").view(&store);
+    let (idx_env, mut store) = env.data_and_store_mut();
 
-    let id = get_object_id(&mem, ptr);
+    let id = {
+        let mem = idx_env
+            .memory
+            .as_mut()
+            .expect("Memory unitialized.")
+            .view(&store);
+        get_object_id(&mem, ptr)
+    };
 
     let rt = tokio::runtime::Handle::current();
     let bytes =
         rt.block_on(async { idx_env.db.lock().await.get_object(type_id, id).await });
 
     if let Some(bytes) = bytes {
-        let alloc_fn = idx_env.alloc.expect("Alloc export is missing.");
+        let alloc_fn = idx_env.alloc.as_mut().expect("Alloc export is missing.");
 
         let size = bytes.len() as u32;
         let result = alloc_fn.call(&mut store, size).expect("Alloc failed.");
-        let range = result as usize..result as usize + size as usize;
+        let _range = result as usize..result as usize + size as usize;
 
-        WasmPtr::<u32>::new(len_ptr).deref(&mem).write(size);
+        let mem = idx_env
+            .memory
+            .as_mut()
+            .expect("Memory unitialized.")
+            .view(&store);
+        WasmPtr::<u32>::new(len_ptr)
+            .deref(&mem)
+            .write(size)
+            .unwrap();
 
-        mem.write(ptr as u64, &bytes);
+        mem.write(ptr as u64, &bytes).unwrap();
 
         result
     } else {
@@ -159,14 +177,18 @@ fn get_object(
     }
 }
 
-fn put_object(env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
+fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
     let (idx_env, store) = env.data_and_store_mut();
-    let mem = idx_env.memory.expect("Memory unitialized").view(&store);
+    let mem = idx_env
+        .memory
+        .as_mut()
+        .expect("Memory unitialized")
+        .view(&store);
 
     let mut bytes = Vec::with_capacity(len as usize);
-    let range = ptr as usize..ptr as usize + len as usize;
+    let _range = ptr as usize..ptr as usize + len as usize;
 
-    &mem.read(ptr as u64, &mut bytes);
+    mem.read(ptr as u64, &mut bytes).unwrap();
 
     let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
 
@@ -181,13 +203,12 @@ fn put_object(env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u32) {
     });
 }
 
-pub fn get_exports(env: &FunctionEnvMut<IndexEnv>) -> Exports {
-    let (idx_env, mut store) = env.data_and_store_mut();
+pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Exports {
     let mut exports = Exports::new();
 
-    let f_get_obj = Function::new_typed_with_env(&mut store, &env.as_ref(), get_object);
-    let f_put_obj = Function::new_typed_with_env(&mut store, &env.as_ref(), put_object);
-    let f_log_data = Function::new_typed_with_env(&mut store, &env.as_ref(), log_data);
+    let f_get_obj = Function::new_typed_with_env(store, env, get_object);
+    let f_put_obj = Function::new_typed_with_env(store, env, put_object);
+    let f_log_data = Function::new_typed_with_env(store, env, log_data);
     exports.insert(format!("ff_get_object"), f_get_obj);
     exports.insert(format!("ff_get_object"), f_put_obj);
     exports.insert(format!("ff_get_object"), f_log_data);
@@ -199,7 +220,7 @@ pub fn get_exports(env: &FunctionEnvMut<IndexEnv>) -> Exports {
 /// it's not needed anymore, then tells WASM to deallocate.
 pub(crate) struct WasmArg<'a> {
     instance: &'a Instance,
-    store: &'a mut Store,
+    store: std::sync::Arc<std::sync::Mutex<Store>>,
     ptr: u32,
     len: u32,
 }
@@ -207,20 +228,22 @@ pub(crate) struct WasmArg<'a> {
 impl<'a> WasmArg<'a> {
     #[allow(clippy::result_large_err)]
     pub fn new(
-        store: &mut Store,
-        instance: &Instance,
+        store: std::sync::Arc<std::sync::Mutex<Store>>,
+        instance: &'a Instance,
         bytes: Vec<u8>,
     ) -> IndexerResult<WasmArg<'a>> {
+        let store_ = store.clone();
+        let mut store_guard = store_.lock().unwrap();
         let alloc_fn = instance
             .exports
-            .get_typed_function::<u32, u32>(store, "alloc_fn")?;
-        let memory = instance.exports.get_memory("memory")?.view(store);
+            .get_typed_function::<u32, u32>(&store_guard, "alloc_fn")?;
 
         let len = bytes.len() as u32;
-        let ptr = alloc_fn.call(store, len)?;
-        let range = ptr as usize..(ptr + len) as usize;
+        let ptr = alloc_fn.call(&mut store_guard, len)?;
+        let _range = ptr as usize..(ptr + len) as usize;
 
-        memory.write(ptr.into(), &bytes);
+        let memory = instance.exports.get_memory("memory")?.view(&store_guard);
+        memory.write(ptr.into(), &bytes).unwrap();
 
         Ok(WasmArg {
             instance,
@@ -241,13 +264,14 @@ impl<'a> WasmArg<'a> {
 
 impl<'a> Drop for WasmArg<'a> {
     fn drop(&mut self) {
+        let mut store_guard = self.store.lock().unwrap();
         let dealloc_fn = self
             .instance
             .exports
-            .get_typed_function::<(u32, u32), ()>(&mut self.store, "dealloc_fn")
+            .get_typed_function::<(u32, u32), ()>(&mut store_guard, "dealloc_fn")
             .expect("No dealloc fn");
         dealloc_fn
-            .call(&mut self.store, self.ptr, self.len)
+            .call(&mut store_guard, self.ptr, self.len)
             .expect("Dealloc failed");
     }
 }

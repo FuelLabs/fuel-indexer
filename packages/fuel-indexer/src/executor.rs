@@ -525,7 +525,7 @@ where
 pub struct WasmIndexExecutor {
     instance: Instance,
     _module: Module,
-    store: Store,
+    store: std::sync::Arc<std::sync::Mutex<Store>>,
     db: Arc<Mutex<Database>>,
     #[allow(unused)]
     timeout: u64,
@@ -538,51 +538,58 @@ impl<'a> WasmIndexExecutor {
         wasm_bytes: impl AsRef<[u8]>,
         pool: IndexerConnectionPool,
     ) -> IndexerResult<Self> {
-        let db_url = config.database.to_string();
+        let idx_env = IndexEnv::new(pool).await?;
+
         let mut store = Store::new(Cranelift::default());
-        let module = Module::new(&store, &wasm_bytes)?;
 
-        let env = FunctionEnv::new(&mut store, IndexEnv::new(db_url).await?);
-        let mut imports = imports! {};
-        let instance = Instance::new(&mut store, &module, &imports)?;
+        let (instance, module, db, env) = {
+            let module = Module::new(&store, &wasm_bytes)?;
+            let db = idx_env.db.clone();
+            let env = FunctionEnv::new(&mut store, idx_env);
 
-        let mut env_mut = env.into_mut(&mut store);
-        for (export_name, export) in ffi::get_exports(&env_mut) {
-            imports.define("env", &export_name, export.clone());
-        }
+            let mut imports = imports! {};
+            for (export_name, export) in ffi::get_exports(&mut store, &env) {
+                imports.define("env", &export_name, export.clone());
+            }
 
-        if !instance
-            .exports
-            .contains(ffi::MODULE_ENTRYPOINT.to_string())
-        {
-            return Err(IndexerError::MissingHandler);
-        }
+            let instance = Instance::new(&mut store, &module, &imports)?;
 
-        let (mut data_mut, mut store_mut) = env_mut.data_and_store_mut();
-        data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
-        data_mut.alloc = Some(
-            instance
+            if !instance
                 .exports
-                .get_typed_function(&mut store_mut, "alloc_fn")?,
-        );
-        data_mut.dealloc = Some(
-            instance
-                .exports
-                .get_typed_function(&mut store_mut, "dealloc_fn")?,
-        );
+                .contains(ffi::MODULE_ENTRYPOINT.to_string())
+            {
+                return Err(IndexerError::MissingHandler);
+            }
 
-        data_mut
-            .db
-            .lock()
-            .await
-            .load_schema(manifest, Some(&mut store_mut), Some(&instance))
+            let mut env_mut = env.clone().into_mut(&mut store);
+            let (mut data_mut, mut store_mut) = env_mut.data_and_store_mut();
+
+            data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
+            data_mut.alloc = Some(
+                instance
+                    .exports
+                    .get_typed_function(&mut store_mut, "alloc_fn")?,
+            );
+            data_mut.dealloc = Some(
+                instance
+                    .exports
+                    .get_typed_function(&mut store_mut, "dealloc_fn")?,
+            );
+
+            (instance, module, db, env)
+        };
+
+        let db_ = db.clone();
+        let mut db_guard = db_.lock().await;
+        db_guard
+            .load_schema(manifest, Some((&mut store, env)), Some(&instance))
             .await?;
 
         Ok(WasmIndexExecutor {
             instance,
             _module: module,
-            store,
-            db: data_mut.db.clone(),
+            store: std::sync::Arc::new(std::sync::Mutex::new(store)),
+            db,
             timeout: config.indexer_handler_timeout,
         })
     }
@@ -651,12 +658,15 @@ impl<'a> Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);
-        let arg = ffi::WasmArg::new(&mut self.store, &self.instance, bytes)?;
 
-        let fun = self
-            .instance
-            .exports
-            .get_typed_function::<(u32, u32), ()>(&self.store, ffi::MODULE_ENTRYPOINT)?;
+        let arg = ffi::WasmArg::new(self.store.clone(), &self.instance, bytes)?;
+
+        let fun = {
+            let store = self.store.lock().unwrap();
+            self.instance
+                .exports
+                .get_typed_function::<(u32, u32), ()>(&store, ffi::MODULE_ENTRYPOINT)?
+        };
 
         let _ = self.db.lock().await.start_transaction().await?;
 
@@ -665,7 +675,13 @@ impl<'a> Executor for WasmIndexExecutor {
 
         let res = timeout(
             Duration::from_secs(self.timeout),
-            spawn_blocking(move || fun.call(&mut self.store, ptr, len)),
+            spawn_blocking({
+                let store = self.store.clone();
+                move || {
+                    let mut store = store.lock().unwrap();
+                    fun.call(&mut store, ptr, len)
+                }
+            }),
         )
         .await;
 

@@ -7,7 +7,7 @@ use fuel_indexer_lib::{
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
 use tracing::{debug, error, info};
-use wasmer::{Instance, StoreMut};
+use wasmer::Instance;
 
 /// Database for an executor instance, with schema info.
 #[derive(Debug)]
@@ -188,7 +188,7 @@ Do your WASM modules need to be rebuilt?
     pub async fn load_schema(
         &mut self,
         manifest: &Manifest,
-        store: Option<&mut StoreMut<'_>>,
+        store: Option<(&mut wasmer::Store, wasmer::FunctionEnv<crate::IndexEnv>)>,
         instance: Option<&Instance>,
     ) -> IndexerResult<()> {
         match manifest.execution_source() {
@@ -230,11 +230,15 @@ Do your WASM modules need to be rebuilt?
             }
             ExecutionSource::Wasm => {
                 let instance = instance.expect("Instance cannot be None.");
-                let store = store.expect("Store cannot be None");
+                {
+                    let (mut store, env) = store.expect("Store cannot be None");
+                    let mut env_mut = env.into_mut(&mut store);
+                    let (_, mut store) = env_mut.data_and_store_mut();
 
-                self.namespace = ffi::get_namespace(store, instance)?;
-                self.identifier = ffi::get_identifier(store, instance)?;
-                self.version = ffi::get_version(store, instance)?;
+                    self.namespace = ffi::get_namespace(&mut store, instance)?;
+                    self.identifier = ffi::get_identifier(&mut store, instance)?;
+                    self.version = ffi::get_version(&mut store, instance)?;
+                }
 
                 info!(
                     "Loading schema for Indexer({}.{}) with Version({}).",
