@@ -34,7 +34,7 @@ forc index deploy \
 ### Validate
 
 Ensure that test data was indexed via a GraphQL query:
-  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuel/explorer.
+  1. Open this GraphQL playground link http://192.168.1.34:29987/api/playground/fuel/explorer
   2. Submit the following query
 
 ```graphql
@@ -48,7 +48,7 @@ query {
 ```
 
 > IMPORTANT: Since this example uses a dockerized indexer service, with the GraphQL
-> web API being bound at interface `0.0.0.0` your LAN IP might differ from the 
-> `192.168.1.34` mentioned above. 
+> web API being bound at interface `0.0.0.0` your LAN IP might differ from the
+> `192.168.1.34` mentioned above.
 >
-> On Unix platforms you can typically find your LAN IP via `ifconfig | grep inet`
+> On *nix platforms you can typically find your LAN IP via `ifconfig | grep inet`
