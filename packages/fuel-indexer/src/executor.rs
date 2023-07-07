@@ -660,16 +660,16 @@ impl<'a> Executor for WasmIndexExecutor {
         let bytes = serialize(&blocks);
 
         let mut arg = {
-            let store = self.store.clone();
-            let mut store_guard = store.lock().unwrap();
+            let mut store_guard = self.store.lock().unwrap();
             ffi::WasmArg::new(&mut store_guard, &self.instance, bytes)?
         };
 
         let fun = {
-            let store = self.store.lock().unwrap();
-            self.instance
-                .exports
-                .get_typed_function::<(u32, u32), ()>(&store, ffi::MODULE_ENTRYPOINT)?
+            let store_guard = self.store.lock().unwrap();
+            self.instance.exports.get_typed_function::<(u32, u32), ()>(
+                &store_guard,
+                ffi::MODULE_ENTRYPOINT,
+            )?
         };
 
         let _ = self.db.lock().await.start_transaction().await?;
@@ -682,8 +682,8 @@ impl<'a> Executor for WasmIndexExecutor {
             spawn_blocking({
                 let store = self.store.clone();
                 move || {
-                    let mut store = store.lock().unwrap();
-                    fun.call(&mut store, ptr, len)
+                    let mut store_guard = store.lock().unwrap();
+                    fun.call(&mut store_guard, ptr, len)
                 }
             }),
         )
@@ -703,11 +703,8 @@ impl<'a> Executor for WasmIndexExecutor {
             let _ = self.db.lock().await.commit_transaction().await?;
         }
 
-        {
-            let store = self.store.clone();
-            let mut store_guard = store.lock().unwrap();
-            arg.drop(&mut store_guard);
-        }
+        let mut store_guard = self.store.lock().unwrap();
+        arg.drop(&mut store_guard);
 
         Ok(())
     }
