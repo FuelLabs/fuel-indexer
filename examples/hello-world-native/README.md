@@ -40,7 +40,7 @@ query {
     transaction {
         id
         time
-        block
         label
     }
 }
+```
