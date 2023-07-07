@@ -248,11 +248,7 @@ impl<'a> WasmArg<'a> {
             memory.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
 
-        Ok(WasmArg {
-            instance,
-            ptr,
-            len,
-        })
+        Ok(WasmArg { instance, ptr, len })
     }
 
     pub fn get_ptr(&self) -> u32 {

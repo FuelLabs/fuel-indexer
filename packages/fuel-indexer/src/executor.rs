@@ -525,7 +525,7 @@ where
 pub struct WasmIndexExecutor {
     instance: Instance,
     _module: Module,
-    store: std::sync::Arc<std::sync::Mutex<Store>>,
+    store: Arc<Mutex<Store>>,
     db: Arc<Mutex<Database>>,
     #[allow(unused)]
     timeout: u64,
@@ -539,28 +539,29 @@ impl<'a> WasmIndexExecutor {
         pool: IndexerConnectionPool,
     ) -> IndexerResult<Self> {
         let idx_env = IndexEnv::new(pool).await?;
+        let db: Arc<Mutex<Database>> = idx_env.db.clone();
 
         let mut store = Store::new(Cranelift::default());
+        let module = Module::new(&store, &wasm_bytes)?;
 
-        let (instance, module, db, env) = {
-            let module = Module::new(&store, &wasm_bytes)?;
-            let db = idx_env.db.clone();
-            let env = FunctionEnv::new(&mut store, idx_env);
+        let env = FunctionEnv::new(&mut store, idx_env);
+        let mut imports = imports! {};
+        for (export_name, export) in ffi::get_exports(&mut store, &env) {
+            imports.define("env", &export_name, export.clone());
+        }
 
-            let mut imports = imports! {};
-            for (export_name, export) in ffi::get_exports(&mut store, &env) {
-                imports.define("env", &export_name, export.clone());
-            }
+        let instance = Instance::new(&mut store, &module, &imports)?;
 
-            let instance = Instance::new(&mut store, &module, &imports)?;
+        if !instance
+            .exports
+            .contains(ffi::MODULE_ENTRYPOINT.to_string())
+        {
+            return Err(IndexerError::MissingHandler);
+        }
 
-            if !instance
-                .exports
-                .contains(ffi::MODULE_ENTRYPOINT.to_string())
-            {
-                return Err(IndexerError::MissingHandler);
-            }
-
+        // FunctionEnvMut and SotreMut must be scoped because they can't be use
+        // across await
+        {
             let mut env_mut = env.clone().into_mut(&mut store);
             let (mut data_mut, mut store_mut) = env_mut.data_and_store_mut();
 
@@ -575,20 +576,17 @@ impl<'a> WasmIndexExecutor {
                     .exports
                     .get_typed_function(&mut store_mut, "dealloc_fn")?,
             );
-
-            (instance, module, db, env)
         };
 
-        let db_ = db.clone();
-        let mut db_guard = db_.lock().await;
-        db_guard
+        db.lock()
+            .await
             .load_schema(manifest, Some((&mut store, env)), Some(&instance))
             .await?;
 
         Ok(WasmIndexExecutor {
             instance,
             _module: module,
-            store: std::sync::Arc::new(std::sync::Mutex::new(store)),
+            store: Arc::new(Mutex::new(store)),
             db,
             timeout: config.indexer_handler_timeout,
         })
@@ -660,12 +658,12 @@ impl<'a> Executor for WasmIndexExecutor {
         let bytes = serialize(&blocks);
 
         let mut arg = {
-            let mut store_guard = self.store.lock().unwrap();
+            let mut store_guard = self.store.lock().await;
             ffi::WasmArg::new(&mut store_guard, &self.instance, bytes)?
         };
 
         let fun = {
-            let store_guard = self.store.lock().unwrap();
+            let store_guard = self.store.lock().await;
             self.instance.exports.get_typed_function::<(u32, u32), ()>(
                 &store_guard,
                 ffi::MODULE_ENTRYPOINT,
@@ -682,7 +680,8 @@ impl<'a> Executor for WasmIndexExecutor {
             spawn_blocking({
                 let store = self.store.clone();
                 move || {
-                    let mut store_guard = store.lock().unwrap();
+                    let mut store_guard =
+                        tokio::runtime::Handle::current().block_on(store.lock());
                     fun.call(&mut store_guard, ptr, len)
                 }
             }),
@@ -703,7 +702,7 @@ impl<'a> Executor for WasmIndexExecutor {
             let _ = self.db.lock().await.commit_transaction().await?;
         }
 
-        let mut store_guard = self.store.lock().unwrap();
+        let mut store_guard = self.store.lock().await;
         arg.drop(&mut store_guard);
 
         Ok(())
