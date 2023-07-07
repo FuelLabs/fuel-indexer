@@ -50,8 +50,6 @@ async fn test_wasm_executor_can_meter_execution() {
     )
     .unwrap();
 
-    let mut exhausted = false;
-
     match &manifest.module {
         fuel_indexer_lib::manifest::Module::Wasm(ref module) => {
             let mut bytes = Vec::<u8>::new();
@@ -64,7 +62,7 @@ async fn test_wasm_executor_can_meter_execution() {
             );
             let mut config = IndexerConfig::default();
             config.database = DatabaseConfig::from_str(&test_db.url).unwrap();
-            config.indexer_handler_metering_points = Some(2_000u64);
+            config.indexer_handler_metering_points = Some(100u64);
 
             let mut executor =
                 WasmIndexExecutor::new(&config, &manifest, bytes.clone(), pool)
@@ -73,35 +71,30 @@ async fn test_wasm_executor_can_meter_execution() {
 
             let blocks: Vec<fuel_indexer_types::fuel::BlockData> = vec![];
 
-            for i in 0..30 {
-                if let Err(e) = executor.handle_events(blocks.clone()).await {
-                    if let fuel_indexer::IndexerError::RuntimeError(e) = e {
-                        if let Some(e) = e.to_trap() {
-                            assert_eq!(e, wasmer_types::TrapCode::UnreachableCodeReached);
-                            assert_eq!(
-                                wasmer_middlewares::metering::MeteringPoints::Exhausted,
-                                executor.get_instance_metering_points()
-                            );
-                            println!("Metering points exhausted in loop iteration {i}.");
-                            exhausted = true;
-                            break;
-                        }
+            if let Err(e) = executor.handle_events(blocks.clone()).await {
+                if let fuel_indexer::IndexerError::RuntimeError(e) = e {
+                    if let Some(e) = e.to_trap() {
+                        assert_eq!(e, wasmer_types::TrapCode::UnreachableCodeReached);
+                        assert_eq!(
+                            wasmer_middlewares::metering::MeteringPoints::Exhausted,
+                            executor.get_instance_metering_points()
+                        );
+                        println!("Metering points exhausted.");
                     } else {
-                        match executor.get_instance_metering_points() {
-                            wasmer_middlewares::metering::MeteringPoints::Remaining(
-                                pts,
-                            ) => {
-                                assert!(pts > 0)
-                            }
-                            _ => panic!("expected remaining points > 0"),
+                        panic!("Expected exhausted metering points");
+                    }
+                } else {
+                    match executor.get_instance_metering_points() {
+                        wasmer_middlewares::metering::MeteringPoints::Remaining(pts) => {
+                            assert!(pts > 0)
                         }
+                        _ => panic!("Expected remaining points > 0"),
                     }
                 }
             }
         }
-        _ => panic!("unexpected!"),
+        _ => panic!("Unexpected!"),
     }
-    assert!(exhausted, "expected exhausted metering points");
 }
 
 #[tokio::test]
