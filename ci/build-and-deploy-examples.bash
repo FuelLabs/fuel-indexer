@@ -25,6 +25,7 @@ sleep 2
 
 # Deploy the example indexer
 forc-index deploy --path ./hello-indexer --target-dir ./../../
+sleep 5
 
 # Ensure service is up and running via health check
 db_status=$(curl http://localhost:29987/api/health | json_pp | jq '.database_status')
@@ -70,6 +71,7 @@ sleep 2
 
 # Deploy the example indexer
 forc-index deploy --path ./fuel-explorer --target-dir ./../../
+sleep 5
 
 # Ensure service is up and running via 
 db_status=$(curl http://localhost:29987/api/health | json_pp | jq '.database_status')
