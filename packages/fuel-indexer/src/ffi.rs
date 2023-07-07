@@ -157,7 +157,7 @@ fn get_object(
 
         let size = bytes.len() as u32;
         let result = alloc_fn.call(&mut store, size).expect("Alloc failed.");
-        let _range = result as usize..result as usize + size as usize;
+        let range = result as usize..result as usize + size as usize;
 
         let mem = idx_env
             .memory
@@ -169,7 +169,9 @@ fn get_object(
             .write(size)
             .unwrap();
 
-        mem.write(ptr as u64, &bytes).unwrap();
+        unsafe {
+            mem.data_unchecked_mut()[range].copy_from_slice(&bytes);
+        }
 
         result
     } else {
@@ -186,9 +188,11 @@ fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u3
         .view(&store);
 
     let mut bytes = Vec::with_capacity(len as usize);
-    let _range = ptr as usize..ptr as usize + len as usize;
+    let range = ptr as usize..ptr as usize + len as usize;
 
-    mem.read(ptr as u64, &mut bytes).unwrap();
+    unsafe {
+        bytes.extend_from_slice(&mem.data_unchecked()[range]);
+    }
 
     let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
 
@@ -240,10 +244,12 @@ impl<'a> WasmArg<'a> {
 
         let len = bytes.len() as u32;
         let ptr = alloc_fn.call(&mut store_guard, len)?;
-        let _range = ptr as usize..(ptr + len) as usize;
+        let range = ptr as usize..(ptr + len) as usize;
 
         let memory = instance.exports.get_memory("memory")?.view(&store_guard);
-        memory.write(ptr.into(), &bytes).unwrap();
+        unsafe {
+            memory.data_unchecked_mut()[range].copy_from_slice(&bytes);
+        }
 
         Ok(WasmArg {
             instance,
