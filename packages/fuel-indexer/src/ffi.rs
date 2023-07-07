@@ -266,10 +266,8 @@ impl<'a> WasmArg<'a> {
     pub fn get_len(&self) -> u32 {
         self.len
     }
-}
 
-impl<'a> Drop for WasmArg<'a> {
-    fn drop(&mut self) {
+    pub fn drop(&mut self) {
         let mut store_guard = self.store.lock().unwrap();
         let dealloc_fn = self
             .instance
