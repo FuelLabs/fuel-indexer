@@ -230,6 +230,7 @@ Do your WASM modules need to be rebuilt?
             }
             ExecutionSource::Wasm => {
                 let instance = instance.expect("Instance cannot be None.");
+                // StoreMut must be dropped before await
                 {
                     let (mut store, env) = store.expect("Store cannot be None");
                     let mut env_mut = env.into_mut(&mut store);
