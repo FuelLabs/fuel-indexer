@@ -15,7 +15,7 @@ use std::{path::Path, time::Duration};
 use tracing::{error, info};
 
 const STEADY_TICK_INTERVAL: u64 = 120;
-const TCP_TIMEOUT: u64 = 3;
+const TCP_TIMEOUT: u64 = 10;
 
 pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     let DeployCommand {
@@ -115,7 +115,7 @@ pub fn init(command: DeployCommand) -> anyhow::Result<()> {
     pb.set_message("🚀 Deploying...");
 
     let client = Client::builder()
-        .tcp_keepalive(Duration::from_secs(TCP_TIMEOUT))
+        .timeout(Duration::from_secs(TCP_TIMEOUT))
         .connection_verbose(verbose)
         .build()?;
 
