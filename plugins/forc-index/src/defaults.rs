@@ -31,6 +31,8 @@ name = "{indexer_name}"
 path = "src/main.rs"
 
 [dependencies]
+async-trait = {{ version = "0.1" }}
+fuel-indexer = {{ version = "0.17", default-features = false }}
 fuel-indexer-utils = {{ version = "0.17", features = ["native-execution"] }}
 fuels = {{ version = "0.43", default-features = false, features = ["std"] }}
 serde = {{ version = "1.0", default-features = false, features = ["derive"] }}
@@ -104,7 +106,7 @@ end_block: ~
 # that you would like your indexer to index events from. In order to use this per-indexer
 # `fuel_client` option, the indexer service at which your indexer is deployed will have to run
 # with the `--indexer_net_config` option.
-fuel_client:
+fuel_client: ~
 
 # The contract_id specifies which particular contract you would like your index to subscribe to.
 contract_id: ~
@@ -124,7 +126,7 @@ report_metrics: true
 
 # The resumable field contains a boolean that specifies whether or not the indexer should, synchronise
 # with the latest block if it has fallen out of sync.
-resumable: ~
+resumable: true
 "#
     )
 }

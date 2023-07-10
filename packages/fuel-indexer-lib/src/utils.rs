@@ -171,7 +171,10 @@ where
 /// Denotes the status of a service for the service health check.
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ServiceStatus {
+    /// The service is healthy.
     OK,
+
+    /// The service is not healthy.
     NotOk,
 }
 
@@ -187,6 +190,7 @@ impl From<FuelClientHealthResponse> for ServiceStatus {
 /// Response from the Fuel client health check.
 #[derive(Serialize, Deserialize, Default, Debug)]
 pub struct FuelClientHealthResponse {
+    /// `true` if the client is available, `false` otherwise.
     up: bool,
 }
 
