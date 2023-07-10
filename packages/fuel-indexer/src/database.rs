@@ -188,8 +188,7 @@ Do your WASM modules need to be rebuilt?
     pub async fn load_schema(
         &mut self,
         manifest: &Manifest,
-        store_env: Option<(&mut wasmer::Store, wasmer::FunctionEnv<crate::IndexEnv>)>,
-        instance: Option<&Instance>,
+        store_env_instance: Option<(&mut wasmer::Store, wasmer::FunctionEnv<crate::IndexEnv>, &Instance)>,
     ) -> IndexerResult<()> {
         match manifest.execution_source() {
             ExecutionSource::Native => {
@@ -229,10 +228,9 @@ Do your WASM modules need to be rebuilt?
                 }
             }
             ExecutionSource::Wasm => {
-                let instance = instance.expect("Instance cannot be None.");
                 // StoreMut must be dropped before await
                 {
-                    let (mut store, env) = store_env.expect("Store cannot be None");
+                    let (mut store, env, instance) = store_env_instance.expect("Store/FunctionEnv/Instance cannot be None");
                     let mut env_mut = env.into_mut(&mut store);
                     let (_, mut store) = env_mut.data_and_store_mut();
 

@@ -475,7 +475,7 @@ where
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
         let db = Arc::new(Mutex::new(Database::new(pool).await?));
-        db.lock().await.load_schema(manifest, None, None).await?;
+        db.lock().await.load_schema(manifest, None).await?;
         Ok(Self {
             db,
             manifest: manifest.to_owned(),
@@ -580,7 +580,7 @@ impl WasmIndexExecutor {
 
         db.lock()
             .await
-            .load_schema(manifest, Some((&mut store, env)), Some(&instance))
+            .load_schema(manifest, Some((&mut store, env, &instance)))
             .await?;
 
         Ok(WasmIndexExecutor {

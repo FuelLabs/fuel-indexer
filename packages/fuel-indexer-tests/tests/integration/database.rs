@@ -115,7 +115,7 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
 
     let env =
         wasmer::FunctionEnv::new(&mut store, IndexEnv::new(pool.clone()).await.unwrap());
-    db.load_schema(&manifest, Some((&mut store, env)), Some(&instance))
+    db.load_schema(&manifest, Some((&mut store, env, &instance)))
         .await
         .expect("Could not load db schema");
 
