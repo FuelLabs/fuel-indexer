@@ -19,7 +19,7 @@ Note macOS you can install the latest version of PostgreSQL through `brew` by si
 
 <!-- markdownlint-disable MD014 -->
 ```console
-$ brew install postgresql@15
+$ brew install postgresql
 ```
 <!-- markdownlint-restore -->
 
@@ -33,21 +33,11 @@ $ fuelup self update
 ```
 <!-- markdownlint-restore -->
 
-Then run `fuelup toolchain install beta-3` to install the `beta-3` toolchain.
-
-Finally, set the `beta-3` toolchain as your default distribution with the following command:
-
-<!-- markdownlint-disable MD014 -->
-```console
-$ fuelup default beta-3
-```
-<!-- markdownlint-restore -->
-
 You can check your current toolchain anytime by running `fuelup show`.
 
 > Having problems with this part? Post your question on our forum [https://forum.fuel.network/](https://forum.fuel.network/). To help you as efficiently as possible, include the output of this command in your post: `fuelup show.`
 
-4. WebAssembly (WASM) Setup
+1. WebAssembly (WASM) Setup
 
 Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
@@ -304,33 +294,23 @@ If all goes well, you should see the following:
 
 With our indexer deployed, we should be able to query for newly indexed data after a few seconds.
 
-Below, we write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
+Head over to http://127.0.0.1:29987/api/playground/my_project/hello_indexer and paste in this simple GraphQL query and you should be able to get back transaction data from the beta-3 testnet! 
 
-```console
-$ curl -X POST -H "Content-Type: application/graphql" --data '{ "query": "query { tx { id, hash, block } }" }' http://127.0.0.1:29987/api/graph/my_project/hello_indexer
-
-[
-   {
-      "block" : 7017844286925529648,
-      "hash" : "fb93ce9519866676813584eca79afe2d98466b3e2c8b787503b76b0b4718a565",
-      "id" : 7292230935510476086,
-   },
-   {
-      "block" : 3473793069188998756,
-      "hash" : "5ea2577727aaadc331d5ae1ffcbc11ec4c2ba503410f8edfb22fc0a72a1d01eb",
-      "id" : 4136050720295695667,
-   },
-   {
-      "block" : 7221293542007912803,
-      "hash" : "d2f638c26a313c681d75db2edfbc8081dbf5ecced87a41ec4199d221251b0578",
-      "id" : 4049687577184449589,
-   },
-]
+```graphql
+query { 
+  transaction { 
+    id 
+    hash
+    block 
+  } 
+}
 ```
 
-### 3.1 Using the playgrond
+![Alt Text](../img/quickstart-gui.png)
 
-As opposed to writing `curL` commands to query data, note that you can also explore your indexed data using the indexer's GraphQL playground. For more info on using the playground - [checkout the playground docs](../graphql/playground.md).
+For more info on using the playground - [checkout the playground docs](../graphql/playground.md).
+
+Alternatively, we can write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ### Finished! 🥳
 
