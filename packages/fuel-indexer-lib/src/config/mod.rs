@@ -315,6 +315,7 @@ impl IndexerConfig {
         let content: serde_yaml::Value = serde_yaml::from_reader(file)?;
 
         let log_level_key = serde_yaml::Value::String("log_level".into());
+        let replace_indexer_key = serde_yaml::Value::String("replace_indexer".into());
         let indexer_handler_metering_key =
             serde_yaml::Value::String("indexer_handler_metering_points".into());
         let metrics_key = serde_yaml::Value::String("metrics".into());
@@ -325,6 +326,10 @@ impl IndexerConfig {
         let local_fuel_node_key = serde_yaml::Value::String("local_fuel_node".into());
         let indexer_net_config_key =
             serde_yaml::Value::String("indexer_net_config".into());
+
+        if let Some(replace_indexer) = content.get(replace_indexer_key) {
+            config.replace_indexer = replace_indexer.as_bool().unwrap();
+        }
 
         if let Some(indexer_handler_metering_points) =
             content.get(indexer_handler_metering_key)
