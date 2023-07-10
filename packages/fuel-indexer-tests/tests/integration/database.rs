@@ -47,7 +47,6 @@ async fn load_wasm_module(
     }
 
     let instance = Instance::new(&mut store, &module, &import_object)?;
-    // env.init_with_instance(&instance)?;
 
     Ok((instance, store))
 }
