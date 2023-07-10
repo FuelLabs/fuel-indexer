@@ -694,9 +694,11 @@ impl Executor for WasmIndexExecutor {
         let res = spawn_blocking(move || fun.call(ptr, len)).await?;
 
         if let Err(e) = res {
-            if self.get_instance_metering_points() == MeteringPoints::Exhausted
+            // get_instance_metering_points panics if metering is not enabled.
+            if self.metering_points.is_some()
                 && e.clone().to_trap()
                     == Some(wasmer_types::TrapCode::UnreachableCodeReached)
+                && self.get_instance_metering_points() == MeteringPoints::Exhausted
             {
                 let _ = self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::RunTimeLimitExceededError);
