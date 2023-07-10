@@ -563,18 +563,18 @@ impl WasmIndexExecutor {
         // across await
         {
             let mut env_mut = env.clone().into_mut(&mut store);
-            let (mut data_mut, mut store_mut) = env_mut.data_and_store_mut();
+            let (mut data_mut, store_mut) = env_mut.data_and_store_mut();
 
             data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
             data_mut.alloc = Some(
                 instance
                     .exports
-                    .get_typed_function(&mut store_mut, "alloc_fn")?,
+                    .get_typed_function(&store_mut, "alloc_fn")?,
             );
             data_mut.dealloc = Some(
                 instance
                     .exports
-                    .get_typed_function(&mut store_mut, "dealloc_fn")?,
+                    .get_typed_function(&store_mut, "dealloc_fn")?,
             );
         };
 
@@ -652,7 +652,7 @@ impl WasmIndexExecutor {
 }
 
 #[async_trait]
-impl<'a> Executor for WasmIndexExecutor {
+impl Executor for WasmIndexExecutor {
     /// Trigger a WASM event handler, passing in a serialized event struct.
     async fn handle_events(&mut self, blocks: Vec<BlockData>) -> IndexerResult<()> {
         let bytes = serialize(&blocks);
