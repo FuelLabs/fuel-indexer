@@ -23,7 +23,7 @@ type Thing2 {
 }
 "#;
 
-    let mut schema = IndexerSchema::new(
+    let schema = IndexerSchema::new(
         "test_namespace",
         "index1",
         &GraphQLSchema::new(schema.to_owned()),
@@ -31,8 +31,6 @@ type Thing2 {
         ExecutionSource::Wasm,
     )
     .unwrap();
-
-    schema.register_queryroot_fields();
 
     schema
 }
