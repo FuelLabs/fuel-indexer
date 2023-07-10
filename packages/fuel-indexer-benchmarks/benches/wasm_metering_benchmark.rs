@@ -1,7 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 use fuel_indexer::{Executor, IndexerConfig, Manifest, WasmIndexExecutor};
-use std::sync::{Arc, Mutex};
 use std::{fs::File, io::Read};
 
 fn criterion_benchmark(c: &mut Criterion) {
@@ -34,9 +33,9 @@ fn criterion_benchmark(c: &mut Criterion) {
     let mut group: criterion::BenchmarkGroup<'_, criterion::measurement::WallTime> =
         c.benchmark_group("executor");
     for t in [true, false] {
-        let r = tokio::runtime::Runtime::new().unwrap();
+        let rt = tokio::runtime::Runtime::new().unwrap();
 
-        let executor = r.block_on(async {
+        let mut executor = rt.block_on(async {
             let mut config = IndexerConfig::default();
             config.indexer_handler_metering_points =
                 if t { Some(9_000_000_000_000) } else { None };
@@ -50,30 +49,21 @@ fn criterion_benchmark(c: &mut Criterion) {
             .await
             .unwrap();
 
-            let executor = WasmIndexExecutor::new(&config, &manifest, wasm_bytes, pool)
+            WasmIndexExecutor::new(&config, &manifest, wasm_bytes, pool)
                 .await
-                .unwrap();
-
-            Arc::new(Mutex::new(executor))
+                .unwrap()
         });
 
         group.bench_function(&format!("metering={t}"), |b| {
-            b.to_async(&r).iter_custom(|iters| {
-                let executor = executor.clone();
+            b.iter_custom(|iters| {
+                let blocks: Vec<fuel_indexer_types::fuel::BlockData> = vec![];
 
-                async move {
-                    let blocks: Vec<fuel_indexer_types::fuel::BlockData> = vec![];
-
-                    let mut guard = executor.lock().unwrap();
-                    let start = std::time::Instant::now();
-                    for _ in 0..iters {
-                        guard
-                            .handle_events(black_box(blocks.clone()))
-                            .await
-                            .unwrap()
-                    }
-                    start.elapsed()
+                let start = std::time::Instant::now();
+                for _ in 0..iters {
+                    rt.block_on(executor.handle_events(black_box(blocks.clone())))
+                        .unwrap()
                 }
+                start.elapsed()
             })
         });
     }
