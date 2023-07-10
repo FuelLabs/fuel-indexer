@@ -283,6 +283,11 @@ OPTIONS:
 # # For more info on how the Fuel indexer works, read the book: https://fuellabs.github.io/fuel-indexer/master/
 # # or specifically read up on these configuration options: https://fuellabs.github.io/fuel-indexer/master/getting-started/configuration.html
 
+# # Whether to allow replacing an indexer.
+# #
+# # If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
+# replace_indexer: false
+
 # # Log level passed to the Fuel Indexer service.
 # log_level: info
 
