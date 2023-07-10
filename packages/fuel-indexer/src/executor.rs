@@ -559,7 +559,7 @@ impl WasmIndexExecutor {
             return Err(IndexerError::MissingHandler);
         }
 
-        // FunctionEnvMut and SotreMut must be scoped because they can't be use
+        // FunctionEnvMut and SotreMut must be scoped because they can't be used
         // across await
         {
             let mut env_mut = env.clone().into_mut(&mut store);
