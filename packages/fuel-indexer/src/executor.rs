@@ -531,7 +531,7 @@ pub struct WasmIndexExecutor {
     timeout: u64,
 }
 
-impl<'a> WasmIndexExecutor {
+impl WasmIndexExecutor {
     pub async fn new(
         config: &IndexerConfig,
         manifest: &Manifest,
