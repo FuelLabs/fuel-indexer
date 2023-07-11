@@ -13,6 +13,7 @@ use fuel_core_client::client::{
     types::TransactionStatus as ClientTransactionStatus,
     FuelClient, PageDirection, PaginatedResult, PaginationRequest,
 };
+use fuel_indexer_database::IndexerConnectionPool;
 use fuel_indexer_lib::{defaults::*, manifest::Manifest, utils::serialize};
 use fuel_indexer_types::{
     fuel::{field::*, *},
@@ -442,8 +443,8 @@ pub struct IndexEnv {
 }
 
 impl IndexEnv {
-    pub async fn new(db_url: String) -> IndexerResult<IndexEnv> {
-        let db = Arc::new(Mutex::new(Database::new(&db_url).await?));
+    pub async fn new(pool: IndexerConnectionPool) -> IndexerResult<IndexEnv> {
+        let db = Arc::new(Mutex::new(Database::new(pool).await?));
         Ok(IndexEnv {
             memory: Default::default(),
             alloc: Default::default(),
@@ -478,12 +479,11 @@ where
     F: Future<Output = IndexerResult<()>> + Send,
 {
     pub async fn new(
-        config: &IndexerConfig,
         manifest: &Manifest,
+        pool: IndexerConnectionPool,
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
-        let db_url = config.database.to_string();
-        let db = Arc::new(Mutex::new(Database::new(&db_url).await?));
+        let db = Arc::new(Mutex::new(Database::new(pool).await?));
         db.lock().await.load_schema(manifest, None).await?;
         Ok(Self {
             db,
@@ -495,9 +495,10 @@ where
     pub async fn create<T: Future<Output = IndexerResult<()>> + Send + 'static>(
         config: &IndexerConfig,
         manifest: &Manifest,
+        pool: IndexerConnectionPool,
         handle_events: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> T,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
-        let executor = NativeIndexExecutor::new(config, manifest, handle_events).await?;
+        let executor = NativeIndexExecutor::new(manifest, pool, handle_events).await?;
         let kill_switch = Arc::new(AtomicBool::new(false));
         let handle = tokio::spawn(run_executor(
             config,
@@ -544,14 +545,14 @@ impl WasmIndexExecutor {
         config: &IndexerConfig,
         manifest: &Manifest,
         wasm_bytes: impl AsRef<[u8]>,
+        pool: IndexerConnectionPool,
     ) -> IndexerResult<Self> {
-        let db_url = config.database.to_string();
         let store = Store::new(&Universal::new(compiler()).engine());
         let module = Module::new(&store, &wasm_bytes)?;
 
         let mut import_object = imports! {};
 
-        let mut env = IndexEnv::new(db_url).await?;
+        let mut env = IndexEnv::new(pool).await?;
         let exports = ffi::get_exports(&env, &store);
 
         import_object.register("env", exports);
@@ -584,17 +585,19 @@ impl WasmIndexExecutor {
     pub async fn from_file(
         p: impl AsRef<Path>,
         config: Option<IndexerConfig>,
+        pool: IndexerConnectionPool,
     ) -> IndexerResult<Self> {
         let config = config.unwrap_or_default();
         let manifest = Manifest::from_file(p)?;
         let bytes = manifest.module_bytes()?;
-        Self::new(&config, &manifest, bytes).await
+        Self::new(&config, &manifest, bytes, pool).await
     }
 
     pub async fn create(
         config: &IndexerConfig,
         manifest: &Manifest,
         exec_source: ExecutorSource,
+        pool: IndexerConnectionPool,
     ) -> IndexerResult<(JoinHandle<()>, ExecutorSource, Arc<AtomicBool>)> {
         let killer = Arc::new(AtomicBool::new(false));
 
@@ -606,7 +609,8 @@ impl WasmIndexExecutor {
                     file.read_to_end(&mut bytes).await?;
 
                     let executor =
-                        WasmIndexExecutor::new(config, manifest, bytes.clone()).await?;
+                        WasmIndexExecutor::new(config, manifest, bytes.clone(), pool)
+                            .await?;
                     let handle = tokio::spawn(run_executor(
                         config,
                         manifest,
@@ -621,7 +625,8 @@ impl WasmIndexExecutor {
                 }
             },
             ExecutorSource::Registry(bytes) => {
-                let executor = WasmIndexExecutor::new(config, manifest, bytes).await?;
+                let executor =
+                    WasmIndexExecutor::new(config, manifest, bytes, pool).await?;
                 let handle = tokio::spawn(run_executor(
                     config,
                     manifest,

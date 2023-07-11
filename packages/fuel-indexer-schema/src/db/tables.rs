@@ -1,3 +1,10 @@
+//! # fuel_indexer_schema::db::tables
+//!
+//! Runtime logic used to create SQL tables and persist those tables (and various metadata
+//! about the structure of those tables) to the database.
+//!
+//! Also used to load tables from the database when web requests are made.
+
 use crate::{db::IndexerSchemaDbResult, QUERY_ROOT};
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
@@ -104,22 +111,44 @@ impl IndexerSchema {
             }
         }
 
-        let type_ids = self
+        let mut type_ids = self
             .parsed
             .type_defs()
             .iter()
-            .map(|(_, t)| TypeId::from_typdef(t, &self.parsed))
+            .map(|(_, t)| TypeId::from_typedef(t, &self.parsed))
             .unique_by(|t| t.id)
             .collect::<Vec<TypeId>>();
 
+        // Since join tables aren't derived from `TypeDefinition`s, we have to create them
+        // separately. But since `TypeId`s and `Table`s for join tables `impl SqlFragment`,
+        // we can group them all together when generating SQL.
+
+        let mut join_type_ids = self
+            .parsed
+            .join_table_meta()
+            .iter()
+            .map(|(_, info)| TypeId::from_join_meta(info.to_owned(), &self.parsed))
+            .collect::<Vec<TypeId>>();
+
+        type_ids.append(&mut join_type_ids);
+
         queries::type_id_insert(conn, type_ids).await?;
 
-        let tables = self
+        let mut tables = self
             .parsed
             .non_enum_typdefs()
             .iter()
-            .map(|(_, t)| Table::from_typdef(t, &self.parsed))
+            .map(|(_, t)| Table::from_typedef(t, &self.parsed))
             .collect::<Vec<Table>>();
+
+        let mut join_tables = self
+            .parsed
+            .join_table_meta()
+            .iter()
+            .map(|(_, item)| Table::from_join_meta(item.to_owned(), &self.parsed))
+            .collect::<Vec<Table>>();
+
+        tables.append(&mut join_tables);
 
         let columns = tables
             .iter()
@@ -188,7 +217,7 @@ impl IndexerSchema {
         let tables = parsed
             .non_enum_typdefs()
             .iter()
-            .map(|(_, t)| Table::from_typdef(t, &parsed))
+            .map(|(_, t)| Table::from_typedef(t, &parsed))
             .collect::<Vec<Table>>();
 
         let mut schema = IndexerSchema {
@@ -218,9 +247,9 @@ impl IndexerSchema {
         self.parsed.object_field_mappings.insert(
             QUERY_ROOT.to_string(),
             self.parsed
-                .objects()
-                .keys()
-                .map(|k| (k.to_lowercase(), k.clone()))
+                .non_enum_typdefs()
+                .iter()
+                .map(|(k, _)| (k.to_lowercase(), k.to_string()))
                 .collect::<BTreeMap<String, String>>(),
         );
     }

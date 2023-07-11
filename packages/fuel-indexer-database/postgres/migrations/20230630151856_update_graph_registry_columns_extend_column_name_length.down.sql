@@ -1,0 +1,1 @@
+ALTER TABLE graph_registry_columns ALTER COLUMN column_name TYPE varchar(32);

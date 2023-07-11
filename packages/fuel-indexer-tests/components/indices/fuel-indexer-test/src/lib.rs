@@ -738,4 +738,52 @@ mod fuel_indexer_test {
 
         e.save();
     }
+
+    fn fuel_indexer_test_trigger_list(_block: BlockData) {
+        info!("fuel_indexer_test_trigger_list handling trigger_list event.");
+
+        let list_fk1 = ListFKType { id: 1, value: 1 };
+        list_fk1.save();
+
+        let list_fk2 = ListFKType { id: 2, value: 2 };
+        list_fk2.save();
+
+        let list_fk3 = ListFKType { id: 3, value: 3 };
+        list_fk3.save();
+
+        let e = ListTypeEntity {
+            id: 1,
+            foo: "hello world".to_string(),
+            required_all: vec![list_fk1.id, list_fk2.id, list_fk3.id],
+            optional_inner: vec![
+                Some("hello".to_string()),
+                None,
+                Some("world".to_string()),
+                None,
+            ],
+            optional_outer: Some(vec![1, 2, 3, 4, 5]),
+            optional_all: Some(vec![Some(1), None, Some(3), None]),
+            virtual_optional_inner: vec![
+                Some(
+                    VirtualEntity {
+                        name: Some("foo".to_string()),
+                        size: 1,
+                    }
+                    .into(),
+                ),
+                None,
+                None,
+                Some(
+                    VirtualEntity {
+                        name: Some("bar".to_string()),
+                        size: 2,
+                    }
+                    .into(),
+                ),
+            ],
+            enum_required_all: vec![EnumEntity::One.into(), EnumEntity::Two.into()],
+        };
+
+        e.save();
+    }
 }

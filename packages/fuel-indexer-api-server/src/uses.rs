@@ -87,13 +87,13 @@ pub(crate) async fn get_fuel_status(config: &IndexerConfig) -> ServiceStatus {
                 .await
                 .unwrap_or_default();
 
-            let fuel_node_health: FuelClientHealthResponse =
+            let clienth_health: FuelClientHealthResponse =
                 serde_json::from_slice(&body_bytes).unwrap_or_default();
 
-            ServiceStatus::from(fuel_node_health)
+            ServiceStatus::from(clienth_health)
         }
         Err(e) => {
-            error!("Failed to fetch fuel /health status: {e}.");
+            error!("Failed to fetch Fuel client health status: {e}.");
             ServiceStatus::NotOk
         }
     }
@@ -106,11 +106,11 @@ pub(crate) async fn health_check(
 ) -> ApiResult<axum::Json<Value>> {
     let db_status = pool.is_connected().await.unwrap_or(ServiceStatus::NotOk);
     let uptime = start_time.elapsed().as_secs().to_string();
-    let fuel_core_status = get_fuel_status(&config).await;
+    let client_status = get_fuel_status(&config).await;
 
     Ok(Json(json!({
-        "fuel_core_status": fuel_core_status,
-        "uptime(seconds)": uptime,
+        "client_status": client_status,
+        "uptime": uptime,
         "database_status": db_status,
     })))
 }
