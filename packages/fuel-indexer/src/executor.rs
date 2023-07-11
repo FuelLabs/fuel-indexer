@@ -387,7 +387,16 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         crate::IndexerDatabaseError::SqlxError(e),
                     ) => match e {
                         sqlx::Error::Database(inner) => {
-                            error!("sqlx::Error::Database error: {inner:?}");
+                            // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
+                            // but sqlx v0.6 does not so we use a best guess.
+                            //
+                            // https://docs.rs/sqlx/0.7.0/sqlx/error/trait.DatabaseError.html#method.is_unique_violation
+                            if inner.constraint().is_some() {
+                                warn!("Constraint violation. Continuing...");
+                            } else {
+                                error!("Database error: {inner}.");
+                                retry_count += 1;
+                            }
                         }
                         _ => {
                             retry_count += 1;
