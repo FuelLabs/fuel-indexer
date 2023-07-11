@@ -144,9 +144,9 @@ pub struct ParsedGraphQLSchema {
     /// All unique names of types in the schema (whether objects, enums, or scalars).
     type_names: HashSet<String>,
 
-    /// Mapping of lowercase entity names to their actual entity types.
+    /// Mapping of lowercase `TypeDefinition` names to their actual `TypeDefinition` names.
     // Used to refer to top-level entities in GraphQL queries.
-    entity_names_to_types: HashMap<String, String>,
+    typedef_names_to_types: HashMap<String, String>,
 
     /// Mapping of object names to objects.
     objects: HashMap<String, ObjectType>,
@@ -219,7 +219,7 @@ impl Default for ParsedGraphQLSchema {
             identifier: "".to_string(),
             exec_source: ExecutionSource::Wasm,
             type_names: HashSet::new(),
-            entity_names_to_types: HashMap::new(),
+            typedef_names_to_types: HashMap::new(),
             enum_names: HashSet::new(),
             union_names: HashSet::new(),
             objects: HashMap::new(),
@@ -448,7 +448,7 @@ impl ParsedGraphQLSchema {
             }
         }
 
-        let entity_names_to_types = type_defs
+        let typedef_names_to_types = type_defs
             .iter()
             .filter(|(_, t)| !matches!(&t.kind, TypeKind::Enum(_)))
             .collect::<Vec<(&String, &TypeDefinition)>>()
@@ -481,7 +481,7 @@ impl ParsedGraphQLSchema {
             list_type_defs,
             unions,
             join_table_meta,
-            entity_names_to_types,
+            typedef_names_to_types,
         })
     }
 
@@ -634,7 +634,7 @@ impl ParsedGraphQLSchema {
         self.union_names.contains(name)
     }
 
-    /// Return the GraphQL type for a given field name.
+    /// Return the GraphQL type for a given `FieldDefinition` name.
     fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
         match self.object_field_mappings().get(cond) {
             Some(fieldset) => fieldset.get(name),
@@ -648,16 +648,19 @@ impl ParsedGraphQLSchema {
         }
     }
 
-    /// Return the GraphQL type for a given entity.
-    fn entity_type(&self, name: &str) -> Option<&String> {
-        self.entity_names_to_types.get(name)
+    /// Return the GraphQL type for a given `TypeDefinition` name.
+    fn typedef_type(&self, name: &str) -> Option<&String> {
+        self.typedef_names_to_types.get(name)
     }
 
-    /// Return the GraphQL type for a given entity or field.
+    /// Return the GraphQL type for a given `FieldDefinition` or `TypeDefinition` name.
+    // This serves as a convenience function so that the caller doesn't have to
+    // worry about handling the case in which `cond` is not present; for example,
+    // `cond` is None when retrieving the type for a top-level entity in a query.
     pub fn graphql_type(&self, cond: Option<&String>, name: &str) -> Option<&String> {
         match cond {
             Some(c) => self.field_type(c, name),
-            None => self.entity_type(name),
+            None => self.typedef_type(name),
         }
     }
 
