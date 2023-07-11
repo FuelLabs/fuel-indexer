@@ -16,6 +16,7 @@ set -ex
 cd examples/hello-world/
 
 # Start the local Fuel node in the background
+cargo build -p hello-world-node
 cargo run -p hello-world-node --bin hello-world-node &
 sleep 2
 
