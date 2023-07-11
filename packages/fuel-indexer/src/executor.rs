@@ -663,18 +663,25 @@ impl Executor for WasmIndexExecutor {
         )
         .await;
 
-        if let Err(e) = res {
-            error!("WasmIndexExecutor handle_events timed out: {e:?}.");
-            let _ = self.db.lock().await.revert_transaction().await?;
-            return Err(IndexerError::from(e));
-        } else {
-            let inner = res.unwrap();
-            if let Err(e) = inner {
+        match res {
+            Err(e) => {
+                error!("WasmIndexExecutor handle_events timed out: {e:?}.");
+                let _ = self.db.lock().await.revert_transaction().await?;
+                return Err(IndexerError::from(e));
+            }
+            Ok(Err(e)) => {
                 error!("WasmIndexExecutor handle_events failed: {e:?}.");
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }
-            let _ = self.db.lock().await.commit_transaction().await?;
+            Ok(Ok(Err(e))) => {
+                error!("WasmIndexExecutor handle_events failed: {e:?}.");
+                self.db.lock().await.revert_transaction().await?;
+                return Err(IndexerError::from(e));
+            }
+            Ok(Ok(Ok(()))) => {
+                let _ = self.db.lock().await.commit_transaction().await?;
+            }
         }
         Ok(())
     }
