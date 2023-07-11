@@ -15,7 +15,7 @@ In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github
 
 2. [Install PostgreSQL](https://www.postgresql.org/docs/).
 
-Note macOS you can install the latest version of PostgreSQL through `brew` by simply running:
+Note: macOS you can install the latest version of PostgreSQL through `brew` by simply running:
 
 <!-- markdownlint-disable MD014 -->
 ```console
@@ -27,6 +27,8 @@ $ brew install postgresql
 
 Make sure you have the latest version of `fuelup` by running the following command:
 
+Note: older versions of `fuel-indexer` might not work in this guide
+
 <!-- markdownlint-disable MD014 -->
 ```console
 $ fuelup self update
@@ -37,7 +39,7 @@ You can check your current toolchain anytime by running `fuelup show`.
 
 > Having problems with this part? Post your question on our forum [https://forum.fuel.network/](https://forum.fuel.network/). To help you as efficiently as possible, include the output of this command in your post: `fuelup show.`
 
-1. WebAssembly (WASM) Setup
+4. WebAssembly (WASM) Setup
 
 Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
@@ -294,7 +296,7 @@ If all goes well, you should see the following:
 
 With our indexer deployed, we should be able to query for newly indexed data after a few seconds.
 
-Head over to http://127.0.0.1:29987/api/playground/my_project/hello_indexer and paste in this simple GraphQL query and you should be able to get back transaction data from the beta-3 testnet! 
+Head over to your local [indexer playground](http://127.0.0.1:29987/api/playground/my_project/hello_indexer) and paste in this simple GraphQL query. You should be able to get back transaction data from the beta-3 testnet! 
 
 ```graphql
 query { 
