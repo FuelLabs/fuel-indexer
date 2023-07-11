@@ -95,6 +95,5 @@ sleep 2
 forc-index kill
 sleep 2
 
-
 # Finally, kill the hello-world-node
 kill -9 $(lsof -ti:4000)
