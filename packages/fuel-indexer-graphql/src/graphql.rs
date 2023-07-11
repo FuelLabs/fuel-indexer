@@ -192,10 +192,17 @@ impl Selections {
                     sub_selections,
                     alias,
                 } => {
-                    let field_type = schema
-                        .parsed()
-                        .graphql_type(cond, name)
-                        .expect("Unable to retrieve field type");
+                    let field_type =
+                        schema.parsed().graphql_type(cond, name).ok_or_else(|| {
+                            if let Some(c) = cond {
+                                GraphqlError::UnrecognizedField(
+                                    c.to_string(),
+                                    name.to_string(),
+                                )
+                            } else {
+                                GraphqlError::UnrecognizedType(name.to_string())
+                            }
+                        })?;
                     let _ = sub_selections.resolve_fragments(
                         schema,
                         Some(&field_type.clone()),
