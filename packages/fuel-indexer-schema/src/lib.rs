@@ -17,7 +17,6 @@ pub mod db;
 
 /// Placeholder value for SQL `NULL` values.
 const NULL_VALUE: &str = "NULL";
-pub const QUERY_ROOT: &str = "QueryRoot";
 
 /// Result type used by indexer schema operations.
 pub type IndexerSchemaResult<T> = core::result::Result<T, IndexerSchemaError>;
