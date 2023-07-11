@@ -382,8 +382,23 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
 
             if let Err(e) = result {
                 error!("Indexer executor failed {e:?}, retrying.");
-                sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
-                retry_count += 1;
+                match e {
+                    IndexerError::DatabaseError(
+                        crate::IndexerDatabaseError::SqlxError(e),
+                    ) => match e {
+                        sqlx::Error::Database(inner) => {
+                            error!("sqlx::Error::Database error: {inner:?}");
+                        }
+                        _ => {
+                            retry_count += 1;
+                        }
+                    },
+                    _ => {
+                        sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
+                        retry_count += 1;
+                    }
+                }
+
                 if retry_count < INDEXER_FAILED_CALLS {
                     println!("Retrying indexer, attempt: {retry_count}");
                     continue;
