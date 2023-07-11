@@ -635,7 +635,7 @@ impl ParsedGraphQLSchema {
     }
 
     /// Return the GraphQL type for a given field name.
-    pub fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
+    fn field_type(&self, cond: &str, name: &str) -> Option<&String> {
         match self.object_field_mappings().get(cond) {
             Some(fieldset) => fieldset.get(name),
             _ => {
@@ -648,10 +648,12 @@ impl ParsedGraphQLSchema {
         }
     }
 
+    /// Return the GraphQL type for a given entity.
     fn entity_type(&self, name: &str) -> Option<&String> {
         self.entity_names_to_types.get(name)
     }
 
+    /// Return the GraphQL type for a given entity or field.
     pub fn graphql_type(&self, cond: Option<&String>, name: &str) -> Option<&String> {
         match cond {
             Some(c) => self.field_type(c, name),

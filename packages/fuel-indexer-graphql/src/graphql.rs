@@ -115,7 +115,7 @@ impl Selections {
                         .iter()
                         .map(|(arg, value)| {
                             parse_argument_into_param(
-                                subfield_type,
+                                Some(subfield_type),
                                 &arg.to_string(),
                                 value.node.clone(),
                                 schema,
