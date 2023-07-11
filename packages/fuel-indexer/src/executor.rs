@@ -383,25 +383,18 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             if let Err(e) = result {
                 error!("Indexer executor failed {e:?}, retrying.");
                 match e {
-                    IndexerError::DatabaseError(
-                        crate::IndexerDatabaseError::SqlxError(e),
-                    ) => match e {
-                        sqlx::Error::Database(inner) => {
-                            // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
-                            // but sqlx v0.6 does not so we use a best guess.
-                            //
-                            // https://docs.rs/sqlx/0.7.0/sqlx/error/trait.DatabaseError.html#method.is_unique_violation
-                            if inner.constraint().is_some() {
-                                warn!("Constraint violation. Continuing...");
-                            } else {
-                                error!("Database error: {inner}.");
-                                retry_count += 1;
-                            }
-                        }
-                        _ => {
+                    IndexerError::SqlxError(sqlx::Error::Database(inner)) => {
+                        // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
+                        // but sqlx v0.6 does not so we use a best guess.
+                        //
+                        // https://docs.rs/sqlx/0.7.0/sqlx/error/trait.DatabaseError.html#method.is_unique_violation
+                        if inner.constraint().is_some() {
+                            warn!("Constraint violation. Continuing...");
+                        } else {
+                            error!("Database error: {inner}.");
                             retry_count += 1;
                         }
-                    },
+                    }
                     _ => {
                         sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
                         retry_count += 1;
@@ -409,7 +402,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
 
                 if retry_count < INDEXER_FAILED_CALLS {
-                    println!("Retrying indexer, attempt: {retry_count}");
+                    warn!("Retrying indexer after {retry_count} failed attempts.");
                     continue;
                 } else {
                     error!("Indexer failed after retries, giving up. <('.')>");
