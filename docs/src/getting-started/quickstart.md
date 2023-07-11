@@ -9,13 +9,13 @@ In this tutorial you will:
 
 ## 1. Prerequisites
 
-In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` component that we'll use to develop our indexer. There are a lot of prerequisites so please read through each installation carefully.  
+In this Quickstart, we'll use Fuel's toolchain manager [`fuelup`](https://github.com/FuelLabs/fuelup) in order to install the `forc-index` component that we'll use to develop our indexer.
 
 1. [Install the Rust toolchain](https://www.rust-lang.org/tools/install).
 
 2. [Install PostgreSQL](https://www.postgresql.org/docs/).
 
-Note: macOS you can install the latest version of PostgreSQL through `brew` by simply running:
+On macOS, you can use Homebrew to install PostgresSQL:
 
 <!-- markdownlint-disable MD014 -->
 ```console
@@ -25,21 +25,18 @@ $ brew install postgresql
 
 3. [Install the Fuel toolchain](https://github.com/FuelLabs/fuelup).
 
-Make sure you have the latest version of `fuelup` by running the following command:
-
-Note: older versions of `fuel-indexer` might not work in this guide
-
 <!-- markdownlint-disable MD014 -->
 ```console
 $ fuelup self update
 ```
 <!-- markdownlint-restore -->
+Check that you have the latest available version of fuel-indexer by ensuring that your toolchain is up-to-date.
 
 You can check your current toolchain anytime by running `fuelup show`.
 
 > Having problems with this part? Post your question on our forum [https://forum.fuel.network/](https://forum.fuel.network/). To help you as efficiently as possible, include the output of this command in your post: `fuelup show.`
 
-4. WebAssembly (WASM) Setup
+1. WebAssembly (WASM) Setup
 
 Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
@@ -67,13 +64,7 @@ $ brew install llvm
 ```
 <!-- markdownlint-restore -->
 
-Open up your `.zshrc` or `.bashrc` file and add the following environment variables to the end of that file. 
-
-<!-- markdownlint-disable MD014 -->
-```console
-$ nano ~/.zshrc
-```
-<!-- markdownlint-restore -->
+Open your shell configuration file in your preferred text editor and add the following environment variables:
 
 ```console
 export AR=/opt/homebrew/opt/llvm/bin/llvm-ar
@@ -83,15 +74,7 @@ export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
 export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
 ```
 
-Save and close the file by pressing `Ctrl+O` followed by `Ctrl+X`
-
-Apply the changes without opening a new terminal by running:
-
-<!-- markdownlint-disable MD014 -->
-```console
-$ source ~/.zshrc
-```
-<!-- markdownlint-restore -->
+Be sure to apply the new changes by either opening a new terminal or using the `source` command to reload your shell configuration.
 
 ## 2. Using the `forc-index` plugin
 
@@ -192,7 +175,7 @@ $ forc-index check
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | fuel-indexer binary    |  /Users/fuel-env/.fuelup/bin/fuel-indexer               |
 +--------+------------------------+---------------------------------------------------------+
-|  ✅  | fuel-indexer service   |  Local service found: PID(5137) | Port(29987).          |
+|   ✅   | fuel-indexer service   |  Local service found: PID(5137) | Port(29987).          |
 +--------+------------------------+---------------------------------------------------------+
 |   ✅   | psql                   |  /opt/homebrew/bin/psql                                 |
 +--------+------------------------+---------------------------------------------------------+
@@ -214,7 +197,7 @@ $ forc-index check
 
 ### 2.3 Creating a new indexer
 
-Now that we have our development environment set up, in a seperate terminal we will create indexer.
+Now that we have our development environment set up, let's open a separate terminal and create an indexer.
 
 <!-- markdownlint-disable MD014 -->
 ```console
@@ -296,7 +279,7 @@ If all goes well, you should see the following:
 
 With our indexer deployed, we should be able to query for newly indexed data after a few seconds.
 
-Head over to your local [indexer playground](http://127.0.0.1:29987/api/playground/my_project/hello_indexer) and paste in this simple GraphQL query. You should be able to get back transaction data from the beta-3 testnet! 
+Head over to your local [indexer playground](http://127.0.0.1:29987/api/playground/my_project/hello_indexer) and paste in this GraphQL query. You should be able to get back transaction data from the beta-3 testnet! 
 
 ```graphql
 query { 
@@ -311,8 +294,6 @@ query {
 ![Alt Text](../img/quickstart-gui.png)
 
 For more info on using the playground - [checkout the playground docs](../graphql/playground.md).
-
-Alternatively, we can write a simple GraphQL query that simply returns a few fields from all transactions that we've indexed.
 
 ### Finished! 🥳
 
