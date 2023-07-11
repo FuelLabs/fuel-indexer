@@ -36,7 +36,7 @@ You can check your current toolchain anytime by running `fuelup show`.
 
 > Having problems with this part? Post your question on our forum [https://forum.fuel.network/](https://forum.fuel.network/). To help you as efficiently as possible, include the output of this command in your post: `fuelup show.`
 
-1. WebAssembly (WASM) Setup
+4. WebAssembly (WASM) Setup
 
 Indexers are typically compiled to WASM so you'll need to have the proper WASM compilation target available on your system. You can install this target using `rustup`:
 
