@@ -1,6 +1,8 @@
 extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
+// TODO: We use a lot of manual type conversion below due to https://github.com/FuelLabs/fuel-indexer/issues/286
+
 impl From<fuel::ReturnType> for ReturnType {
     fn from(value: fuel::ReturnType) -> Self {
         match value {
@@ -489,14 +491,13 @@ impl From<fuel::Receipt> for Receipt {
                 pc,
                 is: isr,
             } => {
-                let recipient_bytes = <[u8; 32]>::try_from(recipient).unwrap();
                 let receipt = CallReceipt {
-                    contract_id: <[u8; 32]>::try_from(contract_id).unwrap().into(),
-                    recipient: Identity::ContractId(fuels::types::ContractId::from(
-                        recipient_bytes,
-                    )),
+                    contract_id: <[u8; 32]>::from(contract_id).into(),
+                    recipient: Identity::ContractId(ContractId::from(<[u8; 32]>::from(
+                        recipient,
+                    ))),
                     amount,
-                    asset_id: <[u8; 32]>::try_from(asset_id).unwrap().into(),
+                    asset_id: <[u8; 32]>::from(asset_id).into(),
                     gas,
                     param1,
                     param2,
@@ -515,7 +516,7 @@ impl From<fuel::Receipt> for Receipt {
                 is: isr,
             } => {
                 let receipt = ReturnReceipt {
-                    contract_id: <[u8; 32]>::try_from(contract_id).unwrap().into(),
+                    contract_id: <[u8; 32]>::from(contract_id).into(),
                     val,
                     pc,
                     isr,
@@ -535,10 +536,10 @@ impl From<fuel::Receipt> for Receipt {
                 is: isr,
             } => {
                 let receipt = ReturnDataReceipt {
-                    contract_id: <[u8; 32]>::try_from(contract_id).unwrap().into(),
+                    contract_id: <[u8; 32]>::from(contract_id).into(),
                     ptr,
                     len,
-                    digest: <[u8; 32]>::try_from(digest).unwrap().into(),
+                    digest: <[u8; 32]>::from(digest).into(),
                     data: data.into(),
                     pc,
                     isr,
@@ -557,10 +558,10 @@ impl From<fuel::Receipt> for Receipt {
                 pc,
                 is: isr,
             } => {
+                let contract_id =
+                    contract_id.map(|c| ContractId::from(<[u8; 32]>::from(c)));
                 let receipt = PanicReceipt {
-                    contract_id: Some(ContractId::from(
-                        <[u8; 32]>::try_from(contract_id.unwrap()).unwrap(),
-                    )),
+                    contract_id,
                     reason: Some(
                         InstructionResult {
                             reason: PanicReason::from(reason.reason().to_owned()).into(),
@@ -583,7 +584,7 @@ impl From<fuel::Receipt> for Receipt {
                 is: isr,
             } => {
                 let receipt = RevertReceipt {
-                    contract_id: <[u8; 32]>::try_from(contract_id).unwrap().into(),
+                    contract_id: <[u8; 32]>::from(contract_id).into(),
                     ra,
                     pc,
                     isr,
@@ -603,7 +604,7 @@ impl From<fuel::Receipt> for Receipt {
                 is: isr,
             } => {
                 let receipt = LogReceipt {
-                    contract_id: <[u8; 32]>::try_from(contract_id).unwrap().into(),
+                    contract_id: <[u8; 32]>::from(contract_id).into(),
                     ra,
                     rb,
                     rc,
@@ -628,12 +629,12 @@ impl From<fuel::Receipt> for Receipt {
                 is: isr,
             } => {
                 let receipt = LogDataReceipt {
-                    contract_id: <[u8; 32]>::try_from(contract_id).unwrap().into(),
+                    contract_id: <[u8; 32]>::from(contract_id).into(),
                     ra,
                     rb,
                     ptr,
                     len,
-                    digest: <[u8; 32]>::try_from(digest).unwrap().into(),
+                    digest: <[u8; 32]>::from(digest).into(),
                     data: data.into(),
                     pc,
                     isr,
@@ -651,14 +652,13 @@ impl From<fuel::Receipt> for Receipt {
                 pc,
                 is: isr,
             } => {
-                let recipient_bytes = <[u8; 32]>::try_from(recipient).unwrap();
                 let receipt = TransferReceipt {
-                    contract_id: <[u8; 32]>::try_from(contract_id).unwrap().into(),
-                    recipient: Identity::ContractId(fuels::types::ContractId::from(
-                        recipient_bytes,
-                    )),
+                    contract_id: <[u8; 32]>::from(contract_id).into(),
+                    recipient: Identity::ContractId(ContractId::from(<[u8; 32]>::from(
+                        recipient,
+                    ))),
                     amount,
-                    asset_id: <[u8; 32]>::try_from(asset_id).unwrap().into(),
+                    asset_id: <[u8; 32]>::from(asset_id).into(),
                     pc,
                     isr,
                     label: ReceiptLabel::Transfer.into(),
@@ -675,14 +675,13 @@ impl From<fuel::Receipt> for Receipt {
                 pc,
                 is: isr,
             } => {
-                let recipient_bytes = <[u8; 32]>::try_from(recipient).unwrap();
                 let receipt = TransferOutReceipt {
-                    contract_id: <[u8; 32]>::try_from(contract_id).unwrap().into(),
-                    recipient: Identity::Address(fuels::types::Address::from(
-                        recipient_bytes,
-                    )),
+                    contract_id: <[u8; 32]>::from(contract_id).into(),
+                    recipient: Identity::Address(Address::from(<[u8; 32]>::from(
+                        recipient,
+                    ))),
                     amount,
-                    asset_id: <[u8; 32]>::try_from(asset_id).unwrap().into(),
+                    asset_id: <[u8; 32]>::from(asset_id).into(),
                     pc,
                     isr,
                     label: ReceiptLabel::TransferOut.into(),
@@ -711,16 +710,15 @@ impl From<fuel::Receipt> for Receipt {
                 data,
                 ..
             } => {
-                let recipient_bytes = <[u8; 32]>::try_from(recipient).unwrap();
                 let receipt = MessageOutReceipt {
-                    sender: <[u8; 32]>::try_from(sender).unwrap().into(),
-                    recipient: Identity::Address(fuels::types::Address::from(
-                        recipient_bytes,
-                    )),
+                    sender: <[u8; 32]>::from(sender).into(),
+                    recipient: Identity::Address(Address::from(<[u8; 32]>::from(
+                        recipient,
+                    ))),
                     amount,
-                    nonce: <[u8; 32]>::try_from(nonce).unwrap().into(),
+                    nonce: <[u8; 32]>::from(nonce).into(),
                     len,
-                    digest: <[u8; 32]>::try_from(digest).unwrap().into(),
+                    digest: <[u8; 32]>::from(digest).into(),
                     data: data.into(),
                     label: ReceiptLabel::MessageOut.into(),
                     is_message_out: true,
@@ -764,7 +762,7 @@ impl From<fuel::TransactionData> for Transaction {
                     .map(|w| w.into())
                     .collect::<Vec<_>>();
 
-                let transactions = transaction
+                let receipts = transaction
                     .receipts
                     .iter()
                     .map(|r| Receipt::from(r.to_owned()).into())
@@ -782,7 +780,7 @@ impl From<fuel::TransactionData> for Transaction {
                     receipts_root,
                     metadata.to_owned().map(|m| m.into()),
                     true,
-                    Some(transactions),
+                    Some(receipts),
                     tx_status.id,
                 );
 
