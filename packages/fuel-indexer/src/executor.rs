@@ -376,8 +376,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
                         // but sqlx v0.6 does not so we use a best guess.
                         //
-                        // This is a temporary workaround - skipping bad items - until we formally decide on
-                        // the best way to fix https://github.com/FuelLabs/fuel-indexer/issues/1083
+                        // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1093
                         if inner.constraint().is_some() {
                             // Just bump the cursor and keep going
                             warn!("Constraint violation. Continuing...");
