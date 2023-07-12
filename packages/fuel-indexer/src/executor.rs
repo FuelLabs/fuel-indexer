@@ -675,7 +675,7 @@ impl Executor for WasmIndexExecutor {
                 return Err(IndexerError::from(e));
             }
             Ok(Ok(Err(e))) => {
-                error!("WasmIndexExecutor handle_events failed: {e:?}.");
+                error!("WasmIndexExecutor WASM module failed: {e:?}.");
                 self.db.lock().await.revert_transaction().await?;
                 return Err(IndexerError::from(e));
             }
