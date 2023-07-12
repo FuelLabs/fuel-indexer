@@ -1,13 +1,9 @@
-use crate::ffi;
 use crate::{IndexerResult, Manifest};
 use fuel_indexer_database::{queries, IndexerConnection, IndexerConnectionPool};
-use fuel_indexer_lib::{
-    fully_qualified_namespace, graphql::types::IdCol, ExecutionSource,
-};
+use fuel_indexer_lib::{fully_qualified_namespace, graphql::types::IdCol};
 use fuel_indexer_schema::FtColumn;
 use std::collections::HashMap;
 use tracing::{debug, error, info};
-use wasmer::Instance;
 
 /// Database for an executor instance, with schema info.
 #[derive(Debug)]
@@ -31,16 +27,21 @@ fn is_id_only_upsert(columns: &[String]) -> bool {
 
 impl Database {
     /// Create a new `Database`.
-    pub async fn new(pool: IndexerConnectionPool) -> IndexerResult<Database> {
-        Ok(Database {
+    pub async fn new(
+        pool: IndexerConnectionPool,
+        manifest: &Manifest,
+    ) -> IndexerResult<Database> {
+        let mut db = Database {
             pool,
             stashed: None,
-            namespace: Default::default(),
-            identifier: Default::default(),
+            namespace: manifest.namespace.clone(),
+            identifier: manifest.identifier.clone(),
             version: Default::default(),
             schema: Default::default(),
             tables: Default::default(),
-        })
+        };
+        db.load_schema().await?;
+        Ok(db)
     }
 
     /// Open a database transaction.
@@ -185,98 +186,42 @@ Do your WASM modules need to be rebuilt?
 
     /// Load the schema for this indexer from the database, and build a mapping of `TypeId`s to
     /// tables.
-    pub async fn load_schema(
-        &mut self,
-        manifest: &Manifest,
-        store_env_instance: Option<(
-            &mut wasmer::Store,
-            wasmer::FunctionEnv<crate::IndexEnv>,
-            &Instance,
-        )>,
-    ) -> IndexerResult<()> {
-        match manifest.execution_source() {
-            ExecutionSource::Native => {
-                self.namespace = manifest.namespace.clone();
-                self.identifier = manifest.identifier.clone();
+    async fn load_schema(&mut self) -> IndexerResult<()> {
+        let mut conn = self.pool.acquire().await?;
+        self.version =
+            queries::type_id_latest(&mut conn, &self.namespace, &self.identifier).await?;
 
-                let mut conn = self.pool.acquire().await?;
-                self.version =
-                    queries::type_id_latest(&mut conn, &self.namespace, &self.identifier)
-                        .await?;
+        info!(
+            "Loading schema for Indexer({}.{}) with Version({}).",
+            self.namespace, self.identifier, self.version
+        );
 
-                let results = queries::columns_get_schema(
-                    &mut conn,
-                    &self.namespace,
-                    &self.identifier,
-                    &self.version,
-                )
-                .await?;
+        let mut conn = self.pool.acquire().await?;
+        let columns = queries::columns_get_schema(
+            &mut conn,
+            &self.namespace,
+            &self.identifier,
+            &self.version,
+        )
+        .await?;
 
-                for column in results {
-                    let table = &format!(
-                        "{}.{}",
-                        fully_qualified_namespace(&self.namespace, &self.identifier),
-                        &column.table_name
-                    );
+        for column in columns {
+            let table = &format!(
+                "{}.{}",
+                fully_qualified_namespace(&self.namespace, &self.identifier),
+                &column.table_name
+            );
 
-                    self.tables
-                        .entry(column.type_id)
-                        .or_insert_with(|| table.to_string());
+            self.tables
+                .entry(column.type_id)
+                .or_insert_with(|| table.to_string());
 
-                    let columns = self
-                        .schema
-                        .entry(table.to_string())
-                        .or_insert_with(Vec::new);
+            let columns = self
+                .schema
+                .entry(table.to_string())
+                .or_insert_with(Vec::new);
 
-                    columns.push(column.column_name);
-                }
-            }
-            ExecutionSource::Wasm => {
-                // StoreMut must be dropped before await
-                {
-                    let (mut store, env, instance) = store_env_instance
-                        .expect("Store/FunctionEnv/Instance cannot be None");
-                    let mut env_mut = env.into_mut(&mut store);
-                    let (_, mut store) = env_mut.data_and_store_mut();
-
-                    self.namespace = ffi::get_namespace(&mut store, instance)?;
-                    self.identifier = ffi::get_identifier(&mut store, instance)?;
-                    self.version = ffi::get_version(&mut store, instance)?;
-                }
-
-                info!(
-                    "Loading schema for Indexer({}.{}) with Version({}).",
-                    self.namespace, self.identifier, self.version
-                );
-
-                let mut conn = self.pool.acquire().await?;
-                let columns = queries::columns_get_schema(
-                    &mut conn,
-                    &self.namespace,
-                    &self.identifier,
-                    &self.version,
-                )
-                .await?;
-
-                for column in columns {
-                    let table = &format!(
-                        "{}.{}",
-                        fully_qualified_namespace(&self.namespace, &self.identifier),
-                        &column.table_name
-                    );
-
-                    self.tables
-                        .entry(column.type_id)
-                        .or_insert_with(|| table.to_string());
-
-                    let columns = self
-                        .schema
-                        .entry(table.to_string())
-                        .or_insert_with(Vec::new);
-
-                    columns.push(column.column_name);
-                }
-            }
+            columns.push(column.column_name);
         }
 
         Ok(())

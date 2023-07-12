@@ -434,13 +434,16 @@ pub struct IndexEnv {
 }
 
 impl IndexEnv {
-    pub async fn new(pool: IndexerConnectionPool) -> IndexerResult<IndexEnv> {
-        let db = Arc::new(Mutex::new(Database::new(pool).await?));
+    pub async fn new(
+        pool: IndexerConnectionPool,
+        manifest: &Manifest,
+    ) -> IndexerResult<IndexEnv> {
+        let db = Database::new(pool, manifest).await?;
         Ok(IndexEnv {
             memory: None,
             alloc: None,
             dealloc: None,
-            db,
+            db: Arc::new(Mutex::new(db)),
         })
     }
 }
@@ -474,10 +477,9 @@ where
         pool: IndexerConnectionPool,
         handle_events_fn: fn(Vec<BlockData>, Arc<Mutex<Database>>) -> F,
     ) -> IndexerResult<Self> {
-        let db = Arc::new(Mutex::new(Database::new(pool).await?));
-        db.lock().await.load_schema(manifest, None).await?;
+        let db = Database::new(pool, manifest).await?;
         Ok(Self {
-            db,
+            db: Arc::new(Mutex::new(db)),
             manifest: manifest.to_owned(),
             handle_events_fn,
         })
@@ -538,7 +540,7 @@ impl WasmIndexExecutor {
         wasm_bytes: impl AsRef<[u8]>,
         pool: IndexerConnectionPool,
     ) -> IndexerResult<Self> {
-        let idx_env = IndexEnv::new(pool).await?;
+        let idx_env = IndexEnv::new(pool, manifest).await?;
         let db: Arc<Mutex<Database>> = idx_env.db.clone();
 
         let mut store = Store::new(Cranelift::default());
@@ -577,11 +579,6 @@ impl WasmIndexExecutor {
                     .get_typed_function(&store_mut, "dealloc_fn")?,
             );
         };
-
-        db.lock()
-            .await
-            .load_schema(manifest, Some((&mut store, env, &instance)))
-            .await?;
 
         Ok(WasmIndexExecutor {
             instance,

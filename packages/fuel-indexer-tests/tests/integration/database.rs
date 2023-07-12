@@ -34,12 +34,13 @@ const TEST_INDENTIFIER: &str = "simple_wasm_executor";
 
 async fn load_wasm_module(
     pool: IndexerConnectionPool,
+    manifest: &Manifest,
 ) -> IndexerResult<(Instance, Store)> {
     let compiler = compiler();
     let mut store = Store::new(compiler);
     let module = Module::new(&store, SIMPLE_WASM_WASM)?;
 
-    let env = wasmer::FunctionEnv::new(&mut store, IndexEnv::new(pool).await?);
+    let env = wasmer::FunctionEnv::new(&mut store, IndexEnv::new(pool, manifest).await?);
 
     let mut import_object = imports! {};
     for (export_name, export) in ffi::get_exports(&mut store, &env) {
@@ -105,19 +106,13 @@ async fn generate_schema_then_load_schema_from_wasm_module(database_url: &str) {
         assert_eq!(result.column_name, TEST_COLUMNS[index].2);
     }
 
-    let (instance, mut store) = load_wasm_module(pool.clone())
+    let (_instance, mut _store) = load_wasm_module(pool.clone(), &manifest)
         .await
         .expect("Error creating WASM module");
 
-    let mut db = Database::new(pool.clone())
+    let mut db = Database::new(pool.clone(), &manifest)
         .await
         .expect("Failed to create database object.");
-
-    let env =
-        wasmer::FunctionEnv::new(&mut store, IndexEnv::new(pool.clone()).await.unwrap());
-    db.load_schema(&manifest, Some((&mut store, env, &instance)))
-        .await
-        .expect("Could not load db schema");
 
     assert_eq!(db.namespace, "test_namespace");
     assert_eq!(db.version, version);
