@@ -80,7 +80,7 @@ impl Decoder for ImplementationDecoder {
                 let mut hasher = quote! { Sha256::new() };
 
                 let obj_field_names = parsed
-                    .object_field_mappings
+                    .object_field_mappings()
                     .get(&obj_name)
                     .expect("TypeDefinition not found in parsed GraphQL schema.")
                     .iter()
@@ -158,7 +158,7 @@ impl Decoder for ImplementationDecoder {
                     .flat_map(|m| {
                         let name = m.node.to_string();
                         parsed
-                            .object_field_mappings
+                            .object_field_mappings()
                             .get(&name)
                             .expect("Could not find union member in parsed schema.")
                             .iter()
@@ -315,7 +315,7 @@ impl From<ImplementationDecoder> for TokenStream {
                     .flat_map(|m| {
                         let name = m.node.to_string();
                         parsed
-                            .object_field_mappings
+                            .object_field_mappings()
                             .get(&name)
                             .expect("Could not find union member in parsed schema.")
                             .iter()
@@ -330,7 +330,7 @@ impl From<ImplementationDecoder> for TokenStream {
                     let member_ident = format_ident!("{}", m.to_string());
 
                     let member_fields = parsed
-                        .object_field_mappings
+                        .object_field_mappings()
                         .get(m.to_string().as_str())
                         .expect("Could not get field mappings for union member.")
                         .keys()
@@ -535,7 +535,7 @@ impl Decoder for ObjectDecoder {
                     .flat_map(|m| {
                         let name = m.node.to_string();
                         parsed
-                            .object_field_mappings
+                            .object_field_mappings()
                             .get(&name)
                             .expect("Could not find union member in parsed schema.")
                             .iter()

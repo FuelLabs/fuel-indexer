@@ -107,14 +107,10 @@ pub async fn init(command: StartCommand) -> anyhow::Result<()> {
 
     match cmd.spawn() {
         Ok(child) => {
-            info!(
-                "\n✅ Successfully started the indexer service at PID {}",
-                child.id()
-            );
+            let pid = child.id();
+            info!("✅ Successfully started the indexer service at PID {pid}");
         }
-        Err(e) => {
-            panic!("❌ Failed to spawn fuel-indexer child process: {e:?}.");
-        }
+        Err(e) => panic!("❌ Failed to spawn fuel-indexer child process: {e:?}."),
     }
 
     Ok(())

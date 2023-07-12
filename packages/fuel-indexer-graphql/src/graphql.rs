@@ -10,7 +10,7 @@ use async_graphql_parser::{
     },
 };
 use fuel_indexer_database_types::DbType;
-use fuel_indexer_schema::{db::tables::IndexerSchema, QUERY_ROOT};
+use fuel_indexer_schema::db::tables::IndexerSchema;
 use std::collections::HashMap;
 use thiserror::Error;
 
@@ -69,8 +69,6 @@ pub enum Selection {
 
 #[derive(Clone, Debug)]
 pub struct Selections {
-    #[allow(unused)]
-    field_type: String,
     has_fragments: bool,
     selections: Vec<Selection>,
 }
@@ -78,7 +76,7 @@ pub struct Selections {
 impl Selections {
     pub fn new(
         schema: &IndexerSchema,
-        field_type: &str,
+        field_type: Option<&String>,
         set: &SelectionSet,
     ) -> GraphqlResult<Selections> {
         let mut selections = Vec::with_capacity(set.items.len());
@@ -95,20 +93,29 @@ impl Selections {
                         alias,
                         ..
                     } = &field.node;
-
-                    let subfield_type = schema
-                        .parsed()
-                        .field_type(field_type, &name.to_string())
-                        .ok_or(GraphqlError::UnrecognizedField(
-                            field_type.into(),
-                            name.to_string(),
-                        ))?;
+                    let subfield_type =
+                        match schema.parsed().graphql_type(field_type, &name.to_string())
+                        {
+                            Some(typ) => typ,
+                            None => {
+                                if let Some(field_type) = field_type {
+                                    return Err(GraphqlError::UnrecognizedField(
+                                        field_type.into(),
+                                        name.to_string(),
+                                    ));
+                                } else {
+                                    return Err(GraphqlError::UnrecognizedType(
+                                        name.to_string(),
+                                    ));
+                                }
+                            }
+                        };
 
                     let params = arguments
                         .iter()
                         .map(|(arg, value)| {
                             parse_argument_into_param(
-                                subfield_type,
+                                Some(subfield_type),
                                 &arg.to_string(),
                                 value.node.clone(),
                                 schema,
@@ -116,8 +123,11 @@ impl Selections {
                         })
                         .collect::<Result<Vec<ParamType>, GraphqlError>>()?;
 
-                    let sub_selections =
-                        Selections::new(schema, subfield_type, &selection_set.node)?;
+                    let sub_selections = Selections::new(
+                        schema,
+                        Some(subfield_type),
+                        &selection_set.node,
+                    )?;
                     selections.push(Selection::Field {
                         name: name.to_string(),
                         params,
@@ -140,7 +150,6 @@ impl Selections {
         }
 
         Ok(Selections {
-            field_type: field_type.to_string(),
             has_fragments,
             selections,
         })
@@ -149,7 +158,7 @@ impl Selections {
     pub fn resolve_fragments(
         &mut self,
         schema: &IndexerSchema,
-        cond: &str,
+        cond: Option<&String>,
         fragments: &HashMap<String, Fragment>,
     ) -> GraphqlResult<usize> {
         let mut has_fragments = false;
@@ -161,10 +170,14 @@ impl Selections {
                 Selection::Fragment(name) => {
                     if let Some(frag) = fragments.get(name) {
                         if !frag.check_cond(cond) {
-                            return Err(GraphqlError::InvalidFragmentSelection(
-                                frag.clone(),
-                                cond.to_string(),
-                            ));
+                            if let Some(c) = cond {
+                                return Err(GraphqlError::InvalidFragmentSelection(
+                                    frag.clone(),
+                                    c.to_string(),
+                                ));
+                            } else {
+                                return Err(GraphqlError::FragmentResolverFailed);
+                            }
                         }
                         resolved += 1;
                         selections.extend(frag.selections.get_selections());
@@ -179,12 +192,22 @@ impl Selections {
                     sub_selections,
                     alias,
                 } => {
-                    let field_type = schema
-                        .parsed()
-                        .field_type(cond, name)
-                        .expect("Unable to retrieve field type");
-                    let _ = sub_selections
-                        .resolve_fragments(schema, field_type, fragments)?;
+                    let field_type =
+                        schema.parsed().graphql_type(cond, name).ok_or_else(|| {
+                            if let Some(c) = cond {
+                                GraphqlError::UnrecognizedField(
+                                    c.to_string(),
+                                    name.to_string(),
+                                )
+                            } else {
+                                GraphqlError::UnrecognizedType(name.to_string())
+                            }
+                        })?;
+                    let _ = sub_selections.resolve_fragments(
+                        schema,
+                        Some(&field_type.clone()),
+                        fragments,
+                    )?;
 
                     selections.push(Selection::Field {
                         name: name.to_string(),
@@ -218,13 +241,17 @@ impl Fragment {
         cond: String,
         selection_set: &async_graphql_parser::types::SelectionSet,
     ) -> GraphqlResult<Fragment> {
-        let selections = Selections::new(schema, &cond, selection_set)?;
+        let selections = Selections::new(schema, Some(&cond), selection_set)?;
 
         Ok(Fragment { cond, selections })
     }
 
-    pub fn check_cond(&self, cond: &str) -> bool {
-        self.cond == cond
+    pub fn check_cond(&self, cond: Option<&String>) -> bool {
+        if let Some(c) = cond {
+            self.cond == *c
+        } else {
+            false
+        }
     }
 
     pub fn has_fragments(&self) -> bool {
@@ -238,7 +265,7 @@ impl Fragment {
         fragments: &HashMap<String, Fragment>,
     ) -> GraphqlResult<usize> {
         self.selections
-            .resolve_fragments(schema, &self.cond, fragments)
+            .resolve_fragments(schema, Some(&self.cond.clone()), fragments)
     }
 }
 
@@ -555,8 +582,8 @@ impl<'a> GraphqlQueryBuilder<'a> {
                 // TODO: directives and variable definitions....
                 let OperationDefinition { selection_set, .. } = operation;
                 let mut selections =
-                    Selections::new(self.schema, QUERY_ROOT, &selection_set.node)?;
-                selections.resolve_fragments(self.schema, QUERY_ROOT, fragments)?;
+                    Selections::new(self.schema, None, &selection_set.node)?;
+                selections.resolve_fragments(self.schema, None, fragments)?;
 
                 Ok(Operation::new(
                     self.schema.parsed().namespace().to_string(),
@@ -657,14 +684,12 @@ mod tests {
     #[test]
     fn test_operation_parse_into_user_query() {
         let selections_on_block_field = Selections {
-            field_type: "BlockData".to_string(),
             has_fragments: false,
             selections: vec![
                 Selection::Field {
                     name: "id".to_string(),
                     params: Vec::new(),
                     sub_selections: Selections {
-                        field_type: "ID!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
@@ -674,7 +699,6 @@ mod tests {
                     name: "height".to_string(),
                     params: Vec::new(),
                     sub_selections: Selections {
-                        field_type: "UInt8!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
@@ -684,7 +708,6 @@ mod tests {
         };
 
         let selections_on_tx_field = Selections {
-            field_type: "Tx".to_string(),
             has_fragments: false,
             selections: vec![
                 Selection::Field {
@@ -697,7 +720,6 @@ mod tests {
                     name: "id".to_string(),
                     params: Vec::new(),
                     sub_selections: Selections {
-                        field_type: "ID!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
@@ -707,7 +729,6 @@ mod tests {
                     name: "timestamp".to_string(),
                     params: Vec::new(),
                     sub_selections: Selections {
-                        field_type: "Int8!".to_string(),
                         has_fragments: false,
                         selections: Vec::new(),
                     },
@@ -727,7 +748,6 @@ mod tests {
             namespace: "fuel_indexer_test".to_string(),
             identifier: "test_index".to_string(),
             selections: Selections {
-                field_type: "".to_string(),
                 has_fragments: false,
                 selections: query_selections,
             },
@@ -748,7 +768,7 @@ type Tx {
 }
 "#;
 
-        let mut schema = IndexerSchema::new(
+        let schema = IndexerSchema::new(
             "fuel_indexer_test",
             "test_index",
             &GraphQLSchema::new(schema.to_string()),
@@ -756,8 +776,6 @@ type Tx {
             ExecutionSource::Wasm,
         )
         .unwrap();
-
-        schema.register_queryroot_fields();
 
         let expected = vec![UserQuery {
             elements: vec![

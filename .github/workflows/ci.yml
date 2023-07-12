@@ -1,27 +1,28 @@
 name: CI
-
-on:
+'on':
   push:
     branches:
       - master
-  pull_request:
+  pull_request: null
   release:
-    types: [published]
-
+    types:
+      - published
 env:
-  DATABASE_URL: postgres://postgres:my-secret@localhost:5432
-  DASEL_VERSION: https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64
+  DATABASE_URL: 'postgres://postgres:my-secret@localhost:5432'
+  DASEL_VERSION: >-
+    https://github.com/TomWright/dasel/releases/download/v1.24.3/dasel_linux_amd64
   CARGO_TERM_COLOR: always
-  RUSTFLAGS: -D warnings
+  RUSTFLAGS: '-D warnings'
   REGISTRY: ghcr.io
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
   SQLX_OFFLINE: true
   RUSTC_VERSION: 1.69.0
-  BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
-  IS_MASTER: ${{ github.ref == 'refs/heads/master' }}
-  IS_RELEASE: ${{ github.event_name == 'release' && github.event.action == 'published' }}
-  IS_RELEASE_OR_MASTER: ${{ github.event_name == 'release' || github.event.action == 'published' || github.ref == 'refs/heads/master' }}
-
+  BRANCH_NAME: '${{ github.head_ref || github.ref_name }}'
+  IS_MASTER: '${{ github.ref == ''refs/heads/master'' }}'
+  IS_RELEASE: '${{ github.event_name == ''release'' && github.event.action == ''published'' }}'
+  IS_RELEASE_OR_MASTER: >-
+    ${{ github.event_name == 'release' || github.event.action == 'published' ||
+    github.ref == 'refs/heads/master' }}
 jobs:
   cancel-previous-runs:
     runs-on: ubuntu-latest
@@ -29,44 +30,43 @@ jobs:
       - name: Cancel Previous Runs
         uses: styfle/cancel-workflow-action@0.9.1
         with:
-          access_token: ${{ github.token }}
-
+          access_token: '${{ github.token }}'
   cargo-toml-fmt-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: ${{ env.RUSTC_VERSION }}
+          toolchain: '${{ env.RUSTC_VERSION }}'
       - name: setup binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install Cargo.toml linter
         run: cargo binstall --no-confirm cargo-sort
       - name: Run Cargo.toml sort check
         run: cargo sort -w --check packages/**/Cargo.toml
-
   set-env-vars:
     runs-on: ubuntu-latest
     outputs:
-      IS_MASTER: ${{ steps.set-env.outputs.IS_MASTER }}
-      IS_RELEASE: ${{ steps.set-env.outputs.IS_RELEASE }}
-      IS_RELEASE_OR_MASTER: ${{ steps.set-env.outputs.IS_RELEASE_OR_MASTER }}
-
+      IS_MASTER: '${{ steps.set-env.outputs.IS_MASTER }}'
+      IS_RELEASE: '${{ steps.set-env.outputs.IS_RELEASE }}'
+      IS_RELEASE_OR_MASTER: '${{ steps.set-env.outputs.IS_RELEASE_OR_MASTER }}'
     steps:
       - name: Set env vars
         id: set-env
-        run: |
+        run: >
           echo "IS_MASTER=${{ env.IS_MASTER }}" >> $GITHUB_OUTPUT
-          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT
-          echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >> $GITHUB_OUTPUT
 
+          echo "IS_RELEASE=${{ env.IS_RELEASE }}" >> $GITHUB_OUTPUT
+
+          echo "IS_RELEASE_OR_MASTER=${{ env.IS_RELEASE_OR_MASTER }}" >>
+          $GITHUB_OUTPUT
   check-is-semver-branch:
     if: needs.set-env-vars.outputs.IS_RELEASE_OR_MASTER != 'true'
     needs:
       - set-env-vars
     runs-on: ubuntu-latest
     outputs:
-      is_semver_branch: ${{ steps.semver-branch-check.outputs.is_semver_branch }}
+      is_semver_branch: '${{ steps.semver-branch-check.outputs.is_semver_branch }}'
     steps:
       - name: Check for semver branch
         id: semver-branch-check
@@ -77,7 +77,6 @@ jobs:
           else
             echo "Not a release branch ^(^.^)^"
           fi
-
   mdbook-lint:
     runs-on: ubuntu-latest
     steps:
@@ -88,7 +87,6 @@ jobs:
       - run: |
           npm install -g markdownlint-cli@0.31.1
           markdownlint --config .markdownlintrc **/*.md docs/src/
-
   mdbook-build:
     needs:
       - mdbook-lint
@@ -96,13 +94,11 @@ jobs:
     steps:
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
-
       - uses: Swatinem/rust-cache@v1
       - name: mdbook build
         uses: peaceiris/actions-mdbook@v1
         with:
-          mdbook-version: 'latest'
-
+          mdbook-version: latest
   cargo-verifications:
     runs-on: ubuntu-latest
     needs:
@@ -111,35 +107,52 @@ jobs:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     strategy:
       matrix:
-        command: [build]
-        args: [--locked --all-features --all-targets, --locked --no-default-features]
-        package: [fuel-indexer, fuel-indexer-api-server, fuel-indexer-database, fuel-indexer-database-types, fuel-indexer-postgres, fuel-indexer-lib, fuel-indexer-macros, fuel-indexer-metrics, fuel-indexer-plugin, fuel-indexer-schema, fuel-indexer-types, forc-index, forc-postgres]
-
-    # disallow any job that takes longer than 45 minutes
+        command:
+          - build
+        args:
+          - '--locked --all-features --all-targets'
+          - '--locked --no-default-features'
+        package:
+          - fuel-indexer
+          - fuel-indexer-api-server
+          - fuel-indexer-database
+          - fuel-indexer-database-types
+          - fuel-indexer-postgres
+          - fuel-indexer-lib
+          - fuel-indexer-macros
+          - fuel-indexer-metrics
+          - fuel-indexer-plugin
+          - fuel-indexer-schema
+          - fuel-indexer-types
+          - forc-index
+          - forc-postgres
     timeout-minutes: 45
-    continue-on-error: ${{ matrix.skip-error || false }}
+    continue-on-error: '${{ matrix.skip-error || false }}'
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
-
-      - name: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
-        if: ${{ matrix.package }}
-        run: cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args }}
-
+      - name: >-
+          cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args
+          }}
+        if: '${{ matrix.package }}'
+        run: >-
+          cargo ${{ matrix.command }} -p ${{ matrix.package }} ${{ matrix.args
+          }}
       - name: Notify if Job Fails
         uses: ravsamhq/notify-slack-action@v2
         if: always() && github.ref == 'refs/heads/master'
         with:
-          status: ${{ job.status }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          status: '${{ job.status }}'
+          token: '${{ secrets.GITHUB_TOKEN }}'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+          message_format: >-
+            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> :
+            <{run_url}|View Run Results>
           footer: ''
-          notify_when: 'failure'
+          notify_when: failure
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-
+          SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}'
   cargo-clippy:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
@@ -151,10 +164,9 @@ jobs:
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy, rustfmt
+          components: 'clippy, rustfmt'
       - name: cargo clippy --all-targets --all-features
         run: cargo clippy --all-targets --all-features
-
   cargo-fmt-check:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
@@ -169,7 +181,6 @@ jobs:
           components: rustfmt
       - name: cargo fmt --all --verbose -- --check
         run: cargo fmt --all --verbose -- --check
-
   cargo-test-unit-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
@@ -178,24 +189,29 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:latest
+        image: 'postgres:latest'
         env:
           POSTGRES_PASSWORD: my-secret
           POSTGRES_DB: postgres
           POSTGRES_USER: postgres
         ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+          - '5432:5432'
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
         credentials:
           username: fuellabs
-          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
+          password: '${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}'
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
-      - name: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests --exclude plugin-tests
-        run: cargo test --locked --all-targets --workspace --exclude fuel-indexer-tests --exclude plugin-tests
-
+      - name: >-
+          cargo test --locked --all-targets --workspace --exclude
+          fuel-indexer-tests --exclude plugin-tests
+        run: >-
+          cargo test --locked --all-targets --workspace --exclude
+          fuel-indexer-tests --exclude plugin-tests
   cargo-test-e2e-and-integration-tests:
     if: needs.set-env-vars.outputs.IS_RELEASE != 'true'
     needs:
@@ -204,17 +220,19 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:latest
+        image: 'postgres:latest'
         env:
           POSTGRES_PASSWORD: my-secret
           POSTGRES_DB: postgres
           POSTGRES_USER: postgres
         ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+          - '5432:5432'
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
         credentials:
           username: fuellabs
-          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
+          password: '${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}'
     steps:
       - uses: actions/checkout@v3
       - name: Install toolchain
@@ -223,24 +241,107 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v1
       - run: cargo install sqlx-cli
-
       - name: Install wasm-snip
         run: cargo install wasm-snip
-
       - name: Build fuel-indexer-test WASM
-        run: |
-          cargo build -p fuel-indexer-test --release --target wasm32-unknown-unknown
-          bash scripts/stripper.bash fuel_indexer_test.wasm
-          cp fuel_indexer_test.wasm target/wasm32-unknown-unknown/release/
+        run: >
+          cargo build -p fuel-indexer-test --release --target
+          wasm32-unknown-unknown
 
+          bash scripts/stripper.bash fuel_indexer_test.wasm
+
+          cp fuel_indexer_test.wasm target/wasm32-unknown-unknown/release/
       - name: Build simple-wasm WASM
         run: |
           cargo build -p simple-wasm --release --target wasm32-unknown-unknown
           bash scripts/stripper.bash simple_wasm.wasm
           cp simple_wasm.wasm target/wasm32-unknown-unknown/release/
-
       - name: Run E2E and integration tests
-        run: cargo test --locked --all-targets --features e2e,postgres -p fuel-indexer-tests -- --test-threads=1
+        run: >-
+          cargo test --locked --all-targets --features e2e,postgres -p
+          fuel-indexer-tests -- --test-threads=1
+  build-default-indexer:
+    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
+    needs:
+      - cargo-toml-fmt-check
+      - check-is-semver-branch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v1
+      - name: wasm-snip
+        run: cargo install wasm-snip
+      - name: cargo build -p forc-index -p fuel-indexer --locked --release
+        run: cargo build -p forc-index -p fuel-indexer --locked --release
+      - name: forc-index-* commands (wasm + native)
+        run: |
+          export PATH=$PATH:$PWD/target/release
+          echo $PATH
+          which forc-index
+          which fuel-indexer
+
+          forc-index check
+
+          mkdir -pv /tmp/indexer
+          cd /tmp/indexer
+
+          # WASM indexer
+          forc-index new indexer-test --namespace fuel
+          cd indexer-test/
+          forc-index build
+          cd ..
+          rm -rfv indexer-test
+
+          # Native indexer
+          forc-index new indexer-test --namespace fuel --native
+          cd indexer-test/
+          forc-index build --native
+          cd ..
+          rm -rfv indexer-test
+  build-and-test-examples:
+    if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
+    needs:
+      - cargo-toml-fmt-check
+      - check-is-semver-branch
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: 'postgres:latest'
+        env:
+          POSTGRES_PASSWORD: my-secret
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s
+          --health-retries 5
+        credentials:
+          username: fuellabs
+          password: '${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}'
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v1
+      - name: wasm-snip
+        run: cargo install wasm-snip
+      - name: cargo build -p forc-index -p fuel-indexer --locked --release
+        run: cargo build -p forc-index -p fuel-indexer --locked --release
+      - name: Build and test examples
+        run: |
+          export PATH=$PATH:$PWD/target/release
+          echo $PATH
+          which forc-index
+          which fuel-indexer
+          
+          bash ./ci/build-and-deploy-examples.bash
 
   cargo-test-forc-index-plugins:
     if: needs.check-is-semver-branch.outputs.is_semver_branch != 'true'
@@ -254,15 +355,11 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-
       - uses: Swatinem/rust-cache@v1
-
       - name: wasm-snip
         run: cargo install wasm-snip
-
       - name: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
         run: cargo test --locked --all-targets -p plugin-tests -- --test-threads=1
-
   publish-docker-image:
     needs:
       - set-env-vars
@@ -274,8 +371,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
-
       - name: Docker meta
         id: meta
         uses: docker/metadata-action@v3
@@ -291,53 +386,52 @@ jobs:
             latest=${{ github.ref == 'refs/heads/master' }}
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-
       - name: Log in to the ghcr.io registry
         uses: docker/login-action@v1
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
+          registry: '${{ env.REGISTRY }}'
+          username: '${{ github.repository_owner }}'
+          password: '${{ secrets.GITHUB_TOKEN }}'
       - name: Log in to the docker.io registry
         uses: docker/login-action@v2
         with:
           username: fuellabs
-          password: ${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}
-
+          password: '${{ secrets.DOCKER_IO_READ_ONLY_TOKEN }}'
       - name: Build and push the image to ghcr.io
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v4
         with:
           context: .
           file: deployment/Dockerfile
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: '${{ steps.meta.outputs.tags }}'
+          labels: '${{ steps.meta.outputs.labels }}'
           cache-from: type=gha
-          cache-to: type=gha,mode=max
-
+          cache-to: 'type=gha,mode=max'
       - name: Notify if Job Fails
         uses: ravsamhq/notify-slack-action@v2
-        if: always() && (github.ref == 'refs/heads/master' || github.ref_type == 'tag')
+        if: >-
+          always() && (github.ref == 'refs/heads/master' || github.ref_type ==
+          'tag')
         with:
-          status: ${{ job.status }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          status: '${{ job.status }}'
+          token: '${{ secrets.GITHUB_TOKEN }}'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+          message_format: >-
+            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> :
+            <{run_url}|View Run Results>
           footer: ''
-          notify_when: 'failure'
+          notify_when: failure
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-
+          SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}'
   publish-fuel-indexer-binaries:
-    runs-on: ${{ matrix.job.os }}
+    runs-on: '${{ matrix.job.os }}'
     needs:
       - set-env-vars
     if: needs.set-env-vars.outputs.IS_RELEASE == 'true'
     strategy:
       matrix:
         job:
-          # TODO: Add other targets as needed, using fuel-core as reference
           - os: ubuntu-latest
             platform: linux
             target: x86_64-unknown-linux-gnu
@@ -355,39 +449,33 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
       - name: Set up Docker Buildx
         if: matrix.job.cross_image
         uses: docker/setup-buildx-action@v1
-
-      - name: Setup custom cross env ${{ matrix.job.cross_image }}
+      - name: 'Setup custom cross env ${{ matrix.job.cross_image }}'
         if: matrix.job.cross_image
         uses: docker/build-push-action@v2
         with:
           context: ci
-          file: ci/Dockerfile.${{ matrix.job.target }}-clang
-          tags: ${{ matrix.job.cross_image }}:latest
+          file: 'ci/Dockerfile.${{ matrix.job.target }}-clang'
+          tags: '${{ matrix.job.cross_image }}:latest'
           load: true
           cache-from: type=gha
-          cache-to: type=gha,mode=max
-
+          cache-to: 'type=gha,mode=max'
       - name: Install packages (macOS)
         if: matrix.job.os == 'macos-latest'
         run: |
           ci/macos-install-packages.sh
-
       - uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.job.target }}
-
+          targets: '${{ matrix.job.target }}'
       - name: Install cross
         uses: baptiste0928/cargo-install@v1
         with:
           crate: cross
           cache-key: '${{ matrix.job.target }}'
-
       - name: Build fuel-indexer
         run: |
           cross \
@@ -398,14 +486,15 @@ jobs:
             --features fuel-core-lib \
             -p fuel-indexer-api-server \
             -p forc-index
-
       - name: Strip release binary linux x86_64
         if: matrix.job.platform == 'linux'
-        run: |
+        run: >
           strip "target/${{ matrix.job.target }}/release/fuel-indexer"
-          strip "target/${{ matrix.job.target }}/release/fuel-indexer-api-server"
-          strip "target/${{ matrix.job.target }}/release/forc-index"
 
+          strip "target/${{ matrix.job.target
+          }}/release/fuel-indexer-api-server"
+
+          strip "target/${{ matrix.job.target }}/release/forc-index"
       - name: Strip release binary aarch64-linux-gnu
         if: matrix.job.target == 'aarch64-unknown-linux-gnu'
         run: |
@@ -426,92 +515,123 @@ jobs:
           aarch64-linux-gnu:latest \
           aarch64-linux-gnu-strip \
           /target/aarch64-unknown-linux-gnu/release/forc-index
-
       - name: Strip release binary mac
         if: matrix.job.os == 'macos-latest'
-        run: |
+        run: >
           strip -x "target/${{ matrix.job.target }}/release/fuel-indexer"
-          strip -x "target/${{ matrix.job.target }}/release/fuel-indexer-api-server"
-          strip -x "target/${{ matrix.job.target }}/release/forc-index"
 
+          strip -x "target/${{ matrix.job.target
+          }}/release/fuel-indexer-api-server"
+
+          strip -x "target/${{ matrix.job.target }}/release/forc-index"
       - name: Prepare Binary Artifact
         env:
-          PLATFORM_NAME: ${{ matrix.job.platform }}
-          TARGET: ${{ matrix.job.target }}
-        run: |
+          PLATFORM_NAME: '${{ matrix.job.platform }}'
+          TARGET: '${{ matrix.job.target }}'
+        run: >
           # trim refs/tags/ prefix
+
           FUEL_INDEXER_VERSION="${GITHUB_REF#refs/tags/}"
 
+
           # optionally trim v from tag prefix
+
           FUEL_INDEXER_VERSION="${FUEL_INDEXER_VERSION#v}"
+
           echo "version is: $FUEL_INDEXER_VERSION"
 
+
           # setup artifact filename
-          INDEXER_ARTIFACT="fuel-indexer-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
-          API_SERVER_ARTIFACT="fuel-indexer-api-server-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
-          FORC_INDEX_ARTIFACT="forc-index-$FUEL_INDEXER_VERSION-${{ env.TARGET }}"
+
+          INDEXER_ARTIFACT="fuel-indexer-$FUEL_INDEXER_VERSION-${{ env.TARGET
+          }}"
+
+          API_SERVER_ARTIFACT="fuel-indexer-api-server-$FUEL_INDEXER_VERSION-${{
+          env.TARGET }}"
+
+          FORC_INDEX_ARTIFACT="forc-index-$FUEL_INDEXER_VERSION-${{ env.TARGET
+          }}"
+
           INDEXER_ZIP_FILE_NAME="$INDEXER_ARTIFACT.tar.gz"
+
           API_SERVER_ZIP_FILE_NAME="$API_SERVER_ARTIFACT.tar.gz"
+
           FORC_INDEX_ZIP_FILE_NAME="$FORC_INDEX_ARTIFACT.tar.gz"
+
           echo "INDEXER_ZIP_FILE_NAME=$INDEXER_ZIP_FILE_NAME" >> $GITHUB_ENV
-          echo "API_SERVER_ZIP_FILE_NAME=$API_SERVER_ZIP_FILE_NAME" >> $GITHUB_ENV
-          echo "FORC_INDEX_ZIP_FILE_NAME=$FORC_INDEX_ZIP_FILE_NAME" >> $GITHUB_ENV
+
+          echo "API_SERVER_ZIP_FILE_NAME=$API_SERVER_ZIP_FILE_NAME" >>
+          $GITHUB_ENV
+
+          echo "FORC_INDEX_ZIP_FILE_NAME=$FORC_INDEX_ZIP_FILE_NAME" >>
+          $GITHUB_ENV
+
 
           # create zip file
-          mkdir -pv "$INDEXER_ARTIFACT"
-          mkdir -pv "$API_SERVER_ARTIFACT"
-          mkdir -pv "$FORC_INDEX_ARTIFACT"
-          cp "target/${{ matrix.job.target }}/release/fuel-indexer" "$INDEXER_ARTIFACT"
-          cp "target/${{ matrix.job.target }}/release/fuel-indexer-api-server" "$API_SERVER_ARTIFACT"
-          cp "target/${{ matrix.job.target }}/release/forc-index" "$FORC_INDEX_ARTIFACT"
-          tar -czvf "$INDEXER_ZIP_FILE_NAME" "$INDEXER_ARTIFACT"
-          tar -czvf "$API_SERVER_ZIP_FILE_NAME" "$API_SERVER_ARTIFACT"
-          tar -czvf "$FORC_INDEX_ZIP_FILE_NAME" "$FORC_INDEX_ARTIFACT"
 
+          mkdir -pv "$INDEXER_ARTIFACT"
+
+          mkdir -pv "$API_SERVER_ARTIFACT"
+
+          mkdir -pv "$FORC_INDEX_ARTIFACT"
+
+          cp "target/${{ matrix.job.target }}/release/fuel-indexer"
+          "$INDEXER_ARTIFACT"
+
+          cp "target/${{ matrix.job.target }}/release/fuel-indexer-api-server"
+          "$API_SERVER_ARTIFACT"
+
+          cp "target/${{ matrix.job.target }}/release/forc-index"
+          "$FORC_INDEX_ARTIFACT"
+
+          tar -czvf "$INDEXER_ZIP_FILE_NAME" "$INDEXER_ARTIFACT"
+
+          tar -czvf "$API_SERVER_ZIP_FILE_NAME" "$API_SERVER_ARTIFACT"
+
+          tar -czvf "$FORC_INDEX_ZIP_FILE_NAME" "$FORC_INDEX_ARTIFACT"
       - name: Upload Indexer Binary Artifact
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: '${{ github.token }}'
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ env.INDEXER_ZIP_FILE_NAME }}
-          asset_name: ${{ env.INDEXER_ZIP_FILE_NAME }}
+          upload_url: '${{ github.event.release.upload_url }}'
+          asset_path: './${{ env.INDEXER_ZIP_FILE_NAME }}'
+          asset_name: '${{ env.INDEXER_ZIP_FILE_NAME }}'
           asset_content_type: application/gzip
-
       - name: Upload Api Server Binary Artifact
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: '${{ github.token }}'
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ env.API_SERVER_ZIP_FILE_NAME }}
-          asset_name: ${{ env.API_SERVER_ZIP_FILE_NAME }}
+          upload_url: '${{ github.event.release.upload_url }}'
+          asset_path: './${{ env.API_SERVER_ZIP_FILE_NAME }}'
+          asset_name: '${{ env.API_SERVER_ZIP_FILE_NAME }}'
           asset_content_type: application/gzip
-
       - name: Upload Forc Index Binary Artifact
         uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: '${{ github.token }}'
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ env.FORC_INDEX_ZIP_FILE_NAME }}
-          asset_name: ${{ env.FORC_INDEX_ZIP_FILE_NAME }}
+          upload_url: '${{ github.event.release.upload_url }}'
+          asset_path: './${{ env.FORC_INDEX_ZIP_FILE_NAME }}'
+          asset_name: '${{ env.FORC_INDEX_ZIP_FILE_NAME }}'
           asset_content_type: application/gzip
-
       - name: Notify if Job Fails
         uses: ravsamhq/notify-slack-action@v2
-        # need to find a work-around to be able to run this action on mac
-        if: always() && (github.ref == 'refs/heads/master' || github.ref_type == 'tag') && matrix.job.os != 'macos-latest'
+        if: >-
+          always() && (github.ref == 'refs/heads/master' || github.ref_type ==
+          'tag') && matrix.job.os != 'macos-latest'
         with:
-          status: ${{ job.status }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          status: '${{ job.status }}'
+          token: '${{ secrets.GITHUB_TOKEN }}'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+          message_format: >-
+            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> :
+            <{run_url}|View Run Results>
           footer: ''
-          notify_when: 'failure'
+          notify_when: failure
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-
+          SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}'
   deploy:
     if: needs.set-env-vars.outputs.IS_MASTER == 'true'
     needs:
@@ -524,7 +644,6 @@ jobs:
           tag=(`echo $GITHUB_SHA | cut -c1-7`)
           echo "IMAGE_TAG=`echo sha-$tag`" >> $GITHUB_ENV
           echo "DEPLOYMENT_VERSION=$(echo $GITHUB_SHA)" >> $GITHUB_ENV
-
       - name: Deploy Fuel Indexer
         id: deploy_fuel_indexer
         run: |
@@ -535,11 +654,9 @@ jobs:
             https://api.github.com/repos/FuelLabs/fuel-deployment/actions/workflows/deploy-fuel-indexer.yml/dispatches \
             -d '{"ref":"master","inputs":{ "k8s-type": "${{ env.K8S }}", "config-directory": "${{ env.CONFIG }}", "config-env": "${{ env.ENV }}", "deployment-version": "${{ env.DEPLOYMENT_VERSION }}", "image-tag": "${{ env.IMAGE_TAG }}" }}'
         env:
-          K8S: 'eks'
-          CONFIG: 'fuel-dev1'
-          ENV: 'fueldevsway.env'
-
-  # TODO: publish these in parallel
+          K8S: eks
+          CONFIG: fuel-dev1
+          ENV: fueldevsway.env
   publish:
     needs:
       - set-env-vars
@@ -548,38 +665,38 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-
       - uses: actions/checkout@v3
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-
       - name: Verify tag version
-        run: |
+        run: >
           curl -sSLf "${DASEL_VERSION}" -L -o dasel && chmod +x dasel
-          mv ./dasel /usr/local/bin/dasel
-          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }} Cargo.toml
 
+          mv ./dasel /usr/local/bin/dasel
+
+          ./.github/workflows/scripts/verify_tag.sh ${{ github.ref_name }}
+          Cargo.toml
       - name: Publish crates
         uses: katyo/publish-crates@v2
         with:
           publish-delay: 30000
-          registry-token: ${{ secrets.CARGO_REGISTRY_TOKEN }}
-
+          registry-token: '${{ secrets.CARGO_REGISTRY_TOKEN }}'
       - name: Notify Slack On Failure
         uses: ravsamhq/notify-slack-action@v2
         if: always()
         with:
-          status: ${{ job.status }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          status: '${{ job.status }}'
+          token: '${{ secrets.GITHUB_TOKEN }}'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+          message_format: >-
+            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> :
+            <{run_url}|View Run Results>
           footer: ''
-          notify_when: 'failure'
+          notify_when: failure
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
-
+          SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}'
   validation-complete:
     if: always()
     needs:
@@ -590,12 +707,11 @@ jobs:
       - cargo-test-e2e-and-integration-tests
       - cargo-clippy
       - cargo-fmt-check
+      - build-default-indexer
       - cargo-test-forc-index-plugins
-
     runs-on: ubuntu-latest
     steps:
       - run: true
-
   notify-slack-on-failure:
     needs:
       - validation-complete
@@ -605,11 +721,13 @@ jobs:
       - name: Notify Slack On Failure
         uses: ravsamhq/notify-slack-action@v2
         with:
-          status: ${{ job.status }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          status: '${{ job.status }}'
+          token: '${{ secrets.GITHUB_TOKEN }}'
           notification_title: '{workflow} has {status_message}'
-          message_format: '{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> : <{run_url}|View Run Results>'
+          message_format: >-
+            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> :
+            <{run_url}|View Run Results>
           footer: ''
-          notify_when: 'failure'
+          notify_when: failure
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}
+          SLACK_WEBHOOK_URL: '${{ secrets.SLACK_WEBHOOK_NOTIFY_BUILD }}'

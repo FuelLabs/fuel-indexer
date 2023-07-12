@@ -373,7 +373,7 @@ impl FilterType {
 /// `parse_arguments` is the entry point for parsing all API query arguments.
 /// Any new top-level operators should first be added here.
 pub fn parse_argument_into_param(
-    entity_type: &String,
+    entity_type: Option<&String>,
     arg: &str,
     value: Value,
     schema: &IndexerSchema,
@@ -401,7 +401,7 @@ pub fn parse_argument_into_param(
                 if let Some((field, sort_order)) = obj.into_iter().next() {
                     if schema
                         .parsed()
-                        .field_type(entity_type, field.as_str())
+                        .graphql_type(entity_type, field.as_str())
                         .is_some()
                     {
                         if let Value::Enum(sort_order) = sort_order {
@@ -458,10 +458,20 @@ pub fn parse_argument_into_param(
                 Err(GraphqlError::UnsupportedValueType(value.to_string()))
             }
         }
-        _ => Err(GraphqlError::UnrecognizedArgument(
-            entity_type.to_string(),
-            arg.to_string(),
-        )),
+        _ => {
+            if let Some(entity) = entity_type {
+                Err(GraphqlError::UnrecognizedArgument(
+                    entity.to_string(),
+                    arg.to_string(),
+                ))
+            } else {
+                // Returned when using an argument at the root of query
+                Err(GraphqlError::UnrecognizedArgument(
+                    "root level object".to_string(),
+                    arg.to_string(),
+                ))
+            }
+        }
     }
 }
 
@@ -470,7 +480,7 @@ pub fn parse_argument_into_param(
 /// This serves as a helper function for starting the parsing operation for values under the "filter" key.
 fn parse_filter_object(
     obj: IndexMap<Name, Value>,
-    entity_type: &String,
+    entity_type: Option<&String>,
     schema: &IndexerSchema,
     prior_filter: &mut Option<FilterType>,
 ) -> Result<FilterType, GraphqlError> {
@@ -499,7 +509,7 @@ fn parse_filter_object(
 fn parse_arg_pred_pair(
     key: &str,
     predicate: Value,
-    entity_type: &String,
+    entity_type: Option<&String>,
     schema: &IndexerSchema,
     prior_filter: &mut Option<FilterType>,
     top_level_arg_value_iter: &mut impl Iterator<Item = (Name, Value)>,
@@ -512,13 +522,17 @@ fn parse_arg_pred_pair(
                     if let Value::Enum(column) = element {
                         if schema
                             .parsed()
-                            .field_type(entity_type, column.as_str())
+                            .graphql_type(entity_type, column.as_str())
                             .is_some()
                         {
                             column_list.push(column.to_string())
-                        } else {
+                        } else if let Some(entity) = entity_type {
                             return Err(GraphqlError::UnrecognizedField(
-                                entity_type.to_string(),
+                                entity.to_string(),
+                                column.to_string(),
+                            ));
+                        } else {
+                            return Err(GraphqlError::UnrecognizedType(
                                 column.to_string(),
                             ));
                         }
@@ -556,7 +570,7 @@ fn parse_arg_pred_pair(
             }
         }
         other => {
-            if schema.parsed().field_type(entity_type, other).is_some() {
+            if schema.parsed().graphql_type(entity_type, other).is_some() {
                 if let Value::Object(inner_obj) = predicate {
                     for (key, predicate) in inner_obj.iter() {
                         match key.as_str() {
@@ -639,10 +653,7 @@ fn parse_arg_pred_pair(
                     Err(GraphqlError::UnsupportedValueType(predicate.to_string()))
                 }
             } else {
-                Err(GraphqlError::UnrecognizedField(
-                    entity_type.to_string(),
-                    other.to_string(),
-                ))
+                Err(GraphqlError::UnrecognizedType(other.to_string()))
             }
         }
     }
@@ -656,7 +667,7 @@ fn parse_arg_pred_pair(
 fn parse_binary_logical_operator(
     key: &str,
     predicate: Value,
-    entity_type: &String,
+    entity_type: Option<&String>,
     schema: &IndexerSchema,
     top_level_arg_value_iter: &mut impl Iterator<Item = (Name, Value)>,
     prior_filter: &mut Option<FilterType>,

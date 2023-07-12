@@ -34,8 +34,8 @@ pub const INDEXER_FAILED_CALLS: usize = 10;
 /// Stop indexers that have seen `MAX_EMPTY_BLOCK_REQUESTS`.
 pub const STOP_IDLE_INDEXERS: bool = false;
 
-/// Max body size for GraphQL API requests.
-pub const MAX_BODY_SIZE: usize = 5242880; // 5MB
+/// Max body size for GraphQL API requests (5 MB).
+pub const MAX_BODY_SIZE: usize = 5242880;
 
 /// Size of web-API-to-executor-service channel.
 pub const SERVICE_REQUEST_CHANNEL_SIZE: usize = 100;
@@ -116,4 +116,6 @@ pub const LOG_LEVEL: &str = "info";
 pub const INDEXER_HANDLER_TIMEOUT: u64 = 5;
 
 /// Whether to allow replacing an indexer.
+///
+/// If this is disabled, then an HTTP 409 Conflict will be returned if an indexer with the same name already exists.
 pub const REPLACE_INDEXER: bool = false;
