@@ -1,6 +1,8 @@
 extern crate alloc;
 use fuel_indexer_utils::prelude::*;
 
+// TODO: We use a lot of manual type conversion below due to https://github.com/FuelLabs/fuel-indexer/issues/286
+
 impl From<fuel::ReturnType> for ReturnType {
     fn from(value: fuel::ReturnType) -> Self {
         match value {
@@ -556,7 +558,6 @@ impl From<fuel::Receipt> for Receipt {
                 pc,
                 is: isr,
             } => {
-                // We have to manually convert all these types because of https://github.com/FuelLabs/fuel-indexer/issues/286
                 let contract_id =
                     contract_id.map(|c| ContractId::from(<[u8; 32]>::from(c)));
                 let receipt = PanicReceipt {
