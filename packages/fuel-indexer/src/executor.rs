@@ -386,10 +386,10 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     IndexerError::SqlxError(sqlx::Error::Database(inner)) => {
                         // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
                         // but sqlx v0.6 does not so we use a best guess.
-                        //
-                        // https://docs.rs/sqlx/0.7.0/sqlx/error/trait.DatabaseError.html#method.is_unique_violation
                         if inner.constraint().is_some() {
                             warn!("Constraint violation. Continuing...");
+                            next_cursor = cursor;
+                            continue;
                         } else {
                             error!("Database error: {inner}.");
                             retry_count += 1;
@@ -402,7 +402,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
 
                 if retry_count < INDEXER_FAILED_CALLS {
-                    warn!("Retrying indexer after {retry_count} failed attempts.");
+                    warn!("Retrying handler after {retry_count} failed attempts.");
                     continue;
                 } else {
                     error!("Indexer failed after retries, giving up. <('.')>");
