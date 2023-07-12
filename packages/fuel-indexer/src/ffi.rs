@@ -154,7 +154,8 @@ fn put_object(env: &IndexEnv, type_id: i64, ptr: u32, len: u32) {
         bytes.extend_from_slice(&mem.data_unchecked()[range]);
     }
 
-    let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
+    let columns: Vec<FtColumn> = bincode::deserialize(&bytes)
+        .expect("Failed to deserialize Vec<FtColumn> for put_object.");
 
     let rt = tokio::runtime::Handle::current();
     rt.block_on(async {
