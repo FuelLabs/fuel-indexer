@@ -6,7 +6,7 @@ use thiserror::Error;
 use tracing::{debug, error, info, trace, warn};
 use wasmer::{
     ExportError, Exports, Function, FunctionEnvMut, Instance, MemoryView, RuntimeError,
-    Store, StoreMut, WasmPtr,
+    Store, WasmPtr,
 };
 
 use crate::{IndexEnv, IndexerResult};
@@ -24,76 +24,6 @@ pub enum FFIError {
     Export(#[from] ExportError),
     #[error("Expected result from call {0:?}")]
     None(String),
-}
-
-pub(crate) fn get_namespace(
-    store: &mut StoreMut,
-    instance: &Instance,
-) -> Result<String, FFIError> {
-    let exports = &instance.exports;
-
-    let ptr = exports
-        .get_function("get_namespace_ptr")?
-        .call(store, &[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_namespace".to_string()))? as u32;
-
-    let len = exports
-        .get_function("get_namespace_len")?
-        .call(store, &[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_namespace".to_string()))? as u32;
-
-    let memory = exports.get_memory("memory")?.view(store);
-    let namespace = get_string(&memory, ptr, len)?;
-
-    Ok(namespace)
-}
-
-pub(crate) fn get_identifier(
-    store: &mut StoreMut,
-    instance: &Instance,
-) -> Result<String, FFIError> {
-    let exports = &instance.exports;
-
-    let ptr = exports
-        .get_function("get_identifier_ptr")?
-        .call(store, &[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_identifier".to_string()))?
-        as u32;
-
-    let len = exports
-        .get_function("get_identifier_len")?
-        .call(store, &[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_identifier".to_string()))?
-        as u32;
-
-    let memory = exports.get_memory("memory")?.view(store);
-    let identifier = get_string(&memory, ptr, len)?;
-
-    Ok(identifier)
-}
-
-pub(crate) fn get_version(
-    store: &mut StoreMut,
-    instance: &Instance,
-) -> Result<String, FFIError> {
-    let exports = &instance.exports;
-
-    let ptr = exports.get_function("get_version_ptr")?.call(store, &[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
-
-    let len = exports.get_function("get_version_len")?.call(store, &[])?[0]
-        .i32()
-        .ok_or_else(|| FFIError::None("get_version".to_string()))? as u32;
-
-    let memory = exports.get_memory("memory")?.view(store);
-    let version = get_string(&memory, ptr, len)?;
-
-    Ok(version)
 }
 
 fn get_string(mem: &MemoryView, ptr: u32, len: u32) -> Result<String, FFIError> {
