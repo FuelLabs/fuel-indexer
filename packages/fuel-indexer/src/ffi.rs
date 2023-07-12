@@ -1,4 +1,3 @@
-use async_std::sync::{Arc, Mutex};
 use fuel_indexer_schema::FtColumn;
 use fuel_indexer_types::ffi::{
     LOG_LEVEL_DEBUG, LOG_LEVEL_ERROR, LOG_LEVEL_INFO, LOG_LEVEL_TRACE, LOG_LEVEL_WARN,
@@ -154,8 +153,6 @@ pub fn get_exports(store: &mut Store, env: &wasmer::FunctionEnv<IndexEnv>) -> Ex
 /// Holds on to a byte blob that has been copied into WASM memory until
 /// it's not needed anymore, then tells WASM to deallocate.
 pub(crate) struct WasmArg<'a> {
-    rt: tokio::runtime::Handle,
-    store: Arc<Mutex<Store>>,
     instance: &'a Instance,
     ptr: u32,
     len: u32,
@@ -164,33 +161,24 @@ pub(crate) struct WasmArg<'a> {
 impl<'a> WasmArg<'a> {
     #[allow(clippy::result_large_err)]
     pub fn new(
-        rt: tokio::runtime::Handle,
-        store: Arc<Mutex<Store>>,
+        store: &mut Store,
         instance: &'a Instance,
         bytes: Vec<u8>,
     ) -> IndexerResult<WasmArg<'a>> {
-        let store_ = store.clone();
-        let mut store_guard = rt.block_on(store_.lock());
         let alloc_fn = instance
             .exports
-            .get_typed_function::<u32, u32>(&store_guard, "alloc_fn")?;
+            .get_typed_function::<u32, u32>(store, "alloc_fn")?;
 
         let len = bytes.len() as u32;
-        let ptr = alloc_fn.call(&mut store_guard, len)?;
+        let ptr = alloc_fn.call(store, len)?;
         let range = ptr as usize..(ptr + len) as usize;
 
-        let memory = instance.exports.get_memory("memory")?.view(&store_guard);
+        let memory = instance.exports.get_memory("memory")?.view(store);
         unsafe {
             memory.data_unchecked_mut()[range].copy_from_slice(&bytes);
         }
 
-        Ok(WasmArg {
-            rt,
-            store,
-            instance,
-            ptr,
-            len,
-        })
+        Ok(WasmArg { instance, ptr, len })
     }
 
     pub fn get_ptr(&self) -> u32 {
@@ -200,18 +188,15 @@ impl<'a> WasmArg<'a> {
     pub fn get_len(&self) -> u32 {
         self.len
     }
-}
 
-impl<'a> Drop for WasmArg<'a> {
-    fn drop(&mut self) {
-        let mut store_guard = self.rt.block_on(self.store.lock());
+    pub fn drop(&mut self, store: &mut Store) {
         let dealloc_fn = self
             .instance
             .exports
-            .get_typed_function::<(u32, u32), ()>(&store_guard, "dealloc_fn")
+            .get_typed_function::<(u32, u32), ()>(store, "dealloc_fn")
             .expect("No dealloc fn");
         dealloc_fn
-            .call(&mut store_guard, self.ptr, self.len)
+            .call(store, self.ptr, self.len)
             .expect("Dealloc failed");
     }
 }
