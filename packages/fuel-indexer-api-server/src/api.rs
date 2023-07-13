@@ -99,6 +99,8 @@ pub enum ApiError {
     HexError(#[from] hex::FromHexError),
     #[error("BoxError: {0:?}")]
     BoxError(#[from] axum::BoxError),
+    #[error("SqlParser error: {0:?}")]
+    SqlParser(#[from] sqlparser::parser::ParserError),
 }
 
 impl Default for ApiError {

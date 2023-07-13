@@ -3401,6 +3401,7 @@ dependencies = [
  "jsonwebtoken",
  "serde",
  "serde_json",
+ "sqlparser",
  "sqlx",
  "thiserror",
  "tokio 1.29.1",
@@ -7641,6 +7642,15 @@ dependencies = [
  "itertools 0.10.5",
  "nom",
  "unicode_categories",
+]
+
+[[package]]
+name = "sqlparser"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fa863a2dfc4879a35647c51dadf495a2ad53745eaf3723fda27006e745fb0ba"
+dependencies = [
+ "log",
 ]
 
 [[package]]
