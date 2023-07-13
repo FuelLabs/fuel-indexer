@@ -107,10 +107,13 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         None
     };
 
-    info!("Subscribing to Fuel node at {fuel_node_addr}");
+    let indexer_uid = manifest.uid();
 
-    let client = FuelClient::from_str(&fuel_node_addr)
-        .unwrap_or_else(|e| panic!("Node connection failed: {e}."));
+    info!("Indexer({indexer_uid}) subscribing to Fuel node at {fuel_node_addr}");
+
+    let client = FuelClient::from_str(&fuel_node_addr).unwrap_or_else(|e| {
+        panic!("Indexer({indexer_uid}) client node connection failed: {e}.")
+    });
 
     async move {
         let mut retry_count = 0;
@@ -126,7 +129,9 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
         let mut num_empty_block_reqs = 0;
 
         loop {
-            debug!("Fetching paginated results from {next_cursor:?}");
+            debug!(
+                "Indexer({indexer_uid}) fetching paginated results from {next_cursor:?}"
+            );
 
             let PaginatedResult {
                 cursor, results, ..
@@ -138,7 +143,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 })
                 .await
                 .unwrap_or_else(|e| {
-                    error!("Failed to retrieve blocks: {e}");
+                    error!("Indexer({indexer_uid}) ailed to retrieve blocks: {e}");
                     PaginatedResult {
                         cursor: None,
                         results: vec![],
@@ -151,7 +156,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             for block in results.into_iter() {
                 if let Some(end_block) = end_block {
                     if block.header.height.0 > end_block {
-                        info!("Stopping indexer at the specified end_block: {end_block}");
+                        info!("Stopping Indexer({indexer_uid}) at the specified end_block: {end_block}");
                         break;
                     }
                 }
@@ -264,12 +269,8 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 .storage_slots()
                                 .iter()
                                 .map(|x| StorageSlot {
-                                    key: <[u8; 32]>::try_from(*x.key())
-                                        .expect("Could not convert key to bytes")
-                                        .into(),
-                                    value: <[u8; 32]>::try_from(*x.value())
-                                        .expect("Could not convert key to bytes")
-                                        .into(),
+                                    key: <[u8; 32]>::from(*x.key()).into(),
+                                    value: <[u8; 32]>::from(*x.value()).into(),
                                 })
                                 .collect(),
                             inputs: tx
@@ -283,9 +284,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                                 .map(|o| o.to_owned().into())
                                 .collect(),
                             witnesses: tx.witnesses().to_vec(),
-                            salt: <[u8; 32]>::try_from(*tx.salt())
-                                .expect("Could not convert key to bytes")
-                                .into(),
+                            salt: <[u8; 32]>::from(*tx.salt()).into(),
                             metadata: None,
                         }),
                         _ => Transaction::default(),
@@ -394,10 +393,12 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 }
 
                 if retry_count < INDEXER_FAILED_CALLS {
-                    warn!("Retrying handler after {retry_count} failed attempts.");
+                    warn!("Indexer({indexer_uid}) retrying handler after {retry_count} failed attempts.");
                     continue;
                 } else {
-                    error!("Indexer failed after retries, giving up. <('.')>");
+                    error!(
+                        "Indexer({indexer_uid}) failed after retries, giving up. <('.')>"
+                    );
                     break;
                 }
             }
@@ -409,7 +410,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                 num_empty_block_reqs += 1;
 
                 if num_empty_block_reqs == max_empty_block_reqs {
-                    error!("No blocks being produced, giving up. <('.')>");
+                    error!("No blocks being produced, Indexer({indexer_uid}) giving up. <('.')>");
                     break;
                 }
             } else {
@@ -418,6 +419,7 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
             }
 
             if kill_switch.load(Ordering::SeqCst) {
+                info!("Kill switch flipped, stopping Indexer({indexer_uid}). <('.')>");
                 break;
             }
 
