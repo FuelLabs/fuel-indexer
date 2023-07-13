@@ -124,7 +124,16 @@ fn put_object(mut env: FunctionEnvMut<IndexEnv>, type_id: i64, ptr: u32, len: u3
         bytes.extend_from_slice(&mem.data_unchecked()[range]);
     }
 
-    let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
+    let columns: Vec<FtColumn> = match bincode::deserialize(&bytes) {
+        Ok(columns) => columns,
+        Err(e) => {
+            error!(
+                "Failed to deserialize Vec<FtColumn> for put_object: {:?}",
+                e
+            );
+            return;
+        }
+    };
 
     let rt = tokio::runtime::Handle::current();
     rt.block_on(async {
