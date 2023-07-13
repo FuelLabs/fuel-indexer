@@ -576,7 +576,7 @@ impl WasmIndexExecutor {
         // across await
         {
             let mut env_mut = env.clone().into_mut(&mut store);
-            let (mut data_mut, store_mut) = env_mut.data_and_store_mut();
+            let (data_mut, store_mut) = env_mut.data_and_store_mut();
 
             data_mut.memory = Some(instance.exports.get_memory("memory")?.clone());
             data_mut.alloc = Some(
