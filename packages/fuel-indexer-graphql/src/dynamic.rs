@@ -123,7 +123,7 @@ lazy_static! {
     /// so that they do not appear in the generated documentation. This is done
     /// to hide internal Fuel indexer entity types.
     static ref IGNORED_ENTITY_TYPES: HashSet<&'static str> =
-        HashSet::from(["IndexMetadataEntity", "QueryRoot"]);
+        HashSet::from(["IndexMetadataEntity"]);
 
     /// Entity fields that should be ignored when building the dynamic schema,
     /// so that they do not appear in the generated documentation. This is done
@@ -204,7 +204,7 @@ pub fn build_dynamic_schema(schema: &IndexerSchema) -> GraphqlResult<DynamicSche
 
     let sort_enum = Enum::new("SortOrder").item("asc").item("desc");
 
-    for (entity_type, field_map) in &schema.parsed().object_field_mappings {
+    for (entity_type, field_map) in schema.parsed().object_field_mappings() {
         if IGNORED_ENTITY_TYPES.contains(&entity_type.as_str()) {
             continue;
         }

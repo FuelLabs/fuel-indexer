@@ -5,14 +5,13 @@
 //!
 //! Also used to load tables from the database when web requests are made.
 
-use crate::{db::IndexerSchemaDbResult, QUERY_ROOT};
+use crate::db::IndexerSchemaDbResult;
 use fuel_indexer_database::{
     queries, types::*, DbType, IndexerConnection, IndexerConnectionPool,
 };
 use fuel_indexer_lib::graphql::{GraphQLSchema, ParsedGraphQLSchema};
 use fuel_indexer_lib::{manifest::Manifest, ExecutionSource};
 use itertools::Itertools;
-use std::collections::BTreeMap;
 
 /// `IndexerSchema` is used to encapsulate most of the logic related to parsing
 /// GraphQL types, generating SQL from those types, and committing that SQL to
@@ -220,37 +219,13 @@ impl IndexerSchema {
             .map(|(_, t)| Table::from_typedef(t, &parsed))
             .collect::<Vec<Table>>();
 
-        let mut schema = IndexerSchema {
+        Ok(IndexerSchema {
             namespace: root.schema_name,
             identifier: root.schema_identifier,
             schema,
             tables,
             parsed,
             db_type: DbType::Postgres,
-        };
-
-        schema.register_queryroot_fields();
-
-        Ok(schema)
-    }
-
-    /// Register the `QueryRoot` type and its corresponding field types.
-    pub fn register_queryroot_fields(&mut self) {
-        // **** HACK ****
-
-        // Below we manually add a `QueryRoot` type, with its corresponding field types
-        // data being each `Object` defined in the schema.
-
-        // We need this because at the moment our GraphQL query parsing is tightly-coupled
-        // to our old way of resolving GraphQL types (which was using a `QueryType` object
-        // defined in a `TypeSystemDefinition::Schema`)
-        self.parsed.object_field_mappings.insert(
-            QUERY_ROOT.to_string(),
-            self.parsed
-                .non_enum_typdefs()
-                .iter()
-                .map(|(k, _)| (k.to_lowercase(), k.to_string()))
-                .collect::<BTreeMap<String, String>>(),
-        );
+        })
     }
 }

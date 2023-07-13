@@ -998,7 +998,7 @@ impl Table {
                     .flat_map(|m| {
                         let name = m.node.to_string();
                         parsed
-                            .object_field_mappings
+                            .object_field_mappings()
                             .get(&name)
                             .unwrap_or(&default_)
                             .iter()

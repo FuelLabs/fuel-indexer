@@ -342,12 +342,18 @@ async fn get_start_block(
         ..
     } = manifest;
     match &resumable {
-        Some(_) => {
+        Some(resumable) => {
             let last =
                 queries::last_block_height_for_indexer(conn, namespace, identifier)
                     .await?;
-            info!("Resuming index from block {last}");
-            Ok(last)
+            let start = start_block.unwrap_or(last);
+            let resume = if *resumable {
+                std::cmp::max(start, last)
+            } else {
+                start
+            };
+            info!("Resuming index from block {resume}");
+            Ok(resume)
         }
         None => Ok(start_block.unwrap_or(1)),
     }

@@ -16,6 +16,7 @@ set -ex
 cd examples/hello-world/
 
 # Start the local Fuel node in the background
+cargo build -p hello-world-node
 cargo run -p hello-world-node --bin hello-world-node &
 sleep 2
 
@@ -93,7 +94,6 @@ sleep 2
 # Shutdown the service
 forc-index kill
 sleep 2
-
 
 # Finally, kill the hello-world-node
 kill -9 $(lsof -ti:4000)

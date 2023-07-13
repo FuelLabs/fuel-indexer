@@ -314,64 +314,53 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                         } = g.to_owned();
 
                         Consensus::Genesis(Genesis {
-                            chain_config_hash: <[u8; 32]>::try_from(
+                            chain_config_hash: <[u8; 32]>::from(
                                 chain_config_hash.to_owned().0 .0,
                             )
-                            .unwrap()
                             .into(),
-                            coins_root: <[u8; 32]>::try_from(coins_root.0 .0.to_owned())
-                                .unwrap()
+                            coins_root: <[u8; 32]>::from(coins_root.0 .0.to_owned())
                                 .into(),
-                            contracts_root: <[u8; 32]>::try_from(
+                            contracts_root: <[u8; 32]>::from(
                                 contracts_root.0 .0.to_owned(),
                             )
-                            .unwrap()
                             .into(),
-                            messages_root: <[u8; 32]>::try_from(
+                            messages_root: <[u8; 32]>::from(
                                 messages_root.0 .0.to_owned(),
                             )
-                            .unwrap()
                             .into(),
                         })
                     }
                     ClientConsensus::PoAConsensus(poa) => Consensus::PoA(PoA {
-                        signature: <[u8; 64]>::try_from(poa.signature.0 .0.to_owned())
-                            .unwrap()
-                            .into(),
+                        signature: <[u8; 64]>::from(poa.signature.0 .0.to_owned()).into(),
                     }),
                 };
 
                 // TODO: https://github.com/FuelLabs/fuel-indexer/issues/286
                 let block = BlockData {
                     height: block.header.height.clone().into(),
-                    id: Bytes32::from(<[u8; 32]>::try_from(block.id.0 .0).unwrap()),
+                    id: Bytes32::from(<[u8; 32]>::from(block.id.0 .0)),
                     producer,
                     time: block.header.time.0.to_unix(),
                     consensus,
                     header: Header {
-                        id: Bytes32::from(
-                            <[u8; 32]>::try_from(block.header.id.0 .0).unwrap(),
-                        ),
+                        id: Bytes32::from(<[u8; 32]>::from(block.header.id.0 .0)),
                         da_height: block.header.da_height.0,
                         transactions_count: block.header.transactions_count.0,
                         output_messages_count: block.header.output_messages_count.0,
-                        transactions_root: Bytes32::from(
-                            <[u8; 32]>::try_from(block.header.transactions_root.0 .0)
-                                .unwrap(),
-                        ),
-                        output_messages_root: Bytes32::from(
-                            <[u8; 32]>::try_from(block.header.output_messages_root.0 .0)
-                                .unwrap(),
-                        ),
+                        transactions_root: Bytes32::from(<[u8; 32]>::from(
+                            block.header.transactions_root.0 .0,
+                        )),
+                        output_messages_root: Bytes32::from(<[u8; 32]>::from(
+                            block.header.output_messages_root.0 .0,
+                        )),
                         height: block.header.height.0,
-                        prev_root: Bytes32::from(
-                            <[u8; 32]>::try_from(block.header.prev_root.0 .0).unwrap(),
-                        ),
+                        prev_root: Bytes32::from(<[u8; 32]>::from(
+                            block.header.prev_root.0 .0,
+                        )),
                         time: block.header.time.0.to_unix(),
-                        application_hash: Bytes32::from(
-                            <[u8; 32]>::try_from(block.header.application_hash.0 .0)
-                                .unwrap(),
-                        ),
+                        application_hash: Bytes32::from(<[u8; 32]>::from(
+                            block.header.application_hash.0 .0,
+                        )),
                     },
                     transactions,
                 };
@@ -388,10 +377,30 @@ pub fn run_executor<T: 'static + Executor + Send + Sync>(
                     break;
                 }
                 error!("Indexer executor failed {e:?}, retrying.");
-                sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
-                retry_count += 1;
+                match e {
+                    IndexerError::SqlxError(sqlx::Error::Database(inner)) => {
+                        // sqlx v0.7 let's you determine if this was specifically a unique constraint violation
+                        // but sqlx v0.6 does not so we use a best guess.
+                        //
+                        // TODO: https://github.com/FuelLabs/fuel-indexer/issues/1093
+                        if inner.constraint().is_some() {
+                            // Just bump the cursor and keep going
+                            warn!("Constraint violation. Continuing...");
+                            next_cursor = cursor;
+                            continue;
+                        } else {
+                            error!("Database error: {inner}.");
+                            retry_count += 1;
+                        }
+                    }
+                    _ => {
+                        sleep(Duration::from_secs(DELAY_FOR_SERVICE_ERROR)).await;
+                        retry_count += 1;
+                    }
+                }
+
                 if retry_count < INDEXER_FAILED_CALLS {
-                    println!("Retrying indexer, attempt: {retry_count}");
+                    warn!("Retrying handler after {retry_count} failed attempts.");
                     continue;
                 } else {
                     error!("Indexer failed after retries, giving up. <('.')>");

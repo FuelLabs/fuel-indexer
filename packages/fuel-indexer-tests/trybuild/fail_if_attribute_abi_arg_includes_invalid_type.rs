@@ -15,8 +15,7 @@ mod indexer {
 }
 
 fn main() {
-    use fuels::core::abi_encoder::ABIEncoder;
-    use fuels::types::traits::Tokenizable;
+    use fuels::core::{codec::ABIEncoder, traits::Tokenizable};
 
     let s = SomeEvent {
         id: 9,

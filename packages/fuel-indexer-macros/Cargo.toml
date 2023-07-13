@@ -32,7 +32,11 @@ sha2 = "0.10"
 syn = { version = "2.0", features = ["full"] }
 
 [dev-dependencies]
-fuel-indexer-plugin = { workspace = true }
+# This is a workaround to avoid cyclic dependency problems. In short,
+# during the publishing step, Cargo will strip dev-dependencies that
+# don't have a version. This has worked for a number of high-profile crates.
+# See https://github.com/rust-lang/futures-rs/pull/2305.
+fuel-indexer-utils = { path = "../fuel-indexer-utils" }
 fuels-macros = { version = "0.43", default-features = false }
 fuels-types = { version = "0.42", default-features = false }
 serde = { workspace = true }
