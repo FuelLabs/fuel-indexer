@@ -70,8 +70,17 @@ pub struct CommonMetadata {
 
 impl From<CommonMetadata> for Json {
     fn from(metadata: CommonMetadata) -> Self {
-        let s = serde_json::to_string(&metadata).expect("Serde error.");
+        let s = serde_json::to_string(&metadata)
+            .expect("Failed to serialize CommonMetadata.");
         Self(s)
+    }
+}
+
+impl From<Json> for CommonMetadata {
+    fn from(json: Json) -> Self {
+        let metadata: CommonMetadata =
+            serde_json::from_str(&json.0).expect("Failed to deserialize CommonMetadata.");
+        metadata
     }
 }
 
@@ -97,8 +106,17 @@ pub struct ScriptMetadata {
 
 impl From<ScriptMetadata> for Json {
     fn from(metadata: ScriptMetadata) -> Self {
-        let s = serde_json::to_string(&metadata).expect("Serde error.");
+        let s = serde_json::to_string(&metadata)
+            .expect("Failed to deserialize MintMetadata.");
         Self(s)
+    }
+}
+
+impl From<Json> for ScriptMetadata {
+    fn from(json: Json) -> Self {
+        let metadata: ScriptMetadata =
+            serde_json::from_str(&json.0).expect("Failed to deserialize ScriptMetadata.");
+        metadata
     }
 }
 
@@ -118,8 +136,17 @@ pub struct MintMetadata {
 
 impl From<MintMetadata> for Json {
     fn from(metadata: MintMetadata) -> Self {
-        let s = serde_json::to_string(&metadata).expect("Serde error.");
+        let s =
+            serde_json::to_string(&metadata).expect("Failed to serialize MintMetadata.");
         Self(s)
+    }
+}
+
+impl From<Json> for MintMetadata {
+    fn from(json: Json) -> Self {
+        let metadata: MintMetadata =
+            serde_json::from_str(&json.0).expect("Failed to deserialize MintMetadata.");
+        metadata
     }
 }
 
@@ -592,14 +619,15 @@ pub struct ProgramState {
 
 impl From<ProgramState> for Json {
     fn from(state: ProgramState) -> Self {
-        let s = serde_json::to_string(&state).expect("Serde error.");
+        let s = serde_json::to_string(&state).expect("Failed to serialize ProgramState.");
         Self(s)
     }
 }
 
 impl From<Json> for ProgramState {
     fn from(json: Json) -> Self {
-        let state: ProgramState = serde_json::from_str(&json.0).expect("Serde error.");
+        let state: ProgramState =
+            serde_json::from_str(&json.0).expect("Failed to deserialize ProgramState.");
         state
     }
 }

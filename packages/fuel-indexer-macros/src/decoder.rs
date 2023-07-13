@@ -673,14 +673,14 @@ impl From<ObjectDecoder> for TokenStream {
 
             impl From<#ident> for Json {
                 fn from(value: #ident) -> Self {
-                    let s = serde_json::to_string(&value).expect("Serde error.");
+                    let s = serde_json::to_string(&value).expect("Failed to serialize Entity.");
                     Self(s)
                 }
             }
 
             impl From<Json> for #ident {
                 fn from(value: Json) -> Self {
-                    let s: #ident = serde_json::from_str(&value.0).expect("Serde error.");
+                    let s: #ident = serde_json::from_str(&value.0).expect("Failed to deserialize Entity.");
                     s
                 }
             }
@@ -716,7 +716,7 @@ impl From<ObjectDecoder> for TokenStream {
                                 Some(d) => {
                                     match d.lock().await.get_object(Self::TYPE_ID, id).await {
                                         Some(bytes) => {
-                                            let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Serde error.");
+                                            let columns: Vec<FtColumn> = bincode::deserialize(&bytes).expect("Failed to deserialize Vec<FtColumn> for Entity::load.");
                                             let obj = Self::from_row(columns);
                                             Some(obj)
                                         },
