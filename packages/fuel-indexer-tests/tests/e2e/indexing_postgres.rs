@@ -34,7 +34,6 @@ async fn setup_test_components(
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_postgres()
 {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
@@ -103,7 +102,6 @@ async fn test_can_trigger_and_index_events_with_multiple_args_in_index_handler_p
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_callreturn_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -140,7 +138,6 @@ async fn test_can_trigger_and_index_callreturn_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -192,7 +189,6 @@ async fn test_can_trigger_and_index_blocks_and_transactions_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_ping_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -237,7 +233,6 @@ async fn test_can_trigger_and_index_ping_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_transfer_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -266,7 +261,6 @@ async fn test_can_trigger_and_index_transfer_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_log_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -295,7 +289,6 @@ async fn test_can_trigger_and_index_log_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_logdata_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -331,7 +324,6 @@ async fn test_can_trigger_and_index_logdata_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_scriptresult_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -368,7 +360,7 @@ async fn test_can_trigger_and_index_scriptresult_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres", ignore))]
+#[ignore]
 async fn test_can_trigger_and_index_transferout_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -401,7 +393,7 @@ async fn test_can_trigger_and_index_transferout_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres", ignore))]
+#[ignore]
 async fn test_can_trigger_and_index_messageout_event_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -446,7 +438,6 @@ async fn test_can_trigger_and_index_messageout_event_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_index_event_with_optional_fields_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -483,7 +474,6 @@ async fn test_can_index_event_with_optional_fields_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -512,7 +502,6 @@ async fn test_can_index_metadata_when_indexer_macro_is_called_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_indexer_respects_start_block_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -581,7 +570,6 @@ async fn test_indexer_respects_start_block_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_indexer_respects_end_block_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -659,7 +647,6 @@ async fn test_indexer_respects_end_block_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_index_respects_end_block_and_start_block_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -739,7 +726,6 @@ async fn test_index_respects_end_block_and_start_block_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_tuple_events_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -768,7 +754,6 @@ async fn test_can_trigger_and_index_tuple_events_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_pure_function_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -801,7 +786,6 @@ async fn test_can_trigger_and_index_pure_function_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_revert_function_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -833,7 +817,6 @@ async fn test_can_trigger_and_index_revert_function_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_panic_function_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -862,7 +845,6 @@ async fn test_can_trigger_and_index_panic_function_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_enum_error_function_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -891,7 +873,6 @@ async fn test_can_trigger_and_index_enum_error_function_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_block_explorer_types_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -929,7 +910,6 @@ async fn test_can_trigger_and_index_block_explorer_types_postgres() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_enum_types_postgres() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -965,7 +945,6 @@ struct VirtualEntity {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_nonindexable_events() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -1000,7 +979,6 @@ async fn test_can_trigger_and_index_nonindexable_events() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_deploying_twice_returns_an_error() {
     let test_db = TestPostgresDb::new().await.unwrap();
 
@@ -1034,7 +1012,6 @@ async fn test_deploying_twice_returns_an_error() {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_replace_indexer() {
     let node_handle = tokio::spawn(setup_example_test_fuel_node());
     let test_db = TestPostgresDb::new().await.unwrap();
@@ -1087,7 +1064,6 @@ struct UnionEntity {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_union_types() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
@@ -1142,7 +1118,6 @@ struct ListFKType {
 }
 
 #[actix_web::test]
-#[cfg(all(feature = "e2e", feature = "postgres"))]
 async fn test_can_trigger_and_index_list_types() {
     let (node_handle, test_db, mut srvc) = setup_test_components().await;
 
