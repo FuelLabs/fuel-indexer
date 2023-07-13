@@ -18,8 +18,6 @@ pub enum FFIError {
     MemoryBound,
     #[error("Error calling into wasm function {0:?}")]
     Runtime(#[from] RuntimeError),
-    // #[error("Error initializing host environment {0:?}")]
-    // HostEnvInit(#[from] HostEnvInitError),
     #[error("Invalid export {0:?}")]
     Export(#[from] ExportError),
     #[error("Expected result from call {0:?}")]

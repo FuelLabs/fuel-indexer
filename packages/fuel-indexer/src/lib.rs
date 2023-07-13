@@ -47,8 +47,6 @@ pub enum IndexerError {
     ExportError(#[from] ExportError),
     #[error("Error executing function: {0:#?}")]
     RuntimeError(#[from] RuntimeError),
-    // #[error("Could not initialize host environment: {0:#?}")]
-    // HostEnvInitError(#[from] HostEnvInitError),
     #[error("IO Error: {0:#?}")]
     IoError(#[from] std::io::Error),
     #[error("FFI Error {0:?}")]
